@@ -1,0 +1,31 @@
+*/node_modules
+*node_modules
+.env
+coverage
+coverage.json
+typechain
+config.json
+contract.addresses
+deployedAddresses
+
+#Hardhat files
+cache_hardhat
+artifacts
+*.lock
+#Foundry files
+out
+cache
+
+*.DS_Store
+
+broadcast
+
+# Deployment tools
+/data
+
+# Certora Outputs
+.certora_internal/
+.certora_recent_jobs.json
+
+#script config file
+# script/M1_deploy.config.json

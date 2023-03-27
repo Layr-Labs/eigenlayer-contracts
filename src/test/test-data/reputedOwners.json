@@ -1,0 +1,35 @@
+{
+    "numOwners": 10,
+    "owners": [
+        {
+            "Address": "0x364ea4241059a1880a289ccf6f3e730371e399c2"
+        },
+        {
+            "Address": "0x164dfa4241059a1880a289ccf6f3e730371e399c2"
+        },
+        {
+            "Address": "0x264ea4241059a1880a289ccf6f3e730371e399c4"
+        },
+        {
+            "Address": "0x464ea4241059a1880a289ccf6f3e730371e399c5"
+        },
+        {
+            "Address": "0x564ea4241059a1880a289ccf6f3e730371e399c6"
+        },
+        {
+            "Address": "0x864ea4241059a1880a289ccf6f3e730371e399c7"
+        },
+        {
+            "Address": "0x344ea4241059a1880a289ccf6f3e730371e399c8"
+        },
+        {
+            "Address": "0x304ea4241059a1880a289ccf6f3e730371e399c9"
+        },
+        {
+            "Address": "0x364ea4241059a1880a289ccf6f3e730371e399d4"
+        },
+        {
+            "Address": "0x364ea4241059a1880a289ccf6f3e730371e39955"
+        }
+    ]
+}

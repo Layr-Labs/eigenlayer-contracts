@@ -1,0 +1,11 @@
+{
+    "detectors_to_exclude": "assembly,solc-version,naming-convention,incorrect-equality,uninitialized-local,timestamp,low-level-calls,unimplemented-functions,too-many-digits,similar-names,calls-loop,arbitrary-send-eth,reentrancy-no-eth,reentrancy-benign,reentrancy-events,unused-state",
+    "filter_paths": "lib/|test/|mocks/|BytesLib|script/",
+    "solc_remaps": [
+        "forge-std/=lib/forge-std/src/",
+        "@openzeppelin/=lib/openzeppelin-contracts/",
+        "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/",
+        "ds-test/=lib/ds-test/src/"
+    ],
+    "compile_force_framework": "foundry"
+}

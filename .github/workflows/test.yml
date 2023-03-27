@@ -1,0 +1,33 @@
+name: Automatic Testing
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Foundry Project
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install forge dependencies
+        run: forge install
+
+      - name: Run tests
+        run: forge test -vvv
+
+      - name: Run snapshot
+        run: forge snapshot
