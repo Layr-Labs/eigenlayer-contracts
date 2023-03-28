@@ -11,6 +11,5 @@ certoraRun certora/harnesses/StructuredLinkedListHarness.sol \
     --settings -optimisticFallback=true \
     $RULE \
     --rule_sanity \
-    # --staging master \
     --loop_iter 3 \
     --msg "StructuredLinkedList $1 $2" \
