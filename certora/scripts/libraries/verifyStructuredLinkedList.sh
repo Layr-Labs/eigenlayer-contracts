@@ -3,7 +3,6 @@ then
     RULE="--rule $2"
 fi
 
-solc-select use 0.8.12
 
 certoraRun certora/harnesses/StructuredLinkedListHarness.sol \
     --verify StructuredLinkedListHarness:certora/specs/libraries/StructuredLinkedList.spec \
