@@ -9,7 +9,7 @@ interface IBeaconChainOracle {
     /// @notice Largest blockNumber that has been confirmed by the oracle.
     function latestConfirmedOracleBlockNumber() external view returns(uint64);
     /// @notice Mapping: Beacon Chain blockNumber => the Beacon Chain state root at the specified blockNumber.
-    /// @dev This will return `bytes32(0)` if the state root is not yet finalized at the blockNumber.
+    /// @dev This will return `bytes32(0)` if the state root at the specified blockNumber is not yet confirmed.
     function beaconStateRootAtBlockNumber(uint64 blockNumber) external view returns(bytes32);
 
     /// @notice Mapping: address => whether or not the address is in the set of oracle signers.

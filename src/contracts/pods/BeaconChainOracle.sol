@@ -27,7 +27,7 @@ contract BeaconChainOracle is IBeaconChainOracle, Ownable {
     uint64 public latestConfirmedOracleBlockNumber;
 
     /// @notice Mapping: Beacon Chain blockNumber => the Beacon Chain state root at the specified blockNumber.
-    /// @dev This will return `bytes32(0)` if the state root is not yet confirmed at the blockNumber.
+    /// @dev This will return `bytes32(0)` if the state root at the specified blockNumber is not yet confirmed.
     mapping(uint64 => bytes32) public beaconStateRootAtBlockNumber;
     /// @notice Mapping: address => whether or not the address is in the set of oracle signers.
     mapping(address => bool) public isOracleSigner; 
