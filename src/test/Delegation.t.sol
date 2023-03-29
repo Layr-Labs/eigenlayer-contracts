@@ -430,8 +430,7 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     /// @notice This function checks that you can only delegate to an address that is already registered.
-    function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public{
-
+    function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
         vm.startPrank(_staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
         delegation.delegateTo(_unregisteredOperator);
