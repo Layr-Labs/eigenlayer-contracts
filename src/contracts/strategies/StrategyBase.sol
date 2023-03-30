@@ -80,11 +80,15 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
          * @notice calculation of newShares *mirrors* `underlyingToShares(amount)`, but is different since the balance of `underlyingToken`
          * has already been increased due to the `strategyManager` transferring tokens to this strategy prior to calling this function
          */
-        uint256 priorTokenBalance = _tokenBalance() - amount;
-        if (priorTokenBalance == 0 || totalShares == 0) {
+        if (totalShares == 0) {
             newShares = amount;
         } else {
-            newShares = (amount * totalShares) / priorTokenBalance;
+            uint256 priorTokenBalance = _tokenBalance() - amount;
+            if (priorTokenBalance == 0) {
+                newShares = amount;
+            } else {
+                newShares = (amount * totalShares) / priorTokenBalance;
+            }
         }
 
         // checks to ensure correctness / avoid edge case where share rate can be massively inflated as a 'griefing' sort of attack
