@@ -437,6 +437,128 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         _testDepositToStrategy(sender, amountToDeposit, underlyingToken, oneWeiFeeOnTransferTokenStrategy);
     }
 
+    /// @notice Shadow-forks mainnet and tests depositing stETH tokens into a "StrategyBase" contract.
+    function testForkMainnetDepositSteth() public {
+        // hard-coded inputs
+        address sender = address(this);
+        uint64 amountToDeposit = 1e12;
+
+        // shadow-fork mainnet
+        uint256 forkId = cheats.createFork("mainnet");
+        cheats.selectFork(forkId);
+
+        // cast mainnet stETH address to IERC20 interface
+        IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+        IERC20 underlyingToken = steth;
+
+        // deploy necessary contracts on the shadow-forked network
+        // deploy proxy admin for ability to upgrade proxy contracts
+        eigenLayerProxyAdmin = new ProxyAdmin();
+        //deploy pauser registry
+        eigenLayerPauserReg = new PauserRegistry(pauser, unpauser);
+        /**
+         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
+         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
+         */
+        emptyContract = new EmptyContract();
+        delegation = DelegationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        strategyManager = StrategyManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        slasher = Slasher(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        eigenPodManager = EigenPodManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        delayedWithdrawalRouter = DelayedWithdrawalRouter(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        address[] memory initialOracleSignersArray = new address[](0);
+        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+
+        ethPOSDeposit = new ETHPOSDepositMock();
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+
+        eigenPodBeacon = new UpgradeableBeacon(address(pod));
+
+        // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        Slasher slasherImplementation = new Slasher(strategyManager, delegation);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(delegation))),
+            address(delegationImplementation),
+            abi.encodeWithSelector(
+                DelegationManager.initialize.selector,
+                eigenLayerReputedMultisig,
+                eigenLayerPauserReg,
+                0/*initialPausedStatus*/
+            )
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation),
+            abi.encodeWithSelector(
+                StrategyManager.initialize.selector,
+                eigenLayerReputedMultisig,
+                eigenLayerReputedMultisig,
+                eigenLayerPauserReg,
+                0/*initialPausedStatus*/,
+                0/*withdrawalDelayBlocks*/
+            )
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(slasher))),
+            address(slasherImplementation),
+            abi.encodeWithSelector(
+                Slasher.initialize.selector,
+                eigenLayerReputedMultisig,
+                eigenLayerPauserReg,
+                0/*initialPausedStatus*/
+            )
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation),
+            abi.encodeWithSelector(
+                EigenPodManager.initialize.selector,
+                beaconChainOracle,
+                eigenLayerReputedMultisig,
+                eigenLayerPauserReg,
+                0/*initialPausedStatus*/
+            )
+        );
+
+        // cheat a bunch of ETH to this address
+        cheats.deal(address(this), 1e20);
+        // deposit a huge amount of ETH to get ample stETH
+        (bool success, bytes memory returnData) = address(steth).call{value: 1e20}("");
+        require(success, "depositing stETH failed");
+        returnData;
+
+        // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+        IStrategy stethStrategy = StrategyBase(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(baseStrategyImplementation),
+                        address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                    )
+                )
+            );
+
+        _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
+
+    }
+
     function _whitelistStrategy(StrategyManager _strategyManager, StrategyBase _strategyBase) internal returns(StrategyManager) {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
