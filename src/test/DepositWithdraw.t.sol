@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "./EigenLayerTestHelper.t.sol";
 import "../contracts/core/StrategyManagerStorage.sol";
+import "./mocks/ERC20_OneWeiFeeOnTransfer.sol";
 
 contract DepositWithdrawTests is EigenLayerTestHelper {
     uint256[] public emptyUintArray;
@@ -408,6 +409,32 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         (, shares) = _strategyManager.getDeposits(user);
         require(wethStrat.sharesToUnderlyingView(shares[0]) >= (1900000000000000000), "user has lost more than 0.1 eth from frontrunning");
 
+    }
+
+    function testDepositTokenWithOneWeiFeeOnTransfer(address sender, uint64 amountToDeposit) public fuzzedAddress(sender) {
+        // MIN_NONZERO_TOTAL_SHARES = 1e9
+        cheats.assume(amountToDeposit >= 1e9);
+
+        uint256 initSupply = 1e50;
+        address initOwner = address(this);
+
+        ERC20_OneWeiFeeOnTransfer oneWeiFeeOnTransferToken = new ERC20_OneWeiFeeOnTransfer(initSupply, initOwner);
+        IERC20 underlyingToken = IERC20(address(oneWeiFeeOnTransferToken));
+
+        // need to transfer extra here because otherwise the `sender` won't have enough tokens
+        underlyingToken.transfer(sender, 1000);
+
+        IStrategy oneWeiFeeOnTransferTokenStrategy = StrategyBase(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(baseStrategyImplementation),
+                        address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                    )
+                )
+            );
+
+        _testDepositToStrategy(sender, amountToDeposit, underlyingToken, oneWeiFeeOnTransferTokenStrategy);
     }
 
     function _whitelistStrategy(StrategyManager _strategyManager, StrategyBase _strategyBase) internal returns(StrategyManager) {
