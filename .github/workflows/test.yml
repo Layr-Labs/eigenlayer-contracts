@@ -33,3 +33,5 @@ jobs:
 
       - name: Run snapshot
         run: forge snapshot
+        env:
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
