@@ -6,7 +6,7 @@ on:
       - master
       - release-v*
       - formal-verification
-      - add-certora-prover-to-github-workflows
+      - fix-ci-errors
   pull_request: {}
   workflow_dispatch: {}
 
