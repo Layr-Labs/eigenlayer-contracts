@@ -1,0 +1,9 @@
+{
+  "addresses": {
+    "beaconChainOracle": "0x90193C961A926261B756D1E5bb255e67ff9498A1"
+  },
+  "chainInfo": {
+    "chainId": 31337,
+    "deploymentBlock": 1
+  }
+}
