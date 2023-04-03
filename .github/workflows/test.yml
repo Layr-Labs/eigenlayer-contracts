@@ -28,6 +28,10 @@ jobs:
 
       - name: Run tests
         run: forge test -vvv
+        env:
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
 
       - name: Run snapshot
         run: forge snapshot
+        env:
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}

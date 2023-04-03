@@ -22,4 +22,7 @@ via_ir = false
 # Override the Solidity version (this overrides `auto_detect_solc`)
 solc_version = '0.8.12'
 
+[rpc_endpoints]
+mainnet = "${RPC_MAINNET}"
+
 # See more config options https://github.com/gakonst/foundry/tree/master/config

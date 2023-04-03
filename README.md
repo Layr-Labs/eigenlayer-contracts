@@ -39,6 +39,10 @@ To generate the docs, run `npx hardhat docgen` (you may need to run `npm install
 
 ### Run Tests
 
+Prior to running tests, you should set up your environment. At present this repository contains fork tests against ETH mainnet; your environment will need an `RPC_MAINNET` key to run these tests. See the `.env.example` file for an example -- two simple options are to  copy the LlamaNodes RPC url to your `env` or use your own infura API key in the provided format.
+
+The main command to run tests is:
+
 `forge test -vv`
 
 ### Run Static Analysis
