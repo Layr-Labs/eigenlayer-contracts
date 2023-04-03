@@ -6,7 +6,7 @@ on:
       - master
       - release-v*
       - formal-verification
-      - add-certora-prover-to-github-workflows
+      - fix-ci-errors
   pull_request: {}
   workflow_dispatch: {}
 
@@ -43,7 +43,7 @@ jobs:
           java-version: '11'
           java-package: 'jre'
       - name: Install certora
-        run: pip install certora-cli
+        run: pip install certora-cli==3.6.4
       - name: Install solc
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.12/solc-static-linux

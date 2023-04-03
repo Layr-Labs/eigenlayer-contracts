@@ -345,7 +345,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice verifies that multiple partial withdrawals can be made before a full withdrawal
-    function testProvingMultipleWithdrawalsForSameSlot(uint numPartialWithdrawals) public {
+    function testProvingMultipleWithdrawalsForSameSlot(/*uint256 numPartialWithdrawals*/) public {
         IEigenPod newPod = testPartialWithdrawalFlow();
 
         BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
