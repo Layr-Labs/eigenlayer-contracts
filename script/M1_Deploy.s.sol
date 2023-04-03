@@ -323,8 +323,10 @@ contract Deployer_M1 is Script, Test {
         string memory parameters_output = vm.serializeAddress(parameters, "teamMultisig", teamMultisig);
 
         string memory chain_info = "chainInfo";
+        vm.serializeUint(chain_info, "deploymentBlock", block.number);
         string memory chain_info_output = vm.serializeUint(chain_info, "chainId", chainId);
 
+        // serialize all the data
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         vm.serializeString(parent_object, chain_info, chain_info_output);
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);

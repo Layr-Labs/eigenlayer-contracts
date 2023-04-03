@@ -24,7 +24,8 @@
     "strategyManagerImplementation": "0x950885030B890324532e9f0f55421e784dff43C5"
   },
   "chainInfo": {
-    "chainId": 5
+    "chainId": 5,
+    "deploymentBlock": 8705851
   },
   "parameters": {
     "communityMultisig": "0x37bAFb55BC02056c5fD891DFa503ee84a97d89bF",
