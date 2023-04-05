@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 import "./IStrategy.sol";
 import "./ISlasher.sol";
 import "./IDelegationManager.sol";
-import "./IServiceManager.sol";
 
 /**
  * @title Interface for the primary entrypoint for funds into EigenLayer.
