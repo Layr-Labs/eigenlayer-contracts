@@ -71,7 +71,9 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         uint8 _NUMBER_OF_QUORUMS
     ) VoteWeigherBase(_strategyManager, _serviceManager, _NUMBER_OF_QUORUMS)
     // solhint-disable-next-line no-empty-blocks
-    {}
+    {
+        require(_NUMBER_OF_QUORUMS <= 2, "RegistryBase.constructor: NUMBER_OF_QUORUMS must be less than or equal to 2");
+    }
 
     /**
      * @notice Adds empty first entries to the dynamic arrays `totalStakeHistory` and `totalOperatorsHistory`,
@@ -81,8 +83,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      */
     function _initialize(
         uint256[] memory _quorumBips,
-        StrategyAndWeightingMultiplier[] memory _firstQuorumStrategiesConsideredAndMultipliers,
-        StrategyAndWeightingMultiplier[] memory _secondQuorumStrategiesConsideredAndMultipliers
+        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
         VoteWeigherBase._initialize(_quorumBips);
 
@@ -94,8 +95,13 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         OperatorIndex memory _totalOperators;
         totalOperatorsHistory.push(_totalOperators);
 
-        _addStrategiesConsideredAndMultipliers(0, _firstQuorumStrategiesConsideredAndMultipliers);
-        _addStrategiesConsideredAndMultipliers(1, _secondQuorumStrategiesConsideredAndMultipliers);
+        // add the strategies and multipliers to each quorum
+        for (uint i = 0; i < _quorumStrategiesConsideredAndMultipliers.length;) {
+            _addStrategiesConsideredAndMultipliers(i, _quorumStrategiesConsideredAndMultipliers[i]);
+            unchecked {
+                i++;
+            }
+        }
     }
 
     /**
