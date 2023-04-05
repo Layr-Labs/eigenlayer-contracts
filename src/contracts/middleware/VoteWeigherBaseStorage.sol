@@ -5,6 +5,7 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IVoteWeigher.sol";
+import "../interfaces/IServiceManager.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
