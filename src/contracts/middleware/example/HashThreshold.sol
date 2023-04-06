@@ -12,7 +12,7 @@ import "./ECDSARegistry.sol";
  * @author Layr Labs, Inc.
  */
 contract HashThreshold is Ownable, IServiceManager {
-    uint32 constant disputePeriodBlocks = 1 days / 12 seconds;
+    uint32 constant disputePeriod = 1 days;
     uint8 constant numZeroes = 5;
     ISlasher public immutable slasher;
     ECDSARegistry public immutable registry;
@@ -20,7 +20,7 @@ contract HashThreshold is Ownable, IServiceManager {
 
     struct CertifiedMessageMetadata {
         bytes32 signaturesHash;
-        uint32 validAfterBlock;
+        uint32 validAfterTime;
     }
 
     uint32 public taskNumber = 0;
@@ -62,7 +62,7 @@ contract HashThreshold is Ownable, IServiceManager {
      */
     function submitSignatures(bytes32 message, bytes calldata signatures) external {
         // we check that the message has not already been certified
-        require(certifiedMessageMetadatas[message].validAfterBlock == 0, "Message already certified");
+        require(certifiedMessageMetadatas[message].validAfterTime == 0, "Message already certified");
         // this makes it so that the signatures are viewable in calldata
         require(msg.sender == tx.origin, "EOA must call this function");
         uint128 stakeSigned = 0;
@@ -77,10 +77,10 @@ contract HashThreshold is Ownable, IServiceManager {
         (uint96 totalStake,) = registry.totalStake();
         require(stakeSigned >= 666667 * uint256(totalStake) / 1000000, "Need more than 2/3 of stake to sign");
 
-        uint32 newLatestTime = uint32(block.number + disputePeriodBlocks);
+        uint32 newLatestTime = uint32(block.timestamp + disputePeriod);
 
         certifiedMessageMetadatas[message] = CertifiedMessageMetadata({
-            validAfterBlock: newLatestTime,
+            validAfterTime: newLatestTime,
             signaturesHash: keccak256(signatures)
         });
 
@@ -102,7 +102,7 @@ contract HashThreshold is Ownable, IServiceManager {
     function slashSigners(bytes32 message, bytes calldata signatures) external {
         CertifiedMessageMetadata memory certifiedMessageMetadata = certifiedMessageMetadatas[message];
         // we check that the message has been certified
-        require(certifiedMessageMetadata.validAfterBlock > block.number, "Dispute period has passed");
+        require(certifiedMessageMetadata.validAfterTime > block.timestamp, "Dispute period has passed");
         // we check that the signatures match the ones that were certified
         require(certifiedMessageMetadata.signaturesHash == keccak256(signatures), "Signatures do not match");
         // we check that the message hashes to enough zeroes
@@ -114,7 +114,7 @@ contract HashThreshold is Ownable, IServiceManager {
             slasher.freezeOperator(ECDSA.recover(message, signatures[i:i+65]));
         }
         // we invalidate the message
-        certifiedMessageMetadatas[message].validAfterBlock = type(uint32).max;
+        certifiedMessageMetadatas[message].validAfterTime = type(uint32).max;
     }
 
     /// @inheritdoc IServiceManager
