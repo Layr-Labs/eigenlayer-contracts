@@ -28,7 +28,7 @@ contract ServiceManagerMock is IServiceManager, DSTest {
     function recordFirstStakeUpdate(address operator, uint32 serveUntil) external pure {}
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 prevElement) external pure {}
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external pure {}
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external pure {}
@@ -43,8 +43,8 @@ contract ServiceManagerMock is IServiceManager, DSTest {
         return IDelegationManager(address(0));
     }
 
-    /// @notice Returns the `latestTime` until which operators must serve.
-    function latestTime() external pure returns (uint32) {
+    /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
+    function latestServeUntilBlock() external pure returns (uint32) {
         return type(uint32).max;
     }
 

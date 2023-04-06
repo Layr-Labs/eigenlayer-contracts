@@ -16,16 +16,16 @@ interface IServiceManager {
     function freezeOperator(address operator) external;
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording an initial stake update (on operator registration)
-    function recordFirstStakeUpdate(address operator, uint32 serveUntil) external;
+    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external;
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 prevElement) external;
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external;
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external;
+    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;
 
-    /// @notice Returns the `latestTime` until which operators must serve.
-    function latestTime() external view returns (uint32);
+    /// @notice Returns the latest block until which operators must serve.
+    function latestServeUntilBlock() external view returns (uint32);
 
     function owner() external view returns (address);
 }

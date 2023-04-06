@@ -399,13 +399,13 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // remove the operator at `index` from the `operatorList`
         address swappedOperator = _popRegistrant(index);
 
-        // @notice Registrant must continue to serve until the latest time at which an active task expires. this info is used in challenges
-        uint32 latestTime = serviceManager.latestTime();
+        // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
+        uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
         // committing to not signing off on any more middleware tasks
         registry[operator].status = IQuorumRegistry.Status.INACTIVE;
 
-        // record a stake update unbonding the operator after `latestTime`
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestTime);
+        // record a stake update unbonding the operator after `latestServeUntilBlock`
+        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
 
         // Emit `Deregistration` event
         emit Deregistration(operator, swappedOperator);
@@ -514,7 +514,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     {
 
         require(
-            slasher.contractCanSlashOperatorUntil(operator, address(serviceManager)) == type(uint32).max,
+            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
             "RegistryBase._addRegistrant: operator must be opted into slashing by the serviceManager"
         );
         // store the Operator's info in mapping
@@ -640,7 +640,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // push new stake to storage
         pubkeyHashToStakeHistory[pubkeyHash].push(updatedOperatorStake);
         // record stake update in the slasher
-        serviceManager.recordStakeUpdate(operator, uint32(block.number), serviceManager.latestTime(), insertAfter);
+        serviceManager.recordStakeUpdate(operator, uint32(block.number), serviceManager.latestServeUntilBlock(), insertAfter);
 
         emit StakeUpdate(
             operator,

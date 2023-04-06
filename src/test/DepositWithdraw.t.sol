@@ -57,12 +57,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.roll(2);
 
         cheats.startPrank(middleware);
-        // stake update with updateBlock = 2, serveUntil = 5
-        uint32 serveUntil = 5;
-        slasher.recordFirstStakeUpdate(staker, serveUntil);
+        // stake update with updateBlock = 2, serveUntilBlock = 5
+        uint32 serveUntilBlock = 5;
+        slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
         cheats.stopPrank();
 
-        cheats.warp(6);
+        cheats.roll(6);
 
         // freeze the staker
         cheats.startPrank(middleware);
@@ -132,26 +132,26 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             cheats.stopPrank();
 
             cheats.startPrank(middleware);
-            // first stake update with updateBlock = 1, serveUntil = 5
+            // first stake update with updateBlock = 1, serveUntilBlock = 5
       
-            uint32 serveUntil = 5;
-            slasher.recordFirstStakeUpdate(staker, serveUntil);
+            uint32 serveUntilBlock = 5;
+            slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
             require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntil(staker, 0) == 5, "middleware serveUntil update incorrect");
+            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
             
 
             cheats.startPrank(middleware_2);
-            // first stake update with updateBlock = 1, serveUntil = 6
-            slasher.recordFirstStakeUpdate(staker, serveUntil+1);
+            // first stake update with updateBlock = 1, serveUntilBlock = 6
+            slasher.recordFirstStakeUpdate(staker, serveUntilBlock+1);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
             require(slasher.getMiddlewareTimesIndexBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntil(staker, 1) == 6, "middleware serveUntil update incorrect");
+            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 1) == 6, "middleware serveUntil update incorrect");
             //check old entry has not changed
             require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntil(staker, 0) == 5, "middleware serveUntil update incorrect");
+            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
 
             //move ahead a block before queuing the withdrawal
             cheats.roll(2);
@@ -173,36 +173,36 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.roll(3);
 
         cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntil = 7
-        uint32 serveUntil = 7;
+        // stake update with updateBlock = 3, serveUntilBlock = 7
+        uint32 serveUntilBlock = 7;
         uint32 updateBlock = 3;
         uint256 insertAfter = 1;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntil(staker, 2) == 7, "middleware serveUntil update incorrect");
+        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 2) == 7, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware_2);
-        // stake update with updateBlock = 3, serveUntil = 10
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil+3, insertAfter);
+        // stake update with updateBlock = 3, serveUntilBlock = 10
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock+3, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntil(staker, 3) == 10, "middleware serveUntil update incorrect");
+        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 3) == 10, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntil = 7
-        serveUntil = 7;
+        // stake update with updateBlock = 3, serveUntilBlock = 7
+        serveUntilBlock = 7;
         updateBlock = 3;
         insertAfter = 2;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntil(staker, 4) == 10, "middleware serveUntil update incorrect");
+        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");
 
-        //move timestamp to 6, one middleware is past serveUntil but the second middleware is still using the restaked funds.
+        //move timestamp to 6, one middleware is past serveUntilBlock but the second middleware is still using the restaked funds.
         cheats.warp(8);
         //Also move the current block ahead one
         cheats.roll(4);
