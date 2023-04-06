@@ -57,14 +57,15 @@ contract ECDSARegistry is RegistryBase {
         address _whitelister,
         bool _whitelistEnabled,
         uint256[] memory _quorumBips,
-        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
+        StrategyAndWeightingMultiplier[] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setWhitelister(_whitelister);
         whitelistEnabled = _whitelistEnabled;
 
         RegistryBase._initialize(
             _quorumBips,
-            _quorumStrategiesConsideredAndMultipliers
+            _quorumStrategiesConsideredAndMultipliers,
+            new StrategyAndWeightingMultiplier[](0)
         );
     }
 

@@ -90,7 +90,8 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         address _whitelister,
         bool _whitelistEnabled,
         uint256[] memory _quorumBips,
-        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
+        StrategyAndWeightingMultiplier[] memory _firstQuorumStrategiesConsideredAndMultipliers,
+        StrategyAndWeightingMultiplier[] memory _secondQuorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setWhitelister(_whitelister);
         whitelistEnabled = _whitelistEnabled;
@@ -98,7 +99,8 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         _processApkUpdate(BN254.G1Point(0, 0));
         RegistryBase._initialize(
             _quorumBips,
-            _quorumStrategiesConsideredAndMultipliers
+            _firstQuorumStrategiesConsideredAndMultipliers,
+            _secondQuorumStrategiesConsideredAndMultipliers
         );
     }
 

@@ -31,6 +31,7 @@ contract HashThreshold is Ownable, IServiceManager {
 
     modifier onlyRegistry {
         require(msg.sender == address(registry), "Only registry can call this function");
+        _;
     }
 
     constructor(
