@@ -13,7 +13,7 @@ contract Owners is Test {
         ownersConfigJson = vm.readFile("./src/test/test-data/owners.json");
     }
 
-    function ownerPrefix(uint256 index) public returns(string memory) {
+    function ownerPrefix(uint256 index) public pure returns(string memory) {
         return string.concat(".owners[", string.concat(vm.toString(index), "]."));
     }
 
