@@ -8,7 +8,7 @@ import "../../interfaces/IServiceManager.sol";
 import "./ECDSARegistry.sol";
 
 /**
- * @title An EigenLayer middleware example service manager that slashes validators that sign a message that, when hashed 1000 types starts with less than 5 0s.
+ * @title An EigenLayer middleware example service manager that slashes validators that sign a message that, when hashed 10 times starts with less than a certain number of 0s.
  * @author Layr Labs, Inc.
  */
 contract HashThreshold is Ownable, IServiceManager {
@@ -46,15 +46,23 @@ contract HashThreshold is Ownable, IServiceManager {
         return Ownable.owner();
     }
 
-    function kiloHash(bytes32 message) public pure returns (bytes32) {
+    function decaHash(bytes32 message) public pure returns (bytes32) {
         bytes32 hash = message;
-        for (uint256 i = 0; i < 1000; i++) {
+        for (uint256 i = 0; i < 10; i++) {
             hash = keccak256(abi.encodePacked(hash));
         }
         return hash;
     }
 
+    /**
+     * This function is called by anyone to certify a message. Signers are certifying that the decahashed message starts with at least `numZeros` 0s.
+     * 
+     * @param message The message to certify
+     * @param signatures The signatures of the message, certifying it
+     */
     function submitSignatures(bytes32 message, bytes calldata signatures) external {
+        // we check that the message has not already been certified
+        require(certifiedMessageMetadatas[message].validAfterBlock == 0, "Message already certified");
         // this makes it so that the signatures are viewable in calldata
         require(msg.sender == tx.origin, "EOA must call this function");
         uint128 stakeSigned = 0;
@@ -64,6 +72,8 @@ contract HashThreshold is Ownable, IServiceManager {
             require(registry.isActiveOperator(signer), "Signer is not an active operator");
             stakeSigned += registry.firstQuorumStakedByOperator(signer);
         }
+        // We require that 2/3 of the stake signed the message
+        // We only take the first quorum stake because this is a single quorum middleware
         (uint96 totalStake,) = registry.totalStake();
         require(stakeSigned >= 666667 * uint256(totalStake) / 1000000, "Need more than 2/3 of stake to sign");
 
@@ -76,34 +86,53 @@ contract HashThreshold is Ownable, IServiceManager {
 
         // increment global service manager values
         taskNumber++;
+        // Note: latestTime is the latest timestamp at which anyone currently staked on the middleware can be frozen
         latestTime = newLatestTime;
-        
+
         emit MessageCertified(message);
     }
 
+
+    /**
+     * This function is called by anyone to slash the signers of an invalid message that has been certified.
+     * 
+     * @param message The message to slash the signers of
+     * @param signatures The signatures that certified the message
+     */
     function slashSigners(bytes32 message, bytes calldata signatures) external {
         CertifiedMessageMetadata memory certifiedMessageMetadata = certifiedMessageMetadatas[message];
+        // we check that the message has been certified
         require(certifiedMessageMetadata.validAfterBlock > block.number, "Dispute period has passed");
+        // we check that the signatures match the ones that were certified
         require(certifiedMessageMetadata.signaturesHash == keccak256(signatures), "Signatures do not match");
-        require(kiloHash(message) >> (256 - numZeroes) == 0, "Message does not hash to enough zeroes");
+        // we check that the message hashes to enough zeroes
+        require(decaHash(message) >> (256 - numZeroes) == 0, "Message does not hash to enough zeroes");
+        // we freeze all the signers
         for (uint i = 0; i < signatures.length; i += 65) {
+            // this is eigenlayer's means of escalating an operators stake for review for slashing
+            // this immediately prevents all withdrawals for the operator and stakers delegated to them
             slasher.freezeOperator(ECDSA.recover(message, signatures[i:i+65]));
         }
+        // we invalidate the message
         certifiedMessageMetadatas[message].validAfterBlock = type(uint32).max;
     }
 
+    /// @inheritdoc IServiceManager
     function freezeOperator(address operator) external onlyRegistry {
         slasher.freezeOperator(operator);
     }
 
+    /// @inheritdoc IServiceManager
     function recordFirstStakeUpdate(address operator, uint32 serveUntil) external onlyRegistry {
         slasher.recordFirstStakeUpdate(operator, serveUntil);
     }
 
+    /// @inheritdoc IServiceManager
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external onlyRegistry {
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntil);
     }
 
+    /// @inheritdoc IServiceManager
     function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 prevElement) external onlyRegistry {
         slasher.recordStakeUpdate(operator, updateBlock, serveUntil, prevElement);
     }

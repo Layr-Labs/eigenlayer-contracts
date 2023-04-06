@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "../RegistryBase.sol";
 
 /**
- * @title A Registry-type contract using aggregate BLS signatures.
+ * @title A Registry-type contract identifying operators by their Ethereum address, with only 1 quorum.
  * @author Layr Labs, Inc.
  * @notice This contract is used for
  * - registering new operators
@@ -48,7 +48,7 @@ contract ECDSARegistry is RegistryBase {
         RegistryBase(
             _strategyManager,
             _serviceManager,
-            1
+            1 // set the number of quorums to 1
         )
     {}
 
@@ -103,7 +103,6 @@ contract ECDSARegistry is RegistryBase {
             whitelisted[operators[i]] = false;
         }
     }
-
     /**
      * @notice called for registering as an operator
      * @param socket is the socket address of the operator
@@ -194,63 +193,6 @@ contract ECDSARegistry is RegistryBase {
         // update storage of total stake
         _recordTotalStakeUpdate(_totalStake);
     }
-
-    //TODO: The subgraph doesnt like uint256[4][] argument here. Figure this out laters
-    // // TODO: de-dupe code copied from `updateStakes`, if reasonably possible
-    // /**
-    //  * @notice Used for removing operators that no longer meet the minimum requirements
-    //  * @param operators are the nodes who will potentially be booted
-    //  */
-    // function bootOperators(
-    //     address[] calldata operators,
-    //     uint256[4][] memory pubkeysToRemoveAff,
-    //     uint32[] memory indices
-    // )
-    //     external
-    // {
-    //     // copy total stake to memory
-    //     OperatorStake memory _totalStake = totalStakeHistory[totalStakeHistory.length - 1];
-
-    //     // placeholders reused inside of loop
-    //     OperatorStake memory currentStakes;
-    //     bytes32 pubkeyHash;
-    //     uint256 operatorsLength = operators.length;
-    //     // iterating over all the tuples that are to be updated
-    //     for (uint256 i = 0; i < operatorsLength;) {
-    //         // get operator's pubkeyHash
-    //         pubkeyHash = registry[operators[i]].pubkeyHash;
-    //         // fetch operator's existing stakes
-    //         currentStakes = pubkeyHashToStakeHistory[pubkeyHash][pubkeyHashToStakeHistory[pubkeyHash].length - 1];
-    //         // decrease _totalStake by operator's existing stakes
-    //         _totalStake.firstQuorumStake -= currentStakes.firstQuorumStake;
-    //         _totalStake.secondQuorumStake -= currentStakes.secondQuorumStake;
-
-    //         // update the stake for the i-th operator
-    //         currentStakes = _updateOperatorStake(operators[i], pubkeyHash, currentStakes);
-
-    //         // remove the operator from the list of operators if they do *not* meet the minimum requirements
-    //         if (
-    //             (currentStakes.firstQuorumStake < minimumStakeFirstQuorum)
-    //                 && (currentStakes.secondQuorumStake < minimumStakeSecondQuorum)
-    //         ) {
-    //             // TODO: optimize better if possible? right now this pushes an APK update for each operator removed.
-    //             _deregisterOperator(operators[i], pubkeysToRemoveAff[i], indices[i]);
-    //         }
-    //         // in the case that the operator *does indeed* meet the minimum requirements
-    //         else {
-    //             // increase _totalStake by operator's updated stakes
-    //             _totalStake.firstQuorumStake += currentStakes.firstQuorumStake;
-    //             _totalStake.secondQuorumStake += currentStakes.secondQuorumStake;
-    //         }
-
-    //         unchecked {
-    //             ++i;
-    //         }
-    //     }
-
-    //     // update storage of total stake
-    //     _recordTotalStakeUpdate(_totalStake);
-    // }
 
     function _setWhitelister(address _whitelister) internal {
         require(_whitelister != address(0), "BLSRegistry.initialize: cannot set whitelister to zero address");
