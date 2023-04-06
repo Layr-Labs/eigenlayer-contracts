@@ -13,7 +13,7 @@ contract Operators is Test {
         operatorConfigJson = vm.readFile("./src/test/test-data/operators.json");
     }
 
-    function operatorPrefix(uint256 index) public returns(string memory) {
+    function operatorPrefix(uint256 index) public pure returns(string memory) {
         return string.concat(".operators[", string.concat(vm.toString(index), "]."));
     }
 
