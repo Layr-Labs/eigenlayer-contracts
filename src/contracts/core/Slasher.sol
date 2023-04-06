@@ -62,8 +62,8 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     /// @notice Emitted when `operator` begins to allow `contractAddress` to slash them.
     event OptedIntoSlashing(address indexed operator, address indexed contractAddress);
 
-    /// @notice Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the UTC timestamp `contractCanSlashOperatorUntil`.
-    event SlashingAbilityRevoked(address indexed operator, address indexed contractAddress, uint32 contractCanSlashOperatorUntil);
+    /// @notice Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the `contractCanSlashOperatorUntilBlock`.
+    event SlashingAbilityRevoked(address indexed operator, address indexed contractAddress, uint32 contractCanSlashOperatorUntilBlock);
 
     /**
      * @notice Emitted when `slashingContract` 'freezes' the `slashedOperator`.
@@ -82,7 +82,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     /// @notice Ensures that the operator has opted into slashing by the caller, and that the caller has never revoked its slashing ability.
     modifier onlyRegisteredForService(address operator) {
-        require(_whitelistedContractDetails[operator][msg.sender].contractCanSlashOperatorUntil == MAX_CAN_SLASH_UNTIL,
+        require(_whitelistedContractDetails[operator][msg.sender].contractCanSlashOperatorUntilBlock == MAX_CAN_SLASH_UNTIL,
             "Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
         _;
     }
@@ -193,7 +193,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      * @notice this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 
      *         is slashable until serveUntilBlock
      * @param operator the operator whose stake update is being recorded
-     * @param serveUntilBlock the timestamp until which the operator's stake at the current block is slashable
+     * @param serveUntilBlock the block until which the operator's stake at the current block is slashable
      * @dev removes the middleware's slashing contract to the operator's linked list and revokes the middleware's (i.e. caller's) ability to
      * slash `operator` once `serveUntilBlock` is reached
      */
@@ -209,9 +209,9 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     // VIEW FUNCTIONS
 
-    /// @notice Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
-    function contractCanSlashOperatorUntil(address operator, address serviceContract) external view returns (uint32) {
-        return _whitelistedContractDetails[operator][serviceContract].contractCanSlashOperatorUntil;
+    /// @notice Returns the block until which `serviceContract` is allowed to slash the `operator`.
+    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32) {
+        return _whitelistedContractDetails[operator][serviceContract].contractCanSlashOperatorUntilBlock;
     }
 
     /// @notice Returns the block at which the `serviceContract` last updated its view of the `operator`'s stake
@@ -248,7 +248,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     /// @notice Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
     function canSlash(address toBeSlashed, address slashingContract) public view returns (bool) {
-        if (block.timestamp < _whitelistedContractDetails[toBeSlashed][slashingContract].contractCanSlashOperatorUntil) {
+        if (block.number < _whitelistedContractDetails[toBeSlashed][slashingContract].contractCanSlashOperatorUntilBlock) {
             return true;
         } else {
             return false;
@@ -304,7 +304,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     /// @notice Getter function for fetching `_operatorToMiddlewareTimes[operator][index].latestServeUntilBlock`.
-    function getMiddlewareTimesIndexServeUntil(address operator, uint32 index) external view returns (uint32) {
+    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns (uint32) {
         return _operatorToMiddlewareTimes[operator][index].latestServeUntilBlock;
     }
 
@@ -362,14 +362,14 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     function _optIntoSlashing(address operator, address contractAddress) internal {
         //allow the contract to slash anytime before a time VERY far in the future
-        _whitelistedContractDetails[operator][contractAddress].contractCanSlashOperatorUntil = MAX_CAN_SLASH_UNTIL;
+        _whitelistedContractDetails[operator][contractAddress].contractCanSlashOperatorUntilBlock = MAX_CAN_SLASH_UNTIL;
         emit OptedIntoSlashing(operator, contractAddress);
     }
 
     function _revokeSlashingAbility(address operator, address contractAddress, uint32 serveUntilBlock) internal {
         require(serveUntilBlock != MAX_CAN_SLASH_UNTIL, "Slasher._revokeSlashingAbility: serveUntilBlock time must be limited");
         // contractAddress can now only slash operator before `serveUntilBlock`
-        _whitelistedContractDetails[operator][contractAddress].contractCanSlashOperatorUntil = serveUntilBlock;
+        _whitelistedContractDetails[operator][contractAddress].contractCanSlashOperatorUntilBlock = serveUntilBlock;
         emit SlashingAbilityRevoked(operator, contractAddress, serveUntilBlock);
     }
 

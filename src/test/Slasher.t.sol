@@ -99,7 +99,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
         
-        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.number) + 1000;
         //these calls come from middlewares, we need more than 1 middleware to trigger the if clause on line 179
         // we need more than 2 middlewares to trigger the incorrect insertAfter being supplied by getCorrectValueForInsertAfter()
         cheats.startPrank(middleware);
@@ -136,26 +136,26 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
-        uint32 serveUntil = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.number) + 1000;
 
         cheats.startPrank(middleware_2);
         //unapproved slasher calls should fail
         cheats.expectRevert("Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
 
         cheats.startPrank(middleware);
         //valid conditions should succeed
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
 
         //repeated calls to FirstStakeUpdate from the same middleware should fail.
         cheats.expectRevert("Slasher.recordFirstStakeUpdate: Appending middleware unsuccessful");
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
 
         cheats.startPrank(middleware_3);
         //sequential calls from different approved slashing middlewares should succeed
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
         
     }
@@ -168,7 +168,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
-        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.number) + 1000;
         //convert the middleware node address to a node number
         uint256 insertAfter = uint256(uint160(middleware));
 
@@ -207,7 +207,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
-        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.number) + 1000;
         //convert the middleware node address to a node number
         uint256 insertAfter = uint256(uint160(middleware));
 
@@ -315,23 +315,23 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware);
         cheats.stopPrank();
 
-        uint32 serveUntil = 10;
+        uint32 serveUntilBlock = 10;
 
         //stake update
         cheats.prank(middleware);
-        slasher.recordFirstStakeUpdate(operator,serveUntil);
+        slasher.recordFirstStakeUpdate(operator,serveUntilBlock);
 
-        console.log("serveUntil",slasher.getMiddlewareTimesIndexServeUntil(operator,0));
-        console.log("contractCanSlashOperatorUntil",slasher.contractCanSlashOperatorUntil(operator,middleware));
+        console.log("serveUntilBlock",slasher.getMiddlewareTimesIndexServeUntilBlock(operator,0));
+        console.log("contractCanSlashOperatorUntil",slasher.contractCanSlashOperatorUntilBlock(operator,middleware));
 
         //middle can slash
         require(slasher.canSlash(operator,middleware),"middlewre should be able to slash");
 
         //revoke slashing
         cheats.prank(middleware);
-        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator,serveUntil);
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator,serveUntilBlock);
 
-        cheats.warp(serveUntil);
+        cheats.roll(serveUntilBlock);
         //middleware can no longer slash
         require(!slasher.canSlash(operator,middleware),"middlewre should no longer be able to slash");
     }

@@ -126,7 +126,7 @@ contract SlasherUnitTests is Test {
         slasher.optIntoSlashing(contractAddress);
         cheats.stopPrank();
 
-        assertEq(slasher.contractCanSlashOperatorUntil(operator, contractAddress), MAX_CAN_SLASH_UNTIL);
+        assertEq(slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress), MAX_CAN_SLASH_UNTIL);
         require(slasher.canSlash(operator, contractAddress), "contract was not properly granted slashing permission");
     }
 
@@ -258,7 +258,7 @@ contract SlasherUnitTests is Test {
 
         linkedListLengthBefore = slasher.operatorWhitelistedContractsLinkedListSize(operator);
         middlewareDetailsBefore = slasher.whitelistedContractDetails(operator, contractAddress);
-        contractCanSlashOperatorUntilBefore = slasher.contractCanSlashOperatorUntil(operator, contractAddress);
+        contractCanSlashOperatorUntilBefore = slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress);
 
         ISlasher.MiddlewareTimes memory mostRecentMiddlewareTimesStructBefore;
         // fetch the most recent struct, if at least one exists (otherwise leave the struct uninitialized)
@@ -311,10 +311,10 @@ contract SlasherUnitTests is Test {
         middlewareDetailsAfter = slasher.whitelistedContractDetails(operator, contractAddress);
         require(middlewareDetailsAfter.latestUpdateBlock == block.number,
             "latestUpdateBlock not updated correctly");
-        require(middlewareDetailsAfter.contractCanSlashOperatorUntil == middlewareDetailsBefore.contractCanSlashOperatorUntil,
-            "contractCanSlashOperatorUntil changed unexpectedly");
-        // check that `contractCanSlashOperatorUntil` did not change
-        require(slasher.contractCanSlashOperatorUntil(operator, contractAddress) == contractCanSlashOperatorUntilBefore, "contractCanSlashOperatorUntil changed unexpectedly");
+        require(middlewareDetailsAfter.contractCanSlashOperatorUntilBlock == middlewareDetailsBefore.contractCanSlashOperatorUntilBlock,
+            "contractCanSlashOperatorUntilBlock changed unexpectedly");
+        // check that `contractCanSlashOperatorUntilBlock` did not change
+        require(slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress) == contractCanSlashOperatorUntilBefore, "contractCanSlashOperatorUntilBlock changed unexpectedly");
     }
 
     function testRecordFirstStakeUpdate_RevertsWhenPaused() external {
@@ -393,7 +393,7 @@ contract SlasherUnitTests is Test {
 
         linkedListLengthBefore = slasher.operatorWhitelistedContractsLinkedListSize(operator);
         middlewareDetailsBefore = slasher.whitelistedContractDetails(operator, contractAddress);
-        contractCanSlashOperatorUntilBefore = slasher.contractCanSlashOperatorUntil(operator, contractAddress);
+        contractCanSlashOperatorUntilBefore = slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress);
 
         // filter out invalid fuzzed inputs. "can't push a previous update"
         cheats.assume(updateBlock >= middlewareDetailsBefore.latestUpdateBlock);
@@ -446,10 +446,10 @@ contract SlasherUnitTests is Test {
         middlewareDetailsAfter = slasher.whitelistedContractDetails(operator, contractAddress);
         require(middlewareDetailsAfter.latestUpdateBlock == updateBlock,
             "latestUpdateBlock not updated correctly");
-        require(middlewareDetailsAfter.contractCanSlashOperatorUntil == middlewareDetailsBefore.contractCanSlashOperatorUntil,
+        require(middlewareDetailsAfter.contractCanSlashOperatorUntilBlock == middlewareDetailsBefore.contractCanSlashOperatorUntilBlock,
             "contractCanSlashOperatorUntil changed unexpectedly");
-        // check that `contractCanSlashOperatorUntil` did not change
-        require(slasher.contractCanSlashOperatorUntil(operator, contractAddress) == contractCanSlashOperatorUntilBefore, "contractCanSlashOperatorUntil changed unexpectedly");
+        // check that `contractCanSlashOperatorUntilBlock` did not change
+        require(slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress) == contractCanSlashOperatorUntilBefore, "contractCanSlashOperatorUntilBlock changed unexpectedly");
     }
 
     function testRecordStakeUpdate_MultipleLinkedListEntries(
@@ -632,7 +632,7 @@ contract SlasherUnitTests is Test {
         require(middlewareDetailsAfter.latestUpdateBlock == block.number,
             "latestUpdateBlock not updated correctly");
         // check that slashing ability was revoked after `serveUntilBlock`
-        require(slasher.contractCanSlashOperatorUntil(operator, contractAddress) == serveUntilBlock, "contractCanSlashOperatorUntil not set correctly");
+        require(slasher.contractCanSlashOperatorUntilBlock(operator, contractAddress) == serveUntilBlock, "contractCanSlashOperatorUntil not set correctly");
     }
 
     function testRecordLastStakeUpdateAndRevokeSlashingAbility_RevertsWhenCallerCannotSlash(

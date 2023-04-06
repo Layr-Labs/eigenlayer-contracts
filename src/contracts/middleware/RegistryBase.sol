@@ -514,7 +514,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     {
 
         require(
-            slasher.contractCanSlashOperatorUntil(operator, address(serviceManager)) == type(uint32).max,
+            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
             "RegistryBase._addRegistrant: operator must be opted into slashing by the serviceManager"
         );
         // store the Operator's info in mapping

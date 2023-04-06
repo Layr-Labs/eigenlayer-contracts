@@ -17,8 +17,8 @@ interface ISlasher {
 
     // struct used to store details relevant to a single middleware that an operator has opted-in to serving
     struct MiddlewareDetails {
-        // the UTC timestamp before which the contract is allowed to slash the user
-        uint32 contractCanSlashOperatorUntil;
+        // the block before which the contract is allowed to slash the user
+        uint32 contractCanSlashOperatorUntilBlock;
         // the block at which the middleware's view of the operator's stake was most recently updated
         uint32 latestUpdateBlock;
     }
@@ -47,10 +47,10 @@ interface ISlasher {
      * @notice this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration 
      *         is slashable until serveUntil
      * @param operator the operator whose stake update is being recorded
-     * @param serveUntil the timestamp until which the operator's stake at the current block is slashable
+     * @param serveUntilBlock the block until which the operator's stake at the current block is slashable
      * @dev adds the middleware's slashing contract to the operator's linked list
      */
-    function recordFirstStakeUpdate(address operator, uint32 serveUntil) external;
+    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external;
 
     /**
      * @notice this function is a called by middlewares during a stake update for an operator (perhaps to free pending withdrawals)
@@ -68,11 +68,11 @@ interface ISlasher {
      * @notice this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 
      *         is slashable until serveUntil
      * @param operator the operator whose stake update is being recorded
-     * @param serveUntil the timestamp until which the operator's stake at the current block is slashable
+     * @param serveUntilBlock the block until which the operator's stake at the current block is slashable
      * @dev removes the middleware's slashing contract to the operator's linked list and revokes the middleware's (i.e. caller's) ability to
      * slash `operator` once `serveUntil` is reached
      */
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external;
+    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;
 
     /**
      * @notice Used to determine whether `staker` is actively 'frozen'. If a staker is frozen, then they are potentially subject to
@@ -86,8 +86,8 @@ interface ISlasher {
     /// @notice Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
     function canSlash(address toBeSlashed, address slashingContract) external view returns (bool);
 
-    /// @notice Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
-    function contractCanSlashOperatorUntil(address operator, address serviceContract) external view returns (uint32);
+    /// @notice Returns the block until which `serviceContract` is allowed to slash the `operator`.
+    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32);
 
     /// @notice Returns the block at which the `serviceContract` last updated its view of the `operator`'s stake
     function latestUpdateBlock(address operator, address serviceContract) external view returns (uint32);
@@ -127,7 +127,7 @@ interface ISlasher {
     function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.
-    function getMiddlewareTimesIndexServeUntil(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32);
 
     /// @notice Getter function for fetching `_operatorToWhitelistedContractsByUpdate[operator].size`.
     function operatorWhitelistedContractsLinkedListSize(address operator) external view returns (uint256);
