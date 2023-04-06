@@ -11,8 +11,8 @@ interface ISlasher {
     struct MiddlewareTimes {
         // The update block for the middleware whose most recent update was earliest, i.e. the 'stalest' update out of all middlewares the operator is serving
         uint32 stalestUpdateBlock;
-        // The latest 'serveUntil' time from all of the middleware that the operator is serving
-        uint32 latestServeUntil;
+        // The latest 'serveUntilBlock' from all of the middleware that the operator is serving
+        uint32 latestServeUntilBlock;
     }
 
     // struct used to store details relevant to a single middleware that an operator has opted-in to serving
@@ -57,12 +57,12 @@ interface ISlasher {
      *         to make sure the operator's stake at updateBlock is slashable until serveUntil
      * @param operator the operator whose stake update is being recorded
      * @param updateBlock the block for which the stake update is being recorded
-     * @param serveUntil the timestamp until which the operator's stake at updateBlock is slashable
+     * @param serveUntilBlock the block until which the operator's stake at updateBlock is slashable
      * @param insertAfter the element of the operators linked list that the currently updating middleware should be inserted after
      * @dev insertAfter should be calculated offchain before making the transaction that calls this. this is subject to race conditions, 
      *      but it is anticipated to be rare and not detrimental.
      */
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 insertAfter) external;
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external;
 
     /**
      * @notice this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 

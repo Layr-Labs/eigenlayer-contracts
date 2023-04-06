@@ -99,19 +99,19 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
         
-        uint32 serveUntil = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
         //these calls come from middlewares, we need more than 1 middleware to trigger the if clause on line 179
         // we need more than 2 middlewares to trigger the incorrect insertAfter being supplied by getCorrectValueForInsertAfter()
         cheats.startPrank(middleware);
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
 
         cheats.startPrank(middleware_2);
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
         
         cheats.startPrank(middleware_3);
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         cheats.stopPrank();
     
         cheats.startPrank(middleware);
@@ -122,7 +122,7 @@ contract SlasherTests is EigenLayerTestHelper {
         uint256 insertAfter = uint256(uint160(middleware));
         
         //Force fallbackRoutine to occur by specifying the wrong insertAfter. This then loops until we revert
-        slasher.recordStakeUpdate(operator,5, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,5, serveUntilBlock, insertAfter);
         
 
     }
@@ -168,7 +168,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
-        uint32 serveUntil = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
         //convert the middleware node address to a node number
         uint256 insertAfter = uint256(uint160(middleware));
 
@@ -176,26 +176,26 @@ contract SlasherTests is EigenLayerTestHelper {
 
         //calling before first stake update should fail
         cheats.expectRevert("Slasher.recordStakeUpdate: Removing middleware unsuccessful");
-        slasher.recordStakeUpdate(operator,1, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,1, serveUntilBlock, insertAfter);
 
         //set up first stake update
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
 
         cheats.expectRevert("Slasher.recordStakeUpdate: cannot provide update for future block");
-        slasher.recordStakeUpdate(operator,5, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,5, serveUntilBlock, insertAfter);
         cheats.stopPrank();
 
         cheats.startPrank(middleware_2);
         //calling from unapproved middleware should fail
         cheats.expectRevert("Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
-        slasher.recordStakeUpdate(operator,1, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,1, serveUntilBlock, insertAfter);
         cheats.stopPrank();
 
 
         cheats.startPrank(middleware);
         //should succeed when given the correct settings
         cheats.roll(5);
-        slasher.recordStakeUpdate(operator,3, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,3, serveUntilBlock, insertAfter);
         cheats.stopPrank();
     }
 
@@ -207,7 +207,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
-        uint32 serveUntil = uint32(block.timestamp) + 1000;
+        uint32 serveUntilBlock = uint32(block.timestamp) + 1000;
         //convert the middleware node address to a node number
         uint256 insertAfter = uint256(uint160(middleware));
 
@@ -215,7 +215,7 @@ contract SlasherTests is EigenLayerTestHelper {
         //set up first stake update so sizeOf check on line179 is equal to 1
         //uint256 sizeOf = slasher.sizeOfOperatorList(operator);
         uint256 sizeOf = slasher.operatorWhitelistedContractsLinkedListSize(operator);
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
         require(sizeOf + 1 == slasher.operatorWhitelistedContractsLinkedListSize(operator));
         cheats.stopPrank();
 
@@ -223,27 +223,27 @@ contract SlasherTests is EigenLayerTestHelper {
         cheats.startPrank(middleware_3);
         sizeOf = slasher.operatorWhitelistedContractsLinkedListSize(operator);
         cheats.expectRevert("Slasher.recordStakeUpdate: Caller is not the list entrant");
-        slasher.recordStakeUpdate(operator,1, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(operator,1, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         
     }
 
-    function testOnlyRegisteredForService(address _slasher, uint32 _serveUntil) public fuzzedAddress(_slasher){
+    function testOnlyRegisteredForService(address _slasher, uint32 _serveUntilBlock) public fuzzedAddress(_slasher){
         cheats.prank(operator);
         delegation.registerAsOperator(delegationTerms);
 
         //slasher cannot call stake update unless operator has oped in
         cheats.prank(_slasher);
         cheats.expectRevert("Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
-        slasher.recordFirstStakeUpdate(operator, _serveUntil);
+        slasher.recordFirstStakeUpdate(operator, _serveUntilBlock);
 
         cheats.prank(_slasher);
         cheats.expectRevert("Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
-        slasher.recordStakeUpdate(operator, 1,_serveUntil,1);
+        slasher.recordStakeUpdate(operator, 1,_serveUntilBlock,1);
 
         cheats.prank(_slasher);
         cheats.expectRevert("Slasher.onlyRegisteredForService: Operator has not opted into slashing by caller");
-        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, _serveUntil);
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, _serveUntilBlock);
     }
 
     function testOptIn(address _operator, address _slasher) public fuzzedAddress(_slasher) fuzzedAddress(_operator){

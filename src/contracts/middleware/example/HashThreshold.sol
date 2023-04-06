@@ -12,7 +12,7 @@ import "./ECDSARegistry.sol";
  * @author Layr Labs, Inc.
  */
 contract HashThreshold is Ownable, IServiceManager {
-    uint32 constant disputePeriod = 1 days;
+    uint32 constant disputePeriodBlocks = 1 days / 12 seconds;
     uint8 constant numZeroes = 5;
     ISlasher public immutable slasher;
     ECDSARegistry public immutable registry;
@@ -20,11 +20,11 @@ contract HashThreshold is Ownable, IServiceManager {
 
     struct CertifiedMessageMetadata {
         bytes32 signaturesHash;
-        uint32 validAfterTime;
+        uint32 validAfterBlock;
     }
 
     uint32 public taskNumber = 0;
-    uint32 public latestTime = 0;
+    uint32 public latestServeUntilBlock = 0;
     mapping(bytes32 => CertifiedMessageMetadata) public certifiedMessageMetadatas;
 
     event MessageCertified(bytes32);
@@ -62,7 +62,7 @@ contract HashThreshold is Ownable, IServiceManager {
      */
     function submitSignatures(bytes32 message, bytes calldata signatures) external {
         // we check that the message has not already been certified
-        require(certifiedMessageMetadatas[message].validAfterTime == 0, "Message already certified");
+        require(certifiedMessageMetadatas[message].validAfterBlock == 0, "Message already certified");
         // this makes it so that the signatures are viewable in calldata
         require(msg.sender == tx.origin, "EOA must call this function");
         uint128 stakeSigned = 0;
@@ -77,17 +77,17 @@ contract HashThreshold is Ownable, IServiceManager {
         (uint96 totalStake,) = registry.totalStake();
         require(stakeSigned >= 666667 * uint256(totalStake) / 1000000, "Need more than 2/3 of stake to sign");
 
-        uint32 newLatestTime = uint32(block.timestamp + disputePeriod);
+        uint32 newLatestServeUntilBlock = uint32(block.number + disputePeriodBlocks);
 
         certifiedMessageMetadatas[message] = CertifiedMessageMetadata({
-            validAfterTime: newLatestTime,
+            validAfterBlock: newLatestServeUntilBlock,
             signaturesHash: keccak256(signatures)
         });
 
         // increment global service manager values
         taskNumber++;
-        // Note: latestTime is the latest timestamp at which anyone currently staked on the middleware can be frozen
-        latestTime = newLatestTime;
+        // Note: latestServeUntilBlock is the latest block at which anyone currently staked on the middleware can be frozen
+        latestServeUntilBlock = newLatestServeUntilBlock;
 
         emit MessageCertified(message);
     }
@@ -102,7 +102,7 @@ contract HashThreshold is Ownable, IServiceManager {
     function slashSigners(bytes32 message, bytes calldata signatures) external {
         CertifiedMessageMetadata memory certifiedMessageMetadata = certifiedMessageMetadatas[message];
         // we check that the message has been certified
-        require(certifiedMessageMetadata.validAfterTime > block.timestamp, "Dispute period has passed");
+        require(certifiedMessageMetadata.validAfterBlock > block.number, "Dispute period has passed");
         // we check that the signatures match the ones that were certified
         require(certifiedMessageMetadata.signaturesHash == keccak256(signatures), "Signatures do not match");
         // we check that the message hashes to enough zeroes
@@ -114,7 +114,7 @@ contract HashThreshold is Ownable, IServiceManager {
             slasher.freezeOperator(ECDSA.recover(message, signatures[i:i+65]));
         }
         // we invalidate the message
-        certifiedMessageMetadatas[message].validAfterTime = type(uint32).max;
+        certifiedMessageMetadatas[message].validAfterBlock = type(uint32).max;
     }
 
     /// @inheritdoc IServiceManager
@@ -123,17 +123,17 @@ contract HashThreshold is Ownable, IServiceManager {
     }
 
     /// @inheritdoc IServiceManager
-    function recordFirstStakeUpdate(address operator, uint32 serveUntil) external onlyRegistry {
-        slasher.recordFirstStakeUpdate(operator, serveUntil);
+    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external onlyRegistry {
+        slasher.recordFirstStakeUpdate(operator, serveUntilBlock);
     }
 
     /// @inheritdoc IServiceManager
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external onlyRegistry {
-        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntil);
+    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external onlyRegistry {
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
     }
 
     /// @inheritdoc IServiceManager
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 prevElement) external onlyRegistry {
-        slasher.recordStakeUpdate(operator, updateBlock, serveUntil, prevElement);
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external onlyRegistry {
+        slasher.recordStakeUpdate(operator, updateBlock, serveUntilBlock, prevElement);
     }
 }

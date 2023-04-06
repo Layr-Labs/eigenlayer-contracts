@@ -174,10 +174,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         cheats.startPrank(middleware);
         // stake update with updateBlock = 3, serveUntil = 7
-        uint32 serveUntil = 7;
+        uint32 serveUntilBlock = 7;
         uint32 updateBlock = 3;
         uint256 insertAfter = 1;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
@@ -185,7 +185,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         cheats.startPrank(middleware_2);
         // stake update with updateBlock = 3, serveUntil = 10
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil+3, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock+3, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
@@ -193,10 +193,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         cheats.startPrank(middleware);
         // stake update with updateBlock = 3, serveUntil = 7
-        serveUntil = 7;
+        serveUntilBlock = 7;
         updateBlock = 3;
         insertAfter = 2;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntil, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexBlock(staker, 4) == 3, "middleware updateBlock update incorrect");

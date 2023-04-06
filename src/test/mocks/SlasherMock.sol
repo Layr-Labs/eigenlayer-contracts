@@ -28,7 +28,7 @@ contract SlasherMock is ISlasher, Test {
 
     function recordFirstStakeUpdate(address operator, uint32 serveUntil) external{}
 
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 insertAfter) external{}
+    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external{}
 
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external{}
 
