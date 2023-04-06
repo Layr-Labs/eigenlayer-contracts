@@ -71,7 +71,9 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         uint8 _NUMBER_OF_QUORUMS
     ) VoteWeigherBase(_strategyManager, _serviceManager, _NUMBER_OF_QUORUMS)
     // solhint-disable-next-line no-empty-blocks
-    {}
+    {
+        require(_NUMBER_OF_QUORUMS <= 2 && _NUMBER_OF_QUORUMS > 0, "RegistryBase: NUMBER_OF_QUORUMS must be less than or equal to 2 and greater than 0");
+    }
 
     /**
      * @notice Adds empty first entries to the dynamic arrays `totalStakeHistory` and `totalOperatorsHistory`,
