@@ -284,7 +284,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         return(
             withdrawalStartBlock < update.stalestUpdateBlock 
             &&
-            uint32(block.timestamp) > update.latestServeUntilBlock
+            uint32(block.number) > update.latestServeUntilBlock
         );
     }
 
