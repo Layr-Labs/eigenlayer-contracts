@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENCED
+// SPDX-License-Identifier: BUSL-1.1
 // Adapted from OpenZeppelin Contracts (last updated v4.8.0) (utils/cryptography/MerkleProof.sol)
 
 pragma solidity =0.8.12;
