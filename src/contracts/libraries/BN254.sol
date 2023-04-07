@@ -17,7 +17,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-// The remainder of the code is written by LayrLabs Inc. and UNLICENSED
+// The remainder of the code is written by LayrLabs Inc. and is under the BUSL-1.1 license
 
 pragma solidity =0.8.12;
 
