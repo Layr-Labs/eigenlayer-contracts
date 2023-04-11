@@ -110,11 +110,6 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyEigenPod(address podOwner, address pod) {
-        require(address(eigenPodManager.getPod(podOwner)) == pod, "StrategyManager.onlyEigenPod: not a pod");
-        _;
-    }
-
     modifier onlyStrategyWhitelister {
         require(msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
         _;
