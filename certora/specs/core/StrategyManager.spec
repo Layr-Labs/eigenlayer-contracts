@@ -109,6 +109,7 @@ definition methodCanIncreaseShares(method f) returns bool =
 definition methodCanDecreaseShares(method f) returns bool =
     f.selector == queueWithdrawal(uint256[],address[],uint256[],address,bool).selector
     || f.selector == slashShares(address,address,address[],address[],uint256[],uint256[]).selector
+    || f.selector == slashSharesSinglet(address,address,address,address,uint256,uint256).selector
     || f.selector == recordOvercommittedBeaconChainETH(address,uint256,uint256).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
@@ -156,7 +157,23 @@ rule safeApprovalUse(address user) {
     method f;
     env e;
     calldataarg args;
-    f(e,args);
+    // need special case for `slashShares` function since otherwise this rule fails by making the user address one of the slashed strategy(s)
+    if (
+        f.selector == slashShares(address,address,address[],address[],uint256[],uint256[]).selector
+        || f.selector == slashSharesSinglet(address,address,address,address,uint256,uint256).selector
+    ) {
+        address slashedAddress;
+        address recipient;
+        address strategy;
+        address desiredToken;
+        uint256 strategyIndex;
+        uint256 shareAmount;
+        // need this filtering here
+        require(strategy != user);
+        slashSharesSinglet(e, slashedAddress, recipient, strategy, desiredToken, strategyIndex, shareAmount);
+    } else {
+        f(e,args);
+    }
     uint256 tokenBalanceAfter = token.balanceOf(user);
     if (tokenBalanceAfter < tokenBalanceBefore) {
         assert(e.msg.sender == user, "unsafeApprovalUse?");
