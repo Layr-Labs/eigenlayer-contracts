@@ -1,3 +1,5 @@
+// to allow calling ERC20 token within this spec
+using ERC20 as token
 
 methods {
     //// External Calls
@@ -27,6 +29,8 @@ methods {
 
 	// external calls to EigenPodManager
 	withdrawRestakedBeaconChainETH(address,address,uint256) => DISPATCHER(true)
+    // call made to EigenPodManager by DelayedWithdrawalRouter
+    getPod(address) => DISPATCHER(true)
 
     // external calls to EigenPod (from EigenPodManager)
     withdrawRestakedBeaconChainETH(address, uint256) => DISPATCHER(true)
@@ -46,6 +50,9 @@ methods {
     balanceOf(address) returns (uint256) => DISPATCHER(true)
     transfer(address, uint256) returns (bool) => DISPATCHER(true)
     transferFrom(address, address, uint256) returns (bool) => DISPATCHER(true)
+
+    // calls to ERC20 in this spec
+    token.balanceOf(address) returns(uint256) envfree
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
@@ -138,3 +145,21 @@ invariant totalSharesGeqSumOfShares(address strategy)
         // require strategy != beaconChainETHStrategy();
         require strategy != 1088545275507480024404324736574744392984337050304;
     } }
+
+/**
+ * Verifies that ERC20 tokens are transferred out of the account only of the msg.sender.
+ * Called 'safeApprovalUse' since approval-related vulnerabilites in general allow a caller to transfer tokens out of a different account.
+ * This behavior is not always unsafe, but since we don't ever use it (at present) we can do a blanket-check against it.
+ */
+rule safeApprovalUse(address user) {
+    uint256 tokenBalanceBefore = token.balanceOf(user);
+    method f;
+    env e;
+    calldataarg args;
+    f(e,args);
+    uint256 tokenBalanceAfter = token.balanceOf(user);
+    if (tokenBalanceAfter < tokenBalanceBefore) {
+        assert(e.msg.sender == user, "unsafeApprovalUse?");
+    }
+    assert true;
+}
