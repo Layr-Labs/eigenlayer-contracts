@@ -15,7 +15,6 @@ import "../libraries/BN254.sol";
  * - updating the stakes of the operator
  */
 contract BLSRegistry is RegistryBase, IBLSRegistry {
-    using BytesLib for bytes;
 
     // Hash of the zero public key
     bytes32 internal constant ZERO_PK_HASH = hex"012893657d8eb2efad4de0a91bcd0e39ad9837745dec3ea923737ea803fc8e3d";

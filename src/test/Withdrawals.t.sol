@@ -3,8 +3,6 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "../contracts/libraries/BytesLib.sol";
-
 import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/ServiceManagerMock.sol";
 import "./Delegation.t.sol";

@@ -12,7 +12,6 @@ import "../libraries/BN254.sol";
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
 abstract contract BLSSignatureChecker {
-    using BytesLib for bytes;
     // DATA STRUCTURES
     /**
      * @notice this data structure is used for recording the details on the total stake of the registered

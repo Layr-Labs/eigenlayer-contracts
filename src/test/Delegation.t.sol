@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 
 import "../test/EigenLayerTestHelper.t.sol";
 
-import "../contracts/libraries/BytesLib.sol";
-
 import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/MiddlewareVoteWeigherMock.sol";
 import "./mocks/ServiceManagerMock.sol";
@@ -17,7 +15,6 @@ import "./SigP/DelegationTerms.sol";
 
 
 contract DelegationTests is EigenLayerTestHelper {
-    using BytesLib for bytes;
     using Math for uint256;
 
     uint256 public PRIVATE_KEY = 420;

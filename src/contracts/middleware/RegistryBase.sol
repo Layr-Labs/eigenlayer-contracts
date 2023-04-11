@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IQuorumRegistry.sol";
-import "../libraries/BytesLib.sol";
 import "./VoteWeigherBase.sol";
 
 /**
@@ -17,7 +16,6 @@ import "./VoteWeigherBase.sol";
  * @dev This contract is missing key functions. See `BLSRegistry` or `ECDSARegistry` for examples that inherit from this contract.
  */
 abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
-    using BytesLib for bytes;
 
     // TODO: set these on initialization
     /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as

@@ -25,7 +25,6 @@ import "../contracts/pods/BeaconChainOracle.sol";
 
 import "../contracts/permissions/PauserRegistry.sol";
 
-import "../contracts/libraries/BytesLib.sol";
 
 import "./utils/Operators.sol";
 
@@ -36,7 +35,6 @@ import "./mocks/ETHDepositMock.sol";
 import "forge-std/Test.sol";
 
 contract EigenLayerDeployer is Operators {
-    using BytesLib for bytes;
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
