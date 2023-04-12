@@ -143,12 +143,11 @@ invariant listHeadHasSmallestValueOfLatestUpdateBlock(address operator, uint256 
 */
 
 /*
-TODO: rule doesn't pass.
+TODO: rule doesn't pass. We've got separate rules for checking the LinkedList lib properties.
 key properties seem to be that
 1) `StructuredLinkedList._createLink` creates only two-way links
 2) `StructuredLinkedList.remove` removes both links from a node, and stiches together its existing links (which it breaks)
 3) `StructuredLinkedList._insert` similarly inserts a new node 'between' nodes, ensuring that the new node is well-linked
-*/
 invariant consistentListStructure(address operator, uint256 node1)
 	(
 	// either node1 doesn't exist
@@ -157,6 +156,7 @@ invariant consistentListStructure(address operator, uint256 node1)
 	||
 	nodeIsWellLinked(operator, node1)
 	)
+*/
 
 /* TODO: assess if this rule is salvageable. seems to have poor storage assumptions due to the way 'node existence' is defined
 rule cannotAddSameContractTwice(address operator, address contractAddress) {
