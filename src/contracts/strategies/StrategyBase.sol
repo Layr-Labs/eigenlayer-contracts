@@ -48,8 +48,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         _disableInitializers();
     }
 
+    function initialize(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
+        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    }
+
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
-    function initialize(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public initializer {
+    function _initializeStrategyBase(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) internal onlyInitializer {
         underlyingToken = _underlyingToken;
         _initializePauser(_pauserRegistry, UNPAUSE_ALL);
     }
