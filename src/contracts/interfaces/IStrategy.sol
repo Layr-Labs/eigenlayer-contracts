@@ -42,7 +42,7 @@ interface IStrategy {
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
-    function underlyingToShares(uint256 amountUnderlying) external view returns (uint256);
+    function underlyingToShares(uint256 amountUnderlying) external returns (uint256);
 
     /**
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
