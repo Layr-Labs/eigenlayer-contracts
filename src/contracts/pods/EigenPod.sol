@@ -441,7 +441,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     )
         external
         onlyEigenPodManager
-        nonReentrant
     {
         // reduce the restakedExecutionLayerGwei
         restakedExecutionLayerGwei -= uint64(amountWei / GWEI_TO_WEI);
