@@ -40,6 +40,8 @@ contract StrategyManager is
     // index for flag that pauses withdrawals when set
     uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
+    uint256 immutable ORIGINAL_CHAIN_ID;
+
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
 
@@ -129,6 +131,7 @@ contract StrategyManager is
         StrategyManagerStorage(_delegation, _eigenPodManager, _slasher)
     {
         _disableInitializers();
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     // EXTERNAL FUNCTIONS
@@ -145,7 +148,7 @@ contract StrategyManager is
         external
         initializer
     {
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), ORIGINAL_CHAIN_ID, address(this)));
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -260,7 +263,15 @@ contract StrategyManager is
         unchecked {
             nonces[staker] = nonce + 1;
         }
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+
+        bytes32 digestHash;
+        //if chainid has changed, we must re-compute the domain separator
+        if (block.chainid != ORIGINAL_CHAIN_ID) {
+            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), block.chainid, address(this)));
+            digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
+        } else {
+            digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+        }
 
 
         /**
