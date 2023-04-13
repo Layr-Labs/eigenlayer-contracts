@@ -148,7 +148,7 @@ contract StrategyManager is
         external
         initializer
     {
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), ORIGINAL_CHAIN_ID, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), ORIGINAL_CHAIN_ID, address(this)));
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -267,7 +267,7 @@ contract StrategyManager is
         bytes32 digestHash;
         //if chainid has changed, we must re-compute the domain separator
         if (block.chainid != ORIGINAL_CHAIN_ID) {
-            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), block.chainid, address(this)));
+            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
             digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
         } else {
             digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
