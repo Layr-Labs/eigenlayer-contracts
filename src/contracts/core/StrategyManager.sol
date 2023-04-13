@@ -213,7 +213,11 @@ contract StrategyManager is
      * @param amount is the amount of token to be deposited in the strategy by the depositor
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
+     * 
+     * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy.
      */
+
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
@@ -238,6 +242,9 @@ contract StrategyManager is
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targetting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
+     * 
+     *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy
      */
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
