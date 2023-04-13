@@ -68,6 +68,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
      * to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
+     * 
+     * WARNING: In order to mitigate against inflation/donation attacks in the context of ERC_4626, this contract requires the 
+     *          minimum amount of shares be either 0 or 1e9. A consequence of this is that in the worst case a user will not 
+     *          be able to withdraw for 1e9-1 or less shares. 
+     * 
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
     function deposit(IERC20 token, uint256 amount)
