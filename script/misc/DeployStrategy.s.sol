@@ -4,28 +4,10 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../src/contracts/interfaces/IBeaconChainOracle.sol";
+import "../../src/contracts/strategies/StrategyBase.sol";
+import "../../src/contracts/permissions/PauserRegistry.sol";
 
-import "../src/contracts/core/StrategyManager.sol";
-import "../src/contracts/core/Slasher.sol";
-import "../src/contracts/core/DelegationManager.sol";
-
-import "../src/contracts/strategies/StrategyBase.sol";
-
-import "../src/contracts/pods/EigenPod.sol";
-import "../src/contracts/pods/EigenPodManager.sol";
-import "../src/contracts/pods/DelayedWithdrawalRouter.sol";
-
-import "../src/contracts/permissions/PauserRegistry.sol";
-import "../src/contracts/middleware/BLSPublicKeyCompendium.sol";
-
-import "../src/contracts/libraries/BytesLib.sol";
-
-import "../src/test/mocks/EmptyContract.sol";
-import "../src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
