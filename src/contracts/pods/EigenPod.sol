@@ -186,7 +186,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(validatorStatus[validatorIndex] == VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials");
 
-        require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == _podWithdrawalCredentials().toBytes32(0),
+        require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == bytes32(_podWithdrawalCredentials()),
             "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod");
         // deserialize the balance field from the balanceRoot
         uint64 validatorCurrentBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);
@@ -441,7 +441,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     )
         external
         onlyEigenPodManager
-        nonReentrant
     {
         // reduce the restakedExecutionLayerGwei
         restakedExecutionLayerGwei -= uint64(amountWei / GWEI_TO_WEI);

@@ -12,7 +12,6 @@ import "../RegistryBase.sol";
  * - updating the stakes of the operator
  */
 contract ECDSARegistry is RegistryBase {
-    using BytesLib for bytes;
 
     /// @notice the address that can whitelist people
     address public whitelister;

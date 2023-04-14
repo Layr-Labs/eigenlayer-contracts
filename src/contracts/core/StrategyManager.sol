@@ -39,6 +39,8 @@ contract StrategyManager is
     // index for flag that pauses withdrawals when set
     uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
+    uint256 immutable ORIGINAL_CHAIN_ID;
+
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
 
@@ -109,11 +111,6 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyEigenPod(address podOwner, address pod) {
-        require(address(eigenPodManager.getPod(podOwner)) == pod, "StrategyManager.onlyEigenPod: not a pod");
-        _;
-    }
-
     modifier onlyStrategyWhitelister {
         require(msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
         _;
@@ -133,6 +130,7 @@ contract StrategyManager is
         StrategyManagerStorage(_delegation, _eigenPodManager, _slasher)
     {
         _disableInitializers();
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     // EXTERNAL FUNCTIONS
@@ -149,7 +147,7 @@ contract StrategyManager is
         external
         initializer
     {
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), ORIGINAL_CHAIN_ID, address(this)));
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -214,7 +212,11 @@ contract StrategyManager is
      * @param amount is the amount of token to be deposited in the strategy by the depositor
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
+     * 
+     * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy.
      */
+
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
@@ -239,6 +241,9 @@ contract StrategyManager is
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targetting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
+     * 
+     *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy
      */
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
@@ -264,7 +269,15 @@ contract StrategyManager is
         unchecked {
             nonces[staker] = nonce + 1;
         }
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+
+        bytes32 digestHash;
+        //if chainid has changed, we must re-compute the domain separator
+        if (block.chainid != ORIGINAL_CHAIN_ID) {
+            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+            digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
+        } else {
+            digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+        }
 
 
         /**

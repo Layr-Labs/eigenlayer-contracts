@@ -26,6 +26,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
 
+    // chain id at the time of contract deployment
+    uint256 immutable ORIGINAL_CHAIN_ID;
+
+
     /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
     modifier onlyStrategyManager() {
         require(msg.sender == address(strategyManager), "onlyStrategyManager");
@@ -37,6 +41,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         DelegationManagerStorage(_strategyManager, _slasher)
     {
         _disableInitializers();
+        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     /// @dev Emitted when a low-level call to `delegationTerms.onDelegationReceived` fails, returning `returnData`
@@ -50,7 +55,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         initializer
     {
         _initializePauser(_pauserRegistry, initialPausedStatus);
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, bytes("EigenLayer"), block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), ORIGINAL_CHAIN_ID, address(this)));
         _transferOwnership(initialOwner);
     }
 
@@ -97,7 +102,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         unchecked {
             nonces[staker] = nonce + 1;
         }
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+
+        bytes32 digestHash;
+        if (block.chainid != ORIGINAL_CHAIN_ID) {
+            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+            digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
+        } else{
+            digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+        }
 
         /**
          * check validity of signature:

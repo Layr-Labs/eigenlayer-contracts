@@ -22,8 +22,6 @@ import "../src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "../src/contracts/permissions/PauserRegistry.sol";
 import "../src/contracts/middleware/BLSPublicKeyCompendium.sol";
 
-import "../src/contracts/libraries/BytesLib.sol";
-
 import "../src/test/mocks/EmptyContract.sol";
 import "../src/test/mocks/ETHDepositMock.sol";
 

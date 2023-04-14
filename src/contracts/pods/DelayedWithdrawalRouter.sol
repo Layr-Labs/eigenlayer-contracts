@@ -72,6 +72,9 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
      * @notice Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.
      * @param recipient The address to claim delayedWithdrawals for.
      * @param maxNumberOfDelayedWithdrawalsToClaim Used to limit the maximum number of delayedWithdrawals to loop through claiming.
+     * @dev 
+     *      WARNING: Note that the caller of this function cannot control where the funds are sent, but they can control when the 
+     *              funds are sent once the withdrawal becomes claimable.
      */
     function claimDelayedWithdrawals(address recipient, uint256 maxNumberOfDelayedWithdrawalsToClaim)
         external

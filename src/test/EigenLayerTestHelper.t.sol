@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../contracts/libraries/BytesLib.sol";
 import "../test/EigenLayerDeployer.t.sol";
 
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
-    using BytesLib for bytes;
 
     uint8 durationToInit = 2;
     uint256 public SECP256K1N_MODULUS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;

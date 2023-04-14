@@ -48,7 +48,7 @@ contract StrategyWrapper is IStrategy {
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
-    function deposit(IERC20 token, uint256 amount) external virtual override onlyStrategyManager returns (uint256) {
+    function deposit(IERC20 token, uint256 amount) external override onlyStrategyManager returns (uint256) {
         require(token == underlyingToken, "StrategyWrapper.deposit: Can only deposit underlyingToken");
         totalShares += amount;
         return amount;
@@ -63,7 +63,6 @@ contract StrategyWrapper is IStrategy {
      */
     function withdraw(address depositor, IERC20 token, uint256 amountShares)
         external
-        virtual
         override
         onlyStrategyManager
     {
@@ -83,7 +82,7 @@ contract StrategyWrapper is IStrategy {
      * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex
      * strategies, may be a link to metadata that explains in more detail.
      */
-    function explanation() external pure virtual override returns (string memory) {
+    function explanation() external pure override returns (string memory) {
         return "Wrapper Strategy to simply store tokens. Assumes fixed 1-to-1 share-underlying exchange.";
     }
 
@@ -93,7 +92,7 @@ contract StrategyWrapper is IStrategy {
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
-    function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlyingView(uint256 amountShares) public pure override returns (uint256) {
         return amountShares;
     }
 
@@ -103,7 +102,7 @@ contract StrategyWrapper is IStrategy {
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
-    function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
+    function sharesToUnderlying(uint256 amountShares) public pure override returns (uint256) {
         return amountShares;
     }
 
@@ -113,7 +112,7 @@ contract StrategyWrapper is IStrategy {
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
-    function underlyingToSharesView(uint256 amountUnderlying) external view virtual returns (uint256) {
+    function underlyingToSharesView(uint256 amountUnderlying) external pure returns (uint256) {
         return amountUnderlying;
     }
 
@@ -123,7 +122,7 @@ contract StrategyWrapper is IStrategy {
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
-    function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {
+    function underlyingToShares(uint256 amountUnderlying) external pure returns (uint256) {
         return amountUnderlying;
     }
 
@@ -131,7 +130,7 @@ contract StrategyWrapper is IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlying`, this function guarantees no state modifications
      */
-    function userUnderlyingView(address user) external view virtual returns (uint256) {
+    function userUnderlyingView(address user) external view returns (uint256) {
         return sharesToUnderlyingView(shares(user));
     }
 
@@ -139,7 +138,7 @@ contract StrategyWrapper is IStrategy {
      * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
      * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
      */
-    function userUnderlying(address user) external virtual returns (uint256) {
+    function userUnderlying(address user) external view returns (uint256) {
         return sharesToUnderlying(shares(user));
     }
 
@@ -147,7 +146,7 @@ contract StrategyWrapper is IStrategy {
      * @notice convenience function for fetching the current total shares of `user` in this strategy, by
      * querying the `strategyManager` contract
      */
-    function shares(address user) public view virtual returns (uint256) {
+    function shares(address user) public view returns (uint256) {
         return IStrategyManager(strategyManager).stakerStrategyShares(user, IStrategy(address(this)));
     }
 }

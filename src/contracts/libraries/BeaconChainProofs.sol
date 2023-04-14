@@ -3,7 +3,6 @@
 pragma solidity =0.8.12;
 
 import "./Merkle.sol";
-import "./BytesLib.sol";
 import "../libraries/Endian.sol";
 
 //Utility library for parsing and PHASE0 beacon chain block headers
@@ -11,7 +10,6 @@ import "../libraries/Endian.sol";
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs {
-    using BytesLib for bytes;
     // constants are the number of fields and the heights of the different merkle trees used in merkleizing beacon chain containers
     uint256 internal constant NUM_BEACON_BLOCK_HEADER_FIELDS = 5;
     uint256 internal constant BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT = 3;
