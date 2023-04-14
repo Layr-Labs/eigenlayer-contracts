@@ -433,7 +433,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
      * @dev Called during withdrawal or slashing.
-     * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
      */
     function withdrawRestakedBeaconChainETH(
         address recipient,
