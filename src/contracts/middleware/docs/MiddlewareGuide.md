@@ -61,7 +61,7 @@ The following figure illustrates the above flow:
 
 
 ## Guide To Provided Middleware Contracts:
-The EigenLayer team has built a set of reusable and extensible contracts for use in middlewares built on top of EigenLayer. These are contained in the general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer. There are several basic contracts that all middleware-specific contracts can be built on:
+To ease the development process of on-chain contracts for middleware developers, the EigenLayer team has built a set of reusable and extensible contracts for use in middlewares built on top of EigenLayer. These are contained in the general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer. There are several basic contracts that all middleware-specific contracts can be built on:
 - The *RegistryBase contract* is a basic registry contract that can be used to track operators opted into running a middleware.  Importantly, this base registry contract assumes a maximum of two quorums, where each quorum represents an aggregation of a certain type of stake.  Middlewares may want to weigh their rewards based on the type of stake delegated to their operators and weigh each quorum differently.  
 - The *VoteWeigherBase contract* tracks an operator’s “weight” in a given quorum, across all strategies that are associated with that quorum.  This contract also manages which contracts are categorized under which quorums - this includes both removing and adding functionalities as well as changing strategy weights.  
 
