@@ -62,7 +62,7 @@ The following figure illustrates the above flow:
 
 
 ### *Slashing*
-As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract where anyone would be able to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `freezeOperator(..)` function in ServiceManager contract which in turn accesses the API `freezeOperator(..)` in the EigenLayer's Slasher contract. On successful execution of this API, the event `OperatorFrozen(..)` is emitted.  
+As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract where anyone would be able to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `freezeOperator(..)` function in ServiceManager contract which in turn accesses the API `freezeOperator(..)` in the EigenLayer's Slasher contract. This "freezes" the operator, that is, the operator is prevented from participating in any further tasks on EigenLayer from any middleware until the community multi-sig decides on whether to veto the slashing of the operator or not. On successful execution of this API, the event `OperatorFrozen(..)` is emitted.  
 
 The following figure illustrates the above flow: 
 ![Slashing](./images/slashing.png)
@@ -71,7 +71,7 @@ The following figure illustrates the above flow:
 
 
 ## Guide To Provided Middleware Contracts:
-The EigenLayer team has built a set of reusable and extensible contracts for use in middlewares built on top of EigenLayer. These are contained in the general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer. There are several basic contracts that all middleware-specific contracts can be built on:
+To ease the development process of on-chain contracts for middleware developers, the EigenLayer team has built a set of reusable and extensible contracts for use in middlewares built on top of EigenLayer. These are contained in the general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer. There are several basic contracts that all middleware-specific contracts can be built on:
 - The *RegistryBase contract* is a basic registry contract that can be used to track operators opted into running a middleware.  Importantly, this base registry contract assumes a maximum of two quorums, where each quorum represents an aggregation of a certain type of stake.  Middlewares may want to weigh their rewards based on the type of stake delegated to their operators and weigh each quorum differently.  
 - The *VoteWeigherBase contract* tracks an operator’s “weight” in a given quorum, across all strategies that are associated with that quorum.  This contract also manages which contracts are categorized under which quorums - this includes both removing and adding functionalities as well as changing strategy weights.  
 
