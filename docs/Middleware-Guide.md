@@ -1,5 +1,9 @@
 # Purpose
 This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol
+
+The following figure illustrates the above flow: 
+![Doc Outline](./images/middleware_outline_doc.png =20x20)
+
 # Introduction
 In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of middlewares built on top of it. If you are getting started looking at the EigenLayer codebase, the Slasher contract contains most of the logic that actually mediates the interactions between EigenLayer and middlewares. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer.
 
