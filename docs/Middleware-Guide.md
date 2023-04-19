@@ -1,12 +1,14 @@
+# Purpose
+This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol
 # Introduction
-In designing EigenLayer, we aspired to make minimal assumptions about the structure of middlewares built on top of it. If you are getting started looking at the EigenLayer codebase, the Slasher contract contains most of the logic that actually mediates the interactions between EigenLayer and middlewares. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer.
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of middlewares built on top of it. If you are getting started looking at the EigenLayer codebase, the Slasher contract contains most of the logic that actually mediates the interactions between EigenLayer and middlewares. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer.
 
 ## Important Terminology
-### Tasks
+### *Tasks*
 A task in EigenLayer is the discretized unit of work that operators commit to doing when serving a middleware.  
-### Strategies
+### *Strategies*
 A strategy in EigenLayer, its most simple form, is a contract that stakers can use to deposit and delegate their assets to middlewares on EigenLayer. 
-### Quorums
+### *Quorums*
 Each BLSRegistry defines one or two “quorums”; each operator for the middleware may have stake in EigenLayer that falls into either (or both) quorum(s). Each quorum is essentially defined by two vectors: a vector of “Strategies” of interest (in practice this ends up being tokens of interest) and a vector of “weights” or “multipliers”, which define whether certain strategies are weighed more heavily than others within the quorum (e.g. if the middleware desires to give 2x power to a specific token over another token). In the contract code these vectors are condensed into a single array of `StrategyAndWeightingMultiplier` structs. The ServiceManager.owner() has the ability to edit these arrays at will.
 
 
