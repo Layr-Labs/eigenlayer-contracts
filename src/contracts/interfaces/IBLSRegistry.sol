@@ -32,7 +32,7 @@ interface IBLSRegistry is IQuorumRegistry {
     /// @notice returns the block number at which the `index`th APK update occurred
     function apkUpdateBlockNumbers(uint256 index) external view returns (uint32);
 
-    function whitelister() external view returns(address);
+    function operatorWhitelister() external view returns(address);
 
     function whitelistEnabled() external view returns(bool);
 

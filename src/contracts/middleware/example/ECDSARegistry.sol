@@ -37,7 +37,7 @@ contract ECDSARegistry is RegistryBase {
 
     /// @notice Modifier that restricts a function to only be callable by the `whitelister` role.
     modifier onlyOperatorWhitelister {
-        require(operatorWhitelister == msg.sender, "BLSRegistry.onlyWhitelister: not whitelister");
+        require(operatorWhitelister == msg.sender, "BLSRegistry.onlyOperatorWhitelister: not operatorWhitelister");
         _;
     }
 
