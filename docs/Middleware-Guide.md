@@ -48,7 +48,7 @@ EigenLayer is a dynamic system where stakers and operators are constantly adjust
 A staker, who has opted-in to a middleware via delegation, wants to partially withdraw some of its stake or completely stop participating. It has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the middlewares uniformly that its operator is participating in. The sequential flow is as follows:
  - The staker queues their withdrawal request with EigenLayer. The staker can place this request by calling  `queueWithdrawal(..)` in the EigenLayer's `StrategyManager.sol`.
 - The operator, noticing an upcoming change in their delegated stake, notifies the middleware about this change. To do this, the operator triggers the middleware to call the `recordStakeUpdate(..)` in the middleware's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
-The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
+- The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
 
 
 
