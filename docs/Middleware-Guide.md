@@ -37,44 +37,23 @@ In this section, we will explain various API interfaces that EigenLayer provides
 ### *Opting into middleware*
 In order for any EigenLayer operator to be able to opt-in to a middleware, EigenLayer provides two interfaces: `optIntoSlashing(..)` and `recordFirstStakeUpdate(..)`. The sequential flow for opting into a middleware using these functions is as follows:
 1. The operator first opts into slashing by calling  `optIntoSlashing(..)` in `Slasher.sol`, where it has to specify the address of the middleware's ServiceManager contract in the argument. This step results in the operator giving permission to the middleware's ServiceManager contract to slash the operator via EigenLayer, if the operator is ever proven to have engaged in adversarial behavior while responding to the middleware's task. Successful call to  `optIntoSlashing(..)` emits the `OptedIntoSlashing(..)` event.
-2. Next, the operator needs to register with the middleware on chain via a middleware-specific registry contract (see the [*Guide To Provided Middleware Contracts*](https://github.com/Layr-Labs/eigenlayer-contracts/blob/middleware-guide/docs/Middleware-Guide.md#guide-to-provided-middleware-contracts) section for examples). To integrate with EigenLayer, the middleware's Registry contract provides a registration endpoint that calls on the `recordFirstStakeUpdate(..)` in the middleware's ServiceManager contract which in turn calls the `recordFirstStakeUpdate(..)` function in `Slasher.sol`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the middleware.
+2. Next, the operator needs to register with the middleware on chain via a middleware-specific registry contract (see the [this](https://github.com/Layr-Labs/eigenlayer-contracts/blob/middleware-guide/docs/Middleware-Guide.md#guide-to-provided-middleware-contracts) section for examples). To integrate with EigenLayer, the middleware's Registry contract provides a registration endpoint that calls on the `recordFirstStakeUpdate(..)` in the middleware's ServiceManager contract which in turn calls the `recordFirstStakeUpdate(..)` function in `Slasher.sol`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the middleware.
 
 The following figure illustrates the above flow: 
 ![Operator opting-in](./images/operator_opting.png)
 
 
 ### *Deregistering from middleware*
-In order for any EigenLayer operator to be able to de-register from a middleware, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a middleware, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the middleware's ServiceManager contract. One important thing to note is that in order to call this function, the information on the latest block number until which the operator is required to serve the middleware needs to be passed.
+In order for any EigenLayer operator to be able to de-register from a middleware, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a middleware, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the middleware's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
 
-The following figure illustrates the above flow in which the operator calls on a `deregister(..)` function in a sample Registry contract.
-![Operator deregisteringn](./images/operator_deregister.png)
-
-### *Staker opting-in with a middleware*
-In order for any staker to participate in responding to the tasks from the middleware without running the middleware's off-chain software container themself, the staker can pursue delegation. The sequential flow for delegation process is as follows:
-1. The staker first has to delegate its stake to an EigenLayer operator who is opted-in to that middleware and that they trust (based on their own due diligence). The staker can accomplish this by calling the API `delegateTo(..)` in the DelegationManager contract, where the operator's address is passed as the argument.  
-2. Observe that with the staker delegating its stake to the operator, the weight associated with the operator's response to the task in the middleware it has opted-in increases. Therefore, the middleware MUST be notified about this. When the middleware is notified of this update, the call the `recordStakeUpdate` functionality to recognize the change in stake for that operator. On successful execution of this API call, the event `MiddlewareTimesAdded(..)` is emitted.
-
-The following figure illustrates the above flow: 
-![Staker opting-in](./images/staker_opting.png)
-
-
-### *Staker withdraws*
-In order for a staker, who has opted-in to a middleware via delegation, wants to partially withdraw some of its stake or completely stop participating, it has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the middlewares uniformly that its operator is participating in. The sequential flow is as follows:
-1. The staker first has to queue its withdrawal request with EigenLayer. The staker can place this request by calling  `queueWithdrawal(..)` in the EigenLayer's `StrategyManager.sol`. On successful call to this, the event `WithdrawalQueued(..)` is emitted.
-2. The staker then has to notify all the middlewares that its operator has opted in about its intention to partially withdraw some of its stake or completely stop participating and also record the latest time in the EigenLayer contracts until which the staker is obliged to participate with the current stake. To do this, the staker calls on the `updateStakes(..)` function in the Registry contract that calls `recordStakeUpdate(..)` in the middleware's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
-3. After the latest time until which the staker is obliged to participate with the current stake passes, the staker now can complete its queued withdrawal by calling on the `completeQueuedWithdrawal(..)` function in `StrategyManager.sol`.
-
-The following figure illustrates the above flow: 
-![Staker deregistering](./images/staker_withdrawing.png)
-
+The following figure illustrates the above flow in which the operator calls the `deregister(..)` function in a sample Registry contract.
+![Operator deregistering](./images/operator_deregister.png)
 
 ### *Slashing*
-As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract where anyone would be able to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `freezeOperator(..)` function in ServiceManager contract which in turn accesses the `freezeOperator(..)` function in the EigenLayer's Slasher contract. On successful execution of this API, the event `OperatorFrozen(..)` is emitted.  
+As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
 
 The following figure illustrates the above flow: 
 ![Slashing](./images/slashing.png)
-
-
 
 
 ## Guide To Provided Middleware Contracts:
