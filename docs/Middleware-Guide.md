@@ -42,6 +42,15 @@ In order for any EigenLayer operator to be able to opt-in to a middleware, Eigen
 The following figure illustrates the above flow: 
 ![Operator opting-in](./images/operator_opting.png)
 
+### *Recording Stake Updates*
+EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system.  For this reason, AVSs must be aware of any changes to stake delegated to its operators.  Let us consider the following scenario.  
+
+    A staker, who has opted-in to a middleware via delegation, wants to partially withdraw some of its stake or completely stop participating. It has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the middlewares uniformly that its operator is participating in. The sequential flow is as follows:
+        1. The staker queues their withdrawal request with EigenLayer. The staker can place this request by calling  `queueWithdrawal(..)` in the EigenLayer's `StrategyManager.sol`.
+        2. The operator, noticing an upcoming change in their delegated stake, notifies the middleware about this change. To do this, the operator triggers the middleware to call the `recordStakeUpdate(..)` in the middleware's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
+    The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
+
+
 
 ### *Deregistering from middleware*
 In order for any EigenLayer operator to be able to de-register from a middleware, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a middleware, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the middleware's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
