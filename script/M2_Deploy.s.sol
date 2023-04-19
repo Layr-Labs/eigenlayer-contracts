@@ -35,16 +35,14 @@ contract Deployer_M2 is ExistingDeploymentParser {
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
 
         address oracleInitialOwner = communityMultisig;
-        uint256 initialThreshold = stdJson.readUint(config_data, ".oracleInitialization.threshold");
-        bytes memory oracleSignerListRaw = stdJson.parseRaw(config_data, ".oracleInitialization.signers");
-        address[] memory initialOracleSigners = abi.decode(oracleSignerListRaw, (address[]));
-
-        require(initialThreshold <= initialOracleSigners.length, "invalid initialThreshold");
+        address lightClientUpdater = stdJson.readAddress(config_data, ".oracleInitialization.lightClientUpdater");
+        bytes memory oracleProversBytes = stdJson.parseRaw(config_data, ".oracleInitialization.provers");
+        address[] memory initialOracleProvers = abi.decode(oracleProversBytes, (address[]));
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
 
-        beaconChainOracle = new BeaconChainOracle(oracleInitialOwner, initialThreshold, initialOracleSigners);
+        beaconChainOracle = new BeaconChainOracle(oracleInitialOwner, ILightClientUpdater(lightClientUpdater), initialOracleProvers);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();

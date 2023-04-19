@@ -477,8 +477,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+        // TODO: Patch with mock
+        ILightClientUpdater lightClientUpdater = ILightClientUpdater(address(0));
+        address[] memory initialOracleProversArray = new address[](0);
+        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, lightClientUpdater, initialOracleProversArray);
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
