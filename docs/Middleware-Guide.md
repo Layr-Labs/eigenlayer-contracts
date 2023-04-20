@@ -1,26 +1,31 @@
 # Purpose
-This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol
+This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how the AVS developers can use the APIs for: 
+- enabling operators to opt-in to the AVS,
+- enabling operators to withdraw from AVS, and
+- enabling AVS to freeze operators for the purpose of slashing.
 
-The following figure illustrates the above flow: 
+We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. This will be added to this document in the near future.  
+
+The following figure summarizes the scope of the document: 
 ![Doc Outline](./images/middleware_outline_doc.png)
 
 # Introduction
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of middlewares built on top of it. If you are getting started looking at the EigenLayer codebase, the Slasher contract contains most of the logic that actually mediates the interactions between EigenLayer and middlewares. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building middleware on top of EigenLayer.
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer.
 
 ## Important Terminology
-- **Tasks** - A task in EigenLayer is the discretized unit of work that operators commit to doing when serving a middleware.  
+- **Tasks** - A task in EigenLayer is the discretized unit of work that operators commit to doing when serving a AVS.  
 - **Strategies** - "A strategy in EigenLayer is a contract that holds staker deposits, i.e. it controls one or more restaked asset(s). At launch EigenLayer will feature only simple strategies which may hold a single token. However, EigenLayer's strategy design is flexible and open, and in the future strategies could be deployed which implement more complex logic, including DeFi integrations. 
-- **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The prupose of having a quorum is that a middleware can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
+- **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The purpose of having a quorum is that an AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
 
 
 # Assumptions Make About Middlewares
 1. *Discretization of Services into "Tasks"*: 
-    EigenLayer assumes that services manage tasks. In other words, it is assumed that services discretize commitments undertaken by operators, with each task defining the time period for which the service's operators' stakes are placed "at stake", i.e. potentially subject to slashing. Examples of tasks could be:
+    EigenLayer assumes that AVSs manage tasks. In other words, it is assumed that AVSs discretize commitments undertaken by operators, with each task defining the time period for which the AVS's operators' stakes are placed "at stake", i.e. potentially subject to slashing. Examples of tasks could be:
     - A “DataStore” in the context of EigenDA
     - Posting a state root of another blockchain for a bridge service
 
 2. *Stake is “At Stake” on Tasks for a Finite Duration*: 
-    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that tasks have a known duration when they are instantiated. The EigenLabs team believes that on the order of 2 weeks is the longest reasonable duration for a task to keep funds “at stake”. This is not strictly enforced, but builders of middlewares should recognize that extending the durations on tasks impose significant negative externalities on the stakers of EigenLayer, and may disincentivize stakers opting-in to serving their application. Since the window is not strictly enforced, lengthening the duration e.g. while a challenge process is ongoing may be acceptable to stakers; ultimately it is up to the stakers and operators in EigenLayer to decide what they are OK with.
+    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that tasks have a known duration when they are instantiated. The EigenLabs team believes that on the order of 2 weeks is the longest reasonable duration for a task to keep funds “at stake”. This is not strictly enforced, but builders of AVSs should recognize that extending the durations on tasks impose significant negative externalities on the stakers of EigenLayer, and may disincentivize stakers opting-in to serving their application. Since the window is not strictly enforced, lengthening the duration e.g. while a challenge process is ongoing may be acceptable to stakers; ultimately it is up to the stakers and operators in EigenLayer to decide what they are OK with.
 
 3. *Services Slash Only Objectively Attributable Behavior*: 
     EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. Middlewares SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-into serving middlewares with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
@@ -59,7 +64,7 @@ The following figure illustrates the above flow in which the operator calls the 
 ![Operator deregistering](./images/operator_deregister.png)
 
 ### *Slashing*
-As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
+As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's  `Slasher.sol` emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
 
 The following figure illustrates the above flow: 
 ![Slashing](./images/slashing.png)
