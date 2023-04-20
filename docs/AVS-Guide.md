@@ -1,40 +1,39 @@
 # Purpose
-This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how the AVS (actively validated services) developers can use the APIs for: 
+This document aims to describe and summarize how actively validated services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for: 
 - enabling operators to opt-in to the AVS,
-- enabling operators to withdraw from AVS, and
-- enabling AVS to freeze operators for the purpose of slashing.
+- enabling operators to withdraw stake from AVS, and
+- enabling AVS to freeze operators for the purpose of slashing (the corresponding unfreeze actions are determined by the veto committee).
 
-We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. This will be added to this document in the near future.  
+We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
 
-The following figure summarizes the scope of the document: 
+The following figure summarizes scope of this document: 
 ![Doc Outline](./images/middleware_outline_doc.png)
 
 # Introduction
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose [/middleware/ folder](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/middleware), which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer.
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose [/middleware/ folder](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/middleware), which contains code that can be extended, used directly, or consulted as a reference in building an AVS on top of EigenLayer.
 
 ## Important Terminology
-- **Tasks** - A task in EigenLayer is the discretized unit of work that operators commit to doing when serving a AVS.  
-- **Strategies** - "A strategy in EigenLayer is a contract that holds staker deposits, i.e. it controls one or more restaked asset(s). At launch EigenLayer will feature only simple strategies which may hold a single token. However, EigenLayer's strategy design is flexible and open, and in the future strategies could be deployed which implement more complex logic, including DeFi integrations. 
+- **Tasks** - A task in EigenLayer is the smallest unit of work that operators commit to perform when serving an AVS. These tasks may be associated with one or more slashing conditions applicable to the AVS. 
+- **Strategies** - A strategy in EigenLayer is a contract that holds staker deposits, i.e. it controls one or more restaked asset(s). At launch EigenLayer will feature only simple strategies which may hold a single token. However, EigenLayer's strategy design is flexible and open, and in the future strategies could be deployed which implement more complex logic, including DeFi integrations. 
 - **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The prupose of having a quorum is that a AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
 
-
-# Assumptions Make About Middlewares
-1. *Discretization of Services into "Tasks"*: 
-    EigenLayer assumes that AVSs manage tasks. In other words, it is assumed that AVSs discretize commitments undertaken by operators, with each task defining the time period for which the AVS's operators' stakes are placed "at stake", i.e. potentially subject to slashing. Examples of tasks could be:
+# Key Design Considerations
+1. *Decomposition into "Tasks"*: 
+    EigenLayer assumes that an AVS manages tasks that are executed over time by a registered operator. Each task is associated with the time period during which the AVS's operators' stakes are placed "at stake", i.e. potentially subject to slashing. Examples of tasks could be:
     - A “DataStore” in the context of EigenDA
     - Posting a state root of another blockchain for a bridge service
 
 2. *Stake is “At Stake” on Tasks for a Finite Duration*: 
-    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that tasks have a known duration when they are instantiated. The EigenLabs team believes that on the order of 2 weeks is the longest reasonable duration for a task to keep funds “at stake”. This is not strictly enforced, but builders of AVSs should recognize that extending the durations on tasks impose significant negative externalities on the stakers of EigenLayer, and may disincentivize stakers opting-in to serving their application. Since the window is not strictly enforced, lengthening the duration e.g. while a challenge process is ongoing may be acceptable to stakers; ultimately it is up to the stakers and operators in EigenLayer to decide what they are OK with.
+    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is recommended, but not required that a predefined duration is specified in the AVS contract for each task. As a guideline, the EigenLabs team believes that the duration of a task should be aligned with longest reasonable duration that would be acceptable for an operator to keep funds “at stake”. An AVS builder should recognize that extending the duration of a task may impose significant negative externalities on the stakers of EigenLayer, and may disincentivize stakers opting-in to serving their application.
 
 3. *Services Slash Only Objectively Attributable Behavior*: 
-    EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. Middlewares SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-into serving AVSs with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
+    EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. An AVS SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-into serving one or more AVSs with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
     - double-signing a block in Ethereum, but NOT inactivity leak; 
     - proofs-of-custody in EigenDA, but NOT a node ceasing to serve data; 
     - a node in a light-node-bridge AVS signing an invalid block from another chain.
 
 4. *Single Point-of-Interaction for Services and EigenLayer*: 
-    It is assumed that services have a single contract that coordinates the service’s communications sent to EigenLayer. This contract – referred to as the ServiceManager – informs EigenLayer of operator registration, updates, and deregistration, as well as signaling to EigenLayer when an operator should be slashed (frozen). Middlewares have full control over how they split up the actual logic involved, but are expected to route all calls to EigenLayer through a single contract. While technically possible, AVSs SHOULD NOT use multiple contracts to interact with EigenLayer, as this will impose additional burden on stakers and operators in EigenLayer when they are withdrawing or deregistering.
+    It is assumed that services have a single contract that coordinates the service’s communications sent to EigenLayer. This contract – referred to as the ServiceManager – informs EigenLayer of operator registration, updates, and deregistration, as well as signaling to EigenLayer when an operator should be slashed (frozen). An AVS has full control over how it splits the actual logic involved, but is expected to route all calls to EigenLayer through a single contract. While technically possible, an AVS SHOULD NOT use multiple contracts to interact with EigenLayer due to a couple of reasons. Firstly, multiple contracts will impose additional burden on stakers in EigenLayer to withdrawing stake. Secondly, operators will be faced with the complexity of selecting the correct contract in order to deregister from the AVS.
 
 ## Integration with EigenLayer Contracts:
 In this section, we will explain various API interfaces that EigenLayer provides which are essential for AVSs to integrate with EigenLayer. 
@@ -48,14 +47,12 @@ The following figure illustrates the above flow:
 ![Operator opting-in](./images/operator_opting.png)
 
 ### *Recording Stake Updates*
-EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system.  For this reason, AVSs must be aware of any changes to stake delegated to its operators.  Let us consider the following scenario.  
+EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system. It is therefore imperative for an AVS to be aware of any changes to stake delegated to its operators. In order to facilitate this, EigenLayer offers the `recordStakeUpdate(..)` API in the EigenLayer Slasher contract.
 
-A staker, who has opted-in to a AVS via delegation, wants to partially withdraw some of its stake or completely stop participating. It has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the AVSs uniformly that its operator is participating in. The sequential flow is as follows:
+Let us illustrate the usage of this facility with an example: A staker who has opted-in to an AVS via delegation, wants to partially withdraw some of its stake or completely stop participating. The staker has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the AVSs uniformly that its operator is participating in. The sequential flow is as follows:
  - The staker queues their withdrawal request with EigenLayer. The staker can place this request by calling  `queueWithdrawal(..)` in the EigenLayer's `StrategyManager.sol`.
 - The operator, noticing an upcoming change in their delegated stake, notifies the AVS about this change. To do this, the operator triggers the AVS to call the `recordStakeUpdate(..)` in the AVS's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
 - The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
-
-
 
 ### *Deregistering from AVS*
 In order for any EigenLayer operator to be able to de-register from a AVS, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a AVS, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the AVS's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
