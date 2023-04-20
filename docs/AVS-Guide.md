@@ -54,6 +54,9 @@ Let us illustrate the usage of this facility with an example: A staker who has o
 - The operator, noticing an upcoming change in their delegated stake, notifies the AVS about this change. To do this, the operator triggers the AVS to call the `recordStakeUpdate(..)` in the AVS's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
 - The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
 
+The following figure illustrates the above flow: 
+![Stake update](./images/staker_withdrawing.png)
+
 ### *Deregistering from AVS*
 In order for any EigenLayer operator to be able to de-register from a AVS, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a AVS, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the AVS's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
 
