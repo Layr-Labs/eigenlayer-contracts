@@ -34,11 +34,11 @@ interface IBLSRegistry is IQuorumRegistry {
 
     function operatorWhitelister() external view returns(address);
 
-    function whitelistEnabled() external view returns(bool);
+    function operatorWhitelistEnabled() external view returns(bool);
 
     function whitelisted(address) external view returns(bool);
 
-    function setWhitelistStatus(bool _whitelistEnabled) external;
+    function setOperatorWhitelistStatus(bool _operatorWhitelistEnabled) external;
 
     function addToOperatorWhitelist(address[] calldata) external;
 

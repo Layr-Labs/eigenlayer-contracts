@@ -38,7 +38,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     /// @notice the address that can whitelist people
     address public operatorWhitelister;
     /// @notice toggle of whether the operator whitelist is on or off 
-    bool public whitelistEnabled;
+    bool public operatorWhitelistEnabled;
     /// @notice operator => are they whitelisted (can they register with the middleware)
     mapping(address => bool) public whitelisted;
 
@@ -88,13 +88,13 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     /// @notice Initialize the APK, the payment split between quorums, and the quorum strategies + multipliers.
     function initialize(
         address _operatorWhitelister,
-        bool _whitelistEnabled,
+        bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
         StrategyAndWeightingMultiplier[] memory _firstQuorumStrategiesConsideredAndMultipliers,
         StrategyAndWeightingMultiplier[] memory _secondQuorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setOperatorWhitelister(_operatorWhitelister);
-        whitelistEnabled = _whitelistEnabled;
+        operatorWhitelistEnabled = _operatorWhitelistEnabled;
         // process an apk update to get index and totalStake arrays to the same length
         _processApkUpdate(BN254.G1Point(0, 0));
         RegistryBase._initialize(
@@ -113,10 +113,10 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
 
     /**
      * @notice Callable only by the service manager owner, this function toggles the whitelist on or off
-     * @param _whitelistEnabled true if turning whitelist on, false otherwise
+     * @param _operatorWhitelistEnabled true if turning whitelist on, false otherwise
      */
-    function setWhitelistStatus(bool _whitelistEnabled) external onlyServiceManagerOwner {
-        whitelistEnabled = _whitelistEnabled;
+    function setOperatorWhitelistStatus(bool _operatorWhitelistEnabled) external onlyServiceManagerOwner {
+        operatorWhitelistEnabled = _operatorWhitelistEnabled;
     }
 
     /**
@@ -158,7 +158,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     function _registerOperator(address operator, uint8 operatorType, BN254.G1Point memory pk, string calldata socket)
         internal
     {
-        if(whitelistEnabled) {
+        if(operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
 
