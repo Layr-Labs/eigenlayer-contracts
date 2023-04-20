@@ -70,10 +70,10 @@ function whitelisted(address) external view returns (bool)
 function setWhitelistStatus(bool _whitelistEnabled) external
 ```
 
-### addToWhitelist
+### addToOperatorWhitelist
 
 ```solidity
-function addToWhitelist(address[]) external
+function addToOperatorWhitelist(address[]) external
 ```
 
 ### removeFromWhitelist

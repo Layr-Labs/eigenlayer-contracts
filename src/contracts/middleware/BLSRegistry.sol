@@ -123,7 +123,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
      * @notice Called by the whitelister, adds a list of operators to the whitelist
      * @param operators the operators to add to the whitelist
      */
-    function addToWhitelist(address[] calldata operators) external onlyOperatorWhitelister {
+    function addToOperatorWhitelist(address[] calldata operators) external onlyOperatorWhitelister {
         for (uint i = 0; i < operators.length; i++) {
             whitelisted[operators[i]] = true;
         }

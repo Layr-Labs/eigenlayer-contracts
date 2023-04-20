@@ -40,7 +40,7 @@ interface IBLSRegistry is IQuorumRegistry {
 
     function setWhitelistStatus(bool _whitelistEnabled) external;
 
-    function addToWhitelist(address[] calldata) external;
+    function addToOperatorWhitelist(address[] calldata) external;
 
     function removeFromWhitelist(address[] calldata operators) external;
 }
