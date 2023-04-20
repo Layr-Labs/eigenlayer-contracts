@@ -49,16 +49,16 @@ The following figure illustrates the above flow:
 ### *Recording Stake Updates*
 EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system. It is therefore imperative for an AVS to be aware of any changes to stake delegated to its operators. In order to facilitate this, EigenLayer offers the `recordStakeUpdate(..)` API in the EigenLayer Slasher contract.
 
-Let us illustrate the usage of this facility with an example: A staker who has opted-in to an AVS via delegation, wants to partially withdraw some of its stake or completely stop participating. The staker has to undelegate its stake from the current operator. Under current design of delegation, whenever the staker partially withdraw some of its stake or completely stop participating, then it affects all the AVSs uniformly that its operator is participating in. The sequential flow is as follows:
+Let us illustrate the usage of this facility with an example: A staker who has opted-in to an AVS via delegation, wants to partially withdraw some of its stake. Whenever the staker partially withdraw some of its stake, it affects all the AVSs uniformly that its operator is participating in. The series of steps for partially withdrawing stake is as follows:
  - The staker queues their withdrawal request with EigenLayer. The staker can place this request by calling  `queueWithdrawal(..)` in the EigenLayer's `StrategyManager.sol`.
-- The operator, noticing an upcoming change in their delegated stake, notifies the AVS about this change. To do this, the operator triggers the AVS to call the `recordStakeUpdate(..)` in the AVS's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
+ - The operator, noticing an upcoming change in their delegated stake, notifies the AVS about this change. To do this, the operator triggers the AVS to call the `recordStakeUpdate(..)` in the AVS's ServiceManager contract which in turn accesses `recordStakeUpdate(..)` in the EigenLayer's Slasher contract.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
 - The AVS provider now is aware of the change in stake, and the staker is free to complete their withdrawal.
 
 The following figure illustrates the above flow: 
 ![Stake update](./images/staker_withdrawing.png)
 
 ### *Deregistering from AVS*
-In order for any EigenLayer operator to be able to de-register from a AVS, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to de-register from a AVS, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the AVS's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
+In order for any EigenLayer operator to be able to de-register from a AVS, EigenLayer provides the interface `recordLastStakeUpdateAndRevokeSlashingAbility(..)`. Essentially, in order for an operator to deregister from a AVS, the operator has to call `recordLastStakeUpdateAndRevokeSlashingAbility(..)` in EigenLayer's `Slasher.sol` via the AVS's ServiceManager contract. It is important to note that the latest block number until which the operator is required to serve tasks for the service must be known by the service and included in the ServiceManager's call to `Slasher.recordLastStakeUpdateAndRevokeSlashingAbility`.
 
 The following figure illustrates the above flow in which the operator calls the `deregister(..)` function in a sample Registry contract.
 ![Operator deregistering](./images/operator_deregister.png)
@@ -70,10 +70,10 @@ The following figure illustrates the above flow:
 ![Slashing](./images/slashing.png)
 
 
-## Guide To Provided AVS Contracts:
+## Quick Start Guide to Build AVS Contracts:
 The EigenLayer team has built a set of reusable and extensible contracts for use in AVSs built on top of EigenLayer. These are contained in the general-purpose [/middleware/ folder](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/AVS), which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer. There are several basic contracts that all AVS-specific contracts can be built on:
 - The *VoteWeigherBase contract* tracks an operator’s “weight” in a given quorum, across all strategies that are associated with that quorum.  This contract also manages which strategies are in each quorum - this includes both removing and adding functionalities as well as changing strategy weights.  
-- The *RegistryBase contract* is a basic registry contract that can be used to track operators opted into running a AVS.  Importantly, this base registry contract assumes a maximum of two quorums, where each quorum represents an aggregation of a certain type of stake.  AVSs may want to weigh their rewards based on the type of stake delegated to their operators and weigh each quorum differently.  
+- The *RegistryBase contract* is a basic registry contract that can be used to track operators opted into running an AVS.  Importantly, this base registry contract assumes a maximum of two quorums, where each quorum represents an aggregation of a certain type of stake. AVSs may want to weigh their rewards based on the type of stake delegated to their operators and weigh each quorum differently.  
 
 It’s expected that many AVSs will require a quorum of registered operators to sign on commitments. A quorum is a group of stakers who opt into a service while satisfying a particular trait. Examples of a trait could be stETH stakers or native stakers.  To this end, the EigenLabs team have developed a set of contracts designed to optimize the cost of checking signatures through the use of a BLS aggregate signature scheme:
 - The BLSPublicKeyCompendium simply allows each Ethereum address to register a unique BLS public key; a single BLSPublicKeyCompendium contract can be shared amongst all AVSs using BLS signatures. 
