@@ -1,5 +1,5 @@
 # Purpose
-This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how the AVS developers can use the APIs for: 
+This document aims to describe and summarize how AVSs building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how the AVS (actively validated services) developers can use the APIs for: 
 - enabling operators to opt-in to the AVS,
 - enabling operators to withdraw from AVS, and
 - enabling AVS to freeze operators for the purpose of slashing.
@@ -10,20 +10,12 @@ The following figure summarizes the scope of the document:
 ![Doc Outline](./images/middleware_outline_doc.png)
 
 # Introduction
-<<<<<<< HEAD
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the Slasher contract contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose /AVS/ folder, which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer.
-=======
-In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose /middleware/ folder, which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer.
->>>>>>> 90c3b98e5447857c88e7959dccfb884e4a34baeb
+In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions about the structure of AVSs built on top of it. If you are getting started looking at the EigenLayer codebase, the `Slasher.sol` contains most of the logic that actually mediates the interactions between EigenLayer and AVSs. Additionally, there is a general-purpose [/middleware/ folder](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/middleware), which contains code that can be extended, used directly, or consulted as a reference in building AVS on top of EigenLayer.
 
 ## Important Terminology
 - **Tasks** - A task in EigenLayer is the discretized unit of work that operators commit to doing when serving a AVS.  
 - **Strategies** - "A strategy in EigenLayer is a contract that holds staker deposits, i.e. it controls one or more restaked asset(s). At launch EigenLayer will feature only simple strategies which may hold a single token. However, EigenLayer's strategy design is flexible and open, and in the future strategies could be deployed which implement more complex logic, including DeFi integrations. 
-<<<<<<< HEAD
 - **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The prupose of having a quorum is that a AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
-=======
-- **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The purpose of having a quorum is that an AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
->>>>>>> 90c3b98e5447857c88e7959dccfb884e4a34baeb
 
 
 # Assumptions Make About Middlewares
@@ -38,8 +30,8 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
 3. *Services Slash Only Objectively Attributable Behavior*: 
     EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. Middlewares SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-into serving AVSs with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
     - double-signing a block in Ethereum, but NOT inactivity leak; 
-    - proofs-of-custody in EigenDA (or Ethereum after Danksharding is activated), but NOT a node ceasing to serve data; 
-    - a node in a light-node-bridge AVS signing an invalid block from another chain, but NOT the node failing to sign for a brief period.
+    - proofs-of-custody in EigenDA, but NOT a node ceasing to serve data; 
+    - a node in a light-node-bridge AVS signing an invalid block from another chain.
 
 4. *Single Point-of-Interaction for Services and EigenLayer*: 
     It is assumed that services have a single contract that coordinates the service’s communications sent to EigenLayer. This contract – referred to as the ServiceManager – informs EigenLayer of operator registration, updates, and deregistration, as well as signaling to EigenLayer when an operator should be slashed (frozen). Middlewares have full control over how they split up the actual logic involved, but are expected to route all calls to EigenLayer through a single contract. While technically possible, AVSs SHOULD NOT use multiple contracts to interact with EigenLayer, as this will impose additional burden on stakers and operators in EigenLayer when they are withdrawing or deregistering.
@@ -50,7 +42,7 @@ In this section, we will explain various API interfaces that EigenLayer provides
 ### *Opting into AVS*
 In order for any EigenLayer operator to be able to opt-in to a AVS, EigenLayer provides two interfaces: `optIntoSlashing(..)` and `recordFirstStakeUpdate(..)`. The sequential flow for opting into a AVS using these functions is as follows:
 1. The operator first opts into slashing by calling  `optIntoSlashing(..)` in `Slasher.sol`, where it has to specify the address of the AVS's ServiceManager contract in the argument. This step results in the operator giving permission to the AVS's ServiceManager contract to slash the operator via EigenLayer, if the operator is ever proven to have engaged in adversarial behavior while responding to the AVS's task. Successful call to  `optIntoSlashing(..)` emits the `OptedIntoSlashing(..)` event.
-2. Next, the operator needs to register with the AVS on chain via a AVS-specific registry contract (see the [this](https://github.com/Layr-Labs/eigenlayer-contracts/blob/middleware-guide/docs/Middleware-Guide.md#guide-to-provided-middleware-contracts) section for examples). To integrate with EigenLayer, the middleware's Registry contract provides a registration endpoint that calls on the `recordFirstStakeUpdate(..)` in the AVS's ServiceManager contract which in turn calls the `recordFirstStakeUpdate(..)` function in `Slasher.sol`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the AVS.
+2. Next, the operator needs to register with the AVS on chain via a AVS-specific registry contract (see [this](https://github.com/Layr-Labs/eigenlayer-contracts/blob/middleware-guide/docs/Middleware-Guide.md#guide-to-provided-middleware-contracts) section for examples). To integrate with EigenLayer, the middleware's Registry contract provides a registration endpoint that calls on the `recordFirstStakeUpdate(..)` in the AVS's ServiceManager contract which in turn calls the `recordFirstStakeUpdate(..)` function in `Slasher.sol`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the AVS.
 
 The following figure illustrates the above flow: 
 ![Operator opting-in](./images/operator_opting.png)
@@ -72,11 +64,7 @@ The following figure illustrates the above flow in which the operator calls the 
 ![Operator deregistering](./images/operator_deregister.png)
 
 ### *Slashing*
-<<<<<<< HEAD
 As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a AVS to be able to slash an operator in an objective manner, the AVS needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
-=======
-As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for a middleware to be able to slash an operator in an objective manner, the middleware needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls the `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's  `Slasher.sol` emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
->>>>>>> 90c3b98e5447857c88e7959dccfb884e4a34baeb
 
 The following figure illustrates the above flow: 
 ![Slashing](./images/slashing.png)
