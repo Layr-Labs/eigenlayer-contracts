@@ -69,7 +69,7 @@ contract Whitelister is IWhitelister, Ownable {
         // add operator to whitelist
         address[] memory operators = new address[](1);
         operators[0] = operator;
-        registry.addToWhitelist(operators);
+        registry.addToOperatorWhitelist(operators);
     }
 
     function getStaker(address operator) public view returns (address) {

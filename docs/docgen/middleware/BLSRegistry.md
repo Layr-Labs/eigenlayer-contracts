@@ -135,10 +135,10 @@ Callable only by the service manager owner, this function toggles the whitelist 
 | ---- | ---- | ----------- |
 | _whitelistEnabled | bool | true if turning whitelist on, false otherwise |
 
-### addToWhitelist
+### addToOperatorWhitelist
 
 ```solidity
-function addToWhitelist(address[] operators) external
+function addToOperatorWhitelist(address[] operators) external
 ```
 
 Called by the whitelister, adds a list of operators to the whitelist

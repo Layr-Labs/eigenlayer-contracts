@@ -14,9 +14,9 @@ import "../RegistryBase.sol";
 contract ECDSARegistry is RegistryBase {
 
     /// @notice the address that can whitelist people
-    address public whitelister;
+    address public operatorWhitelister;
     /// @notice toggle of whether the operator whitelist is on or off 
-    bool public whitelistEnabled;
+    bool public operatorWhitelistEnabled;
     /// @notice operator => are they whitelisted (can they register with the middleware)
     mapping(address => bool) public whitelisted;
 
@@ -31,12 +31,12 @@ contract ECDSARegistry is RegistryBase {
         string socket
     );
 
-    /// @notice Emitted when the `whitelister` role is transferred.
-    event WhitelisterTransferred(address previousAddress, address newAddress);
+    /// @notice Emitted when the `operatorWhitelister` role is transferred.
+    event OperatorWhitelisterTransferred(address previousAddress, address newAddress);
 
     /// @notice Modifier that restricts a function to only be callable by the `whitelister` role.
-    modifier onlyWhitelister {
-        require(whitelister == msg.sender, "BLSRegistry.onlyWhitelister: not whitelister");
+    modifier onlyOperatorWhitelister {
+        require(operatorWhitelister == msg.sender, "BLSRegistry.onlyOperatorWhitelister: not operatorWhitelister");
         _;
     }
 
@@ -53,13 +53,13 @@ contract ECDSARegistry is RegistryBase {
 
     /// @notice Initialize whitelister and the quorum strategies + multipliers.
     function initialize(
-        address _whitelister,
-        bool _whitelistEnabled,
+        address _operatorWhitelister,
+        bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
         StrategyAndWeightingMultiplier[] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
-        _setWhitelister(_whitelister);
-        whitelistEnabled = _whitelistEnabled;
+        _setOperatorWhitelister(_operatorWhitelister);
+        operatorWhitelistEnabled = _operatorWhitelistEnabled;
 
         RegistryBase._initialize(
             _quorumBips,
@@ -71,33 +71,33 @@ contract ECDSARegistry is RegistryBase {
     /**
      * @notice Called by the service manager owner to transfer the whitelister role to another address 
      */
-    function setWhitelister(address _whitelister) external onlyServiceManagerOwner {
-        _setWhitelister(_whitelister);
+    function setOperatorWhitelister(address _operatorWhitelister) external onlyServiceManagerOwner {
+        _setOperatorWhitelister(_operatorWhitelister);
     }
 
     /**
      * @notice Callable only by the service manager owner, this function toggles the whitelist on or off
-     * @param _whitelistEnabled true if turning whitelist on, false otherwise
+     * @param _operatorWhitelistEnabled true if turning whitelist on, false otherwise
      */
-    function setWhitelistStatus(bool _whitelistEnabled) external onlyServiceManagerOwner {
-        whitelistEnabled = _whitelistEnabled;
+    function setOperatorWhitelistStatus(bool _operatorWhitelistEnabled) external onlyServiceManagerOwner {
+        operatorWhitelistEnabled = _operatorWhitelistEnabled;
     }
 
     /**
-     * @notice Called by the whitelister, adds a list of operators to the whitelist
+     * @notice Called by the operatorWhitelister, adds a list of operators to the whitelist
      * @param operators the operators to add to the whitelist
      */
-    function addToWhitelist(address[] calldata operators) external onlyWhitelister {
+    function addToOperatorWhitelist(address[] calldata operators) external onlyOperatorWhitelister {
         for (uint i = 0; i < operators.length; i++) {
             whitelisted[operators[i]] = true;
         }
     }
 
     /**
-     * @notice Called by the whitelister, removes a list of operators to the whitelist
+     * @notice Called by the operatorWhitelister, removes a list of operators to the whitelist
      * @param operators the operators to remove from the whitelist
      */
-    function removeFromWhitelist(address[] calldata operators) external onlyWhitelister {
+    function removeFromWhitelist(address[] calldata operators) external onlyOperatorWhitelister {
         for (uint i = 0; i < operators.length; i++) {
             whitelisted[operators[i]] = false;
         }
@@ -117,7 +117,7 @@ contract ECDSARegistry is RegistryBase {
     function _registerOperator(address operator, string calldata socket)
         internal
     {
-        if(whitelistEnabled) {
+        if(operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
 
@@ -193,9 +193,9 @@ contract ECDSARegistry is RegistryBase {
         _recordTotalStakeUpdate(_totalStake);
     }
 
-    function _setWhitelister(address _whitelister) internal {
-        require(_whitelister != address(0), "BLSRegistry.initialize: cannot set whitelister to zero address");
-        emit WhitelisterTransferred(whitelister, _whitelister);
-        whitelister = _whitelister;
+    function _setOperatorWhitelister(address _operatorWhitelister) internal {
+        require(_operatorWhitelister != address(0), "BLSRegistry.initialize: cannot set operatorWhitelister to zero address");
+        emit OperatorWhitelisterTransferred(operatorWhitelister, _operatorWhitelister);
+        operatorWhitelister = _operatorWhitelister;
     }
 }
