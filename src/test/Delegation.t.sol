@@ -40,11 +40,17 @@ contract DelegationTests is EigenLayerTestHelper {
     function initializeMiddlewares() public {
         serviceManager = new ServiceManagerMock(slasher);
 
+        emit log("heheehhe");
+
         voteWeigher = MiddlewareVoteWeigherMock(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        emit log("heheehhe");
+
 
         voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
+         emit log("heheehhe");
+
 
         {
             uint96 multiplier = 1e18;
