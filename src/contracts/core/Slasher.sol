@@ -275,6 +275,21 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
         // pull the MiddlewareTimes struct at the `middlewareTimesIndex`th position in `_operatorToMiddlewareTimes[operator]`
         MiddlewareTimes memory update = _operatorToMiddlewareTimes[operator][middlewareTimesIndex];
+
+        /**
+         * Case-handling for if the operator is not registered for any middlewares (i.e. they previously registered but are no longer registered for any),
+         * AND the withdrawal was initiated after the 'stalestUpdateBlock' of the MiddlewareTimes struct specified by the provided `middlewareTimesIndex`.
+         * NOTE: we check the 2nd of these 2 conditions first for gas efficiency, to help avoid an extra SLOAD in all other cases.
+         */
+        if (withdrawalStartBlock >= update.stalestUpdateBlock && _operatorToWhitelistedContractsByUpdate[operator].size == 0) {
+            /**
+             * In this case, we just check against the 'latestServeUntilBlock' of the last MiddlewareTimes struct. This is because the operator not being registered
+             * for any middlewares (i.e. `_operatorToWhitelistedContractsByUpdate.size == 0`) means no new MiddlewareTimes structs will be being pushed, *and* the operator 
+             * will not be undertaking any new obligations (so just checking against the last entry is OK, unlike when the operator is actively registered for >=1 middleware).
+             */
+            update = _operatorToMiddlewareTimes[operator][_operatorToMiddlewareTimes[operator].length - 1];
+            return (uint32(block.number) > update.latestServeUntilBlock);
+        }
         
         /**
          * Make sure the stalest update block at the time of the update is strictly after `withdrawalStartBlock` and ensure that the current time

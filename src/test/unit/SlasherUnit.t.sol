@@ -110,6 +110,103 @@ contract SlasherUnitTests is Test {
         addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
     }
 
+    /**
+     * Regression test for SigP's EGN2-01 issue, "Middleware can Deny Withdrawals by Revoking Slashing Prior to Queueing Withdrawal".
+     * This test checks that a new queued withdrawal after total deregistration (i.e. queued *after* totally de-registering from all AVSs) can still eventually be completed.
+     */
+    function testCanCompleteNewQueuedWithdrawalAfterTotalDeregistration(
+        address operator,
+        address contractAddress,
+        uint32 prevServeUntilBlock,
+        uint32 serveUntilBlock,
+        uint32 withdrawalStartBlock
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(contractAddress)
+    {
+        // filter out setting the `serveUntilBlock` time to the MAX (or one less than max), since the contract will revert in this instance (or our math with overflow, if 1 less).
+        cheats.assume(prevServeUntilBlock <= MAX_CAN_SLASH_UNTIL - 1);
+        cheats.assume(serveUntilBlock <= MAX_CAN_SLASH_UNTIL - 1);
+
+        // simulate registering to and de-registering from an AVS
+        testRecordFirstStakeUpdate(operator, contractAddress, prevServeUntilBlock);
+        // perform the last stake update and revoke slashing ability, from the `contractAddress`
+        cheats.startPrank(contractAddress);
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
+        cheats.stopPrank();
+
+        uint256 middlewareTimesIndex = slasher.middlewareTimesLength(operator) - 1;
+        ISlasher.MiddlewareTimes memory middlewareTimes = slasher.operatorToMiddlewareTimes(operator, middlewareTimesIndex);
+
+        // emit log_named_uint("middlewareTimes.stalestUpdateBlock", middlewareTimes.stalestUpdateBlock);
+        // emit log_named_uint("middlewareTimes.latestServeUntilBlock", middlewareTimes.latestServeUntilBlock);
+
+        // uint256 operatorWhitelistedContractsLinkedListSize = slasher.operatorWhitelistedContractsLinkedListSize(operator);
+        // emit log_named_uint("operatorWhitelistedContractsLinkedListSize", operatorWhitelistedContractsLinkedListSize);
+
+        // filter fuzzed inputs
+        // cheats.assume(withdrawalStartBlock >= block.number);
+        cheats.assume(withdrawalStartBlock >= middlewareTimes.stalestUpdateBlock);
+        cheats.roll(middlewareTimes.latestServeUntilBlock + 1);
+
+        require(
+            slasher.canWithdraw(operator, withdrawalStartBlock, middlewareTimesIndex),
+            "operator cannot complete withdrawal when they should be able to"
+        );
+    }
+
+    /**
+     * Test related to SigP's EGN2-01 issue, "Middleware can Deny Withdrawals by Revoking Slashing Prior to Queueing Withdrawal", to ensure that the fix does not degrade performance.
+     * This test checks that a *previous* queued withdrawal prior to total deregistration (i.e. queued *before* totally de-registering from all AVSs)
+     * can still be withdrawn at the appropriate time, i.e. that a fix to EGN2-01 does not add any delay to existing withdrawals.
+     */
+    function testCanCompleteExistingQueuedWithdrawalAfterTotalDeregistration(
+        address operator,
+        address contractAddress,
+        uint32 prevServeUntilBlock,
+        uint32 serveUntilBlock
+    )
+        public
+        filterFuzzedAddressInputs(operator)
+        filterFuzzedAddressInputs(contractAddress)
+    {
+        // filter out setting the `serveUntilBlock` time to the MAX (or one less than max), since the contract will revert in this instance (or our math with overflow, if 1 less).
+        cheats.assume(prevServeUntilBlock <= MAX_CAN_SLASH_UNTIL - 1);
+        cheats.assume(serveUntilBlock <= MAX_CAN_SLASH_UNTIL - 1);
+
+        // roll forward 2 blocks
+        cheats.roll(block.number + 2);
+        // make sure `withdrawalStartBlock` is in past
+        uint32 withdrawalStartBlock = uint32(block.number) - 1;
+
+        // simulate registering to and de-registering from an AVS
+        testRecordFirstStakeUpdate(operator, contractAddress, prevServeUntilBlock);
+
+        // perform the last stake update and revoke slashing ability, from the `contractAddress`
+        cheats.startPrank(contractAddress);
+        slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
+        cheats.stopPrank();
+
+        uint256 operatorWhitelistedContractsLinkedListSize = slasher.operatorWhitelistedContractsLinkedListSize(operator);
+        require(operatorWhitelistedContractsLinkedListSize == 0, "operatorWhitelistedContractsLinkedListSize != 0");
+
+        uint256 middlewareTimesLength = slasher.middlewareTimesLength(operator);
+        require(middlewareTimesLength >= 2, "middlewareTimesLength < 2");
+        uint256 middlewareTimesIndex = middlewareTimesLength - 2;
+
+        ISlasher.MiddlewareTimes memory olderMiddlewareTimes = slasher.operatorToMiddlewareTimes(operator, middlewareTimesIndex);
+
+        cheats.roll(olderMiddlewareTimes.latestServeUntilBlock + 1);
+
+        require(withdrawalStartBlock < olderMiddlewareTimes.stalestUpdateBlock, "withdrawalStartBlock >= olderMiddlewareTimes.stalestUpdateBlock");
+
+        require(
+            slasher.canWithdraw(operator, withdrawalStartBlock, middlewareTimesIndex),
+            "operator cannot complete withdrawal when they should be able to"
+        );
+    }
+
     function testCannotReinitialize() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         slasher.initialize(initialOwner, pauserRegistry, 0);
