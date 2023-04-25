@@ -1,5 +1,5 @@
 {
-  "name": "eignlayr-contracts",
+  "name": "eigenlayer-contracts",
   "version": "1.0.0",
   "description": "<a name=\"introduction\"/></a> # EigenLayer EigenLayer (formerly 'EigenLayr') is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. At present, this repository contains *both* the contracts for EigenLayer *and* a set of general \"middleware\" contracts, designed to be reuseable across different applications built on top of EigenLayer.",
   "main": "index.js",
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Layr-Labs/eignlayr-contracts.git"
+    "url": "git+https://github.com/Layr-Labs/eigenlayer-contracts.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Layr-Labs/eignlayr-contracts/issues"
+    "url": "https://github.com/Layr-Labs/eigenlayer-contracts/issues"
   },
-  "homepage": "https://github.com/Layr-Labs/eignlayr-contracts#readme",
+  "homepage": "https://github.com/Layr-Labs/eigenlayer-contracts#readme",
   "devDependencies": {
     "hardhat": "^2.12.4",
     "hardhat-preprocessor": "^0.1.5",

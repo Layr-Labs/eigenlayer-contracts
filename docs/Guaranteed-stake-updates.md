@@ -8,7 +8,7 @@ Below, a whitelisted contract refers to a contract that is a part of a middlewar
 
 For each operator, the Slasher contract stores:
 
-1. A `mapping(address => mapping(address => MiddlewareDetails))`, from operator address to contract whitelisted by the operator to slash them, to [details](https://github.com/Layr-Labs/eignlayr-contracts/blob/master/src/contracts/interfaces/ISlasher.sol) about that contract formatted as
+1. A `mapping(address => mapping(address => MiddlewareDetails))`, from operator address to contract whitelisted by the operator to slash them, to [details](../src/contracts/contracts/interfaces/ISlasher.sol) about that contract formatted as
 ```solidity
     struct MiddlewareDetails {
         // the UTC timestamp before which the contract is allowed to slash the user
