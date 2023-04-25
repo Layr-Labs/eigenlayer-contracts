@@ -188,6 +188,17 @@ _middlewareTimesIndex should be calculated off chain before calling this functio
 | middlewareTimesIndex | uint256 | is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array |
 | receiveAsTokens | bool | If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies will simply be transferred to the caller directly. |
 
+### completeQueuedWithdrawals
+
+```solidity
+function completeQueuedWithdrawals(struct IStrategyManager.QueuedWithdrawal[] queuedWithdrawals, contract IERC20[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) external
+```
+
+Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawal.withdrawer`
+
+_Array-ified version of `completeQueuedWithdrawal`
+middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`_
+
 ### slashShares
 
 ```solidity
@@ -276,4 +287,12 @@ function beaconChainETHStrategy() external view returns (contract IStrategy)
 ```
 
 returns the enshrined beaconChainETH Strategy
+
+### withdrawalDelayBlocks
+
+```solidity
+function withdrawalDelayBlocks() external view returns (uint256)
+```
+
+Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
 

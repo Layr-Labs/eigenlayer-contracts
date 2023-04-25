@@ -70,7 +70,13 @@ Since this contract is designed to be initializable, the constructor simply sets
 ### initialize
 
 ```solidity
-function initialize(contract IERC20 _underlyingToken, contract IPauserRegistry _pauserRegistry) public
+function initialize(contract IERC20 _underlyingToken, contract IPauserRegistry _pauserRegistry) public virtual
+```
+
+### _initializeStrategyBase
+
+```solidity
+function _initializeStrategyBase(contract IERC20 _underlyingToken, contract IPauserRegistry _pauserRegistry) internal
 ```
 
 Sets the `underlyingToken` and `pauserRegistry` for the strategy.
@@ -88,7 +94,11 @@ _This function is only callable by the strategyManager contract. It is invoked i
 Note that the assumption is made that `amount` of `token` has already been transferred directly to this contract
 (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
 to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
-the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance)._
+the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
+
+WARNING: In order to mitigate against inflation/donation attacks in the context of ERC_4626, this contract requires the 
+         minimum amount of shares be either 0 or 1e9. A consequence of this is that in the worst case a user will not 
+         be able to withdraw for 1e9-1 or less shares._
 
 #### Parameters
 

@@ -311,8 +311,7 @@ function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) ex
 Transfers `amountWei` in ether from this contract to the specified `recipient` address
 Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
 
-_Called during withdrawal or slashing.
-Note that this function is marked as non-reentrant to prevent the recipient calling back into it_
+_Called during withdrawal or slashing._
 
 ### withdrawBeforeRestaking
 

@@ -40,18 +40,18 @@ used for storing current aggregate public key
 
 _Initialized value of APK is the point at infinity: (0, 0)_
 
-### whitelister
+### operatorWhitelister
 
 ```solidity
-address whitelister
+address operatorWhitelister
 ```
 
 the address that can whitelist people
 
-### whitelistEnabled
+### operatorWhitelistEnabled
 
 ```solidity
-bool whitelistEnabled
+bool operatorWhitelistEnabled
 ```
 
 toggle of whether the operator whitelist is on or off
@@ -83,18 +83,18 @@ Emitted upon the registration of a new operator for the middleware
 | apkHash | bytes32 | The keccak256 hash of the new Aggregate Public Key |
 | socket | string |  |
 
-### WhitelisterTransferred
+### OperatorWhitelisterTransferred
 
 ```solidity
-event WhitelisterTransferred(address previousAddress, address newAddress)
+event OperatorWhitelisterTransferred(address previousAddress, address newAddress)
 ```
 
-Emitted when the `whitelister` role is transferred.
+Emitted when the `operatorWhitelister` role is transferred.
 
-### onlyWhitelister
+### onlyOperatorWhitelister
 
 ```solidity
-modifier onlyWhitelister()
+modifier onlyOperatorWhitelister()
 ```
 
 Modifier that restricts a function to only be callable by the `whitelister` role.
@@ -108,23 +108,23 @@ constructor(contract IStrategyManager _strategyManager, contract IServiceManager
 ### initialize
 
 ```solidity
-function initialize(address _whitelister, bool _whitelistEnabled, uint256[] _quorumBips, struct VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] _firstQuorumStrategiesConsideredAndMultipliers, struct VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] _secondQuorumStrategiesConsideredAndMultipliers) public virtual
+function initialize(address _operatorWhitelister, bool _operatorWhitelistEnabled, uint256[] _quorumBips, struct VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] _firstQuorumStrategiesConsideredAndMultipliers, struct VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] _secondQuorumStrategiesConsideredAndMultipliers) public virtual
 ```
 
 Initialize the APK, the payment split between quorums, and the quorum strategies + multipliers.
 
-### setWhitelister
+### setOperatorWhitelister
 
 ```solidity
-function setWhitelister(address _whitelister) external
+function setOperatorWhitelister(address _operatorWhitelister) external
 ```
 
 Called by the service manager owner to transfer the whitelister role to another address
 
-### setWhitelistStatus
+### setOperatorWhitelistStatus
 
 ```solidity
-function setWhitelistStatus(bool _whitelistEnabled) external
+function setOperatorWhitelistStatus(bool _operatorWhitelistEnabled) external
 ```
 
 Callable only by the service manager owner, this function toggles the whitelist on or off
@@ -133,7 +133,7 @@ Callable only by the service manager owner, this function toggles the whitelist 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _whitelistEnabled | bool | true if turning whitelist on, false otherwise |
+| _operatorWhitelistEnabled | bool | true if turning whitelist on, false otherwise |
 
 ### addToOperatorWhitelist
 
@@ -254,10 +254,10 @@ Updates the stored APK to `newApk`, calculates its hash, and pushes new entries 
 | ---- | ---- | ----------- |
 | newApk | struct BN254.G1Point | The updated APK. This will be the `apk` after this function runs! |
 
-### _setWhitelister
+### _setOperatorWhitelister
 
 ```solidity
-function _setWhitelister(address _whitelister) internal
+function _setOperatorWhitelister(address _operatorWhitelister) internal
 ```
 
 ### getCorrectApkHash

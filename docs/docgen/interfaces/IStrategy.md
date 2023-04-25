@@ -67,7 +67,7 @@ _Implementation for these functions in particular may vary signifcantly for diff
 ### underlyingToShares
 
 ```solidity
-function underlyingToShares(uint256 amountUnderlying) external view returns (uint256)
+function underlyingToShares(uint256 amountUnderlying) external returns (uint256)
 ```
 
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.

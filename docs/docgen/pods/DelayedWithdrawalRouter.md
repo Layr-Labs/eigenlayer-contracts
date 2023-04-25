@@ -101,6 +101,9 @@ function claimDelayedWithdrawals(address recipient, uint256 maxNumberOfDelayedWi
 
 Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.
 
+_WARNING: Note that the caller of this function cannot control where the funds are sent, but they can control when the 
+             funds are sent once the withdrawal becomes claimable._
+
 #### Parameters
 
 | Name | Type | Description |

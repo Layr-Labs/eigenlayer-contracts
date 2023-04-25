@@ -93,7 +93,7 @@ operator =>
 ### MiddlewareTimesAdded
 
 ```solidity
-event MiddlewareTimesAdded(address operator, uint256 index, uint32 stalestUpdateBlock, uint32 latestServeUntil)
+event MiddlewareTimesAdded(address operator, uint256 index, uint32 stalestUpdateBlock, uint32 latestServeUntilBlock)
 ```
 
 Emitted when a middleware times is added to `operator`'s array.
@@ -109,10 +109,10 @@ Emitted when `operator` begins to allow `contractAddress` to slash them.
 ### SlashingAbilityRevoked
 
 ```solidity
-event SlashingAbilityRevoked(address operator, address contractAddress, uint32 contractCanSlashOperatorUntil)
+event SlashingAbilityRevoked(address operator, address contractAddress, uint32 contractCanSlashOperatorUntilBlock)
 ```
 
-Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the UTC timestamp `contractCanSlashOperatorUntil`.
+Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the `contractCanSlashOperatorUntilBlock`.
 
 ### OperatorFrozen
 
@@ -192,11 +192,11 @@ _Callable only by the contract owner (i.e. governance)._
 ### recordFirstStakeUpdate
 
 ```solidity
-function recordFirstStakeUpdate(address operator, uint32 serveUntil) external
+function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external
 ```
 
 this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration 
-        is slashable until serveUntil
+        is slashable until serveUntilBlock
 
 _adds the middleware's slashing contract to the operator's linked list_
 
@@ -205,16 +205,16 @@ _adds the middleware's slashing contract to the operator's linked list_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at the current block is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at the current block is slashable |
 
 ### recordStakeUpdate
 
 ```solidity
-function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 insertAfter) external
+function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external
 ```
 
 this function is a called by middlewares during a stake update for an operator (perhaps to free pending withdrawals)
-        to make sure the operator's stake at updateBlock is slashable until serveUntil
+        to make sure the operator's stake at updateBlock is slashable until serveUntilBlock
 
 _insertAfter should be calculated offchain before making the transaction that calls this. this is subject to race conditions, 
      but it is anticipated to be rare and not detrimental._
@@ -225,35 +225,35 @@ _insertAfter should be calculated offchain before making the transaction that ca
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
 | updateBlock | uint32 | the block for which the stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at updateBlock is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at updateBlock is slashable |
 | insertAfter | uint256 | the element of the operators linked list that the currently updating middleware should be inserted after |
 
 ### recordLastStakeUpdateAndRevokeSlashingAbility
 
 ```solidity
-function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external
+function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external
 ```
 
 this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 
-        is slashable until serveUntil
+        is slashable until serveUntilBlock
 
 _removes the middleware's slashing contract to the operator's linked list and revokes the middleware's (i.e. caller's) ability to
-slash `operator` once `serveUntil` is reached_
+slash `operator` once `serveUntilBlock` is reached_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at the current block is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at the current block is slashable |
 
-### contractCanSlashOperatorUntil
+### contractCanSlashOperatorUntilBlock
 
 ```solidity
-function contractCanSlashOperatorUntil(address operator, address serviceContract) external view returns (uint32)
+function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32)
 ```
 
-Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
+Returns the block until which `serviceContract` is allowed to slash the `operator`.
 
 ### latestUpdateBlock
 
@@ -339,13 +339,13 @@ function getMiddlewareTimesIndexBlock(address operator, uint32 index) external v
 
 Getter function for fetching `_operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
 
-### getMiddlewareTimesIndexServeUntil
+### getMiddlewareTimesIndexServeUntilBlock
 
 ```solidity
-function getMiddlewareTimesIndexServeUntil(address operator, uint32 index) external view returns (uint32)
+function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns (uint32)
 ```
 
-Getter function for fetching `_operatorToMiddlewareTimes[operator][index].latestServeUntil`.
+Getter function for fetching `_operatorToMiddlewareTimes[operator][index].latestServeUntilBlock`.
 
 ### operatorWhitelistedContractsLinkedListSize
 
@@ -398,7 +398,7 @@ function _optIntoSlashing(address operator, address contractAddress) internal
 ### _revokeSlashingAbility
 
 ```solidity
-function _revokeSlashingAbility(address operator, address contractAddress, uint32 serveUntil) internal
+function _revokeSlashingAbility(address operator, address contractAddress, uint32 serveUntilBlock) internal
 ```
 
 ### _freezeOperator
@@ -416,7 +416,7 @@ function _resetFrozenStatus(address previouslySlashedAddress) internal
 ### _recordUpdateAndAddToMiddlewareTimes
 
 ```solidity
-function _recordUpdateAndAddToMiddlewareTimes(address operator, uint32 updateBlock, uint32 serveUntil) internal
+function _recordUpdateAndAddToMiddlewareTimes(address operator, uint32 updateBlock, uint32 serveUntilBlock) internal
 ```
 
 records the most recent updateBlock for the currently updating middleware and appends an entry to the operator's list of 
@@ -429,8 +429,8 @@ _this function is only called during externally called stake updates by middlewa
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | operator | address | the entity whose stake update is being recorded |
-| updateBlock | uint32 | the block number for which the currently updating middleware is updating the serveUntil for |
-| serveUntil | uint32 | the timestamp until which the operator's stake at updateBlock is slashable |
+| updateBlock | uint32 | the block number for which the currently updating middleware is updating the serveUntilBlock for |
+| serveUntilBlock | uint32 | the block until which the operator's stake at updateBlock is slashable |
 
 ### _updateMiddlewareList
 

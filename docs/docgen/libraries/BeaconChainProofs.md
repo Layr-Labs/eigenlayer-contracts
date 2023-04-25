@@ -403,13 +403,13 @@ This function verifies merkle proofs of the balance of a certain validator again
 | proof | bytes | is the proof of the balance against the beacon chain state root |
 | balanceRoot | bytes32 | is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation) |
 
-### verifyBlockNumberAndWithdrawalFields
+### verifyWithdrawalProofs
 
 ```solidity
-function verifyBlockNumberAndWithdrawalFields(bytes32 beaconStateRoot, struct BeaconChainProofs.WithdrawalProofs proofs, bytes32[] withdrawalFields) internal view
+function verifyWithdrawalProofs(bytes32 beaconStateRoot, struct BeaconChainProofs.WithdrawalProofs proofs, bytes32[] withdrawalFields) internal view
 ```
 
-This function verifies merkle proofs of the balance of a specific Beacon Chain withdrawal container against a beacon chain state root
+This function verifies the slot and the withdrawal fields for a given withdrawal
 
 #### Parameters
 

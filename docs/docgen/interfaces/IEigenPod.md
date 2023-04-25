@@ -129,6 +129,14 @@ function hasRestaked() external view returns (bool)
 
 an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
 
+### mostRecentWithdrawalBlockNumber
+
+```solidity
+function mostRecentWithdrawalBlockNumber() external view returns (uint64)
+```
+
+block number of the most recent withdrawal
+
 ### provenPartialWithdrawal
 
 ```solidity

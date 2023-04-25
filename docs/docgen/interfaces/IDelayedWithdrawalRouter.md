@@ -75,6 +75,14 @@ function userWithdrawals(address user) external view returns (struct IDelayedWit
 
 Getter function for the mapping `_userWithdrawals`
 
+### claimableUserDelayedWithdrawals
+
+```solidity
+function claimableUserDelayedWithdrawals(address user) external view returns (struct IDelayedWithdrawalRouter.DelayedWithdrawal[])
+```
+
+Getter function to get all delayedWithdrawals that are currently claimable by the `user`
+
 ### userDelayedWithdrawalByIndex
 
 ```solidity

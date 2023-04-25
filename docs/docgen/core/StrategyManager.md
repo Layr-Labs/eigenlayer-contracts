@@ -28,6 +28,12 @@ uint8 PAUSED_DEPOSITS
 uint8 PAUSED_WITHDRAWALS
 ```
 
+### ORIGINAL_CHAIN_ID
+
+```solidity
+uint256 ORIGINAL_CHAIN_ID
+```
+
 ### ERC1271_MAGICVALUE
 
 ```solidity
@@ -89,7 +95,7 @@ Emitted when a new withdrawal is queued by `depositor`.
 ### WithdrawalCompleted
 
 ```solidity
-event WithdrawalCompleted(address depositor, address withdrawer, bytes32 withdrawalRoot)
+event WithdrawalCompleted(address depositor, uint96 nonce, address withdrawer, bytes32 withdrawalRoot)
 ```
 
 Emitted when a queued withdrawal is completed
@@ -144,12 +150,6 @@ modifier onlyFrozen(address staker)
 modifier onlyEigenPodManager()
 ```
 
-### onlyEigenPod
-
-```solidity
-modifier onlyEigenPod(address podOwner, address pod)
-```
-
 ### onlyStrategyWhitelister
 
 ```solidity
@@ -179,7 +179,7 @@ constructor(contract IDelegationManager _delegation, contract IEigenPodManager _
 ### initialize
 
 ```solidity
-function initialize(address initialOwner, contract IPauserRegistry _pauserRegistry, uint256 initialPausedStatus, uint256 _withdrawalDelayBlocks) external
+function initialize(address initialOwner, address initialStrategyWhitelister, contract IPauserRegistry _pauserRegistry, uint256 initialPausedStatus, uint256 _withdrawalDelayBlocks) external
 ```
 
 Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
@@ -190,6 +190,7 @@ and transfers contract ownership to the specified `initialOwner`.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | initialOwner | address | Ownership of this contract is transferred to this address. |
+| initialStrategyWhitelister | address | The initial value of `strategyWhitelister` to set. |
 | _pauserRegistry | contract IPauserRegistry | Used for access control of pausing. |
 | initialPausedStatus | uint256 |  |
 | _withdrawalDelayBlocks | uint256 | The initial value of `withdrawalDelayBlocks` to set. |
@@ -238,7 +239,10 @@ function depositIntoStrategy(contract IStrategy strategy, contract IERC20 token,
 Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `depositor`
 
 _The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen)._
+Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
+
+WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+         where the token balance and corresponding strategy shares are not in syncupon reentrancy._
 
 #### Parameters
 
@@ -260,7 +264,10 @@ who must sign off on the action
 _The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
 A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
 targetting stakers who may be attempting to undelegate.
-Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen)._
+Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
+
+ WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
+         where the token balance and corresponding strategy shares are not in syncupon reentrancy_
 
 #### Parameters
 
@@ -333,6 +340,17 @@ _middlewareTimesIndex should be calculated off chain before calling this functio
 | tokens | contract IERC20[] | Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `strategies` array of the `queuedWithdrawal`. This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused) |
 | middlewareTimesIndex | uint256 | is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array |
 | receiveAsTokens | bool | If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies will simply be transferred to the caller directly. |
+
+### completeQueuedWithdrawals
+
+```solidity
+function completeQueuedWithdrawals(struct IStrategyManager.QueuedWithdrawal[] queuedWithdrawals, contract IERC20[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) external
+```
+
+Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
+
+_Array-ified version of `completeQueuedWithdrawal`
+middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`_
 
 ### slashShares
 
@@ -455,6 +473,14 @@ Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `st
 
 _the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
 index is incorrect, then we revert to a brute-force search._
+
+### _completeQueuedWithdrawal
+
+```solidity
+function _completeQueuedWithdrawal(struct IStrategyManager.QueuedWithdrawal queuedWithdrawal, contract IERC20[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) internal
+```
+
+Internal function for completeing the given `queuedWithdrawal`.
 
 ### _undelegate
 
