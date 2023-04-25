@@ -101,6 +101,7 @@ contract EigenLayerDeployer is Operators {
     address eigenPodBeaconAddress;
     address beaconChainOracleAddress;
     address emptyContractAddress;
+    address communityMultisig;
 
     uint256 goerliFork;
 
@@ -151,7 +152,7 @@ contract EigenLayerDeployer is Operators {
 
         emptyContract = new EmptyContract();
         
-        emit log_named_uint("emptyContract ADDRESS", address(emptyContract).code.length);
+        emit log_named_address("emptyContract ADDRESS", eigenLayerProxyAdmin.owner());
 
         //deploy pauser registry
         eigenLayerPauserReg = PauserRegistry(eigenLayerPauserRegAddress);
@@ -365,6 +366,8 @@ contract EigenLayerDeployer is Operators {
         eigenPodManagerAddress = stdJson.readAddress(goerliDeploymentConfig, ".addresses.eigenPodManager"); 
         delayedWithdrawalRouterAddress = stdJson.readAddress(goerliDeploymentConfig, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(goerliDeploymentConfig, ".addresses.emptyContract");
+        communityMultisig = stdJson.readAddress(goerliDeploymentConfig, ".parameters.communityMultisig");
+        
     }
     
 }

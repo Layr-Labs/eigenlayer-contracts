@@ -34,23 +34,22 @@ contract DelegationTests is EigenLayerTestHelper {
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
 
+        // if(vm.envUint("DEPLOYMENT_ID") == 1){
+        //     cheats.startPrank(communityMultisig);
+        // }
         initializeMiddlewares();
     }
 
     function initializeMiddlewares() public {
         serviceManager = new ServiceManagerMock(slasher);
 
-        emit log("heheehhe");
 
         voteWeigher = MiddlewareVoteWeigherMock(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        emit log("heheehhe");
 
 
         voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
-         emit log("heheehhe");
-
 
         {
             uint96 multiplier = 1e18;
@@ -68,11 +67,13 @@ contract DelegationTests is EigenLayerTestHelper {
             eigenStratsAndMultipliers[0].strategy = eigenStrat;
             eigenStratsAndMultipliers[0].multiplier = multiplier;
 
+            cheats.startPrank(communityMultisig);
             eigenLayerProxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(voteWeigher))),
                 address(voteWeigherImplementation),
                 abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers)
             );
+            cheats.stopPrank();
         }
     }
 
