@@ -9,7 +9,7 @@ See the `Slasher` contract itself for implementation details.
 ```solidity
 struct MiddlewareTimes {
   uint32 stalestUpdateBlock;
-  uint32 latestServeUntil;
+  uint32 latestServeUntilBlock;
 }
 ```
 
@@ -17,7 +17,7 @@ struct MiddlewareTimes {
 
 ```solidity
 struct MiddlewareDetails {
-  uint32 contractCanSlashOperatorUntil;
+  uint32 contractCanSlashOperatorUntilBlock;
   uint32 latestUpdateBlock;
 }
 ```
@@ -62,7 +62,7 @@ _Callable only by the contract owner (i.e. governance)._
 ### recordFirstStakeUpdate
 
 ```solidity
-function recordFirstStakeUpdate(address operator, uint32 serveUntil) external
+function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external
 ```
 
 this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration 
@@ -75,12 +75,12 @@ _adds the middleware's slashing contract to the operator's linked list_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at the current block is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at the current block is slashable |
 
 ### recordStakeUpdate
 
 ```solidity
-function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntil, uint256 insertAfter) external
+function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external
 ```
 
 this function is a called by middlewares during a stake update for an operator (perhaps to free pending withdrawals)
@@ -95,13 +95,13 @@ _insertAfter should be calculated offchain before making the transaction that ca
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
 | updateBlock | uint32 | the block for which the stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at updateBlock is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at updateBlock is slashable |
 | insertAfter | uint256 | the element of the operators linked list that the currently updating middleware should be inserted after |
 
 ### recordLastStakeUpdateAndRevokeSlashingAbility
 
 ```solidity
-function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external
+function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external
 ```
 
 this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 
@@ -115,7 +115,7 @@ slash `operator` once `serveUntil` is reached_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | operator | address | the operator whose stake update is being recorded |
-| serveUntil | uint32 | the timestamp until which the operator's stake at the current block is slashable |
+| serveUntilBlock | uint32 | the block until which the operator's stake at the current block is slashable |
 
 ### isFrozen
 
@@ -141,13 +141,13 @@ function canSlash(address toBeSlashed, address slashingContract) external view r
 
 Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
 
-### contractCanSlashOperatorUntil
+### contractCanSlashOperatorUntilBlock
 
 ```solidity
-function contractCanSlashOperatorUntil(address operator, address serviceContract) external view returns (uint32)
+function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32)
 ```
 
-Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
+Returns the block until which `serviceContract` is allowed to slash the `operator`.
 
 ### latestUpdateBlock
 
@@ -217,10 +217,10 @@ function getMiddlewareTimesIndexBlock(address operator, uint32 index) external v
 
 Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
 
-### getMiddlewareTimesIndexServeUntil
+### getMiddlewareTimesIndexServeUntilBlock
 
 ```solidity
-function getMiddlewareTimesIndexServeUntil(address operator, uint32 index) external view returns (uint32)
+function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns (uint32)
 ```
 
 Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.

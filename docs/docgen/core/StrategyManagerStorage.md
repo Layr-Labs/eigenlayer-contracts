@@ -151,7 +151,7 @@ constructor(contract IDelegationManager _delegation, contract IEigenPodManager _
 ### __gap
 
 ```solidity
-uint256[41] __gap
+uint256[40] __gap
 ```
 
 _This empty reserved space is put in place to allow future versions to add new

@@ -99,6 +99,14 @@ _Callable only by the owner of this contract (i.e. governance)_
 | ---- | ---- | ----------- |
 | newBeaconChainOracle | contract IBeaconChainOracle | is the new oracle contract being pointed to |
 
+### ownerToPod
+
+```solidity
+function ownerToPod(address podOwner) external view returns (contract IEigenPod)
+```
+
+Returns the address of the `podOwner`'s EigenPod if it has been deployed.
+
 ### getPod
 
 ```solidity

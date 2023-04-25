@@ -48,7 +48,7 @@ constructor(contract IStrategyManager _strategyManager, contract IERC20 _underly
 ### deposit
 
 ```solidity
-function deposit(contract IERC20 token, uint256 amount) external virtual returns (uint256)
+function deposit(contract IERC20 token, uint256 amount) external returns (uint256)
 ```
 
 Used to deposit tokens into this Strategy
@@ -76,7 +76,7 @@ the amount that was input when the transfer was performed (i.e. the amount trans
 ### withdraw
 
 ```solidity
-function withdraw(address depositor, contract IERC20 token, uint256 amountShares) external virtual
+function withdraw(address depositor, contract IERC20 token, uint256 amountShares) external
 ```
 
 Used to withdraw tokens from this Strategy, to the `depositor`'s address
@@ -95,7 +95,7 @@ other functions, and individual share balances are recorded in the strategyManag
 ### explanation
 
 ```solidity
-function explanation() external pure virtual returns (string)
+function explanation() external pure returns (string)
 ```
 
 Currently returns a brief string explaining the strategy's goal & purpose, but for more complex
@@ -104,7 +104,7 @@ strategies, may be a link to metadata that explains in more detail.
 ### sharesToUnderlyingView
 
 ```solidity
-function sharesToUnderlyingView(uint256 amountShares) public view virtual returns (uint256)
+function sharesToUnderlyingView(uint256 amountShares) public pure returns (uint256)
 ```
 
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
@@ -121,7 +121,7 @@ _Implementation for these functions in particular may vary signifcantly for diff
 ### sharesToUnderlying
 
 ```solidity
-function sharesToUnderlying(uint256 amountShares) public view virtual returns (uint256)
+function sharesToUnderlying(uint256 amountShares) public pure returns (uint256)
 ```
 
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
@@ -138,7 +138,7 @@ _Implementation for these functions in particular may vary signifcantly for diff
 ### underlyingToSharesView
 
 ```solidity
-function underlyingToSharesView(uint256 amountUnderlying) external view virtual returns (uint256)
+function underlyingToSharesView(uint256 amountUnderlying) external pure returns (uint256)
 ```
 
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
@@ -155,7 +155,7 @@ _Implementation for these functions in particular may vary signifcantly for diff
 ### underlyingToShares
 
 ```solidity
-function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256)
+function underlyingToShares(uint256 amountUnderlying) external pure returns (uint256)
 ```
 
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
@@ -172,7 +172,7 @@ _Implementation for these functions in particular may vary signifcantly for diff
 ### userUnderlyingView
 
 ```solidity
-function userUnderlyingView(address user) external view virtual returns (uint256)
+function userUnderlyingView(address user) external view returns (uint256)
 ```
 
 convenience function for fetching the current underlying value of all of the `user`'s shares in
@@ -181,7 +181,7 @@ this strategy. In contrast to `userUnderlying`, this function guarantees no stat
 ### userUnderlying
 
 ```solidity
-function userUnderlying(address user) external virtual returns (uint256)
+function userUnderlying(address user) external view returns (uint256)
 ```
 
 convenience function for fetching the current underlying value of all of the `user`'s shares in
@@ -190,7 +190,7 @@ this strategy. In contrast to `userUnderlyingView`, this function **may** make s
 ### shares
 
 ```solidity
-function shares(address user) public view virtual returns (uint256)
+function shares(address user) public view returns (uint256)
 ```
 
 convenience function for fetching the current total shares of `user` in this strategy, by

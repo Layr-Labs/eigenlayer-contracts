@@ -20,6 +20,12 @@ uint8 PAUSED_NEW_DELEGATION
 bytes4 ERC1271_MAGICVALUE
 ```
 
+### ORIGINAL_CHAIN_ID
+
+```solidity
+uint256 ORIGINAL_CHAIN_ID
+```
+
 ### onlyStrategyManager
 
 ```solidity

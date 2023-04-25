@@ -59,10 +59,10 @@ contract IBeaconChainOracle beaconChainOracle
 
 Oracle contract that provides updates to the beacon chain's state
 
-### _podByOwner
+### ownerToPod
 
 ```solidity
-mapping(address => contract IEigenPod) _podByOwner
+mapping(address => contract IEigenPod) ownerToPod
 ```
 
 Pod owner to deployed EigenPod address

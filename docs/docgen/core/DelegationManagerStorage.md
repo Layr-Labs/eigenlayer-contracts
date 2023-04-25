@@ -58,7 +58,7 @@ The Slasher contract for EigenLayer
 mapping(address => mapping(contract IStrategy => uint256)) operatorShares
 ```
 
-returns the total number of shares in `strategy` that are delegated to `operator`.
+Mapping: operator => strategy => total number of shares in the strategy delegated to the operator
 
 ### delegationTerms
 
@@ -66,7 +66,7 @@ returns the total number of shares in `strategy` that are delegated to `operator
 mapping(address => contract IDelegationTerms) delegationTerms
 ```
 
-returns the DelegationTerms of the `operator`, which may mediate their interactions with stakers who delegate to them.
+Mapping: operator => delegation terms contract
 
 ### delegatedTo
 
@@ -74,13 +74,15 @@ returns the DelegationTerms of the `operator`, which may mediate their interacti
 mapping(address => address) delegatedTo
 ```
 
-returns the address of the operator that `staker` is delegated to.
+Mapping: staker => operator whom the staker has delegated to
 
 ### nonces
 
 ```solidity
 mapping(address => uint256) nonces
 ```
+
+Mapping: delegator => number of signed delegation nonce (used in delegateToBySignature)
 
 ### constructor
 

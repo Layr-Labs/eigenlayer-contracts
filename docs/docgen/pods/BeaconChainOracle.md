@@ -49,7 +49,7 @@ mapping(uint64 => bytes32) beaconStateRootAtBlockNumber
 
 Mapping: Beacon Chain blockNumber => the Beacon Chain state root at the specified blockNumber.
 
-_This will return `bytes32(0)` if the state root is not yet confirmed at the blockNumber._
+_This will return `bytes32(0)` if the state root at the specified blockNumber is not yet confirmed._
 
 ### isOracleSigner
 

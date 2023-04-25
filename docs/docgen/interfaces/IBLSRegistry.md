@@ -46,16 +46,16 @@ function apkUpdateBlockNumbers(uint256 index) external view returns (uint32)
 
 returns the block number at which the `index`th APK update occurred
 
-### whitelister
+### operatorWhitelister
 
 ```solidity
-function whitelister() external view returns (address)
+function operatorWhitelister() external view returns (address)
 ```
 
-### whitelistEnabled
+### operatorWhitelistEnabled
 
 ```solidity
-function whitelistEnabled() external view returns (bool)
+function operatorWhitelistEnabled() external view returns (bool)
 ```
 
 ### whitelisted
@@ -64,10 +64,10 @@ function whitelistEnabled() external view returns (bool)
 function whitelisted(address) external view returns (bool)
 ```
 
-### setWhitelistStatus
+### setOperatorWhitelistStatus
 
 ```solidity
-function setWhitelistStatus(bool _whitelistEnabled) external
+function setOperatorWhitelistStatus(bool _operatorWhitelistEnabled) external
 ```
 
 ### addToOperatorWhitelist
