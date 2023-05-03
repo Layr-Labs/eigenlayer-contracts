@@ -54,6 +54,12 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
 
+    /// @notice The number of pods that have been deployed
+    uint256 public numPods;
+
+    /// @notice The maximum number of pods that can be deployed
+    uint256 public maxPods;
+
     /// @notice Emitted to notify the update of the beaconChainOracle address
     event BeaconOracleUpdated(address indexed newOracleAddress);
 
@@ -82,11 +88,13 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     }
 
     function initialize(
+        uint256 _maxPods,
         IBeaconChainOracle _beaconChainOracle,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
+        maxPods = _maxPods;
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
@@ -98,6 +106,8 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      */
     function createPod() external {
         require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
+        require(numPods + 1 <= maxPods, "EigenPodManager.createPod: Max pods exceeded");
+        numPods++;
         // deploy a pod if the sender doesn't have one already
         _deployPod();
     }
@@ -151,6 +161,15 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
     {
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(recipient, amount);
+    }
+
+    /**
+     * Sets the maximum number of pods that can be deployed
+     * @param newMaxPods The new maximum number of pods that can be deployed
+     * @dev Callable by the unpauser of this contract
+     */
+    function setMaxPods(uint256 newMaxPods) external onlyUnpauser {
+        maxPods = newMaxPods;
     }
 
     /**
@@ -223,5 +242,5 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 }

@@ -21,13 +21,14 @@ contract StrategyWrapperTVLLimits is StrategyBase {
     /**
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold
      * @param newMaxDeposits The new maximum deposits
+     * @dev Callable by the unpauser of this contract
      */
     function setMaxDeposits(uint256 newMaxDeposits) external onlyPauser {
         maxDeposits = newMaxDeposits;
     }
 
     /**
-     * Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
+     * @notice Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */

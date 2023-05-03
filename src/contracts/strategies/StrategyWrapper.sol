@@ -85,14 +85,14 @@ contract StrategyWrapper is IStrategy {
     }
 
     /**
-     * Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
+     * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
 
     /**
-     * Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
+     * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
      * @param depositor The address of the depositor
      * @param token The token being withdrawn
      * @param amountShares The amount of shares being withdrawn

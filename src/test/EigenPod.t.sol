@@ -168,6 +168,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                type(uint256).max, // maxPods
                 beaconChainOracle,
                 initialOwner,
                 pauserReg,

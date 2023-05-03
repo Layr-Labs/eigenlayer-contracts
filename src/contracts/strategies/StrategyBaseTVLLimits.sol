@@ -13,21 +13,21 @@ contract StrategyBaseTVLLimits is StrategyBase {
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry, uint256 _maxDeposits) public virtual initializer {
-        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    function initialize(uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
         maxDeposits = _maxDeposits;
-    }
+        _initializeStrategyBase(_underlyingToken, _pauserRegistry);    }
 
     /**
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold
      * @param newMaxDeposits The new maximum deposits
+     * @dev Callable by the unpauser of this contract
      */
     function setMaxDeposits(uint256 newMaxDeposits) external onlyPauser {
         maxDeposits = newMaxDeposits;
     }
 
     /**
-     * Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
+     * @notice Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */

@@ -81,6 +81,7 @@ contract Deployer_M1 is Script, Test {
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
@@ -100,6 +101,7 @@ contract Deployer_M1 is Script, Test {
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
+        EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delayedWithdrawalRouter.init_paused_status");
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
@@ -210,6 +212,7 @@ contract Deployer_M1 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
                 communityMultisig,
                 eigenLayerPauserReg,
