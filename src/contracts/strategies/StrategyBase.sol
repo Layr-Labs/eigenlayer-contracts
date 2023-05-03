@@ -83,6 +83,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         onlyStrategyManager
         returns (uint256 newShares)
     {
+        // call hook to allow for any pre-deposit logic
+        _beforeDeposit(token, amount);
+
         require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
 
         /**
@@ -125,6 +128,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyStrategyManager
     {
+        // call hook to allow for any pre-withdrawal logic
+        _beforeWithdrawal(depositor, token, amountShares);
+        
         require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
         // copy `totalShares` value to memory, prior to any decrease
         uint256 priorTotalShares = totalShares;
@@ -154,6 +160,22 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         underlyingToken.safeTransfer(depositor, amountToSend);
     }
+
+
+    /**
+     * Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
+     * @param token The token being deposited
+     * @param amount The amount of `token` being deposited
+     */
+    function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
+
+    /**
+     * Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
+     * @param depositor The address of the depositor
+     * @param token The token being withdrawn
+     * @param amountShares The amount of shares being withdrawn
+     */
+    function _beforeWithdrawal(address depositor, IERC20 token, uint256 amountShares) internal virtual {}
 
     /**
      * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex

@@ -49,6 +49,9 @@ contract StrategyWrapper is IStrategy {
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
     function deposit(IERC20 token, uint256 amount) external override onlyStrategyManager returns (uint256) {
+        // call hook to allow for any pre-deposit logic
+        _beforeDeposit(token, amount);
+
         require(token == underlyingToken, "StrategyWrapper.deposit: Can only deposit underlyingToken");
         totalShares += amount;
         return amount;
@@ -66,6 +69,9 @@ contract StrategyWrapper is IStrategy {
         override
         onlyStrategyManager
     {
+        // call hook to allow for any pre-withdrawal logic
+        _beforeWithdrawal(depositor, token, amountShares);
+
         require(token == underlyingToken, "StrategyWrapper.withdraw: Can only withdraw the strategy token");
         require(
             amountShares <= totalShares,
@@ -77,6 +83,21 @@ contract StrategyWrapper is IStrategy {
         }
         underlyingToken.safeTransfer(depositor, amountShares);
     }
+
+    /**
+     * Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
+     * @param token The token being deposited
+     * @param amount The amount of `token` being deposited
+     */
+    function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
+
+    /**
+     * Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
+     * @param depositor The address of the depositor
+     * @param token The token being withdrawn
+     * @param amountShares The amount of shares being withdrawn
+     */
+    function _beforeWithdrawal(address depositor, IERC20 token, uint256 amountShares) internal virtual {}
 
     /**
      * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex
