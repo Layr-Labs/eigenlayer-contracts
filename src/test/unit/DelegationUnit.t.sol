@@ -38,8 +38,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         delegationContractImplementation = new DelegationManager(strategyManagerMock, slasherMock);
 
+        cheats.startPrank(eigenLayerProxyAdmin.owner());
         eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(delegationContract))), address(delegationContractImplementation));
-
+        cheats.stopPrank();
+        
         delegationContract.initialize(address(this), eigenLayerPauserReg, 0);
 
         strategyImplementation = new StrategyBase(strategyManager);
