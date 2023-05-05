@@ -18,7 +18,9 @@ import "../mocks/Reverter.sol";
 
 import "../mocks/ERC20Mock.sol";
 
-contract SlasherUnitTests is Test {
+import "./Utils.sol";
+
+contract SlasherUnitTests is Test, Utils {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -52,18 +54,8 @@ contract SlasherUnitTests is Test {
 
     address initialOwner = address(this);
 
-
-
-
-
     IERC20 public dummyToken;
     StrategyBase public dummyStrat;
-
-
-
-
-
-
 
     uint256[] public emptyUintArray;
 
@@ -103,9 +95,8 @@ contract SlasherUnitTests is Test {
             )
         );
         dummyToken = new ERC20Mock();
-        dummyStrat = new StrategyBase(strategyManagerMock);
-        dummyStrat.initialize(dummyToken, pauserRegistry);
-
+        dummyStrat = deployNewStrategy(dummyToken, strategyManagerMock, pauserRegistry, dummyAdmin);
+        
         // excude the zero address and the proxyAdmin from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
