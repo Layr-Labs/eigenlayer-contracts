@@ -40,11 +40,14 @@ contract DelegationTests is EigenLayerTestHelper {
     function initializeMiddlewares() public {
         serviceManager = new ServiceManagerMock(slasher);
 
+
         voteWeigher = MiddlewareVoteWeigherMock(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
+
         voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
+
 
         {
             uint96 multiplier = 1e18;
@@ -55,18 +58,21 @@ contract DelegationTests is EigenLayerTestHelper {
             _quorumBips[1] = 4000;
             VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
                 new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
-            ethStratsAndMultipliers[0].strategy = wethStrat;
+            ethStratsAndMultipliers[0].strategy = wethStrat; 
             ethStratsAndMultipliers[0].multiplier = multiplier;
             VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
                 new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
             eigenStratsAndMultipliers[0].strategy = eigenStrat;
             eigenStratsAndMultipliers[0].multiplier = multiplier;
 
+            cheats.startPrank(eigenLayerProxyAdmin.owner());
             eigenLayerProxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(voteWeigher))),
                 address(voteWeigherImplementation),
-                abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers)
+                abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
             );
+            cheats.stopPrank();
+            
         }
     }
 

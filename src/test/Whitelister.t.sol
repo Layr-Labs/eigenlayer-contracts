@@ -111,12 +111,16 @@ contract WhitelisterTests is EigenLayerTestHelper {
                 new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
             eigenStratsAndMultipliers[0].strategy = eigenStrat;
             eigenStratsAndMultipliers[0].multiplier = 1e18;
+        
 
-        eigenLayerProxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(blsRegistry))),
-                address(blsRegistryImplementation),
-                abi.encodeWithSelector(BLSRegistry.initialize.selector, address(whiteLister), true, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers)
-            );
+            cheats.startPrank(eigenLayerProxyAdmin.owner());
+            eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(blsRegistry))),
+            address(blsRegistryImplementation),
+            abi.encodeWithSelector(BLSRegistry.initialize.selector, address(whiteLister), true, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers)
+        );
+            cheats.stopPrank();
+
         
         dummyReg = new MiddlewareRegistryMock(
              dummyServiceManager,
@@ -126,7 +130,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
         fuzzedAddressMapping[address(whiteLister)] = true;
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
