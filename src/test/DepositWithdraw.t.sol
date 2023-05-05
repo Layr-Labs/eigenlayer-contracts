@@ -260,7 +260,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         token.approve(address(strategyManager), type(uint256).max);
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = wethStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
@@ -296,7 +296,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         token.approve(address(strategyManager), type(uint256).max);
 
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = IStrategy(nonexistentStrategy);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
@@ -309,7 +309,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     /// @notice verify that trying to deposit an amount of zero will correctly revert
     function testRevertOnZeroDeposit() public {
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = wethStrat;
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
@@ -317,7 +317,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
         strategyManager.depositIntoStrategy(wethStrat, weth, 0);
-        cheats.stopPrank();
     }
 
 
@@ -560,7 +559,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
     function _whitelistStrategy(StrategyManager _strategyManager, StrategyBase _strategyBase) internal returns(StrategyManager) {
         // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
+        cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = IStrategy(_strategyBase);
         _strategyManager.addStrategiesToDepositWhitelist(_strategy);
