@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "forge-std/Test.sol";
 
 import "../../contracts/core/StrategyManager.sol";
-import "../../contracts/strategies/StrategyWrapper.sol";
+import "../../contracts/strategies/StrategyBase.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../mocks/DelegationMock.sol";
 import "../mocks/SlasherMock.sol";
@@ -33,7 +33,7 @@ contract StrategyManagerUnitTests is Test {
     SlasherMock public slasherMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
-    StrategyWrapper public dummyStrat;
+    StrategyBase public dummyStrat;
 
     IStrategy public beaconChainETHStrategy;
 
@@ -88,7 +88,8 @@ contract StrategyManagerUnitTests is Test {
             )
         );
         dummyToken = new ERC20Mock();
-        dummyStrat = new StrategyWrapper(strategyManager, dummyToken);
+        dummyStrat = new StrategyBase(strategyManager);
+        dummyStrat.initialize(dummyToken, pauserRegistry);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -636,7 +637,8 @@ contract StrategyManagerUnitTests is Test {
             strategyArray[0] = strategyManager.beaconChainETHStrategy();
             shareAmounts[0] = REQUIRED_BALANCE_WEI;
             strategyIndexes[0] = 0;
-            strategyArray[1] = new StrategyWrapper(strategyManager, dummyToken);
+            strategyArray[1] = new StrategyBase(strategyManager);
+            StrategyBase(address(strategyArray[1])).initialize(dummyToken, pauserRegistry);
             shareAmounts[1] = REQUIRED_BALANCE_WEI;
             strategyIndexes[1] = 1;
         }
@@ -1036,7 +1038,7 @@ contract StrategyManagerUnitTests is Test {
     function testCompleteQueuedWithdrawalFailsWhenAttemptingReentrancy() external {
         // replace dummyStrat with Reenterer contract
         reenterer = new Reenterer();
-        dummyStrat = StrategyWrapper(address(reenterer));
+        dummyStrat = StrategyBase(address(reenterer));
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1516,7 +1518,7 @@ contract StrategyManagerUnitTests is Test {
     function testSlashSharesRevertsWhenAttemptingReentrancy() external {
         // replace dummyStrat with Reenterer contract
         reenterer = new Reenterer();
-        dummyStrat = StrategyWrapper(address(reenterer));
+        dummyStrat = StrategyBase(address(reenterer));
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1668,7 +1670,7 @@ contract StrategyManagerUnitTests is Test {
     function testSlashQueuedWithdrawalFailsWhenAttemptingReentrancy() external {
         // replace dummyStrat with Reenterer contract
         reenterer = new Reenterer();
-        dummyStrat = StrategyWrapper(address(reenterer));
+        dummyStrat = StrategyBase(address(reenterer));
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1731,7 +1733,7 @@ contract StrategyManagerUnitTests is Test {
     function test_addSharesRevertsWhenSharesIsZero() external {
         // replace dummyStrat with Reenterer contract
         reenterer = new Reenterer();
-        dummyStrat = StrategyWrapper(address(reenterer));
+        dummyStrat = StrategyBase(address(reenterer));
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1768,7 +1770,8 @@ contract StrategyManagerUnitTests is Test {
             strategyManager.depositIntoStrategy(strategy, token, amount);
             cheats.stopPrank();
 
-            dummyStrat = new StrategyWrapper(strategyManager, dummyToken);
+            dummyStrat = new StrategyBase(strategyManager);
+            dummyStrat.initialize(dummyToken, pauserRegistry);
             strategy = dummyStrat;
 
             // whitelist the strategy for deposit
@@ -1791,7 +1794,8 @@ contract StrategyManagerUnitTests is Test {
     function test_depositIntoStrategyRevertsWhenTokenSafeTransferFromReverts() external {
         // replace 'dummyStrat' with one that uses a reverting token
         dummyToken = IERC20(address(new Reverter()));
-        dummyStrat = new StrategyWrapper(strategyManager, dummyToken);
+        dummyStrat = new StrategyBase(strategyManager);
+        dummyStrat.initialize(dummyToken, pauserRegistry);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1814,7 +1818,8 @@ contract StrategyManagerUnitTests is Test {
     function test_depositIntoStrategyRevertsWhenTokenDoesNotExist() external {
         // replace 'dummyStrat' with one that uses a non-existent token
         dummyToken = IERC20(address(5678));
-        dummyStrat = new StrategyWrapper(strategyManager, dummyToken);
+        dummyStrat = new StrategyBase(strategyManager);
+        dummyStrat.initialize(dummyToken, pauserRegistry);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -1836,7 +1841,7 @@ contract StrategyManagerUnitTests is Test {
 
     function test_depositIntoStrategyRevertsWhenStrategyDepositFunctionReverts() external {
         // replace 'dummyStrat' with one that always reverts
-        dummyStrat = StrategyWrapper(
+        dummyStrat = StrategyBase(
             address(
                 new Reverter()
             )
@@ -1862,7 +1867,7 @@ contract StrategyManagerUnitTests is Test {
 
     function test_depositIntoStrategyRevertsWhenStrategyDoesNotExist() external {
         // replace 'dummyStrat' with one that does not exist
-        dummyStrat = StrategyWrapper(
+        dummyStrat = StrategyBase(
             address(5678)
         );
 
@@ -1886,7 +1891,8 @@ contract StrategyManagerUnitTests is Test {
 
     function test_depositIntoStrategyRevertsWhenStrategyNotWhitelisted() external {
         // replace 'dummyStrat' with one that is not whitelisted
-        dummyStrat = new StrategyWrapper(strategyManager, dummyToken);
+        dummyStrat = new StrategyBase(strategyManager);
+        dummyStrat.initialize(dummyToken, pauserRegistry);
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -2054,7 +2060,8 @@ contract StrategyManagerUnitTests is Test {
         IStrategy[] memory strategyArray = new IStrategy[](numberOfStrategiesToAdd);
         // loop that deploys a new strategy and adds it to the array
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
-            IStrategy _strategy = new StrategyWrapper(strategyManager, dummyToken);
+            IStrategy _strategy = new StrategyBase(strategyManager);
+            StrategyBase(address(_strategy)).initialize(dummyToken, pauserRegistry);
             strategyArray[i] = _strategy;
             require(!strategyManager.strategyIsWhitelistedForDeposit(_strategy), "strategy improperly whitelisted?");
         }
@@ -2075,7 +2082,8 @@ contract StrategyManagerUnitTests is Test {
     {
         cheats.assume(notStrategyWhitelister != strategyManager.strategyWhitelister());
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        IStrategy _strategy = new StrategyWrapper(strategyManager, dummyToken);
+        IStrategy _strategy = new StrategyBase(strategyManager);
+        StrategyBase(address(_strategy)).initialize(dummyToken, pauserRegistry);
         strategyArray[0] = _strategy;
 
         cheats.startPrank(notStrategyWhitelister);

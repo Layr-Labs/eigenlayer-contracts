@@ -8,7 +8,7 @@ import "forge-std/Test.sol";
 
 import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../../contracts/strategies/StrategyWrapper.sol";
+import "../../contracts/strategies/StrategyBase.sol";
 
 import "../mocks/DelegationMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
@@ -57,7 +57,7 @@ contract SlasherUnitTests is Test {
 
 
     IERC20 public dummyToken;
-    StrategyWrapper public dummyStrat;
+    StrategyBase public dummyStrat;
 
 
 
@@ -103,7 +103,8 @@ contract SlasherUnitTests is Test {
             )
         );
         dummyToken = new ERC20Mock();
-        dummyStrat = new StrategyWrapper(strategyManagerMock, dummyToken);
+        dummyStrat = new StrategyBase(strategyManagerMock);
+        dummyStrat.initialize(dummyToken, pauserRegistry);
 
         // excude the zero address and the proxyAdmin from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;

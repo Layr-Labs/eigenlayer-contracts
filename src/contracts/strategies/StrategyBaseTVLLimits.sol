@@ -8,21 +8,28 @@ import "./StrategyBase.sol";
  * @author Layr Labs, Inc.
  */
 contract StrategyBaseTVLLimits is StrategyBase {
+    /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
+    uint256 public maxPerDeposit;
     /// The maximum deposits (in underlyingToken) that this strategy will hold
     uint256 public maxDeposits;
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
-        maxDeposits = _maxDeposits;
+    function initialize(uint256 _maxPerDeposit, uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
+        _setTVLLimits(_maxPerDeposit, _maxDeposits);
         _initializeStrategyBase(_underlyingToken, _pauserRegistry);    }
 
     /**
-     * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold
+     * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
      * @param newMaxDeposits The new maximum deposits
      * @dev Callable by the unpauser of this contract
      */
-    function setMaxDeposits(uint256 newMaxDeposits) external onlyPauser {
+    function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) external onlyPauser {
+        _setTVLLimits(newMaxPerDeposit, newMaxDeposits);
+    }
+
+    function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) internal {
+        maxPerDeposit = newMaxPerDeposit;
         maxDeposits = newMaxDeposits;
     }
 
@@ -32,6 +39,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
+        require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
         require(_tokenBalance() + amount <= maxDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
     }
 

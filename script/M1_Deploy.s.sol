@@ -39,6 +39,7 @@ contract Deployer_M1 is Script, Test {
     // struct used to encode token info in config file
     struct StrategyConfig {
         uint256 maxDeposits;
+        uint256 maxPerDeposit;
         address tokenAddress;
         string tokenSymbol;
     }
@@ -238,7 +239,7 @@ contract Deployer_M1 is Script, Test {
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
                     )
                 ))
             );
