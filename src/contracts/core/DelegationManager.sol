@@ -50,6 +50,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /// @dev Emitted when a low-level call to `delegationTerms.onDelegationWithdrawn` fails, returning `returnData`
     event OnDelegationWithdrawnCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
 
+    /// @dev Emitted when an entity registers itself as an operator in the DelegationManager
+    event RegisterAsOperator(address indexed operator, IDelegationTerms indexed delegationTerms);
+
     function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus)
         external
         initializer
@@ -75,6 +78,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // store the address of the delegation contract that the operator is providing.
         delegationTerms[msg.sender] = dt;
         _delegate(msg.sender, msg.sender);
+        emit RegisterAsOperator(msg.sender, dt);
     }
 
     /**
