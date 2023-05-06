@@ -317,7 +317,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
         strategyManager.depositIntoStrategy(wethStrat, weth, 0);
-        cheats.stopPrank();
     }
 
 
