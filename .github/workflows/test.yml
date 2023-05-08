@@ -30,8 +30,10 @@ jobs:
         run: forge test -vvv
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
       - name: Run snapshot
         run: forge snapshot
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          CHAIN_ID: ${{ secrets.CHAIN_ID }}
