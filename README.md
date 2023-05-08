@@ -51,7 +51,7 @@ Environment config is contained in config.yml.  Before running the following com
 
 `source source-env.sh [CHAIN]`
 
-for example, on goerli: `source source-env.sh goerli`.  Then to run the actual tests:
+for example, on goerli: `source source-env.sh goerli`.  Currently options for `[CHAIN]` are `goerli`, `local`.  Then to run the actual tests:
 
 `forge test --fork-url [RPC_URL]`
 
