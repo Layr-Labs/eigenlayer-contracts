@@ -534,9 +534,6 @@ contract StrategyManagerUnitTests is Test {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
 
-            emit log_named_bytes32("structHash", structHash);
-            emit log_named_bytes32("digestHash", digestHash);
-            emit log_named_bytes32("DOMAIN_SEPARATOR", strategyManager.DOMAIN_SEPARATOR());
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
             signature = abi.encodePacked(r, s, v);

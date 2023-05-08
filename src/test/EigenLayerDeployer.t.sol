@@ -104,10 +104,6 @@ contract EigenLayerDeployer is Operators {
     address teamMultisig;
     address communityMultisig;
 
-    uint256 goerliFork;
-
-
-
 
     uint256 public initialBeaconChainOracleThreshold = 3;
 
@@ -173,8 +169,6 @@ contract EigenLayerDeployer is Operators {
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
-        emit log("hehjr");
-
 
 
         //simple ERC20 (**NOT** WETH-like!), used in a test strategy
@@ -214,7 +208,6 @@ contract EigenLayerDeployer is Operators {
                 )
             )
         );
-        emit log_named_uint("strategy manager byes", address(strategyManager).code.length);
 
         stakers = [acct_0, acct_1];
     }
