@@ -57,6 +57,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
      * @dev Only callable by the `podOwner`'s EigenPod contract.
      */
     function createDelayedWithdrawal(address podOwner, address recipient) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
+        require(recipient != address(0), "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address");
         uint224 withdrawalAmount = uint224(msg.value);
         if (withdrawalAmount != 0) {
             DelayedWithdrawal memory delayedWithdrawal = DelayedWithdrawal({
