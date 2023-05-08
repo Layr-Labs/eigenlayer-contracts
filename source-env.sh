@@ -4,13 +4,13 @@
 if ! command -v yq &> /dev/null
 then
     echo "yq is not installed. Please install it and try again."
-    exit 1
+    return 1
 fi
 
 # Check for arguments
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 [goerli|local]"
-    exit 1
+    return 1
 fi
 
 # Read the YAML file
@@ -28,7 +28,7 @@ case $1 in
         ;;
     *)
         echo "Invalid argument. Usage: $0 [goerli|local]"
-        exit 1
+        return 1
         ;;
 esac
 
