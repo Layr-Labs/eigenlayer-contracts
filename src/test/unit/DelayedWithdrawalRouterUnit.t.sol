@@ -121,6 +121,14 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
     }
 
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external {
+        uint224 delayedWithdrawalAmount = 0;
+        address podAddress = address(eigenPodManagerMock.getPod(podOwner));
+        cheats.startPrank(podAddress);
+        cheats.expectRevert(bytes("DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"));
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
+    }
+
     function testClaimDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, address recipient, bool useOverloadedFunction)
         public filterFuzzedAddressInputs(recipient)
     {
