@@ -112,6 +112,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
     }
 
+    /// @notice tests that a when an operator is delegated to, that delegation is properly accounted for.
     function testDelegationReceived(address _operator, address staker, uint64 ethAmount, uint64 eigenAmount)
         public
         fuzzedAddress(_operator)
@@ -183,6 +184,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
     }
 
+    /// @notice tests that a when an operator is undelegated from, that the staker is properly classified as undelegated.
     function testUndelegation(address operator, address staker, uint96 ethAmount, uint96 eigenAmount)
         public
         fuzzedAddress(operator)
@@ -202,6 +204,7 @@ contract DelegationTests is EigenLayerTestHelper {
         require(delegation.delegatedTo(staker) == address(0), "undelegation unsuccessful");
     }
 
+    /// @notice tests delegation from a staker to operator via ECDSA signature.  
     function testDelegateToBySignature(address operator, uint96 ethAmount, uint96 eigenAmount, uint256 expiry)
         public
         fuzzedAddress(operator)
@@ -229,7 +232,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
     }
 
-    // tries delegating using a signature and an EIP 1271 compliant wallet
+    /// @notice tries delegating using a signature and an EIP 1271 compliant wallet
     function testDelegateToBySignature_WithContractWallet_Successfully(address operator, uint96 ethAmount, uint96 eigenAmount)
         public
         fuzzedAddress(operator)
@@ -259,7 +262,7 @@ contract DelegationTests is EigenLayerTestHelper {
         assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
     }
 
-    // tries delegating using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
+    ///  @notice tries delegating using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
     function testDelegateToBySignature_WithContractWallet_BadSignature(address operator, uint96 ethAmount, uint96 eigenAmount)
         public
         fuzzedAddress(operator)
@@ -289,7 +292,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.delegateToBySignature(staker, operator, type(uint256).max, signature);
     }
 
-    // tries delegating using a wallet that does not comply with EIP 1271
+    /// @notice  tries delegating using a wallet that does not comply with EIP 1271
     function testDelegateToBySignature_WithContractWallet_NonconformingWallet(address operator, uint96 ethAmount, uint96 eigenAmount, uint8 v, bytes32 r, bytes32 s)
         public
         fuzzedAddress(operator)
