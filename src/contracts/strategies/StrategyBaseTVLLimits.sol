@@ -28,6 +28,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
         _setTVLLimits(newMaxPerDeposit, newMaxDeposits);
     }
 
+    function getTVLLimits() external view returns (uint256, uint256) {
+        return (maxPerDeposit, maxDeposits);
+    }
+
     function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) internal {
         maxPerDeposit = newMaxPerDeposit;
         maxDeposits = newMaxDeposits;
