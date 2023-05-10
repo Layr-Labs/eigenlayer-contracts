@@ -28,7 +28,7 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
     address public pauser = address(555);
     address public unpauser = address(999);
 
-    uint256 initialSupply = 1e24;
+    uint256 initialSupply = 1e65;
     address initialOwner = address(this);
 
     uint256 maxDeposits = 100;
@@ -85,6 +85,29 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         cheats.startPrank(address(strategyManager));
         cheats.expectRevert(bytes("StrategyBaseTVLLimits: max per deposit exceeded"));
         strategy.deposit(underlyingToken, amount);
+        cheats.stopPrank();
+    }
+
+    function testDepositMorthanMaxDeposits() public {
+
+        uint256 maxDeposits = 1e12;
+        uint256 maxPerDeposit = 2e11;
+        uint256 numDeposits = maxDeposits / maxPerDeposit;
+
+        underlyingToken.transfer(address(strategyManager), maxDeposits);
+        cheats.startPrank(pauser);
+        strategy.setTVLLimits(maxPerDeposit, maxDeposits);
+        cheats.stopPrank();
+
+        cheats.startPrank(address(strategyManager));
+        for (uint256 i = 0; i < numDeposits-1; i++) {
+            emit log_named_uint("i", i);
+            underlyingToken.transfer(address(strategy), maxPerDeposit);
+            strategy.deposit(underlyingToken, maxPerDeposit);
+        }
+        underlyingToken.transfer(address(strategy), maxPerDeposit);
+        cheats.expectRevert(bytes("StrategyBaseTVLLimits: max deposits exceeded"));
+        strategy.deposit(underlyingToken, maxPerDeposit);
         cheats.stopPrank();
     }
 
