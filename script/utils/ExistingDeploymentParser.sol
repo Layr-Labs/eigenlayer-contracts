@@ -43,7 +43,7 @@ contract ExistingDeploymentParser is Script, Test {
 
     EmptyContract public emptyContract;
 
-    address communityMultisig;
+    address executorMultisig;
     address teamMultisig;
 
     // strategies deployed
@@ -62,7 +62,7 @@ contract ExistingDeploymentParser is Script, Test {
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
 
         // read all of the deployed addresses
-        communityMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.communityMultisig");
+        executorMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.executorMultisig");
         teamMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.teamMultisig");
         
         eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin"));
