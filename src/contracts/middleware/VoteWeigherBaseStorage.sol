@@ -43,33 +43,30 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     /// @notice The ServiceManager contract for this middleware, where tasks are created / initiated.
     IServiceManager public immutable serviceManager;
 
-    /// @notice Number of quorums that are being used by the middleware.
-    uint256 public immutable NUMBER_OF_QUORUMS;
+    /// @notice The number of quorums that the VoteWeigher is considering.
+    uint8 public quorumCount;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
      * corresponding multipliers for that specific quorum
      */
-    mapping(uint256 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
+    mapping(uint8 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
 
     /**
      * @notice This defines the earnings split between different quorums. Mapping is quorumNumber => BIPS which the quorum earns, out of the total earnings.
      * @dev The sum of all entries, i.e. sum(quorumBips[0] through quorumBips[NUMBER_OF_QUORUMS - 1]) should *always* be 10,000!
      */
-    mapping(uint256 => uint256) public quorumBips;
+    mapping(uint8 => uint256) public quorumBips;
 
     constructor(
         IStrategyManager _strategyManager,
-        IServiceManager _serviceManager,
-        uint8 _NUMBER_OF_QUORUMS
+        IServiceManager _serviceManager
     ) {
         // sanity check that the VoteWeigher is being initialized with at least 1 quorum
-        require(_NUMBER_OF_QUORUMS != 0, "VoteWeigherBaseStorage.constructor: _NUMBER_OF_QUORUMS == 0");
         strategyManager = _strategyManager;
         delegation = _strategyManager.delegation();
         slasher = _strategyManager.slasher();
         serviceManager = _serviceManager;
-        NUMBER_OF_QUORUMS = _NUMBER_OF_QUORUMS;
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }

@@ -46,8 +46,7 @@ contract ECDSARegistry is RegistryBase {
     )
         RegistryBase(
             _strategyManager,
-            _serviceManager,
-            1 // set the number of quorums to 1
+            _serviceManager
         )
     {}
 
@@ -56,15 +55,16 @@ contract ECDSARegistry is RegistryBase {
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
-        StrategyAndWeightingMultiplier[] memory _quorumStrategiesConsideredAndMultipliers
+        uint256[] memory _minimumStakeForQuorums,
+        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setOperatorWhitelister(_operatorWhitelister);
         operatorWhitelistEnabled = _operatorWhitelistEnabled;
 
         RegistryBase._initialize(
             _quorumBips,
-            _quorumStrategiesConsideredAndMultipliers,
-            new StrategyAndWeightingMultiplier[](0)
+            _minimumStakeForQuorums,
+            _quorumStrategiesConsideredAndMultipliers
         );
     }
 
@@ -106,7 +106,7 @@ contract ECDSARegistry is RegistryBase {
      * @notice called for registering as an operator
      * @param socket is the socket address of the operator
      */
-    function registerOperator(string calldata socket) external virtual {
+    function registerOperator(uint256 quorumBitmap, string calldata socket) external virtual {
         _registerOperator(msg.sender, socket);
     }
 
@@ -114,18 +114,15 @@ contract ECDSARegistry is RegistryBase {
      * @param operator is the node who is registering to be a operator
      * @param socket is the socket address of the operator
      */
-    function _registerOperator(address operator, string calldata socket)
+    function _registerOperator(address operator, uint256 quorumBitmap, string calldata socket)
         internal
     {
         if(operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
 
-        // validate the registration of `operator` and find their `OperatorStake`
-        OperatorStake memory _operatorStake = _registrationStakeEvaluation(operator, 1);
-
         // add the operator to the list of registrants and do accounting
-        _addRegistrant(operator, bytes32(uint256(uint160(operator))), _operatorStake);
+        _addRegistrant(operator, bytes32(uint256(uint160(operator))), quorumBitmap);
 
         emit Registration(operator, socket);
     }

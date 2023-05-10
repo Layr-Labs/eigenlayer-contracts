@@ -76,8 +76,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     )
         RegistryBase(
             _strategyManager,
-            _serviceManager,
-            _NUMBER_OF_QUORUMS
+            _serviceManager
         )
     {
         //set compendium
@@ -89,8 +88,8 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
-        StrategyAndWeightingMultiplier[] memory _firstQuorumStrategiesConsideredAndMultipliers,
-        StrategyAndWeightingMultiplier[] memory _secondQuorumStrategiesConsideredAndMultipliers
+        uint128[] memory _minimumStakeForQuorums,
+        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setOperatorWhitelister(_operatorWhitelister);
         operatorWhitelistEnabled = _operatorWhitelistEnabled;
@@ -98,8 +97,8 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         _processApkUpdate(BN254.G1Point(0, 0));
         RegistryBase._initialize(
             _quorumBips,
-            _firstQuorumStrategiesConsideredAndMultipliers,
-            _secondQuorumStrategiesConsideredAndMultipliers
+            _minimumStakeForQuorums,
+            _quorumStrategiesConsideredAndMultipliers
         );
     }
 
@@ -150,19 +149,16 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
 
     /**
      * @param operator is the node who is registering to be a operator
-     * @param operatorType specifies whether the operator want to register as staker for one or both quorums
+     * @param quorumBitmap has a bit set for each quorum the operator wants to register for (if the ith least significant bit is set, the operator wants to register for the ith quorum)
      * @param pk is the operator's G1 public key
      * @param socket is the socket address of the operator
      */
-    function _registerOperator(address operator, uint8 operatorType, BN254.G1Point memory pk, string calldata socket)
+    function _registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pk, string calldata socket)
         internal
     {
         if(operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
-
-        // validate the registration of `operator` and find their `OperatorStake`
-        OperatorStake memory _operatorStake = _registrationStakeEvaluation(operator, operatorType);
 
         // getting pubkey hash
         bytes32 pubkeyHash = BN254.hashG1Point(pk);
@@ -182,7 +178,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         bytes32 newApkHash = _processApkUpdate(newApk);
 
         // add the operator to the list of registrants and do accounting
-        _addRegistrant(operator, pubkeyHash, _operatorStake);
+        _addRegistrant(operator, pubkeyHash, quorumBitmap);
 
         emit Registration(operator, pubkeyHash, pk, uint32(_apkUpdates.length - 1), newApkHash, socket);
     }
@@ -230,40 +226,59 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
      * @param operators are the nodes whose deposit information is getting updated
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
      */
-    function updateStakes(address[] calldata operators, uint256[] calldata prevElements) external {
-        // copy total stake to memory
-        OperatorStake memory _totalStake = totalStakeHistory[totalStakeHistory.length - 1];
-
-        // placeholders reused inside of loop
-        OperatorStake memory currentStakes;
-        bytes32 pubkeyHash;
-        uint256 operatorsLength = operators.length;
-        // make sure lengths are consistent
-        require(operatorsLength == prevElements.length, "BLSRegistry.updateStakes: prevElement is not the same length as operators");
-        // iterating over all the tuples that are to be updated
-        for (uint256 i = 0; i < operatorsLength;) {
-            // get operator's pubkeyHash
-            pubkeyHash = registry[operators[i]].pubkeyHash;
-            // fetch operator's existing stakes
-            currentStakes = pubkeyHashToStakeHistory[pubkeyHash][pubkeyHashToStakeHistory[pubkeyHash].length - 1];
-            // decrease _totalStake by operator's existing stakes
-            _totalStake.firstQuorumStake -= currentStakes.firstQuorumStake;
-            _totalStake.secondQuorumStake -= currentStakes.secondQuorumStake;
-
-            // update the stake for the i-th operator
-            currentStakes = _updateOperatorStake(operators[i], pubkeyHash, currentStakes, prevElements[i]);
-
-            // increase _totalStake by operator's updated stakes
-            _totalStake.firstQuorumStake += currentStakes.firstQuorumStake;
-            _totalStake.secondQuorumStake += currentStakes.secondQuorumStake;
-
+    function updateStakes(address[] memory operators, uint256[] memory prevElements) external {
+        // load all operator structs into memory
+        Operator[] memory operatorStructs = new Operator[](operators.length);
+        for (uint i = 0; i < operators.length;) {
+            operatorStructs[i] = registry[operators[i]];
             unchecked {
                 ++i;
             }
         }
 
-        // update storage of total stake
-        _recordTotalStakeUpdate(_totalStake);
+        // for each quorum, loop through operators and see if they are apart of the quorum
+        // if they are, get their new weight and update their individual stake history and the
+        // quorum's total stake history accordingly
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
+            OperatorStake memory totalStake;
+            // for each operator
+            for(uint i = 0; i < operators.length;) {
+                // if the operator is apart of the quorum
+                if (operatorStructs[i].quorumBitmap >> quorumNumber & 1 == 1) {
+                    // if the total stake has not been loaded yet, load it
+                    if (totalStake.updateBlockNumber == 0) {
+                        totalStake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                    }
+                    // get the operator's pubkeyHash
+                    bytes32 pubkeyHash = operatorStructs[i].pubkeyHash;
+                    // get the operator's current stake
+                    OperatorStake memory stakeBeforeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1];
+                    // update the operator's stake based on current state
+                    OperatorStake memory updatedStake = _updateOperatorStake(operators[i], pubkeyHash, operatorStructs[i].quorumBitmap, quorumNumber, stakeBeforeUpdate.updateBlockNumber);
+                    // calculate the new total stake for the quorum
+                    totalStake.stake = totalStake.stake - stakeBeforeUpdate.stake + updatedStake.stake;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+            // if the total stake for this quorum was updated, record it in storage
+            if (totalStake.updateBlockNumber != 0) {
+                // update the total stake history for the quorum
+                _recordTotalStakeUpdate(quorumNumber, totalStake);
+            }
+            unchecked {
+                ++quorumNumber;
+            }
+        }
+
+        // record stake updates in the EigenLayer Slasher
+        for (uint i = 0; i < operators.length;) {
+            serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
+            unchecked {
+                ++i;
+            }
+        }     
     }
 
     //TODO: The subgraph doesnt like uint256[4][] argument here. Figure this out laters
