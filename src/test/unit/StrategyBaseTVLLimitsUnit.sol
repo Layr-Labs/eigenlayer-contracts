@@ -90,8 +90,8 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
 
     function testDepositMorthanMaxDeposits() public {
 
-        uint256 maxDeposits = 1e12;
-        uint256 maxPerDeposit = 2e11;
+        maxDeposits = 1e12;
+        maxPerDeposit = 3e11;
         uint256 numDeposits = maxDeposits / maxPerDeposit;
 
         underlyingToken.transfer(address(strategyManager), maxDeposits);
@@ -101,7 +101,6 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
 
         cheats.startPrank(address(strategyManager));
         for (uint256 i = 0; i < numDeposits-1; i++) {
-            emit log_named_uint("i", i);
             underlyingToken.transfer(address(strategy), maxPerDeposit);
             strategy.deposit(underlyingToken, maxPerDeposit);
         }
