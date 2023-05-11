@@ -46,7 +46,7 @@ library Merkle {
      * Note this is for a Merkle tree using the keccak/sha3 hash function
      */
     function processInclusionProofKeccak(bytes memory proof, bytes32 leaf, uint256 index) internal pure returns (bytes32) {
-        require(proof.length != 0 && proof.length % 32 == 0, "proof length should be a non-zero multiple of 32"");
+        require(proof.length != 0 && proof.length % 32 == 0, "proof length should be a non-zero multiple of 32");
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i+=32) {
             if(index % 2 == 0) {
@@ -98,7 +98,7 @@ library Merkle {
      * Note this is for a Merkle tree using the sha256 hash function
      */
     function processInclusionProofSha256(bytes memory proof, bytes32 leaf, uint256 index) internal view returns (bytes32) {
-        require(proof.length != 0 && proof.length % 32 == 0, "proof length should be a non-zero multiple of 32"");
+        require(proof.length != 0 && proof.length % 32 == 0, "proof length should be a non-zero multiple of 32");
         bytes32[1] memory computedHash = [leaf];
         for (uint256 i = 32; i <= proof.length; i+=32) {
             if(index % 2 == 0) {
