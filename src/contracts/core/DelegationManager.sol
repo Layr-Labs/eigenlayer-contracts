@@ -36,6 +36,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _;
     }
 
+    modifier onlyNotFrozen(address staker) {
+        require(
+            !slasher.isFrozen(staker),
+            "StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
+        );
+        _;
+    }
+
     // INITIALIZING FUNCTIONS
     constructor(IStrategyManager _strategyManager, ISlasher _slasher) 
         DelegationManagerStorage(_strategyManager, _slasher)
@@ -137,7 +145,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Callable only by the StrategyManager
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
      */
-    function undelegate(address staker) external onlyStrategyManager {
+    function undelegate(address staker) external onlyStrategyManager onlyNotFrozen(staker){
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
         delegatedTo[staker] = address(0);
     }
