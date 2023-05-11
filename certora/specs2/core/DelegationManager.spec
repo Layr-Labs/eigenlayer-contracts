@@ -7,13 +7,13 @@ methods {
 	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
-    function _.isFrozen(address) external returns (bool) => DISPATCHER(true);
-	function _.canWithdraw(address,uint32,uint256) external returns (bool) => DISPATCHER(true);
+    function _.isFrozen(address) external => DISPATCHER(true);
+	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
 
 	// external calls to StrategyManager
-    function _.getDeposits(address) external returns (address[],uint256[]) => DISPATCHER(true);
-    function _.slasher() external returns (address) => DISPATCHER(true);
-	function _.deposit(address,uint256) external returns (uint256) => DISPATCHER(true);
+    function _.getDeposits(address) external => DISPATCHER(true);
+    function _.slasher() external => DISPATCHER(true);
+	function _.deposit(address,uint256) external => DISPATCHER(true);
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
@@ -23,22 +23,22 @@ methods {
 	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    function _.pauser() external returns (address) => DISPATCHER(true);
-	function _.unpauser() external returns (address) => DISPATCHER(true);
+    function _.pauser() external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
-    function _.isValidSignature(bytes32, bytes) external returns (bytes4) => DISPATCHER(true);
+    function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
 	
     //// Harnessed Functions
     // Harnessed calls
     function decreaseDelegatedShares(address,address,address,uint256,uint256) external;
     // Harmessed getters
-    function get_operatorShares(address,address) external returns(uint256) envfree;
+    function get_operatorShares(address,address) external returns (uint256) envfree;
 
     //// Summarized Functions
-    function _._delegationReceivedHook(address,address,address[],uint256[]) => NONDET;
-    function _._delegationWithdrawnHook(address,address,address[],uint256[]) => NONDET;
+    function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
+    function _._delegationWithdrawnHook(address,address,address[]memory, uint256[] memory) internal => NONDET;
 
     //envfree functions
     function isDelegated(address staker) external returns (bool) envfree;
