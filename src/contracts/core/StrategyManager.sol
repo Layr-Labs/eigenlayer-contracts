@@ -571,10 +571,10 @@ contract StrategyManager is
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
                 }
-                unchecked {
+            }
+            unchecked {
                     ++i;
                 }
-            }
         }
     }
 
