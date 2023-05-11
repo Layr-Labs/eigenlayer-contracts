@@ -107,14 +107,39 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         return _userWithdrawals[user];
     }
 
+    /// @notice Getter function to get all delayedWithdrawals of the `user`
+    function getUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+        uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
+        uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
+        uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
+        DelayedWithdrawal[] memory userDelayedWithdrawals = new DelayedWithdrawal[](userDelayedWithdrawalsLength);
+        for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
+            userDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+        }
+        return userDelayedWithdrawals;
+    }
+
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function claimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 delayedWithdrawalsLength = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 claimableDelayedWithdrawalsLength = delayedWithdrawalsLength - delayedWithdrawalsCompleted;
+
+        uint256 count = 0;
+        for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                count++;
+            }
+        }
+        
         DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](claimableDelayedWithdrawalsLength);
         for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
-            claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                break;
+            }
+            claimableDelayedWithdrawals[i] = delayedWithdrawal
         }
         return claimableDelayedWithdrawals;
     }
