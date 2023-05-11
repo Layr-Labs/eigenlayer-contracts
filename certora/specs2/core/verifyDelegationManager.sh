@@ -12,7 +12,6 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     --verify DelegationManagerHarness:certora/specs2/core/DelegationManager.spec \
     --optimistic_loop \
     --send_only \
-    --staging \
     --settings -optimisticFallback=true \
     $RULE \
     --loop_iter 3 \
