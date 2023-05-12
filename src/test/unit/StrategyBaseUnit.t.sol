@@ -180,9 +180,10 @@ contract StrategyBaseUnitTests is Test {
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         uint256 totalSharesBefore = strategy.totalShares();
+        cheats.assume(sharesToWithdraw <= totalSharesBefore);
         uint256 strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
-
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
+
 
         cheats.startPrank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
