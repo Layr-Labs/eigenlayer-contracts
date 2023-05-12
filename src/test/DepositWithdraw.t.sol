@@ -679,11 +679,13 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // to account for this we check approximate rather than strict equivalence here
         {
             uint256 actualSharesOut = strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
-            require((actualSharesOut * 1000) / expectedSharesOut > 998, "too few shares");
+            require(actualSharesOut >= expectedSharesOut, "too few shares");
             require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
 
             // additional sanity check for deposit not increasing in value
             require(stethStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
+            // slippage check
+            require((stethStrategy.sharesToUnderlying(actualSharesOut) * 1e6) / amountToDeposit >= (1e6 - 1), "bad slippage on first deposit");
         }
         cheats.stopPrank();
     }
