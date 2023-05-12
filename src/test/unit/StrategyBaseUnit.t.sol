@@ -330,4 +330,20 @@ contract StrategyBaseUnitTests is Test {
         uint256 sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
         require(sharesFromUnderlyingView == expectedValueOut, "sharesFromUnderlyingView != expectedValueOut");
     }
+
+    // verify that small remaining share amounts (nonzero in particular) are allowed
+    function testCanWithdrawDownToSmallShares(uint256 amountToDeposit, uint32 sharesToLeave) public {
+        cheats.assume(amountToDeposit >= 1);
+        testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
+
+        uint256 totalSharesBefore = strategy.totalShares();
+        // filter out underflow
+        cheats.assume(sharesToLeave <= totalSharesBefore);
+
+        uint256 sharesToWithdraw = totalSharesBefore - sharesToLeave;
+
+        cheats.startPrank(address(strategyManager));
+        strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
+        cheats.stopPrank();
+    }
 }
