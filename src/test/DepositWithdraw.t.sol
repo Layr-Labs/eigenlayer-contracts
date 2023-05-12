@@ -415,14 +415,16 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     }
 
     function testDepositTokenWithOneWeiFeeOnTransfer(address sender, uint64 amountToDeposit) public fuzzedAddress(sender) {
-        // MIN_NONZERO_TOTAL_SHARES = 1e9
-        cheats.assume(amountToDeposit >= 1e9);
+        cheats.assume(amountToDeposit != 0);
 
-        uint256 initSupply = 1e50;
-        address initOwner = address(this);
+        IERC20 underlyingToken;
 
-        ERC20_OneWeiFeeOnTransfer oneWeiFeeOnTransferToken = new ERC20_OneWeiFeeOnTransfer(initSupply, initOwner);
-        IERC20 underlyingToken = IERC20(address(oneWeiFeeOnTransferToken));
+        {
+            uint256 initSupply = 1e50;
+            address initOwner = address(this);
+            ERC20_OneWeiFeeOnTransfer oneWeiFeeOnTransferToken = new ERC20_OneWeiFeeOnTransfer(initSupply, initOwner);
+            underlyingToken = IERC20(address(oneWeiFeeOnTransferToken));
+        }
 
         // need to transfer extra here because otherwise the `sender` won't have enough tokens
         underlyingToken.transfer(sender, 1000);
@@ -437,7 +439,49 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 )
             );
 
-        _testDepositToStrategy(sender, amountToDeposit, underlyingToken, oneWeiFeeOnTransferTokenStrategy);
+        // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
+        // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, oneWeiFeeOnTransferTokenStrategy);
+
+        // whitelist the strategy for deposit, in case it wasn't before
+        {
+            cheats.startPrank(strategyManager.strategyWhitelister());
+            IStrategy[] memory _strategy = new IStrategy[](1);
+            _strategy[0] = oneWeiFeeOnTransferTokenStrategy;
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            cheats.stopPrank();
+        }
+    
+        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy);
+        // check the expected output
+        uint256 expectedSharesOut = oneWeiFeeOnTransferTokenStrategy.underlyingToShares(amountToDeposit);
+
+        underlyingToken.transfer(sender, amountToDeposit);
+        cheats.startPrank(sender);
+        underlyingToken.approve(address(strategyManager), type(uint256).max);
+        strategyManager.depositIntoStrategy(oneWeiFeeOnTransferTokenStrategy, underlyingToken, amountToDeposit);
+
+        //check if depositor has never used this strat, that it is added correctly to stakerStrategyList array.
+        if (operatorSharesBefore == 0) {
+            // check that strategy is appropriately added to dynamic array of all of sender's strategies
+            assertTrue(
+                strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1)
+                    == oneWeiFeeOnTransferTokenStrategy,
+                "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
+            );
+        }
+            
+        // check that the shares out match the expected amount out
+        // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
+        // to account for this we check approximate rather than strict equivalence here
+        {
+            uint256 actualSharesOut = strategyManager.stakerStrategyShares(sender, oneWeiFeeOnTransferTokenStrategy) - operatorSharesBefore;
+            require((actualSharesOut * 1000) / expectedSharesOut > 998, "too few shares");
+            require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
+
+            // additional sanity check for deposit not increasing in value
+            require(oneWeiFeeOnTransferTokenStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
+        }
+        cheats.stopPrank();
     }
 
     /// @notice Shadow-forks mainnet and tests depositing stETH tokens into a "StrategyBase" contract.
@@ -561,6 +605,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 )
             );
 
+        // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
+        // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
+
         // whitelist the strategy for deposit, in case it wasn't before
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
@@ -569,9 +616,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
-
-        // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
-        // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
 
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(address(this), stethStrategy);
         // check the expected output
