@@ -7,9 +7,8 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
-import "forge-std/Test.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter, Test {
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -135,7 +134,6 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
                 count++;
             }
         }
-        emit log_named_uint("count", count);
         
         DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](count);
         for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
