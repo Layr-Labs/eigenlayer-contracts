@@ -5,7 +5,6 @@ import "../contracts/interfaces/IEigenPod.sol";
 import "../contracts/interfaces/IBLSPublicKeyCompendium.sol";
 import "../contracts/middleware/BLSPublicKeyCompendium.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
-import "../contracts/libraries/Merkle.sol";
 import "./utils/ProofParsing.sol";
 import "./EigenLayerDeployer.t.sol";
 import "./mocks/MiddlewareRegistryMock.sol";
