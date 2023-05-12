@@ -163,7 +163,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
                 expectedSharesOut,
-                "_testDepositToStrategy: shares should match deposit"
+                "_testDepositToStrategy: actual shares out should match expected shares out"
             );
         }
         cheats.stopPrank();

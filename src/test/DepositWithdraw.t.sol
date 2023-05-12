@@ -443,7 +443,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     /// @notice Shadow-forks mainnet and tests depositing stETH tokens into a "StrategyBase" contract.
     function testForkMainnetDepositSteth() public {
         // hard-coded inputs
-        address sender = address(this);
+        // address sender = address(this);
         uint64 amountToDeposit = 1e12;
 
         // shadow-fork mainnet
@@ -451,8 +451,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.selectFork(forkId);
 
         // cast mainnet stETH address to IERC20 interface
-        IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-        IERC20 underlyingToken = steth;
+        // IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+        IERC20 underlyingToken = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
         // deploy necessary contracts on the shadow-forked network
         // deploy proxy admin for ability to upgrade proxy contracts
@@ -480,8 +480,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+        {
+            address[] memory initialOracleSignersArray = new address[](0);
+            beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+        }
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
@@ -541,9 +543,11 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // cheat a bunch of ETH to this address
         cheats.deal(address(this), 1e20);
         // deposit a huge amount of ETH to get ample stETH
-        (bool success, bytes memory returnData) = address(steth).call{value: 1e20}("");
-        require(success, "depositing stETH failed");
-        returnData;
+        {
+            (bool success, bytes memory returnData) = address(underlyingToken).call{value: 1e20}("");
+            require(success, "depositing stETH failed");
+            returnData;
+        }
 
         // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
         baseStrategyImplementation = new StrategyBase(strategyManager);
@@ -557,8 +561,49 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 )
             );
 
-        _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
+        // whitelist the strategy for deposit, in case it wasn't before
+        {
+            cheats.startPrank(strategyManager.strategyWhitelister());
+            IStrategy[] memory _strategy = new IStrategy[](1);
+            _strategy[0] = stethStrategy;
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            cheats.stopPrank();
+        }
 
+        // REMAINDER OF CODE ADAPTED FROM `_testDepositToStrategy`
+        // _testDepositToStrategy(sender, amountToDeposit, underlyingToken, stethStrategy);
+
+        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(address(this), stethStrategy);
+        // check the expected output
+        uint256 expectedSharesOut = stethStrategy.underlyingToShares(amountToDeposit);
+
+        underlyingToken.transfer(address(this), amountToDeposit);
+        cheats.startPrank(address(this));
+        underlyingToken.approve(address(strategyManager), type(uint256).max);
+        strategyManager.depositIntoStrategy(stethStrategy, underlyingToken, amountToDeposit);
+
+        //check if depositor has never used this strat, that it is added correctly to stakerStrategyList array.
+        if (operatorSharesBefore == 0) {
+            // check that strategy is appropriately added to dynamic array of all of sender's strategies
+            assertTrue(
+                strategyManager.stakerStrategyList(address(this), strategyManager.stakerStrategyListLength(address(this)) - 1)
+                    == stethStrategy,
+                "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
+            );
+        }
+            
+        // check that the shares out match the expected amount out
+        // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
+        // to account for this we check approximate rather than strict equivalence here
+        {
+            uint256 actualSharesOut = strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
+            require((actualSharesOut * 1000) / expectedSharesOut > 998, "too few shares");
+            require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
+
+            // additional sanity check for deposit not increasing in value
+            require(stethStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
+        }
+        cheats.stopPrank();
     }
 
     function _whitelistStrategy(StrategyManager _strategyManager, StrategyBase _strategyBase) internal returns(StrategyManager) {

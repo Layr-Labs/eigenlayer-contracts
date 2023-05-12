@@ -108,7 +108,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // account for virtual shares and balance
         uint256 virtualShareAmount = priorTotalShares + VIRTUAL_SHARES;
         uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
-        // decrease the virtual balance to account for the tokens that were already transferred to this contract
+        // calculate the prior virtual balance to account for the tokens that were already transferred to this contract
         uint256 virtualPriorTokenBalance = virtualTokenBalance - amount;
         newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
