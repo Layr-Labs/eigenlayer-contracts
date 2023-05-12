@@ -219,6 +219,11 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: withdrawalProof has incorrect length");
         require(proofs.executionPayloadProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: executionPayloadProof has incorrect length");
+        require(proofs.slotProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: slotProof has incorrect length");
+        require(proofs.blockNumberProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: blockNumberProof has incorrect length");
+
 
         /**
          * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
