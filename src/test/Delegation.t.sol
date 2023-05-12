@@ -515,8 +515,8 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(staker != operator);
 
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(ethAmount >= 1e9 && ethAmount <= 1e18);
-        cheats.assume(eigenAmount >= 1e9 && eigenAmount <= 1e18);
+        cheats.assume(ethAmount >= 1 && ethAmount <= 1e18);
+        cheats.assume(eigenAmount >= 1 && eigenAmount <= 1e18);
 
         if (!delegation.isOperator(operator)) {
             _testRegisterAsOperator(operator, IDelegationTerms(operator));

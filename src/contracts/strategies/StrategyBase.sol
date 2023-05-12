@@ -13,19 +13,37 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * @notice Simple, basic, "do-nothing" Strategy that holds a single underlying token and returns it on withdrawals.
  * Implements minimal versions of the IStrategy functions, this contract is designed to be inherited by
  * more complex strategies, which can then override its functions as necessary.
+ * @dev Note that some functions have their mutability restricted; developers inheriting from this contract cannot broaden
+ * the mutability without modifying this contract itself.
  * @dev This contract is expressly *not* intended for use with 'fee-on-transfer'-type tokens.
  * Setting the `underlyingToken` to be a fee-on-transfer token may result in improper accounting.
+ * @notice This contract functions similarly to an ERC4626 vault, only without issuing a token.
+ * To mitigate against the common "inflation attack" vector, we have chosen to use the 'virtual shares' mitigation route,
+ * similar to [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC4626.sol).
+ * We acknowledge that this mitigation has the known downside of the virtual shares causing some losses to users, which are pronounced
+ * particularly in the case of the share exchange rate changing signficantly, either positively or negatively.
+ * For a fairly thorough discussion of this issue and our chosen mitigation strategy, we recommend reading through
+ * [this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
+ * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
 contract StrategyBase is Initializable, Pausable, IStrategy {
     using SafeERC20 for IERC20;
 
     uint8 internal constant PAUSED_DEPOSITS = 0;
     uint8 internal constant PAUSED_WITHDRAWALS = 1;
-    /*
-     * as long as at least *some* shares exist, this is the minimum number.
-     * i.e. `totalShares` must exist in the set {0, [MIN_NONZERO_TOTAL_SHARES, type(uint256).max]}
-    */
-    uint96 internal constant MIN_NONZERO_TOTAL_SHARES = 1e9;
+
+    /**
+     * @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant SHARES_OFFSET = 1e3;
+    /** 
+     * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant BALANCE_OFFSET = 1e3;
 
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
@@ -33,7 +51,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     /// @notice The underyling token for shares in this Strategy
     IERC20 public underlyingToken;
 
-    /// @notice The total number of extant shares in thie Strategy
+    /// @notice The total number of extant shares in this Strategy
     uint256 public totalShares;
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
@@ -68,11 +86,6 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
      * to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
-     * 
-     * WARNING: In order to mitigate against inflation/donation attacks in the context of ERC_4626, this contract requires the 
-     *          minimum amount of shares be either 0 or 1e9. A consequence of this is that in the worst case a user will not 
-     *          be able to withdraw for 1e9-1 or less shares. 
-     * 
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
     function deposit(IERC20 token, uint256 amount)
@@ -85,29 +98,25 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     {
         require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
 
+        // copy `totalShares` value to memory, prior to any change
+        uint256 priorTotalShares = totalShares;
+
         /**
          * @notice calculation of newShares *mirrors* `underlyingToShares(amount)`, but is different since the balance of `underlyingToken`
          * has already been increased due to the `strategyManager` transferring tokens to this strategy prior to calling this function
          */
-        if (totalShares == 0) {
-            newShares = amount;
-        } else {
-            uint256 priorTokenBalance = _tokenBalance() - amount;
-            if (priorTokenBalance == 0) {
-                newShares = amount;
-            } else {
-                newShares = (amount * totalShares) / priorTokenBalance;
-            }
-        }
+        // account for virtual shares and balance
+        uint256 virtualShareAmount = priorTotalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // calculate the prior virtual balance to account for the tokens that were already transferred to this contract
+        uint256 virtualPriorTokenBalance = virtualTokenBalance - amount;
+        newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
-        // checks to ensure correctness / avoid edge case where share rate can be massively inflated as a 'griefing' sort of attack
+        // extra check for correctness / against edge case where share rate can be massively inflated as a 'griefing' sort of attack
         require(newShares != 0, "StrategyBase.deposit: newShares cannot be zero");
-        uint256 updatedTotalShares = totalShares + newShares;
-        require(updatedTotalShares >= MIN_NONZERO_TOTAL_SHARES,
-            "StrategyBase.deposit: updated totalShares amount would be nonzero but below MIN_NONZERO_TOTAL_SHARES");
 
-        // update total share amount
-        totalShares = updatedTotalShares;
+        // update total share amount to account for deposit
+        totalShares = (priorTotalShares + newShares);
         return newShares;
     }
 
@@ -126,31 +135,27 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         onlyStrategyManager
     {
         require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
-        // copy `totalShares` value to memory, prior to any decrease
+
+        // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
+
         require(
             amountShares <= priorTotalShares,
             "StrategyBase.withdraw: amountShares must be less than or equal to totalShares"
         );
 
-        // Calculate the value that `totalShares` will decrease to as a result of the withdrawal
-        uint256 updatedTotalShares = priorTotalShares - amountShares;
-        // check to avoid edge case where share rate can be massively inflated as a 'griefing' sort of attack
-        require(updatedTotalShares >= MIN_NONZERO_TOTAL_SHARES || updatedTotalShares == 0,
-            "StrategyBase.withdraw: updated totalShares amount would be nonzero but below MIN_NONZERO_TOTAL_SHARES");
-        // Actually decrease the `totalShares` value
-        totalShares = updatedTotalShares;
-
         /**
          * @notice calculation of amountToSend *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already
          * been decremented. Specifically, notice how we use `priorTotalShares` here instead of `totalShares`.
          */
-        uint256 amountToSend;
-        if (priorTotalShares == amountShares) {
-            amountToSend = _tokenBalance();
-        } else {
-            amountToSend = (_tokenBalance() * amountShares) / priorTotalShares;
-        }
+        // account for virtual shares and balance
+        uint256 virtualPriorTotalShares = priorTotalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
+        uint256 amountToSend = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
+
+        // Decrease the `totalShares` value to reflect the withdrawal
+        totalShares = priorTotalShares - amountShares;
 
         underlyingToken.safeTransfer(depositor, amountToSend);
     }
@@ -170,11 +175,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
     function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
-        if (totalShares == 0) {
-            return amountShares;
-        } else {
-            return (_tokenBalance() * amountShares) / totalShares;
-        }
+        // account for virtual shares and balance
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
+        return (virtualTokenBalance * amountShares) / virtualTotalShares;
     }
 
     /**
@@ -194,12 +199,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @dev Implementation for these functions in particular may vary signifcantly for different strategies
      */
     function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
-        uint256 tokenBalance = _tokenBalance();
-        if (tokenBalance == 0 || totalShares == 0) {
-            return amountUnderlying;
-        } else {
-            return (amountUnderlying * totalShares) / tokenBalance;
-        }
+        // account for virtual shares and balance
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
+        return (amountUnderlying * virtualTotalShares) / virtualTokenBalance;
     }
 
     /**
