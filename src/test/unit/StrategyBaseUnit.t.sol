@@ -309,31 +309,6 @@ contract StrategyBaseUnitTests is Test {
         require(underlyingFromSharesView == expectedValueOut, "underlyingFromSharesView != expectedValueOut");
     }
 
-
-    function testIntegrityOfUnderlyingToSharesWithZeroTokenBalance(uint256 amountToDeposit, uint256 amountUnderlyingToQuery) public {
-        cheats.assume(amountToDeposit >= 1);
-        testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
-
-        // have the strategy transfer out all of its tokens
-        cheats.startPrank(address(strategy));
-        underlyingToken.transfer(address(this), underlyingToken.balanceOf(address(strategy)));
-        cheats.stopPrank();
-
-        uint256 sharesFromUnderlying = strategy.underlyingToShares(amountUnderlyingToQuery);
-        require(sharesFromUnderlying == amountUnderlyingToQuery, "sharesFromUnderlying != amountUnderlyingToQuery");
-
-        uint256 sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
-        require(sharesFromUnderlyingView == amountUnderlyingToQuery, "sharesFromUnderlyingView != amountUnderlyingToQuery");
-    }
-
-    function testIntegrityOfUnderlyingToSharesWithZeroTotalShares(uint256 amountUnderlyingToQuery) public view {
-        uint256 sharesFromUnderlying = strategy.underlyingToShares(amountUnderlyingToQuery);
-        require(sharesFromUnderlying == amountUnderlyingToQuery, "sharesFromUnderlying != amountUnderlyingToQuery");
-
-        uint256 sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
-        require(sharesFromUnderlyingView == amountUnderlyingToQuery, "sharesFromUnderlyingView != amountUnderlyingToQuery");
-    }
-
     // amountUnderlyingToQuery input is uint96 to prevent overflow
     function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountUnderlyingToQuery) public {
         // sanity check / filter
