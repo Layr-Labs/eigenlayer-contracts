@@ -51,7 +51,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     /// @notice The underyling token for shares in this Strategy
     IERC20 public underlyingToken;
 
-    /// @notice The total number of extant shares in thie Strategy
+    /// @notice The total number of extant shares in this Strategy
     uint256 public totalShares;
 
     /// @notice Simply checks that the `msg.sender` is the `strategyManager`, which is an address stored immutably at construction.
