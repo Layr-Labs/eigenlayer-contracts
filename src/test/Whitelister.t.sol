@@ -206,6 +206,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
         // packed data structure to deal with stack-too-deep issues
         DataForTestWithdrawal memory dataForTestWithdrawal;
+        uint256 expectedTokensOut;
 
         // scoped block to deal with stack-too-deep issues
         {
@@ -223,6 +224,9 @@ contract WhitelisterTests is EigenLayerTestHelper {
                 }
             );
             dataForTestWithdrawal.withdrawerAndNonce = withdrawerAndNonce;
+            // find the expected amount out
+            expectedTokensOut = delegatorStrategies[0].sharesToUnderlying(delegatorShares[0]);
+            emit log_named_uint("expectedTokensOut", expectedTokensOut);
         }
 
         uint256[] memory strategyIndexes = new uint256[](1);
@@ -253,10 +257,10 @@ contract WhitelisterTests is EigenLayerTestHelper {
                 uint32(block.number),
                 1
             );
-            emit log_named_uint("Balance Before Withdrawal", dummyToken.balanceOf(staker));
-            emit log_named_uint("Balance After Withdrawal", balanceBeforeWithdrawal);
+            emit log_named_uint("Balance Before Withdrawal", balanceBeforeWithdrawal);
+            emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
-            require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + AMOUNT, "balance not incremented");
+            require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
 
         }        
     }
