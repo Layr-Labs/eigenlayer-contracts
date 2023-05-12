@@ -128,8 +128,6 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 count = 0;
         for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            //emit log_named_uint("block.number", block.number);
-            //emit log_named_uint("delayedWithdrawal.blockCreated + withdrawalDelayBlocks", delayedWithdrawal.blockCreated + withdrawalDelayBlocks);
             if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 count++;
             }

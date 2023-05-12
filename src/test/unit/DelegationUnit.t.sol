@@ -76,18 +76,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationContract.undelegate(address(this));
     }
 
-    function testUndelegateWithFrozenOperator(address undelegator) public fuzzedAddress(undelegator) {
-        cheats.startPrank(undelegator);
-        delegationContract.registerAsOperator(IDelegationTerms(address(this)));
-        cheats.stopPrank();
-
-        slasherMock.setOperatorFrozenStatus(address(this), true);
-        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        cheats.startPrank(address(strategyManagerMock));
-        delegationContract.undelegate(address(this));
-        cheats.stopPrank();
-    }
-
     function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator){
         cheats.startPrank(operator);
         delegationContract.registerAsOperator(IDelegationTerms(address(this)));

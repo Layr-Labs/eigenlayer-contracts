@@ -1181,6 +1181,14 @@ contract StrategyManagerUnitTests is Test {
         require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
+    function testUndelegateWithFrozenStaker(address undelegator) public {
+        slasherMock.setOperatorFrozenStatus(address(this), true);
+        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
+        cheats.startPrank(address(this));
+        strategyManager.undelegate();
+        cheats.stopPrank();
+    }
+
     function testCompleteQueuedWithdrawalFailsWhenNotCallingFromWithdrawerAddress() external {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
