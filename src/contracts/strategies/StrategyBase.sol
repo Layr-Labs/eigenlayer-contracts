@@ -24,7 +24,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * particularly in the case of the share exchange rate changing signficantly, either positively or negatively.
  * For a fairly thorough discussion of this issue and our chosen mitigation strategy, we recommend reading through
  * [this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
- * We specifically use a share offset of `VIRTUAL_SHARES` and a balance offset of `VIRTUAL_BALANCE`.
+ * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
 contract StrategyBase is Initializable, Pausable, IStrategy {
     using SafeERC20 for IERC20;
@@ -37,13 +37,13 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
      */
-    uint256 internal constant VIRTUAL_SHARES = 1e3;
+    uint256 internal constant SHARES_OFFSET = 1e3;
     /** 
      * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
      */
-    uint256 internal constant VIRTUAL_BALANCE = 1e3;
+    uint256 internal constant BALANCE_OFFSET = 1e3;
 
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
@@ -106,8 +106,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
          * has already been increased due to the `strategyManager` transferring tokens to this strategy prior to calling this function
          */
         // account for virtual shares and balance
-        uint256 virtualShareAmount = priorTotalShares + VIRTUAL_SHARES;
-        uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
+        uint256 virtualShareAmount = priorTotalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate the prior virtual balance to account for the tokens that were already transferred to this contract
         uint256 virtualPriorTokenBalance = virtualTokenBalance - amount;
         newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
@@ -149,8 +149,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
          * been decremented. Specifically, notice how we use `priorTotalShares` here instead of `totalShares`.
          */
         // account for virtual shares and balance
-        uint256 virtualPriorTotalShares = priorTotalShares + VIRTUAL_SHARES;
-        uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
+        uint256 virtualPriorTotalShares = priorTotalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
         uint256 amountToSend = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
 
@@ -176,8 +176,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
         // account for virtual shares and balance
-        uint256 virtualTotalShares = totalShares + VIRTUAL_SHARES;
-        uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
         return (virtualTokenBalance * amountShares) / virtualTotalShares;
     }
@@ -200,8 +200,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
         // account for virtual shares and balance
-        uint256 virtualTotalShares = totalShares + VIRTUAL_SHARES;
-        uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
+        uint256 virtualTotalShares = totalShares + SHARES_OFFSET;
+        uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
         return (amountUnderlying * virtualTotalShares) / virtualTokenBalance;
     }
