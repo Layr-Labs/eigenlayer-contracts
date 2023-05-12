@@ -30,8 +30,6 @@ contract StrategyBaseUnitTests is Test {
     uint256 initialSupply = 1e24;
     address initialOwner = address(this);
 
-    uint256 public constant MIN_NONZERO_TOTAL_SHARES = 1e9;
-
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
@@ -71,7 +69,7 @@ contract StrategyBaseUnitTests is Test {
     function testDepositWithZeroPriorBalanceAndZeroPriorShares(uint256 amountToDeposit) public {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
 
         uint256 totalSharesBefore = strategy.totalShares();
 
@@ -87,7 +85,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint256 priorTotalShares, uint256 amountToDeposit) public {
-        cheats.assume(priorTotalShares >= MIN_NONZERO_TOTAL_SHARES && amountToDeposit > 0);
+        cheats.assume(priorTotalShares >= 1 && amountToDeposit > 0);
 
         testDepositWithZeroPriorBalanceAndZeroPriorShares(priorTotalShares);
 
@@ -146,7 +144,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint256 amountToDeposit) public {
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         uint256 sharesToWithdraw = strategy.totalShares();
@@ -165,14 +163,11 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(uint96 amountToDeposit, uint96 sharesToWithdraw) public {
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         uint256 totalSharesBefore = strategy.totalShares();
         uint256 strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
-
-        // due to `MIN_NONZERO_TOTAL_SHARES` restrictions
-        cheats.assume(totalSharesBefore >= sharesToWithdraw + MIN_NONZERO_TOTAL_SHARES || totalSharesBefore == sharesToWithdraw);
 
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
 
@@ -188,24 +183,8 @@ contract StrategyBaseUnitTests is Test {
             "token balance did not increase appropriately");
     }
 
-    function testWithdrawFailsWhenWouldResultInForbiddenTotalShareAmount(uint32 fuzzedInput) public {
-        uint256 amountToDeposit = 1e18;
-        testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
-
-        uint256 totalSharesBefore = strategy.totalShares();
-
-        // filter so withdrawal will make 'totalShares' fall strictly between 0 and MIN_NONZERO_TOTAL_SHARES
-        cheats.assume(fuzzedInput > 0 && fuzzedInput < MIN_NONZERO_TOTAL_SHARES);
-        uint256 sharesToWithdraw = totalSharesBefore - fuzzedInput;
-
-        cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(bytes("StrategyBase.withdraw: updated totalShares amount would be nonzero but below MIN_NONZERO_TOTAL_SHARES"));
-        strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
-        cheats.stopPrank();
-    }
-
     function testWithdrawFailsWhenWithdrawalsPaused(uint256 amountToDeposit) public {
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         // pause withdrawals
@@ -247,7 +226,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint256 amountToDeposit, uint256 sharesToWithdraw) public {
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         uint256 totalSharesBefore = strategy.totalShares();
@@ -298,7 +277,7 @@ contract StrategyBaseUnitTests is Test {
     function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountSharesToQuery) public {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
 
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
@@ -317,7 +296,7 @@ contract StrategyBaseUnitTests is Test {
 
 
     function testIntegrityOfUnderlyingToSharesWithZeroTokenBalance(uint256 amountToDeposit, uint256 amountUnderlyingToQuery) public {
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
         // have the strategy transfer out all of its tokens
@@ -344,7 +323,7 @@ contract StrategyBaseUnitTests is Test {
     function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountUnderlyingToQuery) public {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
-        cheats.assume(amountToDeposit >= MIN_NONZERO_TOTAL_SHARES);
+        cheats.assume(amountToDeposit >= 1);
 
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
