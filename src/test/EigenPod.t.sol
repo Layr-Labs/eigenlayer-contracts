@@ -618,6 +618,53 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    /// @notice Test that the Merkle proof verification fails when the proof length is 0
+    function testVerifyInclusionSha256FailsForEmptyProof(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index
+    ) public{
+        bytes memory emptyProof = new bytes(0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionSha256(emptyProof, root, leaf, index);
+    }
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is not a multple of 32
+    function testVerifyInclusionSha256FailsForNonMultipleOf32ProofLength(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index,
+        bytes memory proof
+    ) public{
+        cheats.assume(proof.length % 32 != 0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionSha256(proof, root, leaf, index);
+    }
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is empty
+    function testVerifyInclusionKeccakFailsForEmptyProof(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index
+    ) public{
+        bytes memory emptyProof = new bytes(0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionKeccak(emptyProof, root, leaf, index);
+    }
+
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is not a multiple of 32
+    function testVerifyInclusionKeccakFailsForNonMultipleOf32ProofLength(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index,
+        bytes memory proof
+    ) public{
+        cheats.assume(proof.length % 32 != 0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionKeccak(proof, root, leaf, index);
+    }
+
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
     // verifies that the storage of DelegationManager contract is updated appropriately
     function _testRegisterAsOperator(address sender, IDelegationTerms dt) internal {
