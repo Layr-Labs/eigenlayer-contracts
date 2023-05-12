@@ -190,7 +190,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     }
 
     /// @notice This function is used to test the getter function 'getClaimableDelayedWithdrawals'
-    function testGetClaimableDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint224 delayedWithdrawalAmount, address recipient)
+    function testDelayedWithdrawalsGetterFunctions(uint8 delayedWithdrawalsToCreate, uint224 delayedWithdrawalAmount, address recipient)
         public filterFuzzedAddressInputs(recipient)
     {
         cheats.assume(delayedWithdrawalAmount != 0);
@@ -217,13 +217,10 @@ contract DelayedWithdrawalRouterUnitTests is Test {
 
         cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks() + 1 - delayedWithdrawalsToCreate);
         for (uint i = 1; i <= delayedWithdrawalsToCreate; ++i) {
-            emit log_named_uint("i", delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length);
             require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == i);
             cheats.roll(block.number + 1);
-            
         }
         require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "Incorrect number of claimable delayed withdrawals");
-
     }
 
 
