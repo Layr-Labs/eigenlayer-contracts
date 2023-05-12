@@ -330,5 +330,4 @@ contract StrategyBaseUnitTests is Test {
         uint256 sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
         require(sharesFromUnderlyingView == expectedValueOut, "sharesFromUnderlyingView != expectedValueOut");
     }
-
 }

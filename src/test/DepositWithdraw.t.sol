@@ -14,7 +14,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      */
     function testWethDeposit(uint256 amountToDeposit) public returns (uint256 amountDeposited) {
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(amountToDeposit >= 1e9);
+        cheats.assume(amountToDeposit >= 1);
         return _testDepositWeth(getOperatorAddress(0), amountToDeposit);
     }
 
@@ -242,7 +242,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // sanity check for inputs; keeps fuzzed tests from failing
         cheats.assume(eigenToDeposit < eigenTotalSupply);
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(eigenToDeposit >= 1e9);
+        cheats.assume(eigenToDeposit >= 1);
         _testDepositEigen(getOperatorAddress(0), eigenToDeposit);
     }
 
@@ -377,9 +377,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         weth.transfer(attacker,2 ether);
         weth.transfer(user,2 ether);
 
-
-        // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-
         //attacker FRONTRUN: deposit 1 wei (receive 1 share)
         StrategyManager _strategyManager = _whitelistStrategy(strategyManager, wethStrat);
 
@@ -413,6 +410,47 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint256 userLossesWeth = 2 ether - userValueWeth;
         require(attackerLossesWeth > userLossesWeth, "griefing attack deals more damage than cost");
     }
+
+    // fuzzed amounts user uint96's to be more realistic with amounts
+    function testFrontrunFirstDepositorFuzzed(uint96 firstDepositAmount, uint96 donationAmount, uint96 secondDepositAmount) public {
+        // want to only use nonzero amounts or else we'll get reverts
+        cheats.assume(firstDepositAmount != 0 && secondDepositAmount != 0);
+
+        // setup addresses
+        address attacker = address(100);
+        address user = address(200);
+
+        // attacker makes first deposit
+        _testDepositToStrategy(attacker, firstDepositAmount, weth, wethStrat);
+
+        // transfer tokens into strategy directly to manipulate the value of shares
+        weth.transfer(address(wethStrat), donationAmount);
+
+        // filter out calls that would revert for minting zero shares
+        cheats.assume(wethStrat.underlyingToShares(secondDepositAmount) != 0);
+
+        // user makes 2nd deposit into strategy - gets diminished shares due to rounding
+        _testDepositToStrategy(user, secondDepositAmount, weth, wethStrat);
+
+        // check for griefing
+        (, uint256[] memory shares) = strategyManager.getDeposits(attacker);
+        uint256 attackerValueWeth = wethStrat.sharesToUnderlyingView(shares[0]);
+        (, shares) = strategyManager.getDeposits(user);
+        uint256 userValueWeth = wethStrat.sharesToUnderlyingView(shares[0]);
+
+        uint256 attackerCost = uint256(firstDepositAmount) + uint256(donationAmount);
+        require(attackerCost >= attackerValueWeth, "attacker gained value?");
+        // uint256 attackerLossesWeth = attackerValueWeth > attackerCost ? 0 : (attackerCost - attackerValueWeth);
+        uint256 attackerLossesWeth = attackerCost - attackerValueWeth;
+        uint256 userLossesWeth = secondDepositAmount - userValueWeth;
+
+        emit log_named_uint("attackerLossesWeth", attackerLossesWeth);
+        emit log_named_uint("userLossesWeth", userLossesWeth);
+
+        // use '+1' here to account for rounding. given the attack will cost ETH in the form of gas, this is fine.
+        require(attackerLossesWeth + 1 >= userLossesWeth, "griefing attack deals more damage than cost");
+    }
+
 
     function testDepositTokenWithOneWeiFeeOnTransfer(address sender, uint64 amountToDeposit) public fuzzedAddress(sender) {
         cheats.assume(amountToDeposit != 0);

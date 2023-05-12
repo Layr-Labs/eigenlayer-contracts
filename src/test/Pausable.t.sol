@@ -9,7 +9,7 @@ contract PausableTests is EigenLayerTestHelper {
     function testPausingWithdrawalsFromStrategyManager(uint256 amountToDeposit, uint256 amountToWithdraw) public {
         cheats.assume(amountToDeposit <= weth.balanceOf(address(this)));
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(amountToDeposit >= 1e9);
+        cheats.assume(amountToDeposit >= 1);
         cheats.assume(amountToWithdraw <= amountToDeposit);
 
         address sender = getOperatorAddress(0);
