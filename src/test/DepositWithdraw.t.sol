@@ -380,13 +380,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
 
-        //attacker FRONTRUN: deposit 1 wei (receive 1 share)
+        //attacker FRONTRUN: deposit 1e3 wei (receive 1 share)
         StrategyManager _strategyManager = _whitelistStrategy(strategyManager, wethStrat);
 
         cheats.startPrank(attacker);
         weth.approve(address(strategyManager), type(uint256).max);
-        cheats.expectRevert("StrategyBase.deposit: updated totalShares amount would be nonzero but below MIN_NONZERO_TOTAL_SHARES");
-        _strategyManager.depositIntoStrategy(wethStrat, weth, 1 wei);
+        _strategyManager.depositIntoStrategy(wethStrat, weth, 1e3 wei);
         cheats.stopPrank();
 
         //attacker FRONTRUN: transfer 1 ether into strategy directly to manipulate the value of shares
@@ -399,15 +398,20 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         _strategyManager.depositIntoStrategy(wethStrat, weth, 2 ether);
         cheats.stopPrank();
 
-        //attacker deposited 1 ether and 1 wei - received 1 share 
-        //user deposited 2 ether - received 1 share
-        //user has lost 0.5 ether
+        //attacker deposited 1 ether and 1e3 wei - received 1 share 
+        //user deposited 2 ether - received X shares
+        //user has lost 0.5 ether?
         (, uint256[] memory shares) = _strategyManager.getDeposits(attacker);
-        require(shares.length == 0, "Attacker deposit should fail due to minimum balances");
+        uint256 attackerValueWeth = wethStrat.sharesToUnderlyingView(shares[0]);
+        require(attackerValueWeth >= (1), "attacker got zero shares");
 
         (, shares) = _strategyManager.getDeposits(user);
-        require(wethStrat.sharesToUnderlyingView(shares[0]) >= (1900000000000000000), "user has lost more than 0.1 eth from frontrunning");
+        uint256 userValueWeth = wethStrat.sharesToUnderlyingView(shares[0]);
+        require(userValueWeth >= (1900000000000000000), "user has lost more than 0.1 eth from frontrunning");
 
+        uint256 attackerLossesWeth = (2 ether + 1e3 wei) - attackerValueWeth;
+        uint256 userLossesWeth = 2 ether - userValueWeth;
+        require(attackerLossesWeth > userLossesWeth, "griefing attack deals more damage than cost");
     }
 
     function testDepositTokenWithOneWeiFeeOnTransfer(address sender, uint64 amountToDeposit) public fuzzedAddress(sender) {

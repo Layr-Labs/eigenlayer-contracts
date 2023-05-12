@@ -32,10 +32,18 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     uint8 internal constant PAUSED_DEPOSITS = 0;
     uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
-    // @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector
-    uint256 internal constant VIRTUAL_SHARES = 1;
-    // @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
-    uint256 internal constant VIRTUAL_BALANCE = 10;
+    /**
+     * @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant VIRTUAL_SHARES = 1e3;
+    /** 
+     * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant VIRTUAL_BALANCE = 1e3;
 
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
