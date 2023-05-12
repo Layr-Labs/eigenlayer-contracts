@@ -139,7 +139,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
             if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 break;
             }
-            claimableDelayedWithdrawals[i] = delayedWithdrawal
+            claimableDelayedWithdrawals[i] = delayedWithdrawal;
         }
         return claimableDelayedWithdrawals;
     }
