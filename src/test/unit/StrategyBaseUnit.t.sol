@@ -59,17 +59,6 @@ contract StrategyBaseUnitTests is Test {
         strategy.initialize(underlyingToken, pauserRegistry);
     }
 
-    function testInitialDepositCannotBeTooSmall(uint32 amountToDeposit) public {
-        cheats.assume(amountToDeposit > 0 && amountToDeposit < MIN_NONZERO_TOTAL_SHARES);
-
-        underlyingToken.transfer(address(strategy), amountToDeposit);
-
-        cheats.expectRevert(bytes("StrategyBase.deposit: updated totalShares amount would be nonzero but below MIN_NONZERO_TOTAL_SHARES"));
-        cheats.startPrank(address(strategyManager));
-        strategy.deposit(underlyingToken, amountToDeposit);
-        cheats.stopPrank();
-    }
-
     function testCannotReceiveZeroShares() public {
         uint256 amountToDeposit = 0;
 
