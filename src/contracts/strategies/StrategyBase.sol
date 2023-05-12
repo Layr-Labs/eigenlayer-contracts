@@ -152,7 +152,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         uint256 virtualPriorTotalShares = priorTotalShares + VIRTUAL_SHARES;
         uint256 virtualTokenBalance = _tokenBalance() + VIRTUAL_BALANCE;
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
-        uint256 amountToSend = virtualTokenBalance / virtualPriorTotalShares;
+        uint256 amountToSend = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
 
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
