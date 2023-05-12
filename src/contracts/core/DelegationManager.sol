@@ -137,7 +137,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Callable only by the StrategyManager
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
      */
-    function undelegate(address staker) external onlyStrategyManager{
+    function undelegate(address staker) external onlyStrategyManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
         delegatedTo[staker] = address(0);
     }
