@@ -30,6 +30,19 @@ contract StrategyBaseUnitTests is Test {
     uint256 initialSupply = 1e24;
     address initialOwner = address(this);
 
+    /**
+     * @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant SHARES_OFFSET = 1e3;
+    /** 
+     * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+     * incurring reasonably small losses to depositors
+     */
+    uint256 internal constant BALANCE_OFFSET = 1e3;
+
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
@@ -265,7 +278,8 @@ contract StrategyBaseUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint256 amountSharesToQuery) public view {
+    // uint240 input to prevent overflow
+    function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 
@@ -284,8 +298,9 @@ contract StrategyBaseUnitTests is Test {
         cheats.assume(amountToTransfer <= underlyingToken.balanceOf(address(this)));
         underlyingToken.transfer(address(strategy), amountToTransfer);
         uint256 strategyBalance = underlyingToken.balanceOf(address(strategy));
+        uint256 virtualBalance = strategyBalance + BALANCE_OFFSET;
 
-        uint256 expectedValueOut = (strategyBalance * amountSharesToQuery) / strategy.totalShares();
+        uint256 expectedValueOut = (virtualBalance * amountSharesToQuery) / (strategy.totalShares() + SHARES_OFFSET);
 
         uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == expectedValueOut, "underlyingFromShares != expectedValueOut");
@@ -331,7 +346,7 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToTransfer);
         uint256 strategyBalance = underlyingToken.balanceOf(address(strategy));
 
-        uint256 expectedValueOut = (strategy.totalShares() * amountUnderlyingToQuery) / strategyBalance;
+        uint256 expectedValueOut = ((strategy.totalShares() + SHARES_OFFSET) * amountUnderlyingToQuery) / (strategyBalance + BALANCE_OFFSET);
 
         uint256 sharesFromUnderlying = strategy.underlyingToShares(amountUnderlyingToQuery);
         require(sharesFromUnderlying == expectedValueOut, "sharesFromUnderlying != expectedValueOut");
