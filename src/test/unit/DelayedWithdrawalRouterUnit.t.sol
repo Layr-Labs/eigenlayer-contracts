@@ -189,6 +189,42 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userBalanceAfter != userBalanceBefore + totalDelayedWithdrawalAmount");
     }
 
+    /// @notice This function is used to test the getter function 'getClaimableDelayedWithdrawals'
+    function testGetClaimableDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint224 delayedWithdrawalAmount, address recipient)
+        public filterFuzzedAddressInputs(recipient)
+    {
+        cheats.assume(delayedWithdrawalAmount != 0);
+        cheats.assume(delayedWithdrawalsToCreate > 5);
+        // filter contracts out of fuzzed recipient input, since most don't implement a payable fallback function
+        cheats.assume(!Address.isContract(recipient));
+        // filter out precompile addresses (they won't accept delayedWithdrawal either)
+        cheats.assume(uint160(recipient) > 256);
+        // filter fuzzed inputs to avoid running out of gas & excessive test run-time
+        cheats.assume(delayedWithdrawalsToCreate <= 32);
+
+        address podOwner = address(88888);
+
+        // create the delayedWithdrawals
+        uint8 delayedWithdrawalsCreated;
+        for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {   
+            testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+            delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
+            delayedWithdrawalsCreated += 1;
+            cheats.roll(block.number + 1); // make sure each delayedWithdrawal has a unique block number
+        }
+
+        cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks() + 1 - delayedWithdrawalsToCreate);
+        for (uint i = 1; i <= delayedWithdrawalsToCreate; ++i) {
+            emit log_named_uint("i", delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length);
+            require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == i);
+            cheats.roll(block.number + 1);
+            
+        }
+        require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "");
+
+    }
+
+
     /**
      * @notice Creates a set of delayedWithdrawals of length (2 * `delayedWithdrawalsToCreate`) where only the first half is claimable, claims using `maxNumberOfDelayedWithdrawalsToClaim` input,
      * and checks that only appropriate delayedWithdrawals were claimed.

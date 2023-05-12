@@ -7,8 +7,9 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
+import "forge-std/Test.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter, Test {
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -120,7 +121,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
     }
 
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+    function getClaimableUserDelayedWithdrawals(address user) external returns (DelayedWithdrawal[] memory) {
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 delayedWithdrawalsLength = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 claimableDelayedWithdrawalsLength = delayedWithdrawalsLength - delayedWithdrawalsCompleted;
@@ -128,18 +129,20 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 count = 0;
         for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+            //emit log_named_uint("block.number", block.number);
+            //emit log_named_uint("delayedWithdrawal.blockCreated + withdrawalDelayBlocks", delayedWithdrawal.blockCreated + withdrawalDelayBlocks);
+            if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 count++;
             }
         }
+        emit log_named_uint("count", count);
         
-        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](claimableDelayedWithdrawalsLength);
+        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](count);
         for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
-                break;
+            if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                claimableDelayedWithdrawals[i] = delayedWithdrawal;
             }
-            claimableDelayedWithdrawals[i] = delayedWithdrawal;
         }
         return claimableDelayedWithdrawals;
     }

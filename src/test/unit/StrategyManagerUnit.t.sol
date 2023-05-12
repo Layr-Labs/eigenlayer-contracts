@@ -2173,6 +2173,14 @@ contract StrategyManagerUnitTests is Test {
         return array;
     }
 
+    function _arrayWithMultipleDummyTokens(uint256 numTokens) internal view returns(IERC20[] memory) {
+        IERC20[] memory array = new IERC20[](numTokens);
+        for (uint256 i = 0; i < numTokens; ++i) {
+            array[i] = dummyToken;
+        }
+        return array;
+    }
+
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
     function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal {
         IStrategy strategy = dummyStrat;
