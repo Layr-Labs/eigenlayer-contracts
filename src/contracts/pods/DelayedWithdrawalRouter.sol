@@ -120,7 +120,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
     }
 
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function getClaimableUserDelayedWithdrawals(address user) external returns (DelayedWithdrawal[] memory) {
+    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 delayedWithdrawalsLength = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 claimableDelayedWithdrawalsLength = delayedWithdrawalsLength - delayedWithdrawalsCompleted;
