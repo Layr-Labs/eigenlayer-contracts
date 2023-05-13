@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IBLSRegistry.sol";
-import "../libraries/BytesLib.sol";
 import "../libraries/MiddlewareUtils.sol";
 import "../libraries/BN254.sol";
 
@@ -41,42 +40,19 @@ abstract contract BLSSignatureChecker {
 
     /**
      * @notice This function is called by disperser when it has aggregated all the signatures of the operators
-     * that are part of the quorum for a particular taskNumber and is asserting them into on-chain. The function
+     * that are part of the quorum for a particular taskNumber and is asserting them into onchain. The function
      * checks that the claim for aggregated signatures are valid.
      *
      * The thesis of this procedure entails:
-     * - computing the aggregated pubkey of all the operators that are not part of the quorum for
-     * this specific taskNumber (represented by aggNonSignerPubkey)
      * - getting the aggregated pubkey of all registered nodes at the time of pre-commit by the
-     * disperser (represented by pk),
-     * - do subtraction of aggNonSignerPubkey from pk over Jacobian coordinate system to get aggregated pubkey
-     * of all operators that are part of quorum.
+     * disperser (represented by apk in the parameters),
+     * - subtracting the pubkeys of all the signers not in the quorum (nonSignerPubkeys) and storing 
+     * the output in apk to get aggregated pubkey of all operators that are part of quorum.
      * - use this aggregated pubkey to verify the aggregated signature under BLS scheme.
-     */
-    /**
-     * @dev This calldata is of the format:
-     * <
-     * bytes32 msgHash, the taskHash for which disperser is calling checkSignatures
-     * uint48 index of the totalStake corresponding to the dataStoreId in the 'totalStakeHistory' array of the BLSRegistry
-     * uint32 blockNumber, the blockNumber at which the task was initated
-     * uint32 taskNumberToConfirm
-     * uint32 numberOfNonSigners,
-     * {uint256[2] pubkeyG1, uint32 stakeIndex}[numberOfNonSigners] the G1 public key and the index to query of `pubkeyHashToStakeHistory` for each nonsigner,
-     * uint32 apkIndex, the index in the `apkUpdates` array at which we want to load the aggregate public key
-     * uint256[2] apkG1 (G1 aggregate public key, including nonSigners),
-     * uint256[4] apkG2 (G2 aggregate public key, not including nonSigners),
-     * uint256[2] sigma, the aggregate signature itself
-     * >
      * 
      * @dev Before signature verification, the function verifies operator stake information.  This includes ensuring that the provided `referenceBlockNumber`
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
      * for the total stake (or the operator) or latest before the referenceBlockNumber.
-     * The next step involves computing the aggregated pub key of all the operators that are not part of the quorum for this specific taskNumber.
-     * We use a loop to iterate through the `nonSignerPK` array, loading each individual public key from calldata. Before the loop, we isolate the first public key
-     * calldataload - this implementation saves us one ecAdd operation, which would be performed in the i=0 iteration otherwise.
-     * Within the loop, each non-signer public key is loaded from the calldata into memory.  The most recent staking-related information is retrieved and is subtracted
-     * from the total stake of validators in the quorum.  Then the aggregate public key and the aggregate non-signer public key is subtracted from it.
-     * Finally  the siganture is verified by computing the elliptic curve pairing.
      */
     function checkSignatures(
         bytes32 msgHash, 
