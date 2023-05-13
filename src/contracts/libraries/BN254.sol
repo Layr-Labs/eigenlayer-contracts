@@ -45,6 +45,10 @@ library BN254 {
         uint256[2] Y;
     }
 
+    function generatorG1() internal pure returns (G1Point memory) {
+        return G1Point(1, 2);
+    }
+
     // generator of group G2
     /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
     uint256 internal constant G2x1 =
@@ -263,7 +267,7 @@ library BN254 {
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
      */
-    function hashToG1(bytes32 _x) internal view returns (uint256, uint256) {
+    function hashToG1(bytes32 _x) internal view returns (G1Point memory) {
         uint256 beta = 0;
         uint256 y = 0;
 
@@ -275,12 +279,12 @@ library BN254 {
 
             // y^2 == beta
             if( beta == mulmod(y, y, FP_MODULUS) ) {
-                return (x, y);
+                return G1Point(x, y);
             }
 
             x = addmod(x, 1, FP_MODULUS);
         }
-        return (0, 0);
+        return G1Point(0, 0);
     }
 
     /**

@@ -20,7 +20,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     // TODO: set these on initialization
     /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as
     /// evaluated by this contract's 'VoteWeigher' logic.
-    uint128[256] public minimumStakeForQuorum;
+    uint96[256] public minimumStakeForQuorum;
 
     /// @notice used for storing Operator info on each operator while registration
     mapping(address => Operator) public registry;
@@ -28,14 +28,17 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     /// @notice used for storing the list of current and past registered operators
     address[] public operatorList;
 
+    /// @notice used for storing the quorums which the operator is participating in
+    mapping(bytes32 => uint256) public pubkeyHashToQuorumBitmap;
+
     /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    OperatorStake[][256] internal totalStakeHistory;
+    OperatorStakeUpdate[][256] internal totalStakeHistory;
 
     /// @notice array of the history of the number of operators, and the taskNumbers at which the number of operators changed
     OperatorIndex[] public totalOperatorsHistory;
 
     /// @notice mapping from operator's pubkeyhash to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStake[])) public pubkeyHashToStakeHistory;
+    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public pubkeyHashToStakeHistory;
 
     /// @notice mapping from operator's pubkeyhash to the history of their index in the array of all operators
     mapping(bytes32 => OperatorIndex[]) public pubkeyHashToIndexHistory;
@@ -77,7 +80,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      */
     function _initialize(
         uint256[] memory _quorumBips,
-        uint128[] memory _minimumStakeForQuorum,
+        uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
         // sanity check lengths
@@ -85,11 +88,11 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // other length sanity check done in VoteWeigherBase._initialize
         VoteWeigherBase._initialize(uint8(_quorumStrategiesConsideredAndMultipliers.length), _quorumBips);
 
-        // push an empty OperatorStake struct to the total stake history to record starting with zero stake
+        // push an empty OperatorStakeUpdate struct to the total stake history to record starting with zero stake
         // TODO: Address this @ gpsanant
-        OperatorStake memory _totalStake;
+        OperatorStakeUpdate memory _totalStakeUpdate;
         for (uint quorumNumber = 0; quorumNumber < 256;) {
-            totalStakeHistory[quorumNumber].push(_totalStake);
+            totalStakeHistory[quorumNumber].push(_totalStakeUpdate);
             unchecked {
                 ++quorumNumber;
             }
@@ -179,19 +182,118 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     }
 
     /**
-     * @notice Returns the stake weight corresponding to `pubkeyHash` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]` array.
+     * @notice Returns the `index`-th entry in the `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]` array.
      * @param quorumNumber The quorum number to get the stake for.
      * @param pubkeyHash Hash of the public key of the operator of interest.
-     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash]`.
+     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeFromPubkeyHashAndIndexForQuorum(uint8 quorumNumber, bytes32 pubkeyHash, uint256 index)
+    function getStakeUpdateForQuorumFromPubkeyHashAndIndex(uint8 quorumNumber, bytes32 pubkeyHash, uint256 index)
         external
         view
-        returns (OperatorStake memory)
+        returns (OperatorStakeUpdate memory)
     {
         return pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][index];
+    }
+
+    /**
+     * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Function will revert in the event that `index` is out-of-bounds.
+     */
+    function getTotalStakeUpdateForQuorumFromIndex(uint256 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {
+        return totalStakeHistory[quorumNumber][index];
+    }
+
+    /**
+     * @notice Returns the stake weight corresponding to `pubkeyHash` for quorum `quorumNumber` at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param pubkeyHash Hash of the public key of the operator of interest.
+     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getStakeForQuorumAtBlockNumberFromPubkeyHashAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 pubkeyHash, uint256 index)
+        external
+        view
+        returns (uint96)
+    {
+        OperatorStakeUpdate memory operatorStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][index];
+        _validateOperatorStakeUpdateAtBlockNumber(operatorStakeUpdate, blockNumber);
+        return operatorStakeUpdate.stake;
+    }
+
+    /**
+     * @notice Returns the total stake weight for quorum `quorumNumber` at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getTotalStakeAtBlockNumberFromIndex(uint256 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96) {
+        OperatorStakeUpdate memory totalStakeUpdate = totalStakeHistory[quorumNumber][index];
+        _validateOperatorStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
+        return totalStakeUpdate.stake;
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operator` for a certain quorum
+     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     */
+    function getMostRecentStakeUpdateByOperator(address operator, uint8 quorumNumber) public view returns (OperatorStakeUpdate memory) {
+        bytes32 pubkeyHash = getOperatorPubkeyHash(operator);
+        uint256 historyLength = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
+        OperatorStakeUpdate memory operatorStakeUpdate;
+        if (historyLength == 0) {
+            return operatorStakeUpdate;
+        } else {
+            operatorStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][historyLength - 1];
+            return operatorStakeUpdate;
+        }
+    }
+
+    function getStakeHistoryLengthForQuorumNumber(bytes32 pubkeyHash, uint8 quorumNumber) external view returns (uint256) {
+        return pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
+    }
+
+    /**
+     * @notice Returns the most recent stake weight for the `operator` for quorum `quorumNumber`
+     * @dev Function returns weight of **0** in the event that the operator has no stake history
+     */
+    function getCurrentOperatorStakeForQuorum(address operator, uint8 quorumNumber) external view returns (uint96) {
+        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperator(operator, quorumNumber);
+        return operatorStakeUpdate.stake;
+    }
+
+    /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
+    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
+        // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
+        return totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake;
+    }
+
+    function getLengthOfPubkeyHashStakeHistoryForQuorum(bytes32 pubkeyHash, uint8 quorumNumber) external view returns (uint256) {
+        return pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
+    }
+
+    function getLengthOfPubkeyHashIndexHistory(bytes32 pubkeyHash) external view returns (uint256) {
+        return pubkeyHashToIndexHistory[pubkeyHash].length;
+    }
+
+    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
+        return totalStakeHistory[quorumNumber].length;
+    }
+
+    function getLengthOfTotalOperatorsHistory() external view returns (uint256) {
+        return totalOperatorsHistory.length;
+    }
+
+    /// @notice Returns task number from when `operator` has been registered.
+    function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
+        return registry[operator].fromTaskNumber;
+    }
+
+    /// @notice Returns the current number of operators of this service.
+    function numOperators() public view returns (uint32) {
+        return uint32(operatorList.length);
     }
 
     /**
@@ -220,17 +322,17 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // fetch the `operator`'s pubkey hash
         bytes32 pubkeyHash = registry[operator].pubkeyHash;
         // pull the stake history entry specified by `stakeHistoryIndex`
-        OperatorStake memory operatorStake = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][stakeHistoryIndex];
+        OperatorStakeUpdate memory operatorStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][stakeHistoryIndex];
         return (
             // check that the update specified by `stakeHistoryIndex` occurred at or prior to `blockNumber`
-            (operatorStake.updateBlockNumber <= blockNumber)
+            (operatorStakeUpdate.updateBlockNumber <= blockNumber)
             &&
             // if there is a next update, then check that the next update occurred strictly after `blockNumber`
-            (operatorStake.nextUpdateBlockNumber == 0 || operatorStake.nextUpdateBlockNumber > blockNumber)
+            (operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber)
             &&
             /// verify that the stake was non-zero at the time (note: here was use the assumption that the operator was 'inactive'
             /// once their stake fell to zero)
-            operatorStake.stake != 0 // this implicitly checks that the quorum bitmap was 1 for the quorum of interest
+            operatorStakeUpdate.stake != 0 // this implicitly checks that the quorum bitmap was 1 for the quorum of interest
         );
     }
 
@@ -257,101 +359,32 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         uint256 stakeHistoryIndex
         ) external view returns (bool)
     {
-        Operator memory operatorStruct = registry[operator];
+        bytes32 pubkeyHash = registry[operator].pubkeyHash;
         
-        require(operatorStruct.quorumBitmap >> quorumNumber & 1 == 1, "RegistryBase._checkOperatorInactiveAtBlockNumber: operator was not part of quorum");
+        require(pubkeyHashToQuorumBitmap[pubkeyHash] >> quorumNumber & 1 == 1, "RegistryBase._checkOperatorInactiveAtBlockNumber: operator was not part of quorum");
         // special case for `pubkeyHashToStakeHistory[pubkeyHash]` having lenght zero -- in which case we know the operator was never registered
-        if (pubkeyHashToStakeHistory[operatorStruct.pubkeyHash][quorumNumber].length == 0) {
+        if (pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length == 0) {
             return true;
         }
         // pull the stake history entry specified by `stakeHistoryIndex`
-        OperatorStake memory operatorStake = pubkeyHashToStakeHistory[operatorStruct.pubkeyHash][quorumNumber][stakeHistoryIndex];
+        OperatorStakeUpdate memory operatorStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][stakeHistoryIndex];
         return (
             // check that the update specified by `stakeHistoryIndex` occurred at or prior to `blockNumber`
-            (operatorStake.updateBlockNumber <= blockNumber)
+            (operatorStakeUpdate.updateBlockNumber <= blockNumber)
             &&
             // if there is a next update, then check that the next update occurred strictly after `blockNumber`
-            (operatorStake.nextUpdateBlockNumber == 0 || operatorStake.nextUpdateBlockNumber > blockNumber)
+            (operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber)
             &&
             /// verify that the stake was zero at the time (note: here was use the assumption that the operator was 'inactive'
             /// once their stake fell to zero)
-            operatorStake.stake == 0
+            operatorStakeUpdate.stake == 0
         );
-    }
-
-    /**
-     * @notice Returns the most recent stake weight for the `operator` for a certain quorum
-     * @dev Function returns an OperatorStake struct with **every entry equal to 0** in the event that the operator has no stake history
-     */
-    function getMostRecentStakeByOperator(address operator, uint8 quorumNumber) public view returns (OperatorStake memory) {
-        bytes32 pubkeyHash = getOperatorPubkeyHash(operator);
-        uint256 historyLength = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
-        OperatorStake memory opStake;
-        if (historyLength == 0) {
-            return opStake;
-        } else {
-            opStake = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][historyLength - 1];
-            return opStake;
-        }
-    }
-
-    function getStakeHistoryLengthForQuorumNumber(bytes32 pubkeyHash, uint8 quorumNumber) external view returns (uint256) {
-        return pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
-    }
-
-    /**
-     * @notice Returns the most recent stake weight for the `operator` for quorum `quorumNumber`
-     * @dev Function returns weight of **0** in the event that the operator has no stake history
-     */
-    function getCurrentOperatorStakeForQuorum(address operator, uint8 quorumNumber) external view returns (uint96) {
-        OperatorStake memory opStake = getMostRecentStakeByOperator(operator, quorumNumber);
-        return opStake.stake;
-    }
-
-    /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
-    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
-        // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
-        return totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake;
-    }
-
-    function getLengthOfPubkeyHashStakeHistoryForQuorum(bytes32 pubkeyHash, uint8 quorumNumber) external view returns (uint256) {
-        return pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length;
-    }
-
-    function getLengthOfPubkeyHashIndexHistory(bytes32 pubkeyHash) external view returns (uint256) {
-        return pubkeyHashToIndexHistory[pubkeyHash].length;
-    }
-
-    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
-        return totalStakeHistory[quorumNumber].length;
-    }
-
-    function getLengthOfTotalOperatorsHistory() external view returns (uint256) {
-        return totalOperatorsHistory.length;
-    }
-
-    /**
-     * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
-     * @dev Function will revert in the event that `index` is out-of-bounds.
-     */
-    function getTotalStakeFromIndexForQuorum(uint256 quorumNumber, uint256 index) external view returns (OperatorStake memory) {
-        return totalStakeHistory[quorumNumber][index];
-    }
-
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return registry[operator].fromTaskNumber;
-    }
-
-    /// @notice Returns the current number of operators of this service.
-    function numOperators() public view returns (uint32) {
-        return uint32(operatorList.length);
     }
 
     // MUTATING FUNCTIONS
 
     /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
-    function setMinimumStakeForQuorum(uint8 quorumNumber, uint128 minimumStake) external onlyServiceManagerOwner {
+    function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external onlyServiceManagerOwner {
         minimumStakeForQuorum[quorumNumber] = minimumStake;
     }
 
@@ -387,7 +420,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      */
     function _removeOperator(address operator, bytes32 pubkeyHash, uint32 index) internal virtual {
         // remove the operator's stake
-        uint32 updateBlockNumber = _removeOperatorStake(operator, pubkeyHash);
+        _removeOperatorStake(pubkeyHash);
 
         // store blockNumber at which operator index changed (stopped being applicable)
         pubkeyHashToIndexHistory[pubkeyHash][pubkeyHashToIndexHistory[pubkeyHash].length - 1].toBlockNumber =
@@ -411,9 +444,9 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     /**
      * @notice Removes the stakes of the operator
      */
-    function _removeOperatorStake(address operator, bytes32 pubkeyHash) internal returns(uint32) {
+    function _removeOperatorStake(bytes32 pubkeyHash) internal {
         // loop through the operator's quorum bitmap and remove the operator's stake for each quorum
-        uint256 quorumBitmap = registry[operator].quorumBitmap;
+        uint256 quorumBitmap = pubkeyHashToQuorumBitmap[pubkeyHash];
         for (uint quorumNumber = 0; quorumNumber < quorumCount;) {
             if (quorumBitmap >> quorumNumber & 1 == 1) {
                 _removeOperatorStakeForQuorum(pubkeyHash, uint8(quorumNumber));
@@ -428,12 +461,12 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     /**
      * @notice Removes the stakes of the operator with pubkeyHash `pubkeyHash` for the quorum with number `quorumNumber`
      */
-    function _removeOperatorStakeForQuorum(bytes32 pubkeyHash, uint8 quorumNumber) internal returns(uint32) {
+    function _removeOperatorStakeForQuorum(bytes32 pubkeyHash, uint8 quorumNumber) internal {
         // gas saving by caching length here
         uint256 pubkeyHashToStakeHistoryLengthMinusOne = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1;
 
         // determine current stakes
-        OperatorStake memory currentStakes =
+        OperatorStakeUpdate memory currentStakeUpdate =
             pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistoryLengthMinusOne];
         //set nextUpdateBlockNumber in current stakes
         pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistoryLengthMinusOne].nextUpdateBlockNumber =
@@ -443,7 +476,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
          * @notice recording the information pertaining to change in stake for this operator in the history. operator stakes are set to 0 here.
          */
         pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(
-            OperatorStake({
+            OperatorStakeUpdate({
                 // recording the current block number where the operator stake got updated
                 updateBlockNumber: uint32(block.number),
                 // mark as 0 since the next update has not yet occurred
@@ -455,20 +488,19 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
 
         // subtract the amounts staked by the operator that is getting deregistered from the total stake
         // copy latest totalStakes to memory
-        OperatorStake memory _totalStake = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1];
-        _totalStake.stake -= currentStakes.stake;
+        OperatorStakeUpdate memory currentTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1];
+        currentTotalStakeUpdate.stake -= currentStakeUpdate.stake;
         // update storage of total stake
-        _recordTotalStakeUpdate(quorumNumber, _totalStake);
+        _recordTotalStakeUpdate(quorumNumber, currentTotalStakeUpdate);
 
         emit StakeUpdate(
             msg.sender,
             // new stakes are zero
-            0,
+            quorumNumber,
             0,
             uint32(block.number),
-            currentStakes.updateBlockNumber
+            currentStakeUpdate.updateBlockNumber
             );
-        return currentStakes.updateBlockNumber;
     }
 
     /**
@@ -524,9 +556,11 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         registry[operator] = Operator({
             pubkeyHash: pubkeyHash,
             status: IQuorumRegistry.Status.ACTIVE,
-            fromTaskNumber: serviceManager.taskNumber(),
-            quorumBitmap: quorumBitmap
+            fromTaskNumber: serviceManager.taskNumber()
         });
+
+        // store the operator's quorum bitmap
+        pubkeyHashToQuorumBitmap[pubkeyHash] = quorumBitmap;
 
         // add the operator to the list of operators
         operatorList.push(operator);
@@ -553,11 +587,9 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     /**
      * @notice Used inside of inheriting contracts to validate the registration of `operator` and find their `OperatorStake`.
      * @dev This function does **not** update the stored state of the operator's stakes -- storage updates are performed elsewhere.
-     * @return The newly calculated `OperatorStake` for `operator`, stored in memory but not yet committed to storage.
      */
     function _registerStake(address operator, bytes32 pubkeyHash, uint256 quorumBitmap)
         internal
-        returns (OperatorStake memory)
     {
         // verify that the `operator` is not already registered
         require(
@@ -565,19 +597,19 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
             "RegistryBase._registrationStakeEvaluation: Operator is already registered"
         );
 
-        OperatorStake memory _operatorStake;
+        OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
-        _operatorStake.updateBlockNumber = uint32(block.number);
-        OperatorStake memory _totalStake;
+        _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
+        OperatorStakeUpdate memory _newTotalStakeUpdate;
         // add the `updateBlockNumber` info
-        _totalStake.updateBlockNumber = uint32(block.number);
+        _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // for each quorum, evaluate stake and add to total stake
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
             // evaluate the stake for the operator
             if(quorumBitmap >> quorumNumber & 1 == 1) {
-                _operatorStake.stake = uint96(weightOfOperator(operator, quorumNumber));
+                _operatorStakeUpdate.stake = uint96(weightOfOperator(operator, quorumNumber));
                 // check if minimum requirement has been met
-                require(_operatorStake.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registrationStakeEvaluation: Operator does not meet minimum stake requirement for quorum");
+                require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registrationStakeEvaluation: Operator does not meet minimum stake requirement for quorum");
                 // check special case that operator is re-registering (and thus already has some history)
                 if (pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length != 0) {
                     // correctly set the 'nextUpdateBlockNumber' field for the re-registering operator's oldest history entry
@@ -585,19 +617,19 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
                         = uint32(block.number);
                 }
                 // push the new stake for the operator to storage
-                pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(_operatorStake);
+                pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(_operatorStakeUpdate);
 
                 // get the total stake for the quorum
-                _totalStake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                _newTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
                 // add operator stakes to total stake (in memory)
-                _totalStake.stake = uint96(_totalStake.stake + _operatorStake.stake);
+                _newTotalStakeUpdate.stake = uint96(_newTotalStakeUpdate.stake + _operatorStakeUpdate.stake);
                 // update storage of total stake
-                _recordTotalStakeUpdate(quorumNumber, _totalStake);
+                _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
 
                 emit StakeUpdate(
                     operator,
                     quorumNumber,
-                    _operatorStake.stake,
+                    _operatorStakeUpdate.stake,
                     uint32(block.number),
                     // no previous update block number -- use 0 instead
                     0 // TODO: Decide whether this needs to be set in re-registration edge case
@@ -615,29 +647,29 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      */
     function _updateOperatorStake(address operator, bytes32 pubkeyHash, uint256 quorumBitmap, uint8 quorumNumber, uint32 prevUpdateBlockNumber)
         internal
-        returns (OperatorStake memory updatedOperatorStake)
+        returns (OperatorStakeUpdate memory operatorStakeUpdate)
     {   
         // if the operator is part of the quorum
         if (quorumBitmap >> quorumNumber & 1 == 1) {
             // determine new stakes
-            updatedOperatorStake.updateBlockNumber = uint32(block.number);
-            updatedOperatorStake.stake = weightOfOperator(operator, quorumNumber);
+            operatorStakeUpdate.updateBlockNumber = uint32(block.number);
+            operatorStakeUpdate.stake = weightOfOperator(operator, quorumNumber);
 
             // check if minimum requirements have been met
-            if (updatedOperatorStake.stake < minimumStakeForQuorum[quorumNumber]) {
-                updatedOperatorStake.stake = uint96(0);
+            if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {
+                operatorStakeUpdate.stake = uint96(0);
             }
 
             // set nextUpdateBlockNumber in prev stakes
             pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1].nextUpdateBlockNumber =
                 uint32(block.number);
             // push new stake to storage
-            pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(updatedOperatorStake);
+            pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(operatorStakeUpdate);
             
             emit StakeUpdate(
                 operator,
                 quorumNumber,
-                updatedOperatorStake.stake,
+                operatorStakeUpdate.stake,
                 uint32(block.number),
                 prevUpdateBlockNumber
             );
@@ -645,10 +677,22 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     }
 
     /// @notice Records that the `totalStake` is now equal to the input param @_totalStake
-    function _recordTotalStakeUpdate(uint8 quorumNumber, OperatorStake memory _totalStake) internal {
+    function _recordTotalStakeUpdate(uint8 quorumNumber, OperatorStakeUpdate memory _totalStake) internal {
         _totalStake.updateBlockNumber = uint32(block.number);
         totalStakeHistory[quorumNumber][totalStakeHistory.length - 1].nextUpdateBlockNumber = uint32(block.number);
         totalStakeHistory[quorumNumber].push(_totalStake);
+    }
+
+    /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`
+    function _validateOperatorStakeUpdateAtBlockNumber(OperatorStakeUpdate memory operatorStakeUpdate, uint32 blockNumber) internal pure {
+        require(
+            operatorStakeUpdate.updateBlockNumber <= blockNumber,
+            "RegistryBase._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
+        );
+        require(
+            operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber,
+            "RegistryBase._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
+        );
     }
 
     /// @notice Verify that the `operator` is an active operator and that they've provided the correct `index`

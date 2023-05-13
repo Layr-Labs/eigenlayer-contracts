@@ -71,7 +71,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager,
-        uint8 _NUMBER_OF_QUORUMS,
         IBLSPublicKeyCompendium _pubkeyCompendium
     )
         RegistryBase(
@@ -88,7 +87,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
-        uint128[] memory _minimumStakeForQuorums,
+        uint96[] memory _minimumStakeForQuorums,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setOperatorWhitelister(_operatorWhitelister);
@@ -236,36 +235,45 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
             }
         }
 
+        // load all operator quorum bitmaps into memory
+        uint256[] memory quorumBitmaps = new uint256[](operators.length);
+        for (uint i = 0; i < operators.length;) {
+            quorumBitmaps[i] = pubkeyHashToQuorumBitmap[operatorStructs[i].pubkeyHash];
+            unchecked {
+                ++i;
+            }
+        }
+
         // for each quorum, loop through operators and see if they are apart of the quorum
         // if they are, get their new weight and update their individual stake history and the
         // quorum's total stake history accordingly
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
-            OperatorStake memory totalStake;
+            OperatorStakeUpdate memory totalStakeUpdate;
             // for each operator
             for(uint i = 0; i < operators.length;) {
                 // if the operator is apart of the quorum
-                if (operatorStructs[i].quorumBitmap >> quorumNumber & 1 == 1) {
+                if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
                     // if the total stake has not been loaded yet, load it
-                    if (totalStake.updateBlockNumber == 0) {
-                        totalStake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                    if (totalStakeUpdate.updateBlockNumber == 0) {
+                        totalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
                     }
                     // get the operator's pubkeyHash
                     bytes32 pubkeyHash = operatorStructs[i].pubkeyHash;
                     // get the operator's current stake
-                    OperatorStake memory stakeBeforeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1];
+                    OperatorStakeUpdate memory prevStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1];
                     // update the operator's stake based on current state
-                    OperatorStake memory updatedStake = _updateOperatorStake(operators[i], pubkeyHash, operatorStructs[i].quorumBitmap, quorumNumber, stakeBeforeUpdate.updateBlockNumber);
+                    OperatorStakeUpdate memory newStakeUpdate = _updateOperatorStake(operators[i], pubkeyHash, quorumBitmaps[i], quorumNumber, prevStakeUpdate.updateBlockNumber);
                     // calculate the new total stake for the quorum
-                    totalStake.stake = totalStake.stake - stakeBeforeUpdate.stake + updatedStake.stake;
+                    totalStakeUpdate.stake = totalStakeUpdate.stake - prevStakeUpdate.stake + newStakeUpdate.stake;
                 }
                 unchecked {
                     ++i;
                 }
             }
             // if the total stake for this quorum was updated, record it in storage
-            if (totalStake.updateBlockNumber != 0) {
+            if (totalStakeUpdate.updateBlockNumber != 0) {
                 // update the total stake history for the quorum
-                _recordTotalStakeUpdate(quorumNumber, totalStake);
+                _recordTotalStakeUpdate(quorumNumber, totalStakeUpdate);
             }
             unchecked {
                 ++quorumNumber;
@@ -369,14 +377,14 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
      * @notice get hash of a historical aggregated public key corresponding to a given index;
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
-    function getCorrectApkHash(uint256 index, uint32 blockNumber) external view returns (bytes32) {
+    function getApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32) {
         // check that the `index`-th APK update occurred at or before `blockNumber`
-        require(blockNumber >= _apkUpdates[index].blockNumber, "BLSRegistry.getCorrectApkHash: index too recent");
+        require(blockNumber >= _apkUpdates[index].blockNumber, "BLSRegistry.getApkAtBlockNumberFromIndex: index too recent");
 
         // if not last update
         if (index != _apkUpdates.length - 1) {
             // check that there was not *another APK update* that occurred at or before `blockNumber`
-            require(blockNumber < _apkUpdates[index + 1].blockNumber, "BLSRegistry.getCorrectApkHash: Not latest valid apk update");
+            require(blockNumber < _apkUpdates[index + 1].blockNumber, "BLSRegistry.getApkAtBlockNumberFromIndex: Not latest valid apk update");
         }
 
         return _apkUpdates[index].apkHash;

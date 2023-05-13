@@ -30,8 +30,6 @@ interface IQuorumRegistry is IRegistry {
         uint32 fromTaskNumber;
         // indicates whether the operator is actively registered for serving the middleware or not
         Status status;
-        // indicates which quorum the operator is in
-        uint256 quorumBitmap;
     }
 
     // struct used to give definitive ordering to operators at each blockNumber
@@ -44,7 +42,7 @@ interface IQuorumRegistry is IRegistry {
     }
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
-    struct OperatorStake {
+    struct OperatorStakeUpdate {
         // the block number at which the stake amounts were updated and stored
         uint32 updateBlockNumber;
         // the block number at which the *next update* occurred.
@@ -54,13 +52,15 @@ interface IQuorumRegistry is IRegistry {
         uint96 stake;
     }
 
+    function pubkeyHashToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256);
+
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
     /**
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @dev Function will revert in the event that `index` is out-of-bounds.
      */
-    function getTotalStakeFromIndexForQuorum(uint256 quorumNumber, uint256 index) external view returns (OperatorStake memory);
+    function getTotalStakeUpdateForQuorumFromIndex(uint256 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
     /// @notice Returns the stored pubkeyHash for the specified `operator`.
     function getOperatorPubkeyHash(address operator) external view returns (bytes32);
@@ -69,17 +69,41 @@ interface IQuorumRegistry is IRegistry {
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);
 
     /**
-     * @notice Returns the stake weight corresponding to `pubkeyHash` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]` array.
+     * @notice Returns the `index`-th entry in the `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]` array.
      * @param quorumNumber The quorum number to get the stake for.
      * @param pubkeyHash Hash of the public key of the operator of interest.
-     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash]`.
+     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeFromPubkeyHashAndIndexForQuorum(uint8 quorumNumber, bytes32 pubkeyHash, uint256 index)
+    function getStakeUpdateForQuorumFromPubkeyHashAndIndex(uint8 quorumNumber, bytes32 pubkeyHash, uint256 index)
         external
         view
-        returns (OperatorStake memory);
+        returns (OperatorStakeUpdate memory);
+
+    /**
+     * @notice Returns the stake weight corresponding to `pubkeyHash` for quorum `quorumNumber`, at the
+     * `index`-th entry in the `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]` array if it was the operator's
+     * stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param pubkeyHash Hash of the public key of the operator of interest.
+     * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash][quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getStakeForQuorumAtBlockNumberFromPubkeyHashAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 pubkeyHash, uint256 index)
+        external
+        view
+        returns (uint96);
+
+    /**
+     * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the 
+     * `totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
+     * @param blockNumber Block number to make sure the stake is from.
+     * @dev Function will revert if `index` is out-of-bounds.
+     */
+    function getTotalStakeAtBlockNumberFromIndex(uint256 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.

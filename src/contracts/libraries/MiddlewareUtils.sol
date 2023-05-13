@@ -9,13 +9,11 @@ pragma solidity =0.8.12;
 library MiddlewareUtils {
     /// @notice Finds the `signatoryRecordHash`, used for fraudproofs.
     function computeSignatoryRecordHash(
-        uint32 globalDataStoreId,
-        bytes32[] memory nonSignerPubkeyHashes,
-        uint256 signedStakeFirstQuorum,
-        uint256 signedStakeSecondQuorum
+        uint32 referenceBlockNumber,
+        bytes32[] memory nonSignerPubkeyHashes
     ) internal pure returns (bytes32) {
         return keccak256(
-            abi.encodePacked(globalDataStoreId, nonSignerPubkeyHashes, signedStakeFirstQuorum, signedStakeSecondQuorum)
+            abi.encodePacked(referenceBlockNumber, nonSignerPubkeyHashes)
         );
     }
 }

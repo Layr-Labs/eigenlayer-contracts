@@ -53,7 +53,6 @@ contract RegistrationTests is EigenLayerTestHelper {
         dlRegImplementation = new BLSRegistry(
                 strategyManagerMock,
                 dlsm,
-                2,
                 pubkeyCompendium
             );
 

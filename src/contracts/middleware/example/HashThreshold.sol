@@ -70,11 +70,11 @@ contract HashThreshold is Ownable, IServiceManager {
             // we fetch all the signers and check their signatures and their stake
             address signer = ECDSA.recover(message, signatures[i:i+65]);
             require(registry.isActiveOperator(signer), "Signer is not an active operator");
-            stakeSigned += registry.firstQuorumStakedByOperator(signer);
+            stakeSigned += registry.getCurrentOperatorStakeForQuorum(signer, 0);
         }
         // We require that 2/3 of the stake signed the message
         // We only take the first quorum stake because this is a single quorum middleware
-        (uint96 totalStake,) = registry.totalStake();
+        uint96 totalStake = registry.getCurrentTotalStakeForQuorum(0);
         require(stakeSigned >= 666667 * uint256(totalStake) / 1000000, "Need more than 2/3 of stake to sign");
 
         uint32 newLatestServeUntilBlock = uint32(block.number + disputePeriodBlocks);

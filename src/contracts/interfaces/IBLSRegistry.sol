@@ -21,7 +21,7 @@ interface IBLSRegistry is IQuorumRegistry {
      * @notice get hash of a historical aggregated public key corresponding to a given index;
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
-    function getCorrectApkHash(uint256 index, uint32 blockNumber) external returns (bytes32);
+    function getApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates
     function apkUpdates(uint256 index) external view returns (ApkUpdate memory);

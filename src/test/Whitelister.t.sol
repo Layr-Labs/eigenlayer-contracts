@@ -96,7 +96,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
 
         dummyServiceManager  = new ServiceManagerMock(slasher);
-        blsRegistryImplementation = new BLSRegistry(strategyManager, dummyServiceManager, 2, dummyCompendium);
+        blsRegistryImplementation = new BLSRegistry(strategyManager, dummyServiceManager, dummyCompendium);
 
         uint256[] memory _quorumBips = new uint256[](2);
         // split 60% ETH quorum, 40% EIGEN quorum

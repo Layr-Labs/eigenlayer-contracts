@@ -55,7 +55,7 @@ contract ECDSARegistry is RegistryBase {
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
         uint256[] memory _quorumBips,
-        uint256[] memory _minimumStakeForQuorums,
+        uint96[] memory _minimumStakeForQuorums,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         _setOperatorWhitelister(_operatorWhitelister);
@@ -104,10 +104,11 @@ contract ECDSARegistry is RegistryBase {
     }
     /**
      * @notice called for registering as an operator
+     * @param quorumBitmap is the bitmap of quorums that the operator is registering for
      * @param socket is the socket address of the operator
      */
     function registerOperator(uint256 quorumBitmap, string calldata socket) external virtual {
-        _registerOperator(msg.sender, socket);
+        _registerOperator(msg.sender, quorumBitmap, socket);
     }
 
     /**
@@ -154,40 +155,68 @@ contract ECDSARegistry is RegistryBase {
      * @param operators are the nodes whose deposit information is getting updated
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
      */
-    function updateStakes(address[] calldata operators, uint256[] calldata prevElements) external {
-        // copy total stake to memory
-        OperatorStake memory _totalStake = totalStakeHistory[totalStakeHistory.length - 1];
-
-        // placeholders reused inside of loop
-        OperatorStake memory currentStakes;
-        bytes32 pubkeyHash;
-        uint256 operatorsLength = operators.length;
-        // make sure lengths are consistent
-        require(operatorsLength == prevElements.length, "BLSRegistry.updateStakes: prevElement is not the same length as operators");
-        // iterating over all the tuples that are to be updated
-        for (uint256 i = 0; i < operatorsLength;) {
-            // get operator's pubkeyHash
-            pubkeyHash = bytes32(uint256(uint160(operators[i])));
-            // fetch operator's existing stakes
-            currentStakes = pubkeyHashToStakeHistory[pubkeyHash][pubkeyHashToStakeHistory[pubkeyHash].length - 1];
-
-            // Note: we only edit the first quorum stake because this is a single quorum registry example
-            // decrease _totalStake by operator's existing stakes
-            _totalStake.firstQuorumStake -= currentStakes.firstQuorumStake;
-
-            // update the stake for the i-th operator
-            currentStakes = _updateOperatorStake(operators[i], pubkeyHash, currentStakes, prevElements[i]);
-
-            // increase _totalStake by operator's updated stakes
-            _totalStake.firstQuorumStake += currentStakes.firstQuorumStake;
-
+    function updateStakes(address[] memory operators, uint256[] memory prevElements) external {
+        // load all operator structs into memory
+        Operator[] memory operatorStructs = new Operator[](operators.length);
+        for (uint i = 0; i < operators.length;) {
+            operatorStructs[i] = registry[operators[i]];
             unchecked {
                 ++i;
             }
         }
 
-        // update storage of total stake
-        _recordTotalStakeUpdate(_totalStake);
+        // load all operator quorum bitmaps into memory
+        uint256[] memory quorumBitmaps = new uint256[](operators.length);
+        for (uint i = 0; i < operators.length;) {
+            quorumBitmaps[i] = pubkeyHashToQuorumBitmap[operatorStructs[i].pubkeyHash];
+            unchecked {
+                ++i;
+            }
+        }
+
+        // for each quorum, loop through operators and see if they are apart of the quorum
+        // if they are, get their new weight and update their individual stake history and the
+        // quorum's total stake history accordingly
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
+            OperatorStakeUpdate memory totalStakeUpdate;
+            // for each operator
+            for(uint i = 0; i < operators.length;) {
+                // if the operator is apart of the quorum
+                if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
+                    // if the total stake has not been loaded yet, load it
+                    if (totalStakeUpdate.updateBlockNumber == 0) {
+                        totalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                    }
+                    // get the operator's pubkeyHash
+                    bytes32 pubkeyHash = operatorStructs[i].pubkeyHash;
+                    // get the operator's current stake
+                    OperatorStakeUpdate memory prevStakeUpdate = pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1];
+                    // update the operator's stake based on current state
+                    OperatorStakeUpdate memory newStakeUpdate = _updateOperatorStake(operators[i], pubkeyHash, quorumBitmaps[i], quorumNumber, prevStakeUpdate.updateBlockNumber);
+                    // calculate the new total stake for the quorum
+                    totalStakeUpdate.stake = totalStakeUpdate.stake - prevStakeUpdate.stake + newStakeUpdate.stake;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+            // if the total stake for this quorum was updated, record it in storage
+            if (totalStakeUpdate.updateBlockNumber != 0) {
+                // update the total stake history for the quorum
+                _recordTotalStakeUpdate(quorumNumber, totalStakeUpdate);
+            }
+            unchecked {
+                ++quorumNumber;
+            }
+        }
+
+        // record stake updates in the EigenLayer Slasher
+        for (uint i = 0; i < operators.length;) {
+            serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
+            unchecked {
+                ++i;
+            }
+        }     
     }
 
     function _setOperatorWhitelister(address _operatorWhitelister) internal {
