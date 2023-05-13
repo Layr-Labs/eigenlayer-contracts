@@ -22,9 +22,9 @@ abstract contract BLSSignatureChecker {
 
     struct QuorumStakeTotals {
         // total stake of the operators in each quorum
-        uint128[] signedStakeForQuorum;
+        uint96[] signedStakeForQuorum;
         // total amount staked by all operators in each quorum
-        uint128[] totalStakeForQuorum;
+        uint96[] totalStakeForQuorum;
     }
     
     // CONSTANTS & IMMUTABLES
@@ -114,6 +114,8 @@ abstract contract BLSSignatureChecker {
         }
 
         QuorumStakeTotals memory quorumStakeTotals;
+        quorumStakeTotals.totalStakeForQuorum = new uint96[](quorumNumbers.length);
+        quorumStakeTotals.signedStakeForQuorum = new uint96[](quorumNumbers.length);
         // loop through each quorum number
         for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {
             // get the quorum number
