@@ -124,7 +124,8 @@ library Merkle {
 
     /**
      @notice this function returns the merkle root of a tree created from a set of leaves using sha256 as its hash function
-     @param leaves the leaves of the merkle tree     
+     @param leaves the leaves of the merkle tree  
+     @notice A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
      */ 
     function merkleizeSha256(
         bytes32[] memory leaves
