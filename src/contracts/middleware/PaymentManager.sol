@@ -11,14 +11,11 @@ import "../interfaces/IPaymentManager.sol";
 import "../permissions/Pausable.sol";
 
 /**
- * @title Controls 'rolled-up' middleware payments.
+ * @title Controls middleware payments.
  * @author Layr Labs, Inc.
- * @notice This contract is used for doing interactive payment challenges.
- * @notice The contract is marked as abstract since it does not implement the `respondToPaymentChallengeFinal`
- * function -- see DataLayerPaymentManager for an example
  */
 //
-abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
+contract PaymentManager is Initializable, IPaymentManager, Pausable {
     using SafeERC20 for IERC20;
 
     uint8 constant internal PAUSED_NEW_PAYMENT_COMMIT = 0;
