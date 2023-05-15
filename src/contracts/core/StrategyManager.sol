@@ -12,6 +12,8 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -28,7 +30,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    Test
 {
     using SafeERC20 for IERC20;
 
@@ -356,6 +359,8 @@ contract StrategyManager is
          * while other share in all other strategies represent purely fungible positions.
          */
         for (uint256 i = 0; i < strategies.length;) {
+            emit log_named_uint("HERE IT IS", i);
+            emit log_named_uint("HERE IT IS", strategies.length);
             if (strategies[i] == beaconChainETHStrategy) {
                 require(withdrawer == msg.sender,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
@@ -364,6 +369,7 @@ contract StrategyManager is
                 require(shares[i] % GWEI_TO_WEI == 0,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
             }   
+
 
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
@@ -539,6 +545,8 @@ contract StrategyManager is
         onlyFrozen(queuedWithdrawal.delegatedAddress)
         nonReentrant
     {
+        emit log_named_uint("tokens length", tokens.length);
+        emit log_named_uint("queuedWithdrawal strategies length", queuedWithdrawal.strategies.length);
         require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.slashQueuedWithdrawal: input length mismatch");
 
         // find the withdrawalRoot
@@ -718,7 +726,8 @@ contract StrategyManager is
             // replace the strategy with the last strategy in the list
             stakerStrategyList[depositor][strategyIndex] =
                 stakerStrategyList[depositor][stakerStrategyList[depositor].length - 1];
-        } else {
+        } 
+        else {
             //loop through all of the strategies, find the right one, then replace
             uint256 stratsLength = stakerStrategyList[depositor].length;
             uint256 j = 0;
