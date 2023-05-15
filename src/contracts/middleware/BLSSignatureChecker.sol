@@ -153,6 +153,15 @@ abstract contract BLSSignatureChecker {
         return (quorumStakeTotals, signatoryRecordHash);
     }
 
+    /**
+     * trySignatureAndApkVerification verifies a BLS aggregate signature and the veracity of a calculated G1 Public key
+     * @param msgHash is the hash being signed
+     * @param apk is the claimed G1 public key
+     * @param apkG2 is provided G2 public key
+     * @param sigma is the G1 point signature
+     * @return pairingSuccessful is true if the pairing precompile call was successful
+     * @return siganatureIsValid is true if the signature is valid
+     */
     function trySignatureAndApkVerification(
         bytes32 msgHash,
         BN254.G1Point memory apk,
