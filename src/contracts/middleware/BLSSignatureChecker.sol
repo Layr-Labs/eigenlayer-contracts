@@ -84,6 +84,9 @@ abstract contract BLSSignatureChecker {
 
         for (uint i = 0; i < nonSignerPubkeys.length; i++) {
             nonSignerPubkeyHashes[i] = nonSignerPubkeys[i].hashG1Point();
+            if (i != 0) {
+                require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
+            }
             nonSignerQuorumBitmaps[i] = registry.pubkeyHashToQuorumBitmap(nonSignerPubkeyHashes[i]);
             // subtract the nonSignerPubkey from the running apk to get the apk of all signers
             apk = apk.plus(nonSignerPubkeys[i].negate());
