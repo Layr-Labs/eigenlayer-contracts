@@ -80,7 +80,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
     
-    // in exection payload header
+    // in execution payload header
     uint256 internal constant BLOCK_NUMBER_INDEX = 6;
     uint256 internal constant WITHDRAWALS_ROOT_INDEX = 14;
 

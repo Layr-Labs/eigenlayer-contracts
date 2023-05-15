@@ -206,7 +206,7 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `depositor`
+     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the depositor
@@ -214,9 +214,8 @@ contract StrategyManager is
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
      * 
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy.
+     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
@@ -228,22 +227,24 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Used for depositing an asset into the specified strategy with the resultant shared created to `staker`,
-     * who must sign off on the action
+     * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
+     * who must sign off on the action.
+     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed 
+     * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the depositor
-     * @param staker the staker that the assets will be deposited on behalf of
+     * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
      * following EIP-1271 if the `staker` is a contract
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
-     * targetting stakers who may be attempting to undelegate.
+     * targeting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
      * 
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy
+     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
      */
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
@@ -282,7 +283,7 @@ contract StrategyManager is
 
         /**
          * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECSDA signature from `staker`,
+         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
          * indicating their intention for this action
          * 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271
          */
@@ -312,7 +313,7 @@ contract StrategyManager is
      * The total number of shares is decremented in the 'completeQueuedWithdrawal' function instead, which is where
      * the funds are actually sent to the user through use of the strategies' 'withdrawal' function. This ensures
      * that the value per share reported by each strategy will remain consistent, and that the shares will continue
-     * to accrue gains during the enforced WITHDRAWAL_WAITING_PERIOD.
+     * to accrue gains during the enforced withdrawal waiting period.
      * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
      * for which `msg.sender` is withdrawing 100% of their shares
      * @param strategies The Strategies to withdraw from
@@ -740,7 +741,7 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Internal function for completeing the given `queuedWithdrawal`.
+     * @notice Internal function for completing the given `queuedWithdrawal`.
      */
     function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal {
         // find the withdrawalRoot
@@ -814,7 +815,7 @@ contract StrategyManager is
     }
 
     /*
-     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any succesfully withdrawn funds going to `recipient`.
+     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any successfully withdrawn funds going to `recipient`.
      * @dev First, the amount is drawn-down by any applicable 'beaconChainETHSharesToDecrementOnWithdrawal' that the staker has, 
      * before passing any remaining amount (if applicable) onto a call to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
     */

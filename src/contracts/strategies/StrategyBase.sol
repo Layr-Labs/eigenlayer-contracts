@@ -48,7 +48,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
-    /// @notice The underyling token for shares in this Strategy
+    /// @notice The underlying token for shares in this Strategy
     IERC20 public underlyingToken;
 
     /// @notice The total number of extant shares in this Strategy
@@ -172,7 +172,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
         // account for virtual shares and balance
@@ -186,7 +186,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
         return sharesToUnderlyingView(amountShares);
@@ -196,7 +196,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
         // account for virtual shares and balance
@@ -210,7 +210,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {
         return underlyingToSharesView(amountUnderlying);

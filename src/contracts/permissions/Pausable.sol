@@ -92,7 +92,7 @@ contract Pausable is IPausable {
 
     /**
      * @notice This function is used to unpause an EigenLayer contract's functionality.
-     * It is permissioned to the `unpauser` address, which is expected to be a high threshold multisig or goverance contract.
+     * It is permissioned to the `unpauser` address, which is expected to be a high threshold multisig or governance contract.
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only unpause functionality, and thus cannot 'flip' any bit in `_paused` from 0 to 1.
      */

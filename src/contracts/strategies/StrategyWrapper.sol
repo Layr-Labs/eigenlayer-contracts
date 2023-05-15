@@ -20,10 +20,10 @@ contract StrategyWrapper is IStrategy {
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
-    /// @notice The underyling token for shares in this Strategy
+    /// @notice The underlying token for shares in this Strategy
     IERC20 public immutable underlyingToken;
 
-    /// @notice The total number of extant shares in thie Strategy
+    /// @notice The total number of extant shares in this Strategy
     uint256 public totalShares;
 
     modifier onlyStrategyManager() {
@@ -90,7 +90,7 @@ contract StrategyWrapper is IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlyingView(uint256 amountShares) public pure override returns (uint256) {
         return amountShares;
@@ -100,7 +100,7 @@ contract StrategyWrapper is IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlying(uint256 amountShares) public pure override returns (uint256) {
         return amountShares;
@@ -110,7 +110,7 @@ contract StrategyWrapper is IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToSharesView(uint256 amountUnderlying) external pure returns (uint256) {
         return amountUnderlying;
@@ -120,7 +120,7 @@ contract StrategyWrapper is IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @dev Implementation for these functions in particular may vary signifcantly for different strategies
+     * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToShares(uint256 amountUnderlying) external pure returns (uint256) {
         return amountUnderlying;
