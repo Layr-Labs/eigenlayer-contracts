@@ -5,7 +5,7 @@ pragma solidity =0.8.12;
 import "../interfaces/IPausable.sol";
 
 /**
- * @title Adds pausability to a contract.
+ * @title Adds pausability to a contract, with pausing & unpausing controlled by the `pauser` and `unpauser` of a PauserRegistry contract.
  * @author Layr Labs, Inc.
  * @notice Contracts that inherit from this contract may define their own `pause` and `unpause` (and/or related) functions.
  * These functions should be permissioned as "onlyPauser" which defers to a `PauserRegistry` for determining access control.
@@ -70,7 +70,7 @@ contract Pausable is IPausable {
     }
 
     /**
-     * @notice This function is used to pause an EigenLayer/DataLayer contract's functionality.
+     * @notice This function is used to pause an EigenLayer contract's functionality.
      * It is permissioned to the `pauser` address, which is expected to be a low threshold multisig.
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only pause functionality, and thus cannot 'unflip' any bit in `_paused` from 1 to 0.
@@ -91,7 +91,7 @@ contract Pausable is IPausable {
     }
 
     /**
-     * @notice This function is used to unpause an EigenLayer/DataLayercontract's functionality.
+     * @notice This function is used to unpause an EigenLayer contract's functionality.
      * It is permissioned to the `unpauser` address, which is expected to be a high threshold multisig or goverance contract.
      * @param newPausedStatus represents the new value for `_paused` to take, which means it may flip several bits at once.
      * @dev This function can only unpause functionality, and thus cannot 'flip' any bit in `_paused` from 0 to 1.
