@@ -88,7 +88,7 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testDepositMorthanMaxDeposits() public {
+    function testDepositMorethanMaxDeposits() public {
 
         maxDeposits = 1e12;
         maxPerDeposit = 3e11;
@@ -109,6 +109,25 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         strategy.deposit(underlyingToken, maxPerDeposit);
         cheats.stopPrank();
     }
+
+    function testDepositValidAmount(uint256 depositAmount) public {
+        maxDeposits = 1e12;
+        maxPerDeposit = 3e11;
+        cheats.assume(depositAmount > 1e9);
+        cheats.assume(depositAmount < maxPerDeposit);
+
+        cheats.startPrank(pauser);
+        strategy.setTVLLimits(maxPerDeposit, maxDeposits);
+        cheats.stopPrank();
+
+        uint256 sharesBefore = strategy.totalShares();
+        cheats.startPrank(address(strategyManager));
+        strategy.deposit(underlyingToken, depositAmount);
+        cheats.stopPrank();
+
+        require(strategy.totalShares() == depositAmount + sharesBefore, "total shares not updated correctly");
+    }
+
 
 
 }
