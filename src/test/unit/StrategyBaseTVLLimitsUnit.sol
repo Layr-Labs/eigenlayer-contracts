@@ -118,6 +118,9 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         strategy.setTVLLimits(maxPerDeposit, maxDeposits);
         cheats.stopPrank();
 
+        // we need to actually transfer the tokens to the strategy to avoid underflow in the `deposit` calculation
+        underlyingToken.transfer(address(strategy), depositAmount);
+
         uint256 sharesBefore = strategy.totalShares();
         cheats.startPrank(address(strategyManager));
         strategy.deposit(underlyingToken, depositAmount);
