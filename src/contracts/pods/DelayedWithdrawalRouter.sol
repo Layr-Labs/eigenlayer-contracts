@@ -128,25 +128,18 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
 
         uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
-        emit log("****************************************");
-        emit log_named_uint("block.number", block.number);
-        emit log_named_uint("userDelayedWithdrawalsLength", userDelayedWithdrawalsLength);
-
-
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            emit log_named_uint("delayedWithdrawal.blockCreated", delayedWithdrawal.blockCreated);
-            emit log_named_uint("block after which withdrawable", delayedWithdrawal.blockCreated + withdrawalDelayBlocks);
-
             if (block.number <= delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 firstNonClaimableWithdrawalIndex = i;
                 break;
             }
         }
-        emit log_named_uint("firstNonClaimableWithdrawalIndex", firstNonClaimableWithdrawalIndex);
-        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](firstNonClaimableWithdrawalIndex);
-        if(firstNonClaimableWithdrawalIndex != 0) {
-            for (uint256 i = 0; i < firstNonClaimableWithdrawalIndex; i++) {
+        uint256 numberOfClaimableWithdrawals = firstNonClaimableWithdrawalIndex;
+        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](numberOfClaimableWithdrawals);
+        
+        if(numberOfClaimableWithdrawals != 0) {
+            for (uint256 i = 0; i < numberOfClaimableWithdrawals; i++) {
                 DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
                 claimableDelayedWithdrawals[i] = delayedWithdrawal;
             }
