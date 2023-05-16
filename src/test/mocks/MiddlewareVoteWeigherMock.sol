@@ -17,12 +17,10 @@ contract MiddlewareVoteWeigherMock is RegistryBase {
     {}
 
     function initialize(
-        uint256[] memory _quorumBips,
         uint96[] memory _minimumStakeForQuorums,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
         RegistryBase._initialize(
-            _quorumBips,
             _minimumStakeForQuorums,
             _quorumStrategiesConsideredAndMultipliers
         );

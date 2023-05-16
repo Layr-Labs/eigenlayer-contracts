@@ -86,7 +86,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     function initialize(
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
-        uint256[] memory _quorumBips,
         uint96[] memory _minimumStakeForQuorums,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
@@ -95,7 +94,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         // process an apk update to get index and totalStake arrays to the same length
         _processApkUpdate(BN254.G1Point(0, 0));
         RegistryBase._initialize(
-            _quorumBips,
             _minimumStakeForQuorums,
             _quorumStrategiesConsideredAndMultipliers
         );

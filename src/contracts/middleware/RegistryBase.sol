@@ -79,15 +79,11 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
      */
     function _initialize(
-        uint256[] memory _quorumBips,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
         // sanity check lengths
         require(_minimumStakeForQuorum.length == _quorumStrategiesConsideredAndMultipliers.length, "Registry._initialize: minimumStakeForQuorum length mismatch");
-        // other length sanity check done in VoteWeigherBase._initialize
-        VoteWeigherBase._initialize(uint8(_quorumStrategiesConsideredAndMultipliers.length), _quorumBips);
-
         // push an empty OperatorStakeUpdate struct to the total stake history to record starting with zero stake
         // TODO: Address this @ gpsanant
         OperatorStakeUpdate memory _totalStakeUpdate;
@@ -105,7 +101,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // add the strategies considered and multipliers for each quorum
         for (uint8 quorumNumber = 0; quorumNumber < _quorumStrategiesConsideredAndMultipliers.length;) {
             minimumStakeForQuorum[quorumNumber] = _minimumStakeForQuorum[quorumNumber];
-            _addStrategiesConsideredAndMultipliers(quorumNumber, _quorumStrategiesConsideredAndMultipliers[quorumNumber]);
+            _createQuorum(_quorumStrategiesConsideredAndMultipliers[quorumNumber]);
             unchecked {
                 ++quorumNumber;
             }

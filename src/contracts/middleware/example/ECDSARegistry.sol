@@ -54,7 +54,6 @@ contract ECDSARegistry is RegistryBase {
     function initialize(
         address _operatorWhitelister,
         bool _operatorWhitelistEnabled,
-        uint256[] memory _quorumBips,
         uint96[] memory _minimumStakeForQuorums,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public virtual initializer {
@@ -62,7 +61,6 @@ contract ECDSARegistry is RegistryBase {
         operatorWhitelistEnabled = _operatorWhitelistEnabled;
 
         RegistryBase._initialize(
-            _quorumBips,
             _minimumStakeForQuorums,
             _quorumStrategiesConsideredAndMultipliers
         );

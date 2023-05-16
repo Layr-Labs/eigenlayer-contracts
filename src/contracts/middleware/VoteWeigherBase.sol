@@ -29,7 +29,7 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
         _;
     }
 
-    /// @notice Sets the (immutable) `strategyManager` and `serviceManager` addresses, as well as the (immutable) `NUMBER_OF_QUORUMS` variable
+    /// @notice Sets the (immutable) `strategyManager` and `serviceManager` addresses
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
@@ -37,26 +37,9 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
     // solhint-disable-next-line no-empty-blocks
     {}
 
-    /// @notice Set the split in earnings between the different quorums.
-    function _initialize(uint8 _quorumCount, uint256[] memory _quorumBips) internal virtual onlyInitializing {
-        quorumCount = _quorumCount;
-        // verify that the provided `_quorumBips` is of the correct length
-        require(
-            _quorumBips.length == _quorumCount,
-            "VoteWeigherBase._initialize: _quorumBips.length != NUMBER_OF_QUORUMS"
-        );
-        uint256 totalQuorumBips;
-        for (uint8 i; i < _quorumCount; ++i) {
-            totalQuorumBips += _quorumBips[i];
-            quorumBips[i] = _quorumBips[i];
-        }
-        // verify that the provided `_quorumBips` do indeed sum to 10,000!
-        require(totalQuorumBips == MAX_BIPS, "VoteWeigherBase._initialize: totalQuorumBips != MAX_BIPS");
-    }
-
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev returns zero in the case that `quorumNumber` is greater than or equal to `NUMBER_OF_QUORUMS`
+     * @dev returns zero in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
     function weightOfOperator(address operator, uint8 quorumNumber) public virtual returns (uint96) {
         uint96 weight;
@@ -96,15 +79,7 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
     function createQuorum(
         StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers
     ) external virtual onlyServiceManagerOwner {
-        uint8 quorumNumber = quorumCount;
-        // increment quorumCount
-        quorumCount = quorumNumber + 1;
-
-        // add the strategies and their associated weights to the quorum
-        _addStrategiesConsideredAndMultipliers(quorumNumber, _strategiesConsideredAndMultipliers);
-
-        // emit event
-        emit QuorumCreated(quorumNumber);
+        _createQuorum(_strategiesConsideredAndMultipliers);
     }
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
@@ -185,6 +160,23 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
             "VoteWeigherBase.strategiesConsideredAndMultipliersLength: quorumNumber input exceeds NUMBER_OF_QUORUMS"
         );
         return strategiesConsideredAndMultipliers[quorumNumber].length;
+    }
+
+    /**
+     * @notice Creates a quorum with the given_strategiesConsideredAndMultipliers.
+     */
+    function _createQuorum(
+        StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers
+    ) internal {
+        uint8 quorumNumber = quorumCount;
+        // increment quorumCount
+        quorumCount = quorumNumber + 1;
+
+        // add the strategies and their associated weights to the quorum
+        _addStrategiesConsideredAndMultipliers(quorumNumber, _strategiesConsideredAndMultipliers);
+
+        // emit event
+        emit QuorumCreated(quorumNumber);
     }
 
     /** 
