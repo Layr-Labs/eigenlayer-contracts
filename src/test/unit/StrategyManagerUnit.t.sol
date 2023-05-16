@@ -230,13 +230,9 @@ contract StrategyManagerUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testDepositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
-        IERC20 token = dummyToken;
-
-        /// IMPORTANT: ensure that when using this test as a part of another test, that the input strategy is already whitelisted!
-        if (!strategyManager.strategyIsWhitelistedForDeposit(strategy)){
-            strategy = dummyStrat;
-        }
+    function testDepositIntoStrategySuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
+        IERC20 token = dummyToken;    
+        IStrategy strategy = dummyStrat;
 
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
@@ -266,8 +262,8 @@ contract StrategyManagerUnitTests is Test {
     function testDepositIntoStrategySuccessfullyTwice() public {
         address staker = address(this);
         uint256 amount = 1e18;
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
     }
 
     function testDepositIntoStrategyFailsWhenDepositsPaused() public {
@@ -568,7 +564,7 @@ contract StrategyManagerUnitTests is Test {
         address staker = address(this);
         uint256 amount = 1e18;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
         require(strategyManager.stakerStrategyListLength(staker) != 0, "test broken in some way, length shouldn't be 0");
 
         cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
@@ -632,7 +628,7 @@ contract StrategyManagerUnitTests is Test {
     }
 
     function testQueueWithdrawalMultipleStrategiesWithBeaconChain() external {
-        testDepositIntoStrategySuccessfully(dummyStrat,address(this), REQUIRED_BALANCE_WEI);
+        testDepositIntoStrategySuccessfully(address(this), REQUIRED_BALANCE_WEI);
 
         IStrategy[] memory strategyArray = new IStrategy[](2);
         uint256[] memory shareAmounts = new uint256[](2);
@@ -690,7 +686,7 @@ contract StrategyManagerUnitTests is Test {
         _tempStrategyStorage = dummyStrat;
         // IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat,/*staker*/ address(this), depositAmount);
+        testDepositIntoStrategySuccessfully(/*staker*/ address(this), depositAmount);
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot) =
             _setUpQueuedWithdrawalStructSingleStrat(/*staker*/ address(this), /*withdrawer*/ address(this), dummyToken, _tempStrategyStorage, withdrawalAmount);
@@ -741,11 +737,11 @@ contract StrategyManagerUnitTests is Test {
         amounts[0] = withdrawalAmount;
         amounts[1] = withdrawalAmount;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, /*staker*/ address(this), depositAmount);
-        testDepositIntoStrategySuccessfully(dummyStrat2, /*staker*/ address(this), depositAmount);
+        _depositIntoStrategySuccessfully(dummyStrat, /*staker*/ address(this), depositAmount);
+        _depositIntoStrategySuccessfully(dummyStrat2, /*staker*/ address(this), depositAmount);
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-            _setUpQueuedWithdrawalStructSingleStratMultipleStrategies(/*staker*/ address(this), /*withdrawer*/ address(this), strategies, amounts);
+            _setUpQueuedWithdrawalStructSingleStrat_MultipleStrategies(/*staker*/ address(this), /*withdrawer*/ address(this), strategies, amounts);
 
         // uint256 sharesBefore = strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[0]) + strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[1]);
         // uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
@@ -774,7 +770,7 @@ contract StrategyManagerUnitTests is Test {
         address staker = address(this);
         _tempStrategyStorage = dummyStrat;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
             _setUpQueuedWithdrawalStructSingleStrat(staker, withdrawer, /*token*/ dummyToken, _tempStrategyStorage, amount);
@@ -830,7 +826,7 @@ contract StrategyManagerUnitTests is Test {
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = depositAmount;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, depositAmount);
+        testDepositIntoStrategySuccessfully(staker, depositAmount);
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
             _setUpQueuedWithdrawalStructSingleStrat(staker, /*withdrawer*/ staker, token, strategy, withdrawalAmount);
@@ -1234,7 +1230,7 @@ contract StrategyManagerUnitTests is Test {
         require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
-    function testUndelegateWithFrozenStaker(address undelegator) public {
+    function testUndelegateWithFrozenStaker() public {
         slasherMock.setOperatorFrozenStatus(address(this), true);
         cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
         cheats.startPrank(address(this));
@@ -1368,7 +1364,7 @@ contract StrategyManagerUnitTests is Test {
             uint256 depositAmount = 1e18;
             // filter fuzzed input
             cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-            testDepositIntoStrategySuccessfully(dummyStrat, _tempStakerStorage, depositAmount);
+            testDepositIntoStrategySuccessfully(_tempStakerStorage, depositAmount);
         }
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -1411,7 +1407,7 @@ contract StrategyManagerUnitTests is Test {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully( staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -1481,7 +1477,7 @@ contract StrategyManagerUnitTests is Test {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
         testDepositBeaconChainETHSuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](2);
@@ -1525,7 +1521,7 @@ contract StrategyManagerUnitTests is Test {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -1555,7 +1551,7 @@ contract StrategyManagerUnitTests is Test {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -1594,7 +1590,7 @@ contract StrategyManagerUnitTests is Test {
 
         reenterer.prepareReturnData(abi.encode(amount));
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
         testDepositBeaconChainETHSuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](2);
@@ -1983,7 +1979,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -2012,7 +2008,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -2041,7 +2037,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
 
-        testDepositIntoStrategySuccessfully(dummyStrat, staker, amount);
+        testDepositIntoStrategySuccessfully(staker, amount);
         testDepositBeaconChainETHSuccessfully(staker, amount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -2245,7 +2241,35 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 
-    function _setUpQueuedWithdrawalStructSingleStratMultipleStrategies(
+    function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
+        IERC20 token = dummyToken;    
+
+        // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
+        cheats.assume(amount != 0);
+        // filter out zero address because the mock ERC20 we are using will revert on using it
+        cheats.assume(staker != address(0));
+        // sanity check / filter
+        cheats.assume(amount <= token.balanceOf(address(this)));
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
+
+        cheats.startPrank(staker);
+        uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
+        cheats.stopPrank();
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
+
+        require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+        if (sharesBefore == 0) {
+            require(stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1, "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1");
+            require(strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) == strategy,
+                "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy");
+        }
+    }
+
+    function _setUpQueuedWithdrawalStructSingleStrat_MultipleStrategies(
         address staker, 
         address withdrawer, 
         IStrategy[] memory strategyArray, 
