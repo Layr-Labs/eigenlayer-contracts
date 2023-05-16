@@ -67,6 +67,7 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
     }
 
     function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, address notPauser) public {
+        cheats.assume(notPauser != address(proxyAdmin));
         cheats.assume(notPauser != pauser);
         cheats.startPrank(notPauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
@@ -87,7 +88,6 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
     }
 
     function testDepositMorethanMaxDeposits() public {
-
         maxDeposits = 1e12;
         maxPerDeposit = 3e11;
         uint256 numDeposits = maxDeposits / maxPerDeposit;
@@ -98,11 +98,16 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         cheats.stopPrank();
 
         cheats.startPrank(address(strategyManager));
-        for (uint256 i = 0; i < numDeposits-1; i++) {
+        for (uint256 i = 0; i < numDeposits; i++) {
             underlyingToken.transfer(address(strategy), maxPerDeposit);
             strategy.deposit(underlyingToken, maxPerDeposit);
         }
+        cheats.stopPrank();
+
         underlyingToken.transfer(address(strategy), maxPerDeposit);
+        require(underlyingToken.balanceOf(address(strategy)) > maxDeposits, "bad test setup");
+
+        cheats.startPrank(address(strategyManager));
         cheats.expectRevert(bytes("StrategyBaseTVLLimits: max deposits exceeded"));
         strategy.deposit(underlyingToken, maxPerDeposit);
         cheats.stopPrank();
@@ -129,6 +134,75 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         require(strategy.totalShares() == depositAmount + sharesBefore, "total shares not updated correctly");
     }
 
+    /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
+    function testDeposit_WithTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 depositAmount)
+        public returns (bool depositReverted)
+    {
+        // need to filter this to make sure the deposit amounts can actually be transferred
+        cheats.assume(depositAmount <= initialSupply);
+        // set TVL limits
+        cheats.startPrank(pauser);
+        strategy.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
+        cheats.stopPrank();
 
+        // we need to calculate this before transferring tokens to the strategy
+        uint256 expectedSharesOut = strategy.underlyingToShares(depositAmount);
+
+        // we need to actually transfer the tokens to the strategy to avoid underflow in the `deposit` calculation
+        underlyingToken.transfer(address(strategy), depositAmount);
+
+        if (depositAmount > maxPerDepositFuzzedInput) {
+            cheats.startPrank(address(strategyManager));
+            cheats.expectRevert("StrategyBaseTVLLimits: max per deposit exceeded");
+            strategy.deposit(underlyingToken, depositAmount);
+            cheats.stopPrank();
+
+            // transfer the tokens back from the strategy to not mess up the state
+            cheats.startPrank(address(strategy));
+            underlyingToken.transfer(address(this), depositAmount);
+            cheats.stopPrank();
+
+            // return 'true' since the call to `deposit` reverted
+            return true;
+        } else if (underlyingToken.balanceOf(address(strategy)) > maxDepositsFuzzedInput) {
+            cheats.startPrank(address(strategyManager));
+            cheats.expectRevert("StrategyBaseTVLLimits: max deposits exceeded");
+            strategy.deposit(underlyingToken, depositAmount);
+            cheats.stopPrank();
+
+            // transfer the tokens back from the strategy to not mess up the state
+            cheats.startPrank(address(strategy));
+            underlyingToken.transfer(address(this), depositAmount);
+            cheats.stopPrank();
+
+            // return 'true' since the call to `deposit` reverted
+            return true;
+        } else {
+            uint256 totalSharesBefore = strategy.totalShares();
+            if (expectedSharesOut == 0) {
+                cheats.startPrank(address(strategyManager));
+                cheats.expectRevert("StrategyBase.deposit: newShares cannot be zero");
+                strategy.deposit(underlyingToken, depositAmount);
+                cheats.stopPrank();
+
+                // transfer the tokens back from the strategy to not mess up the state
+                cheats.startPrank(address(strategy));
+                underlyingToken.transfer(address(this), depositAmount);
+                cheats.stopPrank();
+
+                // return 'true' since the call to `deposit` reverted
+                return true;
+            } else {
+                cheats.startPrank(address(strategyManager));
+                strategy.deposit(underlyingToken, depositAmount);
+                cheats.stopPrank();
+
+                require(strategy.totalShares() == expectedSharesOut + totalSharesBefore, "total shares not updated correctly");
+
+                // return 'false' since the call to `deposit` succeeded
+                return false;
+            }
+        }
+    }
 
 }
