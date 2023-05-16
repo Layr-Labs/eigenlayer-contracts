@@ -54,6 +54,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
 
+    // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
     uint256 public numPods;
 
