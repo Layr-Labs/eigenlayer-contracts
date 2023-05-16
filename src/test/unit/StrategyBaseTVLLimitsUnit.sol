@@ -56,28 +56,28 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
         );
     }
 
-    function testSetTVLLimits(uint256 maxDeposits, uint256 maxPerDeposit) public {
+    function testSetTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput) public {
         cheats.startPrank(pauser);
-        strategy.setTVLLimits(maxPerDeposit, maxDeposits);
+        strategy.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
         cheats.stopPrank();
         (uint256 _maxPerDeposit, uint256 _maxDeposits) = strategy.getTVLLimits();
 
-        assertEq(_maxPerDeposit, maxPerDeposit);
-        assertEq(_maxDeposits, maxDeposits);
+        assertEq(_maxPerDeposit, maxPerDepositFuzzedInput);
+        assertEq(_maxDeposits, maxDepositsFuzzedInput);
     }
 
-    function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxDeposits, uint256 maxPerDeposit, address notPauser) public {
+    function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, address notPauser) public {
         cheats.assume(notPauser != pauser);
         cheats.startPrank(notPauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
-        strategy.setTVLLimits(maxPerDeposit, maxDeposits);
+        strategy.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
         cheats.stopPrank();
     }
 
-    function testDepositMoreThanMaxPerDeposit(uint256 maxDeposits, uint256 maxPerDeposit, uint256 amount) public {
-        cheats.assume(amount > maxPerDeposit);
+    function testDepositMoreThanMaxPerDeposit(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 amount) public {
+        cheats.assume(amount > maxPerDepositFuzzedInput);
         cheats.startPrank(pauser);
-        strategy.setTVLLimits(maxPerDeposit, maxDeposits);
+        strategy.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
         cheats.stopPrank();
 
         cheats.startPrank(address(strategyManager));
