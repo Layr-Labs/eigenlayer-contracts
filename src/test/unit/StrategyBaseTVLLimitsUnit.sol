@@ -34,8 +34,6 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
     uint256 maxDeposits = 100;
     uint256 maxPerDeposit = 5;
 
-    uint256 public constant MIN_NONZERO_TOTAL_SHARES = 1e9;
-
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
@@ -113,7 +111,7 @@ contract StrategyBaseTVLLimitsUnitTests is Test {
     function testDepositValidAmount(uint256 depositAmount) public {
         maxDeposits = 1e12;
         maxPerDeposit = 3e11;
-        cheats.assume(depositAmount > 1e9);
+        cheats.assume(depositAmount > 0);
         cheats.assume(depositAmount < maxPerDeposit);
 
         cheats.startPrank(pauser);

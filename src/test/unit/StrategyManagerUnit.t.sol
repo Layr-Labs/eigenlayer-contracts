@@ -239,7 +239,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.assume(staker != address(0));
         // sanity check / filter
         cheats.assume(amount <= token.balanceOf(address(this)));
-        cheats.assume(amount >= 1e9);
+        cheats.assume(amount >= 1);
 
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
@@ -313,7 +313,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     function testDepositIntoStrategyWithSignatureSuccessfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
-        cheats.assume(amount >= 1e9);
+        cheats.assume(amount >= 1);
 
         address staker = cheats.addr(privateKey);
         // not expecting a revert, so input an empty string
@@ -325,7 +325,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     // tries depositing using a signature and an EIP 1271 compliant wallet
     function testDepositIntoStrategyWithSignature_WithContractWallet_Successfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
-        cheats.assume(amount >= 1e9);
+        cheats.assume(amount >= 1);
 
         address staker = cheats.addr(privateKey);
 
@@ -343,7 +343,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     // tries depositing using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
     function testDepositIntoStrategyWithSignature_WithContractWallet_BadSignature(uint256 amount) public {
         // min shares must be minted on strategy
-        cheats.assume(amount >= 1e9);
+        cheats.assume(amount >= 1);
 
         address staker = cheats.addr(privateKey);
         IStrategy strategy = dummyStrat;
@@ -382,7 +382,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     // tries depositing using a wallet that does not comply with EIP 1271
     function testDepositIntoStrategyWithSignature_WithContractWallet_NonconformingWallet(uint256 amount, uint8 v, bytes32 r, bytes32 s) public {
         // min shares must be minted on strategy
-        cheats.assume(amount >= 1e9);
+        cheats.assume(amount >= 1);
 
         address staker = cheats.addr(privateKey);
         IStrategy strategy = dummyStrat;

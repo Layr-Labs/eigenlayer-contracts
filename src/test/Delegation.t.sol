@@ -106,8 +106,8 @@ contract DelegationTests is EigenLayerTestHelper {
     {
         cheats.assume(staker != operator);
         // base strategy will revert if these amounts are too small on first deposit
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
         
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
     }
@@ -120,8 +120,8 @@ contract DelegationTests is EigenLayerTestHelper {
         fuzzedAmounts(ethAmount, eigenAmount)
     {
         cheats.assume(staker != _operator);
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
 
         // use storage to solve stack-too-deep
         operator = _operator;
@@ -193,8 +193,8 @@ contract DelegationTests is EigenLayerTestHelper {
     {
         cheats.assume(staker != operator);
         // base strategy will revert if these amounts are too small on first deposit
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
 
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
         cheats.startPrank(address(strategyManager));
