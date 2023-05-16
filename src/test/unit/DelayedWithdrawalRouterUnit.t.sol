@@ -122,7 +122,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
     }
 
-    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external {
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner){
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.startPrank(podAddress);
