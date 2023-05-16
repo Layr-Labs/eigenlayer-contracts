@@ -124,7 +124,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
-        uint256[] memory claimableDelayedWithdrawalIndices = new DelayedWithdrawal[](userDelayedWithdrawalsLength);
+        uint256[] memory claimableDelayedWithdrawalIndices = new uint256[](userDelayedWithdrawalsLength);
 
         uint256 count = 0;
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
