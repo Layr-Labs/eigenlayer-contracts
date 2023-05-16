@@ -57,11 +57,13 @@ contract StrategyBaseTVLLimits is StrategyBase {
     /**
      * @notice Called in the external `deposit` function, before any logic is executed. Makes sure that deposits don't exceed configured maximum.
      * @dev Unused token param is the token being deposited. This is already checked in the `deposit` function.
+     * @dev Note that the `maxTotalDeposits` is purely checked against the current `_tokenBalance()`, since by this point in the deposit flow, the
+     * tokens should have already been transferred to this Strategy by the StrategyManager
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 /*token*/, uint256 amount) internal virtual override {
         require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
-        require(_tokenBalance() + amount <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+        require(_tokenBalance() <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
     }
 
     /**
