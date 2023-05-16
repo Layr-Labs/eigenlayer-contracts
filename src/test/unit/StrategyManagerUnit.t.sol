@@ -233,6 +233,10 @@ contract StrategyManagerUnitTests is Test {
     function testDepositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;
 
+        if (!strategyManager.strategyIsWhitelistedForDeposit(strategy)){
+            strategy = dummyStrat;
+        }
+
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
         // filter out zero address because the mock ERC20 we are using will revert on using it
