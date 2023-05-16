@@ -677,6 +677,23 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.createPod();
     }
 
+    function test_setMaxPods(uint256 newValue) public {
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
+        cheats.stopPrank();
+
+        require(EigenPodManager(address(eigenPodManager)).maxPods() == newValue, "maxPods value not set correctly");
+    }
+
+    function test_setMaxPods_RevertsWhenNotCalledByPauser(address notPauser) public fuzzedAddress(notPauser) {
+        cheats.assume(notPauser != eigenPodManager.pauserRegistry().pauser());
+        uint256 newValue = 0;
+        cheats.startPrank(notPauser);
+        cheats.expectRevert("msg.sender is not permissioned as pauser");
+        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
+        cheats.stopPrank();
+    }
+
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
     // verifies that the storage of DelegationManager contract is updated appropriately
     function _testRegisterAsOperator(address sender, IDelegationTerms dt) internal {
