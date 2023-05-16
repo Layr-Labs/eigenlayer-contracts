@@ -36,6 +36,8 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
      * @param newMaxTotalDeposits The new maximum deposits
      * @dev Callable only by the pauser of this contract
+     * @dev We note that there is a potential race condition between a call to this function that lowers either or both of these limits and call(s)
+     * to `deposit`, that may result in some calls to `deposit` reverting.
      */
     function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) external onlyPauser {
         _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
@@ -59,6 +61,11 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @dev Unused token param is the token being deposited. This is already checked in the `deposit` function.
      * @dev Note that the `maxTotalDeposits` is purely checked against the current `_tokenBalance()`, since by this point in the deposit flow, the
      * tokens should have already been transferred to this Strategy by the StrategyManager
+     * @dev We note as well that this makes it possible for various race conditions to occur:
+     * a) multiple simultaneous calls to `deposit` may result in some of these calls reverting due to `maxTotalDeposits` being reached.
+     * b) transferring funds directly to this Strategy (although not generally in someone's economic self interest) in order to reach `maxTotalDeposits`
+     * is a route by which someone can cause calls to `deposit` to revert.
+     * c) increases in the token balance of this contract through other effects – including token rebasing – may cause similar issues to (a) and (b).
      * @param amount The amount of `token` being deposited
      */
     function _beforeDeposit(IERC20 /*token*/, uint256 amount) internal virtual override {
