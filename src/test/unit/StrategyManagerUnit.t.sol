@@ -765,13 +765,6 @@ contract StrategyManagerUnitTests is Test {
             );
         }
 
-        // uint256 sharesAfter = strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[0]) + strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[1]);
-        // uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
-
-        // require(strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is false!");
-        // require(sharesAfter == sharesBefore - 2*withdrawalAmount, "sharesAfter != sharesBefore - withdrawalAmount");
-        // require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
-
         return (queuedWithdrawal, tokens, withdrawalRoot);
     }
 
