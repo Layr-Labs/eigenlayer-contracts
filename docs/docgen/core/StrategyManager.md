@@ -55,7 +55,7 @@ Emitted when a new deposit occurs on behalf of `depositor`.
 | depositor | address | Is the staker who is depositing funds into EigenLayer. |
 | token | contract IERC20 | Is the token that `depositor` deposited. |
 | strategy | contract IStrategy | Is the strategy that `depositor` has deposited into. |
-| shares | uint256 | Is the number of shares `depositor` has in `strategy`. |
+| shares | uint256 | Is the number of new shares `depositor` has been granted in `strategy`. |
 
 ### ShareWithdrawalQueued
 
@@ -430,6 +430,12 @@ function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external
 
 Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _withdrawalDelayBlocks | uint256 | new value of `withdrawalDelayBlocks`. |
+
 ### setStrategyWhitelister
 
 ```solidity
@@ -437,6 +443,12 @@ function setStrategyWhitelister(address newStrategyWhitelister) external
 ```
 
 Owner-only function to change the `strategyWhitelister` address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newStrategyWhitelister | address | new address for the `strategyWhitelister`. |
 
 ### addStrategiesToDepositWhitelist
 
@@ -446,6 +458,12 @@ function addStrategiesToDepositWhitelist(contract IStrategy[] strategiesToWhitel
 
 Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| strategiesToWhitelist | contract IStrategy[] | Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already) |
+
 ### removeStrategiesFromDepositWhitelist
 
 ```solidity
@@ -453,6 +471,12 @@ function removeStrategiesFromDepositWhitelist(contract IStrategy[] strategiesToR
 ```
 
 Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| strategiesToRemoveFromWhitelist | contract IStrategy[] | Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it) |
 
 ### _addShares
 
@@ -465,6 +489,14 @@ This function adds `shares` for a given `strategy` to the `depositor` and runs t
 _In particular, this function calls `delegation.increaseDelegatedShares(depositor, strategy, shares)` to ensure that all
 delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[depositor][strategy]`, and adds `strategy`
 to the `depositor`'s list of strategies, if it is not in the list already._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| depositor | address | The address to add shares to |
+| strategy | contract IStrategy | The Strategy in which the `depositor` is receiving shares |
+| shares | uint256 | The amount of shares to grant to the `depositor` |
 
 ### _depositIntoStrategy
 
@@ -501,6 +533,15 @@ Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
 _If the amount of shares represents all of the depositor`s shares in said strategy,
 then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned._
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| depositor | address | The address to decrement shares from |
+| strategyIndex | uint256 | The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that the removal of the depositor's shares results in them having zero remaining shares in the `strategy` |
+| strategy | contract IStrategy | The strategy for which the `depositor`'s shares are being decremented |
+| shareAmount | uint256 | The amount of shares to decrement |
+
 ### _removeStrategyFromStakerStrategyList
 
 ```solidity
@@ -512,6 +553,14 @@ Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `st
 _the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
 index is incorrect, then we revert to a brute-force search._
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| depositor | address | The user whose array will have an entry removed |
+| strategyIndex | uint256 | Preferably the index of `strategy` in `stakerStrategyList[depositor]`. If the input is incorrect, then a brute-force fallback routine will be used to find the correct input |
+| strategy | contract IStrategy | The Strategy to remove from `stakerStrategyList[depositor]` |
+
 ### _completeQueuedWithdrawal
 
 ```solidity
@@ -519,6 +568,15 @@ function _completeQueuedWithdrawal(struct IStrategyManager.QueuedWithdrawal queu
 ```
 
 Internal function for completing the given `queuedWithdrawal`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| queuedWithdrawal | struct IStrategyManager.QueuedWithdrawal | The QueuedWithdrawal to complete |
+| tokens | contract IERC20[] | The ERC20 tokens to provide as inputs to `Strategy.withdraw`. Only relevant if `receiveAsTokens = true` |
+| middlewareTimesIndex | uint256 | Passed on as an input to the `slasher.canWithdraw` function, to ensure the withdrawal is completable. |
+| receiveAsTokens | bool | If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy. If marked 'false', then the shares will simply be internally transferred to the `msg.sender`. |
 
 ### _undelegate
 
@@ -528,6 +586,12 @@ function _undelegate(address depositor) internal
 
 If the `depositor` has no existing shares, then they can `undelegate` themselves.
 This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| depositor | address | The address to undelegate. Passed on as an input to the `delegation.undelegate` function. |
 
 ### _withdrawBeaconChainETH
 
@@ -543,6 +607,12 @@ function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal
 
 internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _withdrawalDelayBlocks | uint256 | The new value for `withdrawalDelayBlocks` to take. |
+
 ### _setStrategyWhitelister
 
 ```solidity
@@ -550,6 +620,12 @@ function _setStrategyWhitelister(address newStrategyWhitelister) internal
 ```
 
 Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newStrategyWhitelister | address | The new address for the `strategyWhitelister` to take. |
 
 ### getDeposits
 

@@ -49,7 +49,7 @@ contract StrategyManager is
      * @param depositor Is the staker who is depositing funds into EigenLayer.
      * @param strategy Is the strategy that `depositor` has deposited into.
      * @param token Is the token that `depositor` deposited.
-     * @param shares Is the number of shares `depositor` has in `strategy`.
+     * @param shares Is the number of new shares `depositor` has been granted in `strategy`.
      */
     event Deposit(
         address depositor, IERC20 token, IStrategy strategy, uint256 shares
@@ -159,7 +159,6 @@ contract StrategyManager is
      * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
      * @param staker is the entity that is restaking in eigenlayer,
      * @param amount is the amount of beaconchain ETH being restaked,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
      * @dev Only callable by EigenPodManager.
      */
     function depositBeaconChainETH(address staker, uint256 amount)
@@ -597,17 +596,26 @@ contract StrategyManager is
         }
     }
 
-    /// @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
+    /**
+     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
+     * @param _withdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
+    */
     function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner {
         _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
-    /// @notice Owner-only function to change the `strategyWhitelister` address.
+    /**
+     * @notice Owner-only function to change the `strategyWhitelister` address.
+     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
+    */
     function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
-    /// @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+    */
     function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister {
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength;) {
@@ -622,7 +630,10 @@ contract StrategyManager is
         }
     } 
 
-    /// @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
+    */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
@@ -641,6 +652,9 @@ contract StrategyManager is
 
     /**
      * @notice This function adds `shares` for a given `strategy` to the `depositor` and runs through the necessary update logic.
+     * @param depositor The address to add shares to
+     * @param strategy The Strategy in which the `depositor` is receiving shares
+     * @param shares The amount of shares to grant to the `depositor`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(depositor, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[depositor][strategy]`, and adds `strategy`
      * to the `depositor`'s list of strategies, if it is not in the list already.
@@ -696,6 +710,11 @@ contract StrategyManager is
 
     /**
      * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
+     * @param depositor The address to decrement shares from
+     * @param strategyIndex The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that
+     * the removal of the depositor's shares results in them having zero remaining shares in the `strategy`
+     * @param strategy The strategy for which the `depositor`'s shares are being decremented
+     * @param shareAmount The amount of shares to decrement
      * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned.
      */
@@ -732,6 +751,10 @@ contract StrategyManager is
 
     /**
      * @notice Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `stakerStrategyList[depositor]`
+     * @param depositor The user whose array will have an entry removed
+     * @param strategyIndex Preferably the index of `strategy` in `stakerStrategyList[depositor]`. If the input is incorrect, then a brute-force
+     * fallback routine will be used to find the correct input
+     * @param strategy The Strategy to remove from `stakerStrategyList[depositor]`
      * @dev the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
      * index is incorrect, then we revert to a brute-force search.
      */
@@ -764,6 +787,11 @@ contract StrategyManager is
 
     /**
      * @notice Internal function for completing the given `queuedWithdrawal`.
+     * @param queuedWithdrawal The QueuedWithdrawal to complete
+     * @param tokens The ERC20 tokens to provide as inputs to `Strategy.withdraw`. Only relevant if `receiveAsTokens = true`
+     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure the withdrawal is completable.
+     * @param receiveAsTokens If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy.
+     * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
     function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal {
         // find the withdrawalRoot
@@ -830,6 +858,7 @@ contract StrategyManager is
     /**
      * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
+     * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
      */
     function _undelegate(address depositor) internal {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
@@ -838,6 +867,9 @@ contract StrategyManager is
 
     /*
      * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any successfully withdrawn funds going to `recipient`.
+     * @param staker The address whose 'beaconChainETH' shares will be decremented
+     * @param recipient Passed on as the recipient input to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
+     * @param amount The amount of virtual 'beaconChainETH' shares to be 'withdrawn'
      * @dev First, the amount is drawn-down by any applicable 'beaconChainETHSharesToDecrementOnWithdrawal' that the staker has, 
      * before passing any remaining amount (if applicable) onto a call to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
     */
@@ -858,14 +890,20 @@ contract StrategyManager is
         eigenPodManager.withdrawRestakedBeaconChainETH(staker, recipient, amount);
     }
 
-    /// @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
+    /**
+     * @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
+     * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
+     */
     function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
         require(_withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high");
         emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
         withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
 
-    /// @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+    /**
+     * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+     * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
+     */
     function _setStrategyWhitelister(address newStrategyWhitelister) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;

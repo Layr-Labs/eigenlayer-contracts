@@ -53,7 +53,6 @@ interface IStrategyManager {
      * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
      * @param staker is the entity that is restaking in eigenlayer,
      * @param amount is the amount of beaconchain ETH being restaked,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
      * @dev Only callable by EigenPodManager.
      */
     function depositBeaconChainETH(address staker, uint256 amount) external;
@@ -231,10 +230,16 @@ interface IStrategyManager {
         pure
         returns (bytes32);
 
-    /// @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+    */
     function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external;
 
-    /// @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
+    */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
@@ -243,7 +248,7 @@ interface IStrategyManager {
     /// @notice Returns the single, central Slasher contract of EigenLayer
     function slasher() external view returns (ISlasher);
 
-    /// @notice returns the enshrined beaconChainETH Strategy
+    /// @notice returns the enshrined, virtual 'beaconChainETH' Strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed

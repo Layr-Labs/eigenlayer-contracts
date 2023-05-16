@@ -291,6 +291,12 @@ function addStrategiesToDepositWhitelist(contract IStrategy[] strategiesToWhitel
 
 Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
 
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| strategiesToWhitelist | contract IStrategy[] | Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already) |
+
 ### removeStrategiesFromDepositWhitelist
 
 ```solidity
@@ -298,6 +304,12 @@ function removeStrategiesFromDepositWhitelist(contract IStrategy[] strategiesToR
 ```
 
 Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| strategiesToRemoveFromWhitelist | contract IStrategy[] | Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it) |
 
 ### delegation
 
@@ -321,7 +333,7 @@ Returns the single, central Slasher contract of EigenLayer
 function beaconChainETHStrategy() external view returns (contract IStrategy)
 ```
 
-returns the enshrined beaconChainETH Strategy
+returns the enshrined, virtual 'beaconChainETH' Strategy
 
 ### withdrawalDelayBlocks
 
