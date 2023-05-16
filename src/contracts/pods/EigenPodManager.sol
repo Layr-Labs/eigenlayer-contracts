@@ -167,9 +167,9 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /**
      * Sets the maximum number of pods that can be deployed
      * @param newMaxPods The new maximum number of pods that can be deployed
-     * @dev Callable by the unpauser of this contract
+     * @dev Callable by the pauser of this contract
      */
-    function setMaxPods(uint256 newMaxPods) external onlyUnpauser {
+    function setMaxPods(uint256 newMaxPods) external onlyPauser {
         _setMaxPods(newMaxPods);
     }
 
