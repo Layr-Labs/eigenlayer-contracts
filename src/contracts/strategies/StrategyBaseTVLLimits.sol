@@ -12,34 +12,46 @@ import "./StrategyBase.sol";
 contract StrategyBaseTVLLimits is StrategyBase {
     /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
     uint256 public maxPerDeposit;
+
     /// The maximum deposits (in underlyingToken) that this strategy will hold
-    uint256 public maxDeposits;
+    uint256 public maxTotalDeposits;
+
+    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`
+    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
+    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
+
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(uint256 _maxPerDeposit, uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
+    function initialize(uint256 _maxPerDeposit, uint256 _maxTotalDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
         public virtual initializer
     {
-        _setTVLLimits(_maxPerDeposit, _maxDeposits);
+        _setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
         _initializeStrategyBase(_underlyingToken, _pauserRegistry);
     }
 
     /**
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
-     * @param newMaxDeposits The new maximum deposits
+     * @param newMaxTotalDeposits The new maximum deposits
      * @dev Callable only by the pauser of this contract
      */
-    function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) external onlyPauser {
-        _setTVLLimits(newMaxPerDeposit, newMaxDeposits);
+    function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) external onlyPauser {
+        _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
     }
 
+    /// @notice Simple getter function that returns the current values of `maxPerDeposit` and `maxTotalDeposits`.
     function getTVLLimits() external view returns (uint256, uint256) {
-        return (maxPerDeposit, maxDeposits);
+        return (maxPerDeposit, maxTotalDeposits);
     }
 
-    function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) internal {
+    /// @notice Internal setter for TVL limits
+    function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
+        emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
+        emit MaxPerDepositUpdated(maxTotalDeposits, newMaxTotalDeposits);
         maxPerDeposit = newMaxPerDeposit;
-        maxDeposits = newMaxDeposits;
+        maxTotalDeposits = newMaxTotalDeposits;
     }
 
     /**
@@ -49,7 +61,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
         require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
-        require(_tokenBalance() + amount <= maxDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+        require(_tokenBalance() + amount <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
     }
 
     /**
