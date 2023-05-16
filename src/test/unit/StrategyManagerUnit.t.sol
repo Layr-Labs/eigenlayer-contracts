@@ -2125,48 +2125,6 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.stopPrank();
     }
 
-    function _queueWithdrawalStrategyMock(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) internal
-        returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
-    {
-        // filtering of fuzzed inputs
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-
-        // address staker = address(this);
-        _tempStrategyStorage = dummyStrat;
-        // IERC20 token = dummyToken;
-
-        testDepositIntoStrategySuccessfully(dummyStrat, /*staker*/ address(this), depositAmount);
-
-        (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot) =
-            _setUpQueuedWithdrawalStructSingleStrat(/*staker*/ address(this), /*withdrawer*/ address(this), dummyToken, _tempStrategyStorage, withdrawalAmount);
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
-        uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
-
-        require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-
-        {
-            uint256[] memory strategyIndexes = new uint256[](1);
-            strategyIndexes[0] = 0;
-            strategyManager.queueWithdrawal(
-                strategyIndexes,
-                queuedWithdrawal.strategies,
-                queuedWithdrawal.shares,
-                /*withdrawer*/ address(this),
-                undelegateIfPossible
-            );
-        }
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
-        uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
-
-        require(strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is false!");
-        require(sharesAfter == sharesBefore - withdrawalAmount, "sharesAfter != sharesBefore - withdrawalAmount");
-        require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
-
-        return (queuedWithdrawal, tokensArray, withdrawalRoot);
-    }
-
     function testAddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) public returns (IStrategy[] memory) {
         // sanity filtering on fuzzed input
         cheats.assume(numberOfStrategiesToAdd <= 16);
