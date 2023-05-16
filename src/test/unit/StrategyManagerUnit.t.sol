@@ -233,6 +233,7 @@ contract StrategyManagerUnitTests is Test {
     function testDepositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;
 
+        /// IMPORTANT: ensure that when using this test as a part of another test, that the input strategy is already whitelisted!
         if (!strategyManager.strategyIsWhitelistedForDeposit(strategy)){
             strategy = dummyStrat;
         }
@@ -1686,7 +1687,6 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
 
         indicesToSkip[0] = 0;
         indicesToSkip[1] = 1;
-
 
         cheats.startPrank(strategyManager.owner());
         strategyManager.slashQueuedWithdrawal(recipient, queuedWithdrawal, _arrayWithJustTwoDummyTokens(), indicesToSkip);

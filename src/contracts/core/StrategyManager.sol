@@ -12,8 +12,6 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -30,8 +28,7 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage,
-    Test
+    StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
 
@@ -543,8 +540,6 @@ contract StrategyManager is
         onlyFrozen(queuedWithdrawal.delegatedAddress)
         nonReentrant
     {
-        emit log_named_uint("tokens length", tokens.length);
-        emit log_named_uint("queuedWithdrawal strategies length", queuedWithdrawal.strategies.length);
         require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.slashQueuedWithdrawal: input length mismatch");
 
         // find the withdrawalRoot
