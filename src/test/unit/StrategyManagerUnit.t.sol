@@ -1640,8 +1640,7 @@ contract StrategyManagerUnitTests is Test {
         uint256 withdrawalAmount = depositAmount;
         bool undelegateIfPossible = false;
 
-        (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
-testQueueWithdrawal_ToSelf_NotBeaconChainETH(depositAmount, withdrawalAmount, undelegateIfPossible);
+        (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) = testQueueWithdrawal_ToSelf_NotBeaconChainETH(depositAmount, withdrawalAmount, undelegateIfPossible);
 
         uint256 balanceBefore = dummyToken.balanceOf(address(recipient));
 
@@ -1653,8 +1652,6 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETH(depositAmount, withdrawalAmount, un
         cheats.stopPrank();
 
         uint256 balanceAfter = dummyToken.balanceOf(address(recipient));
-
-
         require(balanceAfter == balanceBefore + withdrawalAmount, "balanceAfter != balanceBefore + withdrawalAmount");
         require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is true!");
     }
@@ -1687,6 +1684,12 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
 
         uint256 balanceAfter = dummyToken.balanceOf(address(recipient));
 
+        /**
+         * This check ensures that the strategy has not been withdrawn from.  If the incrementor is misplaced inside
+         * the else statement (as it was before the fix was made), the withdrawal would have been triggered for the 
+         * the strategy that we intended to skip, i.e., the check indicesToSkip[indicesToSkipIndex] == i would have 
+         * failed, triggering the else logic to withdraw from the strategy that was at index 0.
+         */
         require(balanceAfter == balanceBefore, "withdrawal should not have been processed");
 
         require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is true!");
