@@ -359,8 +359,6 @@ contract StrategyManager is
          * while other share in all other strategies represent purely fungible positions.
          */
         for (uint256 i = 0; i < strategies.length;) {
-            emit log_named_uint("HERE IT IS", i);
-            emit log_named_uint("HERE IT IS", strategies.length);
             if (strategies[i] == beaconChainETHStrategy) {
                 require(withdrawer == msg.sender,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
