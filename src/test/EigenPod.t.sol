@@ -470,7 +470,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofs.balanceRoot = bytes32(0);
         validatorFields[3] = bytes32(0);
         cheats.expectRevert(bytes("EigenPod.verifyOvercommittedStake: Validator must be slashed to be overcommitted"));
-        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, 0);
+        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
 
     }
 
@@ -602,7 +602,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
-        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, 0);
+        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {

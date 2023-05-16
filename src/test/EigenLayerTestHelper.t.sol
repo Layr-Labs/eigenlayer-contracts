@@ -15,6 +15,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] priorTotalShares;
     uint256[] strategyTokenBalance;
 
+    /**
+     * @notice Helper function to test `initiateDelegation` functionality.  Handles registering as an operator, depositing tokens
+     * into both Weth and Eigen strategies, as well as delegating assets from "stakers" to the operator.
+     * @param operatorIndex is the index of the operator to use from the test-data/operators.json file
+     * @param amountEigenToDeposit amount of eigen token to deposit
+     * @param amountEthToDeposit amount of eth to deposit
+     */
+
     function _testInitiateDelegation(
         uint8 operatorIndex,
         uint256 amountEigenToDeposit, 
@@ -54,8 +62,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         return (amountEthStaked, amountEigenStaked);
     }
 
-    // simply tries to register 'sender' as an operator, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
-    // verifies that the storage of DelegationManager contract is updated appropriately
+    /**
+     * @notice Register 'sender' as an operator, setting their 'DelegationTerms' contract in DelegationManager to 'dt', verifies 
+     * that the storage of DelegationManager contract is updated appropriately
+     * 
+     * @param sender is the address being registered as an operator
+     * @param dt is the sender's DelegationTerms contract
+     */
     function _testRegisterAsOperator(address sender, IDelegationTerms dt) internal {
         cheats.startPrank(sender);
         delegation.registerAsOperator(dt);
@@ -105,19 +118,24 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         internal
         returns (uint256 amountDeposited)
     {
+        
         // deposits will revert when amountToDeposit is 0
         cheats.assume(amountToDeposit > 0);
 
         // whitelist the strategy for deposit, in case it wasn't before
-        cheats.startPrank(strategyManager.owner());
-        IStrategy[] memory _strategy = new IStrategy[](1);
-        _strategy[0] = stratToDepositTo;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
+        {
+            cheats.startPrank(strategyManager.strategyWhitelister());
+            IStrategy[] memory _strategy = new IStrategy[](1);
+            _strategy[0] = stratToDepositTo;
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            cheats.stopPrank();
+        }
 
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
+        // check the expected output
+        uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
         // logging and error for misusing this function (see assumption above)
         if (amountToDeposit > contractBalance) {
             emit log("amountToDeposit > contractBalance");
@@ -137,76 +155,26 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 assertTrue(
                     strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1)
                         == stratToDepositTo,
-                    "_depositToStrategy: stakerStrategyList array updated incorrectly"
+                    "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
             }
             
-            //in this case, since shares never grow, the shares should just match the deposited amount
+            // check that the shares out match the expected amount out
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
-                amountDeposited,
-                "_depositToStrategy: shares should match deposit"
+                expectedSharesOut,
+                "_testDepositToStrategy: actual shares out should match expected shares out"
             );
         }
         cheats.stopPrank();
     }
 
-// TODO: reimplement with queued withdrawals
-/*
-    //checks that it is possible to withdraw from the given `stratToWithdrawFrom`
-    function _testWithdrawFromStrategy(
-        address sender,
-        uint256 strategyIndex,
-        uint256 amountSharesToWithdraw,
-        IERC20 underlyingToken,
-        IStrategy stratToWithdrawFrom
-    )
-        internal
-    {
-        // fetch the length of `sender`'s dynamic `stakerStrategyList` array
-        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(sender);
-        // fetch `sender`'s existing share amount
-        uint256 existingShares = strategyManager.stakerStrategyShares(sender, stratToWithdrawFrom);
-        // fetch `sender`'s existing balance of `underlyingToken`
-        uint256 senderUnderlyingBalanceBefore = underlyingToken.balanceOf(sender);
-
-        // sanity checks on `strategyIndex` input
-        if (strategyIndex >= stakerStrategyListLengthBefore) {
-            emit log("_testWithdrawFromStrategy: attempting to withdraw from out-of-bounds index");
-            revert("_testWithdrawFromStrategy: attempting to withdraw from out-of-bounds index");
-        }
-        assertEq(address(stratToWithdrawFrom), address(strategyManager.stakerStrategyList(sender, strategyIndex)));
-
-        cheats.prank(sender);
-        //trying to withdraw more than the amountDeposited will fail, so we expect a revert and *short-circuit* if it happens
-        if (amountSharesToWithdraw > existingShares) {
-            cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
-            strategyManager.withdrawFromStrategy(
-                strategyIndex, stratToWithdrawFrom, underlyingToken, amountSharesToWithdraw
-            );
-            return;
-        } else {
-            strategyManager.withdrawFromStrategy(
-                strategyIndex, stratToWithdrawFrom, underlyingToken, amountSharesToWithdraw
-            );
-        }
-
-        uint256 senderUnderlyingBalanceAfter = underlyingToken.balanceOf(sender);
-
-        assertEq(
-            amountSharesToWithdraw,
-            senderUnderlyingBalanceAfter - senderUnderlyingBalanceBefore,
-            "_testWithdrawFromStrategy: shares differ from 1-to-1 with underlyingToken?"
-        );
-        cheats.stopPrank();
-    }
-*/
-
-    // tries to delegate from 'staker' to 'operator'
-    // verifies that:
-    //                  staker has at least some shares
-    //                  delegatedShares update correctly for 'operator'
-    //                  delegated status is updated correctly for 'staker'
+    /**
+     * @notice tries to delegate from 'staker' to 'operator', verifies that staker has at least some shares 
+     * delegatedShares update correctly for 'operator' and delegated status is updated correctly for 'staker'
+     * @param staker the staker address to delegate from
+     * @param operator the operator address to delegate to
+     */
     function _testDelegateToOperator(address staker, address operator) internal {
         //staker-specific information
         (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) =
@@ -242,8 +210,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
     }
 
-    /// deploys 'numStratsToAdd' strategies contracts and initializes them to treat `underlyingToken` as their underlying token
-    /// and then deposits 'amountToDeposit' to each of them from 'sender'
+    /**
+     * @notice deploys 'numStratsToAdd' strategies contracts and initializes them to treat `underlyingToken` as their underlying token 
+     * and then deposits 'amountToDeposit' to each of them from 'sender'
+     * 
+     * @param sender address that is depositing into the strategies
+     * @param amountToDeposit amount being deposited
+     * @param numStratsToAdd number of strategies that are being deployed and deposited into
+     */
     function _testDepositStrategies(address sender, uint256 amountToDeposit, uint8 numStratsToAdd) internal {
         // hard-coded input
         IERC20 underlyingToken = weth;
@@ -340,7 +314,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     /** 
-    * combines V and S into VS - if S is greater than SECP256K1N_MODULUS_HALF, then we
+    * Helper for ECDSA signatures: combines V and S into VS - if S is greater than SECP256K1N_MODULUS_HALF, then we
     * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
     * bit to be either 0 or 1 based on the value of v, which is either 27 or 28 
     */
@@ -412,6 +386,18 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
     }
 
+    /**
+     * @notice Helper function to complete an existing queued withdrawal in shares
+     * @param depositor is the address of the staker who queued a withdrawal
+     * @param strategyArray is the array of strategies to withdraw from
+     * @param tokensArray is the array of tokens to withdraw from said strategies
+     * @param shareAmounts is the array of shares to be withdrawn from said strategies
+     * @param delegatedTo is the address the staker has delegated their shares to
+     * @param withdrawerAndNonce is a struct containing the withdrawer and the nonce of the withdrawal
+     * @param withdrawalStartBlock the block number of the original queued withdrawal
+     * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
+     */
+
     function _testCompleteQueuedWithdrawalShares(
         address depositor,
         IStrategy[] memory strategyArray,
@@ -460,6 +446,17 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice Helper function to complete an existing queued withdrawal in tokens
+     * @param depositor is the address of the staker who queued a withdrawal
+     * @param strategyArray is the array of strategies to withdraw from
+     * @param tokensArray is the array of tokens to withdraw from said strategies
+     * @param shareAmounts is the array of shares to be withdrawn from said strategies
+     * @param delegatedTo is the address the staker has delegated their shares to
+     * @param withdrawerAndNonce is a struct containing the withdrawer and the nonce of the withdrawal
+     * @param withdrawalStartBlock the block number of the original queued withdrawal
+     * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
+     */
     function _testCompleteQueuedWithdrawalTokens(
         address depositor,
         IStrategy[] memory strategyArray,
@@ -504,7 +501,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         cheats.stopPrank();
     }
 
-    //*******INTERNAL FUNCTIONS*********//
     function _testQueueWithdrawal(
         address depositor,
         uint256[] memory strategyIndexes,
@@ -530,4 +526,3 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         return withdrawalRoot;
     }
 }
-

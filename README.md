@@ -46,6 +46,15 @@ The main command to run tests is:
 
 `forge test -vv`
 
+### Run Tests on a Fork
+Environment config is contained in config.yml.  Before running the following commands, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/).  Then set up the environment with this script:
+
+`source source-env.sh [CHAIN]`
+
+for example, on goerli: `source source-env.sh goerli`.  Currently options for `[CHAIN]` are `goerli`, `local`.  Then to run the actual tests:
+
+`forge test --fork-url [RPC_URL]`
+
 ### Run Static Analysis
 
 `solhint 'src/contracts/**/*.sol'`

@@ -84,6 +84,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
 
     function testCreateDelayedWithdrawalNonzeroAmount(uint224 delayedWithdrawalAmount, address podOwner, address recipient) public filterFuzzedAddressInputs(podOwner) {
         cheats.assume(delayedWithdrawalAmount != 0);
+        cheats.assume(recipient != address(0));
 
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsBefore = delayedWithdrawalRouter.userWithdrawals(recipient);
 
@@ -118,6 +119,14 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         // verify that no new 'delayedWithdrawal' was created
         require(userWithdrawalsAfter.delayedWithdrawals.length == userWithdrawalsBefore.delayedWithdrawals.length,
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
+    }
+
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external {
+        uint224 delayedWithdrawalAmount = 0;
+        address podAddress = address(eigenPodManagerMock.getPod(podOwner));
+        cheats.startPrank(podAddress);
+        cheats.expectRevert(bytes("DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"));
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
     }
 
     function testClaimDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, address recipient, bool useOverloadedFunction)

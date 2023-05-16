@@ -81,8 +81,8 @@ contract EigenLayerDeployer is Operators {
     uint256 REQUIRED_BALANCE_WEI = 31.4 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
 
-    address pauser = address(69);
-    address unpauser = address(489);
+    address pauser;
+    address unpauser;
     address theMultiSig = address(420);
     address operator = address(0x4206904396bF2f8b173350ADdEc5007A52664293); //sk: e88d9d864d5d731226020c5d2f02b62a4ce2a4534a39c225d32d3db795f83319
     address acct_0 = cheats.addr(uint256(priv_key_0));
@@ -90,7 +90,25 @@ contract EigenLayerDeployer is Operators {
     address _challenger = address(0x6966904396bF2f8b173350bCcec5007A52669873);
     address public eigenLayerReputedMultisig = address(this);
 
+    address eigenLayerProxyAdminAddress;
+    address eigenLayerPauserRegAddress;
+    address slasherAddress;
+    address delegationAddress;
+    address strategyManagerAddress;
+    address eigenPodManagerAddress;
+    address podAddress;
+    address delayedWithdrawalRouterAddress;
+    address eigenPodBeaconAddress;
+    address beaconChainOracleAddress;
+    address emptyContractAddress;
+    address teamMultisig;
+    address communityMultisig;
+
+
     uint256 public initialBeaconChainOracleThreshold = 3;
+
+    string internal goerliDeploymentConfig = vm.readFile("script/output/M1_deployment_goerli_2023_3_23.json");
+
 
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping (address => bool) fuzzedAddressMapping;
@@ -108,8 +126,14 @@ contract EigenLayerDeployer is Operators {
     }
 
     //performs basic deployment before each test
+    // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        _deployEigenLayerContracts();
+        if(vm.envUint("CHAIN_ID") == 31337){
+            _deployEigenLayerContractsLocal();
+
+        }else if(vm.envUint("CHAIN_ID") == 5){
+            _deployEigenLayerContractsGoerli();
+        }
 
         fuzzedAddressMapping[address(0)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
@@ -119,7 +143,78 @@ contract EigenLayerDeployer is Operators {
         fuzzedAddressMapping[address(slasher)] = true;
     }
 
-    function _deployEigenLayerContracts() internal {
+    function _deployEigenLayerContractsGoerli() internal {
+        _setAddresses(goerliDeploymentConfig);
+        pauser = teamMultisig;
+        unpauser = communityMultisig;
+        // deploy proxy admin for ability to upgrade proxy contracts
+        eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
+
+        emptyContract = new EmptyContract();
+        
+        //deploy pauser registry
+        eigenLayerPauserReg = PauserRegistry(eigenLayerPauserRegAddress);
+
+        delegation = DelegationManager(delegationAddress);
+        strategyManager = StrategyManager(strategyManagerAddress);
+        slasher = Slasher(slasherAddress);
+        eigenPodManager = EigenPodManager(eigenPodManagerAddress);
+        delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
+
+        address[] memory initialOracleSignersArray = new address[](0);
+        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+
+        ethPOSDeposit = new ETHPOSDepositMock();
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+
+        eigenPodBeacon = new UpgradeableBeacon(address(pod));
+
+
+
+        //simple ERC20 (**NOT** WETH-like!), used in a test strategy
+        weth = new ERC20PresetFixedSupply(
+            "weth",
+            "WETH",
+            wethInitialSupply,
+            address(this)
+        );
+
+        // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+        wethStrat = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, weth, eigenLayerPauserReg)
+                )
+            )
+        );
+
+        eigenToken = new ERC20PresetFixedSupply(
+            "eigen",
+            "EIGEN",
+            wethInitialSupply,
+            address(this)
+        );
+
+        // deploy upgradeable proxy that points to StrategyBase implementation and initialize it
+        eigenStrat = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken, eigenLayerPauserReg)
+                )
+            )
+        );
+
+        stakers = [acct_0, acct_1];
+    }
+
+    function _deployEigenLayerContractsLocal() internal {
+        pauser = address(69);
+        unpauser = address(489);
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
 
@@ -258,6 +353,19 @@ contract EigenLayerDeployer is Operators {
         );
 
         stakers = [acct_0, acct_1];
+    }
+
+    function _setAddresses(string memory config) internal {
+        eigenLayerProxyAdminAddress = stdJson.readAddress(config, ".addresses.eigenLayerProxyAdmin");   
+        eigenLayerPauserRegAddress = stdJson.readAddress(config, ".addresses.eigenLayerPauserReg");
+        delegationAddress = stdJson.readAddress(config, ".addresses.delegation");
+        strategyManagerAddress = stdJson.readAddress(config, ".addresses.strategyManager");
+        slasherAddress = stdJson.readAddress(config, ".addresses.slasher");
+        eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager"); 
+        delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
+        emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
+        teamMultisig = stdJson.readAddress(config, ".parameters.teamMultisig");
+        communityMultisig = stdJson.readAddress(config, ".parameters.communityMultisig");
     }
     
 }

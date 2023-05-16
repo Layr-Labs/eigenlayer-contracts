@@ -542,7 +542,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 amount = 1e18;
 
         uint256 nonceBefore = strategyManager.nonces(staker);
-        uint256 expiry = 5555;
+        uint256 expiry = block.timestamp;
         bytes memory signature;
 
         {
