@@ -171,7 +171,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
-     * @param depositor The address of the depositor
+     * @param depositor The address that will receive the withdrawn tokens
      * @param token The token being withdrawn
      * @param amountShares The amount of shares being withdrawn
      */

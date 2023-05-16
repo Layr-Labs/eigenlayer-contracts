@@ -5,6 +5,8 @@ import "./StrategyBase.sol";
 
 /**
  * @title A Strategy implementation inheriting from `StrategyBase` that limits the total amount of deposits it will accept.
+ * @dev Note that this implementation still converts between any amount of shares or underlying tokens in its view functions;
+ * these functions purposefully do not take the TVL limit into account.
  * @author Layr Labs, Inc.
  */
 contract StrategyBaseTVLLimits is StrategyBase {
@@ -15,9 +17,12 @@ contract StrategyBaseTVLLimits is StrategyBase {
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(uint256 _maxPerDeposit, uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) public virtual initializer {
+    function initialize(uint256 _maxPerDeposit, uint256 _maxDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
+        public virtual initializer
+    {
         _setTVLLimits(_maxPerDeposit, _maxDeposits);
-        _initializeStrategyBase(_underlyingToken, _pauserRegistry);    }
+        _initializeStrategyBase(_underlyingToken, _pauserRegistry);
+    }
 
     /**
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
