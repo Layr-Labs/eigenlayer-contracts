@@ -124,21 +124,22 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
+        uint256[] memory claimableDelayedWithdrawalIndices = new DelayedWithdrawal[](userDelayedWithdrawalsLength);
 
         uint256 count = 0;
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
             if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                claimableDelayedWithdrawalIndices[count] = i;
                 count++;
             }
         }
         
         DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](count);
-        for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
-                claimableDelayedWithdrawals[i] = delayedWithdrawal;
-            }
+        for (uint256 i = 0; i < count; i++) {
+            uint256 index = claimableDelayedWithdrawalIndices[i];
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + index];
+            claimableDelayedWithdrawals[i] = delayedWithdrawal;
         }
         return claimableDelayedWithdrawals;
     }
