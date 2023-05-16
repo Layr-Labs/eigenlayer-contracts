@@ -125,6 +125,7 @@ library Merkle {
      @param leaves the leaves of the merkle tree
 
      @notice requires the leaves.length is a power of 2
+     @return The computed Merkle root of the tree.
      */ 
     function merkleizeSha256(
         bytes32[] memory leaves

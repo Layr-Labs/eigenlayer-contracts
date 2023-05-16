@@ -37,6 +37,7 @@ interface IStrategyManager {
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
      * 
@@ -45,7 +46,7 @@ interface IStrategyManager {
      */
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
-        returns (uint256);
+        returns (uint256 shares);
 
 
     /**
@@ -79,6 +80,7 @@ interface IStrategyManager {
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
      * following EIP-1271 if the `staker` is a contract
+     * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
@@ -122,6 +124,10 @@ interface IStrategyManager {
      * for which `msg.sender` is withdrawing 100% of their shares
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
+     * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
+     * @param undelegateIfPossible If this param is marked as 'true' *and the withdrawal will result in `msg.sender` having no shares in any Strategy,*
+     * then this function will also make an internal call to `undelegate(msg.sender)` to undelegate the `msg.sender`.
+     * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
@@ -161,6 +167,12 @@ interface IStrategyManager {
     
     /**
      * @notice Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
+     * @param queuedWithdrawals The QueuedWithdrawals to complete.
+     * @param tokens Array of tokens for each QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param middlewareTimesIndexes One index to reference per QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
+     * @param receiveAsTokens If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves
+     * and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
+     * will simply be transferred to the caller directly.
      * @dev Array-ified version of `completeQueuedWithdrawal`
      * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
      */
@@ -175,6 +187,11 @@ interface IStrategyManager {
     /**
      * @notice Slashes the shares of a 'frozen' operator (or a staker delegated to one)
      * @param slashedAddress is the frozen address that is having its shares slashed
+     * @param recipient is the address that will receive the slashed funds, which could e.g. be a harmed party themself,
+     * or a MerkleDistributor-type contract that further sub-divides the slashed funds.
+     * @param strategies Strategies to slash
+     * @param shareAmounts The amount of shares to slash in each of the provided `strategies`
+     * @param tokens The tokens to use as input to the `withdraw` function of each of the provided `strategies`
      * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
      * for which `msg.sender` is withdrawing 100% of their shares
      * @param recipient The slashed funds are withdrawn as tokens to this address.

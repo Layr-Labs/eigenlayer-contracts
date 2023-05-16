@@ -122,6 +122,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice Used to withdraw tokens from this Strategy, to the `depositor`'s address
+     * @param depositor is the address to receive the withdrawn funds
      * @param token is the ERC20 token being transferred out
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
@@ -172,6 +173,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
+     * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlyingView(uint256 amountShares) public view virtual override returns (uint256) {
@@ -186,6 +188,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
+     * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlying(uint256 amountShares) public view virtual override returns (uint256) {
@@ -196,6 +199,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
+     * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToSharesView(uint256 amountUnderlying) public view virtual returns (uint256) {
@@ -210,6 +214,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
+     * @return The amount of shares corresponding to the input `amountUnderlying`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToShares(uint256 amountUnderlying) external view virtual returns (uint256) {

@@ -174,6 +174,7 @@ library BeaconChainProofs {
      * validatorIndex mod 4 is used to determine which of the four uint64 values to extract from the balanceRoot.
      * @param validatorIndex is the index of the validator being proven for.
      * @param balanceRoot is the combination of 4 validator balances being proven for.
+     * @return The validator's balance, in Gwei
      */
    function getBalanceFromBalanceRoot(uint40 validatorIndex, bytes32 balanceRoot) internal pure returns (uint64) {
         uint256 bitShiftAmount = (validatorIndex % 4) * 64;
