@@ -606,17 +606,75 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
-        //should fail if no/wrong value is provided
+        // should fail if no/wrong value is provided
         cheats.startPrank(podOwner);
         cheats.expectRevert("EigenPod.stake: must initially stake for any validator with 32 ether");
         eigenPodManager.stake(_pubkey, _signature, _depositDataRoot);
         cheats.expectRevert("EigenPod.stake: must initially stake for any validator with 32 ether");
         eigenPodManager.stake{value: 12 ether}(_pubkey, _signature, _depositDataRoot);
         
-
-        //successful call
+        // successful call
         eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
         cheats.stopPrank();
+    }
+
+
+    // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.stake` function
+    function test_incrementNumPodsOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+        uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
+        testStake(_pubkey, _signature, _depositDataRoot);
+        uint256 numPodsAfter = EigenPodManager(address(eigenPodManager)).numPods();
+        require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
+    }
+
+    // verifies that the `maxPods` variable is enforced on the `EigenPod.stake` function
+    function test_maxPodsEnforcementOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+        // set pod limit to current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
+        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
+        cheats.stopPrank();
+
+        // set pod limit to *one more than* current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        // successful call
+        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.createPod` function
+    function test_incrementNumPodsOnCreatePod() public {
+        uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
+        eigenPodManager.createPod();
+        uint256 numPodsAfter = EigenPodManager(address(eigenPodManager)).numPods();
+        require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
+    }
+
+    // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
+    function test_maxPodsEnforcementOnCreatePod() public {
+        // set pod limit to current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
+        cheats.stopPrank();
+
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
+        eigenPodManager.createPod();
+
+        // set pod limit to *one more than* current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
+        cheats.stopPrank();
+
+        // successful call
+        eigenPodManager.createPod();
     }
 
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
