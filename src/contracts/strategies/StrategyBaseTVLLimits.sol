@@ -27,7 +27,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     /**
      * @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit
      * @param newMaxDeposits The new maximum deposits
-     * @dev Callable by the unpauser of this contract
+     * @dev Callable only by the pauser of this contract
      */
     function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxDeposits) external onlyPauser {
         _setTVLLimits(newMaxPerDeposit, newMaxDeposits);
