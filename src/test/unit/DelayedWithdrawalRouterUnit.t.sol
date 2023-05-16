@@ -217,7 +217,8 @@ contract DelayedWithdrawalRouterUnitTests is Test {
 
         cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks() + 1 - delayedWithdrawalsToCreate);
         for (uint i = 1; i <= delayedWithdrawalsToCreate; ++i) {
-            require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == i);
+            uint256 length = delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length;
+            require(length == i, "Incorrect number of claimable delayed withdrawals");
             cheats.roll(block.number + 1);
         }
         require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "Incorrect number of claimable delayed withdrawals");

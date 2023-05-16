@@ -8,7 +8,9 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
+import "forge-std/Test.sol";
+
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter, Test {
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -120,26 +122,34 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
     }
 
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+    function getClaimableUserDelayedWithdrawals(address user) external  returns (DelayedWithdrawal[] memory) {
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
         uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
         uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
-        uint256[] memory claimableDelayedWithdrawalIndices = new uint256[](userDelayedWithdrawalsLength);
 
-        uint256 count = 0;
+        uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
+        emit log("****************************************");
+        emit log_named_uint("block.number", block.number);
+        emit log_named_uint("userDelayedWithdrawalsLength", userDelayedWithdrawalsLength);
+
+
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            if (block.number > delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
-                claimableDelayedWithdrawalIndices[count] = i;
-                count++;
+            emit log_named_uint("delayedWithdrawal.blockCreated", delayedWithdrawal.blockCreated);
+            emit log_named_uint("block after which withdrawable", delayedWithdrawal.blockCreated + withdrawalDelayBlocks);
+
+            if (block.number <= delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                firstNonClaimableWithdrawalIndex = i;
+                break;
             }
         }
-        
-        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](count);
-        for (uint256 i = 0; i < count; i++) {
-            uint256 index = claimableDelayedWithdrawalIndices[i];
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + index];
-            claimableDelayedWithdrawals[i] = delayedWithdrawal;
+        emit log_named_uint("firstNonClaimableWithdrawalIndex", firstNonClaimableWithdrawalIndex);
+        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](firstNonClaimableWithdrawalIndex);
+        if(firstNonClaimableWithdrawalIndex != 0) {
+            for (uint256 i = 0; i < firstNonClaimableWithdrawalIndex; i++) {
+                DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+                claimableDelayedWithdrawals[i] = delayedWithdrawal;
+            }
         }
         return claimableDelayedWithdrawals;
     }
