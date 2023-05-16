@@ -2241,7 +2241,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 
-    function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
+    function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) internal filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;    
 
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
