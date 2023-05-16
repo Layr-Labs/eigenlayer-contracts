@@ -62,7 +62,7 @@ _Callable only by the podOwner's EigenPod contract._
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | podOwner | address | The owner of the pod whose balance must be removed. |
-| beaconChainETHStrategyIndex | uint256 |  |
+| beaconChainETHStrategyIndex | uint256 | is the index of the beaconChainETHStrategy for the pod owner for the callback to                                     the StrategyManager in case it must be removed from the list of the podOwner's strategies |
 | amount | uint256 | The amount of ETH to remove. |
 
 ### withdrawRestakedBeaconChainETH

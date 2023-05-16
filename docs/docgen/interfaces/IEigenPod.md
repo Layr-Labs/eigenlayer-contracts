@@ -143,7 +143,7 @@ block number of the most recent withdrawal
 function provenPartialWithdrawal(uint40 validatorIndex, uint64 slot) external view returns (bool)
 ```
 
-mapping that trackes proven partial withdrawals
+mapping that tracks proven partial withdrawals
 
 ### verifyWithdrawalCredentialsAndBalance
 
