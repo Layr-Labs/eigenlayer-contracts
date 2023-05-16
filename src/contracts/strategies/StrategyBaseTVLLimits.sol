@@ -49,7 +49,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     /// @notice Internal setter for TVL limits
     function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
         emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
-        emit MaxPerDepositUpdated(maxTotalDeposits, newMaxTotalDeposits);
+        emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
         maxPerDeposit = newMaxPerDeposit;
         maxTotalDeposits = newMaxTotalDeposits;
     }
