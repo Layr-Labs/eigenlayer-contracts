@@ -704,7 +704,6 @@ contract StrategyManager is
         _addShares(depositor, strategy, shares);
 
         emit Deposit(depositor, token, strategy, shares);
-
         return shares;
     }
 
