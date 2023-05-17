@@ -38,8 +38,8 @@ contract Deployer_M1 is Script, Test {
 
     // struct used to encode token info in config file
     struct StrategyConfig {
-        uint256 maxDeposits;
         uint256 maxPerDeposit;
+        uint256 maxDeposits;
         address tokenAddress;
         string tokenSymbol;
     }
@@ -96,6 +96,7 @@ contract Deployer_M1 is Script, Test {
 
         // READ JSON CONFIG DATA
         string memory config_data = vm.readFile(deployConfigPath);
+
         // bytes memory parsedData = vm.parseJson(config_data);
 
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
@@ -234,12 +235,16 @@ contract Deployer_M1 is Script, Test {
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+            //we parse these separately as foundry's json parsing returns incorrect values
+            uint256 maxPerDeposit = stdJson.readUint(config_data, string.concat(".strategies[", string.concat(vm.toString(i), "].max_per_deposit")));
+            uint256 maxDeposits = stdJson.readUint(config_data, string.concat(".strategies[", string.concat(vm.toString(i), "].max_deposits")));
+            address tokenAddress = stdJson.readAddress(config_data, string.concat(".strategies[", string.concat(vm.toString(i), "].token_address")));
             deployedStrategyArray.push(
                 StrategyBaseTVLLimits(address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, maxPerDeposit, maxDeposits, IERC20(tokenAddress), eigenLayerPauserReg)
                     )
                 ))
             );
@@ -278,7 +283,8 @@ contract Deployer_M1 is Script, Test {
 
         string memory deployed_strategies = "strategies";
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
-            vm.serializeAddress(deployed_strategies, strategyConfigs[i].tokenSymbol, address(deployedStrategyArray[i]));
+            string memory tokenSymbol = stdJson.readString(config_data, string.concat(".strategies[", string.concat(vm.toString(i), "].token_symbol")));
+            vm.serializeAddress(deployed_strategies, tokenSymbol, address(deployedStrategyArray[i]));
         }
         string memory deployed_strategies_output = vm.serializeAddress(
             deployed_strategies, strategyConfigs[strategyConfigs.length - 1].tokenSymbol,
