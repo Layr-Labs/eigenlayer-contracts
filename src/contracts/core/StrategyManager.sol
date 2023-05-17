@@ -589,10 +589,10 @@ contract StrategyManager is
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
                 }
-                unchecked {
+            }
+            unchecked {
                     ++i;
                 }
-            }
         }
     }
 
@@ -859,7 +859,7 @@ contract StrategyManager is
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
      * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
      */
-    function _undelegate(address depositor) internal {
+    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }

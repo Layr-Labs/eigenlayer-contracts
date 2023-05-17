@@ -105,6 +105,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     }
 
     function testCreateDelayedWithdrawalZeroAmount(address podOwner, address recipient) public filterFuzzedAddressInputs(podOwner) {
+        cheats.assume(recipient != address(0));
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsBefore = delayedWithdrawalRouter.userWithdrawals(recipient);
         uint224 delayedWithdrawalAmount = 0;
 
@@ -121,9 +122,10 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
     }
 
-    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external {
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner){
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
+        cheats.assume(podAddress != address(proxyAdmin));
         cheats.startPrank(podAddress);
         cheats.expectRevert(bytes("DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"));
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
@@ -187,6 +189,42 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         require(userBalanceAfter == userBalanceBefore + totalDelayedWithdrawalAmount,
             "userBalanceAfter != userBalanceBefore + totalDelayedWithdrawalAmount");
     }
+
+    /// @notice This function is used to test the getter function 'getClaimableDelayedWithdrawals'
+    function testDelayedWithdrawalsGetterFunctions(uint8 delayedWithdrawalsToCreate, uint224 delayedWithdrawalAmount, address recipient)
+        public filterFuzzedAddressInputs(recipient)
+    {
+        cheats.assume(delayedWithdrawalAmount != 0);
+        cheats.assume(delayedWithdrawalsToCreate > 5);
+        // filter contracts out of fuzzed recipient input, since most don't implement a payable fallback function
+        cheats.assume(!Address.isContract(recipient));
+        // filter out precompile addresses (they won't accept delayedWithdrawal either)
+        cheats.assume(uint160(recipient) > 256);
+        // filter fuzzed inputs to avoid running out of gas & excessive test run-time
+        cheats.assume(delayedWithdrawalsToCreate <= 32);
+
+        address podOwner = address(88888);
+
+        // create the delayedWithdrawals
+        uint8 delayedWithdrawalsCreated;
+        for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {   
+            testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+            delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
+            delayedWithdrawalsCreated += 1;
+            cheats.roll(block.number + 1); // make sure each delayedWithdrawal has a unique block number
+        }
+
+        require(delayedWithdrawalRouter.getUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "Incorrect number delayed withdrawals");
+
+        cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks() - delayedWithdrawalsToCreate);
+        for (uint i = 1; i <= delayedWithdrawalsToCreate; ++i) {
+            uint256 length = delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length;
+            require(length == i, "Incorrect number of claimable delayed withdrawals");
+            cheats.roll(block.number + 1);
+        }
+        require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "Incorrect number of claimable delayed withdrawals");
+    }
+
 
     /**
      * @notice Creates a set of delayedWithdrawals of length (2 * `delayedWithdrawalsToCreate`) where only the first half is claimable, claims using `maxNumberOfDelayedWithdrawalsToClaim` input,

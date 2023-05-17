@@ -168,6 +168,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                type(uint256).max, // maxPods
                 beaconChainOracle,
                 initialOwner,
                 pauserReg,
@@ -605,16 +606,137 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
-        //should fail if no/wrong value is provided
+        // should fail if no/wrong value is provided
         cheats.startPrank(podOwner);
         cheats.expectRevert("EigenPod.stake: must initially stake for any validator with 32 ether");
         eigenPodManager.stake(_pubkey, _signature, _depositDataRoot);
         cheats.expectRevert("EigenPod.stake: must initially stake for any validator with 32 ether");
         eigenPodManager.stake{value: 12 ether}(_pubkey, _signature, _depositDataRoot);
         
-
-        //successful call
+        // successful call
         eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is 0
+    function testVerifyInclusionSha256FailsForEmptyProof(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index
+    ) public {
+        bytes memory emptyProof = new bytes(0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionSha256(emptyProof, root, leaf, index);
+    }
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is not a multple of 32
+    function testVerifyInclusionSha256FailsForNonMultipleOf32ProofLength(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index,
+        bytes memory proof
+    ) public {
+        cheats.assume(proof.length % 32 != 0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionSha256(proof, root, leaf, index);
+    }
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is empty
+    function testVerifyInclusionKeccakFailsForEmptyProof(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index
+    ) public {
+        bytes memory emptyProof = new bytes(0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionKeccak(emptyProof, root, leaf, index);
+    }
+
+
+    /// @notice Test that the Merkle proof verification fails when the proof length is not a multiple of 32
+    function testVerifyInclusionKeccakFailsForNonMultipleOf32ProofLength(
+        bytes32 root,
+        bytes32 leaf,
+        uint256 index,
+        bytes memory proof
+    ) public {
+        cheats.assume(proof.length % 32 != 0);
+        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        Merkle.verifyInclusionKeccak(proof, root, leaf, index);
+    }
+
+    // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.stake` function
+    function test_incrementNumPodsOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+        uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
+        testStake(_pubkey, _signature, _depositDataRoot);
+        uint256 numPodsAfter = EigenPodManager(address(eigenPodManager)).numPods();
+        require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
+    }
+
+    // verifies that the `maxPods` variable is enforced on the `EigenPod.stake` function
+    function test_maxPodsEnforcementOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+        // set pod limit to current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
+        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
+        cheats.stopPrank();
+
+        // set pod limit to *one more than* current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        // successful call
+        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.createPod` function
+    function test_incrementNumPodsOnCreatePod() public {
+        uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
+        eigenPodManager.createPod();
+        uint256 numPodsAfter = EigenPodManager(address(eigenPodManager)).numPods();
+        require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
+    }
+
+    // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
+    function test_maxPodsEnforcementOnCreatePod() public {
+        // set pod limit to current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
+        cheats.stopPrank();
+
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
+        eigenPodManager.createPod();
+
+        // set pod limit to *one more than* current number of pods
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
+        cheats.stopPrank();
+
+        // successful call
+        eigenPodManager.createPod();
+    }
+
+    function test_setMaxPods(uint256 newValue) public {
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
+        cheats.stopPrank();
+
+        require(EigenPodManager(address(eigenPodManager)).maxPods() == newValue, "maxPods value not set correctly");
+    }
+
+    function test_setMaxPods_RevertsWhenNotCalledByPauser(address notPauser) public fuzzedAddress(notPauser) {
+        cheats.assume(notPauser != eigenPodManager.pauserRegistry().pauser());
+        uint256 newValue = 0;
+        cheats.startPrank(notPauser);
+        cheats.expectRevert("msg.sender is not permissioned as pauser");
+        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
         cheats.stopPrank();
     }
 
