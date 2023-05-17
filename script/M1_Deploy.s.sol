@@ -445,6 +445,11 @@ contract Deployer_M1 is Script, Test {
             " eigenPodImplementation: eigenPodManager contract address not set correctly");
         require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
             " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly");
+        for (uint i = 0; i < deployedStrategyArray.length; i++) {
+            (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getMaxTVLLimits();
+            require(setMaxPerDeposit == strategyConfigs[i].maxPerDeposit, "setMaxPerDeposit not set correctly");
+            require(setMaxDeposits == strategyConfigs[i].maxDeposits, "setMaxDeposits not set correctly");
+        }
     }
 }
 
