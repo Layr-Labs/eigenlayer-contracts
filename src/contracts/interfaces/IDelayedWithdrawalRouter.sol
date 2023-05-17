@@ -39,8 +39,11 @@ interface IDelayedWithdrawalRouter {
     /// @notice Getter function for the mapping `_userWithdrawals`
     function userWithdrawals(address user) external view returns (UserDelayedWithdrawals memory);
 
+    /// @notice Getter function to get all delayedWithdrawals of the `user`
+    function getUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
+
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function claimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
+    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
     
     /// @notice Getter function for fetching the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array
     function userDelayedWithdrawalByIndex(address user, uint256 index) external view returns (DelayedWithdrawal memory);

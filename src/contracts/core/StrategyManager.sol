@@ -571,10 +571,10 @@ contract StrategyManager is
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
                 }
-                unchecked {
+            }
+            unchecked {
                     ++i;
                 }
-            }
         }
     }
 
@@ -667,7 +667,6 @@ contract StrategyManager is
         _addShares(depositor, strategy, shares);
 
         emit Deposit(depositor, token, strategy, shares);
-
         return shares;
     }
 
@@ -808,7 +807,7 @@ contract StrategyManager is
      * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
      */
-    function _undelegate(address depositor) internal {
+    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }
