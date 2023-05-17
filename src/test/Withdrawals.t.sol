@@ -54,8 +54,8 @@ contract WithdrawalTests is DelegationTests {
             fuzzedAddress(withdrawer) 
         {
             cheats.assume(depositor != operator);
-            cheats.assume(ethAmount >= 1e9 && ethAmount <= 1e18); 
-            cheats.assume(eigenAmount >= 1e9 && eigenAmount <= 1e18); 
+            cheats.assume(ethAmount >= 1 && ethAmount <= 1e18); 
+            cheats.assume(eigenAmount >= 1 && eigenAmount <= 1e18); 
 
             initializeGeneralMiddlewares();
 

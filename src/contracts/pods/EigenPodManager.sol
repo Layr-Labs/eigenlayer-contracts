@@ -54,6 +54,13 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
 
+    // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
+    /// @notice The number of EigenPods that have been deployed
+    uint256 public numPods;
+
+    /// @notice The maximum number of EigenPods that can be deployed
+    uint256 public maxPods;
+
     /// @notice Emitted to notify the update of the beaconChainOracle address
     event BeaconOracleUpdated(address indexed newOracleAddress);
 
@@ -62,6 +69,9 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
 
     /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
     event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
+
+    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
+    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
     modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
@@ -82,11 +92,13 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     }
 
     function initialize(
+        uint256 _maxPods,
         IBeaconChainOracle _beaconChainOracle,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
+        _setMaxPods(_maxPods);
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
@@ -154,6 +166,15 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     }
 
     /**
+     * Sets the maximum number of pods that can be deployed
+     * @param newMaxPods The new maximum number of pods that can be deployed
+     * @dev Callable by the pauser of this contract
+     */
+    function setMaxPods(uint256 newMaxPods) external onlyPauser {
+        _setMaxPods(newMaxPods);
+    }
+
+    /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
@@ -164,6 +185,10 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
 
     // INTERNAL FUNCTIONS
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
+        // check that the limit of EigenPods has not been hit, and increment the EigenPod count
+        require(numPods + 1 <= maxPods, "EigenPodManager._deployPod: pod limit reached");
+        ++numPods;
+        // create the pod
         IEigenPod pod = 
             IEigenPod(
                 Create2.deploy(
@@ -183,9 +208,16 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         return pod;
     }
 
+    /// @notice Internal setter for `beaconChainOracle` that also emits an event
     function _updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) internal {
         beaconChainOracle = newBeaconChainOracle;
         emit BeaconOracleUpdated(address(newBeaconChainOracle));
+    }
+
+    /// @notice Internal setter for `maxPods` that also emits an event
+    function _setMaxPods(uint256 _maxPods) internal {
+        emit MaxPodsUpdated(maxPods, _maxPods);
+        maxPods = _maxPods;
     }
 
     // VIEW FUNCTIONS
@@ -223,5 +255,5 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 }

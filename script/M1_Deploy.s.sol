@@ -13,7 +13,7 @@ import "../src/contracts/core/StrategyManager.sol";
 import "../src/contracts/core/Slasher.sol";
 import "../src/contracts/core/DelegationManager.sol";
 
-import "../src/contracts/strategies/StrategyBase.sol";
+import "../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 import "../src/contracts/pods/EigenPod.sol";
 import "../src/contracts/pods/EigenPodManager.sol";
@@ -37,9 +37,10 @@ contract Deployer_M1 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // struct used to encode token info in config file
-    struct StrategyTokenAndName {
+    struct StrategyConfig {
+        uint256 maxDeposits;
+        uint256 maxPerDeposit;
         address tokenAddress;
-        string tokenName;
         string tokenSymbol;
     }
 
@@ -81,6 +82,7 @@ contract Deployer_M1 is Script, Test {
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
@@ -99,6 +101,7 @@ contract Deployer_M1 is Script, Test {
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
+        EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delayedWithdrawalRouter.init_paused_status");
 
@@ -108,13 +111,13 @@ contract Deployer_M1 is Script, Test {
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
 
         // tokens to deploy strategies for
-        StrategyTokenAndName[] memory strategyTokensAndNames;
+        StrategyConfig[] memory strategyConfigs;
 
         communityMultisig = stdJson.readAddress(config_data, ".multisig_addresses.communityMultisig");
         teamMultisig = stdJson.readAddress(config_data, ".multisig_addresses.teamMultisig");
         // load token list
-        bytes memory strategyTokensAndNamesRaw = stdJson.parseRaw(config_data, ".strategies");
-        strategyTokensAndNames = abi.decode(strategyTokensAndNamesRaw, (StrategyTokenAndName[]));
+        bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
+        strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
 
         require(communityMultisig != address(0), "communityMultisig address not configured correctly!");
         require(teamMultisig != address(0), "teamMultisig address not configured correctly!");
@@ -210,6 +213,7 @@ contract Deployer_M1 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
                 communityMultisig,
                 eigenLayerPauserReg,
@@ -226,32 +230,16 @@ contract Deployer_M1 is Script, Test {
             DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS)
         );
 
-        // deploy simple ERC20 (**NOT** WETH-like!), used in a test strategy
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
-            if (strategyTokensAndNames[i].tokenAddress == address(0)) {
-                strategyTokensAndNames[i].tokenAddress = address(
-                    new ERC20PresetFixedSupply(
-                    strategyTokensAndNames[i].tokenName,
-                    strategyTokensAndNames[i].tokenSymbol,
-                    // initial supply
-                    10e50,
-                    // owner
-                    msg.sender
-                    )
-                );
-            }
-        }
-
-        // deploy StrategyBase contract implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        // deploy StrategyBaseTVLLimits contract implementation
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
+        for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             deployedStrategyArray.push(
-                StrategyBase(address(
+                StrategyBaseTVLLimits(address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBase.initialize.selector, IERC20(strategyTokensAndNames[i].tokenAddress), eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
                     )
                 ))
             );
@@ -289,12 +277,12 @@ contract Deployer_M1 is Script, Test {
         string memory parent_object = "parent object";
 
         string memory deployed_strategies = "strategies";
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
-            vm.serializeAddress(deployed_strategies, strategyTokensAndNames[i].tokenSymbol, address(deployedStrategyArray[i]));
+        for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+            vm.serializeAddress(deployed_strategies, strategyConfigs[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
         string memory deployed_strategies_output = vm.serializeAddress(
-            deployed_strategies, strategyTokensAndNames[strategyTokensAndNames.length - 1].tokenSymbol,
-            address(deployedStrategyArray[strategyTokensAndNames.length - 1])
+            deployed_strategies, strategyConfigs[strategyConfigs.length - 1].tokenSymbol,
+            address(deployedStrategyArray[strategyConfigs.length - 1])
         );
 
         string memory deployed_addresses = "addresses";
@@ -406,8 +394,8 @@ contract Deployer_M1 is Script, Test {
         require(eigenLayerPauserReg.unpauser() == communityMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
-            require(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBase: pauser registry not set correctly");
-            require(deployedStrategyArray[i].paused() == 0, "StrategyBase: init paused status set incorrectly");
+            require(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly");
+            require(deployedStrategyArray[i].paused() == 0, "StrategyBaseTVLLimits: init paused status set incorrectly");
         }
 
         // // pause *nothing*
