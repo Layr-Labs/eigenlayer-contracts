@@ -1274,7 +1274,7 @@ contract StrategyManagerUnitTests is Test {
         bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf_NotBeaconChainETH( depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf_NotBeaconChainETH(depositAmount, withdrawalAmount, undelegateIfPossible);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -1698,7 +1698,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
-            testQueueWithdrawal_ToSelf_NotBeaconChainETH( depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf_NotBeaconChainETH(depositAmount, withdrawalAmount, undelegateIfPossible);
 
         uint256 balanceBefore = dummyToken.balanceOf(address(recipient));
 

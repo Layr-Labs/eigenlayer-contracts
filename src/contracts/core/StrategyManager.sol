@@ -808,7 +808,7 @@ contract StrategyManager is
      * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
      */
-    function _undelegate(address depositor) internal onlyNotFrozen(depositor){
+    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }
