@@ -8,7 +8,7 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter{
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -126,6 +126,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
 
         uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
+
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
             // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
@@ -139,8 +140,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         
         if(numberOfClaimableWithdrawals != 0) {
             for (uint256 i = 0; i < numberOfClaimableWithdrawals; i++) {
-                DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-                claimableDelayedWithdrawals[i] = delayedWithdrawal;
+                claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
             }
         }
         return claimableDelayedWithdrawals;
