@@ -19,7 +19,7 @@ CONFIG_FILE="config.yml"
 case $1 in
     goerli)
         CHAIN_ID=$(yq e '.goerli.CHAIN_ID' $CONFIG_FILE)
-        COMMUNITY_MULTISIG=$(yq e '.goerli.COMMUNITY_MULTISIG' $CONFIG_FILE)
+        EXECUTOR_MULTISIG=$(yq e '.goerli.EXECUTOR_MULTISIG' $CONFIG_FILE)
         FOUNDRY_FUZZ_RUNS=$(yq e '.goerli.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
         ;;
     local)
@@ -34,11 +34,11 @@ esac
 
 # Export environment variables
 export CHAIN_ID=$CHAIN_ID
-export COMMUNITY_MULTISIG=$COMMUNITY_MULTISIG
+export EXECUTOR_MULTISIG=$EXECUTOR_MULTISIG
 export FOUNDRY_FUZZ_RUNS=$FOUNDRY_FUZZ_RUNS
 
 # Print environment variables
 echo "Environment variables set:"
 echo "CHAIN_ID: $CHAIN_ID"
-echo "COMMUNITY_MULTISIG: $COMMUNITY_MULTISIG"
+echo "EXECUTOR_MULTISIG: $EXECUTOR_MULTISIG"
 echo "FOUNDRY_FUZZ_RUNS: $FOUNDRY_FUZZ_RUNS"

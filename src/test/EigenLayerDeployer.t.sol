@@ -102,7 +102,7 @@ contract EigenLayerDeployer is Operators {
     address beaconChainOracleAddress;
     address emptyContractAddress;
     address teamMultisig;
-    address communityMultisig;
+    address executorMultisig;
 
 
     uint256 public initialBeaconChainOracleThreshold = 3;
@@ -146,7 +146,7 @@ contract EigenLayerDeployer is Operators {
     function _deployEigenLayerContractsGoerli() internal {
         _setAddresses(goerliDeploymentConfig);
         pauser = teamMultisig;
-        unpauser = communityMultisig;
+        unpauser = executorMultisig;
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
 
@@ -365,7 +365,7 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
         teamMultisig = stdJson.readAddress(config, ".parameters.teamMultisig");
-        communityMultisig = stdJson.readAddress(config, ".parameters.communityMultisig");
+        executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
     }
     
 }

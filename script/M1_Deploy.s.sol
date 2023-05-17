@@ -65,7 +65,7 @@ contract Deployer_M1 is Script, Test {
 
     EmptyContract public emptyContract;
 
-    address communityMultisig;
+    address executorMultisig;
     address teamMultisig;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
@@ -113,13 +113,13 @@ contract Deployer_M1 is Script, Test {
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
 
-        communityMultisig = stdJson.readAddress(config_data, ".multisig_addresses.communityMultisig");
+        executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
         teamMultisig = stdJson.readAddress(config_data, ".multisig_addresses.teamMultisig");
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
 
-        require(communityMultisig != address(0), "communityMultisig address not configured correctly!");
+        require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(teamMultisig != address(0), "teamMultisig address not configured correctly!");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
@@ -129,7 +129,7 @@ contract Deployer_M1 is Script, Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(teamMultisig, communityMultisig);
+        eigenLayerPauserReg = new PauserRegistry(teamMultisig, executorMultisig);
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -181,7 +181,7 @@ contract Deployer_M1 is Script, Test {
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 DELEGATION_INIT_PAUSED_STATUS
             )
@@ -191,7 +191,7 @@ contract Deployer_M1 is Script, Test {
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 teamMultisig,
                 eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS,
@@ -203,7 +203,7 @@ contract Deployer_M1 is Script, Test {
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 SLASHER_INIT_PAUSED_STATUS
             )
@@ -215,7 +215,7 @@ contract Deployer_M1 is Script, Test {
                 EigenPodManager.initialize.selector,
                 EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
@@ -224,7 +224,7 @@ contract Deployer_M1 is Script, Test {
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
             abi.encodeWithSelector(DelayedWithdrawalRouter.initialize.selector,
-            communityMultisig,
+            executorMultisig,
             eigenLayerPauserReg,
             DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS,
             DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS)
@@ -245,8 +245,8 @@ contract Deployer_M1 is Script, Test {
             );
         }
 
-        eigenLayerProxyAdmin.transferOwnership(communityMultisig);
-        eigenPodBeacon.transferOwnership(communityMultisig);
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
@@ -305,7 +305,7 @@ contract Deployer_M1 is Script, Test {
         string memory deployed_addresses_output = vm.serializeString(deployed_addresses, "strategies", deployed_strategies_output);
 
         string memory parameters = "parameters";
-        vm.serializeAddress(parameters, "communityMultisig", communityMultisig);
+        vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
         string memory parameters_output = vm.serializeAddress(parameters, "teamMultisig", teamMultisig);
 
         string memory chain_info = "chainInfo";
@@ -373,14 +373,14 @@ contract Deployer_M1 is Script, Test {
     }
 
     function _verifyInitialOwners() internal view {
-        require(strategyManager.owner() == communityMultisig, "strategyManager: owner not set correctly");
-        require(delegation.owner() == communityMultisig, "delegation: owner not set correctly");
-        require(slasher.owner() == communityMultisig, "slasher: owner not set correctly");
-        require(eigenPodManager.owner() == communityMultisig, "delegation: owner not set correctly");
+        require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
+        require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
+        require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
+        require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
 
-        require(eigenLayerProxyAdmin.owner() == communityMultisig, "eigenLayerProxyAdmin: owner not set correctly");
-        require(eigenPodBeacon.owner() == communityMultisig, "eigenPodBeacon: owner not set correctly");
-        require(delayedWithdrawalRouter.owner() == communityMultisig, "delayedWithdrawalRouter: owner not set correctly");        
+        require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
+        require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
+        require(delayedWithdrawalRouter.owner() == executorMultisig, "delayedWithdrawalRouter: owner not set correctly");        
     }
 
     function _checkPauserInitializations() internal view {
@@ -391,7 +391,7 @@ contract Deployer_M1 is Script, Test {
         require(delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg, "delayedWithdrawalRouter: pauser registry not set correctly");        
 
         require(eigenLayerPauserReg.pauser() == teamMultisig, "pauserRegistry: pauser not set correctly");
-        require(eigenLayerPauserReg.unpauser() == communityMultisig, "pauserRegistry: unpauser not set correctly");
+        require(eigenLayerPauserReg.unpauser() == executorMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             require(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly");
