@@ -128,7 +128,8 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
             DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
-            if (block.number <= delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+            // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
+            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 firstNonClaimableWithdrawalIndex = i;
                 break;
             }
