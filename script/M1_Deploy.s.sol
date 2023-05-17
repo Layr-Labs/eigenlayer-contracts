@@ -72,7 +72,8 @@ contract Deployer_M1 is Script, Test {
     IETHPOSDeposit public ethPOSDeposit;
 
     // strategies deployed
-    StrategyBase[] public deployedStrategyArray;
+    StrategyBaseTVLLimits[] public deployedStrategyArray;
+
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
@@ -415,7 +416,7 @@ contract Deployer_M1 is Script, Test {
         require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
     }
 
-    function _verifyInitializationParams() internal view {
+    function _verifyInitializationParams() internal {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -445,10 +446,14 @@ contract Deployer_M1 is Script, Test {
             " eigenPodImplementation: eigenPodManager contract address not set correctly");
         require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
             " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly");
+
+        string memory config_data = vm.readFile(deployConfigPath);
         for (uint i = 0; i < deployedStrategyArray.length; i++) {
-            (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getMaxTVLLimits();
-            require(setMaxPerDeposit == strategyConfigs[i].maxPerDeposit, "setMaxPerDeposit not set correctly");
-            require(setMaxDeposits == strategyConfigs[i].maxDeposits, "setMaxDeposits not set correctly");
+            uint256 maxPerDeposit = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_per_deposit"));
+            uint256 maxDeposits = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_deposits"));
+            (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getTVLLimits();
+            require(setMaxPerDeposit == maxPerDeposit, "setMaxPerDeposit not set correctly");
+            require(setMaxDeposits == maxDeposits, "setMaxDeposits not set correctly");
         }
     }
 }
