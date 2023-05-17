@@ -590,7 +590,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         // verify that the `operator` is not already registered
         require(
             registry[operator].status == IQuorumRegistry.Status.INACTIVE,
-            "RegistryBase._registrationStakeEvaluation: Operator is already registered"
+            "RegistryBase._registerStake: Operator is already registered"
         );
 
         OperatorStakeUpdate memory _operatorStakeUpdate;
@@ -605,7 +605,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
             if(quorumBitmap >> quorumNumber & 1 == 1) {
                 _operatorStakeUpdate.stake = uint96(weightOfOperator(operator, quorumNumber));
                 // check if minimum requirement has been met
-                require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registrationStakeEvaluation: Operator does not meet minimum stake requirement for quorum");
+                require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registerStake: Operator does not meet minimum stake requirement for quorum");
                 // check special case that operator is re-registering (and thus already has some history)
                 if (pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length != 0) {
                     // correctly set the 'nextUpdateBlockNumber' field for the re-registering operator's oldest history entry
@@ -700,4 +700,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
 
         require(operator == operatorList[index], "RegistryBase._deregistrationCheck: Incorrect index supplied");
     }
+
+    // storage gap
+    uint256[50] private __GAP;
 }

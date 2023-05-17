@@ -136,12 +136,12 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
 
     /**
      * @notice called for registering as an operator
-     * @param operatorType specifies whether the operator want to register as staker for one or both quorums
+     * @param quorumBitmap has a bit set for each quorum the operator wants to register for (if the ith least significant bit is set, the operator wants to register for the ith quorum)
      * @param pk is the operator's G1 public key
      * @param socket is the socket address of the operator
      */
-    function registerOperator(uint8 operatorType, BN254.G1Point memory pk, string calldata socket) external virtual {
-        _registerOperator(msg.sender, operatorType, pk, socket);
+    function registerOperator(uint8 quorumBitmap, BN254.G1Point memory pk, string calldata socket) external virtual {
+        _registerOperator(msg.sender, quorumBitmap, pk, socket);
     }
 
     /**
@@ -161,7 +161,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         bytes32 pubkeyHash = BN254.hashG1Point(pk);
 
         require(pubkeyHash != ZERO_PK_HASH, "BLSRegistry._registerOperator: Cannot register with 0x0 public key");
-
 
         require(
             pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,

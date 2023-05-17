@@ -22,6 +22,8 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
     event StrategyAddedToQuorum(uint256 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
     event StrategyRemovedFromQuorum(uint256 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyMultiplierUpdated(uint256 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
 
     /// @notice when applied to a function, ensures that the function is only callable by the current `owner` of the `serviceManager`
     modifier onlyServiceManagerOwner() {
@@ -143,7 +145,7 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
         for (uint256 i = 0; i < numStrats;) {
             // change the strategy's associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].multiplier = newMultipliers[i];
-
+            emit StrategyMultiplierUpdated(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].strategy, newMultipliers[i]);
             unchecked {
                 ++i;
             }
@@ -189,6 +191,7 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint8 quorumNumber,
         StrategyAndWeightingMultiplier[] memory _newStrategiesConsideredAndMultipliers
     ) internal {
+        require(quorumNumber <= quorumCount, "VoteWeigherBase._addStrategiesConsideredAndMultipliers: quorumNumber exceeds quorumCount");
         uint256 numStratsToAdd = _newStrategiesConsideredAndMultipliers.length;
         uint256 numStratsExisting = strategiesConsideredAndMultipliers[quorumNumber].length;
         require(
