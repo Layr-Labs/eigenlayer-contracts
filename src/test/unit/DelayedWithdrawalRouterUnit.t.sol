@@ -125,6 +125,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner){
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
+        cheats.assume(podAddress != address(proxyAdmin));
         cheats.startPrank(podAddress);
         cheats.expectRevert(bytes("DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"));
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
