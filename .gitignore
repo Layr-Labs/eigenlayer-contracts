@@ -29,3 +29,4 @@ broadcast
 
 #script config file
 # script/M1_deploy.config.json
+script/output/M1_deployment_data.json
