@@ -74,7 +74,6 @@ contract Deployer_M1 is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
-
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
 
