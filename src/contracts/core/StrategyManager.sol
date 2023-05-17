@@ -365,7 +365,6 @@ contract StrategyManager is
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
             }   
 
-
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
             if (_removeShares(msg.sender, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
@@ -719,8 +718,7 @@ contract StrategyManager is
             // replace the strategy with the last strategy in the list
             stakerStrategyList[depositor][strategyIndex] =
                 stakerStrategyList[depositor][stakerStrategyList[depositor].length - 1];
-        } 
-        else {
+        } else {
             //loop through all of the strategies, find the right one, then replace
             uint256 stratsLength = stakerStrategyList[depositor].length;
             uint256 j = 0;
@@ -810,7 +808,7 @@ contract StrategyManager is
      * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
      */
-    function _undelegate(address depositor) internal onlyNotFrozen(depositor){
+    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }
