@@ -676,12 +676,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         }
             
         // check that the shares out match the expected amount out
-        // the actual transfer in will be lower by 1 wei than expected due to stETH's internal rounding
+        // the actual transfer in will be lower by 1-2 wei than expected due to stETH's internal rounding
         // to account for this we check approximate rather than strict equivalence here
         {
             uint256 actualSharesOut = strategyManager.stakerStrategyShares(address(this), stethStrategy) - operatorSharesBefore;
             require(actualSharesOut >= expectedSharesOut, "too few shares");
-            require((actualSharesOut * 1000) / expectedSharesOut < 1002, "too many shares");
+            require((actualSharesOut * 1000) / expectedSharesOut < 1003, "too many shares");
 
             // additional sanity check for deposit not increasing in value
             require(stethStrategy.sharesToUnderlying(actualSharesOut) <= amountToDeposit, "value cannot have increased");
