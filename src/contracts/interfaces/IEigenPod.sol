@@ -82,7 +82,7 @@ interface IEigenPod {
     function mostRecentWithdrawalBlockNumber() external view returns (uint64);
 
 
-    ///@notice mapping that trackes proven partial withdrawals
+    ///@notice mapping that tracks proven partial withdrawals
     function provenPartialWithdrawal(uint40 validatorIndex, uint64 slot) external view returns (bool);
 
     /**

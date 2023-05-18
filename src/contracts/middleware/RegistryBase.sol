@@ -188,7 +188,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * @param blockNumber is the block number of interest
      * @param stakeHistoryIndex specifies an index in `pubkeyHashToStakeHistory[pubkeyHash]`, where `pubkeyHash` is looked up
      * in `registry[operator].pubkeyHash`
-     * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
+     * @return 'true' if it is successfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `pubkeyHashToStakeHistory[pubkeyHash][index].updateBlockNumber <= blockNumber`
      * 2) `pubkeyHashToStakeHistory[pubkeyHash][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or
@@ -227,7 +227,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * @param blockNumber is the block number of interest
      * @param stakeHistoryIndex specifies an index in `pubkeyHashToStakeHistory[pubkeyHash]`, where `pubkeyHash` is looked up
      * in `registry[operator].pubkeyHash`
-     * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
+     * @return 'true' if it is successfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `pubkeyHashToStakeHistory[pubkeyHash][index].updateBlockNumber <= blockNumber`
      * 2) `pubkeyHashToStakeHistory[pubkeyHash][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or

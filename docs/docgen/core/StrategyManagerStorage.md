@@ -140,7 +140,7 @@ mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal
 contract IStrategy beaconChainETHStrategy
 ```
 
-returns the enshrined beaconChainETH Strategy
+returns the enshrined, virtual 'beaconChainETH' Strategy
 
 ### constructor
 

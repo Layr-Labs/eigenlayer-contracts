@@ -156,7 +156,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         return _userWithdrawals[user].delayedWithdrawals.length;
     }
 
-    /// @notice Convenience function for checking whethere or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
+    /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool) {
         return ((index >= _userWithdrawals[user].delayedWithdrawalsCompleted) && (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks));
     }

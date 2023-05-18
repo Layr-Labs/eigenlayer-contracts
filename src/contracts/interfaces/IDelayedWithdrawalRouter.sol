@@ -51,7 +51,7 @@ interface IDelayedWithdrawalRouter {
     /// @notice Getter function for fetching the length of the delayedWithdrawals array of a specific user
     function userWithdrawalsLength(address user) external view returns (uint256);
 
-    /// @notice Convenience function for checking whethere or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
+    /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool);
 
     /**

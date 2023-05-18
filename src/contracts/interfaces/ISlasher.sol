@@ -78,6 +78,7 @@ interface ISlasher {
      * @notice Used to determine whether `staker` is actively 'frozen'. If a staker is frozen, then they are potentially subject to
      * slashing of their funds, and cannot cannot deposit or withdraw from the strategyManager until the slashing process is completed
      * and the staker's status is reset (to 'unfrozen').
+     * @param staker The staker of interest.
      * @return Returns 'true' if `staker` themselves has their status set to frozen, OR if the staker is delegated
      * to an operator who has their status set to frozen. Otherwise returns 'false'.
      */

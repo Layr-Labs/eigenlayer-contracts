@@ -215,7 +215,7 @@ bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise |
+| [0] | bool | 'true' if it is successfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise |
 
 ### checkOperatorInactiveAtBlockNumber
 
@@ -246,7 +246,7 @@ bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise |
+| [0] | bool | 'true' if it is successfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise |
 
 ### getMostRecentStakeByOperator
 
