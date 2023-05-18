@@ -643,8 +643,10 @@ contract StrategyManager is
         // add the returned shares to their existing shares for this strategy
         stakerStrategyShares[depositor][strategy] += shares;
 
-        // if applicable, increase delegated shares accordingly
-        delegation.increaseDelegatedShares(depositor, strategy, shares);
+        if (delegation.isDelegated(depositor)) {
+            // if applicable, increase delegated shares accordingly
+            delegation.increaseDelegatedShares(depositor, strategy, shares);
+        }
     }
 
     /**

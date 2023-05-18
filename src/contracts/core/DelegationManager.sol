@@ -150,23 +150,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         external
         onlyStrategyManager
     {
-        //if the staker is delegated to an operator
-        if (isDelegated(staker)) {
-            address operator = delegatedTo[staker];
+        address operator = delegatedTo[staker];
 
-            // add strategy shares to delegate's shares
-            operatorShares[operator][strategy] += shares;
+        // add strategy shares to delegate's shares
+        operatorShares[operator][strategy] += shares;
 
-            //Calls into operator's delegationTerms contract to update weights of individual staker
-            IStrategy[] memory stakerStrategyList = new IStrategy[](1);
-            uint256[] memory stakerShares = new uint[](1);
-            stakerStrategyList[0] = strategy;
-            stakerShares[0] = shares;
+        //Calls into operator's delegationTerms contract to update weights of individual staker
+        IStrategy[] memory stakerStrategyList = new IStrategy[](1);
+        uint256[] memory stakerShares = new uint[](1);
+        stakerStrategyList[0] = strategy;
+        stakerShares[0] = shares;
 
-            // call into hook in delegationTerms contract
-            IDelegationTerms dt = delegationTerms[operator];
-            _delegationReceivedHook(dt, staker, stakerStrategyList, stakerShares);
-        }
+        // call into hook in delegationTerms contract
+        IDelegationTerms dt = delegationTerms[operator];
+        _delegationReceivedHook(dt, staker, stakerStrategyList, stakerShares);
     }
 
     /**
