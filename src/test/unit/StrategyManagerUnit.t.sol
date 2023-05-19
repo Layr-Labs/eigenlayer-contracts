@@ -24,7 +24,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    uint256 public REQUIRED_BALANCE_WEI = 31.4 ether;
+    uint256 public REQUIRED_BALANCE_WEI = 31 ether;
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
