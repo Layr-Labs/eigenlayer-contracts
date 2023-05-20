@@ -39,6 +39,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     }
 
     function testSetTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput) public {
+        cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
         cheats.startPrank(pauser);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
         cheats.stopPrank();
@@ -57,8 +58,19 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.stopPrank();
     }
 
+    function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput) public {
+        cheats.assume(maxDepositsFuzzedInput > 0);
+        cheats.assume(maxPerDepositFuzzedInput > 0);
+        cheats.assume(maxDepositsFuzzedInput < maxPerDepositFuzzedInput);
+        cheats.startPrank(pauser);
+        cheats.expectRevert(bytes("StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"));
+        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
+        cheats.stopPrank();
+    }
+
     function testDepositMoreThanMaxPerDeposit(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 amount) public {
         cheats.assume(amount > maxPerDepositFuzzedInput);
+        cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
         cheats.startPrank(pauser);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
         cheats.stopPrank();
@@ -145,6 +157,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     function testDeposit_WithTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 depositAmount)
         public returns (bool depositReverted)
     {
+        cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
         // need to filter this to make sure the deposit amounts can actually be transferred
         cheats.assume(depositAmount <= initialSupply);
         // set TVL limits
