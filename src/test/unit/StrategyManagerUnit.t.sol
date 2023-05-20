@@ -324,6 +324,19 @@ contract StrategyManagerUnitTests is Test, Utils {
         _depositIntoStrategyWithSignature(staker, amount, expiry, expectedRevertMessage);
     }
 
+    function testDepositIntoStrategyWithSignatureReplay(uint256 amount, uint256 expiry) public {
+         // min shares must be minted on strategy
+        cheats.assume(amount >= 1);
+        cheats.assume(expiry > block.timestamp);
+
+        address staker = cheats.addr(privateKey);
+        // not expecting a revert, so input an empty string
+        bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
+
+        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: signature not from staker"));
+        strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
+
+    }
 
     // tries depositing using a signature and an EIP 1271 compliant wallet
     function testDepositIntoStrategyWithSignature_WithContractWallet_Successfully(uint256 amount, uint256 expiry) public {
@@ -2327,20 +2340,18 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
     }
 
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
-    function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal {
-        IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
+    function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal returns (bytes memory){
 
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
         // sanity check / filter
-        cheats.assume(amount <= token.balanceOf(address(this)));
+        cheats.assume(amount <= dummyToken.balanceOf(address(this)));
 
         uint256 nonceBefore = strategyManager.nonces(staker);
         bytes memory signature;
 
         {
-            bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
+            bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, dummyToken, amount, nonceBefore, expiry));
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
@@ -2348,7 +2359,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             signature = abi.encodePacked(r, s, v);
         }
 
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
 
         bool expectedRevertMessageIsempty;
         {
@@ -2360,14 +2371,15 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         } else if (expiry < block.timestamp) {
             cheats.expectRevert("StrategyManager.depositIntoStrategyWithSignature: signature expired");
         }
-        uint256 shares = strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
+        uint256 shares = strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
         if (expiry >= block.timestamp && expectedRevertMessageIsempty) {
             require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
             require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
         }
+        return signature;
     }
 }

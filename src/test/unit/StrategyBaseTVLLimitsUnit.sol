@@ -116,6 +116,31 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         require(strategyWithTVLLimits.totalShares() == depositAmount + sharesBefore, "total shares not updated correctly");
     }
 
+    function testDepositTVLLimit_ThenChangeTVLLimit(uint256 maxDeposits, uint256 newMaxDeposits) public {
+        cheats.assume(maxDeposits > 0);
+        cheats.assume(newMaxDeposits > maxDeposits);
+        cheats.assume(newMaxDeposits < initialSupply);
+        cheats.startPrank(pauser);
+        strategyWithTVLLimits.setTVLLimits(maxDeposits, maxDeposits);
+        cheats.stopPrank();
+
+        underlyingToken.transfer(address(strategyWithTVLLimits), maxDeposits);
+
+        cheats.startPrank(address(strategyManager));
+        strategyWithTVLLimits.deposit(underlyingToken, maxDeposits);
+        cheats.stopPrank();
+
+        cheats.startPrank(pauser);
+        strategyWithTVLLimits.setTVLLimits(newMaxDeposits, newMaxDeposits);
+        cheats.stopPrank();
+
+        underlyingToken.transfer(address(strategyWithTVLLimits), newMaxDeposits - maxDeposits);
+
+        cheats.startPrank(address(strategyManager));    
+        strategyWithTVLLimits.deposit(underlyingToken, newMaxDeposits - maxDeposits);
+        cheats.stopPrank();
+    }
+
     /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
     function testDeposit_WithTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 depositAmount)
         public returns (bool depositReverted)
