@@ -10,8 +10,8 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     StrategyBaseTVLLimits public strategyWithTVLLimits;
 
     // defaults for tests, used in setup
-    uint256 maxTotalDeposits = 32e18;
-    uint256 maxPerDeposit = 3200e18;
+    uint256 maxTotalDeposits = 3200e18;
+    uint256 maxPerDeposit = 32e18;
 
     function setUp() virtual public override {
         // copy setup for StrategyBaseUnitTests
