@@ -56,7 +56,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         BN254.G1Point pk,
         uint32 apkHashIndex,
         bytes32 apkHash,
-        uint32 index,
         string socket
     );
 
@@ -177,7 +176,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         // add the operator to the list of registrants and do accounting
         _addRegistrant(operator, pubkeyHash, quorumBitmap);
 
-        emit Registration(operator, pubkeyHash, pk, uint32(_apkUpdates.length - 1), newApkHash, uint32(operatorList.length - 1), socket);
+        emit Registration(operator, pubkeyHash, pk, uint32(_apkUpdates.length - 1), newApkHash, socket);
     }
 
     /**

@@ -51,7 +51,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     event StakeUpdate(
         address operator,
         uint8 quorumNumber,
-        uint96 weight,
+        uint96 stake,
         uint32 updateBlockNumber,
         uint32 prevUpdateBlockNumber
     );
@@ -60,7 +60,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * @notice Emitted whenever an operator deregisters.
      * The `swapped` address is the address returned by an internal call to the `_popRegistrant` function.
      */
-    event Deregistration(address operator, address swapped);
+    event Deregistration(address operator, address swapped, uint32 deregisteredIndex);
 
     /**
      * @notice Irrevocably sets the (immutable) `delegation` & `strategyManager` addresses, and `NUMBER_OF_QUORUMS` variable.
@@ -434,7 +434,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
 
         // Emit `Deregistration` event
-        emit Deregistration(operator, swappedOperator);
+        emit Deregistration(operator, swappedOperator, index);
     }
 
     /**
