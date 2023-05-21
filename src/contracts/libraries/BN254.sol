@@ -263,6 +263,13 @@ library BN254 {
         return keccak256(abi.encodePacked(pk.X, pk.Y));
     }
 
+    /// @return the keccak256 hash of the G2 Point
+    /// @dev used for BLS signatures
+    function hashG2Point(
+        BN254.G2Point memory pk
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
+    }
 
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol

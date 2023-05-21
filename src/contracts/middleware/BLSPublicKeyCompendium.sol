@@ -19,7 +19,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
 
     // EVENTS
     /// @notice Emitted when `operator` registers with the public key `pk`.
-    event NewPubkeyRegistration(address operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
+    event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
@@ -59,8 +59,6 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
 
         // getting pubkey hash
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
-
-        require(pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.registerBLSPublicKey: operator attempting to register the zero public key");
 
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),
