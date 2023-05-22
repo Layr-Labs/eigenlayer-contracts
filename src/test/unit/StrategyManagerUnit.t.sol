@@ -704,6 +704,23 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
     }
 
+    function testQueueWithdrawaMismatchedIndexAndStrategyArrayLength() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        uint256[] memory shareAmounts = new uint256[](2);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        bool undelegateIfPossible = false;
+
+        {
+            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            shareAmounts[0] = 1;    
+            shareAmounts[1] = 1;    
+            strategyIndexes[0] = 0;
+        }
+
+        cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: input length mismatch"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
+    }
+
     function testQueueWithdrawal_ToSelf_NotBeaconChainETH(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) public
         returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     {
