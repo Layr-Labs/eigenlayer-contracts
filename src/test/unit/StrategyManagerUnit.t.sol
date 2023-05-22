@@ -721,6 +721,16 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
     }
 
+    function testQueueWithdrawalWithZeroAddress() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        bool undelegateIfPossible = false;
+
+        cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: cannot withdraw to zero address"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
+    }
+
     function testQueueWithdrawal_ToSelf_NotBeaconChainETH(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) public
         returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     {
