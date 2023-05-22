@@ -301,7 +301,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
         // needed for expecting an event with the right parameters
-        uint256 expectedShares = amount;
+        uint256 expectedShares = strategy.underlyingToShares(amount);
 
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(strategyManager));
