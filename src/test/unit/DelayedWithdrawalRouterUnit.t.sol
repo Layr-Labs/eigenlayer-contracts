@@ -46,6 +46,15 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         _;
     }
 
+    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+
+    /// @notice event for delayedWithdrawal creation
+    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
+
+    /// @notice event for the claiming of delayedWithdrawals
+    event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
+
     function setUp() external {
         proxyAdmin = new ProxyAdmin();
 
@@ -91,6 +100,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.deal(podAddress, delayedWithdrawalAmount);
         cheats.startPrank(podAddress);
+        uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(recipient);
+        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+        emit DelayedWithdrawalCreated(podOwner, recipient, delayedWithdrawalAmount, userWithdrawalsLength);
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, recipient);
         cheats.stopPrank();
 
@@ -131,7 +143,13 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
     }
 
-    function testClaimDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, address recipient, bool useOverloadedFunction)
+    function testClaimDelayedWithdrawals(
+        uint8 delayedWithdrawalsToCreate,
+        uint8 maxNumberOfDelayedWithdrawalsToClaim,
+        uint256 pseudorandomNumber_,
+        address recipient,
+        bool useOverloadedFunction
+    )
         public filterFuzzedAddressInputs(recipient)
     {
         // filter contracts out of fuzzed recipient input, since most don't implement a payable fallback function
@@ -164,12 +182,24 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         // roll forward the block number enough to make the delayedWithdrawals claimable
         cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks());
 
+        // find the expected number of completed withdrawals and the expected total withdrawal amount
+        uint256 numberOfDelayedWithdrawalsThatShouldBeCompleted =
+            (maxNumberOfDelayedWithdrawalsToClaim > delayedWithdrawalsCreated) ? delayedWithdrawalsCreated : maxNumberOfDelayedWithdrawalsToClaim;
+        uint256 totalDelayedWithdrawalAmount = 0;
+        for (uint256 i = 0; i < numberOfDelayedWithdrawalsThatShouldBeCompleted; ++i) {
+            totalDelayedWithdrawalAmount += delayedWithdrawalAmounts[i];
+        }
+
         // claim the delayedWithdrawals
         if (delayedWithdrawalsCreated != 0) {
             if (useOverloadedFunction) {
+                cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+                emit DelayedWithdrawalsClaimed(recipient, totalDelayedWithdrawalAmount, numberOfDelayedWithdrawalsThatShouldBeCompleted);
                 delayedWithdrawalRouter.claimDelayedWithdrawals(recipient, maxNumberOfDelayedWithdrawalsToClaim);                
             } else {
                 cheats.startPrank(recipient);
+                cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+                emit DelayedWithdrawalsClaimed(recipient, totalDelayedWithdrawalAmount, numberOfDelayedWithdrawalsThatShouldBeCompleted);
                 delayedWithdrawalRouter.claimDelayedWithdrawals(maxNumberOfDelayedWithdrawalsToClaim);
                 cheats.stopPrank();
             }
@@ -179,13 +209,8 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         uint256 userBalanceAfter = recipient.balance;
 
         // post-conditions
-        uint256 numberOfDelayedWithdrawalsThatShouldBeCompleted = (maxNumberOfDelayedWithdrawalsToClaim > delayedWithdrawalsCreated) ? delayedWithdrawalsCreated : maxNumberOfDelayedWithdrawalsToClaim;
         require(userWithdrawalsAfter.delayedWithdrawalsCompleted == userWithdrawalsBefore.delayedWithdrawalsCompleted + numberOfDelayedWithdrawalsThatShouldBeCompleted,
             "userWithdrawalsAfter.delayedWithdrawalsCompleted != userWithdrawalsBefore.delayedWithdrawalsCompleted + numberOfDelayedWithdrawalsThatShouldBeCompleted");
-        uint256 totalDelayedWithdrawalAmount = 0;
-        for (uint256 i = 0; i < numberOfDelayedWithdrawalsThatShouldBeCompleted; ++i) {
-            totalDelayedWithdrawalAmount += delayedWithdrawalAmounts[i];
-        }
         require(userBalanceAfter == userBalanceBefore + totalDelayedWithdrawalAmount,
             "userBalanceAfter != userBalanceBefore + totalDelayedWithdrawalAmount");
     }
@@ -222,15 +247,19 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             require(length == i, "Incorrect number of claimable delayed withdrawals");
             cheats.roll(block.number + 1);
         }
-        require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated, "Incorrect number of claimable delayed withdrawals");
+        require(delayedWithdrawalRouter.getClaimableUserDelayedWithdrawals(recipient).length == delayedWithdrawalsCreated,
+            "Incorrect number of claimable delayed withdrawals");
     }
 
 
     /**
-     * @notice Creates a set of delayedWithdrawals of length (2 * `delayedWithdrawalsToCreate`) where only the first half is claimable, claims using `maxNumberOfDelayedWithdrawalsToClaim` input,
+     * @notice Creates a set of delayedWithdrawals of length (2 * `delayedWithdrawalsToCreate`),
+     * where only the first half is claimable, claims using `maxNumberOfDelayedWithdrawalsToClaim` input,
      * and checks that only appropriate delayedWithdrawals were claimed.
      */
-    function testClaimDelayedWithdrawalsSomeUnclaimable(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, bool useOverloadedFunction) external {
+    function testClaimDelayedWithdrawalsSomeUnclaimable(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, bool useOverloadedFunction)
+        external
+    {
         // filter fuzzed inputs to avoid running out of gas & excessive test run-time
         cheats.assume(delayedWithdrawalsToCreate <= 32);
 
@@ -273,12 +302,24 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         require(userWithdrawalsBefore.delayedWithdrawals.length == delayedWithdrawalsCreated_1 + delayedWithdrawalsCreated_2,
             "userWithdrawalsBefore.delayedWithdrawals.length != delayedWithdrawalsCreated_1 + delayedWithdrawalsCreated_2");
 
+        // find the expected number of completed withdrawals and the expected total withdrawal amount
+        uint256 numberOfDelayedWithdrawalsThatShouldBeCompleted =
+            (maxNumberOfDelayedWithdrawalsToClaim > delayedWithdrawalsCreated_1) ? delayedWithdrawalsCreated_1 : maxNumberOfDelayedWithdrawalsToClaim;
+        uint256 totalDelayedWithdrawalAmount = 0;
+        for (uint256 i = 0; i < numberOfDelayedWithdrawalsThatShouldBeCompleted; ++i) {
+            totalDelayedWithdrawalAmount += delayedWithdrawalAmounts[i];
+        }
+
         // claim the delayedWithdrawals
         if (delayedWithdrawalsCreated_1 + delayedWithdrawalsCreated_2 != 0) {
             if (useOverloadedFunction) {
+                cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+                emit DelayedWithdrawalsClaimed(recipient, totalDelayedWithdrawalAmount, numberOfDelayedWithdrawalsThatShouldBeCompleted);
                 delayedWithdrawalRouter.claimDelayedWithdrawals(recipient, maxNumberOfDelayedWithdrawalsToClaim);                
             } else {
                 cheats.startPrank(recipient);
+                cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+                emit DelayedWithdrawalsClaimed(recipient, totalDelayedWithdrawalAmount, numberOfDelayedWithdrawalsThatShouldBeCompleted);
                 delayedWithdrawalRouter.claimDelayedWithdrawals(maxNumberOfDelayedWithdrawalsToClaim);
                 cheats.stopPrank();
             }
@@ -288,13 +329,8 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         uint256 userBalanceAfter = recipient.balance;
 
         // post-conditions
-        uint256 numberOfDelayedWithdrawalsThatShouldBeCompleted = (maxNumberOfDelayedWithdrawalsToClaim > delayedWithdrawalsCreated_1) ? delayedWithdrawalsCreated_1 : maxNumberOfDelayedWithdrawalsToClaim;
         require(userWithdrawalsAfter.delayedWithdrawalsCompleted == userWithdrawalsBefore.delayedWithdrawalsCompleted + numberOfDelayedWithdrawalsThatShouldBeCompleted,
             "userWithdrawalsAfter.delayedWithdrawalsCompleted != userWithdrawalsBefore.delayedWithdrawalsCompleted + numberOfDelayedWithdrawalsThatShouldBeCompleted");
-        uint256 totalDelayedWithdrawalAmount = 0;
-        for (uint256 i = 0; i < numberOfDelayedWithdrawalsThatShouldBeCompleted; ++i) {
-            totalDelayedWithdrawalAmount += delayedWithdrawalAmounts[i];
-        }
         require(userBalanceAfter == userBalanceBefore + totalDelayedWithdrawalAmount,
             "userBalanceAfter != userBalanceBefore + totalDelayedWithdrawalAmount");
     }
@@ -320,7 +356,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
     }
 
-    function testClaimDelayedWithdrawals_NonzeroToClaim_AttemptToClaimNonzero(uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, bool useOverloadedFunction) external {
+    function testClaimDelayedWithdrawals_NonzeroToClaim_AttemptToClaimNonzero(
+        uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, bool useOverloadedFunction
+    )external {
         uint8 delayedWithdrawalsToCreate = 2;
         address recipient = address(22222);
         testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
@@ -386,6 +424,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
 
         // set the `withdrawalDelayBlocks` variable
         cheats.startPrank(delayedWithdrawalRouter.owner());
+        uint256 previousValue = delayedWithdrawalRouter.withdrawalDelayBlocks();
+        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+        emit WithdrawalDelayBlocksSet(previousValue, uint256(valueToSet));
         delayedWithdrawalRouter.setWithdrawalDelayBlocks(valueToSet);
         cheats.stopPrank();
         require(delayedWithdrawalRouter.withdrawalDelayBlocks() == valueToSet, "delayedWithdrawalRouter.withdrawalDelayBlocks() != valueToSet");

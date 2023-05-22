@@ -16,6 +16,10 @@ contract PauserRegistryUnitTests is Test {
 
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
 
+    event PauserChanged(address previousPauser, address newPauser);
+
+    event UnpauserChanged(address previousUnpauser, address newUnpauser);
+
     function setUp() virtual public {
         pauserRegistry = new PauserRegistry(pauser, unpauser);
     }
@@ -24,6 +28,9 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newPauser != address(0));
 
         cheats.startPrank(pauserRegistry.unpauser());
+        address oldAddress = pauserRegistry.pauser();
+        cheats.expectEmit(true, true, true, true, address(pauserRegistry));
+        emit PauserChanged(oldAddress, newPauser);
         pauserRegistry.setPauser(newPauser);
         cheats.stopPrank();
 
@@ -34,6 +41,9 @@ contract PauserRegistryUnitTests is Test {
         cheats.assume(newUnpauser != address(0));
 
         cheats.startPrank(pauserRegistry.unpauser());
+        address oldAddress = pauserRegistry.unpauser();
+        cheats.expectEmit(true, true, true, true, address(pauserRegistry));
+        emit UnpauserChanged(oldAddress, newUnpauser);
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
 
