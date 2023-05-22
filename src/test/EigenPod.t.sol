@@ -704,6 +704,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
     }
 
+    function test_createPodTwiceFails() public {
+        eigenPodManager.createPod();
+        cheats.expectRevert(bytes("EigenPodManager.createPod: Sender already has a pod"));
+        eigenPodManager.createPod();
+    }
+
     // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
     function test_maxPodsEnforcementOnCreatePod() public {
         // set pod limit to current number of pods
