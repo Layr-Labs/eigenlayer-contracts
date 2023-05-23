@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../libraries/BN254.sol";
-import "../interfaces/IServiceManager.sol";
 
 
 contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
