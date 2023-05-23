@@ -100,10 +100,10 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
-        require(blockNumber >= quorumToApkUpdates[quorumNumber][index].updateBlockNumber, "");
+        require(blockNumber >= quorumToApkUpdates[quorumNumber][index].updateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: index too recent");
 
         if (index != quorumToApkUpdates[quorumNumber].length - 1){
-            require(blockNumber < quorumToApkUpdates[quorumNumber][index].nextUpdateBlockNumber, "");
+            require(blockNumber < quorumToApkUpdates[quorumNumber][index].nextUpdateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: not latest apk update");
         }
 
         return quorumToApkUpdates[quorumNumber][index].apkHash;
@@ -114,10 +114,10 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
-        require(blockNumber >= globalApkUpdates[index].updateBlockNumber, "");
+        require(blockNumber >= globalApkUpdates[index].updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
 
         if (index != globalApkUpdates.length - 1){
-            require(blockNumber < globalApkUpdates[index].nextUpdateBlockNumber, "");
+            require(blockNumber < globalApkUpdates[index].nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
         }
 
         return globalApkUpdates[index].apkHash;
