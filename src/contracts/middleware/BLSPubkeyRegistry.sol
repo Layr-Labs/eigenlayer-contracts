@@ -5,10 +5,9 @@ pragma solidity =0.8.12;
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../libraries/BN254.sol";
 import "../interfaces/IServiceManager.sol";
-import "./RegistryBase.sol";
 
 
-contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
+contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     BN254.G1Point globalApk;
 
@@ -36,16 +35,9 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     constructor(
         IStrategyManager strategyManager,
         IServiceManager serviceManager
-    )RegistryBase(strategyManager, serviceManager){
+    ){
     }
 
-    function initialize(
-        uint96[] memory _minimumStakeForQuorum,
-        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
-    ) public initializer {
-        RegistryBase._initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
-        _initializeApkUpdates();
-    }
 
     function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
         _processQuorumApkUpdate(quorumBitmap, pubkey, true);
@@ -53,7 +45,6 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
 
 
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        _addRegistrant(operator, pubkeyHash, quorumBitmap);
 
         emit RegistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
     }
@@ -66,7 +57,6 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         _processQuorumApkUpdate(quorumBitmap, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        _removeOperator(operator, pubkeyHash, index);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, BN254.negate(pubkey)));
 
         emit DeregistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
