@@ -19,16 +19,16 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     mapping(uint8 => BN254.G1Point) public quorumToApk;
 
     event RegistrationEvent(
-        address indexed operator,
-        bytes32 pubkeyHash,
-        uint256 quorumBitmap,
+        address indexed operator;
+        bytes32 pubkeyHash;
+        uint256 quorumBitmap;
         bytes32 globalApkHash;
     )
 
     event DeregistrationEvent(
-        address indexed operator,
-        bytes32 pubkeyHash,
-        uint256 quorumBitmap,
+        address indexed operator;
+        bytes32 pubkeyHash;
+        uint256 quorumBitmap;
         bytes32 globalApkHash;
     )
 
@@ -46,7 +46,7 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public initializer {
         RegistryBase._initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
-        _initializeApkUpdates();
+        _initializeApkUpdates(BN254.G1Point(0,0));
     }
 
     function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
@@ -128,7 +128,7 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
 
     function _processQuorumApkUpdate(uint256 quorumBitmap, bool isRegistration) internal {
         uint256 quorumToApkUpdatesLatestIndex = quorumToApkUpdates[quorumNumber].length - 1;
-        for (uint8 quorumNumber = 0; i < 256; i++) {
+        for (uint8 quorumNumber = 0; i < 256; quorumNumber++) {
             if(quorumBitmap >> quorumNumber & 1 == 1){
                 BN254.G1Point currentApk = quorumToApk[quorumNumber];
                 if(isRegistration){
@@ -150,8 +150,16 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         }
     }
 
-    function _initializeApkUpdates() internal {
-        _processGlobalApkUpdate(BN254.G1Point(0,0))
-        _processQuorumApkUpdate(type(uint256).max, true);
+    function _initializeApkUpdates(initPk) internal {
+        _processGlobalApkUpdate(initPk)
+
+        for (uint quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
+            quorumToApk[quorumNumber] = initPk;
+            quorumToApkUpdates[quorum].push(ApkUpdate({
+                apkHash: BN254.hashG1Point(initPk)
+            }));
+
+            
+        }
     }
 }
