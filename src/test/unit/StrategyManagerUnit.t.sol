@@ -791,7 +791,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
     }
 
-    function testQueueWithdrawaMismatchedIndexAndStrategyArrayLength() external {
+    function testQueueWithdrawalMismatchedIndexAndStrategyArrayLength() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](2);
         uint256[] memory strategyIndexes = new uint256[](1);
