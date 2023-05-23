@@ -593,7 +593,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testDeployEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager){
+    function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager){
         cheats.assume(nonPodManager != address(eigenPodManager));
 
         cheats.startPrank(podOwner);
