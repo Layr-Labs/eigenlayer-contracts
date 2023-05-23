@@ -19,6 +19,12 @@ contract PausableUnitTests is Test {
 
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
 
+    /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
+    event Paused(address indexed account, uint256 newPausedStatus);
+
+    /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
+    event Unpaused(address indexed account, uint256 newPausedStatus);
+
     function setUp() virtual public {
         pauserRegistry = new PauserRegistry(pauser, unpauser);
         pausable = new PausableHarness();
@@ -42,12 +48,16 @@ contract PausableUnitTests is Test {
         cheats.assume(previousPausedStatus & newPausedStatus == previousPausedStatus);
 
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), previousPausedStatus);
         pausable.pause(previousPausedStatus);
         cheats.stopPrank();
 
         require(pausable.paused() == previousPausedStatus, "previousPausedStatus not set correctly");
 
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), newPausedStatus);
         pausable.pause(newPausedStatus);
         cheats.stopPrank();
 
@@ -65,12 +75,16 @@ contract PausableUnitTests is Test {
 
     function testPauseAll(uint256 previousPausedStatus) public {
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), previousPausedStatus);
         pausable.pause(previousPausedStatus);
         cheats.stopPrank();
 
         require(pausable.paused() == previousPausedStatus, "previousPausedStatus not set correctly");
 
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), type(uint256).max);
         pausable.pauseAll();
         cheats.stopPrank();
 
@@ -91,6 +105,8 @@ contract PausableUnitTests is Test {
         cheats.assume(previousPausedStatus & newPausedStatus != previousPausedStatus);
 
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), previousPausedStatus);
         pausable.pause(previousPausedStatus);
         cheats.stopPrank();
 
@@ -113,12 +129,16 @@ contract PausableUnitTests is Test {
         cheats.assume(~previousPausedStatus & ~newPausedStatus == ~previousPausedStatus);
 
         cheats.startPrank(pausable.pauserRegistry().pauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Paused(pausable.pauserRegistry().pauser(), previousPausedStatus);
         pausable.pause(previousPausedStatus);
         cheats.stopPrank();
 
         require(pausable.paused() == previousPausedStatus, "previousPausedStatus not set correctly");
 
         cheats.startPrank(pausable.pauserRegistry().unpauser());
+        cheats.expectEmit(true, true, true, true, address(pausable));
+        emit Unpaused(pausable.pauserRegistry().unpauser(), newPausedStatus);
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
 

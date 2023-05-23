@@ -13,6 +13,12 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     uint256 maxTotalDeposits = 3200e18;
     uint256 maxPerDeposit = 32e18;
 
+    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`
+    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
+    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
+
     function setUp() virtual public override {
         // copy setup for StrategyBaseUnitTests
         StrategyBaseUnitTests.setUp();
@@ -39,28 +45,23 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     }
 
     function testSetTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput) public {
-        cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
-        cheats.startPrank(pauser);
-        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
-        cheats.stopPrank();
+        _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         (uint256 _maxPerDeposit, uint256 _maxDeposits) = strategyWithTVLLimits.getTVLLimits();
 
         assertEq(_maxPerDeposit, maxPerDepositFuzzedInput);
-        assertEq(_maxDeposits, maxDepositsFuzzedInput);
+        assertEq(_maxDeposits, maxTotalDepositsFuzzedInput);
     }
 
-    function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, address notPauser) public {
+    function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, address notPauser) public {
         cheats.assume(notPauser != address(proxyAdmin));
         cheats.assume(notPauser != pauser);
         cheats.startPrank(notPauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
-        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
+        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
 
     function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput) public {
-        cheats.assume(maxDepositsFuzzedInput > 0);
-        cheats.assume(maxPerDepositFuzzedInput > 0);
         cheats.assume(maxDepositsFuzzedInput < maxPerDepositFuzzedInput);
         cheats.startPrank(pauser);
         cheats.expectRevert(bytes("StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"));
@@ -70,10 +71,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
     function testDepositMoreThanMaxPerDeposit(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 amount) public {
         cheats.assume(amount > maxPerDepositFuzzedInput);
-        cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
-        cheats.startPrank(pauser);
-        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
-        cheats.stopPrank();
+        _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
         cheats.startPrank(address(strategyManager));
         cheats.expectRevert(bytes("StrategyBaseTVLLimits: max per deposit exceeded"));
@@ -86,11 +84,9 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         maxPerDeposit = 3e11;
         uint256 numDeposits = maxTotalDeposits / maxPerDeposit;
 
-        underlyingToken.transfer(address(strategyManager), maxTotalDeposits);
-        cheats.startPrank(pauser);
-        strategyWithTVLLimits.setTVLLimits(maxPerDeposit, maxTotalDeposits);
-        cheats.stopPrank();
+        _setTVLLimits(maxPerDeposit, maxTotalDeposits);
 
+        underlyingToken.transfer(address(strategyManager), maxTotalDeposits);
         cheats.startPrank(address(strategyManager));
         for (uint256 i = 0; i < numDeposits; i++) {
             underlyingToken.transfer(address(strategyWithTVLLimits), maxPerDeposit);
@@ -113,9 +109,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.assume(depositAmount > 0);
         cheats.assume(depositAmount < maxPerDeposit);
 
-        cheats.startPrank(pauser);
-        strategyWithTVLLimits.setTVLLimits(maxPerDeposit, maxTotalDeposits);
-        cheats.stopPrank();
+        _setTVLLimits(maxPerDeposit, maxTotalDeposits);
 
         // we need to actually transfer the tokens to the strategy to avoid underflow in the `deposit` calculation
         underlyingToken.transfer(address(strategyWithTVLLimits), depositAmount);
@@ -161,16 +155,14 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     }
 
     /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
-    function testDeposit_WithTVLLimits(uint256 maxDepositsFuzzedInput, uint256 maxPerDepositFuzzedInput, uint256 depositAmount)
+    function testDeposit_WithTVLLimits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, uint256 depositAmount)
         public returns (bool depositReverted)
     {
         cheats.assume(maxPerDepositFuzzedInput < maxDepositsFuzzedInput);
         // need to filter this to make sure the deposit amounts can actually be transferred
         cheats.assume(depositAmount <= initialSupply);
         // set TVL limits
-        cheats.startPrank(pauser);
-        strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxDepositsFuzzedInput);
-        cheats.stopPrank();
+        _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
         // we need to calculate this before transferring tokens to the strategy
         uint256 expectedSharesOut = strategyWithTVLLimits.underlyingToShares(depositAmount);
@@ -191,7 +183,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
             // return 'true' since the call to `deposit` reverted
             return true;
-        } else if (underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxDepositsFuzzedInput) {
+        } else if (underlyingToken.balanceOf(address(strategyWithTVLLimits)) > maxTotalDepositsFuzzedInput) {
             cheats.startPrank(address(strategyManager));
             cheats.expectRevert("StrategyBaseTVLLimits: max deposits exceeded");
             strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
@@ -230,6 +222,18 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
                 return false;
             }
         }
+    }
+
+    // sets the TVL Limits and checks that events were emitted correctly
+    function _setTVLLimits(uint256 _maxPerDeposit, uint256 _maxTotalDeposits) internal {
+        cheats.assume(_maxPerDeposit < _maxTotalDeposits);
+        (uint256 _maxPerDepositBefore, uint256 _maxTotalDepositsBefore) = strategyWithTVLLimits.getTVLLimits();
+        cheats.startPrank(pauser);
+        cheats.expectEmit(true, true, true, true, address(strategyWithTVLLimits));
+        emit MaxPerDepositUpdated(_maxPerDepositBefore, _maxPerDeposit);
+        emit MaxTotalDepositsUpdated(_maxTotalDepositsBefore, _maxTotalDeposits);
+        strategyWithTVLLimits.setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
+        cheats.stopPrank();
     }
 
     /// OVERRIDING EXISTING TESTS TO FILTER INPUTS THAT WOULD FAIL DUE TO DEPOSIT-LIMITING

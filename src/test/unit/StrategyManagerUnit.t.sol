@@ -24,7 +24,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    uint256 public REQUIRED_BALANCE_WEI = 31.4 ether;
+    uint256 public REQUIRED_BALANCE_WEI = 31 ether;
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
@@ -65,6 +65,55 @@ contract StrategyManagerUnitTests is Test, Utils {
         _;
     }
 
+    /**
+     * @notice Emitted when a new deposit occurs on behalf of `depositor`.
+     * @param depositor Is the staker who is depositing funds into EigenLayer.
+     * @param strategy Is the strategy that `depositor` has deposited into.
+     * @param token Is the token that `depositor` deposited.
+     * @param shares Is the number of new shares `depositor` has been granted in `strategy`.
+     */
+    event Deposit(
+        address depositor, IERC20 token, IStrategy strategy, uint256 shares
+    );
+
+    /**
+     * @notice Emitted when a new withdrawal occurs on behalf of `depositor`.
+     * @param depositor Is the staker who is queuing a withdrawal from EigenLayer.
+     * @param nonce Is the withdrawal's unique identifier (to the depositor).
+     * @param strategy Is the strategy that `depositor` has queued to withdraw from.
+     * @param shares Is the number of shares `depositor` has queued to withdraw.
+     */
+    event ShareWithdrawalQueued(
+        address depositor, uint96 nonce, IStrategy strategy, uint256 shares
+    );
+
+    /**
+     * @notice Emitted when a new withdrawal is queued by `depositor`.
+     * @param depositor Is the staker who is withdrawing funds from EigenLayer.
+     * @param nonce Is the withdrawal's unique identifier (to the depositor).
+     * @param withdrawer Is the party specified by `staker` who will be able to complete the queued withdrawal and receive the withdrawn funds.
+     * @param delegatedAddress Is the party who the `staker` was delegated to at the time of creating the queued withdrawal
+     * @param withdrawalRoot Is a hash of the input data for the withdrawal.
+     */
+    event WithdrawalQueued(
+        address depositor, uint96 nonce, address withdrawer, address delegatedAddress, bytes32 withdrawalRoot
+    );
+
+    /// @notice Emitted when a queued withdrawal is completed
+    event WithdrawalCompleted(address indexed depositor, uint96 nonce, address indexed withdrawer, bytes32 withdrawalRoot);
+
+    /// @notice Emitted when the `strategyWhitelister` is changed
+    event StrategyWhitelisterChanged(address previousAddress, address newAddress);
+
+    /// @notice Emitted when a strategy is added to the approved list of strategies for deposit
+    event StrategyAddedToDepositWhitelist(IStrategy strategy);
+
+    /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
+    event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+
+    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
@@ -99,6 +148,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         IStrategy[] memory _strategy = new IStrategy[](2);
         _strategy[0] = dummyStrat;
         _strategy[1] = dummyStrat2;
+        for (uint256 i = 0; i < _strategy.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(_strategy[i]);
+        }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -247,7 +300,12 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
+        // needed for expecting an event with the right parameters
+        uint256 expectedShares = strategy.underlyingToShares(amount);
+
         cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit Deposit(staker, token, strategy, expectedShares);
         uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
         cheats.stopPrank();
 
@@ -301,6 +359,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = IStrategy(address(reenterer));
+        for (uint256 i = 0; i < _strategy.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(_strategy[i]);
+        }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -476,6 +538,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = IStrategy(address(reenterer));
+        for (uint256 i = 0; i < _strategy.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(_strategy[i]);
+        }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -624,6 +690,27 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
+
+        {
+            for (uint256 i = 0; i < queuedWithdrawal.strategies.length; ++i) {
+                cheats.expectEmit(true, true, true, true, address(strategyManager));
+                emit ShareWithdrawalQueued(
+                    /*staker*/ address(this),
+                    queuedWithdrawal.withdrawerAndNonce.nonce,
+                    queuedWithdrawal.strategies[i],
+                    queuedWithdrawal.shares[i]
+                );                
+            }
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit WithdrawalQueued(
+                /*staker*/ address(this),
+                queuedWithdrawal.withdrawerAndNonce.nonce,
+                queuedWithdrawal.withdrawerAndNonce.withdrawer,
+                queuedWithdrawal.delegatedAddress,
+                withdrawalRoot
+            );
+        }
+
         strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, withdrawer, undelegateIfPossible);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
@@ -767,6 +854,24 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
         {
+            for (uint256 i = 0; i < queuedWithdrawal.strategies.length; ++i) {
+                cheats.expectEmit(true, true, true, true, address(strategyManager));
+                emit ShareWithdrawalQueued(
+                    /*staker*/ address(this),
+                    queuedWithdrawal.withdrawerAndNonce.nonce,
+                    queuedWithdrawal.strategies[i],
+                    queuedWithdrawal.shares[i]
+                );                
+            }
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit WithdrawalQueued(
+                /*staker*/ address(this),
+                queuedWithdrawal.withdrawerAndNonce.nonce,
+                queuedWithdrawal.withdrawerAndNonce.withdrawer,
+                queuedWithdrawal.delegatedAddress,
+                withdrawalRoot
+            );
+
             uint256[] memory strategyIndexes = new uint256[](1);
             strategyIndexes[0] = 0;
             strategyManager.queueWithdrawal(
@@ -819,6 +924,24 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
         {
+            for (uint256 i = 0; i < queuedWithdrawal.strategies.length; ++i) {
+                cheats.expectEmit(true, true, true, true, address(strategyManager));
+                emit ShareWithdrawalQueued(
+                    /*staker*/ address(this),
+                    queuedWithdrawal.withdrawerAndNonce.nonce,
+                    queuedWithdrawal.strategies[i],
+                    queuedWithdrawal.shares[i]
+                );                
+            }
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit WithdrawalQueued(
+                /*staker*/ address(this),
+                queuedWithdrawal.withdrawerAndNonce.nonce,
+                queuedWithdrawal.withdrawerAndNonce.withdrawer,
+                queuedWithdrawal.delegatedAddress,
+                withdrawalRoot
+            );
+
             uint256[] memory strategyIndexes = new uint256[](2);
             strategyIndexes[0] = 0;
             strategyIndexes[1] = 0;
@@ -853,6 +976,27 @@ contract StrategyManagerUnitTests is Test, Utils {
         bool undelegateIfPossible = false;
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
+
+        {
+            for (uint256 i = 0; i < queuedWithdrawal.strategies.length; ++i) {
+                cheats.expectEmit(true, true, true, true, address(strategyManager));
+                emit ShareWithdrawalQueued(
+                    /*staker*/ address(this),
+                    queuedWithdrawal.withdrawerAndNonce.nonce,
+                    queuedWithdrawal.strategies[i],
+                    queuedWithdrawal.shares[i]
+                );                
+            }
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit WithdrawalQueued(
+                /*staker*/ address(this),
+                queuedWithdrawal.withdrawerAndNonce.nonce,
+                queuedWithdrawal.withdrawerAndNonce.withdrawer,
+                queuedWithdrawal.delegatedAddress,
+                withdrawalRoot
+            );
+        }
+
         strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, withdrawer, undelegateIfPossible);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
@@ -972,6 +1116,13 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
         strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
@@ -1026,6 +1177,13 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
         uint256 balanceBefore = dummyToken.balanceOf(address(staker));
 
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
         strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, /*middlewareTimesIndex*/ 0, /*receiveAsTokens*/ true);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
@@ -1080,6 +1238,14 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
         strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(_tempStakerStorage, _tempStrategyStorage);
@@ -1161,6 +1327,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        for (uint256 i = 0; i < _strategy.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(_strategy[i]);
+        }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1354,6 +1524,13 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
 
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
         strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
@@ -1382,6 +1559,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 valueToSet = 1;
         // set the `withdrawalDelayBlocks` variable
         cheats.startPrank(strategyManager.owner());
+        uint256 previousValue = strategyManager.withdrawalDelayBlocks();
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalDelayBlocksSet(previousValue, valueToSet);
         strategyManager.setWithdrawalDelayBlocks(valueToSet);
         cheats.stopPrank();
         require(strategyManager.withdrawalDelayBlocks() == valueToSet, "strategyManager.withdrawalDelayBlocks() != valueToSet");
@@ -1407,6 +1587,9 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         // set the `withdrawalDelayBlocks` variable
         cheats.startPrank(strategyManager.owner());
+        uint256 previousValue = strategyManager.withdrawalDelayBlocks();
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalDelayBlocksSet(previousValue, valueToSet);
         strategyManager.setWithdrawalDelayBlocks(valueToSet);
         cheats.stopPrank();
         require(strategyManager.withdrawalDelayBlocks() == valueToSet, "strategyManager.withdrawalDelayBlocks() != valueToSet");
@@ -1652,6 +1835,8 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1820,6 +2005,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1883,6 +2070,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1921,6 +2110,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             cheats.startPrank(strategyManager.owner());
             IStrategy[] memory _strategy = new IStrategy[](1);
             _strategy[0] = dummyStrat;
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(dummyStrat);
             strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
@@ -1943,6 +2134,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1966,6 +2159,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -1992,6 +2187,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -2016,6 +2213,8 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -2151,6 +2350,9 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
 
         // set the `withdrawalDelayBlocks` variable
         cheats.startPrank(strategyManager.owner());
+        uint256 previousValue = strategyManager.withdrawalDelayBlocks();
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalDelayBlocksSet(previousValue, valueToSet);
         strategyManager.setWithdrawalDelayBlocks(valueToSet);
         cheats.stopPrank();
         require(strategyManager.withdrawalDelayBlocks() == valueToSet, "strategyManager.withdrawalDelayBlocks() != valueToSet");
@@ -2178,6 +2380,9 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
     }
 
     function testSetStrategyWhitelister(address newWhitelister) external {
+        address previousStrategyWhitelister = strategyManager.strategyWhitelister();
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyWhitelisterChanged(previousStrategyWhitelister, newWhitelister);
         strategyManager.setStrategyWhitelister(newWhitelister);
         require(strategyManager.strategyWhitelister() == newWhitelister, "strategyManager.strategyWhitelister() != newWhitelister");
     }
@@ -2206,6 +2411,10 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         }
 
         cheats.startPrank(strategyManager.strategyWhitelister());
+        for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyAddedToDepositWhitelist(strategyArray[i]);
+        }
         strategyManager.addStrategiesToDepositWhitelist(strategyArray);
         cheats.stopPrank();
 
@@ -2245,6 +2454,10 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         }
 
         cheats.startPrank(strategyManager.strategyWhitelister());
+        for (uint256 i = 0; i < strategiesToRemove.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit StrategyRemovedFromDepositWhitelist(strategiesToRemove[i]);
+        }
         strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemove);
         cheats.stopPrank();
 
@@ -2326,7 +2539,12 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
+        // needed for expecting an event with the right parameters
+        uint256 expectedShares = amount;
+
         cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit Deposit(staker, token, strategy, expectedShares);
         uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
         cheats.stopPrank();
 
@@ -2412,6 +2630,11 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             cheats.expectRevert(bytes(expectedRevertMessage));
         } else if (expiry < block.timestamp) {
             cheats.expectRevert("StrategyManager.depositIntoStrategyWithSignature: signature expired");
+        } else {
+            // needed for expecting an event with the right parameters
+            uint256 expectedShares = amount;
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit Deposit(staker, token, strategy, expectedShares);
         }
         uint256 shares = strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
