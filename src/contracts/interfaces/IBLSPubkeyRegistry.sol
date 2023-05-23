@@ -31,6 +31,12 @@ interface IBLSPubkeyRegistry is IRegistry {
      */    
     function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32);
 
+    /// @notice returns the current stored APK for the `quorumNumber`
+    function quorumApk(uint8 quorumNumber) external view returns (BN254.G1Point memory);
+
+    /// @notice returns the current stored APK among all quorums
+    function globalApk() external view returns (BN254.G1Point memory);
+
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
 
