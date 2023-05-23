@@ -69,14 +69,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.delegateToBySignature(staker, operator, expiry, signature);
     }
 
-    function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator){
+    function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator) {
         cheats.assume(undelegator != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
         cheats.startPrank(undelegator);
         delegationManager.undelegate(address(this));
     }
 
-    function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator){
+    function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
         delegationManager.registerAsOperator(IDelegationTerms(address(this)));
         cheats.stopPrank();
@@ -87,7 +87,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator){
+    function testIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
         cheats.startPrank(operator);
@@ -98,14 +98,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address operator,  
         IStrategy[] memory strategies,  
         uint256[] memory shareAmounts
-    ) public fuzzedAddress(operator){
+    ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
         cheats.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
 
-    function testDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker){
+    function testDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
         
         cheats.startPrank(operator);
@@ -151,7 +151,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.delegateTo(operator);
     }
 
-    function testDelegationWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker){
+    function testDelegationWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.startPrank(pauser);
         delegationManager.pause(1);
         cheats.stopPrank();
@@ -181,7 +181,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testRevertingDelegationWithdrawnHook(
         address operator, 
         address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker){
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
         delegationTermsMock.setShouldRevert(true);
 
@@ -204,7 +204,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testDelegationReceivedHookWithTooMuchReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker){
+    function testDelegationReceivedHookWithTooMuchReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
         delegationTermsMock.setShouldReturnData(true);
 
@@ -220,7 +220,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testDelegationWithdrawnHookWithTooMuchReturnData(
         address operator, 
         address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker){
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
 
         delegationTermsMock.setShouldReturnData(true);
@@ -242,7 +242,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testDelegationReceivedHookWithNoReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker){
+    function testDelegationReceivedHookWithNoReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
 
         cheats.startPrank(operator);
@@ -257,7 +257,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testDelegationWithdrawnHookWithNoReturnData(
         address operator, 
         address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker){
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
 
         cheats.startPrank(operator);

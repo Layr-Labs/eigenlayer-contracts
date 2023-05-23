@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 contract ServiceManagerMock is IServiceManager, DSTest {
     ISlasher public slasher;
 
-    constructor(ISlasher _slasher){
+    constructor(ISlasher _slasher) {
         slasher = _slasher;
     }
 

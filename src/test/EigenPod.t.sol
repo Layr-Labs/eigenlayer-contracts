@@ -356,7 +356,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice This test is to ensure that the partial withdrawal flow works correctly
-    function testPartialWithdrawalFlow() public returns(IEigenPod){
+    function testPartialWithdrawalFlow() public returns(IEigenPod) {
         //this call is to ensure that validator 61068 has proven their withdrawalcreds
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -419,7 +419,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
     }
 
-    function testDeployAndVerifyNewEigenPod() public returns(IEigenPod){
+    function testDeployAndVerifyNewEigenPod() public returns(IEigenPod) {
         // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         return _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -593,7 +593,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager){
+    function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager) {
         cheats.assume(nonPodManager != address(eigenPodManager));
 
         cheats.startPrank(podOwner);
@@ -609,7 +609,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner){
+    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner) {
         cheats.assume(nonPodOwner != podOwner);
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
@@ -987,7 +987,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return delayedWithdrawalRouter.userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1).amount;
     }
 
-    function _getValidatorFieldsAndBalanceProof() internal returns (BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory){
+    function _getValidatorFieldsAndBalanceProof() internal returns (BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory) {
 
         bytes32 balanceRoot = getBalanceRoot();
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = BeaconChainProofs.ValidatorFieldsAndBalanceProofs(

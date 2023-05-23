@@ -228,7 +228,7 @@ contract SlasherTests is EigenLayerTestHelper {
         
     }
 
-    function testOnlyRegisteredForService(address _slasher, uint32 _serveUntilBlock) public fuzzedAddress(_slasher){
+    function testOnlyRegisteredForService(address _slasher, uint32 _serveUntilBlock) public fuzzedAddress(_slasher) {
         cheats.prank(operator);
         delegation.registerAsOperator(delegationTerms);
 
@@ -246,7 +246,7 @@ contract SlasherTests is EigenLayerTestHelper {
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, _serveUntilBlock);
     }
 
-    function testOptIn(address _operator, address _slasher) public fuzzedAddress(_slasher) fuzzedAddress(_operator){
+    function testOptIn(address _operator, address _slasher) public fuzzedAddress(_slasher) fuzzedAddress(_operator) {
 
         //cannot opt in until registered as operator
         cheats.prank(_operator);
@@ -280,7 +280,7 @@ contract SlasherTests is EigenLayerTestHelper {
         require(frozen,"operator should be frozen");
     }
 
-    function testResetFrozenOperator(address _attacker) public fuzzedAddress(_attacker){
+    function testResetFrozenOperator(address _attacker) public fuzzedAddress(_attacker) {
         cheats.assume(_attacker != slasher.owner());
 
         cheats.prank(operator);

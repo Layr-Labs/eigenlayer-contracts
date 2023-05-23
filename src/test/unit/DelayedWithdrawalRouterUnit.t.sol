@@ -135,7 +135,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
     }
 
-    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner){
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner) {
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.assume(podAddress != address(proxyAdmin));
@@ -144,7 +144,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
     }
 
-    function testCreateDelayedWithdrawalFromNonPodAddress(address podOwner, address nonPodAddress) external filterFuzzedAddressInputs(podOwner) filterFuzzedAddressInputs(nonPodAddress){
+    function testCreateDelayedWithdrawalFromNonPodAddress(address podOwner, address nonPodAddress) external filterFuzzedAddressInputs(podOwner) filterFuzzedAddressInputs(nonPodAddress) {
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.assume(nonPodAddress != podAddress);

@@ -80,7 +80,7 @@ contract RegistrationTests is EigenLayerTestHelper {
     }
 
 
-    function testRegisterOperator(address operator, uint32 operatorIndex, string calldata socket) public fuzzedAddress(operator){
+    function testRegisterOperator(address operator, uint32 operatorIndex, string calldata socket) public fuzzedAddress(operator) {
         cheats.assume(operatorIndex < 15);
         BN254.G1Point memory pk = getOperatorPubkeyG1(operatorIndex);
 
