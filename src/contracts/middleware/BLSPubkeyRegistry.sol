@@ -112,9 +112,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
 
     function _processGlobalApkUpdate(BN254.G1Point memory newGlobalApk) internal returns(bytes32){
-        globalApk = newGlobalApk;
-        bytes32 globalApkHash = BN254.hashG1Point(globalApk);
+        bytes32 globalApkHash = BN254.hashG1Point(newGlobalApk);
         globalApkUpdateList[globalApkUpdateList.length - 1].nextUpdateBlockNumber = uint32(block.number);
+        globalApk = newGlobalApk;
 
         ApkUpdate memory latestGlobalApkUpdate;
         latestGlobalApkUpdate.apkHash = globalApkHash;
@@ -126,9 +126,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     function _processQuorumApkUpdate(uint256 quorumBitmap, BN254.G1Point memory pubkey, bool isRegistration) internal {
         BN254.G1Point memory latestApk;
+        BN254.G1Point memory currentApk;
         for (uint8 quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
             if(quorumBitmap >> quorumNumber & 1 == 1){
-                BN254.G1Point memory currentApk = quorumToApk[quorumNumber];
+                currentApk = quorumToApk[quorumNumber];
                 if(isRegistration){
                     latestApk = BN254.plus(currentApk, pubkey);
                 } else {
