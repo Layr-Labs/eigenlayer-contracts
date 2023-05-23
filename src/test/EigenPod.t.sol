@@ -555,11 +555,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.deal(nonPodManager, stakeAmount);     
 
-
         cheats.startPrank(nonPodManager);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodManager: not eigenPodManager"));
         newPod.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
+    }
+
+    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner){
+        cheats.assume(nonPodOwner != podOwner);
+        testStaking();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == false, "Pod should not be restaked");
+
+        //simulate a withdrawal
+        cheats.startPrank(nonPodOwner);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
+        pod.withdrawBeforeRestaking();
     }
     
 
