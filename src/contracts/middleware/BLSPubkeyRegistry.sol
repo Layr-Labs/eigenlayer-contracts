@@ -88,7 +88,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         require(blockNumber >= quorumToApkUpdates[quorumNumber][index].updateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: index too recent");
 
         if (index != quorumToApkUpdates[quorumNumber].length - 1){
-            require(blockNumber < quorumToApkUpdates[quorumNumber][index + 1].updateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: not latest apk update");
+            require(blockNumber < quorumToApkUpdates[quorumNumber][index].nextUpdateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: not latest apk update");
         }
 
         return quorumToApkUpdates[quorumNumber][index].apkHash;
@@ -102,7 +102,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         require(blockNumber >= globalApkUpdateList[index].updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
 
         if (index != globalApkUpdateList.length - 1){
-            require(blockNumber < globalApkUpdateList[index + 1].updateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
+            require(blockNumber < globalApkUpdateList[index].nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
         }
 
         return globalApkUpdateList[index].apkHash;
