@@ -533,6 +533,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function testCreatePodWhenPaused() external {
+        // pause the contract
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        eigenPodManager.pause(2 ** PAUSED_NEW_EIGENPODS);
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        eigenPodManager.createPod();
+        cheats.stopPrank();
+    }
+
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
         // pause the contract
         cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
