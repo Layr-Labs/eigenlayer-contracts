@@ -12,7 +12,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     IRegistryCoordinator public registryCoordinator;
 
-    ApkUpdate[] public globalApkUpdates;
+    ApkUpdate[] public globalApkUpdateList;
 
     mapping(uint8 => ApkUpdate[]) public quorumToApkUpdates;
     
@@ -75,7 +75,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates that keep track of the sum of the APK amonng all quorums
     function globalApkUpdates(uint256 index) external view returns (ApkUpdate memory){
-        return globalApkUpdates[index];
+        return globalApkUpdateList[index];
     }
 
     /**
@@ -97,25 +97,25 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
-        require(blockNumber >= globalApkUpdates[index].updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
+        require(blockNumber >= globalApkUpdateList[index].updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
 
-        if (index != globalApkUpdates.length - 1){
-            require(blockNumber < globalApkUpdates[index].nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
+        if (index != globalApkUpdateList.length - 1){
+            require(blockNumber < globalApkUpdateList[index].nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
         }
 
-        return globalApkUpdates[index].apkHash;
+        return globalApkUpdateList[index].apkHash;
     }
 
 
     function _processGlobalApkUpdate(BN254.G1Point memory newGlobalApk) internal returns(bytes32){
         globalApk = newGlobalApk;
         bytes32 globalApkHash = BN254.hashG1Point(globalApk);
-        globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlockNumber = uint32(block.number);
+        globalApkUpdateList[globalApkUpdateList.length - 1].nextUpdateBlockNumber = uint32(block.number);
 
         ApkUpdate memory latestGlobalApkUpdate;
         latestGlobalApkUpdate.apkHash = globalApkHash;
         latestGlobalApkUpdate.updateBlockNumber = uint32(block.number);
-        globalApkUpdates.push(latestGlobalApkUpdate);
+        globalApkUpdateList.push(latestGlobalApkUpdate);
 
         return globalApkHash;
     }
