@@ -2,10 +2,8 @@
 pragma solidity =0.8.12;
 
 /**
- * @title Interface for a `Registry`-type contract that uses either 1 or 2 quorums.
+ * @title Interface for a contract the coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
- * @notice This contract does not currently support n-quorums where n >= 3.
- * Note in particular the presence of only `firstQuorumStake` and `secondQuorumStake` in the `OperatorStake` struct.
  */
 interface IRegistryCoordinator {
     // DATA STRUCTURES
