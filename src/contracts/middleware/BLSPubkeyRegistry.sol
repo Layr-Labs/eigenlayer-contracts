@@ -11,6 +11,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     BN254.G1Point globalApk;
 
+    IRegistryCoordinator public registryCoordinator;
+
     ApkUpdate[] public globalApkUpdates;
 
     mapping(uint8 => ApkUpdate[]) public quorumToApkUpdates;
@@ -33,9 +35,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
 
     constructor(
-        IStrategyManager strategyManager,
-        IServiceManager serviceManager
+        IRegistryCoordinator _registryCoordinator
     ){
+        registryCoordinator = _registryCoordinator;
     }
 
 
