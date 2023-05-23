@@ -19,20 +19,18 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     mapping(uint8 => BN254.G1Point) public quorumToApk;
 
     event RegistrationEvent(
-        address indexed operator;
-        bytes32 pubkeyHash;
-        uint256 quorumBitmap;
-        bytes32 globalApkHash;
-    )
+        address indexed operator,
+        bytes32 pubkeyHash,
+        uint256 quorumBitmap,
+        bytes32 globalApkHash
+    );
 
     event DeregistrationEvent(
-        address indexed operator;
-        bytes32 pubkeyHash;
-        uint256 quorumBitmap;
-        bytes32 globalApkHash;
-    )
-
-    event Operator
+        address indexed operator,
+        bytes32 pubkeyHash,
+        uint256 quorumBitmap,
+        bytes32 globalApkHash
+    );
 
 
     constructor(
@@ -46,12 +44,12 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) public initializer {
         RegistryBase._initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
-        _initializeApkUpdates(BN254.G1Point(0,0));
+        _initializeApkUpdates();
     }
 
     function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
-        _processQuorumApkUpdate(quorumBitmap, true);
-        bytes32 globalApkHash = _processApkUpdate(BN254.plus(globalApk, pubkey););
+        _processQuorumApkUpdate(quorumBitmap, pubkey, true);
+        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, pubkey));
 
 
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
@@ -65,11 +63,11 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * @dev Permissioned by RegistryCoordinator
      */    
     function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey, uint32 index) external returns(bytes32){
-        _processQuorumApkUpdate(quorumBitmap, false);
+        _processQuorumApkUpdate(quorumBitmap, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        _removeOperator(operator, pubkeyHash, index)
-        bytes32 globalApkHash = _processApkUpdate(BN254.plus(globalApk, BN254.negate(pubkey)););
+        _removeOperator(operator, pubkeyHash, index);
+        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, BN254.negate(pubkey)));
 
         emit DeregistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
     }
@@ -113,24 +111,24 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     }
 
 
-    function _processGlobalApkUpdate(BN254.G1Point newGlobalApk) internal returns(bytes32){
+    function _processGlobalApkUpdate(BN254.G1Point memory newGlobalApk) internal returns(bytes32){
         globalApk = newGlobalApk;
-        globalApkHash = BN254.hashG1Point(globalApk);
-        globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlock = block.number
+        bytes32 globalApkHash = BN254.hashG1Point(globalApk);
+        globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlockNumber = uint32(block.number);
 
         ApkUpdate memory latestGlobalApkUpdate;
         latestGlobalApkUpdate.apkHash = globalApkHash;
-        latestGlobalApkUpdate.updateBlockNumber = block.number;
+        latestGlobalApkUpdate.updateBlockNumber = uint32(block.number);
         globalApkUpdates.push(latestGlobalApkUpdate);
 
         return globalApkHash;
     }
 
-    function _processQuorumApkUpdate(uint256 quorumBitmap, bool isRegistration) internal {
-        uint256 quorumToApkUpdatesLatestIndex = quorumToApkUpdates[quorumNumber].length - 1;
-        for (uint8 quorumNumber = 0; i < 256; quorumNumber++) {
+    function _processQuorumApkUpdate(uint256 quorumBitmap, BN254.G1Point memory pubkey, bool isRegistration) internal {
+        BN254.G1Point memory latestApk;
+        for (uint8 quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
             if(quorumBitmap >> quorumNumber & 1 == 1){
-                BN254.G1Point currentApk = quorumToApk[quorumNumber];
+                BN254.G1Point memory currentApk = quorumToApk[quorumNumber];
                 if(isRegistration){
                     latestApk = BN254.plus(currentApk, pubkey);
                 } else {
@@ -140,27 +138,27 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
                 //update aggregate public key for this quorum
                 quorumToApk[quorumNumber] = latestApk;
                 //update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumToApkUpdates[quorumNumber][quorumToApkUpdatesLatestIndex].nextUpdateBlockNumber = block.number;
+                quorumToApkUpdates[quorumNumber][quorumToApkUpdates[quorumNumber].length - 1].nextUpdateBlockNumber = uint32(block.number);
                 //create new ApkUpdate to add to the mapping
                 ApkUpdate memory latestApkUpdate;
                 latestApkUpdate.apkHash = BN254.hashG1Point(latestApk);
-                latestApkUpdate.updateBlockNumber = block.number;
+                latestApkUpdate.updateBlockNumber = uint32(block.number);
                 quorumToApkUpdates[quorumNumber].push(latestApkUpdate);
             }
         }
     }
 
-    function _initializeApkUpdates(initPk) internal {
-        _processGlobalApkUpdate(initPk)
+    function _initializeApkUpdates() internal {
+        BN254.G1Point memory pk = BN254.G1Point(0,0);
+        _processGlobalApkUpdate(pk);
 
-        for (uint quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
-            quorumToApk[quorumNumber] = initPk;
-            quorumToApkUpdates[quorum].push(ApkUpdate({
-                apkHash: BN254.hashG1Point(initPk),
-                updateBlockNumber: block.number,
+        for (uint8 quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
+            quorumToApk[quorumNumber] = pk;
+            quorumToApkUpdates[quorumNumber].push(ApkUpdate({
+                apkHash: BN254.hashG1Point(pk),
+                updateBlockNumber: uint32(block.number),
                 nextUpdateBlockNumber: 0
             }));
-
         }
     }
 }
