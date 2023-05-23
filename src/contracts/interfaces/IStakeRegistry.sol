@@ -44,7 +44,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @dev Function will revert in the event that `index` is out-of-bounds.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint256 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
+    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -81,7 +81,7 @@ interface IStakeRegistry is IRegistry {
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getTotalStakeAtBlockNumberFromIndex(uint256 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
+    function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
