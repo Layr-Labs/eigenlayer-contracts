@@ -26,9 +26,6 @@ contract IndexRegistry is IIndexRegistry {
     }
     function registerOperator(bytes32 operatorId, uint8 quorumBitmap) external onlyRegistryCoordinator {
 
-        quorum -> totaloperators
-
-        operator -> quorum -> index history
 
     }
 
