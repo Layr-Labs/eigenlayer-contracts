@@ -132,6 +132,17 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
     }
 
+    function testCreateDelayedWithdrawalFromNonPodAddress(address podOwner, address nonPodAddress) external filterFuzzedAddressInputs(podOwner) filterFuzzedAddressInputs(nonPodAddress){
+        uint224 delayedWithdrawalAmount = 0;
+        address podAddress = address(eigenPodManagerMock.getPod(podOwner));
+        cheats.assume(nonPodAddress != podAddress);
+        cheats.assume(nonPodAddress != address(proxyAdmin));
+
+        cheats.startPrank(nonPodAddress);
+        cheats.expectRevert(bytes("DelayedWithdrawalRouter.onlyEigenPod: not podOwner's EigenPod"));
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
+    }
+
     function testClaimDelayedWithdrawals(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, address recipient, bool useOverloadedFunction)
         public filterFuzzedAddressInputs(recipient)
     {
