@@ -100,6 +100,13 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
+        require(blockNumber >= quorumToApkUpdates[quorumNumber][index].updateBlockNumber, "");
+
+        if (index != quorumToApkUpdates[quorumNumber].length - 1){
+            require(blockNumber < quorumToApkUpdates[quorumNumber][index].nextUpdateBlockNumber, "");
+        }
+
+        return quorumToApkUpdates[quorumNumber][index].apkHash;
     }
 
 	/**
@@ -107,7 +114,13 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
+        require(blockNumber >= globalApkUpdates[index].updateBlockNumber, "");
 
+        if (index != globalApkUpdates.length - 1){
+            require(blockNumber < globalApkUpdates[index].nextUpdateBlockNumber, "");
+        }
+
+        return globalApkUpdates[index].apkHash;
     }
 
 
