@@ -51,12 +51,13 @@ interface IIndexRegistry is IRegistry {
     function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /**
-     * @notice Looks up the number of total operators at the specified `blockNumber`.
-     * @param index Input used to specify the entry within the dynamic array `totalOperatorsHistory` to read data from.
-     * @dev This function will revert if the provided `index` is out of bounds.
-    */
-    function getTotalOperators(uint32 blockNumber, uint32 index) external view returns (uint32);
+     * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
+     * @param quorumNumber is the quorum number for which the total number of operators is desired
+     * @param blockNumber is the block number at which the total number of operators is desired
+     * @param index is the index of the entry in the dynamic array `totalOperatorsHistory[quorumNumber]` to read data from
+     */
+    function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /// @notice Returns the current number of operators of this service.
-    function numOperators() external view returns (uint32);
+    function totalOperators() external view returns (uint32);
 }
