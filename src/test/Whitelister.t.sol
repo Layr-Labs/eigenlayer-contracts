@@ -44,7 +44,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
     
 
-    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount){
+    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
         cheats.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
         _;
@@ -137,7 +137,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testWhitelistingOperator(address operator) public fuzzedAddress(operator){
+    function testWhitelistingOperator(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
         IDelegationTerms dt = IDelegationTerms(address(89));
         delegation.registerAsOperator(dt);
@@ -150,7 +150,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
         assertTrue(blsRegistry.whitelisted(operator) == true, "operator not added to whitelist");
     }
 
-    function testWhitelistDepositIntoStrategy(address operator, uint256 depositAmount) external fuzzedAddress(operator){
+    function testWhitelistDepositIntoStrategy(address operator, uint256 depositAmount) external fuzzedAddress(operator) {
         cheats.assume(depositAmount < AMOUNT);
         testWhitelistingOperator(operator);
 
@@ -162,7 +162,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testCallStakerFromNonWhitelisterAddress(address nonWhitelister, bytes memory data) external fuzzedAddress(nonWhitelister){
+    function testCallStakerFromNonWhitelisterAddress(address nonWhitelister, bytes memory data) external fuzzedAddress(nonWhitelister) {
         testWhitelistingOperator(operator);
         address staker = whiteLister.getStaker(operator);
 

@@ -25,7 +25,7 @@ contract DelegationTests is EigenLayerTestHelper {
     MiddlewareVoteWeigherMock public voteWeigher;
     MiddlewareVoteWeigherMock public voteWeigherImplementation;
 
-    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount){
+    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
         cheats.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
         _;

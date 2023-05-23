@@ -20,7 +20,7 @@ contract MiddlewareRegistryMock is IRegistry, DSTest{
     constructor(
         IServiceManager _serviceManager,
         IStrategyManager _strategyManager
-    ){
+    ) {
         serviceManager = _serviceManager;
         strategyManager = _strategyManager;
         slasher = _strategyManager.slasher();
@@ -43,7 +43,7 @@ contract MiddlewareRegistryMock is IRegistry, DSTest{
     }
 
     function isActiveOperator(address operator) external pure returns (bool) {
-        if (operator != address(0)){
+        if (operator != address(0)) {
             return true;
         } else {
             return false;

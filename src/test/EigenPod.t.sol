@@ -356,7 +356,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice This test is to ensure that the partial withdrawal flow works correctly
-    function testPartialWithdrawalFlow() public returns(IEigenPod){
+    function testPartialWithdrawalFlow() public returns(IEigenPod) {
         //this call is to ensure that validator 61068 has proven their withdrawalcreds
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -419,7 +419,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
     }
 
-    function testDeployAndVerifyNewEigenPod() public returns(IEigenPod){
+    function testDeployAndVerifyNewEigenPod() public returns(IEigenPod) {
         // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         return _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -580,6 +580,47 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
     }
+
+    function testCreatePodWhenPaused() external {
+        // pause the contract
+        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        eigenPodManager.pause(2 ** PAUSED_NEW_EIGENPODS);
+        cheats.stopPrank();
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        eigenPodManager.createPod();
+        cheats.stopPrank();
+    }
+
+    function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager) {
+        cheats.assume(nonPodManager != address(eigenPodManager));
+
+        cheats.startPrank(podOwner);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.deal(nonPodManager, stakeAmount);     
+
+        cheats.startPrank(nonPodManager);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodManager: not eigenPodManager"));
+        newPod.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner) {
+        cheats.assume(nonPodOwner != podOwner);
+        testStaking();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == false, "Pod should not be restaked");
+
+        //simulate a withdrawal
+        cheats.startPrank(nonPodOwner);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
+        pod.withdrawBeforeRestaking();
+    }
+    
 
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
         // pause the contract
@@ -763,6 +804,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
     }
 
+    function test_createPodTwiceFails() public {
+        eigenPodManager.createPod();
+        cheats.expectRevert(bytes("EigenPodManager.createPod: Sender already has a pod"));
+        eigenPodManager.createPod();
+    }
+
     // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
     function test_maxPodsEnforcementOnCreatePod() public {
         // set pod limit to current number of pods
@@ -940,7 +987,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return delayedWithdrawalRouter.userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1).amount;
     }
 
-    function _getValidatorFieldsAndBalanceProof() internal returns (BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory){
+    function _getValidatorFieldsAndBalanceProof() internal returns (BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory) {
 
         bytes32 balanceRoot = getBalanceRoot();
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = BeaconChainProofs.ValidatorFieldsAndBalanceProofs(

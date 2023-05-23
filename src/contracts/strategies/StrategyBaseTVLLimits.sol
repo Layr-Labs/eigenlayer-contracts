@@ -52,6 +52,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
         emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
+        require(newMaxPerDeposit <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
         maxPerDeposit = newMaxPerDeposit;
         maxTotalDeposits = newMaxTotalDeposits;
     }

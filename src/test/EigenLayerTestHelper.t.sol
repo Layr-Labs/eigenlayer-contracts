@@ -318,13 +318,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
     * bit to be either 0 or 1 based on the value of v, which is either 27 or 28 
     */
-    function getVSfromVandS(uint8 v, bytes32 s) internal view returns(bytes32){
+    function getVSfromVandS(uint8 v, bytes32 s) internal view returns(bytes32) {
         if (uint256(s) > SECP256K1N_MODULUS_HALF) {
             s = bytes32(SECP256K1N_MODULUS - uint256(s));
         }
 
         bytes32 vs = s;
-        if(v == 28){
+        if(v == 28) {
             vs = bytes32(uint256(s) ^ (1 << 255));
         }
 

@@ -59,7 +59,7 @@ contract WithdrawalTests is DelegationTests {
 
             initializeGeneralMiddlewares();
 
-            if(RANDAO){
+            if(RANDAO) {
                 _testWithdrawalAndDeregistration(operator, depositor, withdrawer, ethAmount, eigenAmount, withdrawAsTokens);
             }
             else{

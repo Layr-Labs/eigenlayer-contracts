@@ -133,6 +133,7 @@ contract StrategyBaseUnitTests is Test {
         cheats.stopPrank();
     }
 
+
     function testDepositFailsWhenCallingFromNotStrategyManager(address caller) public {
         cheats.assume(caller != address(strategy.strategyManager()) && caller != address(proxyAdmin));
 
@@ -195,6 +196,22 @@ contract StrategyBaseUnitTests is Test {
         require(totalSharesBefore - totalSharesAfter == sharesToWithdraw, "shares did not decrease appropriately");
         require(tokenBalanceAfter - tokenBalanceBefore == (strategyBalanceBefore * sharesToWithdraw) / totalSharesBefore,
             "token balance did not increase appropriately");
+    }
+
+    function testWithdrawZeroAmount(uint256 amountToDeposit) public {
+         cheats.assume(amountToDeposit >= 1);
+        testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
+
+        uint256 amountToWithdraw = 0;
+
+        uint256 sharesBefore = strategy.totalShares();
+        uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
+        cheats.startPrank(address(strategyManager));
+        strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
+        cheats.stopPrank();
+
+        require(sharesBefore == strategy.totalShares(), "shares changed");
+        require(tokenBalanceBefore == underlyingToken.balanceOf(address(this)), "token balance changed");
     }
 
     function testWithdrawFailsWhenWithdrawalsPaused(uint256 amountToDeposit) public virtual {
@@ -287,6 +304,14 @@ contract StrategyBaseUnitTests is Test {
         uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == amountSharesToQuery, "underlyingFromSharesView != amountSharesToQuery");
     }
+
+    function testDeposit_ZeroAmount() public {
+        cheats.startPrank(address(strategyManager));
+        cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
+        strategy.deposit(underlyingToken, 0);
+        cheats.stopPrank();
+    }
+
 
     // amountSharesToQuery input is uint96 to prevent overflow
     function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountSharesToQuery

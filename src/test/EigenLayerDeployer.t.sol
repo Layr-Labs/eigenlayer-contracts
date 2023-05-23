@@ -128,10 +128,10 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        if(vm.envUint("CHAIN_ID") == 31337){
+        if(vm.envUint("CHAIN_ID") == 31337) {
             _deployEigenLayerContractsLocal();
 
-        }else if(vm.envUint("CHAIN_ID") == 5){
+        }else if(vm.envUint("CHAIN_ID") == 5) {
             _deployEigenLayerContractsGoerli();
         }
 

@@ -386,6 +386,19 @@ contract StrategyManagerUnitTests is Test, Utils {
         _depositIntoStrategyWithSignature(staker, amount, expiry, expectedRevertMessage);
     }
 
+    function testDepositIntoStrategyWithSignatureReplay(uint256 amount, uint256 expiry) public {
+         // min shares must be minted on strategy
+        cheats.assume(amount >= 1);
+        cheats.assume(expiry > block.timestamp);
+
+        address staker = cheats.addr(privateKey);
+        // not expecting a revert, so input an empty string
+        bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
+
+        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: signature not from staker"));
+        strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
+
+    }
 
     // tries depositing using a signature and an EIP 1271 compliant wallet
     function testDepositIntoStrategyWithSignature_WithContractWallet_Successfully(uint256 amount, uint256 expiry) public {
@@ -776,6 +789,48 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
         strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
+    }
+
+    function testQueueWithdrawalMismatchedIndexAndStrategyArrayLength() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        uint256[] memory shareAmounts = new uint256[](2);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        bool undelegateIfPossible = false;
+
+        {
+            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            shareAmounts[0] = 1;    
+            shareAmounts[1] = 1;    
+            strategyIndexes[0] = 0;
+        }
+
+        cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: input length mismatch"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
+    }
+
+    function testQueueWithdrawalWithZeroAddress() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        bool undelegateIfPossible = false;
+
+        cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: cannot withdraw to zero address"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
+    }
+
+    function testQueueWithdrawalWithFrozenAddress(address frozenAddress) external filterFuzzedAddressInputs(frozenAddress) {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        bool undelegateIfPossible = false;
+
+        slasherMock.freezeOperator(frozenAddress);
+
+        cheats.startPrank(frozenAddress);
+        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
+        cheats.stopPrank();
+
     }
 
     function testQueueWithdrawal_ToSelf_NotBeaconChainETH(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) public
@@ -2545,20 +2600,18 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
     }
 
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
-    function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal {
-        IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
+    function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal returns (bytes memory) {
 
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
         // sanity check / filter
-        cheats.assume(amount <= token.balanceOf(address(this)));
+        cheats.assume(amount <= dummyToken.balanceOf(address(this)));
 
         uint256 nonceBefore = strategyManager.nonces(staker);
         bytes memory signature;
 
         {
-            bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
+            bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, dummyToken, amount, nonceBefore, expiry));
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
@@ -2566,7 +2619,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             signature = abi.encodePacked(r, s, v);
         }
 
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
 
         bool expectedRevertMessageIsempty;
         {
@@ -2581,17 +2634,17 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             // needed for expecting an event with the right parameters
             uint256 expectedShares = amount;
             cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit Deposit(staker, token, strategy, expectedShares);
+            emit Deposit(staker, dummyToken, dummyStrat, expectedShares);
         }
+        uint256 shares = strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
-        uint256 shares = strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
         if (expiry >= block.timestamp && expectedRevertMessageIsempty) {
             require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
             require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
         }
+        return signature;
     }
 }
