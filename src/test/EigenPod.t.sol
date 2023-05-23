@@ -545,6 +545,24 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function testDeployEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager){
+        cheats.assume(nonPodManager != address(eigenPodManager));
+
+        cheats.startPrank(podOwner);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.deal(nonPodManager, stakeAmount);     
+
+
+        cheats.startPrank(nonPodManager);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodManager: not eigenPodManager"));
+        newPod.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
+    
+
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
         // pause the contract
         cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
