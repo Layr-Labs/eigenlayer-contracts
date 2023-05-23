@@ -156,10 +156,11 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         for (uint quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
             quorumToApk[quorumNumber] = initPk;
             quorumToApkUpdates[quorum].push(ApkUpdate({
-                apkHash: BN254.hashG1Point(initPk)
+                apkHash: BN254.hashG1Point(initPk),
+                updateBlockNumber: block.number,
+                nextUpdateBlockNumber: 0
             }));
 
-            
         }
     }
 }
