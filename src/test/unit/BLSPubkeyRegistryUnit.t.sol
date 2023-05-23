@@ -8,7 +8,10 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/middleware/VoteWeigherBase.sol";
 import "../mocks/ERC20Mock.sol";
-import "../../contracts/middleware/StrategyWrapper.sol";
+import "../mocks/ServiceManagerMock.sol";
+import "../mocks/StrategyManagerMock.sol";
+import "../mocks/SlasherMock.sol";
+import "../../contracts/strategies/StrategyWrapper.sol";
 import "forge-std/Test.sol";
 
 
@@ -20,31 +23,35 @@ contract BLSPubkeyRegistrationUnitTests is Test {
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
     StrategyWrapper public dummyStrat;
+    SlasherMock public slasherMock;
     ERC20Mock public dummyToken;
 
 
     function setUp() external {
         dummyToken = new ERC20Mock();
         dummyStrat = new StrategyWrapper(strategyManagerMock, dummyToken);
+        slasherMock = new SlasherMock();
+        strategyManagerMock = new StrategyManagerMock();
+        serviceManagerMock = new ServiceManagerMock(slasherMock);
 
-        blsPubReg = new BLSPubkeyRegistry(serviceManagerMock, strategManagerMock);
+        blsPubReg = new BLSPubkeyRegistry(strategyManagerMock, serviceManagerMock);
 
         uint96[] memory minimumStakeForQuorum = new uint96[](2);
         minimumStakeForQuorum[0] = 100;
         minimumStakeForQuorum[1] = 100;
 
-        VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory quorumStrategiesConsideredAndMultipliers =
-                new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](2);
-        ethStratsAndMultipliers[0].strategy = dummyStrat;
-        ethStratsAndMultipliers[0].multiplier = 1e18;
-        eigenStratsAndMultipliers[1].strategy = dummyStrat;
-        eigenStratsAndMultipliers[1].multiplier = 1e18;
+        VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
+                new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[][](2);
+        quorumStrategiesConsideredAndMultipliers[0][0].strategy = dummyStrat;
+        quorumStrategiesConsideredAndMultipliers[0][0].multiplier = 1e18;
+        quorumStrategiesConsideredAndMultipliers[1][0].strategy = dummyStrat;
+        quorumStrategiesConsideredAndMultipliers[1][0].multiplier = 1e18;
 
 
-        BLSPubkeyRegistry.initialize(minimumStakeForQuorum, quorumStrategiesConsideredAndMultipliers);
+        blsPubReg.initialize(minimumStakeForQuorum, quorumStrategiesConsideredAndMultipliers);
     }
 
     function testRegisterOperator() public {
-        
+
     }
 }
