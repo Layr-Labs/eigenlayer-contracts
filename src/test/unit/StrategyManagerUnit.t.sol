@@ -2634,7 +2634,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
             // needed for expecting an event with the right parameters
             uint256 expectedShares = amount;
             cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit Deposit(staker, token, strategy, expectedShares);
+            emit Deposit(staker, dummyToken, dummyStrat, expectedShares);
         }
         uint256 shares = strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
