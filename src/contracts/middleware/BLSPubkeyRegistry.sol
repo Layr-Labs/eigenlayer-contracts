@@ -59,7 +59,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      * @notice deregisters `operator` with the given `pubkey` for the quorums specified by `quorumBitmap`
      * @dev Permissioned by RegistryCoordinator
      */    
-    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey, uint32 index) external onlyRegistryCoordinator returns(bytes32){
+    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         _processQuorumApkUpdate(quorumBitmap, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
