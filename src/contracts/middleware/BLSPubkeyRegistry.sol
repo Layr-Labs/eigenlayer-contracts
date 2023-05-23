@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 
 import "../interfaces/IBLSPubkeyRegistry.sol";
+import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
 
 
