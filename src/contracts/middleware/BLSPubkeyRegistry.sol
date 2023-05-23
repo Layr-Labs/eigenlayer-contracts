@@ -85,13 +85,14 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
-        require(blockNumber >= quorumToApkUpdates[quorumNumber][index].updateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: index too recent");
+        ApkUpdate memory quorumApkUpdate = quorumToApkUpdates[quorumNumber][index];
+        require(blockNumber >= quorumApkUpdate.updateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: index too recent");
 
         if (index != quorumToApkUpdates[quorumNumber].length - 1){
-            require(blockNumber < quorumToApkUpdates[quorumNumber][index].nextUpdateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: not latest apk update");
+            require(blockNumber < quorumApkUpdate.nextUpdateBlockNumber, "BLSPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex: not latest apk update");
         }
 
-        return quorumToApkUpdates[quorumNumber][index].apkHash;
+        return quorumApkUpdate.apkHash;
     }
 
 	/**
