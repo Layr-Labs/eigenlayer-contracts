@@ -138,9 +138,13 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         underlyingToken.transfer(address(strategyWithTVLLimits), maxDeposits);
 
+        uint256 sharesBefore = strategyWithTVLLimits.totalShares();
+
         cheats.startPrank(address(strategyManager));
         strategyWithTVLLimits.deposit(underlyingToken, maxDeposits);
         cheats.stopPrank();
+
+        require(strategyWithTVLLimits.totalShares() == maxDeposits + sharesBefore, "total shares not updated correctly");
 
         cheats.startPrank(pauser);
         strategyWithTVLLimits.setTVLLimits(newMaxDeposits, newMaxDeposits);
@@ -148,9 +152,12 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         underlyingToken.transfer(address(strategyWithTVLLimits), newMaxDeposits - maxDeposits);
 
+        sharesBefore = strategyWithTVLLimits.totalShares();
         cheats.startPrank(address(strategyManager));    
         strategyWithTVLLimits.deposit(underlyingToken, newMaxDeposits - maxDeposits);
         cheats.stopPrank();
+
+        require(strategyWithTVLLimits.totalShares() == newMaxDeposits, "total shares not updated correctly");
     }
 
     /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
