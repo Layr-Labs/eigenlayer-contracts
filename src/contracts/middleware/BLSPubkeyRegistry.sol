@@ -18,6 +18,15 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     
     mapping(uint8 => BN254.G1Point) public quorumToApk;
 
+    event RegistrationEvent(
+        address indexed operator,
+        bytes32 pubkeyHash,
+        uint256 quorumBitmap,
+        bytes32 globalApkHash;
+    )
+
+    event Operator
+
 
     constructor(
         IStrategyManager strategyManager,
@@ -40,11 +49,13 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
             }
         }
          globalApk = BN254.plus(globalApk, pubkey);
-        _processApkUpdate(globalApk);
+        bytes32 globalApkHash = _processApkUpdate(globalApk);
 
 
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         _addRegistrant(operator, pubkeyHash, quorumBitmap);
+
+        emit RegistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
     }
 
     /**
@@ -62,7 +73,9 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         _removeOperator(operator, pubkeyHash, index)
         globalApk = BN254.plus(globalApk, BN254.negate(pubkey));
-        _processApkUpdate(globalApk);
+        bytes32 globalApkHash = _processApkUpdate(globalApk);
+
+        emit RegistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
     }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
@@ -79,16 +92,19 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32);
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
+    }
 
 	/**
      * @notice get hash of the apk among all quourms at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
-    function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
+    function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
+
+    }
 
 
-    function _processGlobalApkUpdate(BN254.G1Point globalApk) internal {
+    function _processGlobalApkUpdate(BN254.G1Point globalApk) internal returns(bytes32){
         globalApkHash = BN254.hashG1Point(globalApk);
         globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlock = block.number
 
@@ -96,6 +112,8 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         latestGlobalApkUpdate.apkHash = globalApkHash;
         latestGlobalApkUpdate.updateBlockNumber = block.number;
         globalApkUpdates.push(latestGlobalApkUpdate);
+
+        return globalApkHash;
     }
 
     function _processQuorumApkUpdate(uint8 quorumNumber, uint256 quorumToApkUpdatesLatestIndex, bool isRegistration) internal {
