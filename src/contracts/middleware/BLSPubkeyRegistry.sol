@@ -99,13 +99,14 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
-        require(blockNumber >= globalApkUpdateList[index].updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
+        ApkUpdate memory globalApkUpdate = globalApkUpdateList[index];
+        require(blockNumber >= globalApkUpdate.updateBlockNumber, "BLSPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex: blockNumber too recent");
 
         if (index != globalApkUpdateList.length - 1){
-            require(blockNumber < globalApkUpdateList[index].nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
+            require(blockNumber < globalApkUpdate.nextUpdateBlockNumber, "getGlobalApkHashAtBlockNumberFromIndex.getGlobalApkHashAtBlockNumberFromIndex: not latest apk update");
         }
 
-        return globalApkUpdateList[index].apkHash;
+        return globalApkUpdate.apkHash;
     }
 
 
