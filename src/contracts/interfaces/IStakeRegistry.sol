@@ -137,4 +137,12 @@ interface IStakeRegistry is IRegistry {
 
     /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
+
+    /**
+     * @notice Used for updating information on deposits of nodes.
+     * @param operatorIds are the ids of the nodes whose deposit information is getting updated
+     * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
+     * @dev updates the stakes of the operators in storage and communicates the updates to the service manager that sends them to the slasher
+     */
+    function updateStakes(bytes32[] memory operatorIds, uint256[] memory prevElements) external;
 }
