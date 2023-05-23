@@ -22,21 +22,21 @@ interface IStakeRegistry is IRegistry {
     }
 
     /**
-     * @notice Registers the `operator` with `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
-     * @param quorumBitmap The bitmap of the quorums the operator is registering for.
+     * @param quorumNumbers The quorum numbers the operator is registering for.
      * @dev Permissioned by RegistryCoordinator
      */
-    function registerOperator(address operator, bytes32 operatorId, uint8 quorumBitmap) external;
+    function registerOperator(address operator, bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
     /**
-     * @notice Deregisters the operator with `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumBitmap The bitmap of the quorums the operator is deregistering from.
+     * @param quorumNumbers The quourm numbers the operator is deregistering from.
      * @dev Permissioned by RegistryCoordinator
      */
-    function deregisterOperator(bytes32 operatorId, uint8 quorumBitmap) external;
+    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 

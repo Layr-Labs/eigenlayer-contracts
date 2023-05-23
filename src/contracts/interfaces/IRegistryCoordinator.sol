@@ -37,8 +37,8 @@ interface IRegistryCoordinator {
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);
 
-    /// @notice registers the sender as an operator for the quorums specified by `quorumBitmap` with additional bytes for registry interaction data
-    function registerOperator(uint8 quorumBitmap, bytes calldata) external returns (bytes32);
+    /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
+    function registerOperator(uint8[] memory quorumNumbers, bytes calldata) external returns (bytes32);
 
     /// @notice deregisters the sender with additional bytes for registry interaction data
     function deregisterOperator(bytes calldata) external returns (bytes32);

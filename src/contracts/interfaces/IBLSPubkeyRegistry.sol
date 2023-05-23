@@ -15,21 +15,21 @@ interface IBLSPubkeyRegistry is IRegistry {
         bytes32 apkHash;
         // block number at which the update occurred
         uint32 updateBlockNumber;
-  // block number at which the next update occurred
+        // block number at which the next update occurred
         uint32 nextUpdateBlockNumber;
     }
     
     /**
-     * @notice registers `operator` with the given `pubkey` for the quorums specified by `quorumBitmap`
+     * @notice registers `operator` with the given `pubkey` for the specified `quorumNumbers`
      * @dev Permissioned by RegistryCoordinator
      */
-    function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32);
+    function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 
     /**
-     * @notice deregisters `operator` with the given `pubkey` for the quorums specified by `quorumBitmap`
+     * @notice deregisters `operator` with the given `pubkey` for the specified `quorumNumbers`
      * @dev Permissioned by RegistryCoordinator
      */    
-    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32);
+    function deregisterOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 
     /// @notice returns the current stored APK for the `quorumNumber`
     function quorumApk(uint8 quorumNumber) external view returns (BN254.G1Point memory);
@@ -54,4 +54,10 @@ interface IBLSPubkeyRegistry is IRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
+    
+    ///@notice returns the length of the APK history for `quorumNumber`
+    function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns(uint32);
+
+    ///@notice returns the length of the global APK history
+    function getGlobalApkHistoryLength() external view returns(uint32);
 }
