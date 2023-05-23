@@ -12,6 +12,8 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
 
     BN254.G1Point globalApk;
 
+    ApkUpdate[] public globalApkUpdates;
+
     mapping(uint8 => ApkUpdate[]) public quorumToApkUpdates;
     
     mapping(uint8 => BN254.G1Point) public quorumToApk;
@@ -31,24 +33,16 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     }
 
     function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
-        BN254.G1Point currentApk;
         uint256 quorumToApkUpdatesLatestIndex = quorumToApkUpdates[quorumNumber].length - 1;
         for (uint8 quorumNumber = 0; quorumNumber < 256; i++) {
             if(quorumBitmap >> quorumNumber & 1 == 1){
-                currentApk = quorumToApk[quorumNumber];
-                latestApk = BN254.plus(currentApk, pubkey);
-                //update aggregate public key for this quorum
-                quorumToApk[quorumNumber] = latestApk;
-                //update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumToApkUpdates[quorumNumber][quorumToApkUpdatesLatestIndex].nextUpdateBlockNumber = block.number;
-                //create new ApkUpdate to add to the mapping
-                ApkUpdate memory latestApkUpdate;
-                latestApkUpdate.apkHash = BN254.hashG1Point(latestApk);
-                latestApkUpdate.updateBlockNumber = block.number;
-                quorumToApkUpdates[quorumNumber].push(latestApkUpdate);
+                _processQuorumApkUpdate(quorumNumber, quorumToApkUpdatesLatestIndex, true);
             }
         }
          globalApk = BN254.plus(globalApk, pubkey);
+        _processApkUpdate(globalApk);
+
+
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         _addRegistrant(operator, pubkeyHash, quorumBitmap);
     }
@@ -58,30 +52,28 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * @dev Permissioned by RegistryCoordinator
      */    
     function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey, uint32 index) external returns(bytes32){
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        BN254.G1Point currentApk;
+        uint256 quorumToApkUpdatesLatestIndex = quorumToApkUpdates[quorumNumber].length - 1;
         for (uint8 quorumNumber = 0; i < 256; i++) {
             if(quorumBitmap >> quorumNumber & 1 == 1){
-                currentApk = quorumToApk[quorumNumber];
-                latestApk = BN254.plus(currentApk, BN254.negate(pubkey));
-
-                quorumToApk = latestApk;
-
-
-
+                _processQuorumApkUpdate(quorumNumber, quorumToApkUpdatesLatestIndex, false);
             }
             
         }
-
+        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         _removeOperator(operator, pubkeyHash, index)
         globalApk = BN254.plus(globalApk, BN254.negate(pubkey));
+        _processApkUpdate(globalApk);
     }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
-    function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
+    function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory){
+        return quorumToApkUpdates[quorumNumber][index];
+    }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates that keep track of the sum of the APK amonng all quorums
-    function globalApkUpdates(uint256 index) external view returns (ApkUpdate memory);
+    function globalApkUpdates(uint256 index) external view returns (ApkUpdate memory){
+        return globalApkUpdates[index];
+    }
 
     /**
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
@@ -94,4 +86,34 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
+
+
+    function _processGlobalApkUpdate(BN254.G1Point globalApk) internal {
+        globalApkHash = BN254.hashG1Point(globalApk);
+        globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlock = block.number
+
+        ApkUpdate memory latestGlobalApkUpdate;
+        latestGlobalApkUpdate.apkHash = globalApkHash;
+        latestGlobalApkUpdate.updateBlockNumber = block.number;
+        globalApkUpdates.push(latestGlobalApkUpdate);
+    }
+
+    function _processQuorumApkUpdate(uint8 quorumNumber, uint256 quorumToApkUpdatesLatestIndex, bool isRegistration) internal {
+        BN254.G1Point currentApk = quorumToApk[quorumNumber];
+        if(isRegistration){
+            latestApk = BN254.plus(currentApk, pubkey);
+        } else {
+            latestApk = BN254.plus(currentApk, BN254.negate(pubkey));
+        }
+
+        //update aggregate public key for this quorum
+        quorumToApk[quorumNumber] = latestApk;
+        //update nextUpdateBlockNumber of the current latest ApkUpdate
+        quorumToApkUpdates[quorumNumber][quorumToApkUpdatesLatestIndex].nextUpdateBlockNumber = block.number;
+        //create new ApkUpdate to add to the mapping
+        ApkUpdate memory latestApkUpdate;
+        latestApkUpdate.apkHash = BN254.hashG1Point(latestApk);
+        latestApkUpdate.updateBlockNumber = block.number;
+        quorumToApkUpdates[quorumNumber].push(latestApkUpdate);
+    }
 }
