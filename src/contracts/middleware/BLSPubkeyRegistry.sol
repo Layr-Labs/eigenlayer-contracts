@@ -50,12 +50,6 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
     }
 
     function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
-        uint256 quorumToApkUpdatesLatestIndex = quorumToApkUpdates[quorumNumber].length - 1;
-        for (uint8 quorumNumber = 0; quorumNumber < 256; i++) {
-            if(quorumBitmap >> quorumNumber & 1 == 1){
-                _processQuorumApkUpdate(quorumNumber, quorumToApkUpdatesLatestIndex, true);
-            }
-        }
         _processQuorumApkUpdate(quorumBitmap, true);
         bytes32 globalApkHash = _processApkUpdate(BN254.plus(globalApk, pubkey););
 
@@ -158,9 +152,6 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
 
     function _initializeApkUpdates() internal {
         _processGlobalApkUpdate(BN254.G1Point(0,0))
-
-        for (uint quorumNumber = 0; quorumNumber < 256; i++) {
-            
-        }
+        _processQuorumApkUpdate(type(uint256).max, true);
     }
 }
