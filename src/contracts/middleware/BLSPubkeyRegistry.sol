@@ -33,6 +33,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         bytes32 globalApkHash
     );
 
+    modifier onlyRegistryCoordinator() {
+        require(msg.sender == address(registryCoordinator), "BLSPubkeyRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        _;
+    }
+
 
     constructor(
         IRegistryCoordinator _registryCoordinator
@@ -41,7 +46,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     }
 
 
-    function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external returns(bytes32){
+    function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         _processQuorumApkUpdate(quorumBitmap, pubkey, true);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, pubkey));
 
@@ -55,7 +60,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      * @notice deregisters `operator` with the given `pubkey` for the quorums specified by `quorumBitmap`
      * @dev Permissioned by RegistryCoordinator
      */    
-    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey, uint32 index) external returns(bytes32){
+    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey, uint32 index) external onlyRegistryCoordinator returns(bytes32){
         _processQuorumApkUpdate(quorumBitmap, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
