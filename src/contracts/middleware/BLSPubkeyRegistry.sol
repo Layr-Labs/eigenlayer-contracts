@@ -25,6 +25,13 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         bytes32 globalApkHash;
     )
 
+    event DeregistrationEvent(
+        address indexed operator,
+        bytes32 pubkeyHash,
+        uint256 quorumBitmap,
+        bytes32 globalApkHash;
+    )
+
     event Operator
 
 
@@ -75,7 +82,7 @@ contract BLSPubkeyRegistry is RegistryBase, IBLSPubkeyRegistry {
         globalApk = BN254.plus(globalApk, BN254.negate(pubkey));
         bytes32 globalApkHash = _processApkUpdate(globalApk);
 
-        emit RegistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
+        emit DeregistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
     }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
