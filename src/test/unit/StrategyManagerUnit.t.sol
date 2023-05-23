@@ -818,7 +818,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
     }
 
-    function testQueueWithdrawalWithFrozenAddress(address frozenAddress) external {
+    function testQueueWithdrawalWithFrozenAddress(address frozenAddress) external filterFuzzedAddressInputs(frozenAddress) {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](1);
         uint256[] memory strategyIndexes = new uint256[](1);
