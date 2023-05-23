@@ -42,6 +42,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         IRegistryCoordinator _registryCoordinator
     ){
         registryCoordinator = _registryCoordinator;
+        _initializeApkUpdates();
+
     }
 
 
