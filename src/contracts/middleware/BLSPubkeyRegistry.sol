@@ -81,6 +81,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         return globalApkUpdateList[index];
     }
 
+    function quorumApk(uint8 quorumNumber) external view returns (BN254.G1Point memory){
+        return quorumToApk[quorumNumber];
+    }
+
+
     /**
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
@@ -110,6 +115,16 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
         return globalApkUpdate.apkHash;
     }
+
+    function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns(uint32){
+        return uint32(quorumToApkUpdates[quorumNumber].length);
+    }
+
+    function getGlobalApkHistoryLength() external view returns(uint32){
+        return uint32(globalApkUpdateList.length);
+    }
+
+
 
 
     function _processGlobalApkUpdate(BN254.G1Point memory newGlobalApk) internal returns(bytes32){

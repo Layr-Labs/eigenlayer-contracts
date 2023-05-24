@@ -9,7 +9,9 @@ import "../libraries/BN254.sol";
 
 contract IndexRegistry is IIndexRegistry {
 
-    mapping(bytes32 => uint32 => OperatorIndex[]) operatorIdToIndexHistory;
+    IRegistryCoordinator registryCoordinator;
+
+    mapping(bytes32 => mapping(uint32 => OperatorIndex[])) operatorIdToIndexHistory;
     mapping(uint8 => OperatorIndex[]) totalOperatorsHistory;
 
     modifier onlyRegistryCoordinator() {
@@ -43,7 +45,9 @@ contract IndexRegistry is IIndexRegistry {
      * @dev Function will revert in the event that the specified `index` input does not identify the appropriate entry in the
      * array `operatorIdToIndexHistory[operatorId][quorumNumber]` to pull the info from.
      */
-    function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
+    function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
+
+    }
 
     /**
      * @notice Looks up the number of total operators for `quorumNumber` at the specified `blockNumber`.
@@ -51,10 +55,14 @@ contract IndexRegistry is IIndexRegistry {
      * @param blockNumber is the block number at which the total number of operators is desired
      * @param index is the index of the entry in the dynamic array `totalOperatorsHistory[quorumNumber]` to read data from
      */
-    function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
+    function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
+
+    }
 
     /// @notice Returns the current number of operators of this service.
-    function totalOperators() external view returns (uint32);
+    function totalOperators() external view returns (uint32){
+        
+    }
 
 
 }
