@@ -106,9 +106,9 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     }
 
     /// One time function to upgrade the testnet to keep track of the number of deployed pods
-    /// @param _numPods The number of EigenPods that have been deployed
-    function setNumEigenPods(uint256 _numPods) external onlyUnpauser {
-        numPods = _numPods;
+    /// @param _numPods The number of EigenPods that have been deployed at the time of upgrade
+    function incrementNumEigenPods(uint256 _numPods) external onlyUnpauser {
+        numPods += _numPods;
     }
 
     /**
