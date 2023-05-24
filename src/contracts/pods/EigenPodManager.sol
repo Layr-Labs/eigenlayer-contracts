@@ -104,6 +104,12 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
 
+    /// One time function to upgrade the testnet to keep track of the number of deployed pods
+    /// @param _numPods The number of EigenPods that have been deployed
+    function setNumEigenPods(uint256 _numPods) external onlyUnpauser {
+        numPods = _numPods;
+    }
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
