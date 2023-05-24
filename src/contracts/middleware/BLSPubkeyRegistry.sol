@@ -4,14 +4,18 @@ pragma solidity =0.8.12;
 
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
+import "../interfaces/IBLSPublicKeyCompendium.sol";
+
 import "../libraries/BN254.sol";
 
 
 contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
-    BN254.G1Point globalApk;
+    BN254.G1Point internal _globalApk;
 
     IRegistryCoordinator public registryCoordinator;
+    IBLSPublicKeyCompendium public immutable pubkeyCompendium;
+
 
     ApkUpdate[] public globalApkUpdateList;
 
@@ -38,9 +42,12 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
 
     constructor(
-        IRegistryCoordinator _registryCoordinator
+        IRegistryCoordinator _registryCoordinator,
+        IBLSPublicKeyCompendium _pubkeyCompendium
     ){
         registryCoordinator = _registryCoordinator;
+        pubkeyCompendium = _pubkeyCompendium;
+
         _initializeApkUpdates();
 
     }
@@ -48,7 +55,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         _processQuorumApkUpdate(quorumNumbers, pubkey, true);
-        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, pubkey));
+        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(_globalApk, pubkey));
 
 
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
@@ -64,7 +71,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         _processQuorumApkUpdate(quorumNumbers, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, BN254.negate(pubkey)));
+        bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(_globalApk, BN254.negate(pubkey)));
 
         emit DeregistrationEvent(operator, pubkeyHash, globalApkHash);
     }
@@ -81,6 +88,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
     function quorumApk(uint8 quorumNumber) external view returns (BN254.G1Point memory){
         return quorumToApk[quorumNumber];
+    }
+
+    function globalApk() external view returns (BN254.G1Point memory){
+        return _globalApk;
     }
 
 
@@ -128,7 +139,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     function _processGlobalApkUpdate(BN254.G1Point memory newGlobalApk) internal returns(bytes32){
         bytes32 globalApkHash = BN254.hashG1Point(newGlobalApk);
         globalApkUpdateList[globalApkUpdateList.length - 1].nextUpdateBlockNumber = uint32(block.number);
-        globalApk = newGlobalApk;
+        _globalApk = newGlobalApk;
 
         ApkUpdate memory latestGlobalApkUpdate;
         latestGlobalApkUpdate.apkHash = globalApkHash;
@@ -141,7 +152,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     function _processQuorumApkUpdate(uint8[] memory quorumNumbers, BN254.G1Point memory pubkey, bool isRegistration) internal {
         BN254.G1Point memory latestApk;
         BN254.G1Point memory currentApk;
-        for (uint i = 0; i < quorumNumbers.length; quorumNumber++) {
+        for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
             
             currentApk = quorumToApk[quorumNumber];

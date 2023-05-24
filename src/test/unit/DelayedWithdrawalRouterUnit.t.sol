@@ -107,7 +107,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     function testCreateDelayedWithdrawalZeroAmount(address podOwner, address recipient) public filterFuzzedAddressInputs(podOwner) {
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsBefore = delayedWithdrawalRouter.userWithdrawals(recipient);
         uint224 delayedWithdrawalAmount = 0;
-
+        cheats.assume(recipient != address(0)); 
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.deal(podAddress, delayedWithdrawalAmount);
         cheats.startPrank(podAddress);
