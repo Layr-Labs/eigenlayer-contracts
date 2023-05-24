@@ -13,6 +13,8 @@ import "forge-std/Test.sol";
 
 contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
 
+    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+
     BN254.G1Point internal _globalApk;
 
     IRegistryCoordinator public registryCoordinator;
@@ -58,10 +60,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
 
     function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
-        require(
-            pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,
-            "BLSRegistry._registerOperator: operator does not own pubkey"
-        );
+        require(pubkeyHash != ZERO_PK_HASH, "BLSRegistry._registerOperator: cannot register zero pubkey");
+        require(quorumNumbers.length > 0, "BLSRegistry._registerOperator: must register for at least one quorum");
+        require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSRegistry._registerOperator: operator does not own pubkey");
         _processQuorumApkUpdate(quorumNumbers, pubkey, true);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(_globalApk, pubkey));
 
