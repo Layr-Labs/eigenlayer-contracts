@@ -2,10 +2,8 @@
 pragma solidity =0.8.12;
 
 /**
- * @title Interface for a `Registry`-type contract that uses either 1 or 2 quorums.
+ * @title Interface for a contract the coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
- * @notice This contract does not currently support n-quorums where n >= 3.
- * Note in particular the presence of only `firstQuorumStake` and `secondQuorumStake` in the `OperatorStake` struct.
  */
 interface IRegistryCoordinator {
     // DATA STRUCTURES
@@ -39,8 +37,8 @@ interface IRegistryCoordinator {
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);
 
-    /// @notice registers the sender as an operator for the quorums specified by `quorumBitmap` with additional bytes for registry interaction data
-    function registerOperator(uint8 quorumBitmap, bytes calldata) external returns (bytes32);
+    /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
+    function registerOperator(uint8[] memory quorumNumbers, bytes calldata) external returns (bytes32);
 
     /// @notice deregisters the sender with additional bytes for registry interaction data
     function deregisterOperator(bytes calldata) external returns (bytes32);

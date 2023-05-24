@@ -4,10 +4,8 @@ pragma solidity =0.8.12;
 import "./IRegistry.sol";
 
 /**
- * @title Interface for a `Registry`-type contract that uses either 1 or 2 quorums.
+ * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quroums.
  * @author Layr Labs, Inc.
- * @notice This contract does not currently support n-quorums where n >= 3.
- * Note in particular the presence of only `firstQuorumStake` and `secondQuorumStake` in the `OperatorStake` struct.
  */
 interface IIndexRegistry is IRegistry {
     // DATA STRUCTURES
@@ -24,19 +22,19 @@ interface IIndexRegistry is IRegistry {
     /**
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being registered
-     * @param quorumBitmap is the bitmap of the quorums the operator is registered for
+     * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev Permissioned by RegistryCoordinator
      */
-    function registerOperator(bytes32 operatorId, uint8 quorumBitmap) external;
+    function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param quorumBitmap is the bitmap of the quorums the operator is deregistered for
-     * @param indexes is an array of indexes for each quorum as witnesses for where to remove the operator from the quorum
+     * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param indexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
      * @dev Permissioned by RegistryCoordinator
      */
-    function deregisterOperator(bytes32 operatorId, uint8 quorumBitmap, uint32[] memory indexes) external;
+    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory indexes) external;
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
@@ -57,6 +55,9 @@ interface IIndexRegistry is IRegistry {
      * @param index is the index of the entry in the dynamic array `totalOperatorsHistory[quorumNumber]` to read data from
      */
     function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32);
+
+    /// @notice Returns the current number of operators of this service for `quorumNumber`.
+    function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
 
     /// @notice Returns the current number of operators of this service.
     function totalOperators() external view returns (uint32);

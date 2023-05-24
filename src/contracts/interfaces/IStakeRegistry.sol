@@ -22,21 +22,21 @@ interface IStakeRegistry is IRegistry {
     }
 
     /**
-     * @notice Registers the `operator` with `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
-     * @param quorumBitmap The bitmap of the quorums the operator is registering for.
+     * @param quorumNumbers The quorum numbers the operator is registering for.
      * @dev Permissioned by RegistryCoordinator
      */
-    function registerOperator(address operator, bytes32 operatorId, uint8 quorumBitmap) external;
+    function registerOperator(address operator, bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
     /**
-     * @notice Deregisters the operator with `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumBitmap The bitmap of the quorums the operator is deregistering from.
+     * @param quorumNumbers The quourm numbers the operator is deregistering from.
      * @dev Permissioned by RegistryCoordinator
      */
-    function deregisterOperator(bytes32 operatorId, uint8 quorumBitmap) external;
+    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
@@ -44,7 +44,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @dev Function will revert in the event that `index` is out-of-bounds.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint256 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
+    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -81,7 +81,7 @@ interface IStakeRegistry is IRegistry {
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getTotalStakeAtBlockNumberFromIndex(uint256 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
+    function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
@@ -137,4 +137,12 @@ interface IStakeRegistry is IRegistry {
 
     /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
+
+    /**
+     * @notice Used for updating information on deposits of nodes.
+     * @param operatorIds are the ids of the nodes whose deposit information is getting updated
+     * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
+     * @dev updates the stakes of the operators in storage and communicates the updates to the service manager that sends them to the slasher
+     */
+    function updateStakes(bytes32[] memory operatorIds, uint256[] memory prevElements) external;
 }
