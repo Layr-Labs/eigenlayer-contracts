@@ -74,9 +74,14 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @dev Permissioned by RegistryCoordinator
      */    
     function deregisterOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
+
+        require(quorumNumbers.length > 0, "BLSRegistry._deregisterOperator: must register for at least one quorum");
+        require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSRegistry._deregisterOperator: operator does not own pubkey");
+
+
         _processQuorumApkUpdate(quorumNumbers, pubkey, false);
 
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(_globalApk, BN254.negate(pubkey)));
 
         emit DeregistrationEvent(operator, pubkeyHash, globalApkHash);

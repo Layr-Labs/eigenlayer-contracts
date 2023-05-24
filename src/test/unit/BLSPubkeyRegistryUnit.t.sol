@@ -14,6 +14,9 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
     address operator = address(4545);
 
+    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
+
+
 
     BLSPubkeyRegistry public blsPubkeyRegistry;
     BLSPublicKeyCompendiumMock public pkCompendium;
@@ -39,10 +42,25 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testOperatorDoesNotOwnPubKey(address operator) public {
+    function testCallDeregisterOperatorFromNonCoordinatorAddress(address nonCoordinatorAddress) public {
+        cheats.assume(nonCoordinatorAddress != address(registryCoordinator));
+
+        cheats.startPrank(nonCoordinatorAddress);
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
+        blsPubkeyRegistry.deregisterOperator(nonCoordinatorAddress, new uint8[](0), BN254.G1Point(0, 0));
+        cheats.stopPrank();
+    }
+
+    function testOperatorDoesNotOwnPubKeyRegister(address operator) public {
         cheats.startPrank(address(registryCoordinator));
         cheats.expectRevert(bytes("BLSRegistry._registerOperator: operator does not own pubkey"));
         blsPubkeyRegistry.registerOperator(operator, new uint8[](1), BN254.G1Point(1, 0));
+        cheats.stopPrank();
+    }
+    function testOperatorDoesNotOwnPubKeyDeregister(address operator) public {
+        cheats.startPrank(address(registryCoordinator));
+        cheats.expectRevert(bytes("BLSRegistry._deregisterOperator: operator does not own pubkey"));
+        blsPubkeyRegistry.deregisterOperator(operator, new uint8[](1), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
 
@@ -56,6 +74,13 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.startPrank(address(registryCoordinator));
         cheats.expectRevert(bytes("BLSRegistry._registerOperator: must register for at least one quorum"));
         blsPubkeyRegistry.registerOperator(operator, new uint8[](0), BN254.G1Point(1, 0));
+        cheats.stopPrank();
+    }
+
+    function testDeregisteringWithNoQuorums() public {
+        cheats.startPrank(address(registryCoordinator));
+        cheats.expectRevert(bytes("BLSRegistry._deregisterOperator: must register for at least one quorum"));
+        blsPubkeyRegistry.deregisterOperator(operator, new uint8[](0), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
 
@@ -78,11 +103,11 @@ contract BLSPubkeyRegistryUnitTests is Test {
         require(registeredpkHash == pkHash, "registeredpkHash not set correctly");
     }
 
-    function testQuorumApkUpdates(uint8[] quorumNumbers) public {
+    function testQuorumApkUpdates(uint8[] memory quorumNumbers) public {
         BN254.G1Point memory pk = BN254.G1Point(1, 1);
         bytes32 pkHash = BN254.hashG1Point(pk);
 
-        BN254.G1Point[] quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
+        BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
         for(uint8 i = 0; i < quorumNumbers.length; i++){
             quorumApksBefore[i] = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
         }
@@ -97,8 +122,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         //check quorum apk updates
         for(uint8 i = 0; i < quorumNumbers.length; i++){
-            quorumApkAfter = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
-            require(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i])) == pk, "quorum apk not updated correctly");
+            BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
+            require(BN254.hashG1Point(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i]))) == BN254.hashG1Point(pk), "quorum apk not updated correctly");
         }
     }
 
@@ -119,7 +144,9 @@ contract BLSPubkeyRegistryUnitTests is Test {
         bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedGlobalApk);
         cheats.stopPrank();
 
-        require(blsPubkeyRegistry.globalApk() == BN254.G1Point(0, 0), "globalApk not set correctly");
+        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
+
+        require(BN254.hashG1Point(blsPubkeyRegistry.globalApk()) == ZERO_PK_HASH, "globalApk not set correctly");
     }
 
 
