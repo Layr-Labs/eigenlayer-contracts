@@ -5,19 +5,25 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/interfaces/IRegistryCoordinator.sol";
+import "../../contracts/middleware/BLSPublicKeyCompendium.sol";
+import "../mocks/RegistryCoordinatorMock.sol";
 
 
 contract BLSPubkeyRegistryUnitTests is Test {
 
     BLSPubkeyRegistry public blsPubkeyRegistry;
-    IRegistryCoordinator public registryCoordinator;
+    BLSPublicKeyCompendium public pkCompendium;
+    RegistryCoordinatorMock public registryCoordinator;
 
-    address registryCoordinatorAddress = address(555);
+    function setUp() external {
+        registryCoordinator = new RegistryCoordinatorMock();
+        pkCompendium = new BLSPublicKeyCompendium();
+        blsPubkeyRegistry = new BLSPubkeyRegistry(registryCoordinator, pkCompendium);
+    }
 
-    setUp() external {
-        registryCoordinator = IRegistryCoordinator(registryCoordinatorAddress);
-        blsPubkeyRegistry = new BLSPubkeyRegistry(registryCoordinator);
-
+    function testConstructorArgs() public {
+        require(blsPubkeyRegistry.registryCoordinator() == registryCoordinator, "registryCoordinator not set correctly");
+        require(blsPubkeyRegistry.pubkeyCompendium() == pkCompendium, "pubkeyCompendium not set correctly");
     }
 
 }
