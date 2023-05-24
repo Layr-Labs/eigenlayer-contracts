@@ -166,6 +166,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             uint8 quorumNumber = quorumNumbers[i];
             
             currentApk = quorumToApk[quorumNumber];
+            emit log_named_uint("currentApk.X", currentApk.X);
+            emit log_named_uint("currentApk.Y", currentApk.Y);
+            emit log_named_uint("pubkey.X", pubkey.X);
+            emit log_named_uint("pubkey.Y", pubkey.Y);
             if(isRegistration){
                 latestApk = BN254.plus(currentApk, pubkey);
             } else {
