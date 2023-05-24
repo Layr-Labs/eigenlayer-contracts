@@ -54,11 +54,13 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
 
 
     function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+        bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
+        require(
+            pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,
+            "BLSRegistry._registerOperator: operator does not own pubkey"
+        );
         _processQuorumApkUpdate(quorumNumbers, pubkey, true);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(_globalApk, pubkey));
-
-
-         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         emit RegistrationEvent(operator, pubkeyHash, globalApkHash);
     }
