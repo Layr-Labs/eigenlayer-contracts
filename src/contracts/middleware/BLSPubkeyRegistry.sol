@@ -22,14 +22,12 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     event RegistrationEvent(
         address indexed operator,
         bytes32 pubkeyHash,
-        uint256 quorumBitmap,
         bytes32 globalApkHash
     );
 
     event DeregistrationEvent(
         address indexed operator,
         bytes32 pubkeyHash,
-        uint256 quorumBitmap,
         bytes32 globalApkHash
     );
 
@@ -48,27 +46,27 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     }
 
 
-    function registerOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
-        _processQuorumApkUpdate(quorumBitmap, pubkey, true);
+    function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+        _processQuorumApkUpdate(quorumNumbers, pubkey, true);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, pubkey));
 
 
          bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
-        emit RegistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
+        emit RegistrationEvent(operator, pubkeyHash, globalApkHash);
     }
 
     /**
      * @notice deregisters `operator` with the given `pubkey` for the quorums specified by `quorumBitmap`
      * @dev Permissioned by RegistryCoordinator
      */    
-    function deregisterOperator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
-        _processQuorumApkUpdate(quorumBitmap, pubkey, false);
+    function deregisterOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+        _processQuorumApkUpdate(quorumNumbers, pubkey, false);
 
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
         bytes32 globalApkHash = _processGlobalApkUpdate(BN254.plus(globalApk, BN254.negate(pubkey)));
 
-        emit DeregistrationEvent(operator, pubkeyHash, quorumBitmap, globalApkHash);
+        emit DeregistrationEvent(operator, pubkeyHash, globalApkHash);
     }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
@@ -140,28 +138,28 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         return globalApkHash;
     }
 
-    function _processQuorumApkUpdate(uint256 quorumBitmap, BN254.G1Point memory pubkey, bool isRegistration) internal {
+    function _processQuorumApkUpdate(uint8[] memory quorumNumbers, BN254.G1Point memory pubkey, bool isRegistration) internal {
         BN254.G1Point memory latestApk;
         BN254.G1Point memory currentApk;
-        for (uint8 quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
-            if(quorumBitmap >> quorumNumber & 1 == 1){
-                currentApk = quorumToApk[quorumNumber];
-                if(isRegistration){
-                    latestApk = BN254.plus(currentApk, pubkey);
-                } else {
-                    latestApk = BN254.plus(currentApk, BN254.negate(pubkey));
-                }
-
-                //update aggregate public key for this quorum
-                quorumToApk[quorumNumber] = latestApk;
-                //update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumToApkUpdates[quorumNumber][quorumToApkUpdates[quorumNumber].length - 1].nextUpdateBlockNumber = uint32(block.number);
-                //create new ApkUpdate to add to the mapping
-                ApkUpdate memory latestApkUpdate;
-                latestApkUpdate.apkHash = BN254.hashG1Point(latestApk);
-                latestApkUpdate.updateBlockNumber = uint32(block.number);
-                quorumToApkUpdates[quorumNumber].push(latestApkUpdate);
+        for (uint i = 0; i < quorumNumbers.length; quorumNumber++) {
+            uint8 quorumNumber = quorumNumbers[i];
+            
+            currentApk = quorumToApk[quorumNumber];
+            if(isRegistration){
+                latestApk = BN254.plus(currentApk, pubkey);
+            } else {
+                latestApk = BN254.plus(currentApk, BN254.negate(pubkey));
             }
+
+            //update aggregate public key for this quorum
+            quorumToApk[quorumNumber] = latestApk;
+            //update nextUpdateBlockNumber of the current latest ApkUpdate
+            quorumToApkUpdates[quorumNumber][quorumToApkUpdates[quorumNumber].length - 1].nextUpdateBlockNumber = uint32(block.number);
+            //create new ApkUpdate to add to the mapping
+            ApkUpdate memory latestApkUpdate;
+            latestApkUpdate.apkHash = BN254.hashG1Point(latestApk);
+            latestApkUpdate.updateBlockNumber = uint32(block.number);
+            quorumToApkUpdates[quorumNumber].push(latestApkUpdate);
         }
     }
 
