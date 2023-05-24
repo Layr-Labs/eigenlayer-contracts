@@ -8,6 +8,7 @@ import "./StrategyBase.sol";
  * @dev Note that this implementation still converts between any amount of shares or underlying tokens in its view functions;
  * these functions purposefully do not take the TVL limit into account.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract StrategyBaseTVLLimits is StrategyBase {
     /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit

@@ -6,6 +6,7 @@ import "./IQuorumRegistry.sol";
 /**
  * @title Minimal interface extension to `IQuorumRegistry`.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Adds BLS-specific functions to the base interface.
  */
 interface IBLSRegistry is IQuorumRegistry {

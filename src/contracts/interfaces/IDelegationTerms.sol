@@ -6,6 +6,7 @@ import "./IStrategy.sol";
 /**
  * @title Abstract interface for a contract that helps structure the delegation relationship.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The gas budget provided to this contract in calls from EigenLayer contracts is limited.
  */
 interface IDelegationTerms {

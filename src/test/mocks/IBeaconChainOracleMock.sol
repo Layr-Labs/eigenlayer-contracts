@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 /**
  * @title Interface for the BeaconStateOracle contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IBeaconChainOracleMock {
     /// @notice Largest blockNumber that has been confirmed by the oracle.

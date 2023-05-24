@@ -6,6 +6,7 @@ import "../interfaces/IPauserRegistry.sol";
 /**
  * @title Defines pauser & unpauser roles + modifiers to be used elsewhere.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract PauserRegistry is IPauserRegistry {
     /// @notice Unique address that holds the pauser role.

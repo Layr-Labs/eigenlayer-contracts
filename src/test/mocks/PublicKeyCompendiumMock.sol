@@ -8,6 +8,7 @@ import "forge-std/Test.sol";
 /**
  * @title A shared contract for EigenLayer operators to register their BLS public keys.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium, DSTest {
 

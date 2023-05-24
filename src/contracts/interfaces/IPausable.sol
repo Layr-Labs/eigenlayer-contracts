@@ -6,6 +6,7 @@ import "../interfaces/IPauserRegistry.sol";
 /**
  * @title Adds pausability to a contract, with pausing & unpausing controlled by the `pauser` and `unpauser` of a PauserRegistry contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Contracts that inherit from this contract may define their own `pause` and `unpause` (and/or related) functions.
  * These functions should be permissioned as "onlyPauser" which defers to a `PauserRegistry` for determining access control.
  * @dev Pausability is implemented using a uint256, which allows up to 256 different single bit-flags; each bit can potentially pause different functionality.
