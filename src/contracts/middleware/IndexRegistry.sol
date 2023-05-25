@@ -130,7 +130,7 @@ contract IndexRegistry is IIndexRegistry {
         if(indexToRemove != quorumToOperatorListLastIndex){
             bytes32 operatorIdToSwap = quorumToOperatorList[quorumNumber][quorumToOperatorListLastIndex];
             //update the swapped operator's
-            _updateQuorumToOperatorIndexHistory(operatorIdToSwap, quorumNumber);
+            _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber);
 
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
             quorumToOperatorList[quorumNumber].pop();
