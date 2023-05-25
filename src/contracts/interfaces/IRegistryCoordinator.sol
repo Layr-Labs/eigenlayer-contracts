@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 /**
- * @title Interface for a contract the coordinates between various registries for an AVS.
+ * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
 interface IRegistryCoordinator {
@@ -15,9 +15,7 @@ interface IRegistryCoordinator {
     }
 
     /**
-     * @notice  Data structure for storing info on operators to be used for:
-     * - sending data by the sequencer
-     * - payment and associated challenges
+     * @notice Data structure for storing info on operators
      */
     struct Operator {
         // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegsitry
