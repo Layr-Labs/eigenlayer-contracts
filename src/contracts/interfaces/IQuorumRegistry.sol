@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "./IRegistry.sol";
-
 /**
  * @title Interface for a `Registry`-type contract that uses either 1 or 2 quorums.
  * @author Layr Labs, Inc.
  * @notice This contract does not currently support n-quorums where n >= 3.
  * Note in particular the presence of only `firstQuorumStake` and `secondQuorumStake` in the `OperatorStake` struct.
  */
-interface IQuorumRegistry is IRegistry {
+interface IQuorumRegistry {
     // DATA STRUCTURES
     enum Status
     {
