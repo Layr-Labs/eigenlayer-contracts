@@ -42,7 +42,8 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
-     * @dev Function will revert in the event that `index` is out-of-bounds.
+     * @param quorumNumber The quorum number to get the stake for.
+     * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
     function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
@@ -85,11 +86,10 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
-     * @param operator is the operator of interest
+     * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`, where `operatorId` is looked up
-     * in `registryCoordinator.getOperatorId(operator)`
+     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
      * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
@@ -100,7 +100,7 @@ interface IStakeRegistry is IRegistry {
      * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
      */
     function checkOperatorActiveAtBlockNumber(
-        address operator,
+        bytes32 operatorId,
         uint256 blockNumber,
         uint8 quorumNumber,
         uint256 stakeHistoryIndex
@@ -108,11 +108,10 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Checks that the `operator` was inactive at the `blockNumber`, using the specified `stakeHistoryIndex` for `quorumNumber` as proof.
-     * @param operator is the operator of interest
+     * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had no stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`, where `operatorId` is looked up
-     * in `registryCoordinator.getOperatorId(operator)`
+     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
      * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
@@ -123,7 +122,7 @@ interface IStakeRegistry is IRegistry {
      * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
      */
     function checkOperatorInactiveAtBlockNumber(
-        address operator,
+        bytes32 operatorId,
         uint256 blockNumber,
         uint8 quorumNumber,
         uint256 stakeHistoryIndex
