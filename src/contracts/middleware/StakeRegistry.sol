@@ -3,7 +3,8 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IServiceManager.sol";
-import "../interfaces/IQuorumRegistry.sol";
+import "../interfaces/IStakeRegistry.sol";
+import "../interfaces/IRegistryCoordinator.sol";
 import "./VoteWeigherBase.sol";
 
 /**
@@ -15,7 +16,9 @@ import "./VoteWeigherBase.sol";
  * - updating the stakes of the operator
  * @dev This contract is missing key functions. See `BLSRegistry` or `ECDSARegistry` for examples that inherit from this contract.
  */
-abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
+contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
+
+    IRegistryCoordinator public registryCoordinator;
 
     // TODO: set these on initialization
     /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as
@@ -28,13 +31,10 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     /// @notice mapping from operator's operatorId to the history of their stake updates
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
 
-    /// @notice mapping from operator's operatorId to the history of their index in the array of all operators
-    mapping(bytes32 => OperatorIndex[]) public operatorIdToIndexHistory;
-
     // EVENTS
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
-        address operator,
+        bytes32 operatorId,
         uint8 quorumNumber,
         uint96 stake,
         uint32 updateBlockNumber,
@@ -103,7 +103,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint256 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {
+    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {
         return totalStakeHistory[quorumNumber][index];
     }
 
@@ -165,7 +165,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
     function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {
-        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperator(operatorId, quorumNumber);
+        OperatorStakeUpdate memory operatorStakeUpdate = getMostRecentStakeUpdateByOperatorId(operatorId, quorumNumber);
         return operatorStakeUpdate.stake;
     }
 
@@ -179,26 +179,8 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         return operatorIdToStakeHistory[operatorId][quorumNumber].length;
     }
 
-    function getLengthOfOperatorIdIndexHistory(bytes32 operatorId) external view returns (uint256) {
-        return operatorIdToIndexHistory[operatorId].length;
-    }
-
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
         return totalStakeHistory[quorumNumber].length;
-    }
-
-    function getLengthOfTotalOperatorsHistory() external view returns (uint256) {
-        return totalOperatorsHistory.length;
-    }
-
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return registry[operator].fromTaskNumber;
-    }
-
-    /// @notice Returns the current number of operators of this service.
-    function numOperators() public view returns (uint32) {
-        return uint32(operatorList.length);
     }
 
     /**
@@ -287,65 +269,166 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         minimumStakeForQuorum[quorumNumber] = minimumStake;
     }
 
-    function updateSocket(string calldata newSocket) external {
-        require(
-            registry[msg.sender].status == IQuorumRegistry.Status.ACTIVE,
-            "RegistryBase.updateSocket: Can only update socket if active on the service"
-        );
-        emit SocketUpdate(msg.sender, newSocket);
+    /**
+     * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
+     * @param operator The address of the operator to register.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for.
+     * @dev access restricted to the RegistryCoordinator
+     */
+    function registerOperator(address operator, bytes32 operatorId, uint256 quorumBitmap) external virtual {
+        _registerOperator(operator, operatorId, quorumBitmap);
     }
 
+    /**
+     * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
+     * @param operator The address of the operator to deregister.
+     * @param operatorId The id of the operator to deregister.
+     * @param quorumNumbers The quourm numbers the operator is deregistering from.
+     * @dev access restricted to the RegistryCoordinator
+     */
+    function deregisterOperator(address operator, bytes32 operatorId, uint256 quorumBitmap) external virtual {
+        _deregisterOperator(operator, operatorId, quorumBitmap);
+    }
+
+    /**
+     * @notice Used for updating information on deposits of nodes.
+     * @param operators are the addresses of the operators whose stake information is getting updated
+     * @param operatorIds are the ids of the operators whose stake information is getting updated
+     * @param quorumBitmaps are the bitmaps of what quorums each operator in `operators` is part of
+     * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
+     */
+    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory quorumBitmaps, uint256[] memory prevElements) external {
+        // for each quorum, loop through operators and see if they are apart of the quorum
+        // if they are, get their new weight and update their individual stake history and the
+        // quorum's total stake history accordingly
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
+            OperatorStakeUpdate memory totalStakeUpdate;
+            // for each operator
+            for(uint i = 0; i < operatorIds.length;) {
+                // if the operator is apart of the quorum
+                if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
+                    // if the total stake has not been loaded yet, load it
+                    if (totalStakeUpdate.updateBlockNumber == 0) {
+                        totalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                    }
+                    bytes32 operatorId = operatorIds[i];
+                    // get the operator's current stake
+                    OperatorStakeUpdate memory prevStakeUpdate = operatorIdToStakeHistory[operatorId][quorumNumber][operatorIdToStakeHistory[operatorId][quorumNumber].length - 1];
+                    // update the operator's stake based on current state
+                    OperatorStakeUpdate memory newStakeUpdate = _updateOperatorStake(operators[i], operatorId, quorumBitmaps[i], quorumNumber, prevStakeUpdate.updateBlockNumber);
+                    // calculate the new total stake for the quorum
+                    totalStakeUpdate.stake = totalStakeUpdate.stake - prevStakeUpdate.stake + newStakeUpdate.stake;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+            // if the total stake for this quorum was updated, record it in storage
+            if (totalStakeUpdate.updateBlockNumber != 0) {
+                // update the total stake history for the quorum
+                _recordTotalStakeUpdate(quorumNumber, totalStakeUpdate);
+            }
+            unchecked {
+                ++quorumNumber;
+            }
+        }
+
+        // record stake updates in the EigenLayer Slasher
+        for (uint i = 0; i < operators.length;) {
+            serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
+            unchecked {
+                ++i;
+            }
+        }     
+    }
 
     // INTERNAL FUNCTIONS
-    /**
-     * @notice Called when the total number of operators has changed.
-     * Sets the `toBlockNumber` field on the last entry *so far* in thedynamic array `totalOperatorsHistory` to the current `block.number`,
-     * recording that the previous entry is *no longer the latest* and the block number at which the next was added.
-     * Pushes a new entry to `totalOperatorsHistory`, with `index` field set equal to the new amount of operators, recording the new number
-     * of total operators (and leaving the `toBlockNumber` field at zero, signaling that this is the latest entry in the array)
-     */
-    function _updateTotalOperatorsHistory() internal {
-        // set the 'toBlockNumber' field on the last entry *so far* in 'totalOperatorsHistory' to the current block number
-        totalOperatorsHistory[totalOperatorsHistory.length - 1].toBlockNumber = uint32(block.number);
-        // push a new entry to 'totalOperatorsHistory', with 'index' field set equal to the new amount of operators
-        OperatorIndex memory _totalOperators;
-        _totalOperators.index = uint32(operatorList.length);
-        totalOperatorsHistory.push(_totalOperators);
+
+    function _registerOperator(address operator, bytes32 operatorId, uint256 quorumBitmap) internal {
+        require(
+            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
+            "RegistryBase._addRegistrant: operator must be opted into slashing by the serviceManager"
+        );
+        
+        // calculate stakes for each quorum the operator is trying to join
+        _registerStake(operator, operatorId, quorumBitmap);
+
+        // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
+        serviceManager.recordFirstStakeUpdate(operator, 0);
     }
 
     /**
-     * @notice Remove the operator from active status. Removes the operator with the given `operatorId` from the `index` in `operatorList`,
-     * updates operatorList and index histories, and performs other necessary updates for removing operator
+     * TODO: critique: "Currently only `_registrationStakeEvaluation` uses the `uint256 registrantType` input -- we should **EITHER** store this
+     * and keep using it in other places as well, **OR** stop using it altogether"
      */
-    function _removeOperator(address operator, bytes32 operatorId, uint32 index) internal virtual {
+    /**
+     * @notice Used inside of inheriting contracts to validate the registration of `operator` and find their `OperatorStake`.
+     * @dev This function does **not** update the stored state of the operator's stakes -- storage updates are performed elsewhere.
+     */
+    function _registerStake(address operator, bytes32 operatorId, uint256 quorumBitmap)
+        internal
+    {
+        OperatorStakeUpdate memory _operatorStakeUpdate;
+        // add the `updateBlockNumber` info
+        _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
+        OperatorStakeUpdate memory _newTotalStakeUpdate;
+        // add the `updateBlockNumber` info
+        _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
+        // for each quorum, evaluate stake and add to total stake
+        for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
+            // evaluate the stake for the operator
+            if(quorumBitmap >> quorumNumber & 1 == 1) {
+                _operatorStakeUpdate.stake = uint96(weightOfOperator(operator, quorumNumber));
+                // check if minimum requirement has been met
+                require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registerStake: Operator does not meet minimum stake requirement for quorum");
+                // check special case that operator is re-registering (and thus already has some history)
+                if (operatorIdToStakeHistory[operatorId][quorumNumber].length != 0) {
+                    // correctly set the 'nextUpdateBlockNumber' field for the re-registering operator's oldest history entry
+                    operatorIdToStakeHistory[operatorId][quorumNumber][operatorIdToStakeHistory[operatorId][quorumNumber].length - 1].nextUpdateBlockNumber
+                        = uint32(block.number);
+                }
+                // push the new stake for the operator to storage
+                operatorIdToStakeHistory[operatorId][quorumNumber].push(_operatorStakeUpdate);
+
+                // get the total stake for the quorum
+                _newTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                // add operator stakes to total stake (in memory)
+                _newTotalStakeUpdate.stake = uint96(_newTotalStakeUpdate.stake + _operatorStakeUpdate.stake);
+                // update storage of total stake
+                _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
+
+                emit StakeUpdate(
+                    operatorId,
+                    quorumNumber,
+                    _operatorStakeUpdate.stake,
+                    uint32(block.number),
+                    // no previous update block number -- use 0 instead
+                    0 // TODO: Decide whether this needs to be set in re-registration edge case
+                );
+            }
+            unchecked {
+                ++quorumNumber;
+            }
+        }
+    }
+
+    function _deregisterOperator(address operator, bytes32 operatorId, uint256 quorumBitmap) internal {
         // remove the operator's stake
-        _removeOperatorStake(operatorId);
-
-        // store blockNumber at which operator index changed (stopped being applicable)
-        operatorIdToIndexHistory[operatorId][operatorIdToIndexHistory[operatorId].length - 1].toBlockNumber =
-            uint32(block.number);
-
-        // remove the operator at `index` from the `operatorList`
-        address swappedOperator = _removeOperatorFromOperatorListAndIndex(index);
+        _removeOperatorStake(operatorId, quorumBitmap);
 
         // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
         uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
-        // committing to not signing off on any more middleware tasks
-        registry[operator].status = IQuorumRegistry.Status.INACTIVE;
 
         // record a stake update unbonding the operator after `latestServeUntilBlock`
         serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
-
-        // Emit `Deregistration` event
-        emit Deregistration(operator, swappedOperator, index);
     }
 
     /**
      * @notice Removes the stakes of the operator
      */
-    function _removeOperatorStake(bytes32 operatorId) internal {
+    function _removeOperatorStake(bytes32 operatorId, uint256 quorumBitmap) internal {
         // loop through the operator's quorum bitmap and remove the operator's stake for each quorum
-        uint256 quorumBitmap = operatorIdToQuorumBitmap[operatorId];
         for (uint quorumNumber = 0; quorumNumber < quorumCount;) {
             if (quorumBitmap >> quorumNumber & 1 == 1) {
                 _removeOperatorStakeForQuorum(operatorId, uint8(quorumNumber));
@@ -393,122 +476,20 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         _recordTotalStakeUpdate(quorumNumber, currentTotalStakeUpdate);
 
         emit StakeUpdate(
-            msg.sender,
+            operatorId,
             // new stakes are zero
             quorumNumber,
             0,
             uint32(block.number),
             currentStakeUpdate.updateBlockNumber
-            );
-    }
-
-    /// @notice Adds the Operator `operator` with the given `pubkeyHash` to the `operatorList` and performs necessary related updates.
-    function _addRegistrant(
-        address operator,
-        bytes32 pubkeyHash,
-        uint256 quorumBitmap
-    )
-        internal virtual
-    {
-
-        require(
-            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-            "RegistryBase._addRegistrant: operator must be opted into slashing by the serviceManager"
         );
-        // store the Operator's info in mapping
-        registry[operator] = Operator({
-            pubkeyHash: pubkeyHash,
-            status: IQuorumRegistry.Status.ACTIVE,
-            fromTaskNumber: serviceManager.taskNumber()
-        });
-
-        // store the operator's quorum bitmap
-        pubkeyHashToQuorumBitmap[pubkeyHash] = quorumBitmap;
-
-        // add the operator to the list of operators
-        operatorList.push(operator);
-        
-        // calculate stakes for each quorum the operator is trying to join
-        _registerStake(operator, pubkeyHash, quorumBitmap);
-
-        // record `operator`'s index in list of operators
-        OperatorIndex memory operatorIndex;
-        operatorIndex.index = uint32(operatorList.length - 1);
-        pubkeyHashToIndexHistory[pubkeyHash].push(operatorIndex);
-
-        // Update totalOperatorsHistory array
-        _updateTotalOperatorsHistory();
-
-        // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
-        serviceManager.recordFirstStakeUpdate(operator, 0);
-    }
-
-    /**
-     * TODO: critique: "Currently only `_registrationStakeEvaluation` uses the `uint256 registrantType` input -- we should **EITHER** store this
-     * and keep using it in other places as well, **OR** stop using it altogether"
-     */
-    /**
-     * @notice Used inside of inheriting contracts to validate the registration of `operator` and find their `OperatorStake`.
-     * @dev This function does **not** update the stored state of the operator's stakes -- storage updates are performed elsewhere.
-     */
-    function _registerStake(address operator, bytes32 pubkeyHash, uint256 quorumBitmap)
-        internal
-    {
-        // verify that the `operator` is not already registered
-        require(
-            registry[operator].status == IQuorumRegistry.Status.INACTIVE,
-            "RegistryBase._registerStake: Operator is already registered"
-        );
-
-        OperatorStakeUpdate memory _operatorStakeUpdate;
-        // add the `updateBlockNumber` info
-        _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
-        OperatorStakeUpdate memory _newTotalStakeUpdate;
-        // add the `updateBlockNumber` info
-        _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
-        // for each quorum, evaluate stake and add to total stake
-        for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
-            // evaluate the stake for the operator
-            if(quorumBitmap >> quorumNumber & 1 == 1) {
-                _operatorStakeUpdate.stake = uint96(weightOfOperator(operator, quorumNumber));
-                // check if minimum requirement has been met
-                require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registerStake: Operator does not meet minimum stake requirement for quorum");
-                // check special case that operator is re-registering (and thus already has some history)
-                if (pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length != 0) {
-                    // correctly set the 'nextUpdateBlockNumber' field for the re-registering operator's oldest history entry
-                    pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1].nextUpdateBlockNumber
-                        = uint32(block.number);
-                }
-                // push the new stake for the operator to storage
-                pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(_operatorStakeUpdate);
-
-                // get the total stake for the quorum
-                _newTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
-                // add operator stakes to total stake (in memory)
-                _newTotalStakeUpdate.stake = uint96(_newTotalStakeUpdate.stake + _operatorStakeUpdate.stake);
-                // update storage of total stake
-                _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
-
-                emit StakeUpdate(
-                    operator,
-                    quorumNumber,
-                    _operatorStakeUpdate.stake,
-                    uint32(block.number),
-                    // no previous update block number -- use 0 instead
-                    0 // TODO: Decide whether this needs to be set in re-registration edge case
-                );
-            }
-            unchecked {
-                ++quorumNumber;
-            }
-        }
     }
 
     /**
      * @notice Finds the updated stake for `operator`, stores it and records the update.
      * @dev **DOES NOT UPDATE `totalStake` IN ANY WAY** -- `totalStake` updates must be done elsewhere.
      */
-    function _updateOperatorStake(address operator, bytes32 pubkeyHash, uint256 quorumBitmap, uint8 quorumNumber, uint32 prevUpdateBlockNumber)
+    function _updateOperatorStake(address operator, bytes32 operatorId, uint256 quorumBitmap, uint8 quorumNumber, uint32 prevUpdateBlockNumber)
         internal
         returns (OperatorStakeUpdate memory operatorStakeUpdate)
     {   
@@ -524,13 +505,13 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
             }
 
             // set nextUpdateBlockNumber in prev stakes
-            pubkeyHashToStakeHistory[pubkeyHash][quorumNumber][pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].length - 1].nextUpdateBlockNumber =
+            operatorIdToStakeHistory[operatorId][quorumNumber][operatorIdToStakeHistory[operatorId][quorumNumber].length - 1].nextUpdateBlockNumber =
                 uint32(block.number);
             // push new stake to storage
-            pubkeyHashToStakeHistory[pubkeyHash][quorumNumber].push(operatorStakeUpdate);
+            operatorIdToStakeHistory[operatorId][quorumNumber].push(operatorStakeUpdate);
             
             emit StakeUpdate(
-                operator,
+                operatorId,
                 quorumNumber,
                 operatorStakeUpdate.stake,
                 uint32(block.number),
