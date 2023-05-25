@@ -26,7 +26,7 @@ interface IStakeRegistry is IRegistry {
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for.
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function registerOperator(address operator, bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
@@ -34,7 +34,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quourm numbers the operator is deregistering from.
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
@@ -61,13 +61,14 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
-     * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if it was the operator's
-     * stake at `blockNumber`. Reverts otherwise.
+     * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if the entry 
+     * corresponds to the operator's stake at `blockNumber`. Reverts otherwise.
      * @param quorumNumber The quorum number to get the stake for.
      * @param operatorId The id of the operator of interest.
      * @param index Array index for lookup, within the dynamic array `operatorIdToStakeHistory[operatorId][quorumNumber]`.
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
+     * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
     function getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
         external
@@ -76,11 +77,13 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the 
-     * `totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
+     * `totalStakeHistory[quorumNumber]` array if the entry corresponds to the total stake at `blockNumber`. 
+     * Reverts otherwise.
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
+     * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
     function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
 

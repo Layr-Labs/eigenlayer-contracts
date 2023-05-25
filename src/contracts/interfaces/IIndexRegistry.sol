@@ -23,7 +23,7 @@ interface IIndexRegistry is IRegistry {
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
@@ -32,7 +32,7 @@ interface IIndexRegistry is IRegistry {
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param indexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory indexes) external;
 
