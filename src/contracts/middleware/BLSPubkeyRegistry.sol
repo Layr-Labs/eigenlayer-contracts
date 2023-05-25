@@ -53,8 +53,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         pubkeyCompendium = _pubkeyCompendium;
 
         _initializeApkUpdates();
-        emit log("here");
-
     }
 
 
