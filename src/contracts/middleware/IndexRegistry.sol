@@ -39,18 +39,8 @@ contract IndexRegistry is IIndexRegistry {
 
             quorumToOperatorList[quorumNumber].push(operatorId);
 
-            OperatorIndex memory operatorIndex = OperatorIndex({
-                blockNumber: block.number,
-                index: uint32(numOperators - 1)
-            });
-
-            OperatorIndex memory totalOperatorUpdate = OperatorIndex({
-                blockNumber: block.number,
-                index: uint32(numOperators)
-            });
-
-            operatorIdToIndexHistory[operatorId][quorumNumber].push(operatorIndex);
-            totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
+            _updateTotalOperatorHistory(quorumNumber, numOperators);
+            _updateoperatorIdToIndexHistory(operatorId, quorumNumber, numOperators - 1);
         }
     }
 
@@ -88,6 +78,25 @@ contract IndexRegistry is IIndexRegistry {
     /// @notice Returns the current number of operators of this service.
     function totalOperators() external view returns (uint32){
 
+    }
+
+
+    function _updateTotalOperatorHistory(uint8 quorumNumber, uint256 numOperators) internal {
+
+        OperatorIndex memory totalOperatorUpdate = OperatorIndex({
+            blockNumber: block.number,
+            index: uint32(numOperators)
+        });
+        totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
+    }
+
+    function _updateoperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint256 numOperators) internal {
+
+        OperatorIndex memory operatorIndex = OperatorIndex({
+            blockNumber: block.number,
+            index: uint32(numOperators - 1)
+        });
+        operatorIdToIndexHistory[operatorId][quorumNumber].push(operatorIndex);
     }
 
 
