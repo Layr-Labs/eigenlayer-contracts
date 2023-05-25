@@ -21,13 +21,13 @@ interface IBLSPubkeyRegistry is IRegistry {
     
     /**
      * @notice registers `operator` with the given `pubkey` for the specified `quorumNumbers`
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 
     /**
      * @notice deregisters `operator` with the given `pubkey` for the specified `quorumNumbers`
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */    
     function deregisterOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 

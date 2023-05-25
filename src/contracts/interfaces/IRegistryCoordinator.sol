@@ -40,6 +40,9 @@ interface IRegistryCoordinator {
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);
 
+    /// @notice Returns the number of registries
+    function numRegistries() external view returns (uint256);
+
     /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
     function registerOperator(uint8[] memory quorumNumbers, bytes calldata) external returns (bytes32);
 
