@@ -34,7 +34,7 @@ contract IndexRegistry is IIndexRegistry {
             uint8 quorumNumber = quorumNumbers[i];
             quorumToOperatorList[quorumNumber].push(operatorId);
 
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumber);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumber, quorumToOperatorList[quorumNumber].length);
              _updateTotalOperatorHistory(quorumNumber);
         }
         numOperators += 1;
@@ -112,13 +112,14 @@ contract IndexRegistry is IIndexRegistry {
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
-    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint256 operatorIdToIndexHistoryLength) internal {
+    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint256 quorumToOperatorListLength) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory.length;
         if (operatorIdToIndexHistoryLength > 0) {
-            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].toBlockNumber = block.number;
+            operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber];
+            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
-        latestOperatorIndex.index = operatorIdToIndexHistoryLength - 1;
+        latestOperatorIndex.index = quorumToOperatorListLength - 1;
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
