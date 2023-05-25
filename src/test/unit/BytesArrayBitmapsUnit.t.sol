@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../harnesses/BytesArrayBitmapsWrapper.sol";
+// import "../../contracts/libraries/BytesArrayBitmaps.sol";
 
 import "forge-std/Test.sol";
 
@@ -40,9 +41,26 @@ contract BytesArrayBitmapsUnitTests is Test {
         }
     }
 
-    // TODO: either fix this test or adjust the library code. the output is always ordered while the input may not be ordered.
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
     function testBytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public {
+        // filter down to only ordered inputs
+        cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
+        bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
+        emit log_named_bytes("originalBytesArray", originalBytesArray);
+        emit log_named_uint("bitmap", bitmap);
+        emit log_named_bytes("returnedBytesArray", returnedBytesArray);
+        require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+            "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
+    function testBytesArrayToBitmapToBytesArray_OrderedVersion(bytes memory originalBytesArray) public {
+        // filter down to only ordered inputs
+        cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint256 bitmap = bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
         emit log_named_bytes("originalBytesArray", originalBytesArray);
         emit log_named_uint("bitmap", bitmap);

@@ -9,6 +9,14 @@ contract BytesArrayBitmapsWrapper {
         return BytesArrayBitmaps.bytesArrayToBitmap(bytesArray);
     }
 
+    function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) external pure returns (uint256) {
+        return BytesArrayBitmaps.orderedBytesArrayToBitmap(orderedBytesArray);
+    }
+
+    function isArrayStrictlyAscendingOrdered(bytes calldata bytesArray) external pure returns (bool) {
+        return BytesArrayBitmaps.isArrayStrictlyAscendingOrdered(bytesArray);
+    }
+
     function bitmapToBytesArray(uint256 bitmap) external pure returns (bytes memory bytesArray) {
         return BytesArrayBitmaps.bitmapToBytesArray(bitmap);
     }
