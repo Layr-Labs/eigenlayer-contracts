@@ -59,7 +59,11 @@ contract IndexRegistry is IIndexRegistry {
      */
     function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndex memory operatorIndexToCheck = operatorIdToIndexHistory[operatorId][quorumNumber][index];
+
+        //blocknumber must be before the "index'th" entry's toBlockNumber
         require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+       
+        //if there is an index update before the "index'th" update, the blocknumber must be after than the previous entry's toBlockNumber
         if(index != 0){
             OperatorIndex memory previousOperatorIndex = operatorIdToIndexHistory[operatorId][quorumNumber][index - 1];
             require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
@@ -75,7 +79,11 @@ contract IndexRegistry is IIndexRegistry {
      */
     function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndex memory operatorIndexToCheck = totalOperatorsHistory[quorumNumber][index];
+
+        //blocknumber must be before the "index'th" entry's toBlockNumber
         require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+        
+        //if there is an index update before the "index'th" update, the blocknumber must be after than the previous entry's toBlockNumber
         if (index != 0){
             OperatorIndex memory previousOperatorIndex = totalOperatorsHistory[quorumNumber][index - 1];
             require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
@@ -95,6 +103,8 @@ contract IndexRegistry is IIndexRegistry {
 
 
     function _updateTotalOperatorHistory(uint8 quorumNumber) internal {
+
+        //if there is a prior entry, update its "toBlockNumber"
         if (totalOperatorsHistory[quorumNumber].length > 0) {
             totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].toBlockNumber = block.number;
         }
@@ -104,6 +114,10 @@ contract IndexRegistry is IIndexRegistry {
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
+    /// 
+    /// @param operatorId operatorId of the operator to update
+    /// @param quorumNumber quorumNumber of the operator to update
+    /// @param index the latest index of that operator in quorumToOperatorList
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
 
@@ -116,16 +130,21 @@ contract IndexRegistry is IIndexRegistry {
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
-
+    /// @notice when we remove an operator from quorumToOperatorList, we swap the last operator in 
+    ///         quorumToOperatorList[quorumNumber] to the position of the operator we are removing
+    /// @param quorumNumber quorum number of the operator to remove
+    /// @param indexToRemove index of the operator to remove
     function _removeOperatorFromQuorumToOperatorList(uint8 quorumNumber, uint32 indexToRemove) internal {   
-
+        
         uint32 quorumToOperatorListLastIndex  = uint32(quorumToOperatorList[quorumNumber].length - 1);
 
+        // if the operator is not the last in the list, we must swap the last operator into their positon
         if(indexToRemove != quorumToOperatorListLastIndex){
             bytes32 operatorIdToSwap = quorumToOperatorList[quorumNumber][quorumToOperatorListLastIndex];
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexToRemove);
 
+            //set last operator in the list to removed operator's position in the array
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
         }
         //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
