@@ -105,8 +105,11 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
+        uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
+
+        //if there is a prior entry for the operator, set the previous entry's toBlocknumber
         if (operatorIdToIndexHistoryLength > 0) {
-            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length; - 1].toBlockNumber = block.number;
+            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
         latestOperatorIndex.index = index; 
@@ -120,13 +123,14 @@ contract IndexRegistry is IIndexRegistry {
 
         if(indexToRemove != quorumToOperatorListLastIndex){
             bytes32 operatorIdToSwap = quorumToOperatorList[quorumNumber][quorumToOperatorListLastIndex];
-            //update the swapped operator's
+            //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexToRemove);
 
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
         }
         //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
         operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = block.number;
+        //removing the swapped operator from the list
         quorumToOperatorList[quorumNumber].pop();
     }
 
