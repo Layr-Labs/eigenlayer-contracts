@@ -392,12 +392,10 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
             (, uint96 stake) = _updateOperatorStake(operator, operatorId, quorumNumber);
             // @JEFF: This reverts pretty late, but i think that's fine. wdyt?
-            // check if minimum requirement has been met
-            require(stake >= minimumStakeForQuorum[quorumNumber], "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
-            // get the total stake for the quorum
-            _newTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
-            // add operator stakes to total stake (in memory)
-            _newTotalStakeUpdate.stake = _newTotalStakeUpdate.stake + stake;
+            // check if minimum requirement has been met, will be 0 if not
+            require(stake != 0, "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
+            // add operator stakes to total stake before update (in memory)
+            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake + stake;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
             unchecked {
@@ -435,10 +433,9 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // update the operator's stake
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
-            // subtract the amounts staked by the operator that is getting deregistered from the total stake
+            // subtract the amounts staked by the operator that is getting deregistered from the total stake before deregistration
             // copy latest totalStakes to memory
-            OperatorStakeUpdate memory currentTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1];
-            _newTotalStakeUpdate.stake = currentTotalStakeUpdate.stake - stakeBeforeUpdate;
+            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1].stake - stakeBeforeUpdate;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, currentTotalStakeUpdate);
 
