@@ -433,32 +433,19 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
         // loop through the operator's quorums and remove the operator's stake for each quorum
         for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbersLength;) {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
-            // gas saving by caching length here
-            uint256 operatorIdToStakeHistoryLengthMinusOne = operatorIdToStakeHistory[operatorId][quorumNumber].length - 1;
-
-            // determine current stakes
-            OperatorStakeUpdate memory currentStakeUpdate =
-                operatorIdToStakeHistory[operatorId][quorumNumber][operatorIdToStakeHistoryLengthMinusOne];
-            //set nextUpdateBlockNumber in current stakes
-            operatorIdToStakeHistory[operatorId][quorumNumber][operatorIdToStakeHistoryLengthMinusOne].nextUpdateBlockNumber =
-                uint32(block.number);
-
-            /**
-             * @notice recording the information pertaining to change in stake for this operator in the history. operator stakes are set to 0 here.
-             */
-            operatorIdToStakeHistory[operatorId][quorumNumber].push(_operatorStakeUpdate);
-
+            // update the operator's stake
+            uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
             // subtract the amounts staked by the operator that is getting deregistered from the total stake
             // copy latest totalStakes to memory
             OperatorStakeUpdate memory currentTotalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1];
-            _newTotalStakeUpdate.stake -= currentStakeUpdate.stake;
+            _newTotalStakeUpdate.stake = currentTotalStakeUpdate.stake - stakeBeforeUpdate;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, currentTotalStakeUpdate);
 
             emit StakeUpdate(
                 operatorId,
-                // new stakes are zero
                 quorumNumber,
+                // new stakes are zero
                 0
             );
             unchecked {
@@ -485,6 +472,20 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             operatorStakeUpdate.stake = uint96(0);
         }
         // initialize stakeBeforeUpdate to 0
+        uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
+    
+        emit StakeUpdate(
+            operatorId,
+            quorumNumber,
+            operatorStakeUpdate.stake
+        );
+
+        return (stakeBeforeUpdate, operatorStakeUpdate.stake);
+    }
+
+    /// @notice Records that `operatorId`'s current stake is now param @operatorStakeUpdate
+    function _recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, OperatorStakeUpdate memory operatorStakeUpdate) internal returns(uint96) {
+        // initialize stakeBeforeUpdate to 0
         uint96 stakeBeforeUpdate;
         uint256 operatorStakeHistoryLength = operatorIdToStakeHistory[operatorId][quorumNumber].length; 
         if (operatorStakeHistoryLength != 0) {
@@ -496,14 +497,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
         }
         // push new stake to storage
         operatorIdToStakeHistory[operatorId][quorumNumber].push(operatorStakeUpdate);
-        
-        emit StakeUpdate(
-            operatorId,
-            quorumNumber,
-            operatorStakeUpdate.stake
-        );
-
-        return (stakeBeforeUpdate, operatorStakeUpdate.stake);
+        return stakeBeforeUpdate;
     }
 
     /// @notice Records that the `totalStake` is now equal to the input param @_totalStake
