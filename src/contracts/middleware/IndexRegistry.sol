@@ -116,7 +116,7 @@ contract IndexRegistry is IIndexRegistry {
 
     function _removeOperatorFromQuorumToOperatorList(uint8 quorumNumber, uint32 indexToRemove) internal {   
 
-        quorumToOperatorListLastIndex  = quorumToOperatorList[quorumNumber].length - 1;
+        uint32 quorumToOperatorListLastIndex  = uint32(quorumToOperatorList[quorumNumber].length - 1);
 
         if(indexToRemove != quorumToOperatorListLastIndex){
             bytes32 operatorIdToSwap = quorumToOperatorList[quorumNumber][quorumToOperatorListLastIndex];
@@ -125,6 +125,8 @@ contract IndexRegistry is IIndexRegistry {
 
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
         }
+        //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
+        operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = block.number;
         quorumToOperatorList[quorumNumber].pop();
     }
 
