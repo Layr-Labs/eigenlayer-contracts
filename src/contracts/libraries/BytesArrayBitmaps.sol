@@ -200,7 +200,7 @@ library BytesArrayBitmaps {
                         ),
                         1
                     )
-                // check against duplicates by comparing the bitmask and bitmap (revert if the bitmap already contains the entry)
+                // check against duplicates by comparing the bitmask and bitmap (revert if the bitmap already contains the entry, i.e. bitmap & bitMask != 0)
                 // TODO: revert with a good message instead of using `revert(0, 0)`
                 // REFERENCE: require(bitmap & bitMask == 0, "BytesArrayBitmaps.bytesArrayToBitmap: repeat entry in bytesArray");
                 if gt(and(bitmap, bitMask), 0) { revert(0, 0) }
