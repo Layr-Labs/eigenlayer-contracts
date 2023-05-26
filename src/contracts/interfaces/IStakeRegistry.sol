@@ -25,19 +25,30 @@ interface IStakeRegistry is IRegistry {
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param operatorId The id of the operator to register.
-     * @param quorumNumbers The quorum numbers the operator is registering for.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions:
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, uint8[] memory quorumNumbers) external;
+    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external;
 
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quourm numbers the operator is deregistering from.
+     * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions:
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already deregistered
+     *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, uint8[] memory quorumNumbers) external;
+    function deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external;
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
@@ -136,8 +147,10 @@ interface IStakeRegistry is IRegistry {
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      * @param operatorIds are the ids of the operators whose stake information is getting updated
-     * @param quorumNumbers are the quorumNumbers for each operator in `operators` that they are a part of
+     * @param quorumBitmaps are the bitmap of the quorums that each operator in `operators` is part of
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
+     * @dev Precondition:
+     *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      */
-    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint8[][] memory quorumNumbers, uint256[] memory prevElements) external;
+    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory quorumBitmaps, uint256[] memory prevElements) external;
 }
