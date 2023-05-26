@@ -36,7 +36,7 @@ contract StrategyManagerMock is
 
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
-        returns (uint256){}
+        returns (uint256) {}
 
 
     function depositBeaconChainETH(address staker, uint256 amount) external{}
@@ -54,22 +54,22 @@ contract StrategyManagerMock is
         bytes memory signature
     )
         external
-        returns (uint256 shares){}
+        returns (uint256 shares) {}
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares){}
+    function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
     /**
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @return (depositor's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory){}
+    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {}
 
     /// @notice Returns the array of strategies in which `staker` has nonzero shares
-    function stakerStrats(address staker) external view returns (IStrategy[] memory){}
+    function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256){}
+    function stakerStrategyListLength(address staker) external view returns (uint256) {}
 
 
     function queueWithdrawal(
@@ -79,7 +79,7 @@ contract StrategyManagerMock is
         address withdrawer,
         bool undelegateIfPossible
     )
-        external returns(bytes32){}
+        external returns(bytes32) {}
 
 
     function completeQueuedWithdrawal(
@@ -127,12 +127,12 @@ contract StrategyManagerMock is
     )
         external
         pure
-        returns (bytes32){}
+        returns (bytes32) {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
-    function beaconChainETHStrategy() external view returns (IStrategy){}
+    function beaconChainETHStrategy() external view returns (IStrategy) {}
 
-    function withdrawalDelayBlocks() external view returns (uint256){}
+    function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 

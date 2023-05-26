@@ -34,7 +34,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         uint256 configChainId = stdJson.readUint(config_data, ".chainInfo.chainId");
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
 
-        address oracleInitialOwner = communityMultisig;
+        address oracleInitialOwner = executorMultisig;
         uint256 initialThreshold = stdJson.readUint(config_data, ".oracleInitialization.threshold");
         bytes memory oracleSignerListRaw = stdJson.parseRaw(config_data, ".oracleInitialization.signers");
         address[] memory initialOracleSigners = abi.decode(oracleSignerListRaw, (address[]));
@@ -50,7 +50,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         vm.stopBroadcast();
 
         // additional check for correctness of deployment
-        require(beaconChainOracle.owner() == communityMultisig, "beaconChainOracle owner not set correctly");
+        require(beaconChainOracle.owner() == executorMultisig, "beaconChainOracle owner not set correctly");
 
         // WRITE JSON DATA
         string memory parent_object = "parent object";

@@ -78,7 +78,7 @@ contract EigenLayerDeployer is Operators {
     uint256 nonce = 69;
     uint256 public gasLimit = 750000;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
-    uint256 REQUIRED_BALANCE_WEI = 31.4 ether;
+    uint256 REQUIRED_BALANCE_WEI = 31 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
 
     address pauser;
@@ -102,7 +102,7 @@ contract EigenLayerDeployer is Operators {
     address beaconChainOracleAddress;
     address emptyContractAddress;
     address teamMultisig;
-    address communityMultisig;
+    address executorMultisig;
 
 
     uint256 public initialBeaconChainOracleThreshold = 3;
@@ -128,10 +128,10 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        if(vm.envUint("CHAIN_ID") == 31337){
+        if(vm.envUint("CHAIN_ID") == 31337) {
             _deployEigenLayerContractsLocal();
 
-        }else if(vm.envUint("CHAIN_ID") == 5){
+        }else if(vm.envUint("CHAIN_ID") == 5) {
             _deployEigenLayerContractsGoerli();
         }
 
@@ -146,7 +146,7 @@ contract EigenLayerDeployer is Operators {
     function _deployEigenLayerContractsGoerli() internal {
         _setAddresses(goerliDeploymentConfig);
         pauser = teamMultisig;
-        unpauser = communityMultisig;
+        unpauser = executorMultisig;
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
 
@@ -295,6 +295,7 @@ contract EigenLayerDeployer is Operators {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                type(uint256).max, // maxPods
                 beaconChainOracle,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
@@ -364,7 +365,7 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
         teamMultisig = stdJson.readAddress(config, ".parameters.teamMultisig");
-        communityMultisig = stdJson.readAddress(config, ".parameters.communityMultisig");
+        executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
     }
     
 }

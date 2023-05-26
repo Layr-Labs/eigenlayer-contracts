@@ -8,7 +8,7 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter{
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -107,14 +107,41 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         return _userWithdrawals[user];
     }
 
-    /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
-    function claimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+    /// @notice Getter function to get all delayedWithdrawals of the `user`
+    function getUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
         uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
-        uint256 delayedWithdrawalsLength = _userWithdrawals[user].delayedWithdrawals.length;
-        uint256 claimableDelayedWithdrawalsLength = delayedWithdrawalsLength - delayedWithdrawalsCompleted;
-        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](claimableDelayedWithdrawalsLength);
-        for (uint256 i = 0; i < claimableDelayedWithdrawalsLength; i++) {
-            claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+        uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
+        uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
+        DelayedWithdrawal[] memory userDelayedWithdrawals = new DelayedWithdrawal[](userDelayedWithdrawalsLength);
+        for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
+            userDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+        }
+        return userDelayedWithdrawals;
+    }
+
+    /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
+    function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory) {
+        uint256 delayedWithdrawalsCompleted = _userWithdrawals[user].delayedWithdrawalsCompleted;
+        uint256 totalDelayedWithdrawals = _userWithdrawals[user].delayedWithdrawals.length;
+        uint256 userDelayedWithdrawalsLength = totalDelayedWithdrawals - delayedWithdrawalsCompleted;
+
+        uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
+
+        for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
+            if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
+                firstNonClaimableWithdrawalIndex = i;
+                break;
+            }
+        }
+        uint256 numberOfClaimableWithdrawals = firstNonClaimableWithdrawalIndex;
+        DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](numberOfClaimableWithdrawals);
+        
+        if(numberOfClaimableWithdrawals != 0) {
+            for (uint256 i = 0; i < numberOfClaimableWithdrawals; i++) {
+                claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            }
         }
         return claimableDelayedWithdrawals;
     }
@@ -129,7 +156,7 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         return _userWithdrawals[user].delayedWithdrawals.length;
     }
 
-    /// @notice Convenience function for checking whethere or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
+    /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool) {
         return ((index >= _userWithdrawals[user].delayedWithdrawalsCompleted) && (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks));
     }

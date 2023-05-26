@@ -2,6 +2,13 @@
 pragma solidity =0.8.12;
 
 library Endian {
+    /**
+     * @notice Converts a little endian-formatted uint64 to a big endian-formatted uint64
+     * @param lenum little endian-formatted uint64 input, provided as 'bytes32' type
+     * @return n The big endian-formatted uint64
+     * @dev Note that the input is formatted as a 'bytes32' type (i.e. 256 bits), but it is immediately truncated to a uint64 (i.e. 64 bits)
+     * through a right-shift/shr operation.
+     */
     function fromLittleEndianUint64(
         bytes32 lenum
     ) internal pure returns (uint64 n) {
