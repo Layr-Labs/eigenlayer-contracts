@@ -42,11 +42,25 @@ contract BytesArrayBitmapsUnitTests is Test {
     }
 
     // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
-    // note that this only works on ordered arrays
+    // note that this only works on ordered arrays, because unordered arrays will be returned ordered
     function testBytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public view {
         // filter down to only ordered inputs
         cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
+        bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
+        // emit log_named_bytes("originalBytesArray", originalBytesArray);
+        // emit log_named_uint("bitmap", bitmap);
+        // emit log_named_bytes("returnedBytesArray", returnedBytesArray);
+        require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+            "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays, because unordered arrays will be returned ordered
+    function testBytesArrayToBitmapToBytesArray_Yul(bytes memory originalBytesArray) public view {
+        // filter down to only ordered inputs
+        cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint256 bitmap = bytesArrayBitmapsWrapper.bytesArrayToBitmap_Yul(originalBytesArray);
         bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
         // emit log_named_bytes("originalBytesArray", originalBytesArray);
         // emit log_named_uint("bitmap", bitmap);
@@ -115,6 +129,18 @@ contract BytesArrayBitmapsUnitTests is Test {
         // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
         uint256 gasLeftBefore = gasleft();
         bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
+        uint256 gasLeftAfter = gasleft();
+        uint256 gasSpent = gasLeftBefore - gasLeftAfter;
+        emit log_named_uint("gasSpent", gasSpent);
+    }
+
+    // testing one function for a specific input. used for comparing gas costs
+    function testBytesArrayToBitmap_Yul_SpecificInput(/*bytes memory originalBytesArray*/) public {
+        bytes memory originalBytesArray =
+            abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
+        // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
+        uint256 gasLeftBefore = gasleft();
+        bytesArrayBitmapsWrapper.bytesArrayToBitmap_Yul(originalBytesArray);
         uint256 gasLeftAfter = gasleft();
         uint256 gasSpent = gasLeftBefore - gasLeftAfter;
         emit log_named_uint("gasSpent", gasSpent);

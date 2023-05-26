@@ -26,4 +26,8 @@ contract BytesArrayBitmapsWrapper is Test {
     function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) external pure returns (uint256) {
         return BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(orderedBytesArray);
     }
+
+    function bytesArrayToBitmap_Yul(bytes calldata bytesArray) external pure returns (uint256) {
+        return BytesArrayBitmaps.bytesArrayToBitmap_Yul(bytesArray);
+    }
 }
