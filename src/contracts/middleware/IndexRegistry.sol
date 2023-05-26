@@ -32,10 +32,9 @@ contract IndexRegistry is IIndexRegistry {
         globalOperatorList.push(operatorId);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = quorumNumbers[i];
             quorumToOperatorList[quorumNumber].push(operatorId);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumber);
-            _updateTotalOperatorHistory(quorumNumber);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i]);
+            _updateTotalOperatorHistory(quorumNumbers[i]);
         }
     }
 
@@ -44,9 +43,8 @@ contract IndexRegistry is IIndexRegistry {
         _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            uint8 quorumNumber = quorumNumbers[i];
-            _removeOperatorFromQuorumToOperatorList(quorumNumber, quorumToOperatorListIndexes[i]);
-            _updateTotalOperatorHistory(quorumNumber);
+            _removeOperatorFromQuorumToOperatorList(quorumNumbers[i], quorumToOperatorListIndexes[i]);
+            _updateTotalOperatorHistory(quorumNumbers[i]);
         }
     }
 
