@@ -60,7 +60,6 @@ contract IndexRegistry is IIndexRegistry {
      */
     function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndex memory operatorIndexToCheck = operatorIdToIndexHistory[operatorId][quorumNumber][index];
-        
         require(blockNumber >= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
 
         if(index < operatorIdToIndexHistory[operatorId][quorumNumber].length - 1){
@@ -142,6 +141,4 @@ contract IndexRegistry is IIndexRegistry {
         }
         globalOperatorList.pop();
     }
-
-
 }
