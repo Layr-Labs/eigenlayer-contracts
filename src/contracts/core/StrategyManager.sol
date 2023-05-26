@@ -49,7 +49,7 @@ contract StrategyManager is
      * @param depositor Is the staker who is depositing funds into EigenLayer.
      * @param strategy Is the strategy that `depositor` has deposited into.
      * @param token Is the token that `depositor` deposited.
-     * @param shares Is the number of shares `depositor` has in `strategy`.
+     * @param shares Is the number of new shares `depositor` has been granted in `strategy`.
      */
     event Deposit(
         address depositor, IERC20 token, IStrategy strategy, uint256 shares
@@ -140,7 +140,8 @@ contract StrategyManager is
      * and transfers contract ownership to the specified `initialOwner`.
      * @param _pauserRegistry Used for access control of pausing.
      * @param initialOwner Ownership of this contract is transferred to this address.
-     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set. 
+     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+     * @param  initialPausedStatus The initial value of `_paused` to set.
      * @param _withdrawalDelayBlocks The initial value of `withdrawalDelayBlocks` to set.
      */
     function initialize(address initialOwner, address initialStrategyWhitelister, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus, uint256 _withdrawalDelayBlocks)
@@ -158,7 +159,6 @@ contract StrategyManager is
      * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
      * @param staker is the entity that is restaking in eigenlayer,
      * @param amount is the amount of beaconchain ETH being restaked,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
      * @dev Only callable by EigenPodManager.
      */
     function depositBeaconChainETH(address staker, uint256 amount)
@@ -206,17 +206,17 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `depositor`
+     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
      * 
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy.
+     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
@@ -228,22 +228,25 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Used for depositing an asset into the specified strategy with the resultant shared created to `staker`,
-     * who must sign off on the action
+     * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
+     * who must sign off on the action.
+     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed 
+     * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
      * @param amount is the amount of token to be deposited in the strategy by the depositor
-     * @param staker the staker that the assets will be deposited on behalf of
+     * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
      * following EIP-1271 if the `staker` is a contract
+     * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
-     * targetting stakers who may be attempting to undelegate.
+     * targeting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
      * 
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in syncupon reentrancy
+     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
      */
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
@@ -282,7 +285,7 @@ contract StrategyManager is
 
         /**
          * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECSDA signature from `staker`,
+         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
          * indicating their intention for this action
          * 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271
          */
@@ -312,11 +315,15 @@ contract StrategyManager is
      * The total number of shares is decremented in the 'completeQueuedWithdrawal' function instead, which is where
      * the funds are actually sent to the user through use of the strategies' 'withdrawal' function. This ensures
      * that the value per share reported by each strategy will remain consistent, and that the shares will continue
-     * to accrue gains during the enforced WITHDRAWAL_WAITING_PERIOD.
+     * to accrue gains during the enforced withdrawal waiting period.
      * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
      * for which `msg.sender` is withdrawing 100% of their shares
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
+     * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
+     * @param undelegateIfPossible If this param is marked as 'true' *and the withdrawal will result in `msg.sender` having no shares in any Strategy,*
+     * then this function will also make an internal call to `undelegate(msg.sender)` to undelegate the `msg.sender`.
+     * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
@@ -450,6 +457,12 @@ contract StrategyManager is
 
     /**
      * @notice Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
+     * @param queuedWithdrawals The QueuedWithdrawals to complete.
+     * @param tokens Array of tokens for each QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param middlewareTimesIndexes One index to reference per QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
+     * @param receiveAsTokens If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves
+     * and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
+     * will simply be transferred to the caller directly.
      * @dev Array-ified version of `completeQueuedWithdrawal`
      * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
      */
@@ -471,6 +484,11 @@ contract StrategyManager is
     /**
      * @notice Slashes the shares of a 'frozen' operator (or a staker delegated to one)
      * @param slashedAddress is the frozen address that is having its shares slashed
+     * @param recipient is the address that will receive the slashed funds, which could e.g. be a harmed party themself,
+     * or a MerkleDistributor-type contract that further sub-divides the slashed funds.
+     * @param strategies Strategies to slash
+     * @param shareAmounts The amount of shares to slash in each of the provided `strategies`
+     * @param tokens The tokens to use as input to the `withdraw` function of each of the provided `strategies`
      * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
      * for which `msg.sender` is withdrawing 100% of their shares
      * @param recipient The slashed funds are withdrawn as tokens to this address.
@@ -571,24 +589,33 @@ contract StrategyManager is
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
                 }
-                unchecked {
+            }
+            unchecked {
                     ++i;
                 }
-            }
         }
     }
 
-    /// @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
+    /**
+     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
+     * @param _withdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
+    */
     function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner {
         _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
-    /// @notice Owner-only function to change the `strategyWhitelister` address.
+    /**
+     * @notice Owner-only function to change the `strategyWhitelister` address.
+     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
+    */
     function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
-    /// @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+    */
     function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister {
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength;) {
@@ -603,7 +630,10 @@ contract StrategyManager is
         }
     } 
 
-    /// @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+    /**
+     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
+    */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
@@ -622,6 +652,9 @@ contract StrategyManager is
 
     /**
      * @notice This function adds `shares` for a given `strategy` to the `depositor` and runs through the necessary update logic.
+     * @param depositor The address to add shares to
+     * @param strategy The Strategy in which the `depositor` is receiving shares
+     * @param shares The amount of shares to grant to the `depositor`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(depositor, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[depositor][strategy]`, and adds `strategy`
      * to the `depositor`'s list of strategies, if it is not in the list already.
@@ -650,6 +683,10 @@ contract StrategyManager is
     /**
      * @notice Internal function in which `amount` of ERC20 `token` is transferred from `msg.sender` to the Strategy-type contract
      * `strategy`, with the resulting shares credited to `depositor`.
+     * @param depositor The address that will be credited with the new shares.
+     * @param strategy The Strategy contract to deposit into.
+     * @param token The ERC20 token to deposit.
+     * @param amount The amount of `token` to deposit.
      * @return shares The amount of *new* shares in `strategy` that have been credited to the `depositor`.
      */
     function _depositIntoStrategy(address depositor, IStrategy strategy, IERC20 token, uint256 amount)
@@ -667,12 +704,16 @@ contract StrategyManager is
         _addShares(depositor, strategy, shares);
 
         emit Deposit(depositor, token, strategy, shares);
-
         return shares;
     }
 
     /**
      * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
+     * @param depositor The address to decrement shares from
+     * @param strategyIndex The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that
+     * the removal of the depositor's shares results in them having zero remaining shares in the `strategy`
+     * @param strategy The strategy for which the `depositor`'s shares are being decremented
+     * @param shareAmount The amount of shares to decrement
      * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned.
      */
@@ -709,6 +750,10 @@ contract StrategyManager is
 
     /**
      * @notice Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `stakerStrategyList[depositor]`
+     * @param depositor The user whose array will have an entry removed
+     * @param strategyIndex Preferably the index of `strategy` in `stakerStrategyList[depositor]`. If the input is incorrect, then a brute-force
+     * fallback routine will be used to find the correct input
+     * @param strategy The Strategy to remove from `stakerStrategyList[depositor]`
      * @dev the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
      * index is incorrect, then we revert to a brute-force search.
      */
@@ -740,7 +785,12 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Internal function for completeing the given `queuedWithdrawal`.
+     * @notice Internal function for completing the given `queuedWithdrawal`.
+     * @param queuedWithdrawal The QueuedWithdrawal to complete
+     * @param tokens The ERC20 tokens to provide as inputs to `Strategy.withdraw`. Only relevant if `receiveAsTokens = true`
+     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure the withdrawal is completable.
+     * @param receiveAsTokens If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy.
+     * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
     function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal {
         // find the withdrawalRoot
@@ -807,14 +857,18 @@ contract StrategyManager is
     /**
      * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
+     * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
      */
-    function _undelegate(address depositor) internal {
+    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }
 
     /*
-     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any succesfully withdrawn funds going to `recipient`.
+     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any successfully withdrawn funds going to `recipient`.
+     * @param staker The address whose 'beaconChainETH' shares will be decremented
+     * @param recipient Passed on as the recipient input to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
+     * @param amount The amount of virtual 'beaconChainETH' shares to be 'withdrawn'
      * @dev First, the amount is drawn-down by any applicable 'beaconChainETHSharesToDecrementOnWithdrawal' that the staker has, 
      * before passing any remaining amount (if applicable) onto a call to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
     */
@@ -835,14 +889,20 @@ contract StrategyManager is
         eigenPodManager.withdrawRestakedBeaconChainETH(staker, recipient, amount);
     }
 
-    /// @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
+    /**
+     * @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
+     * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
+     */
     function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
         require(_withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high");
         emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
         withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
 
-    /// @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+    /**
+     * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+     * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
+     */
     function _setStrategyWhitelister(address newStrategyWhitelister) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
@@ -852,6 +912,7 @@ contract StrategyManager is
 
     /**
      * @notice Get all details on the depositor's deposits and corresponding shares
+     * @param depositor The staker of interest, whose deposits this function will fetch
      * @return (depositor's strategies, shares in these strategies)
      */
     function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {

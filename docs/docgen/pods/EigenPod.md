@@ -268,7 +268,7 @@ _For more details on the Beacon Chain spec, see: https://github.com/ethereum/con
 | validatorIndex | uint40 | is the index of the validator being proven, refer to consensus specs |
 | proofs | struct BeaconChainProofs.ValidatorFieldsAndBalanceProofs | is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for |
 | validatorFields | bytes32[] | are the fields of the "Validator Container", refer to consensus specs |
-| beaconChainETHStrategyIndex | uint256 | is the index of the beaconChainETHStrategy for the pod owner for the callback to                                     the StrategyManager in case it must be removed from the list of the podOwners strategies |
+| beaconChainETHStrategyIndex | uint256 | is the index of the beaconChainETHStrategy for the pod owner for the callback to                                     the StrategyManager in case it must be removed from the list of the podOwner's strategies |
 | oracleBlockNumber | uint64 | The oracleBlockNumber whose state root the `proof` will be proven against.        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block. |
 
 ### verifyAndProcessWithdrawal
@@ -288,7 +288,7 @@ This function records a full withdrawal on behalf of one of the Ethereum validat
 | validatorFields | bytes32[] | are the fields of the validator being proven |
 | withdrawalFields | bytes32[] | are the fields of the withdrawal being proven |
 | beaconChainETHStrategyIndex | uint256 | is the index of the beaconChainETHStrategy for the pod owner for the callback to         the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies |
-| oracleBlockNumber | uint64 |  |
+| oracleBlockNumber | uint64 | is the Beacon Chain blockNumber whose state root the `proof` will be proven against. |
 
 ### _processFullWithdrawal
 

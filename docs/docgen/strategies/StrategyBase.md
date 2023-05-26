@@ -5,8 +5,18 @@
 Simple, basic, "do-nothing" Strategy that holds a single underlying token and returns it on withdrawals.
 Implements minimal versions of the IStrategy functions, this contract is designed to be inherited by
 more complex strategies, which can then override its functions as necessary.
+This contract functions similarly to an ERC4626 vault, only without issuing a token.
+To mitigate against the common "inflation attack" vector, we have chosen to use the 'virtual shares' mitigation route,
+similar to [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC4626.sol).
+We acknowledge that this mitigation has the known downside of the virtual shares causing some losses to users, which are pronounced
+particularly in the case of the share exchange rate changing signficantly, either positively or negatively.
+For a fairly thorough discussion of this issue and our chosen mitigation strategy, we recommend reading through
+[this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
+We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
 
-_This contract is expressly *not* intended for use with 'fee-on-transfer'-type tokens.
+_Note that some functions have their mutability restricted; developers inheriting from this contract cannot broaden
+the mutability without modifying this contract itself.
+This contract is expressly *not* intended for use with 'fee-on-transfer'-type tokens.
 Setting the `underlyingToken` to be a fee-on-transfer token may result in improper accounting._
 
 ### PAUSED_DEPOSITS
@@ -21,11 +31,25 @@ uint8 PAUSED_DEPOSITS
 uint8 PAUSED_WITHDRAWALS
 ```
 
-### MIN_NONZERO_TOTAL_SHARES
+### SHARES_OFFSET
 
 ```solidity
-uint96 MIN_NONZERO_TOTAL_SHARES
+uint256 SHARES_OFFSET
 ```
+
+virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+incurring reasonably small losses to depositors
+
+### BALANCE_OFFSET
+
+```solidity
+uint256 BALANCE_OFFSET
+```
+
+virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+incurring reasonably small losses to depositors
 
 ### strategyManager
 
@@ -41,7 +65,7 @@ EigenLayer's StrategyManager contract
 contract IERC20 underlyingToken
 ```
 
-The underyling token for shares in this Strategy
+The underlying token for shares in this Strategy
 
 ### totalShares
 
@@ -49,7 +73,7 @@ The underyling token for shares in this Strategy
 uint256 totalShares
 ```
 
-The total number of extant shares in thie Strategy
+The total number of extant shares in this Strategy
 
 ### onlyStrategyManager
 
@@ -94,11 +118,7 @@ _This function is only callable by the strategyManager contract. It is invoked i
 Note that the assumption is made that `amount` of `token` has already been transferred directly to this contract
 (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
 to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
-the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
-
-WARNING: In order to mitigate against inflation/donation attacks in the context of ERC_4626, this contract requires the 
-         minimum amount of shares be either 0 or 1e9. A consequence of this is that in the worst case a user will not 
-         be able to withdraw for 1e9-1 or less shares._
+the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance)._
 
 #### Parameters
 
@@ -128,7 +148,7 @@ other functions, and individual share balances are recorded in the strategyManag
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| depositor | address |  |
+| depositor | address | is the address to receive the withdrawn funds |
 | token | contract IERC20 | is the ERC20 token being transferred out |
 | amountShares | uint256 | is the amount of shares being withdrawn |
 
@@ -150,13 +170,19 @@ function sharesToUnderlyingView(uint256 amountShares) public view virtual return
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
 In contrast to `sharesToUnderlying`, this function guarantees no state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountShares | uint256 | is the amount of shares to calculate its conversion into the underlying token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of underlying tokens corresponding to the input `amountShares` |
 
 ### sharesToUnderlying
 
@@ -167,13 +193,19 @@ function sharesToUnderlying(uint256 amountShares) public view virtual returns (u
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
 In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountShares | uint256 | is the amount of shares to calculate its conversion into the underlying token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of underlying tokens corresponding to the input `amountShares` |
 
 ### underlyingToSharesView
 
@@ -184,13 +216,19 @@ function underlyingToSharesView(uint256 amountUnderlying) public view virtual re
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
 In contrast to `underlyingToShares`, this function guarantees no state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountUnderlying | uint256 | is the amount of `underlyingToken` to calculate its conversion into strategy shares |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of shares corresponding to the input `amountUnderlying` |
 
 ### underlyingToShares
 
@@ -201,13 +239,19 @@ function underlyingToShares(uint256 amountUnderlying) external view virtual retu
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
 In contrast to `underlyingToSharesView`, this function **may** make state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountUnderlying | uint256 | is the amount of `underlyingToken` to calculate its conversion into strategy shares |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of shares corresponding to the input `amountUnderlying` |
 
 ### userUnderlyingView
 

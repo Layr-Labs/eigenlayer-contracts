@@ -369,6 +369,12 @@ validatorIndex mod 4 is used to determine which of the four uint64 values to ext
 | validatorIndex | uint40 | is the index of the validator being proven for. |
 | balanceRoot | bytes32 | is the combination of 4 validator balances being proven for. |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint64 | The validator's balance, in Gwei |
+
 ### verifyValidatorFields
 
 ```solidity

@@ -123,15 +123,19 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         cheats.assume(amountToDeposit > 0);
 
         // whitelist the strategy for deposit, in case it wasn't before
-        cheats.startPrank(strategyManager.strategyWhitelister());
-        IStrategy[] memory _strategy = new IStrategy[](1);
-        _strategy[0] = stratToDepositTo;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
-        cheats.stopPrank();
+        {
+            cheats.startPrank(strategyManager.strategyWhitelister());
+            IStrategy[] memory _strategy = new IStrategy[](1);
+            _strategy[0] = stratToDepositTo;
+            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            cheats.stopPrank();
+        }
 
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
+        // check the expected output
+        uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
         // logging and error for misusing this function (see assumption above)
         if (amountToDeposit > contractBalance) {
             emit log("amountToDeposit > contractBalance");
@@ -151,15 +155,15 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 assertTrue(
                     strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1)
                         == stratToDepositTo,
-                    "_depositToStrategy: stakerStrategyList array updated incorrectly"
+                    "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
             }
             
-            //in this case, since shares never grow, the shares should just match the deposited amount
+            // check that the shares out match the expected amount out
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
-                amountDeposited,
-                "_depositToStrategy: shares should match deposit"
+                expectedSharesOut,
+                "_testDepositToStrategy: actual shares out should match expected shares out"
             );
         }
         cheats.stopPrank();
@@ -314,13 +318,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
     * bit to be either 0 or 1 based on the value of v, which is either 27 or 28 
     */
-    function getVSfromVandS(uint8 v, bytes32 s) internal view returns(bytes32){
+    function getVSfromVandS(uint8 v, bytes32 s) internal view returns(bytes32) {
         if (uint256(s) > SECP256K1N_MODULUS_HALF) {
             s = bytes32(SECP256K1N_MODULUS - uint256(s));
         }
 
         bytes32 vs = s;
-        if(v == 28){
+        if(v == 28) {
             vs = bytes32(uint256(s) ^ (1 << 255));
         }
 

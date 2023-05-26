@@ -33,16 +33,16 @@ contract SlasherMock is ISlasher, Test {
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external{}
 
     /// @notice Returns true if `slashingContract` is currently allowed to slash `toBeSlashed`.
-    function canSlash(address toBeSlashed, address slashingContract) external view returns (bool){}
+    function canSlash(address toBeSlashed, address slashingContract) external view returns (bool) {}
 
     /// @notice Returns the UTC timestamp until which `serviceContract` is allowed to slash the `operator`.
-    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32){}
+    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32) {}
 
     /// @notice Returns the block at which the `serviceContract` last updated its view of the `operator`'s stake
-    function latestUpdateBlock(address operator, address serviceContract) external view returns (uint32){}
+    function latestUpdateBlock(address operator, address serviceContract) external view returns (uint32) {}
 
     /// @notice A search routine for finding the correct input value of `insertAfter` to `recordStakeUpdate` / `_updateMiddlewareList`.
-    function getCorrectValueForInsertAfter(address operator, uint32 updateBlock) external view returns (uint256){}
+    function getCorrectValueForInsertAfter(address operator, uint32 updateBlock) external view returns (uint256) {}
 
     function canWithdraw(address /*operator*/, uint32 /*withdrawalStartBlock*/, uint256 /*middlewareTimesIndex*/) external view returns(bool) {
         return _canWithdraw;
@@ -63,10 +63,10 @@ contract SlasherMock is ISlasher, Test {
     function middlewareTimesLength(address operator) external view returns (uint256) {}
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32){}
+    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32) {}
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntilBlock`.
-    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32){}
+    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32) {}
 
     /// @notice Getter function for fetching `_operatorToWhitelistedContractsByUpdate[operator].size`.
     function operatorWhitelistedContractsLinkedListSize(address operator) external view returns (uint256) {}

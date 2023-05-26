@@ -46,7 +46,7 @@ contract GoerliUpgrade1 is Script, Test {
         IStrategyManager strategyManager = IStrategyManager(stdJson.readAddress(config_data, ".addresses.strategyManager"));
         IDelegationManager delegation = IDelegationManager(stdJson.readAddress(config_data, ".addresses.delegation"));
         IEigenPodManager eigenPodManager = IEigenPodManager(stdJson.readAddress(config_data, ".addresses.eigenPodManager"));
-        IBeacon eigenPodBeacon = IBeacon(stdJson.readAddress(config_data, ".addresses.eigenPodBeacon"));
+        // IBeacon eigenPodBeacon = IBeacon(stdJson.readAddress(config_data, ".addresses.eigenPodBeacon"));
         ISlasher slasher = ISlasher(stdJson.readAddress(config_data, ".addresses.slasher"));
         IDelayedWithdrawalRouter delayedWithdrawalRouter = IDelayedWithdrawalRouter(stdJson.readAddress(config_data, ".addresses.delayedWithdrawalRouter"));
 
