@@ -32,7 +32,7 @@ interface IIndexRegistry is IRegistry {
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param quorumToOperatorListIndexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
-     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list;
+     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
      */
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external;
