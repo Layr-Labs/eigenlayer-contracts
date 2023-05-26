@@ -32,7 +32,7 @@ contract IndexRegistry is IIndexRegistry {
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumToOperatorList[quorumNumber].push(operatorId);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i]);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i], quorumToOperatorList[quorumNumber].length - 1);
             _updateTotalOperatorHistory(quorumNumbers[i]);
         }
     }
@@ -104,12 +104,12 @@ contract IndexRegistry is IIndexRegistry {
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
-    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber) internal {
+    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         if (operatorIdToIndexHistoryLength > 0) {
             operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length; - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
-        latestOperatorIndex.index = quorumToOperatorList[quorumNumber].length - 1;
+        latestOperatorIndex.index = index; 
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
@@ -121,7 +121,7 @@ contract IndexRegistry is IIndexRegistry {
         if(indexToRemove != quorumToOperatorListLastIndex){
             bytes32 operatorIdToSwap = quorumToOperatorList[quorumNumber][quorumToOperatorListLastIndex];
             //update the swapped operator's
-            _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber);
+            _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexToRemove);
 
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
         }
