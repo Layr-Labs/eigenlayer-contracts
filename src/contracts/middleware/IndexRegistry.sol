@@ -26,6 +26,13 @@ contract IndexRegistry is IIndexRegistry {
     ){
         registryCoordinator = _registryCoordinator;
     }
+
+    /**
+     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @param operatorId is the id of the operator that is being registered
+     * @param quorumNumbers is the quorum numbers the operator is registered for
+     * @dev access restricted to the RegistryCoordinator
+     */
     function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external onlyRegistryCoordinator {
         //add operator to operatorList
         globalOperatorList.push(operatorId);
@@ -37,6 +44,14 @@ contract IndexRegistry is IIndexRegistry {
         }
     }
 
+    /**
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @param operatorId is the id of the operator that is being deregistered
+     * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param quorumToOperatorListIndexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
+     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
+     * @dev access restricted to the RegistryCoordinator
+     */
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == indexes.length, "IndexRegistry.deregisterOperator: quorumNumbers and indexes must be the same length");
         _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
