@@ -10,10 +10,9 @@ import "../libraries/BN254.sol";
 contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator registryCoordinator;
-    
     bytes32[] public globalOperatorList;
-    mapping(uint8 => bytes32[]) public quorumToOperatorList;
 
+    mapping(uint8 => bytes32[]) public quorumToOperatorList;
     mapping(bytes32 => mapping(uint8 => OperatorIndex[])) operatorIdToIndexHistory;
     mapping(uint8 => OperatorIndex[]) totalOperatorsHistory;
 
@@ -42,12 +41,12 @@ contract IndexRegistry is IIndexRegistry {
 
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == indexes.length, "IndexRegistry.deregisterOperator: quorumNumbers and indexes must be the same length");
+        _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
 
             _removeOperatorFromQuorumToOperatorList(quorumNumber, quorumToOperatorListIndexes[i]);
-            _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
             _updateTotalOperatorHistory(quorumNumber);
         }
     }
