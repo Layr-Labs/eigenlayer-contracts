@@ -85,7 +85,7 @@ contract BytesArrayBitmapsUnitTests is Test {
     }
 
     // testing one function for a specific input. used for comparing gas costs
-    function testBytesArrayToBitmapToBytesArray_OrderedVersion_Yul_SpecificInput(/*bytes memory originalBytesArray*/) public {
+    function testBytesArrayToBitmap_OrderedVersion_Yul_SpecificInput(/*bytes memory originalBytesArray*/) public {
         bytes memory originalBytesArray =
             abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
         // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
@@ -97,7 +97,7 @@ contract BytesArrayBitmapsUnitTests is Test {
     }
 
     // testing one function for a specific input. used for comparing gas costs
-    function testBytesArrayToBitmapToBytesArray_OrderedVersion_SpecificInput(/*bytes memory originalBytesArray*/) public {
+    function testBytesArrayToBitmap_OrderedVersion_SpecificInput(/*bytes memory originalBytesArray*/) public {
         bytes memory originalBytesArray =
             abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
         // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
@@ -109,7 +109,7 @@ contract BytesArrayBitmapsUnitTests is Test {
     }
 
     // testing one function for a specific input. used for comparing gas costs
-    function testBytesArrayToBitmapToBytesArray_SpecificInput(/*bytes memory originalBytesArray*/) public {
+    function testBytesArrayToBitmap_SpecificInput(/*bytes memory originalBytesArray*/) public {
         bytes memory originalBytesArray =
             abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
         // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));

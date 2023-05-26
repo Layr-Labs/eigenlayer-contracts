@@ -25,13 +25,23 @@ library BytesArrayBitmaps {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
             "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long");
+
+        // return empty bitmap early if length of array is 0
+        if (bytesArray.length == 0) {
+            return uint256(0);
+        }
+
         // initialize the empty bitmap, to be built inside the loop
         uint256 bitmap;
-
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
+
+        // perform the 0-th loop iteration with the ordering check *omitted* (since it is unnecessary / will always pass)
+        // construct a single-bit mask from the numerical value of the 0th byte of the array, and immediately add it to the bitmap
+        bitmap = uint256(1 << uint8(bytesArray[0]));
+
         // loop through each byte in the array to construct the bitmap
-        for (uint256 i = 0; i < bytesArray.length; ++i) {
+        for (uint256 i = 1; i < bytesArray.length; ++i) {
             // construct a single-bit mask from the numerical value of the next byte out of the array
             bitMask = uint256(1 << uint8(bytesArray[i]));
             // check that the entry is not a repeat
@@ -54,6 +64,7 @@ library BytesArrayBitmaps {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
             "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
             return uint256(0);
