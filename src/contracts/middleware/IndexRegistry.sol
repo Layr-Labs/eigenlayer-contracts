@@ -96,7 +96,7 @@ contract IndexRegistry is IIndexRegistry {
 
     /// @notice Returns the current number of operators of this service.
     function totalOperators() external view returns (uint32){
-        return numOperators;
+        return uint32(globalOperatorList.length);
     }
 
 
