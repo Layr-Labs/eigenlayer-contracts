@@ -9,12 +9,12 @@ import "../libraries/BN254.sol";
 
 contract IndexRegistry is IIndexRegistry {
 
-    IRegistryCoordinator registryCoordinator;
+    IRegistryCoordinator public registryCoordinator;
     bytes32[] public globalOperatorList;
 
     mapping(uint8 => bytes32[]) public quorumToOperatorList;
-    mapping(bytes32 => mapping(uint8 => OperatorIndex[])) operatorIdToIndexHistory;
-    mapping(uint8 => OperatorIndex[]) totalOperatorsHistory;
+    mapping(bytes32 => mapping(uint8 => OperatorIndex[])) public operatorIdToIndexHistory;
+    mapping(uint8 => OperatorIndex[]) public totalOperatorsHistory;
 
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(registryCoordinator), "IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
@@ -25,7 +25,6 @@ contract IndexRegistry is IIndexRegistry {
         IRegistryCoordinator _registryCoordinator
     ){
         registryCoordinator = _registryCoordinator;
-
     }
     function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external onlyRegistryCoordinator {
         //add operator to operatorList
@@ -77,7 +76,7 @@ contract IndexRegistry is IIndexRegistry {
     function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndex memory operatorIndexToCheck = totalOperatorsHistory[quorumNumber][index];
         require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
-        if expression(index != 0){
+        if (index != 0){
             OperatorIndex memory previousOperatorIndex = totalOperatorsHistory[quorumNumber][index - 1];
             require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
         }
@@ -95,20 +94,19 @@ contract IndexRegistry is IIndexRegistry {
     }
 
 
-    function _updateTotalOperatorHistory(uint8 quorumNumber, uint256 numOperators) internal {
-        uint256 numOperators = quorumToOperatorList[quorumNumber].length;
+    function _updateTotalOperatorHistory(uint8 quorumNumber) internal {
+        if (totalOperatorsHistory[quorumNumber].length > 0) {
+            totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].toBlockNumber = block.number;
+        }
 
-        OperatorIndex memory totalOperatorUpdate = OperatorIndex({
-            blockNumber: block.number,
-            index: uint32(numOperators)
-        });
+        OperatorIndex memory totalOperatorUpdate;
+        totalOperatorUpdate.index = quorumToOperatorList[quorumNumber].length - 1;
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber) internal {
         if (operatorIdToIndexHistoryLength > 0) {
-            uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length;
-            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = block.number;
+            operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length; - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
         latestOperatorIndex.index = quorumToOperatorList[quorumNumber].length - 1;
