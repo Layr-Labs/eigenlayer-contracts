@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../../contracts/interfaces/IServiceManager.sol";
-import "../../contracts/interfaces/IRegistry.sol";
 import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/ISlasher.sol";
 
@@ -11,7 +10,7 @@ import "forge-std/Test.sol";
 
 
 
-contract MiddlewareRegistryMock is IRegistry, DSTest{
+contract MiddlewareRegistryMock is  DSTest{
     IServiceManager public serviceManager;
     IStrategyManager public strategyManager;
     ISlasher public slasher;
