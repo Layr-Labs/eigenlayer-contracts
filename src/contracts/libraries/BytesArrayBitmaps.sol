@@ -79,7 +79,7 @@ library BytesArrayBitmaps {
     }
 
     /**
-     * @notice Converts an ordered array of bytes into a bitmap.
+     * @notice Converts an ordered array of bytes into a bitmap. Optimized, Yul-heavy version of `orderedBytesArrayToBitmap`.
      * @param orderedBytesArray The array of bytes to convert/compress into a bitmap. Must be in strictly ascending order.
      * @return The resulting bitmap.
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap.
@@ -93,57 +93,48 @@ library BytesArrayBitmaps {
             return uint256(0);
         }
 
-        // initialize the empty bitmap, to be built inside the loop
-        uint256 bitmap;
-
-        bytes1 singleByte;
-
         assembly {
-            calldatacopy(
-                singleByte,
-                add(orderedBytesArray.offset,
-                    64
-                ),
-                8
-            )
-            bitmap :=
-                or(bitmap,
-                    shl(
-                        mload(singleByte),
-                        1
-                    )
+            // get first entry in bitmap (single byte => single-bit mask)
+            let bitmap :=
+                shl(
+                    // pull out single byte to get the correct value for the left shift
+                    shr(
+                        248,
+                        calldataload(
+                            orderedBytesArray.offset
+                        )
+                    ),
+                    1
                 )
-        }
-
-/*
-        assembly {
-            bitmap :=
-                or(bitmap,
-                    shl(calldataload(
-                            add(orderedBytesArray.offset,
-                                32
+            // loop through other entries (byte by byte)
+            for { let i := 1 } lt(i, orderedBytesArray.length) { i := add(i, 1) } {
+                // first construct the single-bit mask by left-shifting a '1'
+                let mask := 
+                    shl(
+                        // pull out single byte to get the correct value for the left shift
+                        shr(
+                            248,
+                            calldataload(
+                                add(
+                                    orderedBytesArray.offset,
+                                    i
+                                )
                             )
                         ),
                         1
                     )
-                )
+                // check strictly ascending ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
+                // TODO: revert with a good message instead of using `revert(0, 0)`
+                if iszero(gt(mask, bitmap)) {revert(0, 0)}
+                // update the bitmap by adding the single bit in the mask
+                bitmap := or(bitmap, mask)
+            }
+            // after the loop is complete, store the bitmap at the value encoded at the free memory pointer, then return it
+            mstore(mload(0x40), bitmap)
+            return(mload(0x40), 32)
         }
-*/
-
-        // loop through each byte in the array to construct the bitmap
-        // for (uint256 i = 1; i < orderedBytesArray.length; ++i) {
-        //     // check that the entry is *strictly greater than* the previous entry. enforces both ordering and non-duplication in the array
-        //     require(uint256(uint8(orderedBytesArray[i])) > uint256(uint8(singleByte)),
-        //         "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
-        //     // pull the next byte out of the array
-        //     singleByte = orderedBytesArray[i];
-        //     // construct a single-bit mask from the numerical value of the byte
-        //     bitMask = uint256(1 << uint8(singleByte));
-        //     // add the entry to the bitmap
-        //     bitmap = (bitmap | bitMask);
-        // }
-        return bitmap;
     }
+
 
     /**
      * @notice Utility function for checking if a bytes array is strictly ordered, in ascending order.
