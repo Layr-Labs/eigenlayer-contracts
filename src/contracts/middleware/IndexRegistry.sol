@@ -29,11 +29,11 @@ contract IndexRegistry is IIndexRegistry {
     }
     function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external onlyRegistryCoordinator {
         //add operator to operatorList
+        globalOperatorList.push(operatorId);
+
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
             quorumToOperatorList[quorumNumber].push(operatorId);
-            globalOperatorList.push(operatorId);
-
             _updateOperatorIdToIndexHistory(operatorId, quorumNumber);
             _updateTotalOperatorHistory(quorumNumber);
         }
@@ -45,7 +45,6 @@ contract IndexRegistry is IIndexRegistry {
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
-
             _removeOperatorFromQuorumToOperatorList(quorumNumber, quorumToOperatorListIndexes[i]);
             _updateTotalOperatorHistory(quorumNumber);
         }
