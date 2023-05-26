@@ -79,6 +79,73 @@ library BytesArrayBitmaps {
     }
 
     /**
+     * @notice Converts an ordered array of bytes into a bitmap.
+     * @param orderedBytesArray The array of bytes to convert/compress into a bitmap. Must be in strictly ascending order.
+     * @return The resulting bitmap.
+     * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap.
+     * @dev This function will eventually revert in the event that the `orderedBytesArray` is not properly ordered (in ascending order).
+     */
+    function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) internal pure returns (uint256) {
+        // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
+        require(orderedBytesArray.length <= 256, "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+        // return empty bitmap early if length of array is 0
+        if (orderedBytesArray.length == 0) {
+            return uint256(0);
+        }
+
+        // initialize the empty bitmap, to be built inside the loop
+        uint256 bitmap;
+
+        bytes1 singleByte;
+
+        assembly {
+            calldatacopy(
+                singleByte,
+                add(orderedBytesArray.offset,
+                    64
+                ),
+                8
+            )
+            bitmap :=
+                or(bitmap,
+                    shl(
+                        mload(singleByte),
+                        1
+                    )
+                )
+        }
+
+/*
+        assembly {
+            bitmap :=
+                or(bitmap,
+                    shl(calldataload(
+                            add(orderedBytesArray.offset,
+                                32
+                            )
+                        ),
+                        1
+                    )
+                )
+        }
+*/
+
+        // loop through each byte in the array to construct the bitmap
+        // for (uint256 i = 1; i < orderedBytesArray.length; ++i) {
+        //     // check that the entry is *strictly greater than* the previous entry. enforces both ordering and non-duplication in the array
+        //     require(uint256(uint8(orderedBytesArray[i])) > uint256(uint8(singleByte)),
+        //         "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+        //     // pull the next byte out of the array
+        //     singleByte = orderedBytesArray[i];
+        //     // construct a single-bit mask from the numerical value of the byte
+        //     bitMask = uint256(1 << uint8(singleByte));
+        //     // add the entry to the bitmap
+        //     bitmap = (bitmap | bitMask);
+        // }
+        return bitmap;
+    }
+
+    /**
      * @notice Utility function for checking if a bytes array is strictly ordered, in ascending order.
      * @param bytesArray the bytes array of interest
      * @return Returns 'true' if the array is ordered in strictly ascending order, and 'false' otherwise.

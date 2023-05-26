@@ -43,28 +43,36 @@ contract BytesArrayBitmapsUnitTests is Test {
 
     // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays
-    function testBytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public {
+    function testBytesArrayToBitmapToBytesArray(bytes memory originalBytesArray) public view {
         // filter down to only ordered inputs
         cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
-        emit log_named_bytes("originalBytesArray", originalBytesArray);
-        emit log_named_uint("bitmap", bitmap);
-        emit log_named_bytes("returnedBytesArray", returnedBytesArray);
+        // emit log_named_bytes("originalBytesArray", originalBytesArray);
+        // emit log_named_uint("bitmap", bitmap);
+        // emit log_named_bytes("returnedBytesArray", returnedBytesArray);
         require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
             "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
     }
 
     // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
     // note that this only works on ordered arrays
-    function testBytesArrayToBitmapToBytesArray_OrderedVersion(bytes memory originalBytesArray) public {
+    function testBytesArrayToBitmapToBytesArray_OrderedVersion(bytes memory originalBytesArray) public view {
         // filter down to only ordered inputs
         cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
         uint256 bitmap = bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
         bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
-        emit log_named_bytes("originalBytesArray", originalBytesArray);
-        emit log_named_uint("bitmap", bitmap);
-        emit log_named_bytes("returnedBytesArray", returnedBytesArray);
+        require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+            "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
+    function testBytesArrayToBitmapToBytesArray_OrderedVersion_Yul(bytes memory originalBytesArray) public view {
+        // filter down to only ordered inputs
+        cheats.assume(bytesArrayBitmapsWrapper.isArrayStrictlyAscendingOrdered(originalBytesArray));
+        uint256 bitmap = bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
+        bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
         require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
             "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
     }
@@ -74,5 +82,44 @@ contract BytesArrayBitmapsUnitTests is Test {
         bytes memory bytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(originalBitmap);
         uint256 returnedBitMap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(bytesArray);
         require(returnedBitMap == originalBitmap, "BytesArrayBitmapsUnitTests.testBitMapToArrayToBitmap: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
+    function testBytesArrayToBitmapToBytesArray_OrderedVersion_Yul_SpecificInput(/*bytes memory originalBytesArray*/) public view {
+        bytes memory originalBytesArray =
+            abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
+        // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
+        bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap_Yul(originalBytesArray);
+        // uint256 bitmap = bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap_Yul(originalBytesArray);
+        // bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
+        // require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+        //     "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
+    function testBytesArrayToBitmapToBytesArray_OrderedVersion_SpecificInput(/*bytes memory originalBytesArray*/) public view {
+        bytes memory originalBytesArray =
+            abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
+        // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
+        bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
+        // uint256 bitmap = bytesArrayBitmapsWrapper.orderedBytesArrayToBitmap(originalBytesArray);
+        // bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
+        // require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+        //     "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
+    }
+
+    // ensure that converting bytes array => bitmap => bytes array is returns the original bytes array (i.e. is lossless and artifactless)
+    // note that this only works on ordered arrays
+    function testBytesArrayToBitmapToBytesArray_SpecificInput(/*bytes memory originalBytesArray*/) public view {
+        bytes memory originalBytesArray =
+            abi.encodePacked(bytes1(uint8(5)), bytes1(uint8(6)), bytes1(uint8(7)), bytes1(uint8(8)), bytes1(uint8(9)), bytes1(uint8(10)), bytes1(uint8(11)), bytes1(uint8(12)));
+        // bytes memory originalBytesArray = abi.encodePacked(bytes1(uint8(5)));
+        bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
+        // uint256 bitmap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(originalBytesArray);
+        // bytes memory returnedBytesArray = bytesArrayBitmapsWrapper.bitmapToBytesArray(bitmap);
+        // require(keccak256(abi.encodePacked(originalBytesArray)) == keccak256(abi.encodePacked(returnedBytesArray)),
+        //     "BytesArrayBitmapsUnitTests.testBytesArrayToBitmapToBytesArray: output doesn't match input");
     }
 }
