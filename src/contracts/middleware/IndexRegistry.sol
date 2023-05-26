@@ -11,7 +11,7 @@ contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator registryCoordinator;
     
-    uint32 public numOperators;
+    bytes32[] public globalOperatorList;
     mapping(uint8 => bytes32[]) public quorumToOperatorList;
 
     mapping(bytes32 => mapping(uint8 => OperatorIndex[])) operatorIdToIndexHistory;
@@ -33,23 +33,23 @@ contract IndexRegistry is IIndexRegistry {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
             quorumToOperatorList[quorumNumber].push(operatorId);
+            globalOperatorList.push(operatorId);
 
             _updateOperatorIdToIndexHistory(operatorId, quorumNumber);
-             _updateTotalOperatorHistory(quorumNumber);
+            _updateTotalOperatorHistory(quorumNumber);
         }
-        numOperators += 1;
     }
 
-    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory indexes) external onlyRegistryCoordinator {
+    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == indexes.length, "IndexRegistry.deregisterOperator: quorumNumbers and indexes must be the same length");
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = quorumNumbers[i];
 
-            _removeOperatorFromQuorumToOperatorList(quorumNumber, indexes);   
+            _removeOperatorFromQuorumToOperatorList(quorumNumber, quorumToOperatorListIndexes[i]);
+            _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
             _updateTotalOperatorHistory(quorumNumber);
         }
-        numOperators -= 1;
     }
 
     /**
@@ -133,8 +133,18 @@ contract IndexRegistry is IIndexRegistry {
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber);
 
             quorumToOperatorList[quorumNumber][indexToRemove] = operatorIdToSwap;
-            quorumToOperatorList[quorumNumber].pop();
         }
+        quorumToOperatorList[quorumNumber].pop();
+    }
+
+    function _removeOperatorFromGlobalOperatorList(uint32 indexToRemove) internal {
+        uint32 globalOperatorListLastIndex = globalOperatorList.length - 1;
+
+        if(indexToRemove != globalOperatorListLastIndex){
+            bytes32 operatorIdToSwap = globalOperatorList[globalOperatorListLastIndex];
+            globalOperatorList[indexToRemove] = operatorIdToSwap;
+        }
+        globalOperatorList.pop();
     }
 
 

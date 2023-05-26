@@ -34,7 +34,7 @@ interface IIndexRegistry is IRegistry {
      * @param indexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
      * @dev Permissioned by RegistryCoordinator
      */
-    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory indexes) external;
+    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external;
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
