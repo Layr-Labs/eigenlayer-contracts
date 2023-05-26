@@ -15,6 +15,13 @@ contract BytesArrayBitmapsUnitTests is Test {
         bytesArrayBitmapsWrapper = new BytesArrayBitmapsWrapper();
     }
 
+    // ensure that the bitmap encoding of an emtpy bytes array is an emtpy bitmap (function doesn't revert and approriately returns uint256(0))
+    function testEmptyArrayEncoding() public view {
+        bytes memory emptyBytesArray;
+        uint256 returnedBitMap = bytesArrayBitmapsWrapper.bytesArrayToBitmap(emptyBytesArray);
+        require(returnedBitMap == 0, "BytesArrayBitmapsUnitTests.testEmptyArrayEncoding: empty array not encoded to empty bitmap");
+    }
+
     // ensure that the bitmap encoding of a single uint8 (i.e. a single byte) matches the expected output
     function testSingleByteEncoding(uint8 fuzzedNumber) public view {
         bytes1 singleByte = bytes1(fuzzedNumber);
