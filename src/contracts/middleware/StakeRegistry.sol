@@ -437,7 +437,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             // copy latest totalStakes to memory
             _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1].stake - stakeBeforeUpdate;
             // update storage of total stake
-            _recordTotalStakeUpdate(quorumNumber, currentTotalStakeUpdate);
+            _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
 
             emit StakeUpdate(
                 operatorId,

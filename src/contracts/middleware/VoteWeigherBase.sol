@@ -15,7 +15,7 @@ import "./VoteWeigherBaseStorage.sol";
  * by the middleware for each of the quorum(s)
  * @dev
  */
-abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
+contract VoteWeigherBase is VoteWeigherBaseStorage {
     /// @notice emitted when a new quorum is created
     event QuorumCreated(uint8 indexed quorumNumber);
     /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]`

@@ -15,15 +15,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
-    /**
-     * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
-     * multiplied by its multiplier, then divided by WEIGHTING_DIVISOR
-     */
-    struct StrategyAndWeightingMultiplier {
-        IStrategy strategy;
-        uint96 multiplier;
-    }
-
     /// @notice Constant used as a divisor in calculating weights.
     uint256 internal constant WEIGHTING_DIVISOR = 1e18;
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
