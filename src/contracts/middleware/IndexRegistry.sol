@@ -44,7 +44,7 @@ contract IndexRegistry is IIndexRegistry {
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumToOperatorList[quorumNumber].push(operatorId);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i]);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i], quorumToOperatorList[quorumNumber].length - 1);
             _updateTotalOperatorHistory(quorumNumbers[i]);
         }
     }
@@ -139,7 +139,7 @@ contract IndexRegistry is IIndexRegistry {
     /// @param operatorId operatorId of the operator to update
     /// @param quorumNumber quorumNumber of the operator to update
     /// @param index the latest index of that operator in quorumToOperatorList
-    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber) internal {
+    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
 
         //if there is a prior entry for the operator, set the previous entry's toBlocknumber
@@ -147,7 +147,7 @@ contract IndexRegistry is IIndexRegistry {
             operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
-        latestOperatorIndex.index = quorumToOperatorList[quorumNumber].length - 1;
+        latestOperatorIndex.index = index;
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
