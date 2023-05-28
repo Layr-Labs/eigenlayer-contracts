@@ -73,6 +73,11 @@ contract IndexRegistryUnitTests is Test {
         cheats.startPrank(address(registryCoordinatorMock));
         indexRegistry.deregisterOperator(operatorId1, quorumNumbers, quorumToOperatorListIndexes, 0);
         cheats.stopPrank();
+
+        require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
+        require(indexRegistry.quorumToOperatorList(1, 0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
+        require(indexRegistry.quorumToOperatorList(2, 0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
+        require(indexRegistry.globalOperatorList(0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
     }
 
     function _registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) public {
