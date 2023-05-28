@@ -42,7 +42,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         _;
     }
 
-
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IBLSPublicKeyCompendium _pubkeyCompendium
