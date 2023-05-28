@@ -157,7 +157,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             emit log_named_uint("pubkey.X", point.X);
             emit log_named_uint("pubkey.Y", point.Y);
 
-            apkAfterUpdate = BN254.plus(apkBeforeUpdate, point);
+            apkAfterUpdate = apkBeforeUpdate.plus(point)
             //update aggregate public key for this quorum
             quorumToApk[quorumNumber] = apkAfterUpdate;
             //update nextUpdateBlockNumber of the current latest ApkUpdate
