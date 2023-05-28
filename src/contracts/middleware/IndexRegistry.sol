@@ -174,6 +174,8 @@ contract IndexRegistry is IIndexRegistry {
         quorumToOperatorList[quorumNumber].pop();
     }
 
+    /// @notice remove an operator from the globalOperatorList  
+    /// @param indexToRemove index of the operator to remove
     function _removeOperatorFromGlobalOperatorList(uint32 indexToRemove) internal {
         uint32 globalOperatorListLastIndex = globalOperatorList.length - 1;
 
