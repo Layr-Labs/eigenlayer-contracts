@@ -10,10 +10,15 @@ import "../libraries/BN254.sol";
 contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator public registryCoordinator;
+
+    // list of all unique registered operators
     bytes32[] public globalOperatorList;
 
+    // mapping of quorumNumber => list of operators registered for that quorum
     mapping(uint8 => bytes32[]) public quorumToOperatorList;
+    // mapping of operatorId => quorumNumber => index history of that operator
     mapping(bytes32 => mapping(uint8 => OperatorIndex[])) public operatorIdToIndexHistory;
+    // mapping of quorumNumber => history of numbers of unique registered operators
     mapping(uint8 => OperatorIndex[]) public totalOperatorsHistory;
 
     modifier onlyRegistryCoordinator() {
@@ -39,7 +44,7 @@ contract IndexRegistry is IIndexRegistry {
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumToOperatorList[quorumNumber].push(operatorId);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i], quorumToOperatorList[quorumNumber].length - 1);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i]);
             _updateTotalOperatorHistory(quorumNumbers[i]);
         }
     }
@@ -133,7 +138,7 @@ contract IndexRegistry is IIndexRegistry {
     /// @param operatorId operatorId of the operator to update
     /// @param quorumNumber quorumNumber of the operator to update
     /// @param index the latest index of that operator in quorumToOperatorList
-    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
+    function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
 
         //if there is a prior entry for the operator, set the previous entry's toBlocknumber
@@ -141,7 +146,7 @@ contract IndexRegistry is IIndexRegistry {
             operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = block.number;
         }
         OperatorIndex memory latestOperatorIndex;
-        latestOperatorIndex.index = index; 
+        latestOperatorIndex.index = quorumToOperatorList[quorumNumber].length - 1;
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
