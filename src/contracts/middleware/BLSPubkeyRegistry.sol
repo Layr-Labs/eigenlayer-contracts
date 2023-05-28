@@ -70,7 +70,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey);
 
-        emit PubkeyAdded(operator, pubkeyHash);
+        emit PubkeyAdded(operator, pubkey);
+        return pubkeyHash;
     }
 
     /**
@@ -88,7 +89,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey.negate());
 
-        emit PubkeyRemoved(operator, pubkeyHash);
+        emit PubkeyRemoved(operator, pubkey);
+        return pubkeyHash;
     }
 
     /// @notice returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
@@ -190,7 +192,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         }));
     }
 
-    function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal{
+    function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
         require(
             blockNumber >= apkUpdate.updateBlockNumber, 
             "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"
