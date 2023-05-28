@@ -130,7 +130,8 @@ contract IndexRegistry is IIndexRegistry {
         }
 
         OperatorIndex memory totalOperatorUpdate;
-        totalOperatorUpdate.index = quorumToOperatorList[quorumNumber].length - 1;
+        // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
+        totalOperatorUpdate.index = quorumToOperatorList[quorumNumber].length;
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
