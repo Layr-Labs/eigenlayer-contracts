@@ -45,6 +45,9 @@ interface IVoteWeigher {
      */
     function quorumBips(uint8 quorumNumber) external view returns (uint256);
 
+    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (StrategyAndWeightingMultiplier memory);
+
     /// @notice Create a new quorum and add the strategies and their associated weights to the quorum.
     function createQuorum(
         StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers
@@ -64,7 +67,6 @@ interface IVoteWeigher {
      */
     function removeStrategiesConsideredAndMultipliers(
         uint8 quorumNumber,
-        IStrategy[] calldata _strategiesToRemove,
         uint256[] calldata indicesToRemove
     ) external;
 
