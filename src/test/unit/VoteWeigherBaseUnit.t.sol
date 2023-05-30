@@ -45,6 +45,8 @@ contract VoteWeigherBaseUnitTests is Test {
     event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy, uint96 multiplier);
     /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
@@ -410,6 +412,56 @@ contract VoteWeigherBaseUnitTests is Test {
         cheats.prank(notServiceManagerOwner);
         cheats.expectRevert("VoteWeigherBase.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
         voteWeigher.modifyStrategyWeights(quorumNumber, strategyIndices, newWeights);
+    }
+
+    function testModifyStrategyWeights_Valid(
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+        uint256[] memory strategyIndices,
+        uint96[] memory newWeights
+    ) public {
+        strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
+
+        // take indices modulo length
+        for (uint256 i = 0; i < strategyIndices.length; i++) {
+            strategyIndices[i] = strategyIndices[i] % strategiesAndWeightingMultipliers.length;
+        }
+        strategyIndices = _removeDuplicatesUint256(strategyIndices);
+        cheats.assume(strategyIndices.length > 0);
+        cheats.assume(strategyIndices.length < strategiesAndWeightingMultipliers.length);
+
+        // trim the provided weights to the length of the strategyIndices
+        uint96[] memory newWeightsTrim = new uint96[](strategyIndices.length);
+        for (uint256 i = 0; i < strategyIndices.length; i++) {
+            if(i < newWeights.length) {
+                newWeightsTrim[i] = newWeights[i];
+            } else {
+                newWeightsTrim[i] = strategiesAndWeightingMultipliers[strategyIndices[i]].multiplier - 1;
+            }
+        }
+        newWeights = newWeightsTrim;
+
+        // create a valid quorum
+        uint8 quorumNumber = voteWeigher.quorumCount();
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
+
+        // modify certain strategies
+        for (uint i = 0; i < strategyIndices.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(voteWeigher));
+            emit StrategyMultiplierUpdated(quorumNumber, strategiesAndWeightingMultipliers[strategyIndices[i]].strategy, newWeights[i]);
+        }
+        voteWeigher.modifyStrategyWeights(quorumNumber, strategyIndices, newWeights);
+
+        // convert the strategies and weighting multipliers to the modified
+        for (uint i = 0; i < strategyIndices.length; i++) {
+            strategiesAndWeightingMultipliers[strategyIndices[i]].multiplier = newWeights[i];
+        }
+        // make sure the quorum strategies and weights have changed
+        for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
+            IVoteWeigher.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
+            assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
+            assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
+        }
     }
 
     function testModifyStrategyWeights_ForNonExistantQuorum_Reverts(
