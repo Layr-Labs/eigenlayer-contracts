@@ -52,7 +52,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev returns zero in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
-    function weightOfOperator(address operator, uint8 quorumNumber) public virtual returns (uint96) {
+    function weightOfOperator(uint8 quorumNumber, address operator) public virtual returns (uint96) {
         uint96 weight;
 
         if (quorumNumber < quorumCount) {
@@ -69,12 +69,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
 
                 // add the weight from the shares for this strategy to the total weight
                 if (sharesAmount > 0) {
-                    weight += uint96(
-                        (
-                            (strategyAndMultiplier.strategy).sharesToUnderlying(sharesAmount)
-                                * strategyAndMultiplier.multiplier
-                        ) / WEIGHTING_DIVISOR
-                    );
+                    weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
                 }
 
                 unchecked {

@@ -603,7 +603,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
             // evaluate the stake for the operator
             if(quorumBitmap >> quorumNumber & 1 == 1) {
-                _operatorStakeUpdate.stake = uint96(weightOfOperator(operator, quorumNumber));
+                _operatorStakeUpdate.stake = uint96(weightOfOperator(quorumNumber, operator));
                 // check if minimum requirement has been met
                 require(_operatorStakeUpdate.stake >= minimumStakeForQuorum[quorumNumber], "RegistryBase._registerStake: Operator does not meet minimum stake requirement for quorum");
                 // check special case that operator is re-registering (and thus already has some history)
@@ -649,7 +649,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
         if (quorumBitmap >> quorumNumber & 1 == 1) {
             // determine new stakes
             operatorStakeUpdate.updateBlockNumber = uint32(block.number);
-            operatorStakeUpdate.stake = weightOfOperator(operator, quorumNumber);
+            operatorStakeUpdate.stake = weightOfOperator(quorumNumber, operator);
 
             // check if minimum requirements have been met
             if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {

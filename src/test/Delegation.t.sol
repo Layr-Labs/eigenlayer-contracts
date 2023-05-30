@@ -133,8 +133,8 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         uint256[3] memory amountsBefore;
-        amountsBefore[0] = voteWeigher.weightOfOperator(operator, 0);
-        amountsBefore[1] = voteWeigher.weightOfOperator(operator, 1);
+        amountsBefore[0] = voteWeigher.weightOfOperator(0, operator);
+        amountsBefore[1] = voteWeigher.weightOfOperator(1, operator);
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the  strategies
@@ -151,8 +151,8 @@ contract DelegationTests is EigenLayerTestHelper {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
             uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
-            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
+            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperator(0, operator);
+            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperator(1, operator);
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
@@ -350,8 +350,8 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(staker != operator);
 
         cheats.assume(numStratsToAdd > 0 && numStratsToAdd <= 20);
-        uint96 operatorEthWeightBefore = voteWeigher.weightOfOperator(operator, 0);
-        uint96 operatorEigenWeightBefore = voteWeigher.weightOfOperator(operator, 1);
+        uint96 operatorEthWeightBefore = voteWeigher.weightOfOperator(0, operator);
+        uint96 operatorEigenWeightBefore = voteWeigher.weightOfOperator(1, operator);
         _testRegisterAsOperator(operator, IDelegationTerms(operator));
         _testDepositStrategies(staker, 1e18, numStratsToAdd);
 
@@ -371,8 +371,8 @@ contract DelegationTests is EigenLayerTestHelper {
 
         _testDepositEigen(staker, 1e18);
         _testDelegateToOperator(staker, operator);
-        uint96 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
-        uint96 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
+        uint96 operatorEthWeightAfter = voteWeigher.weightOfOperator(0, operator);
+        uint96 operatorEigenWeightAfter = voteWeigher.weightOfOperator(1, operator);
         assertTrue(
             operatorEthWeightAfter > operatorEthWeightBefore, "testDelegation: operatorEthWeight did not increase!"
         );

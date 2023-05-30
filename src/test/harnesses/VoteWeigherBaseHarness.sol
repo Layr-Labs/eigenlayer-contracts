@@ -13,4 +13,8 @@ contract VoteWeigherBaseHarness is VoteWeigherBase {
     function getMaxWeighingFunctionLength() public pure returns (uint8) {
         return MAX_WEIGHING_FUNCTION_LENGTH;
     }
+
+    function getWeightingDivisor() public pure returns (uint256) {
+        return WEIGHTING_DIVISOR;
+    }
 }

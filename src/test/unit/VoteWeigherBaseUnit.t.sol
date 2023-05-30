@@ -15,6 +15,7 @@ import "../harnesses/VoteWeigherBaseHarness.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/OwnableMock.sol";
+import "../mocks/DelegationMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -28,6 +29,8 @@ contract VoteWeigherBaseUnitTests is Test {
 
     address serviceManagerOwner;
     IServiceManager public serviceManager;
+
+    DelegationMock delegationMock;
 
     VoteWeigherBaseHarness public voteWeigher;
 
@@ -53,7 +56,15 @@ contract VoteWeigherBaseUnitTests is Test {
 
         pauserRegistry = new PauserRegistry(pauser, unpauser);
 
-        strategyManager = new StrategyManagerMock();
+        StrategyManagerMock strategyManagerMock = new StrategyManagerMock();
+        delegationMock = new DelegationMock();
+        strategyManagerMock.setAddresses(
+            delegationMock,
+            IEigenPodManager(address(uint160(uint256(keccak256(abi.encodePacked("eigenPodManager")))))),
+            ISlasher(address(uint160(uint256(keccak256(abi.encodePacked("slasher"))))))
+        );
+
+        strategyManager = IStrategyManager(address(strategyManagerMock));
 
         // make the serviceManagerOwner the owner of the serviceManager contract
         cheats.prank(serviceManagerOwner);
@@ -519,6 +530,37 @@ contract VoteWeigherBaseUnitTests is Test {
             assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
             assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
         }
+    }
+
+    function testWeightOfOperator(
+        address operator,
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers,
+        uint96[] memory shares
+    ) public {
+        strategiesAndMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndMultipliers);
+        cheats.assume(shares.length >= strategiesAndMultipliers.length);
+        for (uint i = 0; i < strategiesAndMultipliers.length; i++) {
+            cheats.assume(uint256(shares[i]) * uint256(strategiesAndMultipliers[i].multiplier) <= type(uint96).max);
+        }
+
+        // set the operator shares
+        for (uint i = 0; i < strategiesAndMultipliers.length; i++) {
+            delegationMock.setOperatorShares(operator, strategiesAndMultipliers[i].strategy, shares[i]);
+        }
+
+        // create a valid quorum
+        uint8 quorumNumber = voteWeigher.quorumCount();
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(strategiesAndMultipliers);
+
+        // make sure the weight of the operator is correct
+        uint256 expectedWeight = 0;
+        for (uint i = 0; i < strategiesAndMultipliers.length; i++) {
+            
+            expectedWeight += shares[i] * strategiesAndMultipliers[i].multiplier / voteWeigher.getWeightingDivisor();
+        }
+
+        assertEq(voteWeigher.weightOfOperator(quorumNumber, operator), expectedWeight);
     }
 
     function _removeDuplicates(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) 

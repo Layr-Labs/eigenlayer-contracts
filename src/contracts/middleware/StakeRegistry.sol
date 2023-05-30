@@ -462,7 +462,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
         // determine new stakes
         OperatorStakeUpdate memory operatorStakeUpdate;
         operatorStakeUpdate.updateBlockNumber = uint32(block.number);
-        operatorStakeUpdate.stake = weightOfOperator(operator, quorumNumber);
+        operatorStakeUpdate.stake = weightOfOperator(quorumNumber, operator);
 
         // check if minimum requirements have been met
         if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {
