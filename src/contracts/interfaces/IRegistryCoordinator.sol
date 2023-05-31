@@ -7,7 +7,7 @@ pragma solidity =0.8.12;
  */
 interface IRegistryCoordinator {
     // DATA STRUCTURES
-    enum Status
+    enum OperatorStatus
     {
         // default is inactive
         INACTIVE,
@@ -23,13 +23,10 @@ interface IRegistryCoordinator {
         // start taskNumber from which the  operator has been registered
         uint32 fromTaskNumber;
         // indicates whether the operator is actively registered for serving the middleware or not
-        Status status;
+        OperatorStatus status;
     }
 
-    /// @notice Returns the bitmap of the quroums the operator is registered for.
-    function operatorIdToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256);
-
-    /// @notice Returns the stored id for the specified `operator`.
+    /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
 
     /// @notice Returns task number from when `operator` has been registered.
@@ -42,8 +39,8 @@ interface IRegistryCoordinator {
     function numRegistries() external view returns (uint256);
 
     /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
-    function registerOperator(bytes memory quorumNumbers, bytes calldata) external returns (bytes32);
+    function registerOperator(bytes memory quorumNumbers, bytes calldata) external;
 
     /// @notice deregisters the sender with additional bytes for registry interaction data
-    function deregisterOperator(bytes calldata) external returns (bytes32);
+    function deregisterOperator(bytes calldata) external;
 }

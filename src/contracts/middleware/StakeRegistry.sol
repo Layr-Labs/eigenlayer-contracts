@@ -5,27 +5,13 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
-import "./VoteWeigherBase.sol";
+import "./StakeRegistryStorage.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
-
-    IRegistryCoordinator public registryCoordinator;
-
-    // TODO: set these on initialization
-    /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as
-    /// evaluated by this contract's 'VoteWeigher' logic.
-    uint96[256] public minimumStakeForQuorum;
-
-    /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    OperatorStakeUpdate[][256] internal totalStakeHistory;
-
-    /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
-
+contract StakeRegistry is StakeRegistryStorage {
     // EVENTS
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
@@ -34,13 +20,10 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
         uint96 stake
     );
 
-    /**
-     * @notice Irrevocably sets the (immutable) `delegation` & `strategyManager` addresses, and `NUMBER_OF_QUORUMS` variable.
-     */
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager)
+    ) StakeRegistryStorage(_strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
     }
@@ -50,21 +33,19 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
      * to record an initial condition of zero operators with zero total stake.
      * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
      */
+    function initialize(
+        uint96[] memory _minimumStakeForQuorum,
+        StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
+    ) external virtual initializer {
+        _initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+    }
+
     function _initialize(
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
         // sanity check lengths
         require(_minimumStakeForQuorum.length == _quorumStrategiesConsideredAndMultipliers.length, "Registry._initialize: minimumStakeForQuorum length mismatch");
-        // push an empty OperatorStakeUpdate struct to the total stake history to record starting with zero stake
-        // TODO: Address this @ gpsanant
-        OperatorStakeUpdate memory _totalStakeUpdate;
-        for (uint quorumNumber = 0; quorumNumber < 256;) {
-            totalStakeHistory[quorumNumber].push(_totalStakeUpdate);
-            unchecked {
-                ++quorumNumber;
-            }
-        }
 
         // add the strategies considered and multipliers for each quorum
         for (uint8 quorumNumber = 0; quorumNumber < _quorumStrategiesConsideredAndMultipliers.length;) {
@@ -163,6 +144,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
     }
 
     /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
+    /// @dev Will revert if `totalStakeHistory[quorumNumber]` is empty.
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
         // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
         return totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake;
@@ -274,7 +256,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external virtual {
+    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
         _registerOperator(operator, operatorId, quorumNumbers);
     }
 
@@ -291,7 +273,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external virtual {
+    function deregisterOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
         _deregisterOperator(operator, operatorId, quorumNumbers);
     }
 
@@ -303,8 +285,9 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
      * @dev Precondition:
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
+     * @dev reverts if there are no operators registered with index out of bounds
      */
-    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory quorumBitmaps, uint256[] memory prevElements) external {
+    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint256[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
         // for each quorum, loop through operators and see if they are apart of the quorum
         // if they are, get their new weight and update their individual stake history and thes
         // quorum's total stake history accordingly
@@ -352,7 +335,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
     function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
         require(
             slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-            "RegistryBase._addRegistrant: operator must be opted into slashing by the serviceManager"
+            "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
         );
         
         // calculate stakes for each quorum the operator is trying to join
@@ -390,7 +373,13 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             // check if minimum requirement has been met, will be 0 if not
             require(stake != 0, "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
             // add operator stakes to total stake before update (in memory)
-            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake + stake;
+            uint256 totalStakeHistoryLength = totalStakeHistory[quorumNumber].length;
+            if (totalStakeHistoryLength != 0) {
+                // only add the stake if there is a previous total stake
+                // overwrite `stake` variable
+                stake += totalStakeHistory[quorumNumber][totalStakeHistoryLength - 1].stake;
+            }
+            _newTotalStakeUpdate.stake = stake;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
             unchecked {
@@ -430,7 +419,7 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
             // subtract the amounts staked by the operator that is getting deregistered from the total stake before deregistration
             // copy latest totalStakes to memory
-            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory.length - 1].stake - stakeBeforeUpdate;
+            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake - stakeBeforeUpdate;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
 
@@ -494,8 +483,11 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
 
     /// @notice Records that the `totalStake` is now equal to the input param @_totalStake
     function _recordTotalStakeUpdate(uint8 quorumNumber, OperatorStakeUpdate memory _totalStake) internal {
+        uint256 totalStakeHistoryLength = totalStakeHistory[quorumNumber].length;
+        if (totalStakeHistoryLength != 0) {
+            totalStakeHistory[quorumNumber][totalStakeHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+        }
         _totalStake.updateBlockNumber = uint32(block.number);
-        totalStakeHistory[quorumNumber][totalStakeHistory.length - 1].nextUpdateBlockNumber = uint32(block.number);
         totalStakeHistory[quorumNumber].push(_totalStake);
     }
 
@@ -503,11 +495,11 @@ contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
     function _validateOperatorStakeUpdateAtBlockNumber(OperatorStakeUpdate memory operatorStakeUpdate, uint32 blockNumber) internal pure {
         require(
             operatorStakeUpdate.updateBlockNumber <= blockNumber,
-            "RegistryBase._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
+            "StakeRegistry._validateOperatorStakeAtBlockNumber: operatorStakeUpdate is from after blockNumber"
         );
         require(
             operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber,
-            "RegistryBase._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
+            "StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
         );
     }
 

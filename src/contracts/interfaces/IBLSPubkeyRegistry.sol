@@ -31,7 +31,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
+    function registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
@@ -47,7 +47,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         5) `quorumNumbers` is the same as the parameter use when registering
      *         6) `pubkey` is the same as the parameter used when registering
      */  
-    function deregisterOperator(address operator, uint8[] memory quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
+    function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
 
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
