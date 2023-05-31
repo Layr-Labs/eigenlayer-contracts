@@ -27,6 +27,8 @@ contract StrategyBaseUnitTests is Test {
     address public pauser = address(555);
     address public unpauser = address(999);
 
+    address depositor = address(405);
+
     uint256 initialSupply = 1e36;
     address initialOwner = address(this);
 
@@ -75,7 +77,7 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.startPrank(address(strategyManager));
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
-        strategy.deposit(underlyingToken, amountToDeposit);
+        strategy.deposit(depositor, underlyingToken, amountToDeposit);
         cheats.stopPrank();
     }
 
@@ -89,7 +91,7 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
-        uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
+        uint256 newShares = strategy.deposit(depositor, underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
@@ -110,7 +112,7 @@ contract StrategyBaseUnitTests is Test {
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.startPrank(address(strategyManager));
-        uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
+        uint256 newShares = strategy.deposit(depositor, underlyingToken, amountToDeposit);
         cheats.stopPrank();
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
@@ -129,7 +131,7 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.expectRevert(bytes("Pausable: index is paused"));
         cheats.startPrank(address(strategyManager));
-        strategy.deposit(underlyingToken, amountToDeposit);
+        strategy.deposit(depositor, underlyingToken, amountToDeposit);
         cheats.stopPrank();
     }
 
@@ -142,7 +144,7 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
         cheats.startPrank(caller);
-        strategy.deposit(underlyingToken, amountToDeposit);
+        strategy.deposit(depositor, underlyingToken, amountToDeposit);
         cheats.stopPrank();
     }
 
@@ -153,7 +155,7 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.expectRevert(bytes("StrategyBase.deposit: Can only deposit underlyingToken"));
         cheats.startPrank(address(strategyManager));
-        strategy.deposit(IERC20(notUnderlyingToken), amountToDeposit);
+        strategy.deposit(depositor, IERC20(notUnderlyingToken), amountToDeposit);
         cheats.stopPrank();
     }
 
@@ -308,7 +310,7 @@ contract StrategyBaseUnitTests is Test {
     function testDeposit_ZeroAmount() public {
         cheats.startPrank(address(strategyManager));
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
-        strategy.deposit(underlyingToken, 0);
+        strategy.deposit(depositor, underlyingToken, 0);
         cheats.stopPrank();
     }
 

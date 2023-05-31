@@ -19,7 +19,7 @@ contract StrategyTests is EigenLayerTestHelper {
 
         cheats.startPrank(invalidDepositor);
         cheats.expectRevert(bytes("StrategyBase.onlyStrategyManager"));
-        wethStrat.deposit(underlyingToken, 1e18);
+        wethStrat.deposit(invalidDepositor, underlyingToken, 1e18);
         cheats.stopPrank();
     }
 

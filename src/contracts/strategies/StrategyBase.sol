@@ -170,10 +170,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
+     * @param depositor The address that will receive the shares
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
+    function _beforeDeposit(address depositor, IERC20 token, uint256 amount)  internal virtual {}
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.

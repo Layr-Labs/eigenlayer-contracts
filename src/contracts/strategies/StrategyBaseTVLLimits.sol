@@ -17,7 +17,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
     uint256 public maxTotalDeposits;
 
     /// @notice Emitted when `maxDepositPerAddress` value is updated from `previousValue` to `newValue`
-    event MaxPerDepositPerAddressUpdated(uint256 previousValue, uint256 newValue);
+    event MaxDepositPerAddressUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
     event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
@@ -52,7 +52,7 @@ contract StrategyBaseTVLLimits is StrategyBase {
 
     /// @notice Internal setter for TVL limits
     function _setTVLLimits(uint256 newMaxDepositPerAddress, uint256 newMaxTotalDeposits) internal {
-        emit MaxPerDepositUpdated(newMaxDepositPerAddress, newMaxPerDeposit);
+        emit MaxDepositPerAddressUpdated(maxDepositPerAddress, newMaxDepositPerAddress);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
         require(newMaxDepositPerAddress <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
         maxDepositPerAddress = newMaxDepositPerAddress;
