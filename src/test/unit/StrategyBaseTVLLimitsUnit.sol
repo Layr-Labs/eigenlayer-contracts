@@ -79,6 +79,19 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.stopPrank();
     }
 
+    function testCheckMaxDepositPerAddressAccounting(uint256 maxDepositPerAddressFuzzedInput, uint256 maxTotalDepositsFuzzedInput, uint256 amount) public {
+        cheats.assume(amount < initialSupply);
+        cheats.assume(amount < maxDepositPerAddressFuzzedInput);
+        cheats.assume(amount != 0);
+        _setTVLLimits(maxDepositPerAddressFuzzedInput, maxTotalDepositsFuzzedInput);
+        uint256 depositAmountBefore = strategyWithTVLLimits.depositorToDepositAmount(depositor);
+        underlyingToken.transfer(address(strategyWithTVLLimits), amount);
+        cheats.startPrank(address(strategyManager));
+        strategyWithTVLLimits.deposit(depositor, underlyingToken, amount);
+        cheats.stopPrank();
+        require(strategyWithTVLLimits.depositorToDepositAmount(depositor) - depositAmountBefore == amount, "incorrect storage accounting");
+    }
+
     function testDepositMorethanMaxDeposits() public {
         maxTotalDeposits = 1e12;
         maxDepositPerAddress = 3e11;

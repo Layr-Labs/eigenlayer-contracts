@@ -23,7 +23,7 @@ contract StrategyBaseTVLLimits is StrategyBase, Test {
     /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
     event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 
-    mapping(address=>uint256) depositorToDepositAmount;
+    mapping(address => uint256) public depositorToDepositAmount;
 
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
