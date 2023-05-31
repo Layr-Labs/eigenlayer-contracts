@@ -64,7 +64,11 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         revert("BLSIndexRegistryCoordinator.registerOperator: cannot use overrided StakeRegistry.registerOperator on BLSIndexRegistryCoordinator");
     }
 
-    /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
+    /**
+     * @notice Registers the operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param registrationData is the data that is decoded to get the operator's registration information
+     */
     function registerOperator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
         BN254.G1Point memory pubkey = abi.decode(registrationData, (BN254.G1Point));
@@ -72,6 +76,11 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         _registerOperator(msg.sender, quorumNumbers, pubkey);
     }
 
+    /**
+     * @notice Registers the operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param pubkey is the BLS public key of the operator
+     */
     function registerOperator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
         _registerOperator(msg.sender, quorumNumbers, pubkey);
     }
@@ -79,15 +88,25 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     function deregisterOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.deregisterOperator: cannot use overrided StakeRegistry.deregisterOperator on BLSIndexRegistryCoordinator");
     }
-
+    
+    /**
+     * @notice Deregisters the operator from the middleware
+     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     */
     function deregisterOperator(bytes calldata deregistrationData) external {
-        // get the operator's BLS public key
+        // get the operator's deregisteration information
         (BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) 
             = abi.decode(deregistrationData, (BN254.G1Point, uint32[], uint32));
         // call internal function to deregister the operator
         _deregisterOperator(msg.sender, pubkey, quorumToOperatorListIndexes, globalOperatorListIndex);
     }
 
+    /**
+     * @notice Deregisters the operator from the middleware
+     * @param pubkey is the BLS public key of the operator
+     * @param quorumToOperatorListIndexes is the list of the operator's indexes in the quorums they are registered for in the IndexRegistry
+     * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
+     */
     function deregisterOperator(BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external {
         _deregisterOperator(msg.sender, pubkey, quorumToOperatorListIndexes, globalOperatorListIndex);
     }
@@ -120,6 +139,8 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     }
 
     function _deregisterOperator(address operator, BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) internal {
+        require(operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
+
         // get the operatorId of the operator
         bytes32 operatorId = operators[operator].operatorId;
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperator: operatorId does not match pubkey hash");
@@ -136,6 +157,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         // deregister the operator from the StakeRegistry
         _deregisterOperator(operator, operatorId, quorumNumbers);
 
+        // set the status of the operator to DEREGISTERED
         operators[operator].status = OperatorStatus.DEREGISTERED;
     }
 }
