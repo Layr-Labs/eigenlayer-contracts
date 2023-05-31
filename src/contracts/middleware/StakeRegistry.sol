@@ -8,13 +8,8 @@ import "../interfaces/IRegistryCoordinator.sol";
 import "./VoteWeigherBase.sol";
 
 /**
- * @title An abstract Registry-type contract that is signature scheme agnostic.
+ * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
  * @author Layr Labs, Inc.
- * @notice This contract is used for
- * - registering new operators
- * - committing to and finalizing de-registration as an operator
- * - updating the stakes of the operator
- * @dev This contract is missing key functions. See `BLSRegistry` or `ECDSARegistry` for examples that inherit from this contract.
  */
 contract StakeRegistry is VoteWeigherBase, IStakeRegistry {
 
