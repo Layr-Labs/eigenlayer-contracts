@@ -57,33 +57,33 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
     function testOperatorDoesNotOwnPubKeyRegister(address operator) public {
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(bytes("BLSRegistry._registerOperator: operator does not own pubkey"));
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.registerOperator: operator does not own pubkey"));
         blsPubkeyRegistry.registerOperator(operator, new uint8[](1), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
     function testOperatorDoesNotOwnPubKeyDeregister(address operator) public {
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(bytes("BLSRegistry._deregisterOperator: operator does not own pubkey"));
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.deregisterOperator: operator does not own pubkey"));
         blsPubkeyRegistry.deregisterOperator(operator, new uint8[](1), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
 
     function testOperatorRegisterZeroPubkey() public {
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(bytes("BLSRegistry._registerOperator: cannot register zero pubkey"));
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.registerOperator: cannot register zero pubkey"));
         blsPubkeyRegistry.registerOperator(defaultOperator, new uint8[](1), BN254.G1Point(0, 0));
         cheats.stopPrank();
     }
     function testRegisteringWithNoQuorums() public {
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(bytes("BLSRegistry._registerOperator: must register for at least one quorum"));
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.registerOperator: must register for at least one quorum"));
         blsPubkeyRegistry.registerOperator(defaultOperator, new uint8[](0), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
 
     function testDeregisteringWithNoQuorums() public {
         cheats.startPrank(address(registryCoordinator));
-        cheats.expectRevert(bytes("BLSRegistry._deregisterOperator: must register for at least one quorum"));
+        cheats.expectRevert(bytes("BLSPubkeyRegistry.deregisterOperator: must register for at least one quorum"));
         blsPubkeyRegistry.deregisterOperator(defaultOperator, new uint8[](0), BN254.G1Point(1, 0));
         cheats.stopPrank();
     }
@@ -115,7 +115,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
         for(uint8 i = 0; i < quorumNumbers.length; i++){
-            quorumApksBefore[i] = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
+            quorumApksBefore[i] = blsPubkeyRegistry.getApkForQuorum(quorumNumbers[i]);
         }
 
         cheats.startPrank(defaultOperator);
@@ -128,7 +128,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         //check quorum apk updates
         for(uint8 i = 0; i < quorumNumbers.length; i++){
-            BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
+            BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.getApkForQuorum(quorumNumbers[i]);
             bytes32 temp = BN254.hashG1Point(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i])));
             require(temp == BN254.hashG1Point(defaultPubKey), "quorum apk not updated correctly");
         }
@@ -166,7 +166,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
     function testRegisterWithNegativeQuorumApk(address operator) external {
         testRegisterOperatorBLSPubkey(defaultOperator);
 
-        BN254.G1Point memory quorumApk = blsPubkeyRegistry.quorumApk(defaulQuorumNumber);
+        BN254.G1Point memory quorumApk = blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber);
 
         BN254.G1Point memory negatedQuorumApk = BN254.negate(quorumApk);
 
@@ -183,7 +183,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
 
         BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
-        require(BN254.hashG1Point(blsPubkeyRegistry.quorumApk(defaulQuorumNumber)) == ZERO_PK_HASH, "quorumApk not set correctly");
+        require(BN254.hashG1Point(blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber)) == ZERO_PK_HASH, "quorumApk not set correctly");
     }
     
     function testQuorumApkUpdatesDeregistration() external {
@@ -195,7 +195,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
         for(uint8 i = 0; i < quorumNumbers.length; i++){
-            quorumApksBefore[i] = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
+            quorumApksBefore[i] = blsPubkeyRegistry.getApkForQuorum(quorumNumbers[i]);
         }
 
         cheats.startPrank(address(registryCoordinator));
@@ -204,7 +204,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
 
         for(uint8 i = 0; i < quorumNumbers.length; i++){
-            BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
+            BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.getApkForQuorum(quorumNumbers[i]);
             require(BN254.hashG1Point(BN254.plus(quorumApksBefore[i], BN254.negate(quorumApkAfter))) == BN254.hashG1Point(defaultPubKey), "quorum apk not updated correctly");
         }
     }
