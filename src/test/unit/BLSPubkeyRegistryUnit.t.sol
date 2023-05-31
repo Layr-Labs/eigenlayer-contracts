@@ -107,7 +107,10 @@ contract BLSPubkeyRegistryUnitTests is Test {
     }
 
     function testQuorumApkUpdates(uint8[] memory quorumNumbers) public {
-        cheats.assume(quorumNumbers.length > 0);
+        uint8[] memory quorumNumbers = new uint8[](2);
+        quorumNumbers[0] = 1;
+        quorumNumbers[0] = 2;
+
         bytes32 pkHash = BN254.hashG1Point(defaultPubKey);
 
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
@@ -126,30 +129,39 @@ contract BLSPubkeyRegistryUnitTests is Test {
         //check quorum apk updates
         for(uint8 i = 0; i < quorumNumbers.length; i++){
             BN254.G1Point memory quorumApkAfter = blsPubkeyRegistry.quorumApk(quorumNumbers[i]);
-            require(BN254.hashG1Point(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i]))) == BN254.hashG1Point(defaultPubKey), "quorum apk not updated correctly");
+            bytes32 temp = BN254.hashG1Point(BN254.plus(quorumApkAfter, BN254.negate(quorumApksBefore[i])));
+            require(temp == BN254.hashG1Point(defaultPubKey), "quorum apk not updated correctly");
         }
     }
 
-    // function testRegisterWithNegativeGlobalApk(address operator) external {
-    //     testRegisterOperatorBLSPubkey(operator);
+    function testRegisterWithNegativeGlobalApk(address operator) external {
+        testRegisterOperatorBLSPubkey(operator);
 
-    //     BN254.G1Point memory globalApk = blsPubkeyRegistry.globalApk();
+        (uint256 x, uint256 y)= blsPubkeyRegistry.globalApk();
+        BN254.G1Point memory globalApk = BN254.G1Point(x, y);
 
 
-    //     BN254.G1Point memory negatedGlobalApk = BN254.negate(globalApk);
+        BN254.G1Point memory negatedGlobalApk = BN254.negate(globalApk);
 
-    //     //register for one quorum
-    //     uint8[] memory quorumNumbers = new uint8[](1);
-    //     quorumNumbers[0] = defaulQuorumNumber;
+        //register for one quorum
+        uint8[] memory quorumNumbers = new uint8[](1);
+        quorumNumbers[0] = defaulQuorumNumber;
+
+        cheats.startPrank(operator);
+        pkCompendium.registerPublicKey(negatedGlobalApk);
+        cheats.stopPrank();
         
-    //     cheats.startPrank(address(registryCoordinator));
-    //     bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedGlobalApk);
-    //     cheats.stopPrank();
+        cheats.startPrank(address(registryCoordinator));
+        bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedGlobalApk);
+        cheats.stopPrank();
 
-    //     BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
+        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
 
-    //     require(BN254.hashG1Point(blsPubkeyRegistry.globalApk()) == ZERO_PK_HASH, "globalApk not set correctly");
-    // }
+        (x, y)= blsPubkeyRegistry.globalApk();
+        BN254.G1Point memory temp = BN254.G1Point(x, y);
+
+        require(BN254.hashG1Point(temp) == ZERO_PK_HASH, "globalApk not set correctly");
+    }
 
     // function testRegisterWithNegativeQuorumApk(address operator) external {
     //     testRegisterOperatorBLSPubkey(defaultOperator);
@@ -188,31 +200,4 @@ contract BLSPubkeyRegistryUnitTests is Test {
     //         require(BN254.hashG1Point(BN254.plus(quorumApksBefore[i], BN254.negate(quorumApkAfter))) == BN254.hashG1Point(defaultPubKey), "quorum apk not updated correctly");
     //     }
     // }
-
-    function testECADD() public {
-
-        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
-        BN254.G1Point memory onePK = BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
-
-        uint256[4] memory input;
-        BN254.G1Point memory output;
-        input[0] = zeroPk.X;
-        input[1] = zeroPk.Y;
-        input[2] = onePK.X;
-        input[3] = onePK.Y;
-        bool success;
-
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            success := staticcall(sub(gas(), 2000), 6, input, 0x80, output, 0x40)
-            // Use "invalid" to make gas estimation work
-            switch success
-            case 0 {
-                invalid()
-            }
-        }
-        require(success, "ec-add-failed");
-    }
-
-
 }

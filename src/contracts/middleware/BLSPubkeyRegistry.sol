@@ -49,7 +49,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         registryCoordinator = _registryCoordinator;
         pubkeyCompendium = _pubkeyCompendium;
 
-        _initializeApkUpdates();
+        _initializeApkUpdates(BN254.G1Point(0,0));
     }
 
     /**
@@ -68,6 +68,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         _processQuorumApkUpdate(quorumNumbers, pubkey);
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey);
+        emit log("hello");
+
 
         emit PubkeyAdded(operator, pubkey);
         return pubkeyHash;
@@ -131,7 +133,17 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
 
     function _processGlobalApkUpdate(BN254.G1Point memory point) internal returns(bytes32){
         globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlockNumber = uint32(block.number);
+                        emit log("hello");
+        emit log_named_uint("globalApk.x", point.X);
+        emit log_named_uint("globalApk.y", point.Y);
+        emit log_named_uint("globalApk.x before", globalApk.X);
+        emit log_named_uint("globalApk.y before", globalApk.Y);
+
+
         globalApk = globalApk.plus(point);
+        emit log_named_uint("globalApk.x after", globalApk.X);
+        emit log_named_uint("globalApk.y after", globalApk.Y);
+
 
         bytes32 globalApkHash = BN254.hashG1Point(globalApk);
 
@@ -151,12 +163,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             uint8 quorumNumber = quorumNumbers[i];
             
             apkBeforeUpdate = quorumToApk[quorumNumber];
-            emit log_named_uint("apkBeforeUpdate.X", apkBeforeUpdate.X);
-            emit log_named_uint("apkBeforeUpdate.Y", apkBeforeUpdate.Y);
-            emit log_named_uint("pubkey.X", point.X);
-            emit log_named_uint("pubkey.Y", point.Y);
 
             apkAfterUpdate = apkBeforeUpdate.plus(point);
+
             //update aggregate public key for this quorum
             quorumToApk[quorumNumber] = apkAfterUpdate;
             //update nextUpdateBlockNumber of the current latest ApkUpdate
@@ -169,22 +178,24 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         }
     }
 
-    function _initializeApkUpdates() internal {
-        globalApk = BN254.G1Point(0,0);
+    function _initializeApkUpdates(BN254.G1Point memory initial_pk) internal {
+        globalApk = initial_pk;
+        ApkUpdate memory initialGlobalApkUpdate;
+        initialGlobalApkUpdate.apkHash = ZERO_PK_HASH;
+        initialGlobalApkUpdate.updateBlockNumber = uint32(block.number);
+        globalApkUpdates.push(initialGlobalApkUpdate);
 
-        BN254.G1Point memory pk = BN254.G1Point(0,0);
         for (uint8 quorumNumber = 0; quorumNumber < 255; quorumNumber++) {
-
-            quorumToApk[quorumNumber] = pk;
+            quorumToApk[quorumNumber] = initial_pk;
             quorumToApkUpdates[quorumNumber].push(ApkUpdate({
-                apkHash: BN254.hashG1Point(pk),
+                apkHash: ZERO_PK_HASH,
                 updateBlockNumber: uint32(block.number),
                 nextUpdateBlockNumber: 0
             }));
         }
-        quorumToApk[255] = pk;
+        quorumToApk[255] = initial_pk;
         quorumToApkUpdates[255].push(ApkUpdate({
-            apkHash: BN254.hashG1Point(pk),
+            apkHash: ZERO_PK_HASH,
             updateBlockNumber: uint32(block.number),
             nextUpdateBlockNumber: 0
         }));
