@@ -22,15 +22,14 @@ contract BLSPubkeyRegistryUnitTests is Test {
     BLSPublicKeyCompendiumMock public pkCompendium;
     RegistryCoordinatorMock public registryCoordinator;
 
-    BN254.G1Point internal defaultPubKey;
+    BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
+
     uint8 internal defaulQuorumNumber = 0;
 
     function setUp() external {
         registryCoordinator = new RegistryCoordinatorMock();
         pkCompendium = new BLSPublicKeyCompendiumMock();
         blsPubkeyRegistry = new BLSPubkeyRegistry(registryCoordinator, pkCompendium);
-
-        defaultPubKey = BN254.G1Point(1, 1);
     }
 
     function testConstructorArgs() public {
@@ -190,30 +189,30 @@ contract BLSPubkeyRegistryUnitTests is Test {
     //     }
     // }
 
-    // function testECADD() public {
+    function testECADD() public {
 
-    //     BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
-    //     BN254.G1Point memory onePK = BN254.G1Point(0,0);
+        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
+        BN254.G1Point memory onePK = BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
 
-    //     uint256[4] memory input;
-    //     BN254.G1Point memory output;
-    //     input[0] = zeroPk.X;
-    //     input[1] = zeroPk.Y;
-    //     input[2] = onePK.X;
-    //     input[3] = onePK.Y;
-    //     bool success;
+        uint256[4] memory input;
+        BN254.G1Point memory output;
+        input[0] = zeroPk.X;
+        input[1] = zeroPk.Y;
+        input[2] = onePK.X;
+        input[3] = onePK.Y;
+        bool success;
 
-    //     // solium-disable-next-line security/no-inline-assembly
-    //     assembly {
-    //         success := staticcall(sub(gas(), 2000), 6, input, 0x80, output, 0x40)
-    //         // Use "invalid" to make gas estimation work
-    //         switch success
-    //         case 0 {
-    //             invalid()
-    //         }
-    //     }
-    //     require(success, "ec-add-failed");
-    // }
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            success := staticcall(sub(gas(), 2000), 6, input, 0x80, output, 0x40)
+            // Use "invalid" to make gas estimation work
+            switch success
+            case 0 {
+                invalid()
+            }
+        }
+        require(success, "ec-add-failed");
+    }
 
 
 }
