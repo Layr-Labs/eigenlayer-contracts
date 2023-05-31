@@ -88,9 +88,9 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         underlyingToken.transfer(address(strategyManager), maxTotalDeposits);
         cheats.startPrank(address(strategyManager));
-        for (uint256 i = 0; i < numDeposits; i++) {
+        for (uint160 i = 0; i < numDeposits; i++) {
             underlyingToken.transfer(address(strategyWithTVLLimits), maxDepositPerAddress);
-            strategyWithTVLLimits.deposit(depositor, underlyingToken, maxDepositPerAddress);
+            strategyWithTVLLimits.deposit(address(bytes20(i)), underlyingToken, maxDepositPerAddress);
         }
         cheats.stopPrank();
 

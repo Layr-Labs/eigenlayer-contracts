@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "./StrategyBase.sol";
+import "forge-std/Test.sol";
 
 /**
  * @title A Strategy implementation inheriting from `StrategyBase` that limits the total amount of deposits it will accept.
@@ -9,7 +10,7 @@ import "./StrategyBase.sol";
  * these functions purposefully do not take the TVL limit into account.
  * @author Layr Labs, Inc.
  */
-contract StrategyBaseTVLLimits is StrategyBase {
+contract StrategyBaseTVLLimits is StrategyBase, Test {
     /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
     uint256 public maxDepositPerAddress;
 
