@@ -31,6 +31,12 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         _;
     }
 
+    /// @notice when applied to a function, ensures that the `quorumNumber` corresponds to a valid quorum added to the VoteWeigher
+    modifier validQuorumNumber(uint8 quorumNumber) {
+        require(quorumNumber < quorumCount, "VoteWeigherBase.validQuorumNumber: quorumNumber is not valid");
+        _;
+    }
+
     /// @notice Sets the (immutable) `strategyManager` and `serviceManager` addresses
     constructor(
         IStrategyManager _strategyManager,
@@ -92,7 +98,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     function addStrategiesConsideredAndMultipliers(
         uint8 quorumNumber,
         StrategyAndWeightingMultiplier[] memory _newStrategiesConsideredAndMultipliers
-    ) external virtual onlyServiceManagerOwner {
+    ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
         _addStrategiesConsideredAndMultipliers(quorumNumber, _newStrategiesConsideredAndMultipliers);
     }
 
@@ -105,8 +111,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     function removeStrategiesConsideredAndMultipliers(
         uint8 quorumNumber,
         uint256[] calldata indicesToRemove
-    ) external virtual onlyServiceManagerOwner {
-        require(quorumNumber < quorumCount, "VoteWeigherBase.removeStrategiesConsideredAndMultipliers: quorumNumber is greater than or equal to quorumCount");
+    ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
         for (uint256 i = 0; i < indicesToRemove.length;) {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy);
             // remove strategy and its associated multiplier
@@ -130,8 +135,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint8 quorumNumber,
         uint256[] calldata strategyIndices,
         uint96[] calldata newMultipliers
-    ) external virtual onlyServiceManagerOwner {
-        require(quorumNumber < quorumCount, "VoteWeigherBase.modifyStrategyWeights: quorumNumber is greater than or equal to quorumCount");
+    ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
         // sanity check on input lengths
         require(newMultipliers.length == numStrats,
@@ -151,11 +155,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
      * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
      * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
      */
-    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view returns (uint256) {
-        require(
-            quorumNumber < quorumCount,
-            "VoteWeigherBase.strategiesConsideredAndMultipliersLength: quorumNumber input exceeds NUMBER_OF_QUORUMS"
-        );
+    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view validQuorumNumber(quorumNumber) returns (uint256) {
         return strategiesConsideredAndMultipliers[quorumNumber].length;
     }
 
@@ -165,14 +165,13 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     function _createQuorum(
         StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers
     ) internal {
-        uint8 quorumNumber = quorumCount;
-        require(quorumNumber < 255, "VoteWeigherBase._createQuorum: number of quorums cannot 256");
+        uint16 quorumCountMem = quorumCount;
+        require(quorumCountMem < 256, "VoteWeigherBase._createQuorum: number of quorums cannot 256");
+        uint8 quorumNumber = uint8(quorumCountMem);
         // increment quorumCount
         quorumCount = quorumNumber + 1;
-
         // add the strategies and their associated weights to the quorum
         _addStrategiesConsideredAndMultipliers(quorumNumber, _strategiesConsideredAndMultipliers);
-
         // emit event
         emit QuorumCreated(quorumNumber);
     }
@@ -187,7 +186,6 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint8 quorumNumber,
         StrategyAndWeightingMultiplier[] memory _newStrategiesConsideredAndMultipliers
     ) internal {
-        require(quorumNumber < quorumCount, "VoteWeigherBase._addStrategiesConsideredAndMultipliers: quorumNumber exceeds quorumCount");
         require(_newStrategiesConsideredAndMultipliers.length > 0, "VoteWeigherBase._addStrategiesConsideredAndMultipliers: no strategies provided");
         uint256 numStratsToAdd = _newStrategiesConsideredAndMultipliers.length;
         uint256 numStratsExisting = strategiesConsideredAndMultipliers[quorumNumber].length;

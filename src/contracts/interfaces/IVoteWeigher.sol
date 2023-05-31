@@ -37,7 +37,7 @@ interface IVoteWeigher {
     function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96);
 
     /// @notice Number of quorums that are being used by the middleware.
-    function quorumCount() external view returns (uint8);
+    function quorumCount() external view returns (uint16);
 
     /**
      * @notice This defines the earnings split between different quorums. Mapping is quorumNumber => BIPS which the quorum earns, out of the total earnings.
