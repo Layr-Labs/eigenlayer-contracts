@@ -156,7 +156,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             emit log_named_uint("pubkey.X", point.X);
             emit log_named_uint("pubkey.Y", point.Y);
 
-            apkAfterUpdate = apkBeforeUpdate.plus(point)
+            apkAfterUpdate = apkBeforeUpdate.plus(point);
             //update aggregate public key for this quorum
             quorumToApk[quorumNumber] = apkAfterUpdate;
             //update nextUpdateBlockNumber of the current latest ApkUpdate
@@ -170,10 +170,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     }
 
     function _initializeApkUpdates() internal {
+        globalApk = BN254.G1Point(0,0);
 
         BN254.G1Point memory pk = BN254.G1Point(0,0);
-        _processGlobalApkUpdate(pk);
-
         for (uint8 quorumNumber = 0; quorumNumber < 255; quorumNumber++) {
 
             quorumToApk[quorumNumber] = pk;
