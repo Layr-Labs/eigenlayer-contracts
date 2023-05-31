@@ -55,7 +55,7 @@ contract StrategyBaseTVLLimits is StrategyBase, Test {
     function _setTVLLimits(uint256 newMaxDepositPerAddress, uint256 newMaxTotalDeposits) internal {
         emit MaxDepositPerAddressUpdated(maxDepositPerAddress, newMaxDepositPerAddress);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-        require(newMaxDepositPerAddress <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
+        require(newMaxDepositPerAddress <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxDepositPerAddress exceeds maxTotalDeposits");
         maxDepositPerAddress = newMaxDepositPerAddress;
         maxTotalDeposits = newMaxTotalDeposits;
     }
