@@ -266,6 +266,9 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.addStrategiesConsideredAndMultipliers(quorumNumber+1, strategiesAndWeightingMultipliers);        
     }
 
+    // this test generates a psudorandom descending order array of indices to remove
+    // removes them, and checks that the strategies were removed correctly by computing
+    // a local copy of the strategies when the removal algorithm is applied and comparing
     function testRemoveStrategiesConsideredAndMultipliers_Valid(
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
         uint256 randomness
@@ -297,6 +300,7 @@ contract VoteWeigherBaseUnitTests is Test {
         // remove indicesToRemove from local strategiesAndWeightingMultipliers
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliersLocal = new IVoteWeigher.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length - indicesToRemove.length);
         
+        // run the removal algorithm locally
         uint256 endIndex = strategiesAndWeightingMultipliers.length - 1;
         for (uint256 i = 0; i < indicesToRemove.length; i++) {
             strategiesAndWeightingMultipliers[indicesToRemove[i]] = strategiesAndWeightingMultipliers[endIndex];
@@ -304,7 +308,6 @@ contract VoteWeigherBaseUnitTests is Test {
                 endIndex--;
             }
         }
-
         for (uint256 i = 0; i < strategiesAndWeightingMultipliersLocal.length; i++) {
             strategiesAndWeightingMultipliersLocal[i] = strategiesAndWeightingMultipliers[i];
         }
