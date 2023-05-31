@@ -698,7 +698,7 @@ contract StrategyManager is
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
-        shares = strategy.deposit(token, amount);
+        shares = strategy.deposit(depositor, token, amount);
 
         // add the returned shares to the depositor's existing shares for this strategy
         _addShares(depositor, strategy, shares);

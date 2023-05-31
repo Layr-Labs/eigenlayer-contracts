@@ -11,24 +11,26 @@ import "./StrategyBase.sol";
  */
 contract StrategyBaseTVLLimits is StrategyBase {
     /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
-    uint256 public maxPerDeposit;
+    uint256 public maxDepositPerAddress;
 
     /// The maximum deposits (in underlyingToken) that this strategy will hold
     uint256 public maxTotalDeposits;
 
-    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`
-    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+    /// @notice Emitted when `maxDepositPerAddress` value is updated from `previousValue` to `newValue`
+    event MaxPerDepositPerAddressUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
     event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 
+    mapping(address=>uint256) depositorToDepositAmount;
+
 
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(uint256 _maxPerDeposit, uint256 _maxTotalDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
+    function initialize(uint256 _maxDepositPerAddress, uint256 _maxTotalDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
         public virtual initializer
     {
-        _setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
+        _setTVLLimits(_maxDepositPerAddress, _maxTotalDeposits);
         _initializeStrategyBase(_underlyingToken, _pauserRegistry);
     }
 
@@ -39,21 +41,21 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @dev We note that there is a potential race condition between a call to this function that lowers either or both of these limits and call(s)
      * to `deposit`, that may result in some calls to `deposit` reverting.
      */
-    function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) external onlyPauser {
-        _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
+    function setTVLLimits(uint256 newMaxDepositPerAddress, uint256 newMaxTotalDeposits) external onlyPauser {
+        _setTVLLimits(newMaxDepositPerAddress, newMaxTotalDeposits);
     }
 
     /// @notice Simple getter function that returns the current values of `maxPerDeposit` and `maxTotalDeposits`.
     function getTVLLimits() external view returns (uint256, uint256) {
-        return (maxPerDeposit, maxTotalDeposits);
+        return (maxDepositPerAddress, maxTotalDeposits);
     }
 
     /// @notice Internal setter for TVL limits
-    function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
-        emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
+    function _setTVLLimits(uint256 newMaxDepositPerAddress, uint256 newMaxTotalDeposits) internal {
+        emit MaxPerDepositUpdated(newMaxDepositPerAddress, newMaxPerDeposit);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-        require(newMaxPerDeposit <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
-        maxPerDeposit = newMaxPerDeposit;
+        require(newMaxDepositPerAddress <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
+        maxDepositPerAddress = newMaxDepositPerAddress;
         maxTotalDeposits = newMaxTotalDeposits;
     }
 
@@ -69,9 +71,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * c) increases in the token balance of this contract through other effects – including token rebasing – may cause similar issues to (a) and (b).
      * @param amount The amount of `token` being deposited
      */
-    function _beforeDeposit(IERC20 /*token*/, uint256 amount) internal virtual override {
-        require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
+    function _beforeDeposit(address depositor, IERC20 /*token*/, uint256 amount) internal virtual override {
+        require(depositorToDepositAmount[depositor] + amount <= maxDepositPerAddress, "StrategyBaseTVLLimits: max deposit per address exceeded");
         require(_tokenBalance() <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+        depositorToDepositAmount[depositor] += amount;
     }
 
     /**

@@ -88,7 +88,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
-    function deposit(IERC20 token, uint256 amount)
+    function deposit(address depositor, IERC20 token, uint256 amount)
         external
         virtual
         override
@@ -97,7 +97,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         returns (uint256 newShares)
     {
         // call hook to allow for any pre-deposit logic
-        _beforeDeposit(token, amount);
+        _beforeDeposit(depositor, token, amount);
 
         require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
 
