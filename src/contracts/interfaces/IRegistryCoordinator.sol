@@ -9,9 +9,9 @@ interface IRegistryCoordinator {
     // DATA STRUCTURES
     enum OperatorStatus
     {
-        // default is inactive
-        INACTIVE,
-        ACTIVE
+        // default is DEREGISTERED
+        DEREGISTERED,
+        REGISTERED
     }
 
     /**

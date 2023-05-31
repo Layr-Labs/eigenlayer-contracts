@@ -60,7 +60,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         return registries.length;
     }
 
-    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external override {
+    function registerOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.registerOperator: cannot use overrided StakeRegistry.registerOperator on BLSIndexRegistryCoordinator");
     }
 
@@ -76,7 +76,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         _registerOperator(msg.sender, quorumNumbers, pubkey);
     }
 
-    function deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external override {
+    function deregisterOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.deregisterOperator: cannot use overrided StakeRegistry.deregisterOperator on BLSIndexRegistryCoordinator");
     }
 
@@ -115,7 +115,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         operators[operator] = Operator({
             operatorId: operatorId,
             fromTaskNumber: serviceManager.taskNumber(),
-            status: OperatorStatus.ACTIVE
+            status: OperatorStatus.REGISTERED
         });
     }
 
@@ -135,5 +135,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
 
         // deregister the operator from the StakeRegistry
         _deregisterOperator(operator, operatorId, quorumNumbers);
+
+        operators[operator].status = OperatorStatus.DEREGISTERED;
     }
 }
