@@ -172,7 +172,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         require(quorumCountMem < 256, "VoteWeigherBase._createQuorum: number of quorums cannot 256");
         uint8 quorumNumber = uint8(quorumCountMem);
         // increment quorumCount
-        quorumCount = quorumNumber + 1;
+        quorumCount = quorumCountMem + 1;
         // add the strategies and their associated weights to the quorum
         _addStrategiesConsideredAndMultipliers(quorumNumber, _strategiesConsideredAndMultipliers);
         // emit event

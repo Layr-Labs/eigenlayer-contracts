@@ -51,6 +51,10 @@ contract VoteWeigherBaseUnitTests is Test {
 
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping (address => bool) fuzzedAddressMapping;
+    // strategy => is in current array. used for detecting duplicates
+    mapping (IStrategy => bool) strategyInCurrentArray;
+    // uint256 => is in current array
+    mapping (uint256 => bool) uint256InCurrentArray;
 
     //ensures that a passed in address is not set to true in the fuzzedAddressMapping
     modifier fuzzedAddress(address addr) virtual {
@@ -139,23 +143,19 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     function testCreateQuorum_StrategiesAndWeightingMultipliers_WithDuplicateStrategies_Reverts(
-        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+        uint256 indexFromDuplicate,
+        uint256 indexToDuplicate
     ) public {
         cheats.assume(strategiesAndWeightingMultipliers.length <= voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
         cheats.assume(strategiesAndWeightingMultipliers.length > 1);
         strategiesAndWeightingMultipliers = _replaceZeroWeights(strategiesAndWeightingMultipliers);
 
-        // make sure a duplicate strategy exists
-        bool duplicateExists;
-        for (uint256 i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            for (uint256 j = i + 1; j < strategiesAndWeightingMultipliers.length; j++) {
-                if (strategiesAndWeightingMultipliers[i].strategy == strategiesAndWeightingMultipliers[j].strategy) {
-                    duplicateExists = true;
-                    break;
-                }
-            }
-        }
-        cheats.assume(duplicateExists);
+        // plant a duplicate strategy
+        indexToDuplicate = indexToDuplicate % strategiesAndWeightingMultipliers.length;
+        indexFromDuplicate = indexFromDuplicate % strategiesAndWeightingMultipliers.length;
+        cheats.assume(indexToDuplicate != indexFromDuplicate);
+        strategiesAndWeightingMultipliers[indexToDuplicate].strategy = strategiesAndWeightingMultipliers[indexFromDuplicate].strategy;
 
         cheats.prank(serviceManagerOwner);
         cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add same strategy 2x");
@@ -170,20 +170,14 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     function testCreateQuorum_StrategiesAndWeightingMultipliers_WithZeroWeight(
-        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
+        uint256 indexForZeroMultiplier
     ) public {
         strategiesAndWeightingMultipliers = _removeDuplicates(strategiesAndWeightingMultipliers);
         cheats.assume(strategiesAndWeightingMultipliers.length <= voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
         cheats.assume(strategiesAndWeightingMultipliers.length > 0);
-        // make sure a zero weight exists
-        bool zeroWeightExists;
-        for (uint256 i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            if (strategiesAndWeightingMultipliers[i].multiplier == 0) {
-                zeroWeightExists = true;
-                break;
-            }
-        }
-        cheats.assume(zeroWeightExists);
+        //plant a zero weight
+        strategiesAndWeightingMultipliers[indexForZeroMultiplier % strategiesAndWeightingMultipliers.length].multiplier = 0;
 
         cheats.prank(serviceManagerOwner);
         cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero weight");
@@ -268,23 +262,17 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
 
         // add the last element
-        cheats.expectRevert("VoteWeigherBase.addStrategiesConsideredAndMultipliers: quorumNumber exceeds quorumCount");
+        cheats.expectRevert("VoteWeigherBase.validQuorumNumber: quorumNumber is not valid");
         voteWeigher.addStrategiesConsideredAndMultipliers(quorumNumber+1, strategiesAndWeightingMultipliers);        
     }
 
     function testRemoveStrategiesConsideredAndMultipliers_Valid(
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
-        uint256[] memory indicesToRemove
+        uint256 randomness
     ) public {
         strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
-        // take indices modulo length
-        for (uint256 i = 0; i < indicesToRemove.length; i++) {
-            indicesToRemove[i] = indicesToRemove[i] % strategiesAndWeightingMultipliers.length;
-        }
-        indicesToRemove = _removeDuplicatesUint256(indicesToRemove);
-        cheats.assume(indicesToRemove.length > 0);
-        cheats.assume(indicesToRemove.length < strategiesAndWeightingMultipliers.length);
-        indicesToRemove = _sortInDescendingOrder(indicesToRemove);
+        // generate a bunch of random array of valid descending order indices
+        uint256[] memory indicesToRemove = _generateRandomUniqueIndices(randomness, strategiesAndWeightingMultipliers.length);
 
         // create the quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -298,8 +286,6 @@ contract VoteWeigherBaseUnitTests is Test {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesAndWeightingMultipliers[indicesToRemove[i]].strategy);
         }
         voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber, indicesToRemove);
-
-        // check that the strategies were removed
         
         // check that the strategies that were not removed are still there
         // get all strategies and multipliers form the contracts
@@ -310,22 +296,18 @@ contract VoteWeigherBaseUnitTests is Test {
 
         // remove indicesToRemove from local strategiesAndWeightingMultipliers
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliersLocal = new IVoteWeigher.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length - indicesToRemove.length);
-        uint256 j = 0;
-        for (uint256 i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            for (uint256 k = 0; k < indicesToRemove.length; k++) {
-                if (i == indicesToRemove[k]) {
-                    break;
-                }
-                if (k == indicesToRemove.length - 1) {
-                    strategiesAndWeightingMultipliersLocal[j] = strategiesAndWeightingMultipliers[i];
-                    j++;
-                }
+        
+        uint256 endIndex = strategiesAndWeightingMultipliers.length - 1;
+        for (uint256 i = 0; i < indicesToRemove.length; i++) {
+            strategiesAndWeightingMultipliers[indicesToRemove[i]] = strategiesAndWeightingMultipliers[endIndex];
+            if (endIndex > 0) {
+                endIndex--;
             }
         }
 
-        // sort both arrays by strategy so that they are easily comaparable
-        strategiesAndWeightingMultipliersFromContract = _sortStrategiesAndWeightingMultipliersByStrategy(strategiesAndWeightingMultipliersFromContract);
-        strategiesAndWeightingMultipliersLocal = _sortStrategiesAndWeightingMultipliersByStrategy(strategiesAndWeightingMultipliersLocal);
+        for (uint256 i = 0; i < strategiesAndWeightingMultipliersLocal.length; i++) {
+            strategiesAndWeightingMultipliersLocal[i] = strategiesAndWeightingMultipliers[i];
+        }
 
         // check that the arrays are the same
         assertEq(strategiesAndWeightingMultipliersFromContract.length, strategiesAndWeightingMultipliersLocal.length);
@@ -337,11 +319,12 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     function testRemoveStrategiesConsideredAndMultipliers_NotFromServiceManagerOwner_Reverts(
-        address notServiceManagerOwner,
-        uint256[] memory indicesToRemove
+        address notServiceManagerOwner
     ) public fuzzedAddress(notServiceManagerOwner) {
         cheats.assume(notServiceManagerOwner != serviceManagerOwner);
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        uint256[] memory indicesToRemove = new uint256[](1);
 
         // create a valid quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -354,10 +337,10 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber, indicesToRemove);
     }
 
-    function testRemoveStrategiesConsideredAndMultipliers_ForNonexistentQuorum_Reverts(
-        uint256[] memory indicesToRemove
-    ) public {
+    function testRemoveStrategiesConsideredAndMultipliers_ForNonexistentQuorum_Reverts() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        uint256[] memory indicesToRemove = new uint256[](1);
 
         // create a valid quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -383,12 +366,13 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     function testModifyStrategyWeights_NotFromServiceManagerOwner_Reverts(
-        address notServiceManagerOwner,
-        uint256[] memory strategyIndices,
-        uint96[] memory newWeights
+        address notServiceManagerOwner
     ) public fuzzedAddress(notServiceManagerOwner) {
         cheats.assume(notServiceManagerOwner != serviceManagerOwner);
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        uint256[] memory strategyIndices = new uint256[](1);
+        uint96[] memory newWeights = new uint96[](1);
 
         // create a valid quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -403,18 +387,11 @@ contract VoteWeigherBaseUnitTests is Test {
 
     function testModifyStrategyWeights_Valid(
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers,
-        uint256[] memory strategyIndices,
-        uint96[] memory newWeights
+        uint96[] memory newWeights,
+        uint256 randomness
     ) public {
         strategiesAndWeightingMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndWeightingMultipliers);
-
-        // take indices modulo length
-        for (uint256 i = 0; i < strategyIndices.length; i++) {
-            strategyIndices[i] = strategyIndices[i] % strategiesAndWeightingMultipliers.length;
-        }
-        strategyIndices = _removeDuplicatesUint256(strategyIndices);
-        cheats.assume(strategyIndices.length > 0);
-        cheats.assume(strategyIndices.length < strategiesAndWeightingMultipliers.length);
+        uint256[] memory strategyIndices = _generateRandomUniqueIndices(randomness, strategiesAndWeightingMultipliers.length);
 
         // trim the provided weights to the length of the strategyIndices and extend if it is shorter
         uint96[] memory newWeightsTrim = new uint96[](strategyIndices.length);
@@ -451,11 +428,11 @@ contract VoteWeigherBaseUnitTests is Test {
         }
     }
 
-    function testModifyStrategyWeights_ForNonexistentQuorum_Reverts(
-        uint256[] memory strategyIndices,
-        uint96[] memory newWeights
-    ) public {
+    function testModifyStrategyWeights_ForNonexistentQuorum_Reverts() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        uint256[] memory strategyIndices = new uint256[](1);
+        uint96[] memory newWeights = new uint96[](1);
 
         // create a valid quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -475,6 +452,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
         // make sure the arrays are of different lengths
         cheats.assume(strategyIndices.length != newWeights.length);
+        cheats.assume(strategyIndices.length > 0);
 
         // create a valid quorum
         uint8 quorumNumber = uint8(voteWeigher.quorumCount());
@@ -497,7 +475,6 @@ contract VoteWeigherBaseUnitTests is Test {
         // modify no strategies
         cheats.expectRevert("VoteWeigherBase.modifyStrategyWeights: no strategy indices provided");
         voteWeigher.modifyStrategyWeights(quorumNumber, new uint256[](0), new uint96[](0));
-        // make sure the quorum strategies and weights haven't changed
     }
 
     function testWeightOfOperator(
@@ -508,7 +485,9 @@ contract VoteWeigherBaseUnitTests is Test {
         strategiesAndMultipliers = _convertToValidStrategiesAndWeightingMultipliers(strategiesAndMultipliers);
         cheats.assume(shares.length >= strategiesAndMultipliers.length);
         for (uint i = 0; i < strategiesAndMultipliers.length; i++) {
-            cheats.assume(uint256(shares[i]) * uint256(strategiesAndMultipliers[i].multiplier) <= type(uint96).max);
+            if(uint256(shares[i]) * uint256(strategiesAndMultipliers[i].multiplier) > type(uint96).max) {
+                strategiesAndMultipliers[i].multiplier = 1;
+            }
         }
 
         // set the operator shares
@@ -524,7 +503,6 @@ contract VoteWeigherBaseUnitTests is Test {
         // make sure the weight of the operator is correct
         uint256 expectedWeight = 0;
         for (uint i = 0; i < strategiesAndMultipliers.length; i++) {
-            
             expectedWeight += shares[i] * strategiesAndMultipliers[i].multiplier / voteWeigher.WEIGHTING_DIVISOR();
         }
 
@@ -532,23 +510,24 @@ contract VoteWeigherBaseUnitTests is Test {
     }
 
     function _removeDuplicates(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) 
-        internal pure 
+        internal 
         returns(IVoteWeigher.StrategyAndWeightingMultiplier[] memory)
     {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory deduplicatedStrategiesAndWeightingMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](strategiesAndWeightingMultipliers.length);
         uint256 numUniqueStrategies = 0;
+        // check for duplicates
         for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            bool isDuplicate = false;
-            for (uint j = 0; j < deduplicatedStrategiesAndWeightingMultipliers.length; j++) {
-                if (strategiesAndWeightingMultipliers[i].strategy == deduplicatedStrategiesAndWeightingMultipliers[j].strategy) {
-                    isDuplicate = true;
-                    break;
-                }
+            if(strategyInCurrentArray[strategiesAndWeightingMultipliers[i].strategy]) {
+                continue;
             }
-            if(!isDuplicate) {
-                deduplicatedStrategiesAndWeightingMultipliers[numUniqueStrategies] = strategiesAndWeightingMultipliers[i];
-                numUniqueStrategies++;
-            }
+            strategyInCurrentArray[strategiesAndWeightingMultipliers[i].strategy] = true;
+            deduplicatedStrategiesAndWeightingMultipliers[numUniqueStrategies] = strategiesAndWeightingMultipliers[i];
+            numUniqueStrategies++;
+        }
+
+        // undo storage changes
+        for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
+            strategyInCurrentArray[strategiesAndWeightingMultipliers[i].strategy] = false;
         }
 
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory trimmedStrategiesAndWeightingMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](numUniqueStrategies);
@@ -567,72 +546,39 @@ contract VoteWeigherBaseUnitTests is Test {
         return strategiesAndWeightingMultipliers;
     }
 
-    function _sortStrategiesAndWeightingMultipliersByStrategy(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) 
-        internal pure returns(IVoteWeigher.StrategyAndWeightingMultiplier[] memory) 
-    {
-        uint256 n = strategiesAndWeightingMultipliers.length;
-        for (uint256 i = 0; i < n - 1; i++) {
-            uint256 min_idx = i;
-            for (uint256 j = i + 1; j < n; j++) {
-                if (uint160(address(strategiesAndWeightingMultipliers[j].strategy)) < uint160(address(strategiesAndWeightingMultipliers[min_idx].strategy))) {
-                    min_idx = j;
-                }
-            }
-            IVoteWeigher.StrategyAndWeightingMultiplier memory temp = strategiesAndWeightingMultipliers[min_idx];
-            strategiesAndWeightingMultipliers[min_idx] = strategiesAndWeightingMultipliers[i];
-            strategiesAndWeightingMultipliers[i] = temp;
+    function _generateRandomUniqueIndices(uint256 randomness, uint256 length) internal pure returns(uint256[] memory) {
+        uint256[] memory indices = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            indices[i] = length - i - 1;
         }
-        return strategiesAndWeightingMultipliers;
+
+        uint256[] memory randomIndices = new uint256[](length);
+        uint256 numRandomIndices = 0;
+        // take random indices in ascending order
+        for (uint256 i = 0; i < length; i++) {
+            if (uint256(keccak256(abi.encode(randomness, i))) % length < 10) {
+                randomIndices[numRandomIndices] = indices[i];
+                numRandomIndices++;
+            }
+        }
+
+        // trim the array
+        uint256[] memory trimmedRandomIndices = new uint256[](numRandomIndices);
+        for (uint256 i = 0; i < numRandomIndices; i++) {
+            trimmedRandomIndices[i] = randomIndices[i];
+        }
+        
+        return trimmedRandomIndices;
     }
 
-    function _sortInDescendingOrder(uint256[] memory arr) internal pure returns(uint256[] memory) {
-        uint256 n = arr.length;
-        for (uint256 i = 0; i < n - 1; i++) {
-            uint256 max_idx = i;
-            for (uint256 j = i + 1; j < n; j++) {
-                if (arr[j] > arr[max_idx]) {
-                    max_idx = j;
-                }
-            }
-            uint256 temp = arr[max_idx];
-            arr[max_idx] = arr[i];
-            arr[i] = temp;
-        }
-        return arr;
-    }
-
-    function _removeDuplicatesUint256(uint256[] memory arr) internal pure returns(uint256[] memory) {
-        uint256[] memory deduplicatedArr = new uint256[](arr.length);
-        uint256 numUniqueElements = 0;
-        for (uint i = 0; i < arr.length; i++) {
-            bool isDuplicate = false;
-            for (uint j = 0; j < deduplicatedArr.length; j++) {
-                if (arr[i] == deduplicatedArr[j]) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if(!isDuplicate) {
-                deduplicatedArr[numUniqueElements] = arr[i];
-                numUniqueElements++;
-            }
-        }
-
-        uint256[] memory trimmedArr = new uint256[](numUniqueElements);
-        for (uint i = 0; i < numUniqueElements; i++) {
-            trimmedArr[i] = deduplicatedArr[i];
-        }
-        return trimmedArr;
-    }
-
-    function _convertToValidStrategiesAndWeightingMultipliers(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) internal view returns (IVoteWeigher.StrategyAndWeightingMultiplier[] memory) {
+    function _convertToValidStrategiesAndWeightingMultipliers(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) internal returns (IVoteWeigher.StrategyAndWeightingMultiplier[] memory) {
         strategiesAndWeightingMultipliers = _removeDuplicates(strategiesAndWeightingMultipliers);
         cheats.assume(strategiesAndWeightingMultipliers.length <= voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
         cheats.assume(strategiesAndWeightingMultipliers.length > 0);
         return _replaceZeroWeights(strategiesAndWeightingMultipliers);
     }
 
-    function _defaultStrategiesAndWeightingMultipliers() internal view returns (IVoteWeigher.StrategyAndWeightingMultiplier[] memory) {
+    function _defaultStrategiesAndWeightingMultipliers() internal pure returns (IVoteWeigher.StrategyAndWeightingMultiplier[] memory) {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](2);
         strategiesAndWeightingMultipliers[0] = IVoteWeigher.StrategyAndWeightingMultiplier({
             strategy: IStrategy(address(uint160(uint256(keccak256("strategy1"))))),
