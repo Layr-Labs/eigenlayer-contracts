@@ -112,7 +112,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint8 quorumNumber,
         uint256[] calldata indicesToRemove
     ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
-        for (uint256 i = 0; i < indicesToRemove.length;) {
+        uint256 indicesToRemoveLength = indicesToRemove.length;
+        require(indicesToRemoveLength > 0, "VoteWeigherBase.removeStrategiesConsideredAndMultipliers: no indices to remove provided");
+        for (uint256 i = 0; i < indicesToRemoveLength;) {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy);
             // remove strategy and its associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]] = strategiesConsideredAndMultipliers[quorumNumber][strategiesConsideredAndMultipliers[quorumNumber]
@@ -137,6 +139,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint96[] calldata newMultipliers
     ) external virtual onlyServiceManagerOwner validQuorumNumber(quorumNumber) {
         uint256 numStrats = strategyIndices.length;
+        require(numStrats > 0, "VoteWeigherBase.modifyStrategyWeights: no strategy indices provided");
         // sanity check on input lengths
         require(newMultipliers.length == numStrats,
             "VoteWeigherBase.modifyStrategyWeights: input length mismatch");

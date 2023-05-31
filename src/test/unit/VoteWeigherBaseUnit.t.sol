@@ -369,7 +369,7 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber + 1, indicesToRemove);
     }
 
-    function testRemoveStrategiesConsideredAndMultipliers_EmptyIndicesToRemove_HasNoEffect() public {
+    function testRemoveStrategiesConsideredAndMultipliers_EmptyIndicesToRemove_Reverts() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
         // create a valid quorum
@@ -378,13 +378,8 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
 
         // remove no strategies
+        cheats.expectRevert("VoteWeigherBase.removeStrategiesConsideredAndMultipliers: no indices to remove provided");
         voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber, new uint256[](0));
-        // make sure the quorum strategies and weights haven't changed
-        for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            IVoteWeigher.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
-            assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
-            assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
-        }
     }
 
     function testModifyStrategyWeights_NotFromServiceManagerOwner_Reverts(
@@ -421,7 +416,7 @@ contract VoteWeigherBaseUnitTests is Test {
         cheats.assume(strategyIndices.length > 0);
         cheats.assume(strategyIndices.length < strategiesAndWeightingMultipliers.length);
 
-        // trim the provided weights to the length of the strategyIndices
+        // trim the provided weights to the length of the strategyIndices and extend if it is shorter
         uint96[] memory newWeightsTrim = new uint96[](strategyIndices.length);
         for (uint256 i = 0; i < strategyIndices.length; i++) {
             if(i < newWeights.length) {
@@ -491,7 +486,7 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.modifyStrategyWeights(quorumNumber, strategyIndices, newWeights);
     }
 
-    function testModifyStrategyWeights_EmptyStrategyIndicesAndWeights_HasNoEffect() public {
+    function testModifyStrategyWeights_EmptyStrategyIndicesAndWeights_Reverts() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
 
         // create a valid quorum
@@ -500,13 +495,9 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
 
         // modify no strategies
+        cheats.expectRevert("VoteWeigherBase.modifyStrategyWeights: no strategy indices provided");
         voteWeigher.modifyStrategyWeights(quorumNumber, new uint256[](0), new uint96[](0));
         // make sure the quorum strategies and weights haven't changed
-        for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
-            IVoteWeigher.StrategyAndWeightingMultiplier memory strategyAndWeightingMultiplier = voteWeigher.strategyAndWeightingMultiplierForQuorumByIndex(quorumNumber, i);
-            assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
-            assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
-        }
     }
 
     function testWeightOfOperator(
