@@ -228,4 +228,21 @@ contract BLSPubkeyRegistryUnitTests is Test {
         require(x == 0, "global apk not set to zero");
         require(y == 0, "global apk not set to zero");
     }
+
+    function testDeregisterOperatorWithQuorumApk(uint256 numOperators, uint256 x1, uint256 y1, uint256 x2, uint256 y2) external {
+        testRegisterOperatorBLSPubkey(defaultOperator, x1, y1);
+        testRegisterOperatorBLSPubkey(defaultOperator2, x2, y2);
+
+        BN254.G1Point memory quorumApksBefore= blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber);
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaulQuorumNumber);
+
+        cheats.prank(address(registryCoordinator));
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, quorumApksBefore);
+
+        BN254.G1Point memory pk = blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber);
+        require(pk.X == 0, "global apk not set to zero");
+        require(pk.Y == 0, "global apk not set to zero");
+    }
 }
