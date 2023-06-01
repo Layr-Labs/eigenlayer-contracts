@@ -14,6 +14,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     address defaultOperator = address(4545);
+    address defaultOperator2 = address(4546);
 
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
@@ -208,5 +209,23 @@ contract BLSPubkeyRegistryUnitTests is Test {
             quorumApkAfter = blsPubkeyRegistry.getApkForQuorum(uint8(quorumNumbers[i]));
             require(BN254.hashG1Point(quorumApksBefore[i].plus(defaultPubKey.negate())) == BN254.hashG1Point(quorumApkAfter), "quorum apk not updated correctly");
         }
+    }
+    
+    function testDeregisterOperatorWithGlobalAPK(uint256 numOperators, uint256 x1, uint256 y1, uint256 x2, uint256 y2) external {
+        testRegisterOperatorBLSPubkey(defaultOperator, x1, y1);
+        testRegisterOperatorBLSPubkey(defaultOperator2, x2, y2);
+
+        (uint256 x, uint256 y)= blsPubkeyRegistry.globalApk();
+        BN254.G1Point memory globalApkBefore = BN254.G1Point(x, y);
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaulQuorumNumber);
+
+        cheats.prank(address(registryCoordinator));
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, globalApkBefore);
+
+        (x, y)= blsPubkeyRegistry.globalApk();
+        require(x == 0, "global apk not set to zero");
+        require(y == 0, "global apk not set to zero");
     }
 }
