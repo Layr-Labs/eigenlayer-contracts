@@ -154,17 +154,14 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         return uint32(globalApkUpdates.length);
     }
 
-    function _processGlobalApkUpdate(BN254.G1Point memory point) internal {
-        // load and store in memory in common case we need to access the length again
-        uint256 globalApkUpdatesLength = globalApkUpdates.length;
-        // update the nextUpdateBlockNumber of the previous update
+    function _processGlobalApkUpdate(BN254.G1Point memory point) internal returns(bytes32){
         if (globalApkUpdates.length > 0) {
-            globalApkUpdates[globalApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
+            // update the previous global apk update with the current block number
+            globalApkUpdates[globalApkUpdates.length - 1].nextUpdateBlockNumber = uint32(block.number);
         }
-
-        // accumulate the given point into the globalApk
         globalApk = globalApk.plus(point);
-        // add this update to the list of globalApkUpdates
+        bytes32 globalApkHash = BN254.hashG1Point(globalApk);
+
         ApkUpdate memory latestGlobalApkUpdate;
         latestGlobalApkUpdate.apkHash = BN254.hashG1Point(globalApk);
         latestGlobalApkUpdate.updateBlockNumber = uint32(block.number);
