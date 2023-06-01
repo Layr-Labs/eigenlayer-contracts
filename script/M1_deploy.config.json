@@ -7,21 +7,21 @@
      },
      "strategies": [
                     {
-                         "token_address": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
-                         "token_name": "Wrapped Ether",
-                         "token_symbol": "WETH",
+                         "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                         "token_name": "Coinbase Wrapped Staked",
+                         "token_symbol": "cbETH",
                          "max_per_deposit": 32000000000000000000,
                          "max_deposits": 3200000000000000000000
                     },
                     {
-                         "token_address": "0x6320cd32aa674d2898a68ec82e869385fc5f7e2f",
-                         "token_name": "Wrapped liquid staked Ether 2.0",
-                         "token_symbol": "wstETH",
+                         "token_address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                         "token_name": "stETH",
+                         "token_symbol": "stETH",
                          "max_per_deposit": 32000000000000000000,
                          "max_deposits": 3200000000000000000000
                     },
                     {
-                         "token_address": "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
+                         "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
                          "token_name": "Rocket Pool ETH",
                          "token_symbol": "rETH",
                          "max_per_deposit": 32000000000000000000,
