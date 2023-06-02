@@ -68,8 +68,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         //calculate hash of the operator's pubkey
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
-        require(pubkeyHash != ZERO_PK_HASH, "BLSRegistry._registerOperator: cannot register zero pubkey");
-        require(quorumNumbers.length > 0, "BLSRegistry._registerOperator: must register for at least one quorum");
+        require(pubkeyHash != ZERO_PK_HASH, "BLSRegistry.registerOperator: cannot register zero pubkey");
         //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSRegistry._registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
@@ -176,7 +175,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             uint256 quorumApkUpdatesLength = quorumApkUpdates[quorumNumber].length;
             if (quorumApkUpdatesLength > 0) {
                 // update nextUpdateBlockNumber of the current latest ApkUpdate
-                quorumApkUpdates[quorumNumber][quorumApkUpdates[quorumNumber].length - 1].nextUpdateBlockNumber = uint32(block.number);
+                quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
             }
             
             apkBeforeUpdate = quorumApk[quorumNumber];
