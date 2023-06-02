@@ -121,54 +121,7 @@ contract IndexRegistryUnitTests is Test {
         }
     }
 
-    function testGettingOperatorIndexForQuorumAtBlockNumber(uint32 numOperators, uint32 operatorToDeregister) external {
-        cheats.assume(numOperators > 5 && numOperators < 256);
-        cheats.assume(operatorToDeregister >= 0 && operatorToDeregister < numOperators);
 
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-
-        for (uint256 i = 0; i < numOperators; i++) {
-            bytes32 operatorId = _getRandomId(i);
-            _registerOperator(operatorId, quorumNumbers);
-        }
-        cheats.roll(block.number + 100);
-
-        bytes32 operator = _getRandomId(operatorToDeregister);
-
-        uint32[] memory quorumToOperatorListIndexes = new uint32[](1);
-        quorumToOperatorListIndexes[0] = uint32(_generateRandomNumber(operatorToDeregister, numOperators));
-        _deregisterOperator(operator, quorumNumbers, quorumToOperatorListIndexes, operatorToDeregister);
-        require(operatorToDeregister == indexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex(operator, defaultQuorumNumber, uint32(_generateRandomNumber(1, 100)), 0), "wrong index returned");
-
-        emit log_named_uint("quorumToOperatorListIndexes[0]", quorumToOperatorListIndexes[0]);
-        emit log_named_uint("total ops", indexRegistry.totalOperatorsForQuorum(defaultQuorumNumber));
-        bytes32 swappedOperator = indexRegistry.quorumToOperatorList(defaultQuorumNumber, quorumToOperatorListIndexes[0]);
-        emit log_named_uint("quorumToOperatorListIndexes[0]", quorumToOperatorListIndexes[0]);
-        require(quorumToOperatorListIndexes[0] == indexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex(swappedOperator, defaultQuorumNumber, uint32(_generateRandomNumber(1, 100)), 0), "wrong index returned for swapped operator");
-
-    }
-
-    function testGettingTotalOperatorsForQuorumAtBlockNumber(uint32 numOperators, uint32 operatorToDeregister) external {
-        cheats.assume(numOperators > 0 && numOperators < 256);
-        cheats.assume(operatorToDeregister >= 0 && operatorToDeregister < numOperators);
-
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-
-        for (uint256 i = 0; i < numOperators; i++) {
-            bytes32 operatorId = _getRandomId(i);
-            _registerOperator(operatorId, quorumNumbers);
-        }
-        cheats.roll(block.number + 100);
-
-        bytes32 operator = _getRandomId(operatorToDeregister);
-
-        uint32[] memory quorumToOperatorListIndexes = new uint32[](1);
-        quorumToOperatorListIndexes[0] = uint32(_generateRandomNumber(operatorToDeregister, numOperators));
-        _deregisterOperator(operator, quorumNumbers, quorumToOperatorListIndexes, operatorToDeregister);
-        require(operatorToDeregister == indexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex(operator, defaultQuorumNumber, uint32(_generateRandomNumber(1, 100)), 0), "wrong index returned");
-    }
 
     function _registerOperator(bytes32 operatorId, bytes memory quorumNumbers) public {
         cheats.startPrank(address(registryCoordinatorMock));

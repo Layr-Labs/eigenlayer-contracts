@@ -60,7 +60,6 @@ contract IndexRegistry is IIndexRegistry, Test {
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @param quorumToOperatorListIndexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions:
@@ -150,14 +149,14 @@ contract IndexRegistry is IIndexRegistry, Test {
 
         OperatorIndex memory totalOperatorUpdate;
         // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
-        totalOperatorUpdate.index = uint32(quorumToOperatorList[quorumNumber].length);
+        totalOperatorUpdate.index = quorumToTotalOperatorCount[quorumNumber];
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
     /// 
     /// @param operatorId operatorId of the operator to update
     /// @param quorumNumber quorumNumber of the operator to update
-    /// @param index the latest index of that operator in quorumToOperatorList
+    /// @param index the latest index of that operator in the list of operators registered for this quorum
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
         //if there is a prior entry for the operator, set the previous entry's toBlocknumber
@@ -169,8 +168,8 @@ contract IndexRegistry is IIndexRegistry, Test {
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
     }
 
-    /// @notice when we remove an operator from quorumToOperatorList, we swap the last operator in 
-    ///         quorumToOperatorList[quorumNumber] to the position of the operator we are removing
+    /// @notice when we remove an operator from a quorum, we simply update the operator's index history
+    ///         as well as any operatorIds we have to swap
     /// @param quorumNumber quorum number of the operator to remove
     /// @param indexToRemove index of the operator to remove
     function _processOperatorRemoval(bytes32 operatorId, uint8 quorumNumber, uint32 indexToRemove, bytes32 memory operatorIdToSwap) internal {   
