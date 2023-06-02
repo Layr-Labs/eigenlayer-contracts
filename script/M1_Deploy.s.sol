@@ -90,7 +90,7 @@ contract Deployer_M1 is Script, Test {
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
 
-    uint32 TOKEN_MULTIPLIER = 1e18;
+    uint256 TOKEN_MULTIPLIER = 1e18;
 
     function run() external {
         // read and log the chainID
