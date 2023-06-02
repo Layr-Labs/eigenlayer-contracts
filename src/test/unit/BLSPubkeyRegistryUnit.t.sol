@@ -84,13 +84,13 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testRegisterOperatorBLSPubkey(address operator, uint256 x, uint256 y) public {
-        cheats.assume(x != 0 && y != 0);
-        BN254.G1Point memory pubkey = BN254.G1Point(x, y);
-        bytes32 pkHash = BN254.hashG1Point(defaultPubKey);
+    function testRegisterOperatorBLSPubkey(address operator, bytes32 x) public {
+        
+        BN254.G1Point memory pubkey = BN254.hashToG1(x);
+        bytes32 pkHash = BN254.hashG1Point(pubkey);
 
         cheats.startPrank(operator);
-        pkCompendium.registerPublicKey(defaultPubKey);
+        pkCompendium.registerPublicKey(pubkey);
         cheats.stopPrank();
 
         //register for one quorum
@@ -98,7 +98,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         quorumNumbers[0] = bytes1(defaulQuorumNumber);
         
         cheats.startPrank(address(registryCoordinator));
-        bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, defaultPubKey);
+        bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
         cheats.stopPrank();
 
         require(registeredpkHash == pkHash, "registeredpkHash not set correctly");
@@ -134,8 +134,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
     }
 
-    function testRegisterWithNegativeGlobalApk(address operator) external {
-        testRegisterOperatorBLSPubkey(operator, defaultPubKey.X, defaultPubKey.Y);
+    function testRegisterWithNegativeGlobalApk(address operator, bytes32 x) external {
+        testRegisterOperatorBLSPubkey(operator, x);
 
         (uint256 x, uint256 y)= blsPubkeyRegistry.globalApk();
         BN254.G1Point memory globalApk = BN254.G1Point(x, y);
@@ -163,8 +163,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
         require(BN254.hashG1Point(temp) == ZERO_PK_HASH, "globalApk not set correctly");
     }
 
-    function testRegisterWithNegativeQuorumApk(address operator) external {
-        testRegisterOperatorBLSPubkey(defaultOperator, defaultPubKey.X, defaultPubKey.Y);
+    function testRegisterWithNegativeQuorumApk(address operator, bytes32 x) external {
+        testRegisterOperatorBLSPubkey(defaultOperator, x);
 
         BN254.G1Point memory quorumApk = blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber);
 
@@ -211,9 +211,9 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
     }
     
-    function testDeregisterOperatorWithGlobalAPK(uint256 numOperators, uint256 x1, uint256 y1, uint256 x2, uint256 y2) external {
-        testRegisterOperatorBLSPubkey(defaultOperator, x1, y1);
-        testRegisterOperatorBLSPubkey(defaultOperator2, x2, y2);
+    function testDeregisterOperatorWithGlobalAPK(bytes32 x1, bytes32 x2) external {
+        testRegisterOperatorBLSPubkey(defaultOperator, x1);
+        testRegisterOperatorBLSPubkey(defaultOperator2, x2);
 
         (uint256 x, uint256 y)= blsPubkeyRegistry.globalApk();
         BN254.G1Point memory globalApkBefore = BN254.G1Point(x, y);
@@ -229,9 +229,9 @@ contract BLSPubkeyRegistryUnitTests is Test {
         require(y == 0, "global apk not set to zero");
     }
 
-    function testDeregisterOperatorWithQuorumApk(uint256 numOperators, uint256 x1, uint256 y1, uint256 x2, uint256 y2) external {
-        testRegisterOperatorBLSPubkey(defaultOperator, x1, y1);
-        testRegisterOperatorBLSPubkey(defaultOperator2, x2, y2);
+    function testDeregisterOperatorWithQuorumApk(bytes32 x1, bytes32 x2) external {
+        testRegisterOperatorBLSPubkey(defaultOperator, x1);
+        testRegisterOperatorBLSPubkey(defaultOperator2, x2);
 
         BN254.G1Point memory quorumApksBefore= blsPubkeyRegistry.getApkForQuorum(defaulQuorumNumber);
 
