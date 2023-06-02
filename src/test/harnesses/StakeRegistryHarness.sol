@@ -5,6 +5,8 @@ import "../../contracts/middleware/StakeRegistry.sol";
 
 // wrapper around the StakeRegistry contract that exposes the internal functions for unit testing.
 contract StakeRegistryHarness is StakeRegistry {
+    mapping(uint8 => mapping(address => uint96)) public weightOfOperatorForQuorum;
+
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
@@ -24,5 +26,15 @@ contract StakeRegistryHarness is StakeRegistry {
 
     function removeOperatorStake(bytes32 operatorId, bytes memory quorumNumbers) external {
         _removeOperatorStake(operatorId, quorumNumbers);
+    }
+
+    // mocked function so we can set this arbitrarily without having to mock other elements
+    function weightOfOperator(uint8 quorumNumber, address operator) public override returns(uint96) {
+        return weightOfOperatorForQuorum[quorumNumber][operator];
+    }
+
+    // mocked function so we can set this arbitrarily without having to mock other elements
+    function setOperatorWeight(uint8 quorumNumber, address operator, uint96 weight) external {
+        weightOfOperatorForQuorum[quorumNumber][operator] = weight;
     }
 }
