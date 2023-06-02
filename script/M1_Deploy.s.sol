@@ -89,6 +89,8 @@ contract Deployer_M1 is Script, Test {
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
 
+    uint32 TOKEN_MULTIPLIER = 1e18;
+
     function run() external {
         // read and log the chainID
         uint256 chainId = block.chainid;
@@ -234,8 +236,8 @@ contract Deployer_M1 is Script, Test {
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
-            uint256 maxPerDeposit = strategyConfigs[i].maxPerDeposit * 1e18;
-            uint256 maxDeposits = strategyConfigs[i].maxDeposits * 1e18;
+            uint256 maxPerDeposit = strategyConfigs[i].maxPerDeposit * TOKEN_MULTIPLIER;
+            uint256 maxDeposits = strategyConfigs[i].maxDeposits * TOKEN_MULTIPLIER;
             deployedStrategyArray.push(
                 StrategyBaseTVLLimits(address(
                     new TransparentUpgradeableProxy(
@@ -455,8 +457,8 @@ contract Deployer_M1 is Script, Test {
             address tokenAddress = stdJson.readAddress(config_data, string.concat(".strategies[", vm.toString(i), "].token_address"));
 
             (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getTVLLimits();
-            require(setMaxPerDeposit == maxPerDeposit * 1e18, "setMaxPerDeposit not set correctly");
-            require(setMaxDeposits == maxDeposits * 1e18, "setMaxDeposits not set correctly");
+            require(setMaxPerDeposit == maxPerDeposit * TOKEN_MULTIPLIER, "setMaxPerDeposit not set correctly");
+            require(setMaxDeposits == maxDeposits * TOKEN_MULTIPLIER, "setMaxDeposits not set correctly");
             require(deployedStrategyArray[i].underlyingToken() == IERC20(tokenAddress), "token address not set correctly");
             require(deployedStrategyArray[i].strategyManager() == strategyManager, "strategyManager not set correctly");
         }
