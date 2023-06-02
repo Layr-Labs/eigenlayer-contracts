@@ -125,7 +125,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
      * @param index is the provided witness of the onchain index calculated offchain
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external returns (bytes32){
         ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
         _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;

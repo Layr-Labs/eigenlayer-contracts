@@ -62,7 +62,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
      * @param index is the provided witness of the onchain index calculated offchain
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32);
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external returns (bytes32);
 
 	/**
      * @notice get hash of the apk among all quourums at `blockNumber` using the provided `index`;

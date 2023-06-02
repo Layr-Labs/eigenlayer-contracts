@@ -298,6 +298,40 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
     }
 
+    function testIncorrectBlockNumberForQuorumApkUpdates(uint256 numRegistrants, uint32 indexToCheck, uint32 wrongBlockNumber) external {
+        cheats.assume(numRegistrants > 0 && numRegistrants <  100);
+        cheats.assume(indexToCheck < numRegistrants - 1);
+
+        uint256 startingBlockNumber = block.number;
+
+        for (uint256 i = 0; i < numRegistrants; i++) {
+            bytes32 pk = _getRandomPk(i);
+            testRegisterOperatorBLSPubkey(defaultOperator, pk);
+            cheats.roll(block.number + 100);
+        }
+        emit log_named_uint("numRegistrants", numRegistrants);
+        emit log_named_uint("indexToCheck", indexToCheck);
+        if(wrongBlockNumber < startingBlockNumber + indexToCheck*100){
+            cheats.expectRevert(bytes("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"));
+            blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, wrongBlockNumber, indexToCheck);
+        } 
+         if (wrongBlockNumber >= startingBlockNumber + (indexToCheck+1)*100){
+            cheats.expectRevert(bytes("BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"));
+            blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, wrongBlockNumber, indexToCheck);
+        }
+
+
+       
+
+
+
+
+
+
+    }
+
+
+
     function _getRandomPk(uint256 seed) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(block.timestamp, seed));
     }
