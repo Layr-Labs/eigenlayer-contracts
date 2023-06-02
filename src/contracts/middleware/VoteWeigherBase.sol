@@ -58,29 +58,25 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev returns zero in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
-    function weightOfOperator(uint8 quorumNumber, address operator) public virtual returns (uint96) {
+    function weightOfOperator(uint8 quorumNumber, address operator) public virtual validQuorumNumber(quorumNumber) returns (uint96) {
         uint96 weight;
+        uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
+        StrategyAndWeightingMultiplier memory strategyAndMultiplier;
 
-        if (quorumNumber < quorumCount) {
-            uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
+        for (uint256 i = 0; i < stratsLength;) {
+            // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
+            strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
 
-            StrategyAndWeightingMultiplier memory strategyAndMultiplier;
+            // shares of the operator in the strategy
+            uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
 
-            for (uint256 i = 0; i < stratsLength;) {
-                // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
-                strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
+            // add the weight from the shares for this strategy to the total weight
+            if (sharesAmount > 0) {
+                weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
+            }
 
-                // shares of the operator in the strategy
-                uint256 sharesAmount = delegation.operatorShares(operator, strategyAndMultiplier.strategy);
-
-                // add the weight from the shares for this strategy to the total weight
-                if (sharesAmount > 0) {
-                    weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
-                }
-
-                unchecked {
-                    ++i;
-                }
+            unchecked {
+                ++i;
             }
         }
 
