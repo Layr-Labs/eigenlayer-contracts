@@ -36,7 +36,8 @@ import "forge-std/Test.sol";
 contract Deployer_M1 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    // struct used to encode token info in config file
+    // struct used to encode token info in config file.  This does not match the ordering of the elements
+    // in the json but is the only configuration that works with the stdJson library.
     struct StrategyConfig {
         uint256 maxDeposits;
         uint256 maxPerDeposit;
