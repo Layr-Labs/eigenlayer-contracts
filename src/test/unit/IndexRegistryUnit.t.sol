@@ -23,7 +23,6 @@ contract IndexRegistryUnitTests is Test {
         indexRegistry = new IndexRegistry(registryCoordinatorMock);
     }
 
-
     function testConstructor() public {
         // check that the registry coordinator is set correctly
         assertEq(address(indexRegistry.registryCoordinator()), address(registryCoordinatorMock), "IndexRegistry.constructor: registry coordinator not set correctly");
@@ -122,6 +121,27 @@ contract IndexRegistryUnitTests is Test {
         }
     }
 
+    function testGettingOperatorIndexForQuorumAtBlockNumber(uint32 numOperators, uint32 operatorToDeregister) external {
+        cheats.assume(numOperators > 0 && numOperators < 256);
+        cheats.assume(operatorToDeregister >= 0 && operatorToDeregister < numOperators);
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        for (uint256 i = 0; i < numOperators; i++) {
+            bytes32 operatorId = _getRandomId(i);
+            _registerOperator(operatorId, quorumNumbers);
+        }
+        cheats.roll(block.number + 100);
+
+        bytes32 operator = _getRandomId(operatorToDeregister);
+
+        uint32[] memory quorumToOperatorListIndexes = new uint32[](1);
+        quorumToOperatorListIndexes[0] = uint32(_generateRandomNumber(operatorToDeregister, numOperators));
+        _deregisterOperator(operator, quorumNumbers, quorumToOperatorListIndexes, operatorToDeregister);
+        require(operatorToDeregister == indexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex(operator, defaultQuorumNumber, uint32(_generateRandomNumber(1, 100)), 0), "wrong index returned");
+    }
+
     function _registerOperator(bytes32 operatorId, bytes memory quorumNumbers) public {
         cheats.startPrank(address(registryCoordinatorMock));
        indexRegistry.registerOperator(operatorId, quorumNumbers);
@@ -132,5 +152,14 @@ contract IndexRegistryUnitTests is Test {
         cheats.startPrank(address(registryCoordinatorMock));
         indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, index);
         cheats.stopPrank();
+    }
+
+    function _getRandomId(uint256 seed) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(block.timestamp, seed));
+    }
+
+    function _generateRandomNumber(uint256 seed, uint256 modulus) internal view returns (uint256) {
+        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
+        return (randomNumber % modulus); 
     }
 }
