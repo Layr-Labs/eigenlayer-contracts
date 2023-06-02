@@ -236,6 +236,9 @@ contract Deployer_M1 is Script, Test {
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+
+            //note: JSON parsing in foundry doesn't allow for the maxPerDeposit in the Json to be 3.2e19.  Using this multiplier
+            //      is a way around this.
             uint256 maxPerDeposit = strategyConfigs[i].maxPerDeposit * TOKEN_MULTIPLIER;
             uint256 maxDeposits = strategyConfigs[i].maxDeposits * TOKEN_MULTIPLIER;
             deployedStrategyArray.push(
