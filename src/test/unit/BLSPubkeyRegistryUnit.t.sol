@@ -274,6 +274,30 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
     }
 
+    function testGlobalApkUpdatesAtBlockNumber(uint256 numRegistrants, uint256 blockGap) external{
+        cheats.assume(numRegistrants > 0 && numRegistrants <  100);
+        cheats.assume(blockGap < 100);
+
+        BN254.G1Point memory globalApk = BN254.G1Point(0,0);
+        bytes32 globalApkHash;
+        for (uint256 i = 0; i < numRegistrants; i++) {
+            bytes32 pk = _getRandomPk(i);
+            testRegisterOperatorBLSPubkey(defaultOperator, pk);
+            globalApk = globalApk.plus(BN254.hashToG1(pk));
+            globalApkHash = BN254.hashG1Point(globalApk);
+            require(globalApkHash == blsPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex(uint32(block.number + blockGap) , i), "incorrect quorum aok updates");
+            cheats.roll(block.number + 100);
+            if(_generateRandomNumber(i) % 2 == 0){
+               _deregisterOperator(pk);
+               globalApk = globalApk.plus(BN254.hashToG1(pk).negate());
+               globalApkHash = BN254.hashG1Point(globalApk);
+                require(globalApkHash == blsPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex(uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
+                cheats.roll(block.number + 100);
+                i++;
+            }
+        }
+    }
+
     function _getRandomPk(uint256 seed) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(block.timestamp, seed));
     }
