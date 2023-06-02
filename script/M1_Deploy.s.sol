@@ -417,12 +417,10 @@ contract Deployer_M1 is Script, Test {
 
     function _verifyInitializationParams() internal {
         // // one week in blocks -- 50400
-        // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-        // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-        // require(strategyManager.withdrawalDelayBlocks() == 7 days / 12 seconds,
-        //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
-        // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
-        //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
+        require(strategyManager.withdrawalDelayBlocks() == 7 days / 12 seconds,
+            "strategyManager: withdrawalDelayBlocks initialized incorrectly");
+        require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
+            "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 REQUIRED_BALANCE_WEI = 31 ether;
         require(eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
             "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly");
@@ -445,6 +443,8 @@ contract Deployer_M1 is Script, Test {
             " eigenPodImplementation: eigenPodManager contract address not set correctly");
         require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
             " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly");
+
+        require(eigenPodManager.maxPods() == type(uint256).max,"eigenPodManager: maxPods initialized incorrectly");
 
         string memory config_data = vm.readFile(deployConfigPath);
         for (uint i = 0; i < deployedStrategyArray.length; i++) {
