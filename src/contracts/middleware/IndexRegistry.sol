@@ -52,7 +52,7 @@ contract IndexRegistry is IIndexRegistry, Test {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             _updateOperatorIdToIndexHistory(operatorId, quorumNumber, quorumToTotalOperatorCount[quorumNumber]);
             _updateTotalOperatorHistory(quorumNumber);
-            quorumToTotalOperatorCount[quorumNumber]++;
+            quorumToTotalOperatorCount[quorumNumber] += 1;
         }
     }
 
@@ -173,8 +173,8 @@ contract IndexRegistry is IIndexRegistry, Test {
     /// @param quorumNumber quorum number of the operator to remove
     /// @param indexToRemove index of the operator to remove
     function _processOperatorRemoval(bytes32 operatorId, uint8 quorumNumber, uint32 indexToRemove, bytes32 memory operatorIdToSwap) internal {   
-        operatorIdToSwapIndex = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index
-        require(totalOperatorsForQuorum(quorumNumber) - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum")
+        operatorIdToSwapIndex = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index;
+        require(totalOperatorsForQuorum(quorumNumber) - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
         if(operatorId != operatorIdToSwap){
