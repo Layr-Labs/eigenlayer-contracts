@@ -5,9 +5,10 @@ pragma solidity =0.8.12;
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
+import "forge-std/Test.sol";
 
 
-contract IndexRegistry is IIndexRegistry {
+contract IndexRegistry is IIndexRegistry, Test {
 
     IRegistryCoordinator public registryCoordinator;
 
@@ -37,15 +38,21 @@ contract IndexRegistry is IIndexRegistry {
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions:
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already registered
      */
-    function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external onlyRegistryCoordinator {
+    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external onlyRegistryCoordinator {
         //add operator to operatorList
         globalOperatorList.push(operatorId);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            quorumToOperatorList[quorumNumbers[i]].push(operatorId);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumbers[i], uint32(quorumToOperatorList[quorumNumbers[i]].length - 1));
-            _updateTotalOperatorHistory(quorumNumbers[i]);
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            quorumToOperatorList[quorumNumber].push(operatorId);
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumber, uint32(quorumToOperatorList[quorumNumber].length - 1));
+            _updateTotalOperatorHistory(quorumNumber);
         }
     }
 
@@ -56,16 +63,30 @@ contract IndexRegistry is IIndexRegistry {
      * @param quorumToOperatorListIndexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions:
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already deregistered
+     *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == quorumToOperatorListIndexes.length, "IndexRegistry.deregisterOperator: quorumNumbers and indexes must be the same length");
         _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
-
         for (uint i = 0; i < quorumNumbers.length; i++) {
-            _removeOperatorFromQuorumToOperatorList(quorumNumbers[i], quorumToOperatorListIndexes[i]);
-            _updateTotalOperatorHistory(quorumNumbers[i]);
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            require(quorumToOperatorListIndexes[i] < quorumToOperatorList[quorumNumber].length, "IndexRegistry.deregisterOperator: index out of bounds");
+            _removeOperatorFromQuorumToOperatorList(quorumNumber, quorumToOperatorListIndexes[i]);
+            _updateTotalOperatorHistory(quorumNumber);
+
             //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
-            operatorIdToIndexHistory[operatorId][quorumNumbers[i]][operatorIdToIndexHistory[operatorId][quorumNumbers[i]].length - 1].toBlockNumber = uint32(block.number);
+            operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
+            // emit log_named_uint("Index", operatorIdToIndexHistory[operatorId][quorumNumber].length - 1);
+            // emit log_named_uint("block.number", block.number);
+            // emit log_named_uint("quorumNumber", quorumNumber);
+
+            // emit log_named_uint("f", operatorIdToIndexHistory[operatorId][uint8(quorumNumbers[0])][0].toBlockNumber);
+
         }
     }
 
@@ -126,9 +147,11 @@ contract IndexRegistry is IIndexRegistry {
 
     function _updateTotalOperatorHistory(uint8 quorumNumber) internal {
 
+        uint256 totalOperatorsHistoryLength = totalOperatorsHistory[quorumNumber].length;
+
         //if there is a prior entry, update its "toBlockNumber"
-        if (totalOperatorsHistory[quorumNumber].length > 0) {
-            totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].toBlockNumber = uint32(block.number);
+        if (totalOperatorsHistoryLength > 0) {
+            totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].toBlockNumber = uint32(block.number);
         }
 
         OperatorIndex memory totalOperatorUpdate;
@@ -143,7 +166,6 @@ contract IndexRegistry is IIndexRegistry {
     /// @param index the latest index of that operator in quorumToOperatorList
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
         uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
-
         //if there is a prior entry for the operator, set the previous entry's toBlocknumber
         if (operatorIdToIndexHistoryLength > 0) {
             operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = uint32(block.number);

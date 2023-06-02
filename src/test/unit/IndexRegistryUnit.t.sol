@@ -14,6 +14,8 @@ contract IndexRegistryUnitTests is Test {
     IndexRegistry indexRegistry;
     RegistryCoordinatorMock registryCoordinatorMock;
 
+    uint8 defaultQuorumNumber = 1;
+
 
     function setUp() public {
         // deploy the contract
@@ -29,8 +31,8 @@ contract IndexRegistryUnitTests is Test {
 
     function testRegisterOperatorInIndexRegistry(bytes32 operatorId) public {
         // register an operator
-        uint8[] memory quorumNumbers = new uint8[](1);
-        quorumNumbers[0] = 1;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
         cheats.startPrank(address(registryCoordinatorMock));
        indexRegistry.registerOperator(operatorId, quorumNumbers);
@@ -47,7 +49,7 @@ contract IndexRegistryUnitTests is Test {
     function testRegisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
         cheats.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
         // register an operator
-        uint8[] memory quorumNumbers = new uint8[](1);
+        bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.startPrank(nonRegistryCoordinator);
         cheats.expectRevert(bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
@@ -58,7 +60,7 @@ contract IndexRegistryUnitTests is Test {
     function testDeregisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
         cheats.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
         // register an operator
-        uint8[] memory quorumNumbers = new uint8[](1);
+        bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
         uint32[] memory quorumToOperatorListIndexes = new uint32[](1);
 
         cheats.startPrank(nonRegistryCoordinator);
@@ -68,9 +70,11 @@ contract IndexRegistryUnitTests is Test {
     }
 
     function testDeregisterOperatorInIndexRegistry(bytes32 operatorId1, bytes32 operatorId2) public {
-        uint8[] memory quorumNumbers = new uint8[](2);
-        quorumNumbers[0] = 1;
-        quorumNumbers[1] = 2;
+        cheats.assume(operatorId1 != operatorId2);
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
+
         _registerOperator(operatorId1, quorumNumbers);
         _registerOperator(operatorId2, quorumNumbers);
 
@@ -81,7 +85,6 @@ contract IndexRegistryUnitTests is Test {
         uint32[] memory quorumToOperatorListIndexes = new uint32[](2);
         quorumToOperatorListIndexes[0] = 0;
         quorumToOperatorListIndexes[1] = 0;
-
 
         cheats.roll(block.number + 1);
 
@@ -95,19 +98,20 @@ contract IndexRegistryUnitTests is Test {
         require(indexRegistry.quorumToOperatorList(2, 0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
         require(indexRegistry.globalOperatorList(0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
 
-        (uint32 index1, uint32 toBlockNumber1) = indexRegistry.operatorIdToIndexHistory(operatorId1, 1, 0);
-        require(toBlockNumber1 == block.number, "toBlockNumber not set correctly");
-        require(index1 == 0);
+        (uint32 toBlockNumber1, uint32 index1) = indexRegistry.operatorIdToIndexHistory(operatorId1, defaultQuorumNumber, 0);
 
-        (uint32 index2, uint32 toBlockNumber2) = indexRegistry.operatorIdToIndexHistory(operatorId2, 1, 1);
-        require(toBlockNumber2 == block.number, "toBlockNumber not set correctly");
-        require(index2 == 1);
+        require(toBlockNumber1 == block.number, "toBlockNumber not set correctly");
+        require(index1 == 0, "incorrect index");
+
+        (uint32 toBlockNumber2, uint32 index2) = indexRegistry.operatorIdToIndexHistory(operatorId2, defaultQuorumNumber, 1);
+        require(toBlockNumber2 == 0, "toBlockNumber not set correctly");
+        require(index2 == 0, "incorrect index");
 
     }
 
     function testTotalOperatorUpdatesForOneQuorum(uint8 numOperators) public {
-        uint8[] memory quorumNumbers = new uint8[](1);
-        quorumNumbers[0] = 1;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
         
         uint256 lengthBefore = 0;
         for (uint256 i = 0; i < numOperators; i++) {
@@ -118,13 +122,13 @@ contract IndexRegistryUnitTests is Test {
         }
     }
 
-    function _registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) public {
+    function _registerOperator(bytes32 operatorId, bytes memory quorumNumbers) public {
         cheats.startPrank(address(registryCoordinatorMock));
        indexRegistry.registerOperator(operatorId, quorumNumbers);
         cheats.stopPrank();
     }
     
-    function _deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 index) public {
+    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 index) public {
         cheats.startPrank(address(registryCoordinatorMock));
         indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, index);
         cheats.stopPrank();
