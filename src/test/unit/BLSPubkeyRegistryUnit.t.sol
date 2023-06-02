@@ -257,16 +257,38 @@ contract BLSPubkeyRegistryUnitTests is Test {
         BN254.G1Point memory quorumApk = BN254.G1Point(0,0);
         bytes32 quorumPkHash;
         for (uint256 i = 0; i < numRegistrants; i++) {
-            testRegisterOperatorBLSPubkey(defaultOperator, _getRandomPk(i));
-            quorumApk = quorumApk.plus(BN254.hashToG1(_getRandomPk(i)));
+            bytes32 pk = _getRandomPk(i);
+            testRegisterOperatorBLSPubkey(defaultOperator, pk);
+            quorumApk = quorumApk.plus(BN254.hashToG1(pk));
             quorumPkHash = BN254.hashG1Point(quorumApk);
-
             require(quorumPkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i), "incorrect quorum aok updates");
             cheats.roll(block.number + 100);
+            if(_generateRandomNumber(i) % 2 == 0){
+               _deregisterOperator(pk);
+               quorumApk = quorumApk.plus(BN254.hashToG1(pk).negate());
+               quorumPkHash = BN254.hashG1Point(quorumApk);
+                require(quorumPkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
+                cheats.roll(block.number + 100);
+                i++;
+            }
         }
     }
 
-    function _getRandomPk(uint256 i) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(i));
+    function _getRandomPk(uint256 seed) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(block.timestamp, seed));
     }
+
+    function _generateRandomNumber(uint256 seed) internal view returns (uint256) {
+        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
+        return (randomNumber % 100) + 1; 
+    }
+
+    function _deregisterOperator(bytes32 pk) internal {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        cheats.startPrank(address(registryCoordinator));
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, BN254.hashToG1(pk));
+        cheats.stopPrank();
+    }
+
 }
