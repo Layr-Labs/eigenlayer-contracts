@@ -452,9 +452,13 @@ contract Deployer_M1 is Script, Test {
         for (uint i = 0; i < deployedStrategyArray.length; i++) {
             uint256 maxPerDeposit = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_per_deposit"));
             uint256 maxDeposits = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_deposits"));
+            address tokenAddress = stdJson.readAddress(config_data, string.concat(".strategies[", vm.toString(i), "].token_address"));
+
             (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getTVLLimits();
             require(setMaxPerDeposit == maxPerDeposit * 1e18, "setMaxPerDeposit not set correctly");
             require(setMaxDeposits == maxDeposits * 1e18, "setMaxDeposits not set correctly");
+            require(deployedStrategyArray[i].underlyingToken() == IERC20(tokenAddress), "token address not set correctly");
+            require(deployedStrategyArray[i].strategyManager() == strategyManager, "strategyManager not set correctly");
         }
     }
 }
