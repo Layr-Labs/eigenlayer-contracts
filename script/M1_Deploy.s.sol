@@ -234,12 +234,14 @@ contract Deployer_M1 is Script, Test {
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+            uint256 maxPerDeposit = strategyConfigs[i].maxPerDeposit * 1e18;
+            uint256 maxDeposits = strategyConfigs[i].maxDeposits * 1e18;
             deployedStrategyArray.push(
                 StrategyBaseTVLLimits(address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, maxPerDeposit, maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
                     )
                 ))
             );
@@ -451,8 +453,8 @@ contract Deployer_M1 is Script, Test {
             uint256 maxPerDeposit = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_per_deposit"));
             uint256 maxDeposits = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_deposits"));
             (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getTVLLimits();
-            require(setMaxPerDeposit == maxPerDeposit, "setMaxPerDeposit not set correctly");
-            require(setMaxDeposits == maxDeposits, "setMaxDeposits not set correctly");
+            require(setMaxPerDeposit == maxPerDeposit * 1e18, "setMaxPerDeposit not set correctly");
+            require(setMaxDeposits == maxDeposits * 1e18, "setMaxDeposits not set correctly");
         }
     }
 }

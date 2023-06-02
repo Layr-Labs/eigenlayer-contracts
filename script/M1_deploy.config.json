@@ -10,22 +10,22 @@
                          "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
                          "token_name": "Coinbase Wrapped Staked",
                          "token_symbol": "cbETH",
-                         "max_per_deposit": 32000000000000000000,
-                         "max_deposits": 3200000000000000000000
+                         "max_per_deposit": 32,
+                         "max_deposits": 3200
                     },
                     {
                          "token_address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
                          "token_name": "stETH",
                          "token_symbol": "stETH",
-                         "max_per_deposit": 32000000000000000000,
-                         "max_deposits": 3200000000000000000000
+                         "max_per_deposit": 32,
+                         "max_deposits": 3200
                     },
                     {
                          "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
                          "token_name": "Rocket Pool ETH",
                          "token_symbol": "rETH",
-                         "max_per_deposit": 32000000000000000000,
-                         "max_deposits": 3200000000000000000000
+                         "max_per_deposit": 32,
+                         "max_deposits": 3200
                     }
                ],
      "strategyManager":
