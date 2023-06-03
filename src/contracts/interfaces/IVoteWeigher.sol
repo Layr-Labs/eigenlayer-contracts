@@ -13,6 +13,13 @@ interface IVoteWeigher {
      */
     function weightOfOperator(address operator, uint256 quorumNumber) external returns (uint96);
 
+    /**
+     * @notice This function computes the total weight of the @param staker in the quorum @param quorumNumber.
+     * @dev This function should - in general - not take quorum eligibility/requirements into account
+     * @dev returns zero in the case that `quorumNumber` is greater than or equal to `NUMBER_OF_QUORUMS`
+     */
+    function weightOfStaker(address staker, uint256 quorumNumber) external returns (uint96);
+
     /// @notice Number of quorums that are being used by the middleware.
     function NUMBER_OF_QUORUMS() external view returns (uint256);
 

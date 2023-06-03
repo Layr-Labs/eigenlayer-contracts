@@ -90,6 +90,45 @@ abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
         return weight;
     }
 
+    /**
+     * @notice This function computes the total weight of the @param staker in the quorum @param quorumNumber.
+     * @dev This function should - in general - not take quorum eligibility/requirements into account
+     * @dev returns zero in the case that `quorumNumber` is greater than or equal to `NUMBER_OF_QUORUMS`
+     */
+    function weightOfStaker(address staker, uint256 quorumNumber) external returns (uint96) {
+        uint96 weight;
+
+        if (quorumNumber < NUMBER_OF_QUORUMS) {
+            uint256 stratsLength = strategiesConsideredAndMultipliersLength(quorumNumber);
+
+            StrategyAndWeightingMultiplier memory strategyAndMultiplier;
+
+            for (uint256 i = 0; i < stratsLength;) {
+                // accessing i^th StrategyAndWeightingMultiplier struct for the quorumNumber
+                strategyAndMultiplier = strategiesConsideredAndMultipliers[quorumNumber][i];
+
+                // shares of the staker in the strategy
+                uint256 sharesAmount = strategyManager.stakerStrategyShares(staker, strategyAndMultiplier.strategy);
+
+                // add the weight from the shares for this strategy to the total weight
+                if (sharesAmount > 0) {
+                    weight += uint96(
+                        (
+                            (strategyAndMultiplier.strategy).sharesToUnderlying(sharesAmount)
+                                * strategyAndMultiplier.multiplier
+                        ) / WEIGHTING_DIVISOR
+                    );
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+
+        return weight;
+    }
+
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
     function addStrategiesConsideredAndMultipliers(
         uint256 quorumNumber,
