@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IServiceManager.sol";
 
 /**
  * @title Interface for a `PaymentManager` contract.
@@ -85,6 +86,12 @@ interface IPaymentManager {
         uint256 signedStakeFirstQuorum;
         uint256 signedStakeSecondQuorum;
     }
+
+    /**
+     * @notice The service's ServiceManager contract, which could be this contract itself
+     * @dev This address should never change!
+     */
+    function serviceManager() external view returns (IServiceManager);
 
     /**
      * @notice deposit one-time fees by the `msg.sender` with this contract to pay for future tasks of this middleware
