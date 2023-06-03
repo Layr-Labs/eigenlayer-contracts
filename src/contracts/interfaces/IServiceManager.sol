@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IDelegationManager.sol";
+import "./IVoteWeigher.sol";
+import "./IPaymentManager.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
  * @author Layr Labs, Inc.
  */
 interface IServiceManager {
+    // @notice Event that must be emitted when the service's VoteWeigher contract changes
+    event VoteWeigherChanged(IVoteWeigher previousVoteWeigher, IVoteWeigher newVoteWeigher);
+
+    // @notice Event that must be emitted when the service's PaymentManager contract changes
+    event PaymentManagerChanged(IPaymentManager previousPaymentManager, IPaymentManager newPaymentManager);
+
     /// @notice Returns the current 'taskNumber' for the middleware
     function taskNumber() external view returns (uint32);
 
@@ -28,4 +34,10 @@ interface IServiceManager {
     function latestServeUntilBlock() external view returns (uint32);
 
     function owner() external view returns (address);
+
+    // @notice The service's VoteWeigher contract, which could be this contract itself
+    function voteWeigher() external view returns (IVoteWeigher);
+
+    // @notice The service's PaymentManager contract, which could be this contract itself
+    function paymentManager() external view returns (IPaymentManager);
 }

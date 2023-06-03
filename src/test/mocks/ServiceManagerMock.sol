@@ -38,9 +38,14 @@ contract ServiceManagerMock is IServiceManager, DSTest {
         return IERC20(address(0));
     }
 
-    /// @notice The Delegation contract of EigenLayer.
-    function delegationManager() external pure returns (IDelegationManager) {
-        return IDelegationManager(address(0));
+    // @notice The service's VoteWeigher contract, which could be this contract itself
+    function voteWeigher() external pure returns (IVoteWeigher) {
+        return IVoteWeigher(address(0));
+    }
+
+    // @notice The service's PaymentManager contract, which could be this contract itself
+    function paymentManager() external pure returns (IPaymentManager) {
+        return IPaymentManager(address(0));
     }
 
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.

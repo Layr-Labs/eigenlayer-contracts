@@ -136,4 +136,14 @@ contract HashThreshold is Ownable, IServiceManager {
     function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external onlyRegistry {
         slasher.recordStakeUpdate(operator, updateBlock, serveUntilBlock, prevElement);
     }
+
+    /// @inheritdoc IServiceManager
+    function voteWeigher() external view returns (IVoteWeigher) {
+        return IVoteWeigher(address(this));
+    }
+
+    /// @inheritdoc IServiceManager
+    function paymentManager() external view returns (IPaymentManager) {
+        return IPaymentManager(address(this));
+    }
 }
