@@ -15,6 +15,7 @@ contract IndexRegistryUnitTests is Test {
     RegistryCoordinatorMock registryCoordinatorMock;
 
     uint8 defaultQuorumNumber = 1;
+    bytes32 defaultOperator = bytes32(uint256(34));
 
 
     function setUp() public {
@@ -60,11 +61,11 @@ contract IndexRegistryUnitTests is Test {
         cheats.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
         // register an operator
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
-        uint32[] memory quorumToOperatorListIndexes = new uint32[](1);
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
 
         cheats.startPrank(nonRegistryCoordinator);
         cheats.expectRevert(bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
-        indexRegistry.deregisterOperator(bytes32(0), quorumNumbers, quorumToOperatorListIndexes, 0);
+        indexRegistry.deregisterOperator(bytes32(0), quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
     }
 
@@ -81,20 +82,18 @@ contract IndexRegistryUnitTests is Test {
         require(indexRegistry.totalOperatorsForQuorum(1) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
         require(indexRegistry.totalOperatorsForQuorum(2) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
 
-        uint32[] memory quorumToOperatorListIndexes = new uint32[](2);
-        quorumToOperatorListIndexes[0] = 0;
-        quorumToOperatorListIndexes[1] = 0;
+        bytes32[] memory operatorIdsToSwap = new bytes32[](2);
+        operatorIdsToSwap[0] = operatorId2;
+        operatorIdsToSwap[1] = operatorId2;
 
         cheats.roll(block.number + 1);
 
-        // deregister the operatorId1, removing it from both quorum 1 and 2.
+        //deregister the operatorId1, removing it from both quorum 1 and 2.
         cheats.startPrank(address(registryCoordinatorMock));
-        indexRegistry.deregisterOperator(operatorId1, quorumNumbers, quorumToOperatorListIndexes, 0);
+        indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
 
         require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
-        require(indexRegistry.quorumToOperatorList(1, 0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
-        require(indexRegistry.quorumToOperatorList(2, 0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
         require(indexRegistry.globalOperatorList(0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
 
         (uint32 toBlockNumber1, uint32 index1) = indexRegistry.operatorIdToIndexHistory(operatorId1, defaultQuorumNumber, 0);
@@ -106,6 +105,39 @@ contract IndexRegistryUnitTests is Test {
         require(toBlockNumber2 == 0, "toBlockNumber not set correctly");
         require(index2 == 0, "incorrect index");
 
+    }
+
+    function testDeregisterOperatorWithIncorrectOperatorToSwap(bytes32 operatorId1, bytes32 operatorId2, bytes32 operatorId3) public {
+        cheats.assume(operatorId1 != operatorId2 && operatorId3 != operatorId2 && operatorId3 != operatorId1);
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        _registerOperator(operatorId1, quorumNumbers);
+        _registerOperator(operatorId2, quorumNumbers);
+        _registerOperator(operatorId3, quorumNumbers);
+
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = operatorId2;
+
+        cheats.roll(block.number + 1);
+
+        //deregister the operatorId1, removing it from both quorum 1 and 2.
+        cheats.startPrank(address(registryCoordinatorMock));
+        cheats.expectRevert(bytes("IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum"));
+        indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap, 0);
+        cheats.stopPrank();
+    }
+
+    function testDeregisterOperatorWithMismatchInputLengths() public {
+        bytes memory quorumNumbers = new bytes(1);
+        bytes32[] memory operatorIdsToSwap = new bytes32[](2);
+
+        //deregister the operatorId1, removing it from both quorum 1 and 2.
+        cheats.startPrank(address(registryCoordinatorMock));
+        cheats.expectRevert(bytes("IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"));
+        indexRegistry.deregisterOperator(defaultOperator, quorumNumbers, operatorIdsToSwap, 0);
+        cheats.stopPrank();
     }
 
     function testTotalOperatorUpdatesForOneQuorum(uint8 numOperators) public {
@@ -129,18 +161,18 @@ contract IndexRegistryUnitTests is Test {
         cheats.stopPrank();
     }
     
-    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 index) public {
-        cheats.startPrank(address(registryCoordinatorMock));
-        indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, index);
-        cheats.stopPrank();
-    }
+    // function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 index) public {
+    //     cheats.startPrank(address(registryCoordinatorMock));
+    //     indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, index);
+    //     cheats.stopPrank();
+    // }
 
-    function _getRandomId(uint256 seed) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(block.timestamp, seed));
-    }
+    // function _getRandomId(uint256 seed) internal view returns (bytes32) {
+    //     return keccak256(abi.encodePacked(block.timestamp, seed));
+    // }
 
-    function _generateRandomNumber(uint256 seed, uint256 modulus) internal view returns (uint256) {
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
-        return (randomNumber % modulus); 
-    }
+    // function _generateRandomNumber(uint256 seed, uint256 modulus) internal view returns (uint256) {
+    //     uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
+    //     return (randomNumber % modulus); 
+    // }
 }
