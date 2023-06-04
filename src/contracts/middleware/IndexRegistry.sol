@@ -179,10 +179,10 @@ contract IndexRegistry is IIndexRegistry, Test {
         if(operatorId != operatorIdToSwap){
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexToRemove);
-        } else {
-            //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
-            operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
-        }
+        } 
+        //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
+        operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
+        
     }
 
     /// @notice remove an operator from the globalOperatorList  
