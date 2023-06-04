@@ -73,9 +73,6 @@ contract IndexRegistry is IIndexRegistry, Test {
         require(quorumNumbers.length == operatorIdsToSwap.length, "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
 
         _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
-
-        
-
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexToRemove = operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
@@ -175,10 +172,7 @@ contract IndexRegistry is IIndexRegistry, Test {
     /// @param quorumNumber quorum number of the operator to remove
     /// @param indexToRemove index of the operator to remove
     function _processOperatorRemoval(bytes32 operatorId, uint8 quorumNumber, uint32 indexToRemove, bytes32 operatorIdToSwap) internal {   
-        uint256 operatorIdToIndexHistoryLength = operatorIdToIndexHistory[operatorId][quorumNumber].length;
-        emit log("hehe");
-        uint32 operatorIdToSwapIndex = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistoryLength - 1].index;
-        emit log("hehe");
+        uint32 operatorIdToSwapIndex = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index;
         require(quorumToTotalOperatorCount[quorumNumber] - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
@@ -187,7 +181,7 @@ contract IndexRegistry is IIndexRegistry, Test {
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexToRemove);
         } else {
             //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
-            operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = uint32(block.number);
+            operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
         }
     }
 
