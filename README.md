@@ -34,9 +34,18 @@ See the [Foundry Docs](https://book.getfoundry.sh/) for more info on installatio
 
 ### Natspec Documentation
 
-You will notice that we also have hardhat installed in this repo. This is only used to generate natspec [docgen](https://github.com/OpenZeppelin/solidity-docgen). This is our workaround until foundry [finishes implementing](https://github.com/foundry-rs/foundry/issues/1675) the `forge doc` command.
+This project uses `forge doc` to generate natspec located at `docs/docgen`. To generate the documentation locally: 
 
-To generate the docs, run `npx hardhat docgen` (you may need to run `npm install` first). The output is located in `docs/docgen`
+```
+forge doc --out docs/docgen
+```
+
+To run the documentation locally using `mdbook`:
+
+```
+cd docs/docgen
+mdbook serve
+```
 
 ### Run Tests
 
