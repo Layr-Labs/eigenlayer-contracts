@@ -28,11 +28,13 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
 
     constructor(
+        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
     ) VoteWeigherBase(_strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
+        registryCoordinator = _registryCoordinator;
     }
 
     // storage gap

@@ -24,11 +24,11 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     address[] public registries;
 
     constructor(
-        IStrategyManager _strategyManager,
-        IServiceManager _serviceManager,
         IBLSPubkeyRegistry _blsPubkeyRegistry,
-        IIndexRegistry _indexRegistry
-    ) StakeRegistry(_strategyManager, _serviceManager) {
+        IIndexRegistry _indexRegistry,
+        IStrategyManager _strategyManager,
+        IServiceManager _serviceManager
+    ) StakeRegistry(IRegistryCoordinator(address(this)), _strategyManager, _serviceManager) {
         blsPubkeyRegistry = _blsPubkeyRegistry;
         indexRegistry = _indexRegistry;
     }

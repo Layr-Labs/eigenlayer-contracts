@@ -8,9 +8,10 @@ contract StakeRegistryHarness is StakeRegistry {
     mapping(uint8 => mapping(address => uint96)) public weightOfOperatorForQuorum;
 
     constructor(
+        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(_strategyManager, _serviceManager) {}
+    ) StakeRegistry(_registryCoordinator, _strategyManager, _serviceManager) {}
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, OperatorStakeUpdate memory operatorStakeUpdate) external returns(uint96) {
         return _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);

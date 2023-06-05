@@ -35,6 +35,7 @@ contract StakeRegistryUnitTests is Test {
     ServiceManagerMock public serviceManagerMock;
 
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
+    address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
@@ -54,6 +55,7 @@ contract StakeRegistryUnitTests is Test {
         serviceManagerMock = new ServiceManagerMock(slasher);
 
         stakeRegistryImplementation = new StakeRegistryHarness(
+            IRegistryCoordinator(registryCoordinator),
             strategyManager,
             IServiceManager(address(serviceManagerMock))
         );
@@ -88,12 +90,28 @@ contract StakeRegistryUnitTests is Test {
                 )
             )
         );
+
+        cheats.stopPrank();
     }
 
     function testCorrectConstruction() public {
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         stakeRegistryImplementation.initialize(new uint96[](0), new IVoteWeigher.StrategyAndWeightingMultiplier[][](0));
+    }
+
+    function testSetMinimumStakeForQuorum_NotFromServiceManager_Reverts() public {
+        cheats.expectRevert("VoteWeigherBase.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
+        stakeRegistry.setMinimumStakeForQuorum(defaultQuorumNumber, 0);
+    }
+
+    function testSetMinimumStakeForQuorum_Valid(uint8 quorumNumber, uint96 minimumStakeForQuorum) public {
+        // set the minimum stake for quorum
+        cheats.prank(serviceManagerOwner);
+        stakeRegistry.setMinimumStakeForQuorum(quorumNumber, minimumStakeForQuorum);
+
+        // make sure the minimum stake for quorum is as expected
+        assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStakeForQuorum);
     }
 
     function testOperatorStakeUpdate_Valid(

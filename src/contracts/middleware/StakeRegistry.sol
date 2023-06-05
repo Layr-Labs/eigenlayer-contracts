@@ -20,10 +20,16 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96 stake
     );
 
+    modifier onlyRegistryCoordinator() {
+        require(msg.sender == address(registryCoordinator), "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        _;
+    }
+
     constructor(
+        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_strategyManager, _serviceManager)
+    ) StakeRegistryStorage(_registryCoordinator, _strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
     }
@@ -256,7 +262,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
+    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _registerOperator(operator, operatorId, quorumNumbers);
     }
 
@@ -273,7 +279,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
+    function deregisterOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _deregisterOperator(operator, operatorId, quorumNumbers);
     }
 
