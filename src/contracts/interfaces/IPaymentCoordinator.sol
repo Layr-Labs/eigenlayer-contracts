@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title Contract used to coordinate payments from AVSs to operators and splitting earnings from operators to stakers
+ * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequency splitting of earnings from operators to stakers
  * @author Layr Labs, Inc.
  */
 interface IPaymentCoordinator {
@@ -71,7 +71,7 @@ interface IPaymentCoordinator {
     function makePayment(Payment calldata payment) external;
 
     // @notice Permissioned function which allows posting a new Merkle root
-    function postMerkleRoot(IERC20 token, bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external;
+    function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external;
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
     function withdrawEigenlayerShare(IERC20 token, address recipient) external;
