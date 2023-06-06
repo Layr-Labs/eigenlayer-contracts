@@ -14,7 +14,7 @@ import "./VoteWeigherBase.sol";
  */
 abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     /// @notice the coordinator contract that this registry is associated with
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
 
     // TODO: set these on initialization
     /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as

@@ -5,12 +5,14 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
 
 import "../mocks/StrategyManagerMock.sol";
+import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../mocks/OwnableMock.sol";
 import "../mocks/DelegationMock.sol";
@@ -26,13 +28,16 @@ contract StakeRegistryUnitTests is Test {
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
 
-    IStrategyManager public strategyManager;
     ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
 
+    Slasher public slasherImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     StakeRegistryHarness public stakeRegistry;
 
     ServiceManagerMock public serviceManagerMock;
+    StrategyManagerMock public strategyManagerMock;
+    DelegationMock public delegationMock;
+    EigenPodManagerMock public eigenPodManagerMock;
 
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
     address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
@@ -42,33 +47,50 @@ contract StakeRegistryUnitTests is Test {
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
     uint8 defaultQuorumNumber = 0;
+    uint8 numQuorums = 128;
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
         pauserRegistry = new PauserRegistry(pauser, unpauser);
 
-        strategyManager = new StrategyManagerMock();
+        delegationMock = new DelegationMock();
+        eigenPodManagerMock = new EigenPodManagerMock();
+        strategyManagerMock = new StrategyManagerMock();
+        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
+        slasher = Slasher(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(slasherImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(Slasher.initialize.selector, msg.sender, pauserRegistry, 0/*initialPausedStatus*/)
+                )
+            )
+        );
 
-        // make the serviceManagerOwner the owner of the serviceManager contract
+        strategyManagerMock.setAddresses(
+            delegationMock,
+            eigenPodManagerMock,
+            slasher
+        );
+
         cheats.startPrank(serviceManagerOwner);
-        slasher = new SlasherMock();
+        // make the serviceManagerOwner the owner of the serviceManager contract
         serviceManagerMock = new ServiceManagerMock(slasher);
-
         stakeRegistryImplementation = new StakeRegistryHarness(
             IRegistryCoordinator(registryCoordinator),
-            strategyManager,
+            strategyManagerMock,
             IServiceManager(address(serviceManagerMock))
         );
 
         // setup the dummy minimum stake for quorum
-        uint96[] memory minimumStakeForQuorum = new uint96[](128);
+        uint96[] memory minimumStakeForQuorum = new uint96[](numQuorums);
         for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
             minimumStakeForQuorum[i] = uint96(i+1);
         }
 
         // setup the dummy quorum strategies
         IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IVoteWeigher.StrategyAndWeightingMultiplier[][](128);
+            new IVoteWeigher.StrategyAndWeightingMultiplier[][](numQuorums);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
             quorumStrategiesConsideredAndMultipliers[i] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
             quorumStrategiesConsideredAndMultipliers[i][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
@@ -112,6 +134,65 @@ contract StakeRegistryUnitTests is Test {
 
         // make sure the minimum stake for quorum is as expected
         assertEq(stakeRegistry.minimumStakeForQuorum(quorumNumber), minimumStakeForQuorum);
+    }
+
+    function testRegisterOperator_NotFromRegistryCoordinator_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        cheats.expectRevert("StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
+    }
+
+    function testRegisterOperator_NotOptedIntoSlashing_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        cheats.expectRevert("StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager");
+        cheats.prank(registryCoordinator);
+        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
+    }
+
+    function testRegisterOperator_MoreQuorumsThanQuorumCount_Reverts() public {
+        // opt into slashing
+        cheats.startPrank(defaultOperator);
+        delegationMock.setIsOperator(defaultOperator, true);
+        slasher.optIntoSlashing(address(serviceManagerMock));
+        cheats.stopPrank();
+
+        bytes memory quorumNumbers = new bytes(numQuorums+1);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            quorumNumbers[i] = bytes1(uint8(i));
+        }
+
+        // expect that it reverts when you register
+        cheats.expectRevert("StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");
+        cheats.prank(registryCoordinator);
+        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
+    }
+
+    function testRegisterOperator_LessThanMinimumStakeForQuorum_Reverts(
+        uint96[] memory stakesForQuorum
+    ) public {
+        cheats.assume(stakesForQuorum.length > 0);
+        // opt into slashing
+        cheats.startPrank(defaultOperator);
+        delegationMock.setIsOperator(defaultOperator, true);
+        slasher.optIntoSlashing(address(serviceManagerMock));
+        cheats.stopPrank();
+
+        // set the weights of the operator
+        stakeRegistry.setOperatorWeight()
+
+        bytes memory quorumNumbers = new bytes(stakesForQuorum.length > 128 ? 128 : stakesForQuorum.length);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            quorumNumbers[i] = bytes1(uint8(i));
+        }
+
+        stakesForQuorum[stakesForQuorum.length - 1] = stakeRegistry.minimumStakeForQuorum(uint8(quorumNumbers.length - 1)) - 1;
+
+        // expect that it reverts when you register
+        cheats.expectRevert("StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
+        cheats.prank(registryCoordinator);
+        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
     function testOperatorStakeUpdate_Valid(
