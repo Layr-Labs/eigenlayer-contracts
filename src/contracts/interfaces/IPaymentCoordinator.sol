@@ -41,25 +41,8 @@ interface IPaymentCoordinator {
         uint256[] amounts;
     }
 
-    // TODO: better define this event?
-    event PaymentReceived(address indexed receivedFrom, Payment payment);
-
-    // @notice Emitted when a new Merkle root is posted
-    event NewMerkleRootPosted(bytes32 root, uint256 height, uint256 confirmedAtBlockNumber, uint256 calculatedUpToBlockNumber);
-
-    /// @notice Array of roots of posted Merkle trees, as well as associated data like tree height
-    // MerkleRootPost[] public merkleRootPosts;
-    function merkleRootPosts(uint256 index) external view returns (MerkleRootPost memory);
-
     /// @notice Getter function for the length of the `merkleRootPosts` array
     function merkleRootPostsLength() external view returns (uint256);
-
-    /// @notice Mapping token => recipient => cumulative amount *claimed*
-    // mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
-    function cumulativeTokenAmountClaimedByRecipient(IERC20 token, address recipient) external view returns (uint256);
-
-    // @notice Constant that defines the share EigenLayer takes of all payments, in basis points
-    function EIGENLAYER_SHARE_BIPS() external view returns (uint256);
 
     /**
      * @notice Makes a payment of sum(amounts) paid in `token`, for `operator`'s contributions to an AVS,
