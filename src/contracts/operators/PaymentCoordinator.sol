@@ -82,8 +82,9 @@ contract PaymentCoordinator is IPaymentCoordinator{
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
     function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyAdmin(msg.sender){
         uint256 amount = cumulativeEigenLayerTokeEarnings[token];
-        cumulativeEigenLayerTokeEarnings[token] = 0;
         token.safeTransfer(recipient, amount);
+
+        cumulativeEigenLayerTokeEarnings[token] = 0;
     }
 
     /**
