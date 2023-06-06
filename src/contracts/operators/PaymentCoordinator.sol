@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IPaymentCoordinator.sol";
+import "../libraries/Merkle.sol";
 
 /**
  * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequency splitting of earnings from operators to stakers
@@ -24,6 +25,9 @@ contract PaymentCoordinator is IPaymentCoordinator{
     /// @notice Mapping token => recipient => cumulative amount *claimed*
     mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
 
+    /// @notice Mapping token => cumulative amount earned by EigenLayer
+    mapping(IERC20 => uint256) public cumulativeEigenLayerTokeEarnings;
+
      /// @notice Constant that defines the share EigenLayer takes of all payments, in basis points
      uint256 public EIGENLAYER_SHARE_BIPS;
 
@@ -32,6 +36,8 @@ contract PaymentCoordinator is IPaymentCoordinator{
 
     // @notice Emitted when a new Merkle root is posted
     event NewMerkleRootPosted(MerkleRootPost merkleRootPost);
+
+    event PaymentClaimed(MerkleLeaf merkleLeaf);
 
     modifier onlyAdmin(address sender) {
         require(sender == admin, "PaymentCoordinator: Only admin");
@@ -59,6 +65,10 @@ contract PaymentCoordinator is IPaymentCoordinator{
             sumAmounts += payment.amounts[i];
         }
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
+
+        uint256 eigenLayerShare = sumAmounts * EIGENLAYER_SHARE_BIPS / MAX_BIPS;
+        cumulativeEigenLayerTokeEarnings[payment.token] += eigenLayerShare;
+
         emit PaymentReceived(msg.sender, payment);
     }
 
@@ -70,26 +80,34 @@ contract PaymentCoordinator is IPaymentCoordinator{
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
-    function withdrawEigenlayerShare(IERC20 token, address recipient) external{
-        
+    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyAdmin(msg.sender){
+        uint256 amount = cumulativeEigenLayerTokeEarnings[token];
+        cumulativeEigenLayerTokeEarnings[token] = 0;
+        token.safeTransfer(recipient, amount);
     }
 
     /**
     * @notice Called by a staker or operator to prove the inclusion of their earnings in a posted Merkle root and claim them.
-    * @param token ERC20 token to claim
-    * @param amount The `amount` contained in the leaf of the Merkle tree to be proved against the specified Merkle root
     * @param proof Merkle proof showing that a leaf containing `(msg.sender, amount)` was included in the `rootIndex`-th
     * Merkle root posted for the `token`
-    * @param nodeIndex Specifies the node inside the Merkle tree corresponding to the specified root, `merkleRoots[rootIndex].root`.
-    * @param rootIndex Specifies the Merkle root to look up, using `merkleRootsByToken[token][rootIndex]`
+    * @param rootIndex Specifies the node inside the Merkle tree corresponding to the specified root, `merkleRoots[rootIndex].root`.
     */
     function proveAndClaimEarnings(
-        IERC20 token,
-        uint256 amount,
         bytes memory proof,
-        uint256 nodeIndex,
-        uint256 rootIndex
-    ) external;
+        uint256 rootIndex,
+        MerkleLeaf memory leaf
+    ) external{
+        require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
+        bytes32 leaf = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
+        bytes32 root = merkleRootPosts[rootIndex].root;
+        require(Merkle.verifyInclusionKeccak(proof, root, leaf, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
+
+        for(uint i = 0; i < leaf.amounts.length; i++) {
+            leaf.tokens[i].safeTransfer(leaf.recipient, leaf.amounts[i]);
+            cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] += leaf.amounts[i];
+        }
+        emit PaymentClaimed(leaf);
+    }
 
 
     /// @notice Getter function for the length of the `merkleRootPosts` array

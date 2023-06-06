@@ -39,6 +39,8 @@ interface IPaymentCoordinator {
         IERC20[] tokens;
         // cumulative all-time earnings in each token
         uint256[] amounts;
+        //index in the merkle tree
+        uint256 index;
     }
 
     /// @notice Getter function for the length of the `merkleRootPosts` array
