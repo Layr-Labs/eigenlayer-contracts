@@ -4,15 +4,22 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IPaymentCoordinator.sol";
 import "../libraries/Merkle.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+
 
 /**
  * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequency splitting of earnings from operators to stakers
  * @author Layr Labs, Inc.
  */
-contract PaymentCoordinator is IPaymentCoordinator{
+contract PaymentCoordinator is 
+    IPaymentCoordinator,
+    Initializable,
+    OwnableUpgradeable
+{
 
     /// @notice address approved to post new Merkle roots
-    address public admin;
+    address public rootPublisher;
 
     uint256 public merkleRootActivationDelay;
 
@@ -39,16 +46,19 @@ contract PaymentCoordinator is IPaymentCoordinator{
 
     event PaymentClaimed(MerkleLeaf merkleLeaf);
 
-    modifier onlyAdmin(address sender) {
-        require(sender == admin, "PaymentCoordinator: Only admin");
+    modifier onlyRootPublisher {
+        require(msg.sender == rootPublisher, "PaymentCoordinator: Only rootPublisher");
         _;
     }
 
-    constructor(uint256 _eigenlayerShareBips, address _admin, uint256 _merkleRootActivationDelay) {
-        require(_eigenlayerShareBips <= MAX_BIPS, "PaymentCoordinator: EigenLayer share cannot be greater than 100%");
-        EIGENLAYER_SHARE_BIPS = _eigenlayerShareBips;
-        admin = _admin;
-        merkleRootActivationDelay = _merkleRootActivationDelay;
+    function initialize(address _initialOwner, uint256 _eigenlayerShareBips, address _rootPublisher, uint256 _merkleRootActivationDelay)
+        external
+        initializer
+    {
+        _transferOwnership(_initialOwner);
+        _setRootPublisher(_rootPublisher);
+        _setMerkleRootActivationDelay(_merkleRootActivationDelay);
+        _setEigenLayerShareBIPS(_eigenlayerShareBips);
     }
 
 
@@ -73,14 +83,14 @@ contract PaymentCoordinator is IPaymentCoordinator{
     }
 
     // @notice Permissioned function which allows posting a new Merkle root
-    function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyAdmin(msg.sender){
+    function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher{
         MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelay, calculatedUpToBlockNumber);
         merkleRootPosts.push(newMerkleRoot);
         emit NewMerkleRootPosted(newMerkleRoot);
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
-    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyAdmin(msg.sender){
+    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyRootPublisher{
         uint256 amount = cumulativeEigenLayerTokeEarnings[token];
         token.safeTransfer(recipient, amount);
 
@@ -110,9 +120,34 @@ contract PaymentCoordinator is IPaymentCoordinator{
         emit PaymentClaimed(leaf);
     }
 
+    function setRootPublisher(address _rootPublisher) external onlyOwner{
+        _setRootPublisher(_rootPublisher);
+    }
+
+    function setMerkleRootActivationDelay(uint256 _merkleRootActivationDelay) external onlyOwner{
+        _setMerkleRootActivationDelay(_merkleRootActivationDelay);
+    }
+
+    function setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) external onlyOwner{
+        _setEigenLayerShareBIPS(_eigenlayerShareBips);
+    }
+
 
     /// @notice Getter function for the length of the `merkleRootPosts` array
     function merkleRootPostsLength() external view returns (uint256){
         return merkleRootPosts.length;
+    }
+
+    function _setRootPublisher(address _rootPublisher) internal {
+        rootPublisher = _rootPublisher;
+    }
+
+    function _setMerkleRootActivationDelay(uint256 _merkleRootActivationDelay) internal {
+        merkleRootActivationDelay = _merkleRootActivationDelay;
+    }
+
+    function _setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) internal {
+        require(_eigenlayerShareBips <= MAX_BIPS, "PaymentCoordinator: EigenLayer share cannot be greater than 100%");
+        EIGENLAYER_SHARE_BIPS = _eigenlayerShareBips;
     }
 }
