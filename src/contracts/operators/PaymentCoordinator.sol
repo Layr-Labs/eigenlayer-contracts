@@ -36,7 +36,7 @@ contract PaymentCoordinator is
     mapping(IERC20 => uint256) public cumulativeEigenLayerTokeEarnings;
 
      /// @notice Constant that defines the share EigenLayer takes of all payments, in basis points
-     uint256 public EIGENLAYER_SHARE_BIPS;
+     uint256 public eigenLayerShareBIPs;
 
     // TODO: better define this event?
     event PaymentReceived(address indexed receivedFrom, Payment payment);
@@ -76,7 +76,7 @@ contract PaymentCoordinator is
         }
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
 
-        uint256 eigenLayerShare = sumAmounts * EIGENLAYER_SHARE_BIPS / MAX_BIPS;
+        uint256 eigenLayerShare = sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
         cumulativeEigenLayerTokeEarnings[payment.token] += eigenLayerShare;
 
         emit PaymentReceived(msg.sender, payment);
@@ -109,8 +109,10 @@ contract PaymentCoordinator is
         MerkleLeaf memory leaf
     ) external{
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
+        require(merkleRootPosts[rootIndex].confirmedAtBlockNumber > block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
         bytes32 leaf = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
         bytes32 root = merkleRootPosts[rootIndex].root;
+        require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
         require(Merkle.verifyInclusionKeccak(proof, root, leaf, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
         for(uint i = 0; i < leaf.amounts.length; i++) {
@@ -118,6 +120,11 @@ contract PaymentCoordinator is
             cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] += leaf.amounts[i];
         }
         emit PaymentClaimed(leaf);
+    }
+
+    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher{
+        require(block.number <= merkleRootPosts[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
+        merkleRootPosts[rootIndex].root = bytes32(0);
     }
 
     function setRootPublisher(address _rootPublisher) external onlyOwner{
@@ -148,6 +155,6 @@ contract PaymentCoordinator is
 
     function _setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) internal {
         require(_eigenlayerShareBips <= MAX_BIPS, "PaymentCoordinator: EigenLayer share cannot be greater than 100%");
-        EIGENLAYER_SHARE_BIPS = _eigenlayerShareBips;
+        eigenLayerShareBIPs = _eigenlayerShareBips;
     }
 }
