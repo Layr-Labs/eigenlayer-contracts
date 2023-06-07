@@ -7,6 +7,7 @@ import "../libraries/BN254.sol";
 /**
  * @title A shared contract for EigenLayer operators to register their BLS public keys.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     //Hash of the zero public key: BN254.hashG1Point(G1Point(0,0))

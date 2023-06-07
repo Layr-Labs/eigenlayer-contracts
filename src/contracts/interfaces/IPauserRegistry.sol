@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 /**
  * @title Interface for the `PauserRegistry` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IPauserRegistry {
     /// @notice Mapping of addresses to whether they hold the pauser role.

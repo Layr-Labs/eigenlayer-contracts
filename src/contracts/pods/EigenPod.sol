@@ -21,6 +21,7 @@ import "./EigenPodPausingConstants.sol";
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
  * - creating new ETH validators with their withdrawal credentials pointed to this contract
  * - proving from beacon chain state roots that withdrawal credentials are pointed to this contract

@@ -6,6 +6,7 @@ import "./IRegistry.sol";
 /**
  * @title Interface for a `Registry`-type contract that uses either 1 or 2 quorums.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract does not currently support n-quorums where n >= 3.
  * Note in particular the presence of only `firstQuorumStake` and `secondQuorumStake` in the `OperatorStake` struct.
  */

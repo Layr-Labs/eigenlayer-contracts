@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /**
  * @title Minimal interface for an `Strategy` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
 interface IStrategy {

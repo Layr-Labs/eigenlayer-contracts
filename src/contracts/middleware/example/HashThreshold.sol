@@ -10,6 +10,7 @@ import "./ECDSARegistry.sol";
 /**
  * @title An EigenLayer middleware example service manager that slashes validators that sign a message that, when hashed 10 times starts with less than a certain number of 0s.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract HashThreshold is Ownable, IServiceManager {
     uint32 constant disputePeriodBlocks = 1 days / 12 seconds;

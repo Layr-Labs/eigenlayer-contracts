@@ -6,6 +6,7 @@ import "../libraries/BN254.sol";
 /**
  * @title Minimal interface for the `BLSPublicKeyCompendium` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IBLSPublicKeyCompendium {
     /**

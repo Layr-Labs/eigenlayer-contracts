@@ -7,6 +7,7 @@ import "./IDelegationManager.sol";
 /**
  * @title Interface for a `ServiceManager`-type contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IServiceManager {
     /// @notice Returns the current 'taskNumber' for the middleware

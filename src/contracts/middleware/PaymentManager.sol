@@ -13,6 +13,7 @@ import "../permissions/Pausable.sol";
 /**
  * @title Controls 'rolled-up' middleware payments.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is used for doing interactive payment challenges.
  * @notice The contract is marked as abstract since it does not implement the `respondToPaymentChallengeFinal`
  * function -- see DataLayerPaymentManager for an example
