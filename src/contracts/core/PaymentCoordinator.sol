@@ -6,6 +6,8 @@ import "../interfaces/IPaymentCoordinator.sol";
 import "../libraries/Merkle.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 
 
 /**
@@ -17,6 +19,7 @@ contract PaymentCoordinator is
     Initializable,
     OwnableUpgradeable
 {
+    using SafeERC20 for IERC20;
 
     /// @notice address approved to post new Merkle roots
     address public rootPublisher;
@@ -51,7 +54,7 @@ contract PaymentCoordinator is
         _;
     }
 
-    function initialize(address _initialOwner, uint256 _eigenlayerShareBips, address _rootPublisher, uint256 _merkleRootActivationDelay)
+    function initialize(address _initialOwner, address _rootPublisher, uint256 _eigenlayerShareBips, uint256 _merkleRootActivationDelay)
         external
         initializer
     {
@@ -110,10 +113,10 @@ contract PaymentCoordinator is
     ) external{
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
         require(merkleRootPosts[rootIndex].confirmedAtBlockNumber > block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
-        bytes32 leaf = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
+        bytes32 leafHash = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
         bytes32 root = merkleRootPosts[rootIndex].root;
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
-        require(Merkle.verifyInclusionKeccak(proof, root, leaf, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
+        require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
         for(uint i = 0; i < leaf.amounts.length; i++) {
             leaf.tokens[i].safeTransfer(leaf.recipient, leaf.amounts[i]);
