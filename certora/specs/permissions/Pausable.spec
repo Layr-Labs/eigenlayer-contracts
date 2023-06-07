@@ -27,7 +27,7 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
         uint256 newPausedStatus;
         pause(e, newPausedStatus);
         uint256 pausedStatusAfter = paused();
-        if (e.msg.sender == pauser && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
+        if (isPauser(e.msg.sender) && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
             assert(pausedStatusAfter == newPausedStatus, "pausedStatusAfter != newPausedStatus");
         } else {
             assert(pausedStatusAfter == pausedStatusBefore, "pausedStatusAfter != pausedStatusBefore");
@@ -35,7 +35,7 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     } else if (f.selector == pauseAll().selector) {
         pauseAll(e);
         uint256 pausedStatusAfter = paused();
-       if (e.msg.sender == pauser) {
+       if (isPauser(e.msg.sender)) {
             // assert(pausedStatusAfter == type(uint256).max, "pausedStatusAfter != newPausedStatus");
             assert(pausedStatusAfter == 115792089237316195423570985008687907853269984665640564039457584007913129639935,
                 "pausedStatusAfter != newPausedStatus");
