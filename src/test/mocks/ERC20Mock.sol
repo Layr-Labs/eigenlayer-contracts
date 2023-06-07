@@ -41,7 +41,7 @@ contract ERC20Mock is Context, IERC20 {
 
     uint256 private _totalSupply;
 
-    uint256 initSupply = type(uint256).max;
+    uint256 initSupply = type(uint88).max;
 
     constructor() {
         _mint(msg.sender, initSupply);

@@ -4,10 +4,9 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/ISlasher.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-import "forge-std/Test.sol";
-
-contract ServiceManagerMock is IServiceManager, DSTest {
+contract ServiceManagerMock is IServiceManager, Test {
     ISlasher public slasher;
 
     constructor(ISlasher _slasher) {

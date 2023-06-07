@@ -18,6 +18,8 @@ contract PaymentCoordinatorTest is Test {
     PaymentCoordinator public paymentCoordinatorImplementation;
     ProxyAdmin public proxyAdmin;
     ERC20Mock public dummyToken;
+    uint256 MAX_BIPS = 10000;
+    uint256 eigenLayerShareBIPs = 1000;
 
     function setUp() public {
         proxyAdmin = new ProxyAdmin();
@@ -30,7 +32,7 @@ contract PaymentCoordinatorTest is Test {
                                         paymentCoordinatorImplementation.initialize.selector,
                                         address(this),
                                         address(this),
-                                        1000,
+                                        eigenLayerShareBIPs,
                                         7200
                                     )
                                 )));
@@ -46,25 +48,23 @@ contract PaymentCoordinatorTest is Test {
     }
 
     function testMakePayment(uint256[] memory amounts) external {
-        cheats.assume(_sum(amounts) < dummyToken.balanceOf(address(this)));
+        cheats.assume(amounts.length > 0);
+        uint256 sum = _sum(amounts);
         PaymentCoordinator.Payment memory payment;
         payment.token = dummyToken;
-        // uint256[] memory amounts = new uint256[](2);
-        // amounts[0] = 100;
-        // amounts[1] = 200;
         payment.amounts = amounts;
 
 
         paymentCoordinator.makePayment(payment);
-
-        require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == 30, "cumulativeEigenLayerTokeEarnings should be set");
-        require(dummyToken.balanceOf(address(paymentCoordinator)) == 300, "incorrect token balance");
+        require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == sum * eigenLayerShareBIPs / MAX_BIPS, "cumulativeEigenLayerTokeEarnings should be set");
+        require(dummyToken.balanceOf(address(paymentCoordinator)) == sum, "incorrect token balance");
     }
 
-    function _sum(uint[] memory numbers) internal pure returns (uint) {
+    function _sum(uint[] memory numbers) internal returns (uint) {
         uint total = 0;
         
         for (uint i = 0; i < numbers.length; i++) {
+            cheats.assume(numbers[i] < type(uint32).max && numbers[i] > 0);
             total += numbers[i];
         }
         

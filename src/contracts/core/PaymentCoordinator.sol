@@ -8,6 +8,8 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "forge-std/Test.sol";
+
 
 
 /**
@@ -17,7 +19,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract PaymentCoordinator is 
     IPaymentCoordinator,
     Initializable,
-    OwnableUpgradeable
+    OwnableUpgradeable,
+    Test
 {
     using SafeERC20 for IERC20;
 
@@ -80,7 +83,6 @@ contract PaymentCoordinator is
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
 
         cumulativeEigenLayerTokeEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
-
         emit PaymentReceived(msg.sender, payment);
     }
 
