@@ -1,7 +1,7 @@
 
 methods {
     // external calls to PauserRegistry
-    isPauser() returns (bool) => DISPATCHER(true)
+    isPauser(address) returns (bool) => DISPATCHER(true)
 	unpauser() returns (address) => DISPATCHER(true)
 
     // envfree functions
@@ -10,7 +10,7 @@ methods {
     pauserRegistry() returns (address) envfree
 
     // harnessed functions
-    pauser() returns (address) envfree
+    isPauser(address) returns (bool) envfree
     unpauser() returns (address) envfree
     bitwise_not(uint256) returns (uint256) envfree
     bitwise_and(uint256, uint256) returns (uint256) envfree
