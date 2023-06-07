@@ -59,16 +59,16 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      * @param quorumNumber is the quorum whose ApkHash is being retrieved
-     * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
-     * @param index is the provided witness of the onchain index calculated offchain
+     * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
+     * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external returns (bytes32);
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32);
 
 	/**
-     * @notice get hash of the apk among all quourums at `blockNumber` using the provided `index`;
+     * @notice get hash of the apk among all quorums at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
-     * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
-     * @param index is the provided witness of the onchain index calculated offchain
+     * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
+     * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
     

@@ -16,7 +16,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
 
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
-    /// @notice the current global aggregate pubkey among all of the quorums
+    /// @notice the current aggregate pubkey of all operators registered in this contract, regardless of quorum
     BN254.G1Point public globalApk;
     /// @notice the registry coordinator contract
     IRegistryCoordinator public registryCoordinator;
@@ -120,17 +120,17 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      * @param quorumNumber is the quorum whose ApkHash is being retrieved
-     * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
-     * @param index is the provided witness of the onchain index calculated offchain
+     * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
+     * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external returns (bytes32){
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
         ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
         _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;
     }
 
 	/**
-     * @notice get hash of the apk among all quourums at `blockNumber` using the provided `index`;
+     * @notice get hash of the global apk among all quorums at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
@@ -148,10 +148,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     }
 
     function _processGlobalApkUpdate(BN254.G1Point memory point) internal {
-        // load and store in memory in common case we need to access the length again
+        // load and store in memory in case we need to access the length again
         uint256 globalApkUpdatesLength = globalApkUpdates.length;
         // update the nextUpdateBlockNumber of the previous update
-        if (globalApkUpdates.length > 0) {
+        if (globalApkUpdatesLength > 0) {
             globalApkUpdates[globalApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
         }
 
@@ -165,10 +165,9 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     }
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
-        BN254.G1Point memory apkBeforeUpdate;
         BN254.G1Point memory apkAfterUpdate;
 
-        for (uint8 i = 0; i < uint8(quorumNumbers.length);) {
+        for (uint i = 0; i < quorumNumbers.length;) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
             uint256 quorumApkUpdatesLength = quorumApkUpdates[quorumNumber].length;
@@ -176,10 +175,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 // update nextUpdateBlockNumber of the current latest ApkUpdate
                 quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
             }
-            
-            apkBeforeUpdate = quorumApk[quorumNumber];
 
-            apkAfterUpdate = apkBeforeUpdate.plus(point);
+            apkAfterUpdate = quorumApk[quorumNumber].plus(point);
 
             //update aggregate public key for this quorum
             quorumApk[quorumNumber] = apkAfterUpdate;
@@ -200,6 +197,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             blockNumber >= apkUpdate.updateBlockNumber, 
             "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: index too recent"
         );
+        /**
+        * if there is a next update, check that the blockNumber is before the next update or if 
+        * there is no next update, then apkUpdate.nextUpdateBlockNumber is 0.
+        */
         require(
             apkUpdate.nextUpdateBlockNumber == 0 || blockNumber < apkUpdate.nextUpdateBlockNumber, 
             "BLSPubkeyRegistry._validateApkHashForQuorumAtBlockNumber: not latest apk update"
