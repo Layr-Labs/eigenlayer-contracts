@@ -49,4 +49,7 @@ interface IPausable {
 
     /// @notice Returns 'true' if the `indexed`th bit of `_paused` is 1, and 'false' otherwise
     function paused(uint8 index) external view returns (bool);
+
+    /// @notice Allows the unpauser to set a new pauser registry
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external;
 }

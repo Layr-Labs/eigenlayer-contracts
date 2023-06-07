@@ -29,6 +29,9 @@ contract Pausable is IPausable {
     uint256 constant internal UNPAUSE_ALL = 0;
     uint256 constant internal PAUSE_ALL = type(uint256).max;
 
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(address pauserRegistry, address newPauserRegistry);
+
     /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
     event Paused(address indexed account, uint256 newPausedStatus);
 
@@ -66,7 +69,7 @@ contract Pausable is IPausable {
         );
         _paused = initPausedStatus;
         emit Paused(msg.sender, initPausedStatus);
-        pauserRegistry = _pauserRegistry;
+        _setPauserRegistry(_pauserRegistry);
     }
 
     /**
@@ -112,6 +115,18 @@ contract Pausable is IPausable {
     function paused(uint8 index) public view virtual returns (bool) {
         uint256 mask = 1 << index;
         return ((_paused & mask) == mask);
+    }
+
+    /// @notice Allows the unpauser to set a new pauser registry
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external onlyUnpauser {
+        _setPauserRegistry(newPauserRegistry);
+    }
+
+    /// internal function for setting pauser registry
+    function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
+        require(address(newPauserRegistry) != address(0), "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address");
+        emit PauserRegistrySet(address(pauserRegistry), address(newPauserRegistry));
+        pauserRegistry = newPauserRegistry;
     }
 
     /**
