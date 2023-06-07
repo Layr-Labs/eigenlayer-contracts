@@ -104,6 +104,8 @@ contract PaymentCoordinatorTest is Test {
         cheats.stopPrank();
         require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
         require(dummyToken.balanceOf(recipient) == amountToClaim, "incorrect token balance");
+
+        emit log_named_uint("balance", dummyToken.balanceOf(recipient));
     }
 
     function testNullifyMerkleRoot(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
@@ -115,6 +117,8 @@ contract PaymentCoordinatorTest is Test {
         PaymentCoordinator.MerkleLeaf memory leaf;
         leaf.amounts = new uint256[](1);
         leaf.tokens = new IERC20[](1);
+
+        cheats.roll(block.number + rootPostDelay + 1);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: Merkle root is null"));
         paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
     }
@@ -128,6 +132,7 @@ contract PaymentCoordinatorTest is Test {
     }
 
     function testClaimEarningsForRootTooEarly(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
+        cheats.assume(root != bytes32(0));
         testPostMerkleRoot(root, height, calculatedUpToBlockNumber);
         (bytes32 rootPost, , , ) = paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
 
