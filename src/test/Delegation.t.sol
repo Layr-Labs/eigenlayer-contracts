@@ -25,7 +25,7 @@ contract DelegationTests is EigenLayerTestHelper {
     MiddlewareVoteWeigherMock public voteWeigher;
     MiddlewareVoteWeigherMock public voteWeigherImplementation;
 
-    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount){
+    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
         cheats.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
         _;
@@ -106,8 +106,8 @@ contract DelegationTests is EigenLayerTestHelper {
     {
         cheats.assume(staker != operator);
         // base strategy will revert if these amounts are too small on first deposit
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
         
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
     }
@@ -120,8 +120,8 @@ contract DelegationTests is EigenLayerTestHelper {
         fuzzedAmounts(ethAmount, eigenAmount)
     {
         cheats.assume(staker != _operator);
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
 
         // use storage to solve stack-too-deep
         operator = _operator;
@@ -193,8 +193,8 @@ contract DelegationTests is EigenLayerTestHelper {
     {
         cheats.assume(staker != operator);
         // base strategy will revert if these amounts are too small on first deposit
-        cheats.assume(ethAmount >= 1e9);
-        cheats.assume(eigenAmount >= 1e9);
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 1);
 
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
         cheats.startPrank(address(strategyManager));
@@ -412,10 +412,11 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice This function tests to ensure that a delegation contract
     ///         cannot be intitialized multiple times, test with different caller addresses
-    function testCannotInitMultipleTimesDelegation(address _attacker) public cannotReinit {
+    function testCannotInitMultipleTimesDelegation(address _attacker) public {
         cheats.assume(_attacker != address(eigenLayerProxyAdmin));
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
+        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         delegation.initialize(_attacker, eigenLayerPauserReg, 0);
     }
 
@@ -515,8 +516,8 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(staker != operator);
 
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(ethAmount >= 1e9 && ethAmount <= 1e18);
-        cheats.assume(eigenAmount >= 1e9 && eigenAmount <= 1e18);
+        cheats.assume(ethAmount >= 1 && ethAmount <= 1e18);
+        cheats.assume(eigenAmount >= 1 && eigenAmount <= 1e18);
 
         if (!delegation.isOperator(operator)) {
             _testRegisterAsOperator(operator, IDelegationTerms(operator));

@@ -44,7 +44,7 @@ function delegateToBySignature(address staker, address operator, uint256 expiry,
 Delegates from `staker` to `operator`.
 
 _requires that:
-1) if `staker` is an EOA, then `signature` is valid ECSDA signature from `staker`, indicating their intention for this action
+1) if `staker` is an EOA, then `signature` is valid ECDSA signature from `staker`, indicating their intention for this action
 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271_
 
 ### undelegate

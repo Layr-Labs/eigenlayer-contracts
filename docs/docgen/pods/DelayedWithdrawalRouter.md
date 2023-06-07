@@ -171,7 +171,7 @@ Getter function for fetching the length of the delayedWithdrawals array of a spe
 function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool)
 ```
 
-Convenience function for checking whethere or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
+Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
 
 ### _claimDelayedWithdrawals
 

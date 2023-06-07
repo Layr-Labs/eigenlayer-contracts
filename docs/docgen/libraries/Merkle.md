@@ -81,4 +81,5 @@ this function returns the merkle root of a tree created from a set of leaves usi
      @param leaves the leaves of the merkle tree
 
      @notice requires the leaves.length is a power of 2
+     @return The computed Merkle root of the tree.
 

@@ -232,7 +232,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         return address(getPod(podOwner)).code.length > 0;
     }
 
-    function getBeaconChainStateRoot() external view returns(bytes32){
+    function getBeaconChainStateRoot() external view returns(bytes32) {
         // return beaconChainOracle.getBeaconChainStateRoot();
     }
 }

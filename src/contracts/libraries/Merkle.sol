@@ -46,6 +46,7 @@ library Merkle {
      * Note this is for a Merkle tree using the keccak/sha3 hash function
      */
     function processInclusionProofKeccak(bytes memory proof, bytes32 leaf, uint256 index) internal pure returns (bytes32) {
+        require(proof.length != 0 && proof.length % 32 == 0, "Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32");
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i+=32) {
             if(index % 2 == 0) {
@@ -97,6 +98,7 @@ library Merkle {
      * Note this is for a Merkle tree using the sha256 hash function
      */
     function processInclusionProofSha256(bytes memory proof, bytes32 leaf, uint256 index) internal view returns (bytes32) {
+        require(proof.length != 0 && proof.length % 32 == 0, "Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32");
         bytes32[1] memory computedHash = [leaf];
         for (uint256 i = 32; i <= proof.length; i+=32) {
             if(index % 2 == 0) {
@@ -123,8 +125,8 @@ library Merkle {
     /**
      @notice this function returns the merkle root of a tree created from a set of leaves using sha256 as its hash function
      @param leaves the leaves of the merkle tree
-
-     @notice requires the leaves.length is a power of 2
+     @return The computed Merkle root of the tree.
+     @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
      */ 
     function merkleizeSha256(
         bytes32[] memory leaves

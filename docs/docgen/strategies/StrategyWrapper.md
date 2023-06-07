@@ -23,7 +23,7 @@ EigenLayer's StrategyManager contract
 contract IERC20 underlyingToken
 ```
 
-The underyling token for shares in this Strategy
+The underlying token for shares in this Strategy
 
 ### totalShares
 
@@ -31,7 +31,7 @@ The underyling token for shares in this Strategy
 uint256 totalShares
 ```
 
-The total number of extant shares in thie Strategy
+The total number of extant shares in this Strategy
 
 ### onlyStrategyManager
 
@@ -88,7 +88,7 @@ other functions, and individual share balances are recorded in the strategyManag
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| depositor | address |  |
+| depositor | address | is the address to receive the withdrawn funds |
 | token | contract IERC20 | is the ERC20 token being transferred out |
 | amountShares | uint256 | is the amount of shares being withdrawn |
 
@@ -110,13 +110,19 @@ function sharesToUnderlyingView(uint256 amountShares) public pure returns (uint2
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
 In contrast to `sharesToUnderlying`, this function guarantees no state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountShares | uint256 | is the amount of shares to calculate its conversion into the underlying token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of underlying tokens corresponding to the input `amountShares` |
 
 ### sharesToUnderlying
 
@@ -127,13 +133,19 @@ function sharesToUnderlying(uint256 amountShares) public pure returns (uint256)
 Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
 In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountShares | uint256 | is the amount of shares to calculate its conversion into the underlying token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of underlying tokens corresponding to the input `amountShares` |
 
 ### underlyingToSharesView
 
@@ -144,13 +156,19 @@ function underlyingToSharesView(uint256 amountUnderlying) external pure returns 
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
 In contrast to `underlyingToShares`, this function guarantees no state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountUnderlying | uint256 | is the amount of `underlyingToken` to calculate its conversion into strategy shares |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of shares corresponding to the input `amountUnderlying` |
 
 ### underlyingToShares
 
@@ -161,13 +179,19 @@ function underlyingToShares(uint256 amountUnderlying) external pure returns (uin
 Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
 In contrast to `underlyingToSharesView`, this function **may** make state modifications
 
-_Implementation for these functions in particular may vary signifcantly for different strategies_
+_Implementation for these functions in particular may vary significantly for different strategies_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amountUnderlying | uint256 | is the amount of `underlyingToken` to calculate its conversion into strategy shares |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | The amount of shares corresponding to the input `amountUnderlying` |
 
 ### userUnderlyingView
 

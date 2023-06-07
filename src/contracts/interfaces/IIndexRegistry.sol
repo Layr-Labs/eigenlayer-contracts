@@ -23,7 +23,7 @@ interface IIndexRegistry is IRegistry {
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
-     * @dev Permissioned by RegistryCoordinator
+     * @dev access restricted to the RegistryCoordinator
      */
     function registerOperator(bytes32 operatorId, uint8[] memory quorumNumbers) external;
 
@@ -36,6 +36,12 @@ interface IIndexRegistry is IRegistry {
      * @dev Permissioned by RegistryCoordinator
      */
     function deregisterOperator(bytes32 operatorId, uint8[] memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external;
+
+    /**
+     * @notice Returns the operator id at the index in the list of all operators for all quorums
+     * @param index is the index of the operator in the array of operators
+     */
+    function totalOperatorList(uint256 index) external view returns (bytes32);
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.

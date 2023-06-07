@@ -13,7 +13,7 @@ import "../src/contracts/core/StrategyManager.sol";
 import "../src/contracts/core/Slasher.sol";
 import "../src/contracts/core/DelegationManager.sol";
 
-import "../src/contracts/strategies/StrategyBase.sol";
+import "../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 import "../src/contracts/pods/EigenPod.sol";
 import "../src/contracts/pods/EigenPodManager.sol";
@@ -37,9 +37,10 @@ contract Deployer_M1 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // struct used to encode token info in config file
-    struct StrategyTokenAndName {
+    struct StrategyConfig {
+        uint256 maxDeposits;
+        uint256 maxPerDeposit;
         address tokenAddress;
-        string tokenName;
         string tokenSymbol;
     }
 
@@ -64,14 +65,14 @@ contract Deployer_M1 is Script, Test {
 
     EmptyContract public emptyContract;
 
-    address communityMultisig;
+    address executorMultisig;
     address teamMultisig;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
 
     // strategies deployed
-    StrategyBase[] public deployedStrategyArray;
+    StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
@@ -81,6 +82,7 @@ contract Deployer_M1 is Script, Test {
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
@@ -99,6 +101,7 @@ contract Deployer_M1 is Script, Test {
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
+        EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delayedWithdrawalRouter.init_paused_status");
 
@@ -108,15 +111,15 @@ contract Deployer_M1 is Script, Test {
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
 
         // tokens to deploy strategies for
-        StrategyTokenAndName[] memory strategyTokensAndNames;
+        StrategyConfig[] memory strategyConfigs;
 
-        communityMultisig = stdJson.readAddress(config_data, ".multisig_addresses.communityMultisig");
+        executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
         teamMultisig = stdJson.readAddress(config_data, ".multisig_addresses.teamMultisig");
         // load token list
-        bytes memory strategyTokensAndNamesRaw = stdJson.parseRaw(config_data, ".strategies");
-        strategyTokensAndNames = abi.decode(strategyTokensAndNamesRaw, (StrategyTokenAndName[]));
+        bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
+        strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
 
-        require(communityMultisig != address(0), "communityMultisig address not configured correctly!");
+        require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(teamMultisig != address(0), "teamMultisig address not configured correctly!");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
@@ -126,7 +129,7 @@ contract Deployer_M1 is Script, Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(teamMultisig, communityMultisig);
+        eigenLayerPauserReg = new PauserRegistry(teamMultisig, executorMultisig);
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -178,7 +181,7 @@ contract Deployer_M1 is Script, Test {
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 DELEGATION_INIT_PAUSED_STATUS
             )
@@ -188,7 +191,7 @@ contract Deployer_M1 is Script, Test {
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 teamMultisig,
                 eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS,
@@ -200,7 +203,7 @@ contract Deployer_M1 is Script, Test {
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 SLASHER_INIT_PAUSED_STATUS
             )
@@ -210,8 +213,9 @@ contract Deployer_M1 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
+                EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
-                communityMultisig,
+                executorMultisig,
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
             )
@@ -220,45 +224,29 @@ contract Deployer_M1 is Script, Test {
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
             abi.encodeWithSelector(DelayedWithdrawalRouter.initialize.selector,
-            communityMultisig,
+            executorMultisig,
             eigenLayerPauserReg,
             DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS,
             DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS)
         );
 
-        // deploy simple ERC20 (**NOT** WETH-like!), used in a test strategy
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
-            if (strategyTokensAndNames[i].tokenAddress == address(0)) {
-                strategyTokensAndNames[i].tokenAddress = address(
-                    new ERC20PresetFixedSupply(
-                    strategyTokensAndNames[i].tokenName,
-                    strategyTokensAndNames[i].tokenSymbol,
-                    // initial supply
-                    10e50,
-                    // owner
-                    msg.sender
-                    )
-                );
-            }
-        }
-
-        // deploy StrategyBase contract implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        // deploy StrategyBaseTVLLimits contract implementation
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         // create upgradeable proxies that each point to the implementation and initialize them
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
+        for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             deployedStrategyArray.push(
-                StrategyBase(address(
+                StrategyBaseTVLLimits(address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBase.initialize.selector, IERC20(strategyTokensAndNames[i].tokenAddress), eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
                     )
                 ))
             );
         }
 
-        eigenLayerProxyAdmin.transferOwnership(communityMultisig);
-        eigenPodBeacon.transferOwnership(communityMultisig);
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
@@ -289,12 +277,12 @@ contract Deployer_M1 is Script, Test {
         string memory parent_object = "parent object";
 
         string memory deployed_strategies = "strategies";
-        for (uint256 i = 0; i < strategyTokensAndNames.length; ++i) {
-            vm.serializeAddress(deployed_strategies, strategyTokensAndNames[i].tokenSymbol, address(deployedStrategyArray[i]));
+        for (uint256 i = 0; i < strategyConfigs.length; ++i) {
+            vm.serializeAddress(deployed_strategies, strategyConfigs[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
         string memory deployed_strategies_output = vm.serializeAddress(
-            deployed_strategies, strategyTokensAndNames[strategyTokensAndNames.length - 1].tokenSymbol,
-            address(deployedStrategyArray[strategyTokensAndNames.length - 1])
+            deployed_strategies, strategyConfigs[strategyConfigs.length - 1].tokenSymbol,
+            address(deployedStrategyArray[strategyConfigs.length - 1])
         );
 
         string memory deployed_addresses = "addresses";
@@ -317,7 +305,7 @@ contract Deployer_M1 is Script, Test {
         string memory deployed_addresses_output = vm.serializeString(deployed_addresses, "strategies", deployed_strategies_output);
 
         string memory parameters = "parameters";
-        vm.serializeAddress(parameters, "communityMultisig", communityMultisig);
+        vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
         string memory parameters_output = vm.serializeAddress(parameters, "teamMultisig", teamMultisig);
 
         string memory chain_info = "chainInfo";
@@ -385,14 +373,14 @@ contract Deployer_M1 is Script, Test {
     }
 
     function _verifyInitialOwners() internal view {
-        require(strategyManager.owner() == communityMultisig, "strategyManager: owner not set correctly");
-        require(delegation.owner() == communityMultisig, "delegation: owner not set correctly");
-        require(slasher.owner() == communityMultisig, "slasher: owner not set correctly");
-        require(eigenPodManager.owner() == communityMultisig, "delegation: owner not set correctly");
+        require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
+        require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
+        require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
+        require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
 
-        require(eigenLayerProxyAdmin.owner() == communityMultisig, "eigenLayerProxyAdmin: owner not set correctly");
-        require(eigenPodBeacon.owner() == communityMultisig, "eigenPodBeacon: owner not set correctly");
-        require(delayedWithdrawalRouter.owner() == communityMultisig, "delayedWithdrawalRouter: owner not set correctly");        
+        require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
+        require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
+        require(delayedWithdrawalRouter.owner() == executorMultisig, "delayedWithdrawalRouter: owner not set correctly");        
     }
 
     function _checkPauserInitializations() internal view {
@@ -403,11 +391,11 @@ contract Deployer_M1 is Script, Test {
         require(delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg, "delayedWithdrawalRouter: pauser registry not set correctly");        
 
         require(eigenLayerPauserReg.pauser() == teamMultisig, "pauserRegistry: pauser not set correctly");
-        require(eigenLayerPauserReg.unpauser() == communityMultisig, "pauserRegistry: unpauser not set correctly");
+        require(eigenLayerPauserReg.unpauser() == executorMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
-            require(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBase: pauser registry not set correctly");
-            require(deployedStrategyArray[i].paused() == 0, "StrategyBase: init paused status set incorrectly");
+            require(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly");
+            require(deployedStrategyArray[i].paused() == 0, "StrategyBaseTVLLimits: init paused status set incorrectly");
         }
 
         // // pause *nothing*
@@ -427,7 +415,7 @@ contract Deployer_M1 is Script, Test {
         require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
     }
 
-    function _verifyInitializationParams() internal view {
+    function _verifyInitializationParams() internal {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -457,6 +445,15 @@ contract Deployer_M1 is Script, Test {
             " eigenPodImplementation: eigenPodManager contract address not set correctly");
         require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter,
             " eigenPodImplementation: delayedWithdrawalRouter contract address not set correctly");
+
+        string memory config_data = vm.readFile(deployConfigPath);
+        for (uint i = 0; i < deployedStrategyArray.length; i++) {
+            uint256 maxPerDeposit = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_per_deposit"));
+            uint256 maxDeposits = stdJson.readUint(config_data, string.concat(".strategies[", vm.toString(i), "].max_deposits"));
+            (uint256 setMaxPerDeposit, uint256 setMaxDeposits) = deployedStrategyArray[i].getTVLLimits();
+            require(setMaxPerDeposit == maxPerDeposit, "setMaxPerDeposit not set correctly");
+            require(setMaxDeposits == maxDeposits, "setMaxDeposits not set correctly");
+        }
     }
 }
 

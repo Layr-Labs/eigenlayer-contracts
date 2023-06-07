@@ -80,7 +80,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
     
-    // in exection payload header
+    // in execution payload header
     uint256 internal constant BLOCK_NUMBER_INDEX = 6;
     uint256 internal constant WITHDRAWALS_ROOT_INDEX = 14;
 
@@ -127,46 +127,6 @@ library BeaconChainProofs {
         uint40 validatorIndex;
     }
 
-    function computePhase0BeaconBlockHeaderRoot(bytes32[NUM_BEACON_BLOCK_HEADER_FIELDS] calldata blockHeaderFields) internal pure returns(bytes32) {
-        bytes32[] memory paddedHeaderFields = new bytes32[](2**BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT);
-        
-        for (uint256 i = 0; i < NUM_BEACON_BLOCK_HEADER_FIELDS; ++i) {
-            paddedHeaderFields[i] = blockHeaderFields[i];
-        }
-
-        return Merkle.merkleizeSha256(paddedHeaderFields);
-    }
-
-    function computePhase0BeaconStateRoot(bytes32[NUM_BEACON_STATE_FIELDS] calldata beaconStateFields) internal pure returns(bytes32) {
-        bytes32[] memory paddedBeaconStateFields = new bytes32[](2**BEACON_STATE_FIELD_TREE_HEIGHT);
-        
-        for (uint256 i = 0; i < NUM_BEACON_STATE_FIELDS; ++i) {
-            paddedBeaconStateFields[i] = beaconStateFields[i];
-        }
-        
-        return Merkle.merkleizeSha256(paddedBeaconStateFields);
-    }
-
-    function computePhase0ValidatorRoot(bytes32[NUM_VALIDATOR_FIELDS] calldata validatorFields) internal pure returns(bytes32) {  
-        bytes32[] memory paddedValidatorFields = new bytes32[](2**VALIDATOR_FIELD_TREE_HEIGHT);
-        
-        for (uint256 i = 0; i < NUM_VALIDATOR_FIELDS; ++i) {
-            paddedValidatorFields[i] = validatorFields[i];
-        }
-
-        return Merkle.merkleizeSha256(paddedValidatorFields);
-    }
-
-    function computePhase0Eth1DataRoot(bytes32[NUM_ETH1_DATA_FIELDS] calldata eth1DataFields) internal pure returns(bytes32) {  
-        bytes32[] memory paddedEth1DataFields = new bytes32[](2**ETH1_DATA_FIELD_TREE_HEIGHT);
-        
-        for (uint256 i = 0; i < ETH1_DATA_FIELD_TREE_HEIGHT; ++i) {
-            paddedEth1DataFields[i] = eth1DataFields[i];
-        }
-
-        return Merkle.merkleizeSha256(paddedEth1DataFields);
-    }
-
     /**
      * 
      * @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the
@@ -174,6 +134,7 @@ library BeaconChainProofs {
      * validatorIndex mod 4 is used to determine which of the four uint64 values to extract from the balanceRoot.
      * @param validatorIndex is the index of the validator being proven for.
      * @param balanceRoot is the combination of 4 validator balances being proven for.
+     * @return The validator's balance, in Gwei
      */
    function getBalanceFromBalanceRoot(uint40 validatorIndex, bytes32 balanceRoot) internal pure returns (uint64) {
         uint256 bitShiftAmount = (validatorIndex % 4) * 64;
@@ -259,6 +220,11 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: withdrawalProof has incorrect length");
         require(proofs.executionPayloadProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: executionPayloadProof has incorrect length");
+        require(proofs.slotProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: slotProof has incorrect length");
+        require(proofs.blockNumberProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: blockNumberProof has incorrect length");
+
 
         /**
          * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
