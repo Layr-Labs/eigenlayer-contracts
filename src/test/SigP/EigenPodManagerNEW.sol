@@ -38,6 +38,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function paused(uint8 index) external view returns (bool) {}
 
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external {}
+
     function pauserRegistry() external view returns (IPauserRegistry) {}
 
     function unpause(uint256 newPausedStatus) external {}
