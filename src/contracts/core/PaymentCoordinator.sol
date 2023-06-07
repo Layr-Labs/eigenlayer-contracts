@@ -79,8 +79,7 @@ contract PaymentCoordinator is
         }
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
 
-        uint256 eigenLayerShare = sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
-        cumulativeEigenLayerTokeEarnings[payment.token] += eigenLayerShare;
+        cumulativeEigenLayerTokeEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
 
         emit PaymentReceived(msg.sender, payment);
     }

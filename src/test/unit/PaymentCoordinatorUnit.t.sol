@@ -5,6 +5,9 @@ import "../../contracts/core/PaymentCoordinator.sol";
 import "../../contracts/interfaces/IPaymentCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import "../mocks/ERC20Mock.sol";
+
+
 
 import "forge-std/Test.sol";
 
@@ -29,6 +32,8 @@ contract PaymentCoordinatorTest is Test {
                                         7200
                                     )
                                 )));
+        
+        dummyToken = new ERC20Mock()
     }
 
     function testInitialize() public {
@@ -37,5 +42,22 @@ contract PaymentCoordinatorTest is Test {
         require(paymentCoordinator.eigenLayerShareBIPs() == 1000, "eigenLayerShareBIPs should be set");
         require(paymentCoordinator.owner() == address(this), "owner should be set");
     }
+
+    function testMakePayment() external {
+        PaymentCoordinator.Payment memory payment;
+        payment.token = dummyToken;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 100;
+        amounts[1] = 200;
+        payment.amounts = amounts;
+
+
+        paymentCoordinator.makePayment(payment);
+
+        require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == 30, "cumulativeEigenLayerTokeEarnings should be set");
+        require(dummyToken.balance(address(paymentCoordinator)) == 300, "incorrect token balance");
+    }
+
+
 
 }
