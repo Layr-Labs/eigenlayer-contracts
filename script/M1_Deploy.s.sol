@@ -67,6 +67,7 @@ contract Deployer_M1 is Script, Test {
 
     address executorMultisig;
     address operationsMultisig;
+    address pauserMultisig;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
@@ -115,6 +116,7 @@ contract Deployer_M1 is Script, Test {
 
         executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
+        pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
@@ -130,9 +132,10 @@ contract Deployer_M1 is Script, Test {
 
         //deploy pauser registry
         {
-            address[] memory pausers = new address[](2);
+            address[] memory pausers = new address[](3);
             pausers[0] = executorMultisig;
             pausers[1] = operationsMultisig;
+            pausers[2] = pauserMultisig;
             eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
         }
 
@@ -397,6 +400,7 @@ contract Deployer_M1 is Script, Test {
 
         require(eigenLayerPauserReg.isPauser(operationsMultisig), "pauserRegistry: operationsMultisig is not pauser");
         require(eigenLayerPauserReg.isPauser(executorMultisig), "pauserRegistry: executorMultisig is not pauser");
+        require(eigenLayerPauserReg.isPauser(pauserMultisig), "pauserRegistry: pauserMultisig is not pauser");
         require(eigenLayerPauserReg.unpauser() == executorMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
