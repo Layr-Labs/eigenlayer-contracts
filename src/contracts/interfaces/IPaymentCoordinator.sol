@@ -45,7 +45,7 @@ interface IPaymentCoordinator {
     }
 
     /// @notice Getter function for the length of the `merkleRootPosts` array
-    function merkleRootPostsLength() external view returns (uint256);
+    function merkleRootsLength() external view returns (uint256);
 
     /**
      * @notice Makes a payment of sum(amounts) paid in `token`, for `operator`'s contributions to an AVS,

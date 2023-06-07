@@ -33,7 +33,7 @@ contract PaymentCoordinator is
     uint256 public constant MAX_BIPS = 10000;
 
     /// @notice Array of roots of posted Merkle trees, as well as associated data like tree height
-    MerkleRootPost[] public merkleRootPosts;
+    MerkleRootPost[] public merkleRoots;
 
     /// @notice Mapping token => recipient => cumulative amount *claimed*
     mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
@@ -89,15 +89,20 @@ contract PaymentCoordinator is
     // @notice Permissioned function which allows posting a new Merkle root
     function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher{
         MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelay, calculatedUpToBlockNumber);
-        merkleRootPosts.push(newMerkleRoot);
+        merkleRoots.push(newMerkleRoot);
         emit NewMerkleRootPosted(newMerkleRoot);
+    }
+
+    /// @notice Permissioned function which allows rootPublisher to nullify a Merkle root
+    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher{
+        require(block.number <= merkleRoots[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
+        merkleRoots[rootIndex].root = bytes32(0);
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
     function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyRootPublisher{
         uint256 amount = cumulativeEigenLayerTokeEarnings[token];
         token.safeTransfer(recipient, amount);
-
         cumulativeEigenLayerTokeEarnings[token] = 0;
     }
 
@@ -113,10 +118,10 @@ contract PaymentCoordinator is
         MerkleLeaf memory leaf
     ) external{
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
-        require(merkleRootPosts[rootIndex].confirmedAtBlockNumber > block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
-        bytes32 leafHash = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
-        bytes32 root = merkleRootPosts[rootIndex].root;
+        require(merkleRoots[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
+        bytes32 root = merkleRoots[rootIndex].root;
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
+        bytes32 leafHash = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
         require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
         for(uint i = 0; i < leaf.amounts.length; i++) {
@@ -124,11 +129,6 @@ contract PaymentCoordinator is
             cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] += leaf.amounts[i];
         }
         emit PaymentClaimed(leaf);
-    }
-
-    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher{
-        require(block.number <= merkleRootPosts[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
-        merkleRootPosts[rootIndex].root = bytes32(0);
     }
 
     function setRootPublisher(address _rootPublisher) external onlyOwner{
@@ -144,9 +144,9 @@ contract PaymentCoordinator is
     }
 
 
-    /// @notice Getter function for the length of the `merkleRootPosts` array
-    function merkleRootPostsLength() external view returns (uint256){
-        return merkleRootPosts.length;
+    /// @notice Getter function for the length of the `merkleRoots` array
+    function merkleRootsLength() external view returns (uint256){
+        return merkleRoots.length;
     }
 
     function _setRootPublisher(address _rootPublisher) internal {
