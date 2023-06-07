@@ -13,9 +13,11 @@ import "forge-std/Test.sol";
 
 
 contract PaymentCoordinatorTest is Test {
+    Vm cheats = Vm(HEVM_ADDRESS);
     PaymentCoordinator public paymentCoordinator;
     PaymentCoordinator public paymentCoordinatorImplementation;
     ProxyAdmin public proxyAdmin;
+    ERC20Mock public dummyToken;
 
     function setUp() public {
         proxyAdmin = new ProxyAdmin();
@@ -33,7 +35,7 @@ contract PaymentCoordinatorTest is Test {
                                     )
                                 )));
         
-        dummyToken = new ERC20Mock()
+        dummyToken = new ERC20Mock();
     }
 
     function testInitialize() public {
@@ -43,19 +45,30 @@ contract PaymentCoordinatorTest is Test {
         require(paymentCoordinator.owner() == address(this), "owner should be set");
     }
 
-    function testMakePayment() external {
+    function testMakePayment(uint256[] memory amounts) external {
+        cheats.assume(_sum(amounts) < dummyToken.balanceOf(address(this)));
         PaymentCoordinator.Payment memory payment;
         payment.token = dummyToken;
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 100;
-        amounts[1] = 200;
+        // uint256[] memory amounts = new uint256[](2);
+        // amounts[0] = 100;
+        // amounts[1] = 200;
         payment.amounts = amounts;
 
 
         paymentCoordinator.makePayment(payment);
 
         require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == 30, "cumulativeEigenLayerTokeEarnings should be set");
-        require(dummyToken.balance(address(paymentCoordinator)) == 300, "incorrect token balance");
+        require(dummyToken.balanceOf(address(paymentCoordinator)) == 300, "incorrect token balance");
+    }
+
+    function _sum(uint[] memory numbers) internal pure returns (uint) {
+        uint total = 0;
+        
+        for (uint i = 0; i < numbers.length; i++) {
+            total += numbers[i];
+        }
+        
+        return total;
     }
 
 
