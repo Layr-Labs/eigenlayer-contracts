@@ -37,7 +37,7 @@ contract Pausable is IPausable {
 
     /// @notice
     modifier onlyPauser() {
-        require(msg.sender == pauserRegistry.pauser(), "msg.sender is not permissioned as pauser");
+        require(pauserRegistry.isPauser(msg.sender), "msg.sender is not permissioned as pauser");
         _;
     }
 

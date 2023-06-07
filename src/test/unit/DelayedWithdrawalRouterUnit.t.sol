@@ -58,8 +58,10 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     function setUp() external {
         proxyAdmin = new ProxyAdmin();
 
-        pauserRegistry = new PauserRegistry(pauser, unpauser);
-
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserRegistry = new PauserRegistry(pausers, unpauser);
+        
         eigenPodManagerMock = new EigenPodManagerMock();
 
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManagerMock);
@@ -416,7 +418,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         address recipient = address(22222);
 
         // pause delayedWithdrawal claims
-        cheats.startPrank(delayedWithdrawalRouter.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         delayedWithdrawalRouter.pause(2 ** PAUSED_PAYMENT_CLAIMS);
         cheats.stopPrank();
 

@@ -129,7 +129,12 @@ contract Deployer_M1 is Script, Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(teamMultisig, executorMultisig);
+        {
+            address[] memory pausers = new address[](2);
+            pausers[0] = executorMultisig;
+            pausers[1] = teamMultisig;
+            eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
+        }
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -390,7 +395,8 @@ contract Deployer_M1 is Script, Test {
         require(eigenPodManager.pauserRegistry() == eigenLayerPauserReg, "eigenPodManager: pauser registry not set correctly");        
         require(delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg, "delayedWithdrawalRouter: pauser registry not set correctly");        
 
-        require(eigenLayerPauserReg.pauser() == teamMultisig, "pauserRegistry: pauser not set correctly");
+        require(eigenLayerPauserReg.isPauser(teamMultisig), "pauserRegistry: teamMultisig is not pauser");
+        require(eigenLayerPauserReg.isPauser(executorMultisig), "pauserRegistry: executorMultisig is not pauser");
         require(eigenLayerPauserReg.unpauser() == executorMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {

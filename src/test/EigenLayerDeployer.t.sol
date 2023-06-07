@@ -219,7 +219,9 @@ contract EigenLayerDeployer is Operators {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
