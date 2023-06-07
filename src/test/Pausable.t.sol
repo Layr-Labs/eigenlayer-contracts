@@ -33,7 +33,7 @@ contract PausableTests is EigenLayerTestHelper {
         public
         fuzzedAddress(unauthorizedPauser)
     {
-        cheats.assume(unauthorizedPauser != eigenLayerPauserReg.pauser());
+        cheats.assume(!eigenLayerPauserReg.isPauser(unauthorizedPauser));
         cheats.startPrank(unauthorizedPauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
         strategyManager.pause(type(uint256).max);
@@ -42,7 +42,7 @@ contract PausableTests is EigenLayerTestHelper {
 
     function testSetPauser(address newPauser) public fuzzedAddress(newPauser) {
         cheats.startPrank(unpauser);
-        eigenLayerPauserReg.setPauser(newPauser);
+        eigenLayerPauserReg.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
 
@@ -60,7 +60,7 @@ contract PausableTests is EigenLayerTestHelper {
         cheats.assume(fakePauser != eigenLayerPauserReg.unpauser());
         cheats.startPrank(fakePauser);
         cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
-        eigenLayerPauserReg.setPauser(newPauser);
+        eigenLayerPauserReg.setIsPauser(newPauser, true);
         cheats.stopPrank();
     }
 }

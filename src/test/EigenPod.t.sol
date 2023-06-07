@@ -118,7 +118,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         // deploy pauser registry
-        pauserReg = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserReg= new PauserRegistry(pausers, unpauser);
 
         blsPkCompendium = new BLSPublicKeyCompendium();
 
@@ -571,7 +573,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testDeployingEigenPodRevertsWhenPaused() external {
         // pause the contract
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_NEW_EIGENPODS);
         cheats.stopPrank();
 
@@ -583,7 +585,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testCreatePodWhenPaused() external {
         // pause the contract
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_NEW_EIGENPODS);
         cheats.stopPrank();
 
@@ -624,7 +626,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
         // pause the contract
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_WITHDRAW_RESTAKED_ETH);
         cheats.stopPrank();
 
@@ -654,7 +656,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 blockNumber = 1;
 
         // pause the contract
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
         cheats.stopPrank();
 
@@ -677,7 +679,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         
 
         // pause the contract
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_OVERCOMMITTED);
         cheats.stopPrank();
 
@@ -772,7 +774,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // verifies that the `maxPods` variable is enforced on the `EigenPod.stake` function
     function test_maxPodsEnforcementOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
         // set pod limit to current number of pods
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(unpauser);
         EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
         cheats.stopPrank();
 
@@ -782,7 +784,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
 
         // set pod limit to *one more than* current number of pods
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(unpauser);
         EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
         cheats.stopPrank();
 
@@ -813,7 +815,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
     function test_maxPodsEnforcementOnCreatePod() public {
         // set pod limit to current number of pods
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(unpauser);
         uint256 previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
         uint256 newValue = EigenPodManager(address(eigenPodManager)).numPods();
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
@@ -825,7 +827,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.createPod();
 
         // set pod limit to *one more than* current number of pods
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(unpauser);
         previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
         newValue = EigenPodManager(address(eigenPodManager)).numPods() + 1;
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
@@ -838,7 +840,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function test_setMaxPods(uint256 newValue) public {
-        cheats.startPrank(eigenPodManager.pauserRegistry().pauser());
+        cheats.startPrank(unpauser);
         uint256 previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit MaxPodsUpdated(previousValue, newValue);
@@ -848,11 +850,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(EigenPodManager(address(eigenPodManager)).maxPods() == newValue, "maxPods value not set correctly");
     }
 
-    function test_setMaxPods_RevertsWhenNotCalledByPauser(address notPauser) public fuzzedAddress(notPauser) {
-        cheats.assume(notPauser != eigenPodManager.pauserRegistry().pauser());
+    function test_setMaxPods_RevertsWhenNotCalledByUnpauser(address notUnpauser) public fuzzedAddress(notUnpauser) {
+        cheats.assume(notUnpauser != unpauser);
         uint256 newValue = 0;
-        cheats.startPrank(notPauser);
-        cheats.expectRevert("msg.sender is not permissioned as pauser");
+        cheats.startPrank(notUnpauser);
+        cheats.expectRevert("msg.sender is not permissioned as unpauser");
         EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
         cheats.stopPrank();
     }

@@ -1,7 +1,7 @@
 
 methods {
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
+    isPauser() returns (bool) => DISPATCHER(true)
 	unpauser() returns (address) => DISPATCHER(true)
 
     // envfree functions
@@ -20,7 +20,8 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     method f;
     env e;
     uint256 pausedStatusBefore = paused();
-    address pauser = pauser();
+    address pauser;
+    require(isPauser(pauser));
     address unpauser = unpauser();
     if (f.selector == pause(uint256).selector) {
         uint256 newPausedStatus;
