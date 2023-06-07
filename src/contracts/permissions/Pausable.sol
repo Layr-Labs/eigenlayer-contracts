@@ -30,7 +30,7 @@ contract Pausable is IPausable {
     uint256 constant internal PAUSE_ALL = type(uint256).max;
 
     /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
-    event PauserRegistrySet(address pauserRegistry, address newPauserRegistry);
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
 
     /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
     event Paused(address indexed account, uint256 newPausedStatus);
@@ -125,7 +125,7 @@ contract Pausable is IPausable {
     /// internal function for setting pauser registry
     function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
         require(address(newPauserRegistry) != address(0), "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address");
-        emit PauserRegistrySet(address(pauserRegistry), address(newPauserRegistry));
+        emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
         pauserRegistry = newPauserRegistry;
     }
 
