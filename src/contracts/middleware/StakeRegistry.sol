@@ -12,14 +12,6 @@ import "./StakeRegistryStorage.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
-    // EVENTS
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
-
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(registryCoordinator), "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
         _;

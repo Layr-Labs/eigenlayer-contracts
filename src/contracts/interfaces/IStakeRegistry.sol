@@ -8,6 +8,14 @@ import "./IRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
+    // EVENTS
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(
+        bytes32 operatorId,
+        uint8 quorumNumber,
+        uint96 stake
+    );
+    
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage

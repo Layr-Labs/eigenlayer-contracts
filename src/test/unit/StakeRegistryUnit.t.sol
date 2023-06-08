@@ -180,7 +180,7 @@ contract StakeRegistryUnitTests is Test {
         cheats.stopPrank();
 
         // set the weights of the operator
-        stakeRegistry.setOperatorWeight()
+        // stakeRegistry.setOperatorWeight()
 
         bytes memory quorumNumbers = new bytes(stakesForQuorum.length > 128 ? 128 : stakesForQuorum.length);
         for (uint i = 0; i < quorumNumbers.length; i++) {
