@@ -125,8 +125,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
     }
 
-    function testRegisterWithNegativeGlobalApk(address operator, bytes32 x) external {
-        testRegisterOperatorBLSPubkey(operator, x);
+    function testRegisterWithNegativeGlobalApk(address operator, bytes32 pubkeySeed) external {
+        testRegisterOperatorBLSPubkey(operator, pubkeySeed);
 
         (uint256 x, uint256 y)= blsPubkeyRegistry.globalApk();
         BN254.G1Point memory globalApk = BN254.G1Point(x, y);

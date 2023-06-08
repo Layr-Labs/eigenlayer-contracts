@@ -30,15 +30,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     // mapping of quorumNumber => current aggregate pubkey of quorum
     mapping(uint8 => BN254.G1Point) private quorumApk;
 
-    event PubkeyAdded(
-        address operator,
-        BN254.G1Point pubkey
-    );
-    event PubkeyRemoved(
-        address operator,
-        BN254.G1Point pubkey
-    );  
-
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(registryCoordinator), "BLSPubkeyRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
         _;

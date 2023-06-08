@@ -9,6 +9,20 @@ import "../libraries/BN254.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSPubkeyRegistry is IRegistry {
+    // EVENTS
+    // Emitted when a new operator pubkey is registered
+    event PubkeyAdded(
+        address operator,
+        BN254.G1Point pubkey
+    );
+
+    // Emitted when an operator pubkey is deregistered
+    event PubkeyRemoved(
+        address operator,
+        BN254.G1Point pubkey
+    );  
+
+
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
         // keccak256(apk_x0, apk_x1, apk_y0, apk_y1)

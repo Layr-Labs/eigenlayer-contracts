@@ -20,4 +20,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     /// @notice deregisters the sender with additional bytes for registry interaction data
     function deregisterOperator(bytes calldata) external returns (bytes32){}
+
+    function numRegistries() external view returns (uint256){}
+
+    function registries(uint256) external view returns (address){}
 }
