@@ -34,7 +34,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         blsPubkeyRegistry = new BLSPubkeyRegistry(registryCoordinator, pkCompendium);
     }
 
-    function testConstructorArgs() public {
+    function testConstructorArgs() public view {
         require(blsPubkeyRegistry.registryCoordinator() == registryCoordinator, "registryCoordinator not set correctly");
         require(blsPubkeyRegistry.pubkeyCompendium() == pkCompendium, "pubkeyCompendium not set correctly");
     }
@@ -102,8 +102,6 @@ contract BLSPubkeyRegistryUnitTests is Test {
         quorumNumbers[0] = bytes1(quorumNumber1);
         quorumNumbers[1] = bytes1(quorumNumber2);
 
-        bytes32 pkHash = BN254.hashG1Point(defaultPubKey);
-
         BN254.G1Point[] memory quorumApksBefore = new BN254.G1Point[](quorumNumbers.length);
         for(uint8 i = 0; i < quorumNumbers.length; i++){
             quorumApksBefore[i] = blsPubkeyRegistry.getApkForQuorum(uint8(quorumNumbers[i]));
@@ -143,10 +141,8 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
         
         cheats.startPrank(address(registryCoordinator));
-        bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedGlobalApk);
+        blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedGlobalApk);
         cheats.stopPrank();
-
-        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
 
         (x, y)= blsPubkeyRegistry.globalApk();
         BN254.G1Point memory temp = BN254.G1Point(x, y);
@@ -170,10 +166,9 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
 
         cheats.startPrank(address(registryCoordinator));
-        bytes32 registeredpkHash = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedQuorumApk);
+        blsPubkeyRegistry.registerOperator(operator, quorumNumbers, negatedQuorumApk);
         cheats.stopPrank();
 
-        BN254.G1Point memory zeroPk = BN254.G1Point(0,0);
         require(BN254.hashG1Point(blsPubkeyRegistry.getApkForQuorum(defaultQuorumNumber)) == ZERO_PK_HASH, "quorumApk not set correctly");
     }
     
