@@ -165,6 +165,8 @@ contract IndexRegistry is IIndexRegistry, Test {
         OperatorIndex memory latestOperatorIndex;
         latestOperatorIndex.index = index;
         operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
+
+        emit QuorumIndexUpdate(operatorId, quorumNumber, index);
     }
 
     /// @notice when we remove an operator from a quorum, we simply update the operator's index history
@@ -182,7 +184,6 @@ contract IndexRegistry is IIndexRegistry, Test {
         } 
         //marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
         operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
-        
     }
 
     /// @notice remove an operator from the globalOperatorList  
@@ -193,6 +194,7 @@ contract IndexRegistry is IIndexRegistry, Test {
         if(indexToRemove != globalOperatorListLastIndex){
             operatorIdToSwap = globalOperatorList[globalOperatorListLastIndex];
             globalOperatorList[indexToRemove] = operatorIdToSwap;
+            emit GlobalIndexUpdate(operatorIdToSwap, indexToRemove);
         }
         globalOperatorList.pop();
     }

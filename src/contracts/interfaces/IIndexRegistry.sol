@@ -8,6 +8,12 @@ import "./IRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IIndexRegistry is IRegistry {
+    // EVENTS
+    // emitted when an operator's index in at quorum operator list is updated
+    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
+    // emitted when an operator's index in the global operator list is updated
+    event GlobalIndexUpdate(bytes32 indexed operatorId, uint32 newIndex);
+
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber
