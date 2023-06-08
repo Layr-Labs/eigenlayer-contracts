@@ -136,6 +136,9 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
             fromTaskNumber: serviceManager.taskNumber(),
             status: OperatorStatus.REGISTERED
         });
+
+        // emit event
+        emit OperatorRegistered(operator, operatorId);
     }
 
     function _deregisterOperator(address operator, BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) internal {
@@ -159,5 +162,8 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
 
         // set the status of the operator to DEREGISTERED
         operators[operator].status = OperatorStatus.DEREGISTERED;
+
+        // emit event
+        emit OperatorDeregistered(operator, operatorId);
     }
 }

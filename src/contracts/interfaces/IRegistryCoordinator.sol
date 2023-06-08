@@ -6,6 +6,13 @@ pragma solidity =0.8.12;
  * @author Layr Labs, Inc.
  */
 interface IRegistryCoordinator {
+    // EVENTS
+    /// Emits when an operator is registered
+    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
+
+    /// Emits when an operator is deregistered
+    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+    
     // DATA STRUCTURES
     enum OperatorStatus
     {
