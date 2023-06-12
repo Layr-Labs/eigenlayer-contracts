@@ -1,7 +1,7 @@
 <a name="introduction"/></a>
 # EigenLayer
 EigenLayer (formerly 'EigenLayr') is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services.
-At present, this repository contains *both* the contracts for EigenLayer *and* a set of general "middleware" contracts, designed to be reuseable across different applications built on top of EigenLayer.
+At present, this repository contains *both* the contracts for EigenLayer *and* a set of general "middleware" contracts, designed to be reusable across different applications built on top of EigenLayer.
 
 Note that the interactions between middleware and EigenLayer are not yet "set in stone", and may change somewhat prior to the platform being fully live on mainnet; in particular, payment architecture is likely to evolve. As such, the "middleware" contracts should not be treated as definitive, but merely as a helpful reference, at least until the architecture is more settled.
 
