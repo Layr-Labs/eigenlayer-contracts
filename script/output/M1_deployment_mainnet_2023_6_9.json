@@ -27,8 +27,8 @@
     "deploymentBlock": 17445559
   },
   "parameters": {
-    "communityMultisig": "0xbeB9364D9B8D155842FB82C1323B3EBEC1552D9D",
-    "executorMultisig": "0x096713103Ab4CA47bC7807025F2735F891AA6bd7",
+    "communityMultisig": "0xFEA47018D632A77bA579846c840d5706705Dc598",
+    "executorMultisig": "0x369e6F597e22EaB55fFb173C6d9cD234BD699111",
     "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
     "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
     "timelock": "0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF"
