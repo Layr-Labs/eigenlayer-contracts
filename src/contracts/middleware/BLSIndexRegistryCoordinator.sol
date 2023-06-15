@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../interfaces/IRegistryCoordinator.sol";
-import "../interfaces/IBLSPubkeyRegistry.sol";
+import "../interfaces/IBLSStakeRegistryCoordinator.sol";
 import "../interfaces/IIndexRegistry.sol";
 
 import "../libraries/BytesArrayBitmaps.sol";
 
 import "./StakeRegistry.sol";
 
-contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
+contract BLSIndexRegistryCoordinator is StakeRegistry, IBLSStakeRegistryCoordinator {
     using BN254 for BN254.G1Point;
 
+    /// @notice the stake registry for this corrdinator is the contract itself
+    IStakeRegistry public override stakeRegistry;
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
     IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
@@ -37,6 +38,8 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) external override initializer {
+        // we set this in the initialize function because the constructor is called by the proxy contract
+        stakeRegistry = IStakeRegistry(address(this));
         // the stake registry is this contract itself
         registries.push(address(this));
         registries.push(address(blsPubkeyRegistry));

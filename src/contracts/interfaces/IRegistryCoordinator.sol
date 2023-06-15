@@ -39,6 +39,9 @@ interface IRegistryCoordinator {
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);
 
+    /// @notice Returns the bitmap of the quorums that the given `operator` is part of
+    function operatorIdToQuorumBitmap(bytes32) external view returns (uint256);
+
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);
 
