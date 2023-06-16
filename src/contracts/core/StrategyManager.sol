@@ -15,6 +15,7 @@ import "./StrategyManagerStorage.sol";
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is for managing deposits in different strategies. The main
  * functionalities are:
  * - adding and removing strategies that any delegator can deposit into

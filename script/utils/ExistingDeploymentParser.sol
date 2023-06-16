@@ -44,7 +44,7 @@ contract ExistingDeploymentParser is Script, Test {
     EmptyContract public emptyContract;
 
     address executorMultisig;
-    address teamMultisig;
+    address operationsMultisig;
 
     // strategies deployed
     StrategyBase[] public deployedStrategyArray;
@@ -63,7 +63,7 @@ contract ExistingDeploymentParser is Script, Test {
 
         // read all of the deployed addresses
         executorMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.executorMultisig");
-        teamMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.teamMultisig");
+        operationsMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.operationsMultisig");
         
         eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg"));

@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 /**
  * @title Interface for a `VoteWeigher`-type contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Note that `NUMBER_OF_QUORUMS` is expected to remain constant, as suggested by its uppercase formatting.
  */
 interface IVoteWeigher {

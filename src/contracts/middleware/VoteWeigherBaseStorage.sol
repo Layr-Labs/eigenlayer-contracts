@@ -12,6 +12,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 /**
  * @title Storage variables for the `VoteWeigherBase` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {

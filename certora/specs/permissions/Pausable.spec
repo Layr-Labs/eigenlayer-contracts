@@ -1,7 +1,7 @@
 
 methods {
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
+    isPauser(address) returns (bool) => DISPATCHER(true)
 	unpauser() returns (address) => DISPATCHER(true)
 
     // envfree functions
@@ -10,7 +10,7 @@ methods {
     pauserRegistry() returns (address) envfree
 
     // harnessed functions
-    pauser() returns (address) envfree
+    isPauser(address) returns (bool) envfree
     unpauser() returns (address) envfree
     bitwise_not(uint256) returns (uint256) envfree
     bitwise_and(uint256, uint256) returns (uint256) envfree
@@ -20,13 +20,14 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     method f;
     env e;
     uint256 pausedStatusBefore = paused();
-    address pauser = pauser();
+    address pauser;
+    require(isPauser(pauser));
     address unpauser = unpauser();
     if (f.selector == pause(uint256).selector) {
         uint256 newPausedStatus;
         pause(e, newPausedStatus);
         uint256 pausedStatusAfter = paused();
-        if (e.msg.sender == pauser && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
+        if (isPauser(e.msg.sender) && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
             assert(pausedStatusAfter == newPausedStatus, "pausedStatusAfter != newPausedStatus");
         } else {
             assert(pausedStatusAfter == pausedStatusBefore, "pausedStatusAfter != pausedStatusBefore");
@@ -34,7 +35,7 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     } else if (f.selector == pauseAll().selector) {
         pauseAll(e);
         uint256 pausedStatusAfter = paused();
-       if (e.msg.sender == pauser) {
+       if (isPauser(e.msg.sender)) {
             // assert(pausedStatusAfter == type(uint256).max, "pausedStatusAfter != newPausedStatus");
             assert(pausedStatusAfter == 115792089237316195423570985008687907853269984665640564039457584007913129639935,
                 "pausedStatusAfter != newPausedStatus");
