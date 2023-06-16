@@ -368,6 +368,21 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber, new uint256[](0));
     }
 
+    function testRemoveStrategiesConsideredAndMultipliers_IndicesGreaterThanLength_Reverts() public {
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        // create a valid quorum
+        uint8 quorumNumber = uint8(voteWeigher.quorumCount());
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
+
+        // remove index past length of num strategies
+        uint256[] memory indicesToRemove = new uint256[](1);
+        indicesToRemove[0] = strategiesAndWeightingMultipliers.length;
+        cheats.expectRevert();
+        voteWeigher.removeStrategiesConsideredAndMultipliers(quorumNumber, indicesToRemove);
+    }
+
     function testModifyStrategyWeights_NotFromServiceManagerOwner_Reverts(
         address notServiceManagerOwner
     ) public fuzzedAddress(notServiceManagerOwner) {
@@ -478,6 +493,23 @@ contract VoteWeigherBaseUnitTests is Test {
         // modify no strategies
         cheats.expectRevert("VoteWeigherBase.modifyStrategyWeights: no strategy indices provided");
         voteWeigher.modifyStrategyWeights(quorumNumber, new uint256[](0), new uint96[](0));
+    }
+
+    function testModifyStrategyWeights_IndicesGreaterThanLength_Reverts() public {
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        // create a valid quorum
+        uint8 quorumNumber = uint8(voteWeigher.quorumCount());
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
+
+        // modify index past length of num strategies
+        uint256[] memory indicesToRemove = new uint256[](1);
+        indicesToRemove[0] = strategiesAndWeightingMultipliers.length;
+        uint96[] memory newWeights = new uint96[](1);
+        newWeights[0] = 1;
+        cheats.expectRevert();
+        voteWeigher.modifyStrategyWeights(quorumNumber, indicesToRemove, newWeights);
     }
 
     function testWeightOfOperator(
