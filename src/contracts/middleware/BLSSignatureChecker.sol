@@ -109,7 +109,7 @@ abstract contract BLSSignatureChecker {
             uint256[] memory nonSignerQuorumBitmaps = new uint256[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
             {
                 // the bitmap of the quorumNumbers
-                uint256 singingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
+                uint256 signingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
