@@ -190,7 +190,7 @@ contract VoteWeigherBaseUnitTests is Test {
         strategiesAndWeightingMultipliers[indexForZeroMultiplier % strategiesAndWeightingMultipliers.length].multiplier = 0;
 
         cheats.prank(serviceManagerOwner);
-        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero weight");
+        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero multiplier");
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
     }
 
@@ -429,6 +429,10 @@ contract VoteWeigherBaseUnitTests is Test {
             } else {
                 newWeightsTrim[i] = strategiesAndWeightingMultipliers[strategyIndices[i]].multiplier - 1;
             }
+            // ensure that the new weights are not 0
+            if (newWeightsTrim[i] == 0) {
+                newWeightsTrim[i] = 1;
+            }
         }
         newWeights = newWeightsTrim;
 
@@ -454,6 +458,22 @@ contract VoteWeigherBaseUnitTests is Test {
             assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
             assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
         }
+    }
+
+    function testModifyStrategyWeights_ZeroMultiplier_Reverts() public {
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+
+        uint256[] memory strategyIndices = new uint256[](1);
+        uint96[] memory newWeights = new uint96[](1);
+
+        // create a valid quorum
+        uint8 quorumNumber = uint8(voteWeigher.quorumCount());
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
+
+        // modify certain strategies
+        cheats.expectRevert("VoteWeigherBase.modifyStrategyWeights: new multiplier must be greater than zero");
+        voteWeigher.modifyStrategyWeights(quorumNumber, strategyIndices, newWeights);
     }
 
     function testModifyStrategyWeights_ForNonexistentQuorum_Reverts() public {

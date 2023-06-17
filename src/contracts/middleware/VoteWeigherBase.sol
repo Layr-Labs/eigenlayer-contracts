@@ -153,6 +153,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
             "VoteWeigherBase.modifyStrategyWeights: input length mismatch");
 
         for (uint256 i = 0; i < numStrats;) {
+            require(newMultipliers[i] > 0, "VoteWeigherBase.modifyStrategyWeights: new multiplier must be greater than zero");
             // change the strategy's associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].multiplier = newMultipliers[i];
             emit StrategyMultiplierUpdated(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].strategy, newMultipliers[i]);
@@ -209,7 +210,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
             }
             require(
                 _newStrategiesConsideredAndMultipliers[i].multiplier > 0,
-                "VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero weight"
+                "VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero multiplier"
             );
             strategiesConsideredAndMultipliers[quorumNumber].push(_newStrategiesConsideredAndMultipliers[i]);
             emit StrategyAddedToQuorum(quorumNumber, _newStrategiesConsideredAndMultipliers[i].strategy, _newStrategiesConsideredAndMultipliers[i].multiplier);
