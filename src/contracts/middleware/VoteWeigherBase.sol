@@ -194,7 +194,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint256 numStratsExisting = strategiesConsideredAndMultipliers[quorumNumber].length;
         require(
             numStratsExisting + numStratsToAdd <= MAX_WEIGHING_FUNCTION_LENGTH,
-            "VoteWeigherBase._addStrategiesConsideredAndMultipliers: exceed MAX_WEIGHING_FUNCTION_LENGTH"
+            "VoteWeigherBase._addStrategiesConsideredAndMultipliers: number of strategies cannot exceed MAX_WEIGHING_FUNCTION_LENGTH"
         );
         for (uint256 i = 0; i < numStratsToAdd;) {
             // fairly gas-expensive internal loop to make sure that the *same* strategy cannot be added multiple times

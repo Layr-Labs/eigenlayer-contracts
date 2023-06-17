@@ -138,7 +138,7 @@ contract VoteWeigherBaseUnitTests is Test {
 
         cheats.assume(strategiesAndWeightingMultipliers.length > voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
         cheats.prank(serviceManagerOwner);
-        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: exceed MAX_WEIGHING_FUNCTION_LENGTH");
+        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: number of strategies cannot exceed MAX_WEIGHING_FUNCTION_LENGTH");
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
     }
 
@@ -244,6 +244,31 @@ contract VoteWeigherBaseUnitTests is Test {
             assertEq(address(strategyAndWeightingMultiplier.strategy), address(strategiesAndWeightingMultipliers[i].strategy));
             assertEq(strategyAndWeightingMultiplier.multiplier, strategiesAndWeightingMultipliers[i].multiplier);
         }
+    }
+
+    function testAddStrategiesConsideredAndMultipliers_StrategiesAndWeightingMultipliers_LengthGreaterThanMaxAllowed_Reverts(
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory newStrategiesAndWeightingMultipliers
+    ) public {
+        // create dummy quorum
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory defaultStrategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+        cheats.assume(newStrategiesAndWeightingMultipliers.length + defaultStrategiesAndWeightingMultipliers.length > voteWeigher.MAX_WEIGHING_FUNCTION_LENGTH());
+
+        
+        uint8 quorumNumber = uint8(voteWeigher.quorumCount());
+        cheats.startPrank(serviceManagerOwner);
+        voteWeigher.createQuorum(defaultStrategiesAndWeightingMultipliers);
+
+        // add the rest of the strategies
+        IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[](defaultStrategiesAndWeightingMultipliers.length + newStrategiesAndWeightingMultipliers.length);
+        for (uint i = 0; i < defaultStrategiesAndWeightingMultipliers.length; i++) {
+            strategiesAndWeightingMultipliers[i] = defaultStrategiesAndWeightingMultipliers[i];
+        }
+
+        for (uint i = 0; i < newStrategiesAndWeightingMultipliers.length; i++) {
+            strategiesAndWeightingMultipliers[i + defaultStrategiesAndWeightingMultipliers.length] = newStrategiesAndWeightingMultipliers[i];
+        }
+        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: number of strategies cannot exceed MAX_WEIGHING_FUNCTION_LENGTH");
+        voteWeigher.addStrategiesConsideredAndMultipliers(quorumNumber, strategiesAndWeightingMultipliers);
     }
 
     function testAddStrategiesConsideredAndMultipliers_NotFromServiceManagerOwner_Reverts(
