@@ -87,8 +87,4 @@ interface IVoteWeigher {
      * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
      */
     function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) external view returns (uint256);
-
-
-
-
 }

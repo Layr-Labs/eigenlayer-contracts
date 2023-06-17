@@ -45,7 +45,15 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     // solhint-disable-next-line no-empty-blocks
     {}
 
-    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
+    /**
+     * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
+     * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
+     */
+    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view validQuorumNumber(quorumNumber) returns (uint256) {
+        return strategiesConsideredAndMultipliers[quorumNumber].length;
+    }
+
+    /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the @param quorumNumber
     function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
         public
         view
@@ -155,14 +163,6 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     }
 
     /**
-     * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
-     * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
-     */
-    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view validQuorumNumber(quorumNumber) returns (uint256) {
-        return strategiesConsideredAndMultipliers[quorumNumber].length;
-    }
-
-    /**
      * @notice Creates a quorum with the given_strategiesConsideredAndMultipliers.
      */
     function _createQuorum(
@@ -189,7 +189,6 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint8 quorumNumber,
         StrategyAndWeightingMultiplier[] memory _newStrategiesConsideredAndMultipliers
     ) internal {
-        require(_newStrategiesConsideredAndMultipliers.length > 0, "VoteWeigherBase._addStrategiesConsideredAndMultipliers: no strategies provided");
         uint256 numStratsToAdd = _newStrategiesConsideredAndMultipliers.length;
         uint256 numStratsExisting = strategiesConsideredAndMultipliers[quorumNumber].length;
         require(

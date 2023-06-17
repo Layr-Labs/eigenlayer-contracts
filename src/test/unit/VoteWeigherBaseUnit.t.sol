@@ -162,11 +162,21 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
     }
 
-    function testCreateQuorum_EmptyStrategiesAndWeightingMultipliers_Reverts() public {
+    function testCreateQuorum_EmptyStrategiesAndWeightingMultipliers_Valid() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers;
+
+        uint8 quorumNumber = uint8(voteWeigher.quorumCount());
         cheats.prank(serviceManagerOwner);
-        cheats.expectRevert("VoteWeigherBase._addStrategiesConsideredAndMultipliers: no strategies provided");
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
+
+        address operator = address(uint160(uint256(keccak256("operator"))));
+        strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
+        // set the operator shares
+        for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
+            delegationMock.setOperatorShares(operator, strategiesAndWeightingMultipliers[i].strategy, 1 ether * (i+1));
+        }
+
+        assertEq(voteWeigher.weightOfOperator(quorumNumber, operator), 0);
     }
 
     function testCreateQuorum_StrategiesAndWeightingMultipliers_WithZeroWeight(
