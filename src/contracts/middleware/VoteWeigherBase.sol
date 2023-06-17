@@ -65,6 +65,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev returns zero in the case that `quorumNumber` is greater than or equal to `quorumCount`
+     * @dev this function treats shares as invariant of time, and does not pay attention to their conversion to 
+     * the underlying token. This is fine for the base strategies we use, but may not be for more complex strategies.
+     * Strategies where the share to token ratio will need to use more complex logic.
      */
     function weightOfOperator(uint8 quorumNumber, address operator) public virtual returns (uint96) {
         uint96 weight;
