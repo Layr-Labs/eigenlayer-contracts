@@ -207,6 +207,11 @@ contract BLSPubkeyRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
+        cheats.startPrank(defaultOperator);
+        pkCompendium.registerPublicKey(globalApkBefore);
+        cheats.stopPrank();
+
+
         cheats.prank(address(registryCoordinator));
         blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, globalApkBefore);
 
@@ -223,6 +228,10 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.startPrank(defaultOperator);
+        pkCompendium.registerPublicKey(quorumApksBefore);
+        cheats.stopPrank();
 
         cheats.prank(address(registryCoordinator));
         blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, quorumApksBefore);

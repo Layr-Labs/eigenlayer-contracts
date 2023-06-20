@@ -88,6 +88,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
+        require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
+
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         // update the global aggregate pubkey
