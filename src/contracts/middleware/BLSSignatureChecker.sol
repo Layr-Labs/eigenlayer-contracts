@@ -15,7 +15,12 @@ abstract contract BLSSignatureChecker {
     using BN254 for BN254.G1Point;    
 
     // DATA STRUCTURES
-
+    /**
+     * nonSignerPubkeys are the G1 Pubkeys of the nonsigners for the message hash
+     * quorumApks are the G1 aggregate pubkeys of quorums being considered
+     * apkG2 is the G2 aggregate pubkey of all signing operators at the time of pre-commit
+     * sigma is the signature in G1
+     */
     struct NonSignerStakesAndSignature {
         BN254.G1Point[] nonSignerPubkeys;
         BN254.G1Point[] quorumApks;
@@ -109,7 +114,7 @@ abstract contract BLSSignatureChecker {
             uint256[] memory nonSignerQuorumBitmaps = new uint256[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
             {
                 // the bitmap of the quorumNumbers
-                uint256 singingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
+                uint256 signingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
@@ -122,7 +127,7 @@ abstract contract BLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul_tiny(
-                                countNumOnes(nonSignerQuorumBitmaps[i] & singingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                                countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
                             )
                     );
                 }

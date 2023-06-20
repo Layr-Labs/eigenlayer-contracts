@@ -12,6 +12,9 @@ import "../../contracts/interfaces/IRegistryCoordinator.sol";
 contract BLSPubkeyRegistryMock is IBLSPubkeyRegistry {
     IRegistryCoordinator public registryCoordinator;
 
+
+    bytes32 public apkHash = bytes32(0);
+
     function registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32){}
 
     function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32){}
@@ -23,7 +26,7 @@ contract BLSPubkeyRegistryMock is IBLSPubkeyRegistry {
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory){}
 
     function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
-        return bytes32(0);
+        return apkHash;
     }
 
 	/**
@@ -39,4 +42,9 @@ contract BLSPubkeyRegistryMock is IBLSPubkeyRegistry {
 
     /// @notice Returns the length of ApkUpdates for the global APK
     function getGlobalApkHistoryLength() external view returns(uint32){}
+
+
+    function setApkHash(bytes32 _apkHash) public {
+        apkHash = _apkHash;
+    }
 }

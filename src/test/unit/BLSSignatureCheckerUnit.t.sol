@@ -43,6 +43,10 @@ contract BLSSignatureCheckerUnitTests is Test {
 
     }
 
+    function testVerifySignature() public {
+        
+    }
+
 
 
     function nonSignerStakesAndSignature() public returns(BLSSignatureChecker.NonSignerStakesAndSignature memory) {
