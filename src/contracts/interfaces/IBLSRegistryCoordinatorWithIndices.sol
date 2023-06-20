@@ -10,7 +10,7 @@ import "./IIndexRegistry.sol";
  * @title Minimal interface for the `IBLSStakeRegistryCoordinator` contract.
  * @author Layr Labs, Inc.
  */
-interface IBLSStakeRegistryCoordinator is IRegistryCoordinator {
+interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
     /// @notice the stake registry for this corrdinator is the contract itself
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys

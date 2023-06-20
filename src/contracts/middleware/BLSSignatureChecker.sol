@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../interfaces/IBLSStakeRegistryCoordinator.sol";
+import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "../libraries/MiddlewareUtils.sol";
 import "../libraries/BN254.sol";
 import "../libraries/BytesArrayBitmaps.sol";
@@ -48,7 +48,7 @@ abstract contract BLSSignatureChecker {
     IStakeRegistry public immutable stakeRegistry;
     IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
 
-    constructor(IBLSStakeRegistryCoordinator _registryCoordinator) {
+    constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
         registryCoordinator = IRegistryCoordinator(_registryCoordinator);
         stakeRegistry = _registryCoordinator.stakeRegistry();
         blsPubkeyRegistry = _registryCoordinator.blsPubkeyRegistry();

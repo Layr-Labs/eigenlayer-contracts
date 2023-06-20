@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../interfaces/IBLSStakeRegistryCoordinator.sol";
+import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "../interfaces/IIndexRegistry.sol";
 
 import "../libraries/BytesArrayBitmaps.sol";
 
 import "./StakeRegistry.sol";
 
-contract BLSIndexRegistryCoordinator is StakeRegistry, IBLSStakeRegistryCoordinator {
+contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordinatorWithIndices {
     using BN254 for BN254.G1Point;
 
     /// @notice the stake registry for this corrdinator is the contract itself
