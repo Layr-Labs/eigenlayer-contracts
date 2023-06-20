@@ -9,25 +9,16 @@ import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IBLSStakeRegistryCoordinator.sol";
 
 
-contract OperatorStateRetriever {
+contract BLSOperatorStateRetriever {
     IBLSStakeRegistryCoordinator public registryCoordinator;
     IStakeRegistry public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
     IIndexRegistry public indexRegistry;
 
-    struct OperatorView {
-        IBLSStakeRegistryCoordinator.Operator operator;
-        uint8[] quorumNumbers;
-        uint256[] quorumStake;
-    }
-
     struct OperatorState {
-        OperatorView[] operatorView;
-        uint32[] operatorIndices;
         uint32 blockNumber;
-        uint256[] stakePerQuorum;
+        uint96[] stakePerQuorum;
         bytes32 apkHash;
-        BN254.G1Point apkG1;
         uint32 numOperators;
     }
 
@@ -39,8 +30,20 @@ contract OperatorStateRetriever {
         indexRegistry = _registryCoordinator.indexRegistry();
     }
 
-    function getOperatorState(address operator) external view returns (OperatorState memory) {
+    function getOperatorState(uint32 blockNumber, uint256 stakeHistoryIndex, uint256 globalApkHashIndex) external view returns (OperatorState memory) {
+        OperatorState memory state;
+        state.blockNumber = blockNumber;
 
+        uint96[] memory stakePerQuorum = new uint96[](256);
+        for (uint quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
+            stakePerQuorum[quorumNumber] = stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, blockNumber, stakeHistoryIndex);
+        }
+        state.stakePerQuorum = stakePerQuorum;
+
+        state.apkHash = blsPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex(blockNumber, globalApkHashIndex);
+        state.numOperators = indexRegistry.totalOperators();
+
+        return state;
     }
 
     
