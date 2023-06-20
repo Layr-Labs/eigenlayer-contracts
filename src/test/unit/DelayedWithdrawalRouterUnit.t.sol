@@ -122,6 +122,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     }
 
     function testCreateDelayedWithdrawalZeroAddress(address podOwner) external {
+        cheats.assume(podOwner != address(proxyAdmin));
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.startPrank(podAddress);

@@ -39,10 +39,10 @@ contract IndexRegistryUnitTests is Test {
         cheats.stopPrank();
 
        require(indexRegistry.globalOperatorList(0) == operatorId, "IndexRegistry.registerOperator: operator not registered correctly");
-       require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
-       require(indexRegistry.totalOperatorsForQuorum(1) == 1, "IndexRegistry.registerOperator: operator not registered correctly");
+       require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: total operators not updated correctly");
+       require(indexRegistry.totalOperatorsForQuorum(1) == 1, "IndexRegistry.registerOperator: total operators for quorum not updated correctly");
        (uint32 index, uint32 toBlockNumber) = indexRegistry.operatorIdToIndexHistory(operatorId, 1, 0);
-       require(index == 0, "IndexRegistry.registerOperator: operator not registered correctly");
+       require(index == 0, "IndexRegistry.registerOperator: index not 0");
        require(toBlockNumber == 0, "block number should not be set");
     }
 

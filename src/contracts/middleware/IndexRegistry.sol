@@ -15,8 +15,6 @@ contract IndexRegistry is IIndexRegistry, Test {
     // list of all unique registered operators
     bytes32[] public globalOperatorList;
 
-    // mapping of quorumNumber => list of operators registered for that quorum
-    mapping(uint8 => uint32) public quorumToTotalOperatorCount;
     // mapping of operatorId => quorumNumber => index history of that operator
     mapping(bytes32 => mapping(uint8 => OperatorIndex[])) public operatorIdToIndexHistory;
     // mapping of quorumNumber => history of numbers of unique registered operators
@@ -50,9 +48,11 @@ contract IndexRegistry is IIndexRegistry, Test {
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            _updateOperatorIdToIndexHistory(operatorId, quorumNumber, quorumToTotalOperatorCount[quorumNumber]);
-            _updateTotalOperatorHistory(quorumNumber);
-            quorumToTotalOperatorCount[quorumNumber] += 1;
+
+            //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
+            uint32 numOperators = totalOperatorsHistory[quorumNumber].length > 0 ? totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index : 0;
+            _updateOperatorIdToIndexHistory(operatorId, quorumNumber, numOperators);
+            _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
         }
     }
 
@@ -77,8 +77,7 @@ contract IndexRegistry is IIndexRegistry, Test {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexToRemove = operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
             _processOperatorRemoval(operatorId, quorumNumber, indexToRemove, operatorIdsToSwap[i]);
-            _updateTotalOperatorHistory(quorumNumber);
-            quorumToTotalOperatorCount[quorumNumber]--;
+            _updateTotalOperatorHistory(quorumNumber, totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index - 1);
         }
     }
 
@@ -127,7 +126,7 @@ contract IndexRegistry is IIndexRegistry, Test {
     }
 
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
-        return quorumToTotalOperatorCount[quorumNumber];
+        return totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index;
     }
 
 
@@ -137,7 +136,7 @@ contract IndexRegistry is IIndexRegistry, Test {
     }
 
 
-    function _updateTotalOperatorHistory(uint8 quorumNumber) internal {
+    function _updateTotalOperatorHistory(uint8 quorumNumber, uint32 numOperators) internal {
 
         uint256 totalOperatorsHistoryLength = totalOperatorsHistory[quorumNumber].length;
 
@@ -148,7 +147,7 @@ contract IndexRegistry is IIndexRegistry, Test {
 
         OperatorIndex memory totalOperatorUpdate;
         // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
-        totalOperatorUpdate.index = quorumToTotalOperatorCount[quorumNumber];
+        totalOperatorUpdate.index = numOperators;
         totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
@@ -175,7 +174,7 @@ contract IndexRegistry is IIndexRegistry, Test {
     /// @param indexToRemove index of the operator to remove
     function _processOperatorRemoval(bytes32 operatorId, uint8 quorumNumber, uint32 indexToRemove, bytes32 operatorIdToSwap) internal {   
         uint32 operatorIdToSwapIndex = operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index;
-        require(quorumToTotalOperatorCount[quorumNumber] - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
+        require(totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
         if(operatorId != operatorIdToSwap){
