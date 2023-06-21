@@ -16,10 +16,10 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function getFromTaskNumberForOperator(address operator) external view returns (uint32){}
 
     /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
-    function registerOperator(uint8[] memory quorumNumbers, bytes calldata) external returns (bytes32){}
+    function registerOperator(bytes memory quorumNumbers, bytes calldata) external {}
 
     /// @notice deregisters the sender with additional bytes for registry interaction data
-    function deregisterOperator(bytes calldata) external returns (bytes32){}
+    function deregisterOperator(bytes calldata) external {}
 
     function numRegistries() external view returns (uint256){}
 
