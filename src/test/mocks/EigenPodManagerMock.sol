@@ -55,6 +55,8 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return false;
     }
 
+    function setPauserRegistry(IPauserRegistry /*newPauserRegistry*/) external {}
+
     function pauserRegistry() external pure returns (IPauserRegistry) {
         return IPauserRegistry(address(0));
     }

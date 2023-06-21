@@ -21,6 +21,7 @@ import "../../contracts/interfaces/IBeaconChainOracle.sol";
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
  * - creating EigenPods
  * - staking for new validators on EigenPods
@@ -37,6 +38,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function paused() external view returns (uint256) {}
 
     function paused(uint8 index) external view returns (bool) {}
+
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external {}
 
     function pauserRegistry() external view returns (IPauserRegistry) {}
 

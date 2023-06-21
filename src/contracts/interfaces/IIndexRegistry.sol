@@ -38,6 +38,12 @@ interface IIndexRegistry is IRegistry {
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external;
 
     /**
+     * @notice Returns the operator id at the index in the list of all operators for all quorums
+     * @param index is the index of the operator in the array of operators
+     */
+    function totalOperatorList(uint256 index) external view returns (bytes32);
+
+    /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
      * @param operatorId is the id of the operator for which the index is desired
      * @param quorumNumber is the quorum number for which the operator index is desired

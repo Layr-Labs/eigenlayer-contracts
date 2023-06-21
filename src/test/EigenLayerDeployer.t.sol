@@ -101,7 +101,7 @@ contract EigenLayerDeployer is Operators {
     address eigenPodBeaconAddress;
     address beaconChainOracleAddress;
     address emptyContractAddress;
-    address teamMultisig;
+    address operationsMultisig;
     address executorMultisig;
 
 
@@ -145,7 +145,7 @@ contract EigenLayerDeployer is Operators {
 
     function _deployEigenLayerContractsGoerli() internal {
         _setAddresses(goerliDeploymentConfig);
-        pauser = teamMultisig;
+        pauser = operationsMultisig;
         unpauser = executorMultisig;
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
@@ -219,7 +219,9 @@ contract EigenLayerDeployer is Operators {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -364,7 +366,7 @@ contract EigenLayerDeployer is Operators {
         eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager"); 
         delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
-        teamMultisig = stdJson.readAddress(config, ".parameters.teamMultisig");
+        operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");
         executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
     }
     

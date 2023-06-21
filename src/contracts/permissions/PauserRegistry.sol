@@ -6,15 +6,16 @@ import "../interfaces/IPauserRegistry.sol";
 /**
  * @title Defines pauser & unpauser roles + modifiers to be used elsewhere.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract PauserRegistry is IPauserRegistry {
-    /// @notice Unique address that holds the pauser role.
-    address public pauser;
+    /// @notice Mapping of addresses to whether they hold the pauser role.
+    mapping(address => bool) public isPauser;
 
     /// @notice Unique address that holds the unpauser role. Capable of changing *both* the pauser and unpauser addresses.
     address public unpauser;
 
-    event PauserChanged(address previousPauser, address newPauser);
+    event PauserStatusChanged(address pauser, bool canPause);
 
     event UnpauserChanged(address previousUnpauser, address newUnpauser);
 
@@ -23,14 +24,18 @@ contract PauserRegistry is IPauserRegistry {
         _;
     }
 
-    constructor(address _pauser, address _unpauser) {
-        _setPauser(_pauser);
+    constructor(address[] memory _pausers, address _unpauser) {
+        for(uint256 i = 0; i < _pausers.length; i++) {
+            _setIsPauser(_pausers[i], true);
+        }
         _setUnpauser(_unpauser);
     }
 
     /// @notice Sets new pauser - only callable by unpauser, as the unpauser is expected to be kept more secure, e.g. being a multisig with a higher threshold
-    function setPauser(address newPauser) external onlyUnpauser {
-        _setPauser(newPauser);
+    /// @param newPauser Address to be added/removed as pauser
+    /// @param canPause Whether the address should be added or removed as pauser
+    function setIsPauser(address newPauser, bool canPause) external onlyUnpauser {
+        _setIsPauser(newPauser, canPause);
     }
 
     /// @notice Sets new unpauser - only callable by unpauser, as the unpauser is expected to be kept more secure, e.g. being a multisig with a higher threshold
@@ -38,10 +43,10 @@ contract PauserRegistry is IPauserRegistry {
         _setUnpauser(newUnpauser);
     }
 
-    function _setPauser(address newPauser) internal {
-        require(newPauser != address(0), "PauserRegistry._setPauser: zero address input");
-        emit PauserChanged(pauser, newPauser);
-        pauser = newPauser;
+    function _setIsPauser(address pauser, bool canPause) internal {
+        require(pauser != address(0), "PauserRegistry._setPauser: zero address input");
+        isPauser[pauser] = canPause;
+        emit PauserStatusChanged(pauser, canPause);
     }
 
     function _setUnpauser(address newUnpauser) internal {

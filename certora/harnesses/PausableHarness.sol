@@ -5,8 +5,8 @@ import "../munged/permissions/Pausable.sol";
 
 contract PausableHarness is Pausable {
     // getters
-    function pauser() external view returns (address) {
-        return pauserRegistry.pauser();
+    function isPauser(address pauser) external view returns (bool) {
+        return pauserRegistry.isPauser(pauser);
     }
 
     function unpauser() external view returns (address) {

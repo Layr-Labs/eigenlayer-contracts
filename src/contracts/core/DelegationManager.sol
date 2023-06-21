@@ -14,6 +14,7 @@ import "./Slasher.sol";
 /**
  * @title The primary delegation contract for EigenLayer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
  * - enabling anyone to register as an operator in EigenLayer
  * - allowing new operators to provide a DelegationTerms-type contract, which may mediate their interactions with stakers who delegate to them
