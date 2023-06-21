@@ -13,7 +13,7 @@ import "forge-std/Test.sol";
 
 
 /**
- * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequency splitting of earnings from operators to stakers
+ * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequent splitting of earnings from operators to stakers
  * @author Layr Labs, Inc.
  */
 contract PaymentCoordinator is 
@@ -27,21 +27,25 @@ contract PaymentCoordinator is
     /// @notice address approved to post new Merkle roots
     address public rootPublisher;
 
-    uint256 public merkleRootActivationDelay;
+    /// @notice delay in blocks before a Merkle root can be activated
+    uint256 public merkleRootActivationDelayBlocks;
 
     /// @notice maximum BIPS
     uint256 public constant MAX_BIPS = 10000;
 
+    /// @notice maximum BIPS for eigenlayer
+    uint256 public constant MAX_EIGENLAYER_SHARE_BIPS = 1500;
+
     /// @notice Array of roots of posted Merkle trees, as well as associated data like tree height
-    MerkleRootPost[] public merkleRoots;
+    MerkleRootPost[] internal _merkleRoots;
 
     /// @notice Mapping token => recipient => cumulative amount *claimed*
     mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
 
     /// @notice Mapping token => cumulative amount earned by EigenLayer
-    mapping(IERC20 => uint256) public cumulativeEigenLayerTokeEarnings;
+    mapping(IERC20 => uint256) public cumulativeEigenLayerTokenEarnings;
 
-     /// @notice Constant that defines the share EigenLayer takes of all payments, in basis points
+     /// @notice variable that defines the share EigenLayer takes of all payments, in basis points
      uint256 public eigenLayerShareBIPs;
 
     // TODO: better define this event?
@@ -52,18 +56,32 @@ contract PaymentCoordinator is
 
     event PaymentClaimed(MerkleLeaf merkleLeaf);
 
+    /// @notice Emitted when the rootPublisher is changed
+    event RootPublisherChanged(address indexed oldRootPublisher, address indexed newRootPublisher);
+
+    /// @notice Emitted when the merkle root activiation delay is changed
+    event MerkleRootActivationDelayBlocksChanged(uint256 newMerkleRootActivationDelayBlocks);
+
+
+    /// @notice Emitted when the EigenLayer's percentage share is changed
+    event EigenLayerShareBIPSChanged(uint256 newEigenLayerShareBIPS);
+
     modifier onlyRootPublisher {
         require(msg.sender == rootPublisher, "PaymentCoordinator: Only rootPublisher");
         _;
     }
 
-    function initialize(address _initialOwner, address _rootPublisher, uint256 _eigenlayerShareBips, uint256 _merkleRootActivationDelay)
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _initialOwner, address _rootPublisher, uint256 _eigenlayerShareBips, uint256 _merkleRootActivationDelayBlocks)
         external
         initializer
     {
         _transferOwnership(_initialOwner);
         _setRootPublisher(_rootPublisher);
-        _setMerkleRootActivationDelay(_merkleRootActivationDelay);
+        _setMerkleRootActivationDelayBlocks(_merkleRootActivationDelayBlocks);
         _setEigenLayerShareBIPS(_eigenlayerShareBips);
     }
 
@@ -82,33 +100,33 @@ contract PaymentCoordinator is
         }
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
 
-        cumulativeEigenLayerTokeEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
+        cumulativeEigenLayerTokenEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
         emit PaymentReceived(msg.sender, payment);
     }
 
     // @notice Permissioned function which allows posting a new Merkle root
-    function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher{
-        MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelay, calculatedUpToBlockNumber);
-        merkleRoots.push(newMerkleRoot);
+    function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher {
+        MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelayBlocks, calculatedUpToBlockNumber);
+        _merkleRoots.push(newMerkleRoot);
         emit NewMerkleRootPosted(newMerkleRoot);
     }
 
     /// @notice Permissioned function which allows rootPublisher to nullify a Merkle root
-    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher{
-        require(block.number <= merkleRoots[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
-        merkleRoots[rootIndex].root = bytes32(0);
+    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher {
+        require(block.number <= _merkleRoots[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
+        delete _merkleRoots[rootIndex];
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
-    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyRootPublisher{
-        uint256 amount = cumulativeEigenLayerTokeEarnings[token];
-        token.safeTransfer(recipient, amount);
-        cumulativeEigenLayerTokeEarnings[token] = 0;
+    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyOwner {
+        uint256 amount = cumulativeEigenLayerTokenEarnings[token];
+        cumulativeEigenLayerTokenEarnings[token] = 0;
+        token.safeTransfer(recipient, amount); 
     }
 
     /**
     * @notice Called by a staker or operator to prove the inclusion of their earnings in a posted Merkle root and claim them.
-    * @param proof Merkle proof showing that a leaf containing `(msg.sender, amount)` was included in the `rootIndex`-th
+    * @param proof Merkle proof showing that a leaf was included in the `rootIndex`-th
     * Merkle root posted for the `token`
     * @param rootIndex Specifies the node inside the Merkle tree corresponding to the specified root, `merkleRoots[rootIndex].root`.
     */
@@ -116,49 +134,65 @@ contract PaymentCoordinator is
         bytes memory proof,
         uint256 rootIndex,
         MerkleLeaf memory leaf
-    ) external{
+    ) external {
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
-        require(merkleRoots[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
-        bytes32 root = merkleRoots[rootIndex].root;
+        require(_merkleRoots[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
+
+        bytes32 root = _merkleRoots[rootIndex].root;
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
-        bytes32 leafHash = keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
+
+        bytes32 leafHash = _computeLeafHash(leaf);
         require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
-        for(uint i = 0; i < leaf.amounts.length; i++) {
+        for(uint256 i = 0; i < leaf.amounts.length; i++) {
             leaf.tokens[i].safeTransfer(leaf.recipient, leaf.amounts[i]);
             cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] += leaf.amounts[i];
         }
         emit PaymentClaimed(leaf);
     }
 
-    function setRootPublisher(address _rootPublisher) external onlyOwner{
+    function setRootPublisher(address _rootPublisher) external onlyOwner {
         _setRootPublisher(_rootPublisher);
     }
 
-    function setMerkleRootActivationDelay(uint256 _merkleRootActivationDelay) external onlyOwner{
-        _setMerkleRootActivationDelay(_merkleRootActivationDelay);
+    function setMerkleRootActivationDelayBlocks(uint256 _merkleRootActivationDelayBlocks) external onlyOwner {
+        _setMerkleRootActivationDelayBlocks(_merkleRootActivationDelayBlocks);
     }
 
-    function setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) external onlyOwner{
+    function setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) external onlyOwner {
         _setEigenLayerShareBIPS(_eigenlayerShareBips);
     }
 
 
     /// @notice Getter function for the length of the `merkleRoots` array
-    function merkleRootsLength() external view returns (uint256){
-        return merkleRoots.length;
+    function merkleRootsLength() external view returns (uint256) {
+        return _merkleRoots.length;
+    }
+
+    /// @notice Getter function for a merkleRoot at a given index
+    function merkleRoots(uint256 index) external view returns (MerkleRootPost memory) {
+        return _merkleRoots[index];
     }
 
     function _setRootPublisher(address _rootPublisher) internal {
+        address currentRootPublisher = rootPublisher;
         rootPublisher = _rootPublisher;
+        emit RootPublisherChanged(currentRootPublisher, rootPublisher);
     }
 
-    function _setMerkleRootActivationDelay(uint256 _merkleRootActivationDelay) internal {
-        merkleRootActivationDelay = _merkleRootActivationDelay;
+    function _setMerkleRootActivationDelayBlocks(uint256 _merkleRootActivationDelayBlocks) internal {
+        merkleRootActivationDelayBlocks = _merkleRootActivationDelayBlocks;
+        emit MerkleRootActivationDelayBlocksChanged(merkleRootActivationDelayBlocks);
     }
 
     function _setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) internal {
-        require(_eigenlayerShareBips <= MAX_BIPS, "PaymentCoordinator: EigenLayer share cannot be greater than 100%");
+        require(_eigenlayerShareBips <= MAX_EIGENLAYER_SHARE_BIPS, "PaymentCoordinator: EigenLayer share cannot be greater than 100%");
         eigenLayerShareBIPs = _eigenlayerShareBips;
+
+        emit EigenLayerShareBIPSChanged(eigenLayerShareBIPs);
+    }
+
+    function _computeLeafHash(MerkleLeaf memory leaf) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
     }
 }

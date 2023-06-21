@@ -22,8 +22,18 @@ contract PaymentCoordinatorTest is Test {
     uint256 eigenLayerShareBIPs = 1000;
     uint256 rootPostDelay = 7200;
 
+    address rootPublisher = address(25);
+    address initialOwner = address(26);
+
+    mapping (address => bool) fuzzedAddressMapping;
+
     event PaymentReceived(address indexed receivedFrom, PaymentCoordinator.Payment payment);
     event NewMerkleRootPosted(PaymentCoordinator.MerkleRootPost merkleRootPost);
+
+    modifier fuzzedAddress(address addr) virtual {
+        cheats.assume(fuzzedAddressMapping[addr] == false);
+        _;
+    }
 
 
     function setUp() public {
@@ -35,21 +45,24 @@ contract PaymentCoordinatorTest is Test {
                                     address(proxyAdmin),
                                     abi.encodeWithSelector(
                                         paymentCoordinatorImplementation.initialize.selector,
-                                        address(this),
-                                        address(this),
+                                        initialOwner,
+                                        rootPublisher,
                                         eigenLayerShareBIPs,
                                         rootPostDelay
                                     )
                                 )));
         
         dummyToken = new ERC20Mock();
+
+        fuzzedAddressMapping[address(0)] = true;
+        fuzzedAddressMapping[address(proxyAdmin)] = true;
     }
 
-    function testInitialize() public {
-        require(paymentCoordinator.rootPublisher() == address(this), "rootPublisher should be set");
-        require(paymentCoordinator.merkleRootActivationDelay() == 7200, "merkleRootActivationDelay should be set");
+    function testInitialize() public view {
+        require(paymentCoordinator.rootPublisher() == rootPublisher, "rootPublisher should be set");
+        require(paymentCoordinator.merkleRootActivationDelayBlocks() == 7200, "merkleRootActivationDelay should be set");
         require(paymentCoordinator.eigenLayerShareBIPs() == 1000, "eigenLayerShareBIPs should be set");
-        require(paymentCoordinator.owner() == address(this), "owner should be set");
+        require(paymentCoordinator.owner() == initialOwner, "owner should be set");
     }
 
     function testMakePayment(uint256[] memory amounts) public {
@@ -60,15 +73,15 @@ contract PaymentCoordinatorTest is Test {
         payment.amounts = amounts;
 
         uint256 balanceBefore = dummyToken.balanceOf(address(paymentCoordinator));
-        uint256 cumumlativeEarningsBefore = paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken);
+        uint256 cumumlativeEarningsBefore = paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken);
         cheats.expectEmit(address(paymentCoordinator));
         emit PaymentReceived(address(this), payment);
         paymentCoordinator.makePayment(payment);
-        require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) - cumumlativeEarningsBefore == sum * eigenLayerShareBIPs / MAX_BIPS, "cumulativeEigenLayerTokeEarnings should be set");
+        require(paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken) - cumumlativeEarningsBefore == sum * eigenLayerShareBIPs / MAX_BIPS, "cumulativeEigenLayerTokeEarnings should be set");
         require(dummyToken.balanceOf(address(paymentCoordinator)) - balanceBefore == sum, "incorrect token balance");
     }
 
-    function testPostMerkleRootFromUnauthorizedAddress(address unauthorizedAddress) external {
+    function testPostMerkleRootFromUnauthorizedAddress(address unauthorizedAddress) external fuzzedAddress(unauthorizedAddress) {
         cheats.assume(unauthorizedAddress != paymentCoordinator.rootPublisher());
         cheats.startPrank(unauthorizedAddress);
         cheats.expectRevert(bytes("PaymentCoordinator: Only rootPublisher"));
@@ -88,31 +101,33 @@ contract PaymentCoordinatorTest is Test {
         paymentCoordinator.postMerkleRoot(root, height, calculatedUpToBlockNumber);
         cheats.stopPrank();
 
-        (bytes32 rootPost, uint256 heightPost, uint256 confirmedAtBlockNumber, uint256 calculatedUpToBlockNumberPost) = paymentCoordinator.merkleRoots(numMerkleRootsBefore);
-        require(rootPost == root, "root should be set");
-        require(heightPost == height, "height should be set");
-        require(confirmedAtBlockNumber == block.number + rootPostDelay, "confirmedAtBlockNumber should be set");
-        require(calculatedUpToBlockNumberPost == calculatedUpToBlockNumber, "calculatedUpToBlockNumber should be set");
+        IPaymentCoordinator.MerkleRootPost memory post  = paymentCoordinator.merkleRoots(numMerkleRootsBefore);
+        require(post.root == root, "root should be set");
+        require(post.height == height, "height should be set");
+        require(post.confirmedAtBlockNumber == block.number + rootPostDelay, "confirmedAtBlockNumber should be set");
+        require(post.calculatedUpToBlockNumber == calculatedUpToBlockNumber, "calculatedUpToBlockNumber should be set");
     }
 
     function testWithdrawEigenLayerShare(uint256[] memory amounts, address recipient) external {
         cheats.assume(recipient != address(0));
+        cheats.assume(recipient != address(paymentCoordinator));
+        uint256 balanceBefore = dummyToken.balanceOf(recipient);
         testMakePayment(amounts);
-        uint256 amountToClaim = paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken);
-        cheats.startPrank(paymentCoordinator.rootPublisher());
+        uint256 amountToClaim = paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken);
+        cheats.startPrank(paymentCoordinator.owner());
         paymentCoordinator.withdrawEigenlayerShare(dummyToken, recipient);
         cheats.stopPrank();
-        require(paymentCoordinator.cumulativeEigenLayerTokeEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
-        require(dummyToken.balanceOf(recipient) == amountToClaim, "incorrect token balance");
-
-        emit log_named_uint("balance", dummyToken.balanceOf(recipient));
+        require(paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
+        require(dummyToken.balanceOf(recipient) - balanceBefore == amountToClaim, "incorrect token balance");
     }
 
     function testNullifyMerkleRoot(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
         testPostMerkleRoot(root, height, calculatedUpToBlockNumber);
+        cheats.startPrank(paymentCoordinator.rootPublisher());
         paymentCoordinator.nullifyMerkleRoot(paymentCoordinator.merkleRootsLength() - 1);
-        (bytes32 rootPost, , , ) = paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
-        require(rootPost == bytes32(0), "root should be set");
+        cheats.stopPrank();
+        IPaymentCoordinator.MerkleRootPost memory post = paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
+        require(post.root == bytes32(0), "root should be set");
 
         PaymentCoordinator.MerkleLeaf memory leaf;
         leaf.amounts = new uint256[](1);
@@ -121,6 +136,14 @@ contract PaymentCoordinatorTest is Test {
         cheats.roll(block.number + rootPostDelay + 1);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: Merkle root is null"));
         paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
+    }
+
+    function testCallNullifyMerkleRootFromUnauthorizedAddress(address unauthorizedAddress) external fuzzedAddress(unauthorizedAddress) {
+        cheats.assume(unauthorizedAddress != paymentCoordinator.rootPublisher());
+        cheats.startPrank(unauthorizedAddress);
+        cheats.expectRevert(bytes("PaymentCoordinator: Only rootPublisher"));
+        paymentCoordinator.nullifyMerkleRoot(0);
+        cheats.stopPrank();
     }
 
     function testMismatchLengthLeafEntries() external {
@@ -134,7 +157,7 @@ contract PaymentCoordinatorTest is Test {
     function testClaimEarningsForRootTooEarly(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
         cheats.assume(root != bytes32(0));
         testPostMerkleRoot(root, height, calculatedUpToBlockNumber);
-        (bytes32 rootPost, , , ) = paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
+        paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
 
         PaymentCoordinator.MerkleLeaf memory leaf;
         leaf.amounts = new uint256[](1);
@@ -143,7 +166,7 @@ contract PaymentCoordinatorTest is Test {
         paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
     }
 
-    function _sum(uint[] memory numbers) internal returns (uint) {
+    function _sum(uint[] memory numbers) internal view returns (uint) {
         uint total = 0;
         
         for (uint i = 0; i < numbers.length; i++) {
