@@ -50,7 +50,8 @@ contract IndexRegistry is IIndexRegistry, Test {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
             //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
-            uint32 numOperators = totalOperatorsHistory[quorumNumber].length > 0 ? totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index : 0;
+            uint256 quorumHistoryLength = totalOperatorsHistory[quorumNumber].length;
+            uint32 numOperators = quorumHistoryLength > 0 ? totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].index : 0;
             _updateOperatorIdToIndexHistory(operatorId, quorumNumber, numOperators);
             _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
         }
