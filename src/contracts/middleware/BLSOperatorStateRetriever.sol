@@ -10,18 +10,15 @@ import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
 
 contract BLSOperatorStateRetriever {
+    struct Operator {
+        bytes32 operatorId;
+        uint96 stake;
+    }
+
     IBLSRegistryCoordinatorWithIndices public registryCoordinator;
     IStakeRegistry public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
     IIndexRegistry public indexRegistry;
-
-    struct OperatorState {
-        bytes32[] operatorIds;
-        uint32 blockNumber;
-        uint96[] stakePerQuorum;
-        bytes32 apkHash;
-        uint32 numOperators;
-    }
 
     constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
         registryCoordinator = _registryCoordinator;
@@ -31,34 +28,25 @@ contract BLSOperatorStateRetriever {
         indexRegistry = _registryCoordinator.indexRegistry();
     }
 
-    function getOperatorState(uint32 blockNumber, uint256 globalApkHashIndex) external view returns (OperatorState memory) {
-        OperatorState memory state;
-
-        state.operatorIds = indexRegistry.getOperatorIds();
-        state.blockNumber = blockNumber;
-
-        uint96[] memory stakePerQuorum = new uint96[](256);
-
-    
-        for (uint quorumNumber = 0; quorumNumber < 256; quorumNumber++) {
-            IStakeRegistry.OperatorStakeUpdate[] memory totalHistoryForQuorum = stakeRegistry.getTotalStakeHistoryForQuorum(quorumNumber);
-            for (uint256 i = totalHistoryForQuorum.length - 1; i >= 0; i--) {
-                IStakeRegistry.OperatorStakeUpdate memory update = totalHistoryForQuorum[i];
-
-                if (blockNumber < update.blockNumber){
-                    continue;
-                }
-                if (update.blockNumber == 0 || blockNumber < update.nextUpdateBlockNumber ) {
-                    stakePerQuorum[quorumNumber] = update.stake;
-                    break;
-                }
+    /**
+     * @notice returns the ordered list of operators (id and stake) for each quorum
+     * @param quorumNumbers the quorum numbers to get the operator state for
+     */
+    function getOperatorState(bytes calldata quorumNumbers) external view returns (Operator[][] memory) {
+        Operator[][] memory operators = new Operator[][](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorum(quorumNumber);
+            operators[i] = new Operator[](operatorIds.length);
+            for (uint256 j = 0; j < operatorIds.length; j++) {
+                bytes32 operatorId = bytes32(operatorIds[j]);
+                operators[i][j] = Operator({
+                    operatorId: operatorId,
+                    stake: stakeRegistry.getMostRecentStakeUpdateByOperatorId(operatorId, quorumNumber).stake
+                });
             }
         }
-        state.stakePerQuorum = stakePerQuorum;
-        state.apkHash = blsPubkeyRegistry.getGlobalApkHashAtBlockNumberFromIndex(blockNumber, globalApkHashIndex);
-        state.numOperators = indexRegistry.totalOperators();
-
-        return state;
+        return operators;
     }
 
     

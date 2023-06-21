@@ -80,6 +80,12 @@ interface IStakeRegistry is IRegistry {
         returns (OperatorStakeUpdate memory);
 
     /**
+     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
+     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     */
+    function getMostRecentStakeUpdateByOperatorId(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
+
+    /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
      * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if the entry 
      * corresponds to the operator's stake at `blockNumber`. Reverts otherwise.

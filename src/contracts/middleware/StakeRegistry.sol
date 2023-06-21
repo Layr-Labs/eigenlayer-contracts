@@ -156,11 +156,6 @@ contract StakeRegistry is StakeRegistryStorage {
         return totalStakeHistory[quorumNumber].length;
     }
 
-    function getTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {
-        OperatorStakeUpdate[] memory stakeHistory =  totalStakeHistory[quorumNumber];
-        return stakeHistory;
-    }
-
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
      * @param operatorId is the id of the operator of interest

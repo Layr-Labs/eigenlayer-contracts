@@ -126,6 +126,18 @@ contract IndexRegistry is IIndexRegistry, Test {
         return operatorIndexToCheck.index;
     }
 
+    function getOperatorListForQuorum(uint8 quorumNumber) external view returns (bytes32[] memory){
+        bytes32[] memory quorumOperatorList = new bytes32[](totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index);
+        for (uint i = 0; i < globalOperatorList.length; i++) {
+            bytes32 operatorId = globalOperatorList[i];
+            if(operatorIdToIndexHistory[operatorId][quorumNumber].length > 0){
+                uint32 index = operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
+                quorumOperatorList[index - 1] = operatorId;
+            }
+        }
+        return quorumOperatorList;
+    }
+
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
         return totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index;
     }
