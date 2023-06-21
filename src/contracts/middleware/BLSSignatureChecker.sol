@@ -9,6 +9,7 @@ import "../libraries/BytesArrayBitmaps.sol";
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
 abstract contract BLSSignatureChecker {
@@ -109,7 +110,7 @@ abstract contract BLSSignatureChecker {
             uint256[] memory nonSignerQuorumBitmaps = new uint256[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
             {
                 // the bitmap of the quorumNumbers
-                uint256 singingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
+                uint256 signingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
@@ -122,7 +123,7 @@ abstract contract BLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul_tiny(
-                                countNumOnes(nonSignerQuorumBitmaps[i] & singingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                                countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
                             )
                     );
                 }

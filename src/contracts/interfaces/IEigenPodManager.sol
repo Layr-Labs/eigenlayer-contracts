@@ -9,6 +9,7 @@ import "./IPausable.sol";
 /**
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 
 interface IEigenPodManager is IPausable {

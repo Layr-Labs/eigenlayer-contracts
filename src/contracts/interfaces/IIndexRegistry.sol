@@ -8,6 +8,12 @@ import "./IRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IIndexRegistry is IRegistry {
+    // EVENTS
+    // emitted when an operator's index in at quorum operator list is updated
+    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
+    // emitted when an operator's index in the global operator list is updated
+    event GlobalIndexUpdate(bytes32 indexed operatorId, uint32 newIndex);
+
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber
@@ -31,11 +37,11 @@ interface IIndexRegistry is IRegistry {
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @param quorumToOperatorListIndexes is an array of indexes for each quorum as witnesses for the last operators to swap for each quorum
-     * @param globalOperatorListIndex is the index of the operator in the global operator list
-     * @dev Permissioned by RegistryCoordinator
+     * @param operatorIdsToSwap is the list of operatorIds that are to be swapped with the last operator in the list for each quorum
+     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
+     * @dev access restricted to the RegistryCoordinator
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external;
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.

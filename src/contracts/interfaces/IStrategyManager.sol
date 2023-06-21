@@ -8,6 +8,7 @@ import "./IDelegationManager.sol";
 /**
  * @title Interface for the primary entrypoint for funds into EigenLayer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager {

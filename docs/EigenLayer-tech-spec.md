@@ -24,7 +24,7 @@ A **staker** is any party who has assets deposited into EigenLayer. In general, 
 ### Watchers
 **NOTE: at present, EigenLayer does not feature any optimistically rolled up claims. This paragraph reflects a potential future state of the system.**
 
-Some operations in EigenLayer are "**optimisitically rolled up**". This is a design pattern used where it is either impossible or infeasible to prove that some claim is true, but *easy to check a counterexample that proves the claim is false*. The general pattern is:
+Some operations in EigenLayer are "**optimistically rolled up**". This is a design pattern used where it is either impossible or infeasible to prove that some claim is true, but *easy to check a counterexample that proves the claim is false*. The general pattern is:
 1. A "rolled-up" claim is made, asserting that some condition is true.
 2. There is a "fraudproof period", during which anyone can *disprove* the claim with a single counterexample. If a claim is disproven, then the original claimant is punished in some way (e.g. by forfeiting some amount or being slashed).
 3. If the claim is *not* disproved during the fraudproof period, then it is assumed to be true, and the system proceeds from this assumption.
@@ -32,7 +32,7 @@ Some operations in EigenLayer are "**optimisitically rolled up**". This is a des
 **Watchers** are parties who passively observe these "rolled up" claims, and step in only in the case of an invalid or false claim. In such a case, an honest watcher will perform the fraudproof, disproving the claim.
 
 ### Services / Middleware
-We refer to software built on top of EigenLayer as either **services** or **middleware**. Since we anticipate a wide variety of services built on top of EigenLayer, the EigenLayer team has endeavored to make a minimal amount of assumptions about the struture of services.
+We refer to software built on top of EigenLayer as either **services** or **middleware**. Since we anticipate a wide variety of services built on top of EigenLayer, the EigenLayer team has endeavored to make a minimal amount of assumptions about the structure of services.
 
 ## Key Assumptions
 ### Discretization of Services ("Tasks")

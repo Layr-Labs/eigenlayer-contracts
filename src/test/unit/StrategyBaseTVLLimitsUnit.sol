@@ -52,18 +52,18 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         assertEq(_maxDeposits, maxTotalDepositsFuzzedInput);
     }
 
-    function testSetTVLLimitsFailsWhenNotCalledByPauser(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, address notPauser) public {
-        cheats.assume(notPauser != address(proxyAdmin));
-        cheats.assume(notPauser != pauser);
-        cheats.startPrank(notPauser);
-        cheats.expectRevert(bytes("msg.sender is not permissioned as pauser"));
+    function testSetTVLLimitsFailsWhenNotCalledByUnpauser(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, address notUnpauser) public {
+        cheats.assume(notUnpauser != address(proxyAdmin));
+        cheats.assume(notUnpauser != unpauser);
+        cheats.startPrank(notUnpauser);
+        cheats.expectRevert(bytes("msg.sender is not permissioned as unpauser"));
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
     }
 
     function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput) public {
         cheats.assume(maxTotalDepositsFuzzedInput < maxPerDepositFuzzedInput);
-        cheats.startPrank(pauser);
+        cheats.startPrank(unpauser);
         cheats.expectRevert(bytes("StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"));
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
@@ -126,7 +126,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         cheats.assume(maxTotalDepositsFuzzedInput > 0);
         cheats.assume(newMaxTotalDepositsFuzzedInput > maxTotalDepositsFuzzedInput);
         cheats.assume(newMaxTotalDepositsFuzzedInput < initialSupply);
-        cheats.startPrank(pauser);
+        cheats.startPrank(unpauser);
         strategyWithTVLLimits.setTVLLimits(maxTotalDepositsFuzzedInput, maxTotalDepositsFuzzedInput);
         cheats.stopPrank();
 
@@ -140,7 +140,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         require(strategyWithTVLLimits.totalShares() == maxTotalDepositsFuzzedInput + sharesBefore, "total shares not updated correctly");
 
-        cheats.startPrank(pauser);
+        cheats.startPrank(unpauser);
         strategyWithTVLLimits.setTVLLimits(newMaxTotalDepositsFuzzedInput, newMaxTotalDepositsFuzzedInput);
         cheats.stopPrank();
 
@@ -228,7 +228,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     function _setTVLLimits(uint256 _maxPerDeposit, uint256 _maxTotalDeposits) internal {
         cheats.assume(_maxPerDeposit < _maxTotalDeposits);
         (uint256 _maxPerDepositBefore, uint256 _maxTotalDepositsBefore) = strategyWithTVLLimits.getTVLLimits();
-        cheats.startPrank(pauser);
+        cheats.startPrank(unpauser);
         cheats.expectEmit(true, true, true, true, address(strategyWithTVLLimits));
         emit MaxPerDepositUpdated(_maxPerDepositBefore, _maxPerDeposit);
         emit MaxTotalDepositsUpdated(_maxTotalDepositsBefore, _maxTotalDeposits);

@@ -117,7 +117,9 @@ contract StrategyManagerUnitTests is Test, Utils {
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
-        pauserRegistry = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         slasherMock = new SlasherMock();
         delegationMock = new DelegationMock();
@@ -293,6 +295,8 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.assume(amount != 0);
         // filter out zero address because the mock ERC20 we are using will revert on using it
         cheats.assume(staker != address(0));
+        // filter out the strategy itself from fuzzed inputs
+        cheats.assume(staker != address(strategy));
         // sanity check / filter
         cheats.assume(amount <= token.balanceOf(address(this)));
         cheats.assume(amount >= 1);

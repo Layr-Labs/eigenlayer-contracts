@@ -3,12 +3,6 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
-remappings = [
-	'ds-test/=lib/ds-test/src/',
-	'forge-std/=lib/forge-std/src/',
-	'@openzeppelin/=lib/openzeppelin-contracts/',
-	'@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable/'
-]
 gas_reports = ["*"]
 
 # A list of ignored solc error codes

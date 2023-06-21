@@ -9,6 +9,20 @@ import "../libraries/BN254.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSPubkeyRegistry is IRegistry {
+    // EVENTS
+    // Emitted when a new operator pubkey is registered
+    event PubkeyAdded(
+        address operator,
+        BN254.G1Point pubkey
+    );
+
+    // Emitted when an operator pubkey is deregistered
+    event PubkeyRemoved(
+        address operator,
+        BN254.G1Point pubkey
+    );  
+
+
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
         // keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
@@ -20,6 +34,10 @@ interface IBLSPubkeyRegistry is IRegistry {
     }
     
     /**
+<<<<<<< HEAD
+=======
+
+>>>>>>> multiquorums
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
@@ -48,7 +66,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         6) `pubkey` is the same as the parameter used when registering
      */  
     function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
-
+    
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
 
@@ -59,16 +77,16 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      * @param quorumNumber is the quorum whose ApkHash is being retrieved
-     * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
-     * @param index is the provided witness of the onchain index calculated offchain
+     * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
+     * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
     function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32);
 
 	/**
-     * @notice get hash of the apk among all quourums at `blockNumber` using the provided `index`;
+     * @notice get hash of the apk among all quorums at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
-     * @param blockNumber is the number of the block for which the latest ApkHash muust be retrieved
-     * @param index is the provided witness of the onchain index calculated offchain
+     * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
+     * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
     function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32);
     

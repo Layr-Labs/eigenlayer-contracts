@@ -51,7 +51,10 @@ contract StakeRegistryUnitTests is Test {
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
-        pauserRegistry = new PauserRegistry(pauser, unpauser);
+
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         delegationMock = new DelegationMock();
         eigenPodManagerMock = new EigenPodManagerMock();
