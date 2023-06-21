@@ -37,7 +37,7 @@ contract PaymentCoordinator is
     uint256 public constant MAX_EIGENLAYER_SHARE_BIPS = 1500;
 
     /// @notice Array of roots of posted Merkle trees, as well as associated data like tree height
-    MerkleRootPost[] internal _merkleRoots;
+    MerkleRootPost[] internal _merkleRootPosts;
 
     /// @notice Mapping token => recipient => cumulative amount *claimed*
     mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
@@ -107,14 +107,14 @@ contract PaymentCoordinator is
     // @notice Permissioned function which allows posting a new Merkle root
     function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher {
         MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelayBlocks, calculatedUpToBlockNumber);
-        _merkleRoots.push(newMerkleRoot);
+        _merkleRootPosts.push(newMerkleRoot);
         emit NewMerkleRootPosted(newMerkleRoot);
     }
 
     /// @notice Permissioned function which allows rootPublisher to nullify a Merkle root
     function nullifyMerkleRoot(uint256 rootIndex) external onlyOwner {
-        require(block.number <= _merkleRoots[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
-        delete _merkleRoots[rootIndex];
+        require(block.number <= _merkleRootPosts[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
+        delete _merkleRootPosts[rootIndex];
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
@@ -137,9 +137,9 @@ contract PaymentCoordinator is
         uint256 leafIndex
     ) external {
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
-        require(_merkleRoots[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
+        require(_merkleRootPosts[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
 
-        bytes32 root = _merkleRoots[rootIndex].root;
+        bytes32 root = _merkleRootPosts[rootIndex].root;
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
 
         bytes32 leafHash = _computeLeafHash(leaf);
@@ -168,13 +168,13 @@ contract PaymentCoordinator is
 
 
     /// @notice Getter function for the length of the `merkleRoots` array
-    function merkleRootsLength() external view returns (uint256) {
-        return _merkleRoots.length;
+    function merkleRootPostsLength() external view returns (uint256) {
+        return _merkleRootPosts.length;
     }
 
     /// @notice Getter function for a merkleRoot at a given index
-    function merkleRoots(uint256 index) external view returns (MerkleRootPost memory) {
-        return _merkleRoots[index];
+    function merkleRootPosts(uint256 index) external view returns (MerkleRootPost memory) {
+        return _merkleRootPosts[index];
     }
 
     function _setRootPublisher(address _rootPublisher) internal {

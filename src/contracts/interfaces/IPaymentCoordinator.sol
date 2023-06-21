@@ -43,14 +43,14 @@ interface IPaymentCoordinator {
     }
 
     /// @notice Getter function for the length of the `merkleRootPosts` array
-    function merkleRootsLength() external view returns (uint256);
+    function merkleRootPostsLength() external view returns (uint256);
 
 
     /// @notice getter cumulativeTokenAmountClaimedByRecipient (mapping(IERC20 => mapping(address => uint256))
     function cumulativeTokenAmountClaimedByRecipient(IERC20 token, address recipient) external view returns (uint256);
 
     /// @notice getter for merkleRootPosts 
-    function merkleRoots(uint256 index) external view returns (MerkleRootPost memory);
+    function merkleRootPosts(uint256 index) external view returns (MerkleRootPost memory);
 
     /**
      * @notice Makes a payment of sum(amounts) paid in `token`, for `operator`'s contributions to an AVS,
