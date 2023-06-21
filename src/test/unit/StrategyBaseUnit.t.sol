@@ -46,8 +46,10 @@ contract StrategyBaseUnitTests is Test {
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
 
-        pauserRegistry = new PauserRegistry(pauser, unpauser);
-
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        pauserRegistry = new PauserRegistry(pausers, unpauser);
+        
         strategyManager = new StrategyManagerMock();
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);

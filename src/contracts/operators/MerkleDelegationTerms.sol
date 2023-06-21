@@ -12,6 +12,7 @@ import "../libraries/Merkle.sol";
 /**
  * @title A 'Delegation Terms' contract that an operator can use to distribute earnings to stakers by periodically posting Merkle roots
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract specifies the delegation terms of a given operator. When a staker delegates its stake to an operator,
  * it has to agrees to the terms set in the operator's 'Delegation Terms' contract. Payments to an operator are routed through
  * their specified 'Delegation Terms' contract for subsequent distribution of earnings to individual stakers.

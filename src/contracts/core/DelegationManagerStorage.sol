@@ -9,6 +9,7 @@ import "../interfaces/ISlasher.sol";
 /**
  * @title Storage variables for the `DelegationManager` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {

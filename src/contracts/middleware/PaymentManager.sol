@@ -13,8 +13,8 @@ import "../permissions/Pausable.sol";
 /**
  * @title Controls middleware payments.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-//
 contract PaymentManager is Initializable, IPaymentManager, Pausable {
     using SafeERC20 for IERC20;
 
