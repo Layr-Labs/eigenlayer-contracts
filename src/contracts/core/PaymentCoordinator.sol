@@ -112,7 +112,7 @@ contract PaymentCoordinator is
     }
 
     /// @notice Permissioned function which allows rootPublisher to nullify a Merkle root
-    function nullifyMerkleRoot(uint256 rootIndex) external onlyRootPublisher {
+    function nullifyMerkleRoot(uint256 rootIndex) external onlyOwner {
         require(block.number <= _merkleRoots[rootIndex].confirmedAtBlockNumber, "PaymentCoordinator.nullifyMerkleRoot: Merkle root already confirmed");
         delete _merkleRoots[rootIndex];
     }
@@ -133,7 +133,8 @@ contract PaymentCoordinator is
     function proveAndClaimEarnings(
         bytes memory proof,
         uint256 rootIndex,
-        MerkleLeaf memory leaf
+        MerkleLeaf memory leaf,
+        uint256 leafIndex
     ) external {
         require(leaf.amounts.length == leaf.tokens.length, "PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length");
         require(_merkleRoots[rootIndex].confirmedAtBlockNumber < block.number, "PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed");
@@ -142,11 +143,13 @@ contract PaymentCoordinator is
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
 
         bytes32 leafHash = _computeLeafHash(leaf);
-        require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leaf.index), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
+        require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leafIndex), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
         for(uint256 i = 0; i < leaf.amounts.length; i++) {
-            leaf.tokens[i].safeTransfer(leaf.recipient, leaf.amounts[i]);
-            cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] += leaf.amounts[i];
+            uint256 amount = leaf.amounts[i] - cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient];
+            cumulativeTokenAmountClaimedByRecipient[leaf.tokens[i]][leaf.recipient] = leaf.amounts[i];
+            leaf.tokens[i].safeTransfer(leaf.recipient, amount);
+            
         }
         emit PaymentClaimed(leaf);
     }
@@ -193,6 +196,6 @@ contract PaymentCoordinator is
     }
 
     function _computeLeafHash(MerkleLeaf memory leaf) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts)), leaf.index));
+        return keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts))));
     }
 }

@@ -123,7 +123,7 @@ contract PaymentCoordinatorTest is Test {
 
     function testNullifyMerkleRoot(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
         testPostMerkleRoot(root, height, calculatedUpToBlockNumber);
-        cheats.startPrank(paymentCoordinator.rootPublisher());
+        cheats.startPrank(paymentCoordinator.owner());
         paymentCoordinator.nullifyMerkleRoot(paymentCoordinator.merkleRootsLength() - 1);
         cheats.stopPrank();
         IPaymentCoordinator.MerkleRootPost memory post = paymentCoordinator.merkleRoots(paymentCoordinator.merkleRootsLength() - 1);
@@ -135,13 +135,13 @@ contract PaymentCoordinatorTest is Test {
 
         cheats.roll(block.number + rootPostDelay + 1);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: Merkle root is null"));
-        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
+        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf, 0);
     }
 
     function testCallNullifyMerkleRootFromUnauthorizedAddress(address unauthorizedAddress) external fuzzedAddress(unauthorizedAddress) {
-        cheats.assume(unauthorizedAddress != paymentCoordinator.rootPublisher());
+        cheats.assume(unauthorizedAddress != paymentCoordinator.owner());
         cheats.startPrank(unauthorizedAddress);
-        cheats.expectRevert(bytes("PaymentCoordinator: Only rootPublisher"));
+        cheats.expectRevert(bytes("Ownable: caller is not the owner"));
         paymentCoordinator.nullifyMerkleRoot(0);
         cheats.stopPrank();
     }
@@ -151,7 +151,7 @@ contract PaymentCoordinatorTest is Test {
         leaf.amounts = new uint256[](1);
         leaf.tokens = new IERC20[](2);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: leaf amounts and tokens must be same length"));
-        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
+        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf, 0);
     }
 
     function testClaimEarningsForRootTooEarly(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {
@@ -163,7 +163,7 @@ contract PaymentCoordinatorTest is Test {
         leaf.amounts = new uint256[](1);
         leaf.tokens = new IERC20[](1);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: Merkle root not yet confirmed"));
-        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf);
+        paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf, 0);
     }
 
     function _sum(uint[] memory numbers) internal view returns (uint) {
