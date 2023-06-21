@@ -71,13 +71,15 @@ contract PaymentCoordinatorTest is Test {
         PaymentCoordinator.Payment memory payment;
         payment.token = dummyToken;
         payment.amounts = amounts;
+        //this is purely to ensure that the quorum and amount length check passes.  We never use this value on chain
+        payment.quorums = amounts;
 
         uint256 balanceBefore = dummyToken.balanceOf(address(paymentCoordinator));
-        uint256 cumumlativeEarningsBefore = paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken);
+        uint256 cumumlativeEarningsBefore = paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken);
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit PaymentReceived(address(this), payment);
         paymentCoordinator.makePayment(payment);
-        require(paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken) - cumumlativeEarningsBefore == sum * eigenLayerShareBIPs / MAX_BIPS, "cumulativeEigenLayerTokeEarnings should be set");
+        require(paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken) - cumumlativeEarningsBefore == sum * eigenLayerShareBIPs / MAX_BIPS, "cumulativeEigenLayerTokeEarnings should be set");
         require(dummyToken.balanceOf(address(paymentCoordinator)) - balanceBefore == sum, "incorrect token balance");
     }
 
@@ -113,12 +115,23 @@ contract PaymentCoordinatorTest is Test {
         cheats.assume(recipient != address(paymentCoordinator));
         uint256 balanceBefore = dummyToken.balanceOf(recipient);
         testMakePayment(amounts);
-        uint256 amountToClaim = paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken);
+        uint256 amountToClaim = paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken);
         cheats.startPrank(paymentCoordinator.owner());
         paymentCoordinator.withdrawEigenlayerShare(dummyToken, recipient);
         cheats.stopPrank();
-        require(paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
+        require(paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
         require(dummyToken.balanceOf(recipient) - balanceBefore == amountToClaim, "incorrect token balance");
+    }
+
+    function testMismatchedAmountAndQuorumArrayLength(uint256[] memory amounts, uint256[] memory quorums) external {
+        cheats.assume(amounts.length != quorums.length);
+        PaymentCoordinator.Payment memory payment;
+        payment.token = dummyToken;
+        payment.amounts = amounts;
+        payment.quorums = quorums;
+        cheats.expectRevert(bytes("PaymentCoordinator.makePayment: payment amounts and quorums must have the same length"));
+        paymentCoordinator.makePayment(payment);
+
     }
 
     function testNullifyMerkleRoot(bytes32 root, uint256 height, uint256 calculatedUpToBlockNumber) external {

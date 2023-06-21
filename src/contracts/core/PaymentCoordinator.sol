@@ -42,8 +42,8 @@ contract PaymentCoordinator is
     /// @notice Mapping token => recipient => cumulative amount *claimed*
     mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
 
-    /// @notice Mapping token => cumulative amount earned by EigenLayer
-    mapping(IERC20 => uint256) public cumulativeEigenLayerTokenEarnings;
+    /// @notice Mapping token => accumulated amount earned by EigenLayer
+    mapping(IERC20 => uint256) public accumulatedEigenLayerTokenEarnings;
 
      /// @notice variable that defines the share EigenLayer takes of all payments, in basis points
      uint256 public eigenLayerShareBIPs;
@@ -94,13 +94,14 @@ contract PaymentCoordinator is
      * @notice Emits a `PaymentReceived` event
      */
     function makePayment(Payment calldata payment) external{
+        require(payment.amounts.length == payment.quorums.length, "PaymentCoordinator.makePayment: payment amounts and quorums must have the same length");
         uint256 sumAmounts;
         for (uint256 i = 0; i < payment.amounts.length; i++) {
             sumAmounts += payment.amounts[i];
         }
         payment.token.safeTransferFrom(msg.sender, address(this), sumAmounts);
 
-        cumulativeEigenLayerTokenEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
+        accumulatedEigenLayerTokenEarnings[payment.token] += sumAmounts * eigenLayerShareBIPs / MAX_BIPS;
         emit PaymentReceived(msg.sender, payment);
     }
 
@@ -119,8 +120,8 @@ contract PaymentCoordinator is
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
     function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyOwner {
-        uint256 amount = cumulativeEigenLayerTokenEarnings[token];
-        cumulativeEigenLayerTokenEarnings[token] = 0;
+        uint256 amount = accumulatedEigenLayerTokenEarnings[token];
+        accumulatedEigenLayerTokenEarnings[token] = 0;
         token.safeTransfer(recipient, amount); 
     }
 
@@ -142,7 +143,7 @@ contract PaymentCoordinator is
         bytes32 root = _merkleRootPosts[rootIndex].root;
         require(root != bytes32(0), "PaymentCoordinator.proveAndClaimEarnings: Merkle root is null");
 
-        bytes32 leafHash = _computeLeafHash(leaf);
+        bytes32 leafHash = computeLeafHash(leaf);
         require(Merkle.verifyInclusionKeccak(proof, root, leafHash, leafIndex), "PaymentCoordinator.proveAndClaimEarnings: Invalid proof");
 
         for(uint256 i = 0; i < leaf.amounts.length; i++) {
@@ -195,7 +196,7 @@ contract PaymentCoordinator is
         emit EigenLayerShareBIPSChanged(eigenLayerShareBIPs);
     }
 
-    function _computeLeafHash(MerkleLeaf memory leaf) internal pure returns (bytes32) {
+    function computeLeafHash(MerkleLeaf memory leaf) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(leaf.recipient, keccak256(abi.encodePacked(leaf.tokens)), keccak256(abi.encodePacked(leaf.amounts))));
     }
 }
