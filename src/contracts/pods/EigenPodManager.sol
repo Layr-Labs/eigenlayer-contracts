@@ -22,6 +22,7 @@ import "./EigenPodPausingConstants.sol";
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
  * - creating EigenPods
  * - staking for new validators on EigenPods
@@ -103,7 +104,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
-
+    
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -170,9 +171,9 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /**
      * Sets the maximum number of pods that can be deployed
      * @param newMaxPods The new maximum number of pods that can be deployed
-     * @dev Callable by the pauser of this contract
+     * @dev Callable by the unpauser of this contract
      */
-    function setMaxPods(uint256 newMaxPods) external onlyPauser {
+    function setMaxPods(uint256 newMaxPods) external onlyUnpauser {
         _setMaxPods(newMaxPods);
     }
 
