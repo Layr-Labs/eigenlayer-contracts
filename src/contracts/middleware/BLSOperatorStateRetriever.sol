@@ -31,7 +31,7 @@ contract BLSOperatorStateRetriever {
         indexRegistry = _registryCoordinator.indexRegistry();
     }
 
-    function getOperatorState(uint32 blockNumber, uint256 stakeHistoryIndex, uint256 globalApkHashIndex) external view returns (OperatorState memory) {
+    function getOperatorState(uint32 blockNumber, uint256 globalApkHashIndex) external view returns (OperatorState memory) {
         OperatorState memory state;
 
         state.operatorIds = indexRegistry.getOperatorIds();
