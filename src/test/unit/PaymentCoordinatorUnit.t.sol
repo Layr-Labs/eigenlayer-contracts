@@ -118,9 +118,6 @@ contract PaymentCoordinatorTest is Test {
         paymentCoordinator.withdrawEigenlayerShare(dummyToken, recipient);
         cheats.stopPrank();
         require(paymentCoordinator.cumulativeEigenLayerTokenEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
-        emit log_named_uint("amountToClaim", amountToClaim);
-        emit log_named_uint("balanceBefore", balanceBefore);
-        emit log_named_uint("balanceAfter", dummyToken.balanceOf(recipient));
         require(dummyToken.balanceOf(recipient) - balanceBefore == amountToClaim, "incorrect token balance");
     }
 
