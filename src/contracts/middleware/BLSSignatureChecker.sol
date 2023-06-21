@@ -123,7 +123,7 @@ abstract contract BLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul_tiny(
-                                countNumOnes(nonSignerQuorumBitmaps[i] & singingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                                countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
                             )
                     );
                 }
