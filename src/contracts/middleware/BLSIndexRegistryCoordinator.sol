@@ -95,20 +95,20 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      */
     function deregisterOperator(bytes calldata deregistrationData) external {
         // get the operator's deregisteration information
-        (BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) 
-            = abi.decode(deregistrationData, (BN254.G1Point, uint32[], uint32));
+        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
+            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
         // call internal function to deregister the operator
-        _deregisterOperator(msg.sender, pubkey, quorumToOperatorListIndexes, globalOperatorListIndex);
+        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
     /**
      * @notice Deregisters the operator from the middleware
      * @param pubkey is the BLS public key of the operator
-     * @param quorumToOperatorListIndexes is the list of the operator's indexes in the quorums they are registered for in the IndexRegistry
+     * @param operatorIdsToSwap is the list of the operator ids that the should swap for the deregistering operator's index
      * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
-    function deregisterOperator(BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) external {
-        _deregisterOperator(msg.sender, pubkey, quorumToOperatorListIndexes, globalOperatorListIndex);
+    function deregisterOperator(BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
+        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
     function _registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
@@ -138,7 +138,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         });
     }
 
-    function _deregisterOperator(address operator, BN254.G1Point memory pubkey, uint32[] memory quorumToOperatorListIndexes, uint32 globalOperatorListIndex) internal {
+    function _deregisterOperator(address operator, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
         require(operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
 
         // get the operatorId of the operator
@@ -152,7 +152,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, globalOperatorListIndex);
+        indexRegistry.deregisterOperator(operatorId, quorumNumbers, operatorIdsToSwap, globalOperatorListIndex);
 
         // deregister the operator from the StakeRegistry
         _deregisterOperator(operator, operatorId, quorumNumbers);
