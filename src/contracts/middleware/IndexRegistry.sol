@@ -5,10 +5,8 @@ pragma solidity =0.8.12;
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
-import "forge-std/Test.sol";
 
-
-contract IndexRegistry is IIndexRegistry, Test {
+contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator public immutable registryCoordinator;
 
