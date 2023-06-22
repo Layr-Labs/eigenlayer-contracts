@@ -83,6 +83,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
+     * @dev `registrationData` should be a G1 point representing the operator's BLS public key
      */
     function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
@@ -108,6 +109,8 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap,
+     * and the operator's index in the global operator list
      */
     function deregisterOperatorWithCoordinator(bytes calldata deregistrationData) external {
         // get the operator's deregisteration information
