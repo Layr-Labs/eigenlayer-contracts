@@ -8,7 +8,12 @@ import "../interfaces/IRegistryCoordinator.sol";
 import "./StakeRegistryStorage.sol";
 
 /**
- * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * @title A `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * Specifically, it keeps track of
+ *      1) The stake of each operator in all the quorums they are apart of for block ranges
+ *      2) The total stake of all operators in each quorum for block ranges
+ *      3) The minimum stake required to register for each quorum
+ * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
