@@ -112,7 +112,8 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     }
 
     function _registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
-        // TODO: check that the sender is not already registered
+        // check that the sender is not already registered
+        require(operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
