@@ -20,7 +20,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     mapping(bytes32 => uint256) public operatorIdToQuorumBitmap;
     /// @notice the mapping from operator's address to the operator struct
     mapping(address => Operator) public operators;
-    /// @notice the dynamic length array of the registries this coordinator is coordinating
+    /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
 
     constructor(
