@@ -16,7 +16,7 @@ contract BLSOperatorStateRetriever {
     }
 
     struct OperatorState {
-        Operator[][] operators;
+        Operator[][] operators; // 2d array of operators. For each quorum, a ordered list of operators
         uint256 callingOperatorIndex;
     }
 
