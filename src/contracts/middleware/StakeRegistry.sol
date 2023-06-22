@@ -8,7 +8,12 @@ import "../interfaces/IRegistryCoordinator.sol";
 import "./StakeRegistryStorage.sol";
 
 /**
- * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * @title A `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * Specifically, it keeps track of
+ *      1) The stake of each operator in all the quorums they are apart of for block ranges
+ *      2) The total stake of all operators in each quorum for block ranges
+ *      3) The minimum stake required to register for each quorum
+ * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
@@ -16,32 +21,35 @@ contract StakeRegistry is StakeRegistryStorage {
         require(msg.sender == address(registryCoordinator), "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
         _;
     }
-
+    // EVENTS
     constructor(
-        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _strategyManager, _serviceManager)
+    ) StakeRegistryStorage(_strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
     }
 
     /**
-     * @notice Adds empty first entries to the dynamic arrays `totalStakeHistory` and `totalOperatorsHistory`,
+     * @notice Adds empty first entries to the dynamic arrays `_totalStakeHistory`,
      * to record an initial condition of zero operators with zero total stake.
      * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
      */
     function initialize(
+        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) external virtual initializer {
-        _initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+        _initialize(_registryCoordinator, _minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
     }
 
     function _initialize(
+        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
+        // store the coordinator
+        registryCoordinator = _registryCoordinator;
         // sanity check lengths
         require(_minimumStakeForQuorum.length == _quorumStrategiesConsideredAndMultipliers.length, "Registry._initialize: minimumStakeForQuorum length mismatch");
 
@@ -71,12 +79,12 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
+     * @notice Returns the `index`-th entry in the dynamic array of total stake, `_totalStakeHistory` for quorum `quorumNumber`.
      * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
      */
     function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {
-        return totalStakeHistory[quorumNumber][index];
+        return _totalStakeHistory[quorumNumber][index];
     }
 
     /**
@@ -101,14 +109,14 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /**
      * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the 
-     * `totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
+     * `_totalStakeHistory[quorumNumber]` array if it was the stake at `blockNumber`. Reverts otherwise.
      * @param quorumNumber The quorum number to get the stake for.
-     * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
+     * @param index Array index for lookup, within the dynamic array `_totalStakeHistory[quorumNumber]`.
      * @param blockNumber Block number to make sure the stake is from.
      * @dev Function will revert if `index` is out-of-bounds.
      */
     function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96) {
-        OperatorStakeUpdate memory totalStakeUpdate = totalStakeHistory[quorumNumber][index];
+        OperatorStakeUpdate memory totalStakeUpdate = _totalStakeHistory[quorumNumber][index];
         _validateOperatorStakeUpdateAtBlockNumber(totalStakeUpdate, blockNumber);
         return totalStakeUpdate.stake;
     }
@@ -141,11 +149,11 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
-    /// @notice Returns the stake weight from the latest entry in `totalStakeHistory` for quorum `quorumNumber`.
-    /// @dev Will revert if `totalStakeHistory[quorumNumber]` is empty.
+    /// @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+    /// @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
         // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
-        return totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake;
+        return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
     }
 
     function getLengthOfOperatorIdStakeHistoryForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint256) {
@@ -153,7 +161,7 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {
-        return totalStakeHistory[quorumNumber].length;
+        return _totalStakeHistory[quorumNumber].length;
     }
 
     /**
@@ -248,7 +256,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -264,7 +272,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -297,7 +305,7 @@ contract StakeRegistry is StakeRegistryStorage {
                 if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
                     // if the total stake has not been loaded yet, load it
                     if (totalStakeUpdate.updateBlockNumber == 0) {
-                        totalStakeUpdate = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1];
+                        totalStakeUpdate = _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1];
                     }
                     bytes32 operatorId = operatorIds[i];
                     // update the operator's stake based on current state
@@ -371,11 +379,11 @@ contract StakeRegistry is StakeRegistryStorage {
             // check if minimum requirement has been met, will be 0 if not
             require(stake != 0, "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
             // add operator stakes to total stake before update (in memory)
-            uint256 totalStakeHistoryLength = totalStakeHistory[quorumNumber].length;
-            if (totalStakeHistoryLength != 0) {
+            uint256 _totalStakeHistoryLength = _totalStakeHistory[quorumNumber].length;
+            if (_totalStakeHistoryLength != 0) {
                 // only add the stake if there is a previous total stake
                 // overwrite `stake` variable
-                stake += totalStakeHistory[quorumNumber][totalStakeHistoryLength - 1].stake;
+                stake += _totalStakeHistory[quorumNumber][_totalStakeHistoryLength - 1].stake;
             }
             _newTotalStakeUpdate.stake = stake;
             // update storage of total stake
@@ -417,7 +425,7 @@ contract StakeRegistry is StakeRegistryStorage {
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
             // subtract the amounts staked by the operator that is getting deregistered from the total stake before deregistration
             // copy latest totalStakes to memory
-            _newTotalStakeUpdate.stake = totalStakeHistory[quorumNumber][totalStakeHistory[quorumNumber].length - 1].stake - stakeBeforeUpdate;
+            _newTotalStakeUpdate.stake = _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake - stakeBeforeUpdate;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
 
@@ -481,12 +489,12 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /// @notice Records that the `totalStake` is now equal to the input param @_totalStake
     function _recordTotalStakeUpdate(uint8 quorumNumber, OperatorStakeUpdate memory _totalStake) internal {
-        uint256 totalStakeHistoryLength = totalStakeHistory[quorumNumber].length;
-        if (totalStakeHistoryLength != 0) {
-            totalStakeHistory[quorumNumber][totalStakeHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+        uint256 _totalStakeHistoryLength = _totalStakeHistory[quorumNumber].length;
+        if (_totalStakeHistoryLength != 0) {
+            _totalStakeHistory[quorumNumber][_totalStakeHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
         }
         _totalStake.updateBlockNumber = uint32(block.number);
-        totalStakeHistory[quorumNumber].push(_totalStake);
+        _totalStakeHistory[quorumNumber].push(_totalStake);
     }
 
     /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`

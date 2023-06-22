@@ -11,7 +11,7 @@ interface IStakeRegistry is IRegistry {
     // EVENTS
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
-        bytes32 operatorId,
+        bytes32 indexed operatorId,
         uint8 quorumNumber,
         uint96 stake
     );
@@ -35,7 +35,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId The id of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -49,7 +49,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order

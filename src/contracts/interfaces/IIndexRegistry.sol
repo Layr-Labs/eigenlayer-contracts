@@ -30,6 +30,11 @@ interface IIndexRegistry is IRegistry {
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions (these are assumed, not validated in this contract):
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already registered
      */
     function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
 
@@ -37,9 +42,16 @@ interface IIndexRegistry is IRegistry {
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @param operatorIdsToSwap is the list of operatorIds that are to be swapped with the last operator in the list for each quorum
+     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
+     * they will be swapped the operators current index
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
+     * @dev Preconditions (these are assumed, not validated in this contract):
+     *         1) `quorumNumbers` has no duplicates
+     *         2) `quorumNumbers.length` != 0
+     *         3) `quorumNumbers` is ordered in ascending order
+     *         4) the operator is not already deregistered
+     *         5) `quorumNumbers` is the same as the parameter use when registering
      */
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
 

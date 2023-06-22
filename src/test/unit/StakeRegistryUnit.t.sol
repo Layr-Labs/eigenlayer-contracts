@@ -122,7 +122,7 @@ contract StakeRegistryUnitTests is Test {
     function testCorrectConstruction() public {
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        stakeRegistryImplementation.initialize(new uint96[](0), new IVoteWeigher.StrategyAndWeightingMultiplier[][](0));
+        stakeRegistryImplementation.initialize(IRegistryCoordinator(registryCoordinator), new uint96[](0), new IVoteWeigher.StrategyAndWeightingMultiplier[][](0));
     }
 
     function testSetMinimumStakeForQuorum_NotFromServiceManager_Reverts() public {

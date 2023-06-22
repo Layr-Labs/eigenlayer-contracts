@@ -34,16 +34,12 @@ interface IBLSPubkeyRegistry is IRegistry {
     }
     
     /**
-<<<<<<< HEAD
-=======
-
->>>>>>> multiquorums
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The operator's BLS public key.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -57,7 +53,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order

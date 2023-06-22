@@ -16,9 +16,10 @@ interface IRegistryCoordinator {
     // DATA STRUCTURES
     enum OperatorStatus
     {
-        // default is DEREGISTERED
-        DEREGISTERED,
-        REGISTERED
+        // default is NEVER_REGISTERED
+        NEVER_REGISTERED,
+        REGISTERED,
+        DEREGISTERED
     }
 
     /**
@@ -33,14 +34,17 @@ interface IRegistryCoordinator {
         OperatorStatus status;
     }
 
+    /// @notice Returns the operator struct for the given `operator`
+    function getOperator(address operator) external view returns (Operator memory);
+
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
 
+    /// @notice Returns the quorum bitmap for the given `operator`
+    function operatorIdToQuorumBitmap(bytes32 operatorId) external view returns (uint256);
+
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);
-
-    /// @notice Returns the bitmap of the quorums that the given `operator` is part of
-    function operatorIdToQuorumBitmap(bytes32) external view returns (uint256);
 
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);
@@ -48,9 +52,17 @@ interface IRegistryCoordinator {
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
 
-    /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
-    function registerOperator(bytes memory quorumNumbers, bytes calldata) external;
+    /**
+     * @notice Registers msg.sender as an operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param registrationData is the data that is decoded to get the operator's registration information
+     */
+    function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata registrationData) external;
 
-    /// @notice deregisters the sender with additional bytes for registry interaction data
-    function deregisterOperator(bytes calldata) external;
+    /**
+     * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
+     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     */
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
 }

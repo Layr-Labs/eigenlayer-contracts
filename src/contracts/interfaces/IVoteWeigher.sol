@@ -22,6 +22,9 @@ interface IVoteWeigher {
         uint96 multiplier;
     }
 
+    /// @notice Constant used as a divisor in calculating weights.
+    function WEIGHTING_DIVISOR() external pure returns (uint256);
+
     /// @notice Returns the strategy manager contract.
     function strategyManager() external view returns (IStrategyManager);
     /// @notice Returns the stake registry contract.
@@ -73,9 +76,10 @@ interface IVoteWeigher {
 
     /**
      * @notice This function is used for modifying the weights of strategies that are already in the
-     * mapping strategiesConsideredAndMultipliers for a specific @param quorumNumber.
-     * @param strategyIndices is a correctness-check input -- the supplied values must match the indices of the
-     * strategiesToModifyWeightsOf in strategiesConsideredAndMultipliers[quorumNumber]
+     * mapping strategiesConsideredAndMultipliers for a specific
+     * @param quorumNumber is the quorum number to change the strategy for
+     * @param strategyIndices are the indices of the strategies to change
+     * @param newMultipliers are the new multipliers for the strategies
      */
     function modifyStrategyWeights(
         uint8 quorumNumber,
@@ -83,13 +87,6 @@ interface IVoteWeigher {
         uint96[] calldata newMultipliers
     ) external;
 
-    /**
-     * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
-     * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
-     */
+    /// @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
     function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) external view returns (uint256);
-
-
-
-
 }

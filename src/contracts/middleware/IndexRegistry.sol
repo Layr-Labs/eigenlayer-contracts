@@ -5,12 +5,10 @@ pragma solidity =0.8.12;
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
-import "forge-std/Test.sol";
 
+contract IndexRegistry is IIndexRegistry {
 
-contract IndexRegistry is IIndexRegistry, Test {
-
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
 
     // list of all unique registered operators
     bytes32[] public globalOperatorList;
@@ -32,11 +30,11 @@ contract IndexRegistry is IIndexRegistry, Test {
     }
 
     /**
-     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -58,12 +56,14 @@ contract IndexRegistry is IIndexRegistry, Test {
     }
 
     /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
+     * they will be swapped the operators current index
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order

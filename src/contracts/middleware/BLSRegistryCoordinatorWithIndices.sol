@@ -8,6 +8,14 @@ import "../libraries/BytesArrayBitmaps.sol";
 
 import "./StakeRegistry.sol";
 
+/**
+ * @title A `RegistryCoordinator` that has three registries:
+ *      1) a `StakeRegistry` that keeps track of operators' stakes (this is actually the contract itself, via inheritance)
+ *      2) a `BLSPubkeyRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
+ *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ * 
+ * @author Layr Labs, Inc.
+ */
 contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordinatorWithIndices {
     using BN254 for BN254.G1Point;
 
@@ -20,8 +28,8 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
     /// @notice the mapping from operator's operatorId to the bitmap of quorums they are registered for
     mapping(bytes32 => uint256) public operatorIdToQuorumBitmap;
     /// @notice the mapping from operator's address to the operator struct
-    mapping(address => Operator) public operators;
-    /// @notice the dynamic length array of the registries this coordinator is coordinating
+    mapping(address => Operator) internal _operators;
+    /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
 
     constructor(
@@ -29,7 +37,7 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         IIndexRegistry _indexRegistry,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(IRegistryCoordinator(address(this)), _strategyManager, _serviceManager) {
+    ) StakeRegistry(_strategyManager, _serviceManager) {
         blsPubkeyRegistry = _blsPubkeyRegistry;
         indexRegistry = _indexRegistry;
     }
@@ -37,7 +45,7 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
     function initialize(
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
-    ) external override initializer {
+    ) external initializer {
         // we set this in the initialize function because the constructor is called by the proxy contract
         stakeRegistry = IStakeRegistry(address(this));
         // the stake registry is this contract itself
@@ -45,17 +53,23 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         registries.push(address(blsPubkeyRegistry));
         registries.push(address(indexRegistry));
 
-        StakeRegistry._initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+        // this contract is the registry coordinator for the stake registry
+        StakeRegistry._initialize(IRegistryCoordinator(address(this)), _minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
     }
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return operators[operator].fromTaskNumber;
+        return _operators[operator].fromTaskNumber;
+    }
+
+    /// @notice Returns the operator struct for the given `operator`
+    function getOperator(address operator) external view returns (Operator memory) {
+        return _operators[operator];
     }
 
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32) {
-        return operators[operator].operatorId;
+        return _operators[operator].operatorId;
     }
 
     /// @notice Returns the number of registries
@@ -63,59 +77,67 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         return registries.length;
     }
 
+    /// @notice disabled function on the StakeRegistry because this is the registry coordinator
     function registerOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.registerOperator: cannot use overrided StakeRegistry.registerOperator on BLSIndexRegistryCoordinator");
     }
 
     /**
-     * @notice Registers the operator with the middleware
+     * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
+     * @dev `registrationData` should be a G1 point representing the operator's BLS public key
      */
-    function registerOperator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
         BN254.G1Point memory pubkey = abi.decode(registrationData, (BN254.G1Point));
         // call internal function to register the operator
-        _registerOperator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
     /**
-     * @notice Registers the operator with the middleware
+     * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
      */
     function registerOperator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
-        _registerOperator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
+    /// @notice disabled function on the StakeRegistry because this is the registry coordinator
     function deregisterOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.deregisterOperator: cannot use overrided StakeRegistry.deregisterOperator on BLSIndexRegistryCoordinator");
     }
     
     /**
-     * @notice Deregisters the operator from the middleware
+     * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap, 
+     * and the operator's index in the global operator list
      */
-    function deregisterOperator(bytes calldata deregistrationData) external {
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
         // get the operator's deregisteration information
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
         // call internal function to deregister the operator
-        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
     /**
-     * @notice Deregisters the operator from the middleware
+     * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param pubkey is the BLS public key of the operator
      * @param operatorIdsToSwap is the list of the operator ids that the should swap for the deregistering operator's index
      * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
-    function deregisterOperator(BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
-        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
-    function _registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
-        // TODO: check that the sender is not already registered
+    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
+        // check that the sender is not already registered
+        require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
@@ -134,7 +156,7 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         operatorIdToQuorumBitmap[operatorId] = quorumBitmap;
 
         // set the operator struct
-        operators[operator] = Operator({
+        _operators[operator] = Operator({
             operatorId: operatorId,
             fromTaskNumber: serviceManager.taskNumber(),
             status: OperatorStatus.REGISTERED
@@ -144,15 +166,16 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         emit OperatorRegistered(operator, operatorId);
     }
 
-    function _deregisterOperator(address operator, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
-        require(operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
+    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
+        require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
 
         // get the operatorId of the operator
-        bytes32 operatorId = operators[operator].operatorId;
+        bytes32 operatorId = _operators[operator].operatorId;
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        bytes memory quorumNumbers = BytesArrayBitmaps.bitmapToBytesArray(operatorIdToQuorumBitmap[operatorId]);
+        require(operatorIdToQuorumBitmap[operatorId] == BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers), 
+            "BLSIndexRegistryCoordinator._deregisterOperator: quorumNumbers does not match storage");
         
         // deregister the operator from the BLSPubkeyRegistry
         blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
@@ -164,7 +187,7 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
         _deregisterOperator(operator, operatorId, quorumNumbers);
 
         // set the status of the operator to DEREGISTERED
-        operators[operator].status = OperatorStatus.DEREGISTERED;
+        _operators[operator].status = OperatorStatus.DEREGISTERED;
 
         // emit event
         emit OperatorDeregistered(operator, operatorId);
