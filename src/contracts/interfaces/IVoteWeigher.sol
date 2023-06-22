@@ -22,6 +22,11 @@ interface IVoteWeigher {
         uint96 multiplier;
     }
 
+    /// @notice Constant used as a divisor in calculating weights.
+    function WEIGHTING_DIVISOR() external pure returns (uint256);
+    /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
+    function MAX_WEIGHING_FUNCTION_LENGTH() external pure returns (uint8);
+
     /// @notice Returns the strategy manager contract.
     function strategyManager() external view returns (IStrategyManager);
     /// @notice Returns the stake registry contract.
