@@ -56,7 +56,7 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
