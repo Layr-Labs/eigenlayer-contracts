@@ -156,11 +156,8 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         }
     }
 
-    /**
-     * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
-     * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
-     */
-    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view validQuorumNumber(quorumNumber) returns (uint256) {
+    /// @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
+    function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) public view returns (uint256) {
         return strategiesConsideredAndMultipliers[quorumNumber].length;
     }
 

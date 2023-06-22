@@ -87,13 +87,6 @@ interface IVoteWeigher {
         uint96[] calldata newMultipliers
     ) external;
 
-    /**
-     * @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
-     * @dev Reverts if `quorumNumber` < `NUMBER_OF_QUORUMS`, i.e. the input is out of bounds.
-     */
+    /// @notice Returns the length of the dynamic array stored in `strategiesConsideredAndMultipliers[quorumNumber]`.
     function strategiesConsideredAndMultipliersLength(uint8 quorumNumber) external view returns (uint256);
-
-
-
-
 }
