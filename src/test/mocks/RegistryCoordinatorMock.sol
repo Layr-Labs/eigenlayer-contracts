@@ -23,5 +23,5 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
 
     function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata) external {}
 
-    function deregisterOperatorWithCoordinator(bytes calldata) external {}
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata) external {}
 }

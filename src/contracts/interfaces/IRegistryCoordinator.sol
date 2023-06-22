@@ -54,7 +54,8 @@ interface IRegistryCoordinator {
 
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
      */
-    function deregisterOperatorWithCoordinator(bytes calldata deregistrationData) external;
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
 }
