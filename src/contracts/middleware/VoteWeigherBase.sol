@@ -130,9 +130,10 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
 
     /**
      * @notice This function is used for modifying the weights of strategies that are already in the
-     * mapping strategiesConsideredAndMultipliers for a specific @param quorumNumber.
-     * @param strategyIndices is a correctness-check input -- the supplied values must match the indices of the
-     * strategiesToModifyWeightsOf in strategiesConsideredAndMultipliers[quorumNumber]
+     * mapping strategiesConsideredAndMultipliers for a specific @param quorumNumber
+     * @param quorumNumber is the quorum number to change the strategy for
+     * @param strategyIndices are the indices of the strategies to change
+     * @param newMultipliers are the new multipliers for the strategies
      */
     function modifyStrategyWeights(
         uint8 quorumNumber,
