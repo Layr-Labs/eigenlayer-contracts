@@ -30,7 +30,7 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     /**
-     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
