@@ -59,6 +59,4 @@ contract BLSOperatorStateRetriever {
 
         return operatorState;
     }
-
-    
 }
