@@ -84,11 +84,11 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
      */
-    function registerOperator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
         BN254.G1Point memory pubkey = abi.decode(registrationData, (BN254.G1Point));
         // call internal function to register the operator
-        _registerOperator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
     /**
@@ -97,7 +97,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @param pubkey is the BLS public key of the operator
      */
     function registerOperator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
-        _registerOperator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
     /// @notice disabled function on the StakeRegistry because this is the registry coordinator
@@ -109,12 +109,12 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @notice Deregisters the operator from the middleware
      * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
      */
-    function deregisterOperator(bytes calldata deregistrationData) external {
+    function deregisterOperatorWithCoordinator(bytes calldata deregistrationData) external {
         // get the operator's deregisteration information
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
         // call internal function to deregister the operator
-        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+        _deregisterOperatorWithCoordinator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
     /**
@@ -123,11 +123,11 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @param operatorIdsToSwap is the list of the operator ids that the should swap for the deregistering operator's index
      * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
-    function deregisterOperator(BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
-        _deregisterOperator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+    function deregisterOperatorWithCoordinator(BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
+        _deregisterOperatorWithCoordinator(msg.sender, pubkey, operatorIdsToSwap, globalOperatorListIndex);
     }
 
-    function _registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
+    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
         // check that the sender is not already registered
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
 
@@ -155,7 +155,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         });
     }
 
-    function _deregisterOperator(address operator, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
+    function _deregisterOperatorWithCoordinator(address operator, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
 
         // get the operatorId of the operator
