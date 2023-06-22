@@ -36,13 +36,14 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     function initialize(
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
-    ) external override initializer {
+    ) external initializer {
         // the stake registry is this contract itself
         registries.push(address(this));
         registries.push(address(blsPubkeyRegistry));
         registries.push(address(indexRegistry));
 
-        StakeRegistry._initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+        // this contract is the registry coordinator for the stake registry
+        StakeRegistry._initialize(IRegistryCoordinator(address(this)), _minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
     }
 
     /// @notice Returns task number from when `operator` has been registered.

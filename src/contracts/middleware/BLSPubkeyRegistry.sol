@@ -19,7 +19,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     /// @notice the current aggregate pubkey of all operators registered in this contract, regardless of quorum
     BN254.G1Point public globalApk;
     /// @notice the registry coordinator contract
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
     /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked
     IBLSPublicKeyCompendium public immutable pubkeyCompendium;
 

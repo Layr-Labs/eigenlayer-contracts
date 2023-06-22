@@ -34,16 +34,20 @@ contract StakeRegistry is StakeRegistryStorage {
      * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
      */
     function initialize(
+        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) external virtual initializer {
-        _initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+        _initialize(_registryCoordinator, _minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
     }
 
     function _initialize(
+        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
+        // store the coordinator
+        registryCoordinator = _registryCoordinator;
         // sanity check lengths
         require(_minimumStakeForQuorum.length == _quorumStrategiesConsideredAndMultipliers.length, "Registry._initialize: minimumStakeForQuorum length mismatch");
 

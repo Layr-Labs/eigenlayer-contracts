@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 
 contract IndexRegistry is IIndexRegistry, Test {
 
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
 
     // list of all unique registered operators
     bytes32[] public globalOperatorList;
@@ -56,7 +56,7 @@ contract IndexRegistry is IIndexRegistry, Test {
             _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
         }
     }
-    
+
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
