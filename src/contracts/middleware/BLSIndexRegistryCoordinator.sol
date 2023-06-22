@@ -61,6 +61,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         return registries.length;
     }
 
+    /// @notice disabled function on the StakeRegistry because this is the registry coordinator
     function registerOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.registerOperator: cannot use overrided StakeRegistry.registerOperator on BLSIndexRegistryCoordinator");
     }
@@ -86,6 +87,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         _registerOperator(msg.sender, quorumNumbers, pubkey);
     }
 
+    /// @notice disabled function on the StakeRegistry because this is the registry coordinator
     function deregisterOperator(address, bytes32, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.deregisterOperator: cannot use overrided StakeRegistry.deregisterOperator on BLSIndexRegistryCoordinator");
     }
