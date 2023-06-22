@@ -34,10 +34,6 @@ interface IBLSPubkeyRegistry is IRegistry {
     }
     
     /**
-<<<<<<< HEAD
-=======
-
->>>>>>> multiquorums
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
