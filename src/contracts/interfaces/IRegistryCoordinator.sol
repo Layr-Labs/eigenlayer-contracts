@@ -27,8 +27,14 @@ interface IRegistryCoordinator {
         OperatorStatus status;
     }
 
+    /// @notice Returns the operator struct for the given `operator`
+    function getOperator(address operator) external view returns (Operator memory);
+
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
+
+    /// @notice Returns the quorum bitmap for the given `operator`
+    function operatorIdToQuorumBitmap(bytes32 operatorId) external view returns (uint256);
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);

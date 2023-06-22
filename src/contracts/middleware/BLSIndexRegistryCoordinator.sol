@@ -19,7 +19,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     /// @notice the mapping from operator's operatorId to the bitmap of quorums they are registered for
     mapping(bytes32 => uint256) public operatorIdToQuorumBitmap;
     /// @notice the mapping from operator's address to the operator struct
-    mapping(address => Operator) public operators;
+    mapping(address => Operator) internal _operators;
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
 
@@ -48,12 +48,17 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return operators[operator].fromTaskNumber;
+        return _operators[operator].fromTaskNumber;
+    }
+
+    /// @notice Returns the operator struct for the given `operator`
+    function getOperator(address operator) external view returns (Operator memory) {
+        return _operators[operator];
     }
 
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32) {
-        return operators[operator].operatorId;
+        return _operators[operator].operatorId;
     }
 
     /// @notice Returns the number of registries
@@ -116,7 +121,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
 
     function _registerOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
         // check that the sender is not already registered
-        require(operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
+        require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
@@ -135,7 +140,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         operatorIdToQuorumBitmap[operatorId] = quorumBitmap;
 
         // set the operator struct
-        operators[operator] = Operator({
+        _operators[operator] = Operator({
             operatorId: operatorId,
             fromTaskNumber: serviceManager.taskNumber(),
             status: OperatorStatus.REGISTERED
@@ -143,10 +148,10 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     }
 
     function _deregisterOperator(address operator, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
-        require(operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
+        require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperator: operator is not registered");
 
         // get the operatorId of the operator
-        bytes32 operatorId = operators[operator].operatorId;
+        bytes32 operatorId = _operators[operator].operatorId;
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
@@ -162,6 +167,6 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         _deregisterOperator(operator, operatorId, quorumNumbers);
 
         // set the status of the operator to DEREGISTERED
-        operators[operator].status = OperatorStatus.DEREGISTERED;
+        _operators[operator].status = OperatorStatus.DEREGISTERED;
     }
 }
