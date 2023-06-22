@@ -34,7 +34,7 @@ contract IndexRegistry is IIndexRegistry {
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -63,7 +63,7 @@ contract IndexRegistry is IIndexRegistry {
      * they will be swapped the operators current index
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
