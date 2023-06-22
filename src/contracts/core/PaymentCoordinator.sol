@@ -8,9 +8,6 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "forge-std/Test.sol";
-
-
 
 /**
  * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequent splitting of earnings from operators to stakers
@@ -19,8 +16,7 @@ import "forge-std/Test.sol";
 contract PaymentCoordinator is 
     IPaymentCoordinator,
     Initializable,
-    OwnableUpgradeable,
-    Test
+    OwnableUpgradeable
 {
     using SafeERC20 for IERC20;
 
