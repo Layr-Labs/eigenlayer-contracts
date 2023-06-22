@@ -45,9 +45,16 @@ interface IRegistryCoordinator {
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
 
-    /// @notice registers the sender as an operator for the `quorumNumbers` with additional bytes for registry interaction data
-    function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata) external;
+    /**
+     * @notice Registers msg.sender as an operator with the middleware
+     * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
+     * @param registrationData is the data that is decoded to get the operator's registration information
+     */
+    function registerOperatorWithCoordinator(bytes memory quorumNumbers, bytes calldata registrationData) external;
 
-    /// @notice deregisters the sender with additional bytes for registry interaction data
-    function deregisterOperatorWithCoordinator(bytes calldata) external;
+    /**
+     * @notice Deregisters the msg.sender as an operator from the middleware
+     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     */
+    function deregisterOperatorWithCoordinator(bytes calldata deregistrationData) external;
 }
