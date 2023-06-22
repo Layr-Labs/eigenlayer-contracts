@@ -126,6 +126,7 @@ contract IndexRegistry is IIndexRegistry, Test {
         return operatorIndexToCheck.index;
     }
 
+    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber`
     function getOperatorListForQuorum(uint8 quorumNumber) external view returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index);
         for (uint i = 0; i < globalOperatorList.length; i++) {
@@ -136,6 +137,16 @@ contract IndexRegistry is IIndexRegistry, Test {
             }
         }
         return quorumOperatorList;
+    }
+
+    /// @notice Returns an index of the given `operatorId` in the global operator list
+    function getIndexOfOperatorIdInGlobalOperatorList(bytes32 operatorId) external view returns (uint32){
+        for (uint i = 0; i < globalOperatorList.length; i++) {
+            if(globalOperatorList[i] == operatorId){
+                return uint32(i);
+            }
+        }
+        revert("IndexRegistry.getIndexOfOperatorIdInGlobalOperatorList: operatorId not found in globalOperatorList");
     }
 
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){

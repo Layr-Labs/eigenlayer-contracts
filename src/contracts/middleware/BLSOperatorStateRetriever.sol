@@ -15,6 +15,11 @@ contract BLSOperatorStateRetriever {
         uint96 stake;
     }
 
+    struct OperatorState {
+        Operator[][] operators;
+        uint256 callingOperatorIndex;
+    }
+
     IBLSRegistryCoordinatorWithIndices public registryCoordinator;
     IStakeRegistry public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
@@ -32,7 +37,7 @@ contract BLSOperatorStateRetriever {
      * @notice returns the ordered list of operators (id and stake) for each quorum
      * @param quorumNumbers the quorum numbers to get the operator state for
      */
-    function getOperatorState(bytes calldata quorumNumbers) external view returns (Operator[][] memory) {
+    function getOperatorState(bytes32 callingOperatorId, bytes calldata quorumNumbers) external view returns (OperatorState memory) {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -46,7 +51,13 @@ contract BLSOperatorStateRetriever {
                 });
             }
         }
-        return operators;
+
+        OperatorState memory operatorState = OperatorState({
+            operators: operators,
+            callingOperatorIndex: indexRegistry.getIndexOfOperatorIdInGlobalOperatorList(callingOperatorId)
+        });
+
+        return operatorState;
     }
 
     

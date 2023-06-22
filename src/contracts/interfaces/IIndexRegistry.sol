@@ -69,6 +69,9 @@ interface IIndexRegistry is IRegistry {
     /// @notice Returns the current number of operators of this service.
     function totalOperators() external view returns (uint32);
 
-    /// @notice Returns an ordered list of operators of the services for this quorum.
+    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber`.
     function getOperatorListForQuorum(uint8 quorumNumber) external view returns (bytes32[] memory);
+
+    /// @notice Returns an index of the given `operatorId` in the global operator list
+    function getIndexOfOperatorIdInGlobalOperatorList(bytes32 operatorId) external view returns (uint32);
 }
