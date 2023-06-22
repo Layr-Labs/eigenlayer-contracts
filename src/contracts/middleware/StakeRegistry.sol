@@ -15,7 +15,7 @@ contract StakeRegistry is StakeRegistryStorage {
     // EVENTS
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
-        bytes32 operatorId,
+        bytes32 indexed operatorId,
         uint8 quorumNumber,
         uint96 stake
     );
