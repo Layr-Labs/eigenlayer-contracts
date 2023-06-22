@@ -9,6 +9,14 @@ import "../libraries/BytesArrayBitmaps.sol";
 
 import "./StakeRegistry.sol";
 
+/**
+ * @title A `RegistryCoordinator` that has three registries:
+ *      1) a `StakeRegistry` that keeps track of operators' stakes (this is actually the contract itself, via inheritance)
+ *      2) a `BLSPubkeyRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
+ *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
+ * 
+ * @author Layr Labs, Inc.
+ */
 contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     using BN254 for BN254.G1Point;
 
