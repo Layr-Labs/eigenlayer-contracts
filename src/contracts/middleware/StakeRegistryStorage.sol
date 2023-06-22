@@ -22,7 +22,7 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     uint96[256] public minimumStakeForQuorum;
 
     /// @notice array of the history of the total stakes for each quorum -- marked as internal since getTotalStakeFromIndex is a getter for this
-    OperatorStakeUpdate[][256] internal totalStakeHistory;
+    OperatorStakeUpdate[][256] internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
