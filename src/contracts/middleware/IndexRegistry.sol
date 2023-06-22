@@ -56,11 +56,13 @@ contract IndexRegistry is IIndexRegistry, Test {
             _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
         }
     }
-
+    
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
      * @param operatorId is the id of the operator that is being deregistered
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
+     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
+     * they will be swapped the operators current index
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions:
