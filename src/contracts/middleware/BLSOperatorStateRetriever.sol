@@ -15,11 +15,6 @@ contract BLSOperatorStateRetriever {
         uint96 stake;
     }
 
-    struct OperatorState {
-        Operator[][] operators; // 2d array of operators. For each quorum, a ordered list of operators
-        uint256 callingOperatorIndex;
-    }
-
     IBLSRegistryCoordinatorWithIndices public registryCoordinator;
     IStakeRegistry public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
@@ -35,9 +30,16 @@ contract BLSOperatorStateRetriever {
 
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
-     * @param quorumNumbers the quorum numbers to get the operator state for
+     * @param operatorId the id of the operator calling the function
+     * @return 2d array of operators. For each quorum, a ordered list of operators
      */
-    function getOperatorState(bytes32 callingOperatorId, bytes calldata quorumNumbers) external view returns (OperatorState memory) {
+    function getOperatorState(bytes32 operatorId) external view returns (Operator[][] memory) {
+        bytes memory quorumNumbers = BytesArrayBitmaps.bitmapToBytesArray(registryCoordinator.operatorIdToQuorumBitmap(operatorId));
+
+        return getOperatorState(quorumNumbers);
+    }
+
+    function getOperatorState(bytes memory quorumNumbers) public view returns(Operator[][] memory) {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -51,12 +53,7 @@ contract BLSOperatorStateRetriever {
                 });
             }
         }
-
-        OperatorState memory operatorState = OperatorState({
-            operators: operators,
-            callingOperatorIndex: indexRegistry.getIndexOfOperatorIdInGlobalOperatorList(callingOperatorId)
-        });
-
-        return operatorState;
+            
+        return operators;
     }
 }
