@@ -100,7 +100,7 @@ contract BLSRegistryCoordinatorWithIndices is StakeRegistry, IBLSRegistryCoordin
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
      */
-    function registerOperator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
         _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
