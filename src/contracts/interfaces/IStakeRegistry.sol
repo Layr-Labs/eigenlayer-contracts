@@ -39,6 +39,7 @@ interface IStakeRegistry is IRegistry {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param operatorId The id of the operator to deregister.
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
@@ -48,7 +49,7 @@ interface IStakeRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external;
+    function deregisterOperator(address operator, bytes32 operatorId, bool completeDeregistration, bytes memory quorumNumbers) external;
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 

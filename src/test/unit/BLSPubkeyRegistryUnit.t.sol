@@ -53,7 +53,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
         cheats.startPrank(nonCoordinatorAddress);
         cheats.expectRevert(bytes("BLSPubkeyRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
-        blsPubkeyRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0), BN254.G1Point(0, 0));
+        blsPubkeyRegistry.deregisterOperator(nonCoordinatorAddress, true, new bytes(0), BN254.G1Point(0, 0));
         cheats.stopPrank();
     }
 
@@ -186,7 +186,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         }
 
         cheats.startPrank(address(registryCoordinator));
-        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, defaultPubKey);
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, true, quorumNumbers, defaultPubKey);
         cheats.stopPrank();
 
         
@@ -213,7 +213,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
 
         cheats.prank(address(registryCoordinator));
-        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, globalApkBefore);
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, true, quorumNumbers, globalApkBefore);
 
         (x, y)= blsPubkeyRegistry.globalApk();
         require(x == 0, "global apk not set to zero");
@@ -234,7 +234,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.stopPrank();
 
         cheats.prank(address(registryCoordinator));
-        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, quorumApksBefore);
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, true, quorumNumbers, quorumApksBefore);
 
         BN254.G1Point memory pk = blsPubkeyRegistry.getApkForQuorum(defaultQuorumNumber);
         require(pk.X == 0, "global apk not set to zero");
@@ -368,7 +368,7 @@ contract BLSPubkeyRegistryUnitTests is Test {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         cheats.startPrank(address(registryCoordinator));
-        blsPubkeyRegistry.deregisterOperator(defaultOperator, quorumNumbers, BN254.hashToG1(pk));
+        blsPubkeyRegistry.deregisterOperator(defaultOperator, true, quorumNumbers, BN254.hashToG1(pk));
         cheats.stopPrank();
     }
 

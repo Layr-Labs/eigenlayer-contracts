@@ -273,6 +273,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
      * @param operatorId The id of the operator to deregister.
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
@@ -282,8 +283,8 @@ contract StakeRegistry is StakeRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
-        _deregisterOperator(operator, operatorId, quorumNumbers);
+    function deregisterOperator(address operator, bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers) external virtual {
+        _deregisterOperator(operator, operatorId, completeDeregistration, quorumNumbers);
     }
 
     /**
@@ -397,15 +398,18 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    function _deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
+    function _deregisterOperator(address operator, bytes32 operatorId, bool completeDeregistration, bytes memory quorumNumbers) internal {
         // remove the operator's stake
         _removeOperatorStake(operatorId, quorumNumbers);
 
-        // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
-        uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
+        // if the operator is deregistering from all quorums, revoke ther service's slashing ability
+        if(completeDeregistration) {
+            // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
+            uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
 
-        // record a stake update unbonding the operator after `latestServeUntilBlock`
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
+            // record a stake update unbonding the operator after `latestServeUntilBlock`
+            serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
+        }
     }
 
     /**

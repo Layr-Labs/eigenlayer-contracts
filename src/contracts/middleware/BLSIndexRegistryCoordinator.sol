@@ -102,7 +102,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     }
 
     /// @notice disabled function on the StakeRegistry because this is the registry coordinator
-    function deregisterOperator(address, bytes32, bytes calldata) external override pure {
+    function deregisterOperator(address, bytes32, bool, bytes calldata) external override pure {
         revert("BLSIndexRegistryCoordinator.deregisterOperator: cannot use overrided StakeRegistry.deregisterOperator on BLSIndexRegistryCoordinator");
     }
     
@@ -172,13 +172,13 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
             "BLSIndexRegistryCoordinator._deregisterOperator: quorumNumbers does not match storage");
         
         // deregister the operator from the BLSPubkeyRegistry
-        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
+        blsPubkeyRegistry.deregisterOperator(operator, true, quorumNumbers, pubkey);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, quorumNumbers, operatorIdsToSwap, globalOperatorListIndex);
+        indexRegistry.deregisterOperator(operatorId, true, quorumNumbers, operatorIdsToSwap, globalOperatorListIndex);
 
         // deregister the operator from the StakeRegistry
-        _deregisterOperator(operator, operatorId, quorumNumbers);
+        _deregisterOperator(operator, operatorId, true, quorumNumbers);
 
         // set the status of the operator to DEREGISTERED
         _operators[operator].status = OperatorStatus.DEREGISTERED;

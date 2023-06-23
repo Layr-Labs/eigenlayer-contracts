@@ -65,7 +65,7 @@ contract IndexRegistryUnitTests is Test {
 
         cheats.startPrank(nonRegistryCoordinator);
         cheats.expectRevert(bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
-        indexRegistry.deregisterOperator(bytes32(0), quorumNumbers, operatorIdsToSwap, 0);
+        indexRegistry.deregisterOperator(bytes32(0), true, quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
     }
 
@@ -90,7 +90,7 @@ contract IndexRegistryUnitTests is Test {
 
         //deregister the operatorId1, removing it from both quorum 1 and 2.
         cheats.startPrank(address(registryCoordinatorMock));
-        indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap, 0);
+        indexRegistry.deregisterOperator(operatorId1, true, quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
 
         require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
@@ -125,7 +125,7 @@ contract IndexRegistryUnitTests is Test {
         //deregister the operatorId1, removing it from both quorum 1 and 2.
         cheats.startPrank(address(registryCoordinatorMock));
         cheats.expectRevert(bytes("IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum"));
-        indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap, 0);
+        indexRegistry.deregisterOperator(operatorId1, true, quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
     }
 
@@ -136,7 +136,7 @@ contract IndexRegistryUnitTests is Test {
         //deregister the operatorId1, removing it from both quorum 1 and 2.
         cheats.startPrank(address(registryCoordinatorMock));
         cheats.expectRevert(bytes("IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"));
-        indexRegistry.deregisterOperator(defaultOperator, quorumNumbers, operatorIdsToSwap, 0);
+        indexRegistry.deregisterOperator(defaultOperator, true, quorumNumbers, operatorIdsToSwap, 0);
         cheats.stopPrank();
     }
 

@@ -20,7 +20,13 @@ interface IBLSPubkeyRegistry is IRegistry {
     event PubkeyRemoved(
         address operator,
         BN254.G1Point pubkey
-    );  
+    );
+
+    // Emitted when an operator pubkey is removed from a set of quorums
+    event PubkeyRemoveFromQuorums(
+        address operator, 
+        bytes quorumNumbers
+    );
 
 
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
@@ -50,6 +56,7 @@ interface IBLSPubkeyRegistry is IRegistry {
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
@@ -60,8 +67,8 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      *         6) `pubkey` is the same as the parameter used when registering
-     */  
-    function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
+     */ 
+    function deregisterOperator(address operator, bool completeDeregistration, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
     
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);

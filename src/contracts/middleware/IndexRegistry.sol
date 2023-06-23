@@ -58,6 +58,7 @@ contract IndexRegistry is IIndexRegistry {
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
      * they will be swapped the operators current index
@@ -70,15 +71,19 @@ contract IndexRegistry is IIndexRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
+    function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == operatorIdsToSwap.length, "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
 
-        _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexToRemove = operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
             _processOperatorRemoval(operatorId, quorumNumber, indexToRemove, operatorIdsToSwap[i]);
             _updateTotalOperatorHistory(quorumNumber, totalOperatorsHistory[quorumNumber][totalOperatorsHistory[quorumNumber].length - 1].index - 1);
+        }
+
+        // remove operator from globalOperatorList if this is a complete deregistration
+        if(completeDeregistration){
+            _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
         }
     }
 
