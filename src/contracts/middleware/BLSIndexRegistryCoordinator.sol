@@ -20,12 +20,18 @@ import "./StakeRegistry.sol";
 contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
     using BN254 for BN254.G1Point;
 
+    struct QuorumBitmapUpdate {
+        uint32 updateBlockNumber;
+        uint32 nextUpdateBlockNumber;
+        uint192 quorumBitmap;
+    }
+
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
     IBLSPubkeyRegistry public immutable blsPubkeyRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
-    /// @notice the mapping from operator's operatorId to the bitmap of quorums they are registered for
-    mapping(bytes32 => uint256) public operatorIdToQuorumBitmap;
+    /// @notice the mapping from operator's operatorId to the updates of the bitmap of quorums they are registered for
+    mapping(bytes32 => QuorumBitmapUpdate[]) internal _operatorIdToQuorumBitmapHistory;
     /// @notice the mapping from operator's address to the operator struct
     mapping(address => Operator) internal _operators;
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
@@ -69,6 +75,20 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         return _operators[operator].operatorId;
     }
 
+    /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+    function getQuorumBitmapOfOperatorAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
+        QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
+        require(
+            quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
+            "BLSRegistryCoordinator.getQuorumBitmapOfOperatorAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+        );
+        require(
+            quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber, 
+            "BLSRegistryCoordinator.getQuorumBitmapOfOperatorAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+        );
+        return quorumBitmapUpdate.quorumBitmap;
+    }
+
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256) {
         return registries.length;
@@ -97,7 +117,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
      */
-    function registerOperator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
         _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
     }
 
@@ -137,7 +157,7 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
-        uint256 quorumBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        uint192 quorumBitmap = uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers));
         require(quorumBitmap != 0, "BLSIndexRegistryCoordinator: quorumBitmap cannot be 0");
 
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
@@ -149,8 +169,12 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         // register the operator with the StakeRegistry
         _registerOperator(operator, operatorId, quorumNumbers);
 
-        // set the operatorId to quorum bitmap mapping
-        operatorIdToQuorumBitmap[operatorId] = quorumBitmap;
+        // set the operatorId to quorum bitmap history
+        _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
+            updateBlockNumber: uint32(block.number),
+            nextUpdateBlockNumber: 0,
+            quorumBitmap: quorumBitmap
+        }));
 
         // set the operator struct
         _operators[operator] = Operator({
@@ -168,8 +192,14 @@ contract BLSIndexRegistryCoordinator is StakeRegistry, IRegistryCoordinator {
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        require(operatorIdToQuorumBitmap[operatorId] == BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers), 
+        uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
+        // check that the quorumNumbers of the operator matches the quorumNumbers passed in
+        require(
+            _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap == 
+                uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers)), 
             "BLSIndexRegistryCoordinator._deregisterOperator: quorumNumbers does not match storage");
+        // set the toBlockNumber of the operator's quorum bitmap update
+        _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);
         
         // deregister the operator from the BLSPubkeyRegistry
         blsPubkeyRegistry.deregisterOperator(operator, true, quorumNumbers, pubkey);

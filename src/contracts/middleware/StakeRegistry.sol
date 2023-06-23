@@ -297,7 +297,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      * @dev reverts if there are no operators registered with index out of bounds
      */
-    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint256[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
+    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint192[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
         // for each quorum, loop through operators and see if they are apart of the quorum
         // if they are, get their new weight and update their individual stake history and thes
         // quorum's total stake history accordingly

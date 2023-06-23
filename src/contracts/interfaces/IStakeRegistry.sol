@@ -153,5 +153,5 @@ interface IStakeRegistry is IRegistry {
      * @dev Precondition:
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      */
-    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory quorumBitmaps, uint256[] memory prevElements) external;
+    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint192[] memory quorumBitmaps, uint256[] memory prevElements) external;
 }
