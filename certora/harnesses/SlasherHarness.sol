@@ -58,28 +58,28 @@ contract SlasherHarness is Slasher {
         return (_operatorToWhitelistedContractsByUpdate[operator].list[node][direction]);
     }
 
-    // uses that _HEAD = 0. Similar to StructuredLinkedList.nodeExists but slightly better defined
-    function nodeDoesExist(address operator, uint256 node) public returns (bool) {
-        if (get_next_node(operator, node) == 0 && get_previous_node(operator, node) == 0) {
-            // slightly stricter check than that defined in StructuredLinkedList.nodeExists
-            if (get_next_node(operator, 0) == node && get_previous_node(operator, 0) == node) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return true;
-        }
-    }
+    // // uses that _HEAD = 0. Similar to StructuredLinkedList.nodeExists but slightly better defined
+    // function nodeDoesExist(address operator, uint256 node) public returns (bool) {
+    //     if (get_next_node(operator, node) == 0 && get_previous_node(operator, node) == 0) {
+    //         // slightly stricter check than that defined in StructuredLinkedList.nodeExists
+    //         if (get_next_node(operator, 0) == node && get_previous_node(operator, 0) == node) {
+    //             return true;
+    //         } else {
+    //             return false;
+    //         }
+    //     } else {
+    //         return true;
+    //     }
+    // }
 
-    // uses that _PREV = false, _NEXT = true
-    function nodeIsWellLinked(address operator, uint256 node) public returns (bool) {
-        return (
-            // node is not linked to itself
-            get_previous_node(operator, node) != node && get_next_node(operator, node) != node
-            &&
-            // node is the previous node's next node and the next node's previous node
-            get_linked_list_entry(operator, get_previous_node(operator, node), true) == node && get_linked_list_entry(operator, get_next_node(operator, node), false) == node
-        );
-    }
+    // // uses that _PREV = false, _NEXT = true
+    // function nodeIsWellLinked(address operator, uint256 node) public returns (bool) {
+    //     return (
+    //         // node is not linked to itself
+    //         get_previous_node(operator, node) != node && get_next_node(operator, node) != node
+    //         &&
+    //         // node is the previous node's next node and the next node's previous node
+    //         get_linked_list_entry(operator, get_previous_node(operator, node), true) == node && get_linked_list_entry(operator, get_next_node(operator, node), false) == node
+    //     );
+    // }
 }
