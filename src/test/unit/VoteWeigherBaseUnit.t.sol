@@ -185,16 +185,16 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
     }
 
-    function testCreateQuorum_MoreThan256Quorums_Reverts() public {
+    function testCreateQuorum_MoreThan192Quorums_Reverts() public {
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers = _defaultStrategiesAndWeightingMultipliers();
             
         cheats.startPrank(serviceManagerOwner);
-        for (uint i = 0; i < 256; i++) {
+        for (uint i = 0; i < 192; i++) {
             voteWeigher.createQuorum(strategiesAndWeightingMultipliers);
         }
-        assertEq(voteWeigher.quorumCount(), 256);
+        assertEq(voteWeigher.quorumCount(), 192);
 
-        cheats.expectRevert("VoteWeigherBase._createQuorum: number of quorums cannot 256");
+        cheats.expectRevert("VoteWeigherBase._createQuorum: number of quorums cannot 192");
         voteWeigher.createQuorum(strategiesAndWeightingMultipliers); 
     }
 

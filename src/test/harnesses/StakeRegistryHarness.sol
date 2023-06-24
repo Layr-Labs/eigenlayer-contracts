@@ -11,7 +11,7 @@ contract StakeRegistryHarness is StakeRegistry {
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistry(_strategyManager, _serviceManager) {
+    ) StakeRegistry(_registryCoordinator, _strategyManager, _serviceManager) {
     }
 
     function recordOperatorStakeUpdate(bytes32 operatorId, uint8 quorumNumber, OperatorStakeUpdate memory operatorStakeUpdate) external returns(uint96) {
@@ -20,14 +20,6 @@ contract StakeRegistryHarness is StakeRegistry {
 
     function updateOperatorStake(address operator, bytes32 operatorId, uint8 quorumNumber) external returns (uint96, uint96) {
         return _updateOperatorStake(operator, operatorId, quorumNumber);
-    }
-
-    function registerStake(address operator, bytes32 operatorId, bytes memory quorumNumbers) external {
-        _registerStake(operator, operatorId, quorumNumbers);
-    }
-
-    function removeOperatorStake(bytes32 operatorId, bytes memory quorumNumbers) external {
-        _removeOperatorStake(operatorId, quorumNumbers);
     }
 
     // mocked function so we can set this arbitrarily without having to mock other elements

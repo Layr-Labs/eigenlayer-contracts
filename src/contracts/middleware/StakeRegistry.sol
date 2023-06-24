@@ -23,9 +23,10 @@ contract StakeRegistry is StakeRegistryStorage {
     }
     // EVENTS
     constructor(
+        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_strategyManager, _serviceManager)
+    ) StakeRegistryStorage(_registryCoordinator, _strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
     }
@@ -36,20 +37,16 @@ contract StakeRegistry is StakeRegistryStorage {
      * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
      */
     function initialize(
-        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) external virtual initializer {
-        _initialize(_registryCoordinator, _minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
+        _initialize(_minimumStakeForQuorum, _quorumStrategiesConsideredAndMultipliers);
     }
 
     function _initialize(
-        IRegistryCoordinator _registryCoordinator,
         uint96[] memory _minimumStakeForQuorum,
         StrategyAndWeightingMultiplier[][] memory _quorumStrategiesConsideredAndMultipliers
     ) internal virtual onlyInitializing {
-        // store the coordinator
-        registryCoordinator = _registryCoordinator;
         // sanity check lengths
         require(_minimumStakeForQuorum.length == _quorumStrategiesConsideredAndMultipliers.length, "Registry._initialize: minimumStakeForQuorum length mismatch");
 
@@ -149,8 +146,10 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
-    /// @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
-    /// @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+    /**
+     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+     */
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
         // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
         return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
@@ -268,7 +267,6 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
-     * @param operator The address of the operator to deregister.
      * @param operatorId The id of the operator to deregister.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
@@ -279,8 +277,8 @@ contract StakeRegistry is StakeRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
-        _deregisterOperator(operator, operatorId, quorumNumbers);
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
+        _deregisterOperator(operatorId, quorumNumbers);
     }
 
     /**
@@ -293,7 +291,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      * @dev reverts if there are no operators registered with index out of bounds
      */
-    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint256[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
+    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint192[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
         // for each quorum, loop through operators and see if they are apart of the quorum
         // if they are, get their new weight and update their individual stake history and thes
         // quorum's total stake history accordingly
@@ -339,29 +337,6 @@ contract StakeRegistry is StakeRegistryStorage {
     // INTERNAL FUNCTIONS
 
     function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
-        require(
-            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-            "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        );
-        
-        // calculate stakes for each quorum the operator is trying to join
-        _registerStake(operator, operatorId, quorumNumbers);
-
-        // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
-        serviceManager.recordFirstStakeUpdate(operator, 0);
-    }
-
-    /**
-     * TODO: critique: "Currently only `_registrationStakeEvaluation` uses the `uint256 registrantType` input -- we should **EITHER** store this
-     * and keep using it in other places as well, **OR** stop using it altogether"
-     */
-    /**
-     * @notice Used inside of inheriting contracts to validate the registration of `operator` and find their `OperatorStake`.
-     * @dev This function does **not** update the stored state of the operator's stakes -- storage updates are performed elsewhere.
-     */
-    function _registerStake(address operator, bytes32 operatorId, bytes memory quorumNumbers)
-        internal
-    {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is registering for only valid quorums
         require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");
@@ -394,21 +369,10 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    function _deregisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
-        // remove the operator's stake
-        _removeOperatorStake(operatorId, quorumNumbers);
-
-        // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
-        uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
-
-        // record a stake update unbonding the operator after `latestServeUntilBlock`
-        serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
-    }
-
     /**
      * @notice Removes the stakes of the operator
      */
-    function _removeOperatorStake(bytes32 operatorId, bytes memory quorumNumbers) internal {
+    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is deregistering from only valid quorums
         require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");

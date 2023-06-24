@@ -34,7 +34,7 @@ contract BLSOperatorStateRetriever {
      * @return 2d array of operators. For each quorum, a ordered list of operators
      */
     function getOperatorState(bytes32 operatorId) external view returns (Operator[][] memory) {
-        bytes memory quorumNumbers = BytesArrayBitmaps.bitmapToBytesArray(registryCoordinator.operatorIdToQuorumBitmap(operatorId));
+        bytes memory quorumNumbers = BytesArrayBitmaps.bitmapToBytesArray(registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId));
 
         return getOperatorState(quorumNumbers);
     }

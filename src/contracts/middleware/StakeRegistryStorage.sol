@@ -14,7 +14,7 @@ import "./VoteWeigherBase.sol";
  */
 abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     /// @notice the coordinator contract that this registry is associated with
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
 
     // TODO: set these on initialization
     /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as
@@ -28,11 +28,13 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
 
     constructor(
+        IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
     ) VoteWeigherBase(_strategyManager, _serviceManager)
     // solhint-disable-next-line no-empty-blocks
     {
+        registryCoordinator = _registryCoordinator;
     }
 
     // storage gap

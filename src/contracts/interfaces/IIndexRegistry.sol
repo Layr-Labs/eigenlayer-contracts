@@ -26,7 +26,7 @@ interface IIndexRegistry is IRegistry {
     }
 
     /**
-     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
      * @dev access restricted to the RegistryCoordinator
@@ -39,8 +39,9 @@ interface IIndexRegistry is IRegistry {
     function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
 
     /**
-     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumBitmap`.
+     * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
      * they will be swapped the operators current index
@@ -53,7 +54,7 @@ interface IIndexRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
+    function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.

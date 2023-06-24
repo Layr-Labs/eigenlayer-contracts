@@ -11,6 +11,28 @@ import "./IIndexRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
+    // STRUCTS
+
+    struct QuorumBitmapUpdate {
+        uint32 updateBlockNumber;
+        uint32 nextUpdateBlockNumber;
+        uint192 quorumBitmap;
+    }
+
+    struct OperatorSetParam {
+        uint32 maxOperatorCount;
+        uint8 kickPercentageOfOperatorStake;
+        uint8 kickPercentageOfAverageStake;
+        uint8 kickPercentageOfTotalStake;
+    }
+
+    struct OperatorKickParam {
+        address operator;
+        BN254.G1Point pubkey; 
+        bytes32[] operatorIdsToSwap; // should be a single length array when kicking
+        uint32 globalOperatorListIndex;
+    }
+
     /// @notice the stake registry for this corrdinator is the contract itself
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
