@@ -6,6 +6,13 @@ pragma solidity =0.8.12;
  * @author Layr Labs, Inc.
  */
 interface IRegistryCoordinator {
+    // EVENTS
+    /// Emits when an operator is registered
+    event OperatorRegistered(address indexed operator, bytes32 indexed operatorId);
+
+    /// Emits when an operator is deregistered
+    event OperatorDeregistered(address indexed operator, bytes32 indexed operatorId);
+    
     // DATA STRUCTURES
     enum OperatorStatus
     {
@@ -34,7 +41,10 @@ interface IRegistryCoordinator {
     function getOperatorId(address operator) external view returns (bytes32);
 
     /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
-    function getQuorumBitmapOfOperatorAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
+    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
+
+    /// @notice Returns the current quorum bitmap for the given `operatorId`
+    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192);
 
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32);

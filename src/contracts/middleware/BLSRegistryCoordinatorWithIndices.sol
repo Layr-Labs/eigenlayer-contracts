@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import "../interfaces/IRegistryCoordinator.sol";
+import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IVoteWeigher.sol";
@@ -20,28 +20,9 @@ import "../libraries/BytesArrayBitmaps.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSIndexRegistryCoordinator is Initializable, IRegistryCoordinator {
+contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices {
     using BN254 for BN254.G1Point;
 
-    struct QuorumBitmapUpdate {
-        uint32 updateBlockNumber;
-        uint32 nextUpdateBlockNumber;
-        uint192 quorumBitmap;
-    }
-
-    struct OperatorSetParam {
-        uint32 maxOperatorCount;
-        uint8 kickPercentageOfOperatorStake;
-        uint8 kickPercentageOfAverageStake;
-        uint8 kickPercentageOfTotalStake;
-    }
-
-    struct OperatorKickParam {
-        address operator;
-        BN254.G1Point pubkey; 
-        bytes32[] operatorIdsToSwap; // should be a single length array when kicking
-        uint32 globalOperatorListIndex;
-    }
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
     /// @notice the Service Manager for the service that this contract is coordinating
@@ -109,17 +90,22 @@ contract BLSIndexRegistryCoordinator is Initializable, IRegistryCoordinator {
     }
 
     /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
-    function getQuorumBitmapOfOperatorAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
+    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
         QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
         require(
             quorumBitmapUpdate.updateBlockNumber <= blockNumber, 
-            "BLSRegistryCoordinator.getQuorumBitmapOfOperatorAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
+            "BLSRegistryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber"
         );
         require(
             quorumBitmapUpdate.nextUpdateBlockNumber > blockNumber, 
-            "BLSRegistryCoordinator.getQuorumBitmapOfOperatorAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
+            "BLSRegistryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from before blockNumber"
         );
         return quorumBitmapUpdate.quorumBitmap;
+    }
+
+    /// @notice Returns the current quorum bitmap for the given `operatorId`
+    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
+        return _operatorIdToQuorumBitmapHistory[operatorId][_operatorIdToQuorumBitmapHistory[operatorId].length - 1].quorumBitmap;
     }
 
     /// @notice Returns the number of registries
