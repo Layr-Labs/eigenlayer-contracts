@@ -37,9 +37,7 @@ interface IStakeRegistry is IRegistry {
 
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
-     * @param operator The address of the operator to deregister.
      * @param operatorId The id of the operator to deregister.
-     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
@@ -49,7 +47,7 @@ interface IStakeRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(address operator, bytes32 operatorId, bool completeDeregistration, bytes memory quorumNumbers) external;
+    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
@@ -99,6 +97,18 @@ interface IStakeRegistry is IRegistry {
      * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
     function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
+     * @dev Function returns weight of **0** in the event that the operator has no stake history
+     */
+    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
+
+    /**
+     * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
+     * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
+     */
+    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
