@@ -18,13 +18,14 @@ abstract contract BLSSignatureChecker {
     // DATA STRUCTURES
 
     struct NonSignerStakesAndSignature {
+        uint256[] nonSignerQuorumBitmapIndices;
         BN254.G1Point[] nonSignerPubkeys;
         BN254.G1Point[] quorumApks;
         BN254.G2Point apkG2;
         BN254.G1Point sigma;
-        uint32[] apkIndexes;
-        uint32[] totalStakeIndexes;  
-        uint32[][] nonSignerStakeIndexes; // nonSignerStakeIndexes[quorumNumberIndex][nonSignerIndex]
+        uint32[] apkIndices;
+        uint32[] totalStakeIndices;  
+        uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
     }
 
     /**
@@ -92,7 +93,7 @@ abstract contract BLSSignatureChecker {
                     blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
-                        nonSignerStakesAndSignature.apkIndexes[i]
+                        nonSignerStakesAndSignature.apkIndices[i]
                     ),
                 "BLSSignatureChecker.checkSignatures: apkIndex does not match apk"
             );
@@ -117,7 +118,12 @@ abstract contract BLSSignatureChecker {
                     if (i != 0) {
                         require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
                     }
-                    nonSignerQuorumBitmaps[i] = registryCoordinator.getCurrentQuorumBitmapByOperatorId(nonSignerPubkeyHashes[i]);
+                    nonSignerQuorumBitmaps[i] = 
+                        registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+                            nonSignerPubkeyHashes[i], 
+                            referenceBlockNumber, 
+                            nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
+                        );
                     // subtract the nonSignerPubkey from the running apk to get the apk of all signers
                     apk = apk.plus(
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
@@ -135,7 +141,7 @@ abstract contract BLSSignatureChecker {
                 uint8 quorumNumber = uint8(quorumNumbers[quorumNumberIndex]);
                 // get the totalStake for the quorum at the referenceBlockNumber
                 quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex] = 
-                    stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndexes[quorumNumberIndex]);
+                    stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[quorumNumberIndex]);
                 // copy total stake to signed stake
                 quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumber];
                 // loop through all nonSigners, checking that they are a part of the quorum via their quorumBitmap
@@ -150,7 +156,7 @@ abstract contract BLSSignatureChecker {
                                 quorumNumber,
                                 referenceBlockNumber,
                                 nonSignerPubkeyHashes[i],
-                                nonSignerStakesAndSignature.nonSignerStakeIndexes[quorumNumber][nonSignerForQuorumIndex]
+                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumber][nonSignerForQuorumIndex]
                             );
                         unchecked {
                             ++nonSignerForQuorumIndex;
