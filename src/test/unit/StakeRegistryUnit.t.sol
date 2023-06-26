@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/interfaces/IStrategyManager.sol";
+import "../../contracts/interfaces/IStakeRegistry.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
 
@@ -48,6 +49,13 @@ contract StakeRegistryUnitTests is Test {
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 128;
+
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(
+        bytes32 indexed operatorId,
+        uint8 quorumNumber,
+        uint96 stake
+    );
 
     function setUp() virtual public {
         proxyAdmin = new ProxyAdmin();
@@ -190,7 +198,7 @@ contract StakeRegistryUnitTests is Test {
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
-    function testOperatorStakeUpdate_Valid(
+    function testUpdateOperatorStake_Valid(
         uint24[] memory blocksPassed,
         uint96[] memory stakes
     ) public {
@@ -203,7 +211,11 @@ contract StakeRegistryUnitTests is Test {
         // loop through each one of the blocks passed, roll that many blocks, set the weight in the given quorum to the stake, and trigger a stake update
         for (uint256 i = 0; i < blocksPassed.length; i++) {
             stakeRegistry.setOperatorWeight(defaultQuorumNumber, defaultOperator, stakes[i]);
+
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, stakes[i]);
             stakeRegistry.updateOperatorStake(defaultOperator, defaultOperatorId, defaultQuorumNumber);
+
             cumulativeBlockNumber += blocksPassed[i];
             cheats.roll(cumulativeBlockNumber);
         }
@@ -219,7 +231,7 @@ contract StakeRegistryUnitTests is Test {
                 expectedStake = 0;
             }
 
-            assertEq(operatorStakeUpdate.stake, stakes[i]);
+            assertEq(operatorStakeUpdate.stake, expectedStake);
             assertEq(operatorStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
             cumulativeBlockNumber += blocksPassed[i];
             assertEq(operatorStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
@@ -230,5 +242,39 @@ contract StakeRegistryUnitTests is Test {
         assertEq(lastOperatorStakeUpdate.stake, stakes[blocksPassed.length - 1]);
         assertEq(lastOperatorStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
         assertEq(lastOperatorStakeUpdate.nextUpdateBlockNumber, uint32(0));
+    }
+
+    function testRecordTotalStakeUpdate_Valid(
+        uint24[] memory blocksPassed,
+        uint96[] memory stakes
+    ) public {
+        cheats.assume(blocksPassed.length > 0);
+        cheats.assume(blocksPassed.length <= stakes.length);
+        // initialize at a non-zero block number
+        uint32 intialBlockNumber = 100;
+        cheats.roll(intialBlockNumber);
+        uint32 cumulativeBlockNumber = intialBlockNumber;
+        // loop through each one of the blocks passed, roll that many blocks, create an Operator Stake Update for total stake, and trigger a total stake update
+        for (uint256 i = 0; i < blocksPassed.length; i++) {
+            IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate;
+            totalStakeUpdate.stake = stakes[i];
+
+            stakeRegistry.recordTotalStakeUpdate(defaultQuorumNumber, totalStakeUpdate);
+
+            cumulativeBlockNumber += blocksPassed[i];
+            cheats.roll(cumulativeBlockNumber);
+        }
+
+        // reset for checking indices
+        cumulativeBlockNumber = intialBlockNumber;
+        // make sure that the total stake updates are as expected
+        for (uint256 i = 0; i < blocksPassed.length - 1; i++) {
+            IStakeRegistry.OperatorStakeUpdate memory totalStakeUpdate = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(defaultQuorumNumber, i);
+
+            assertEq(totalStakeUpdate.stake, stakes[i]);
+            assertEq(totalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+            cumulativeBlockNumber += blocksPassed[i];
+            assertEq(totalStakeUpdate.nextUpdateBlockNumber, cumulativeBlockNumber);
+        }
     }
 }
