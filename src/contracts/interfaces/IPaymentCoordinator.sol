@@ -65,14 +65,14 @@ interface IPaymentCoordinator {
     function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external;
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
-    function withdrawEigenlayerShare(IERC20 token, address recipient) external;
+    function withdrawEigenLayerShare(IERC20 token, address recipient) external;
 
     /**
     * @notice Called by a staker or operator to prove the inclusion of their earnings in a posted Merkle root and claim them.
     * @param proof Merkle proof showing that a leaf containing `(msg.sender, amount)` was included in the `rootIndex`-th
     * Merkle root posted for the `token`
     * @param rootIndex Specifies the Merkle root to look up, using `merkleRootsByToken[token][rootIndex]`
-    * @param leaf The leaf to be inserted into the Merkle tree
+    * @param leaf The leaf to be proven for the Merkle tree
     */
     function proveAndClaimEarnings(
         bytes memory proof,

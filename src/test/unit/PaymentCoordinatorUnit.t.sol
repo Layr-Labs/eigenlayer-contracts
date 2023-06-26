@@ -20,7 +20,6 @@ contract PaymentCoordinatorTest is Test {
     ERC20Mock public dummyToken;
     uint256 MAX_BIPS = 10000;
     uint256 eigenLayerShareBIPs = 1000;
-    uint256 rootPostDelay = 7200;
 
     address rootPublisher = address(25);
     address initialOwner = address(26);
@@ -47,8 +46,7 @@ contract PaymentCoordinatorTest is Test {
                                         paymentCoordinatorImplementation.initialize.selector,
                                         initialOwner,
                                         rootPublisher,
-                                        eigenLayerShareBIPs,
-                                        rootPostDelay
+                                        eigenLayerShareBIPs
                                     )
                                 )));
         
@@ -60,7 +58,6 @@ contract PaymentCoordinatorTest is Test {
 
     function testInitialize() public view {
         require(paymentCoordinator.rootPublisher() == rootPublisher, "rootPublisher should be set");
-        require(paymentCoordinator.merkleRootActivationDelayBlocks() == 7200, "merkleRootActivationDelay should be set");
         require(paymentCoordinator.eigenLayerShareBIPs() == 1000, "eigenLayerShareBIPs should be set");
         require(paymentCoordinator.owner() == initialOwner, "owner should be set");
     }
@@ -106,7 +103,7 @@ contract PaymentCoordinatorTest is Test {
         IPaymentCoordinator.MerkleRootPost memory post  = paymentCoordinator.merkleRootPosts(numMerkleRootsBefore);
         require(post.root == root, "root should be set");
         require(post.height == height, "height should be set");
-        require(post.confirmedAtBlockNumber == block.number + rootPostDelay, "confirmedAtBlockNumber should be set");
+        require(post.confirmedAtBlockNumber == block.number + paymentCoordinator.MERKLE_ROOT_ACTIVATION_DELAY_BLOCKS(), "confirmedAtBlockNumber should be set");
         require(post.calculatedUpToBlockNumber == calculatedUpToBlockNumber, "calculatedUpToBlockNumber should be set");
     }
 
@@ -117,7 +114,7 @@ contract PaymentCoordinatorTest is Test {
         testMakePayment(amounts);
         uint256 amountToClaim = paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken);
         cheats.startPrank(paymentCoordinator.owner());
-        paymentCoordinator.withdrawEigenlayerShare(dummyToken, recipient);
+        paymentCoordinator.withdrawEigenLayerShare(dummyToken, recipient);
         cheats.stopPrank();
         require(paymentCoordinator.accumulatedEigenLayerTokenEarnings(dummyToken) == 0, "cumulativeEigenLayerTokeEarnings not updated correctly");
         require(dummyToken.balanceOf(recipient) - balanceBefore == amountToClaim, "incorrect token balance");
@@ -146,7 +143,7 @@ contract PaymentCoordinatorTest is Test {
         leaf.amounts = new uint256[](1);
         leaf.tokens = new IERC20[](1);
 
-        cheats.roll(block.number + rootPostDelay + 1);
+        cheats.roll(block.number + paymentCoordinator.MERKLE_ROOT_ACTIVATION_DELAY_BLOCKS() + 1);
         cheats.expectRevert(bytes("PaymentCoordinator.proveAndClaimEarnings: Merkle root is null"));
         paymentCoordinator.proveAndClaimEarnings(new bytes(0), 0, leaf, 0);
     }
