@@ -38,6 +38,13 @@ interface IEigenPod {
         uint64 partialWithdrawalAmountGwei;
     }
 
+    struct ValidatorInfo {
+        uint64 validatorIndex;
+        uint64 restakedBalanceGwei;
+        uint32 lastWithdrawalBlockNumber;
+        VALIDATOR_STATUS status;
+    }
+
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,

@@ -75,6 +75,7 @@ library BeaconChainProofs {
     uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
 
     // in validator
+    uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
