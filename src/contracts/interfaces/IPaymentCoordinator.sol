@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+
 /**
  * @title Contract used to coordinate payments from AVSs to operators and in particular the subsequency splitting of earnings from operators to stakers
  * @author Layr Labs, Inc.
@@ -41,25 +42,15 @@ interface IPaymentCoordinator {
         uint256[] amounts;
     }
 
-    // TODO: better define this event?
-    event PaymentReceived(address indexed receivedFrom, Payment payment);
-
-    // @notice Emitted when a new Merkle root is posted
-    event NewMerkleRootPosted(bytes32 root, uint256 height, uint256 confirmedAtBlockNumber, uint256 calculatedUpToBlockNumber);
-
-    /// @notice Array of roots of posted Merkle trees, as well as associated data like tree height
-    // MerkleRootPost[] public merkleRootPosts;
-    function merkleRootPosts(uint256 index) external view returns (MerkleRootPost memory);
-
     /// @notice Getter function for the length of the `merkleRootPosts` array
     function merkleRootPostsLength() external view returns (uint256);
 
-    /// @notice Mapping token => recipient => cumulative amount *claimed*
-    // mapping(IERC20 => mapping(address => uint256)) public cumulativeTokenAmountClaimedByRecipient;
+
+    /// @notice getter cumulativeTokenAmountClaimedByRecipient (mapping(IERC20 => mapping(address => uint256))
     function cumulativeTokenAmountClaimedByRecipient(IERC20 token, address recipient) external view returns (uint256);
 
-    // @notice Constant that defines the share EigenLayer takes of all payments, in basis points
-    function EIGENLAYER_SHARE_BIPS() external view returns (uint256);
+    /// @notice getter for merkleRootPosts 
+    function merkleRootPosts(uint256 index) external view returns (MerkleRootPost memory);
 
     /**
      * @notice Makes a payment of sum(amounts) paid in `token`, for `operator`'s contributions to an AVS,
@@ -78,18 +69,16 @@ interface IPaymentCoordinator {
 
     /**
     * @notice Called by a staker or operator to prove the inclusion of their earnings in a posted Merkle root and claim them.
-    * @param token ERC20 token to claim
-    * @param amount The `amount` contained in the leaf of the Merkle tree to be proved against the specified Merkle root
     * @param proof Merkle proof showing that a leaf containing `(msg.sender, amount)` was included in the `rootIndex`-th
     * Merkle root posted for the `token`
-    * @param nodeIndex Specifies the node inside the Merkle tree corresponding to the specified root, `merkleRoots[rootIndex].root`.
     * @param rootIndex Specifies the Merkle root to look up, using `merkleRootsByToken[token][rootIndex]`
+    * @param leaf The leaf to be inserted into the Merkle tree
     */
     function proveAndClaimEarnings(
-        IERC20 token,
-        uint256 amount,
         bytes memory proof,
-        uint256 nodeIndex,
-        uint256 rootIndex
+        uint256 rootIndex,
+        MerkleLeaf memory leaf,
+        uint256 leafIndex
     ) external;
+
 }

@@ -113,7 +113,6 @@ contract EigenLayerDeployer is Operators {
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping (address => bool) fuzzedAddressMapping;
 
-
     //ensures that a passed in address is not set to true in the fuzzedAddressMapping
     modifier fuzzedAddress(address addr) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);
