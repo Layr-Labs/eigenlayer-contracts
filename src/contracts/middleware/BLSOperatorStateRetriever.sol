@@ -81,7 +81,7 @@ contract BLSOperatorStateRetriever {
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param nonSignerOperatorIds are the ids of the nonsigning operators
      */
-    function getCheckSignaturesData(
+    function getCheckSignaturesIndices(
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
