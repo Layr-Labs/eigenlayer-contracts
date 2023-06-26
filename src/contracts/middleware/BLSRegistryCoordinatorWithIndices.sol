@@ -10,7 +10,7 @@ import "../interfaces/IVoteWeigher.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 
-import "../libraries/BytesArrayBitmaps.sol";
+import "../libraries/BitmapUtils.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -87,6 +87,21 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32) {
         return _operators[operator].operatorId;
+    }
+
+    /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory) {
+        uint32[] memory indices = new uint32[](operatorIds.length);
+        for (uint256 i = 0; i < operatorIds.length; i++) {
+            uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
+            for (uint32 j = 0; j < length; j++) {
+                if(_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        return indices;
     }
 
     /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
@@ -244,7 +259,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
-        uint192 quorumBitmap = uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers));
+        uint192 quorumBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers));
         require(quorumBitmap != 0, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
 
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
@@ -282,7 +297,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        uint192 quorumsToRemoveBitmap = uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers));
+        uint192 quorumsToRemoveBitmap = uint192(BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers));
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
         // check that the quorumNumbers of the operator matches the quorumNumbers passed in

@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 import "../libraries/MiddlewareUtils.sol";
 import "../libraries/BN254.sol";
-import "../libraries/BytesArrayBitmaps.sol";
+import "../libraries/BitmapUtils.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
@@ -18,12 +18,12 @@ abstract contract BLSSignatureChecker {
     // DATA STRUCTURES
 
     struct NonSignerStakesAndSignature {
-        uint256[] nonSignerQuorumBitmapIndices;
+        uint32[] nonSignerQuorumBitmapIndices;
         BN254.G1Point[] nonSignerPubkeys;
         BN254.G1Point[] quorumApks;
         BN254.G2Point apkG2;
         BN254.G1Point sigma;
-        uint32[] apkIndices;
+        uint32[] quorumApkIndices;
         uint32[] totalStakeIndices;  
         uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
     }
@@ -74,7 +74,7 @@ abstract contract BLSSignatureChecker {
      */
     function checkSignatures(
         bytes32 msgHash, 
-        bytes calldata quorumNumbers, // use list of bytes instead of uint256 bitmap to not iterate 256 times
+        bytes calldata quorumNumbers,
         uint32 referenceBlockNumber, 
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
@@ -93,9 +93,9 @@ abstract contract BLSSignatureChecker {
                     blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
-                        nonSignerStakesAndSignature.apkIndices[i]
+                        nonSignerStakesAndSignature.quorumApkIndices[i]
                     ),
-                "BLSSignatureChecker.checkSignatures: apkIndex does not match apk"
+                "BLSSignatureChecker.checkSignatures: quourmApkIndex does not match quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
         }
@@ -111,7 +111,7 @@ abstract contract BLSSignatureChecker {
             uint256[] memory nonSignerQuorumBitmaps = new uint256[](nonSignerStakesAndSignature.nonSignerPubkeys.length);
             {
                 // the bitmap of the quorumNumbers
-                uint256 signingQuorumBitmap = BytesArrayBitmaps.bytesArrayToBitmap(quorumNumbers);
+                uint256 signingQuorumBitmap = BitmapUtils.bytesArrayToBitmap(quorumNumbers);
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();

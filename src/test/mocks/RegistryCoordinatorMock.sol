@@ -17,6 +17,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     /// @notice Returns task number from when `operator` has been registered.
     function getFromTaskNumberForOperator(address operator) external view returns (uint32){}
 
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory){}
+
     /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
     function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {}
 

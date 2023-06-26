@@ -103,6 +103,22 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         return pubkeyHash;
     }
 
+    /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quourmNumbers, uint256 blockNumber) external view returns(uint32[] memory){
+        uint256[] memory indices = new uint256[](quourmNumbers.length);
+        for (uint i = 0; i < quourmNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quourmNumbers[i]);
+            uint32 length = uint32(quorumApkUpdates[quorumNumber].length);
+            for (uint32 j = 0; j < length; j++) {
+                if(quorumApkUpdates[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber){
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
+    }
+
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns(BN254.G1Point memory) {
         return quorumApk[quorumNumber];
