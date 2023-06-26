@@ -371,7 +371,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is registering for only valid quorums
-        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");
+        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _newTotalStakeUpdate;
         // add the `updateBlockNumber` info
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
@@ -384,7 +384,7 @@ contract StakeRegistry is StakeRegistryStorage {
             (, uint96 stake) = _updateOperatorStake(operator, operatorId, quorumNumber);
             // @JEFF: This reverts pretty late, but i think that's fine. wdyt?
             // check if minimum requirement has been met, will be 0 if not
-            require(stake != 0, "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
+            require(stake != 0, "StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum");
             // add operator stakes to total stake before update (in memory)
             uint256 _totalStakeHistoryLength = _totalStakeHistory[quorumNumber].length;
             if (_totalStakeHistoryLength != 0) {
@@ -407,7 +407,7 @@ contract StakeRegistry is StakeRegistryStorage {
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is deregistering from only valid quorums
-        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");
+        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._deregisterOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
