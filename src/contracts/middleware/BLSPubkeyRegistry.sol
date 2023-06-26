@@ -97,9 +97,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         if(completeDeregistration){
             // update the global aggregate pubkey
             _processGlobalApkUpdate(pubkey.negate());
-            // emit event so offchain actors can update their state
-            emit PubkeyRemoved(operator, pubkey, quorumNumbers);
         }
+
+        // emit event so offchain actors can update their state
+        emit PubkeyRemoved(operator, pubkey, quorumNumbers);
         return pubkeyHash;
     }
 
