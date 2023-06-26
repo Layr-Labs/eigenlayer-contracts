@@ -63,11 +63,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(operator, quorumNumbers, pubkey);
+        _processQuorumApkUpdate(quorumNumbers, pubkey);
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey);
         // emit event so offchain actors can update their state
-        emit PubkeyAdded(operator, pubkey);
+        emit PubkeyAdded(operator, pubkey, quorumNumbers);
         return pubkeyHash;
     }
 
@@ -92,13 +92,13 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
 
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(operator, quorumNumbers, pubkey.negate());
+        _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
         if(completeDeregistration){
             // update the global aggregate pubkey
             _processGlobalApkUpdate(pubkey.negate());
             // emit event so offchain actors can update their state
-            emit PubkeyRemoved(operator, pubkey);
+            emit PubkeyRemoved(operator, pubkey, quorumNumbers);
         }
         return pubkeyHash;
     }
@@ -177,7 +177,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         globalApkUpdates.push(latestGlobalApkUpdate);
     }
 
-    function _processQuorumApkUpdate(address operator, bytes memory quorumNumbers, BN254.G1Point memory point) internal {
+    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory apkAfterUpdate;
 
         for (uint i = 0; i < quorumNumbers.length;) {
@@ -203,8 +203,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 ++i;
             }
         }
-
-        emit PubkeyRemoveFromQuorums(operator, quorumNumbers);
     }
 
     function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {

@@ -13,21 +13,16 @@ interface IBLSPubkeyRegistry is IRegistry {
     // Emitted when a new operator pubkey is registered
     event PubkeyAdded(
         address operator,
-        BN254.G1Point pubkey
+        BN254.G1Point pubkey,
+        bytes quorumNumbers
     );
 
     // Emitted when an operator pubkey is deregistered
     event PubkeyRemoved(
         address operator,
-        BN254.G1Point pubkey
-    );
-
-    // Emitted when an operator pubkey is removed from a set of quorums
-    event PubkeyRemoveFromQuorums(
-        address operator, 
+        BN254.G1Point pubkey,
         bytes quorumNumbers
     );
-
 
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
