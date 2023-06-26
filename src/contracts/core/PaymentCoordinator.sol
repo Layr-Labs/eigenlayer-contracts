@@ -24,7 +24,7 @@ contract PaymentCoordinator is
     address public rootPublisher;
 
     /// @notice delay in blocks before a Merkle root can be activated
-    uint256 public merkleRootActivationDelayBlocks;
+    uint256 public constant MERKLE_ROOT_ACTIVATION_DELAY_BLOCKS = 7200;
 
     /// @notice maximum BIPS
     uint256 public constant MAX_BIPS = 10000;
@@ -71,13 +71,12 @@ contract PaymentCoordinator is
         _disableInitializers();
     }
 
-    function initialize(address _initialOwner, address _rootPublisher, uint256 _eigenlayerShareBips, uint256 _merkleRootActivationDelayBlocks)
+    function initialize(address _initialOwner, address _rootPublisher, uint256 _eigenlayerShareBips)
         external
         initializer
     {
         _transferOwnership(_initialOwner);
         _setRootPublisher(_rootPublisher);
-        _setMerkleRootActivationDelayBlocks(_merkleRootActivationDelayBlocks);
         _setEigenLayerShareBIPS(_eigenlayerShareBips);
     }
 
@@ -103,7 +102,12 @@ contract PaymentCoordinator is
 
     // @notice Permissioned function which allows posting a new Merkle root
     function postMerkleRoot(bytes32 newRoot, uint256 height, uint256 calculatedUpToBlockNumber) external onlyRootPublisher {
-        MerkleRootPost memory newMerkleRoot = MerkleRootPost(newRoot, height, block.number + merkleRootActivationDelayBlocks, calculatedUpToBlockNumber);
+        MerkleRootPost memory newMerkleRoot = MerkleRootPost({
+                                                root: newRoot, 
+                                                height: height, 
+                                                confirmedAtBlockNumber: block.number + MERKLE_ROOT_ACTIVATION_DELAY_BLOCKS, 
+                                                calculatedUpToBlockNumber: calculatedUpToBlockNumber
+                                            });
         _merkleRootPosts.push(newMerkleRoot);
         emit NewMerkleRootPosted(newMerkleRoot);
     }
@@ -115,7 +119,7 @@ contract PaymentCoordinator is
     }
 
     // @notice Permissioned function which allows withdrawal of EigenLayer's share of `token` from all received payments
-    function withdrawEigenlayerShare(IERC20 token, address recipient) external onlyOwner {
+    function withdrawEigenLayerShare(IERC20 token, address recipient) external onlyOwner {
         uint256 amount = accumulatedEigenLayerTokenEarnings[token];
         accumulatedEigenLayerTokenEarnings[token] = 0;
         token.safeTransfer(recipient, amount); 
@@ -155,10 +159,6 @@ contract PaymentCoordinator is
         _setRootPublisher(_rootPublisher);
     }
 
-    function setMerkleRootActivationDelayBlocks(uint256 _merkleRootActivationDelayBlocks) external onlyOwner {
-        _setMerkleRootActivationDelayBlocks(_merkleRootActivationDelayBlocks);
-    }
-
     function setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) external onlyOwner {
         _setEigenLayerShareBIPS(_eigenlayerShareBips);
     }
@@ -178,11 +178,6 @@ contract PaymentCoordinator is
         address currentRootPublisher = rootPublisher;
         rootPublisher = _rootPublisher;
         emit RootPublisherChanged(currentRootPublisher, rootPublisher);
-    }
-
-    function _setMerkleRootActivationDelayBlocks(uint256 _merkleRootActivationDelayBlocks) internal {
-        merkleRootActivationDelayBlocks = _merkleRootActivationDelayBlocks;
-        emit MerkleRootActivationDelayBlocksChanged(merkleRootActivationDelayBlocks);
     }
 
     function _setEigenLayerShareBIPS(uint256 _eigenlayerShareBips) internal {
