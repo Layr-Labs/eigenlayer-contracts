@@ -25,6 +25,12 @@ contract StakeRegistry is StakeRegistryStorage {
         uint96 stake
     );
 
+    /// @notice requires that the caller is the RegistryCoordinator
+    modifier onlyRegistryCoordinator() {
+        require(msg.sender == address(registryCoordinator), "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
+        _;
+    }
+
     constructor(
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
@@ -263,7 +269,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
+    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _registerOperator(operator, operatorId, quorumNumbers);
     }
 
@@ -279,7 +285,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual {
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _deregisterOperator(operatorId, quorumNumbers);
     }
 
