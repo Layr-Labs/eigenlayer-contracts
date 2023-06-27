@@ -72,7 +72,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // set the operator set params
         require(IVoteWeigher(address(stakeRegistry)).quorumCount() == _operatorSetParams.length, "BLSIndexRegistryCoordinator: operator set params length mismatch");
         for (uint8 i = 0; i < _operatorSetParams.length; i++) {
-            _quorumOperatorSetParams[i] = _operatorSetParams[i];
+            _setOperatorSetParams(i, _operatorSetParams[i]);
         }
     }
 
@@ -126,7 +126,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
      */
     function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
-        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
+        _setOperatorSetParams(quorumNumber, operatorSetParam);
     }
 
     /**
@@ -239,6 +239,13 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
         _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+    }
+
+    // INTERNAL FUNCTIONS
+
+    function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
+        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
+        emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
     }
 
     function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {

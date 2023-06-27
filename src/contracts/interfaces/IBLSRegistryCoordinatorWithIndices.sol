@@ -40,6 +40,10 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
         uint32 globalOperatorListIndex;
     }
 
+    // EVENTS
+
+    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
+
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the stake registry for this corrdinator is the contract itself
