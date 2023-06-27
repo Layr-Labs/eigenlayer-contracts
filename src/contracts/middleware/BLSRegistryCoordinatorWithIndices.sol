@@ -96,7 +96,10 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         return _operators[operator].operatorId;
     }
 
-    /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+    /**
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+     * @dev reverts if `index` is incorrect 
+     */ 
     function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192) {
         QuorumBitmapUpdate memory quorumBitmapUpdate = _operatorIdToQuorumBitmapHistory[operatorId][index];
         require(
@@ -225,12 +228,12 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
-     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap, 
      * and the operator's index in the global operator list
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
-        // get the operator's deregisteration information
+        // get the operator's deregistration information
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
         // call internal function to deregister the operator

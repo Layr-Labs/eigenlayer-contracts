@@ -21,6 +21,9 @@ interface IStakeRegistry is IRegistry {
         uint96 stake;
     }
 
+    // EVENTS
+    event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
+
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.

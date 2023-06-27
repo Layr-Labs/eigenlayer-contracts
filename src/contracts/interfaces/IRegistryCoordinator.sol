@@ -53,7 +53,10 @@ interface IRegistryCoordinator {
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
 
-    /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+    /**
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+     * @dev reverts if `index` is incorrect 
+     */ 
     function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
@@ -78,7 +81,7 @@ interface IRegistryCoordinator {
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
-     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
 }

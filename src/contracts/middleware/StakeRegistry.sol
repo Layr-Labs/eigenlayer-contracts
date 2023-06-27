@@ -10,7 +10,7 @@ import "./StakeRegistryStorage.sol";
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * Specifically, it keeps track of
- *      1) The stake of each operator in all the quorums they are apart of for block ranges
+ *      1) The stake of each operator in all the quorums they are a part of for block ranges
  *      2) The total stake of all operators in each quorum for block ranges
  *      3) The minimum stake required to register for each quorum
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
@@ -35,9 +35,8 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Adds empty first entries to the dynamic arrays `_totalStakeHistory`,
-     * to record an initial condition of zero operators with zero total stake.
-     * Adds `_quorumStrategiesConsideredAndMultipliers` for each quorum the Registry is being initialized with
+     * @notice Sets the minimum stake for each quorum and adds `_quorumStrategiesConsideredAndMultipliers` for each 
+     * quorum the Registry is being initialized with
      */
     function initialize(
         uint96[] memory _minimumStakeForQuorum,
@@ -55,7 +54,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
         // add the strategies considered and multipliers for each quorum
         for (uint8 quorumNumber = 0; quorumNumber < _quorumStrategiesConsideredAndMultipliers.length;) {
-            minimumStakeForQuorum[quorumNumber] = _minimumStakeForQuorum[quorumNumber];
+            _setMinimumStakeForQuorum(quorumNumber, _minimumStakeForQuorum[quorumNumber]);
             _createQuorum(_quorumStrategiesConsideredAndMultipliers[quorumNumber]);
             unchecked {
                 ++quorumNumber;
@@ -249,7 +248,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
     /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
     function setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) external onlyServiceManagerOwner {
-        minimumStakeForQuorum[quorumNumber] = minimumStake;
+        _setMinimumStakeForQuorum(quorumNumber, minimumStake);
     }
 
     /**
@@ -295,14 +294,14 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev reverts if there are no operators registered with index out of bounds
      */
     function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint192[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
-        // for each quorum, loop through operators and see if they are apart of the quorum
-        // if they are, get their new weight and update their individual stake history and thes
+        // for each quorum, loop through operators and see if they are a part of the quorum
+        // if they are, get their new weight and update their individual stake history and the
         // quorum's total stake history accordingly
         for (uint8 quorumNumber = 0; quorumNumber < quorumCount;) {
             OperatorStakeUpdate memory totalStakeUpdate;
             // for each operator
             for(uint i = 0; i < operatorIds.length;) {
-                // if the operator is apart of the quorum
+                // if the operator is a part of the quorum
                 if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
                     // if the total stake has not been loaded yet, load it
                     if (totalStakeUpdate.updateBlockNumber == 0) {
@@ -338,6 +337,11 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     // INTERNAL FUNCTIONS
+
+    function _setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) internal {
+        minimumStakeForQuorum[quorumNumber] = minimumStake;
+        emit MinimumStakeForQuorumUpdated(quorumNumber, minimumStake);
+    }
 
     /** 
      * @notice Updates the stake for the operator with `operatorId` for the specified `quorumNumbers`. The total stake
