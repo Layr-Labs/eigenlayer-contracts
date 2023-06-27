@@ -9,7 +9,7 @@ import "./IRegistry.sol";
  */
 interface IIndexRegistry is IRegistry {
     // EVENTS
-    // emitted when an operator's index in at quorum operator list is updated
+    // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
     // emitted when an operator's index in the global operator list is updated
     event GlobalIndexUpdate(bytes32 indexed operatorId, uint32 newIndex);
