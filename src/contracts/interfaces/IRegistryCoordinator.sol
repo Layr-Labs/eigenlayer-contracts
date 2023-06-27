@@ -22,6 +22,8 @@ interface IRegistryCoordinator {
         DEREGISTERED
     }
 
+    // STRUCTS
+
     /**
      * @notice Data structure for storing info on operators
      */
@@ -34,6 +36,17 @@ interface IRegistryCoordinator {
         OperatorStatus status;
     }
 
+    /**
+     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the 
+     * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
+     * @dev nextUpdateBlockNumber is initialized to 0 for the latest update
+     */
+    struct QuorumBitmapUpdate {
+        uint32 updateBlockNumber;
+        uint32 nextUpdateBlockNumber;
+        uint192 quorumBitmap;
+    }
+
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory);
 
@@ -43,7 +56,10 @@ interface IRegistryCoordinator {
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
     function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
 
-    /// @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+    /**
+     * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
+     * @dev reverts if `index` is incorrect 
+     */ 
     function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
@@ -68,7 +84,7 @@ interface IRegistryCoordinator {
     /**
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
-     * @param deregistrationData is the the data that is decoded to get the operator's deregisteration information
+     * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external;
 }
