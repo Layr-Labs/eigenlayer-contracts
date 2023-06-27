@@ -287,13 +287,12 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      * @param operatorIds are the ids of the operators whose stake information is getting updated
-     * @param quorumBitmaps are the bitmap of the quorums that each operator in `operators` is part of
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
      * @dev Precondition:
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      * @dev reverts if there are no operators registered with index out of bounds
      */
-    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint192[] calldata quorumBitmaps, uint256[] calldata prevElements) external {
+    function updateStakes(address[] calldata operators, bytes32[] calldata operatorIds, uint256[] calldata prevElements) external {
         // for each quorum, loop through operators and see if they are a part of the quorum
         // if they are, get their new weight and update their individual stake history and the
         // quorum's total stake history accordingly
@@ -301,8 +300,9 @@ contract StakeRegistry is StakeRegistryStorage {
             OperatorStakeUpdate memory totalStakeUpdate;
             // for each operator
             for(uint i = 0; i < operatorIds.length;) {
+                uint192 quorumBitmap = registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorIds[i]);
                 // if the operator is a part of the quorum
-                if (quorumBitmaps[i] >> quorumNumber & 1 == 1) {
+                if (quorumBitmap >> quorumNumber & 1 == 1) {
                     // if the total stake has not been loaded yet, load it
                     if (totalStakeUpdate.updateBlockNumber == 0) {
                         totalStakeUpdate = _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1];
