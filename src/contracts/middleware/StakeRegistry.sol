@@ -283,7 +283,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is the same as the parameter use when registering
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _deregisterOperator(operatorId, quorumNumbers);
@@ -393,9 +393,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
-        uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is deregistering from only valid quorums
-        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
@@ -403,7 +401,7 @@ contract StakeRegistry is StakeRegistryStorage {
         // add the `updateBlockNumber` info
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // loop through the operator's quorums and remove the operator's stake for each quorum
-        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbersLength;) {
+        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbers.length;) {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // update the operator's stake
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);

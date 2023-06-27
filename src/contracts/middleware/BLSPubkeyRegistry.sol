@@ -83,7 +83,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is the same as the parameter use when registering
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      *         6) `pubkey` is the same as the parameter used when registering
      */   
     function deregisterOperator(address operator, bool completeDeregistration, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
