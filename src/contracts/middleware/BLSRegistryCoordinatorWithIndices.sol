@@ -269,8 +269,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
-        uint192 quorumBitmap = uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers));
+        uint256 quorumBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
         require(quorumBitmap != 0, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
+        require(quorumBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cant have more than 192 set bits");
 
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
         bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
@@ -285,7 +286,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
             updateBlockNumber: uint32(block.number),
             nextUpdateBlockNumber: 0,
-            quorumBitmap: quorumBitmap
+            quorumBitmap: uint192(quorumBitmap)
         }));
 
         // set the operator struct
@@ -307,7 +308,8 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        uint192 quorumsToRemoveBitmap = uint192(BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers));
+        uint256 quorumsToRemoveBitmap = BytesArrayBitmaps.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        require(quorumsToRemoveBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap cant have more than 192 set bits");
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
         // check that the quorumNumbers of the operator matches the quorumNumbers passed in
@@ -335,7 +337,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
                 updateBlockNumber: uint32(block.number),
                 nextUpdateBlockNumber: 0,
-                quorumBitmap: quorumBitmapBeforeUpdate & ~quorumsToRemoveBitmap // this removes the quorumsToRemoveBitmap from the quorumBitmapBeforeUpdate
+                quorumBitmap: quorumBitmapBeforeUpdate & ~uint192(quorumsToRemoveBitmap) // this removes the quorumsToRemoveBitmap from the quorumBitmapBeforeUpdate
             }));
         } else {
             // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
