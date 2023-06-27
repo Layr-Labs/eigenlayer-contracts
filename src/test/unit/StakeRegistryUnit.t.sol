@@ -231,11 +231,22 @@ contract StakeRegistryUnitTests is Test {
         uint80[][] memory stakesForQuorums,
         uint24[] memory blocksPassed
     ) public {
-        cheats.assume(quorumBitmaps.length > 0);
-        cheats.assume(quorumBitmaps.length <= blocksPassed.length);
-        cheats.assume(quorumBitmaps.length <= stakesForQuorums.length);
-        cheats.assume(quorumBitmaps.length == 1);
+        cheats.assume(quorumBitmaps.length > 0 && quorumBitmaps.length <= 15);
 
+        // append as needed to stakesForQuorums
+        uint80[][] memory appendedStakesForQuorums = new uint80[][](quorumBitmaps.length);
+        for (uint256 i = stakesForQuorums.length; i < quorumBitmaps.length; i++) {
+            appendedStakesForQuorums[i] = new uint80[](0);
+        }
+        stakesForQuorums = appendedStakesForQuorums;
+
+        // append to blocksPassed as needed
+        uint24[] memory appendedBlocksPassed = new uint24[](quorumBitmaps.length);
+        for (uint256 i = blocksPassed.length; i < quorumBitmaps.length; i++) {
+            appendedBlocksPassed[i] = 0;
+        }
+        blocksPassed = appendedBlocksPassed;
+        
         uint32 initialBlockNumber = 100;
         cheats.roll(initialBlockNumber);
         uint32 cumulativeBlockNumber = initialBlockNumber;
@@ -243,7 +254,7 @@ contract StakeRegistryUnitTests is Test {
         uint96[][] memory paddedStakesForQuorums = new uint96[][](quorumBitmaps.length);
         for (uint256 i = 0; i < quorumBitmaps.length; i++) {
             emit log_named_uint("quorumBitmaps[i]", quorumBitmaps[i]);
-            quorumBitmaps[i] = quorumBitmaps[i] & 0xf;
+            // quorumBitmaps[i] = quorumBitmaps[i];
             paddedStakesForQuorums[i] = _registerOperatorValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), quorumBitmaps[i], stakesForQuorums[i]);
 
             cumulativeBlockNumber += blocksPassed[i];
@@ -392,8 +403,7 @@ contract StakeRegistryUnitTests is Test {
         uint256 quorumBitmap,
         uint80[] memory stakesForQuorum
     ) internal returns(uint96[] memory){
-        cheats.assume(quorumBitmap > 0);
-
+        cheats.assume(quorumBitmap != 0);
         quorumBitmap = quorumBitmap & type(uint192).max;
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
