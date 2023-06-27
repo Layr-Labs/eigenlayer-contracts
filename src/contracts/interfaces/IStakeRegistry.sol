@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "./IRegistry.sol";
 
 /**
- * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
@@ -29,6 +29,9 @@ interface IStakeRegistry is IRegistry {
         uint96 stake;
     }
 
+    // EVENTS
+    event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
+
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
      * @param operator The address of the operator to register.
@@ -46,7 +49,7 @@ interface IStakeRegistry is IRegistry {
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -138,7 +141,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
+     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's activity
      * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
@@ -160,7 +163,7 @@ interface IStakeRegistry is IRegistry {
      * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had no stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
+     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's inactivity
      * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
@@ -181,10 +184,9 @@ interface IStakeRegistry is IRegistry {
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      * @param operatorIds are the ids of the operators whose stake information is getting updated
-     * @param quorumBitmaps are the bitmap of the quorums that each operator in `operators` is part of
      * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
      * @dev Precondition:
      *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      */
-    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint192[] memory quorumBitmaps, uint256[] memory prevElements) external;
+    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory prevElements) external;
 }

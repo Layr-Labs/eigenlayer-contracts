@@ -11,21 +11,28 @@ import "./IIndexRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
-    // STRUCTS
+    // STRUCT
 
-    struct QuorumBitmapUpdate {
-        uint32 updateBlockNumber;
-        uint32 nextUpdateBlockNumber;
-        uint192 quorumBitmap;
-    }
-
+    /**
+     * @notice Data structure for storing operator set params for a given quorum. Specifically the 
+     * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
+     * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
+     * `kickBIPsOfAverageStake` is the basis points of the average stake of the quorum that an operator needs to be below to be kicked,
+     * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
+     */ 
     struct OperatorSetParam {
         uint32 maxOperatorCount;
-        uint8 kickPercentageOfOperatorStake;
-        uint8 kickPercentageOfAverageStake;
-        uint8 kickPercentageOfTotalStake;
+        uint8 kickBIPsOfOperatorStake;
+        uint8 kickBIPsOfAverageStake;
+        uint8 kickBIPsOfTotalStake;
     }
 
+    /**
+     * @notice Data structure for the parameters needed to kick an operator from a quorum, used during registration churn.
+     * Specifically the `operator` is the address of the operator to kick, `pubkey` is the BLS public key of the operator,
+     * `operatorIdsToSwap` is the list of operatorIds to swap with the operator being kicked in the indexRegistry,
+     * and `globalOperatorListIndex` is the index of the operator in the global operator list in the indexRegistry.
+     */
     struct OperatorKickParam {
         address operator;
         BN254.G1Point pubkey; 
@@ -33,6 +40,12 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
         uint32 globalOperatorListIndex;
     }
 
+    // EVENTS
+
+    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
+
+    /// @notice Returns the operator set params for the given `quorumNumber`
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the stake registry for this corrdinator is the contract itself
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys

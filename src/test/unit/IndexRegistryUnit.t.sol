@@ -41,9 +41,9 @@ contract IndexRegistryUnitTests is Test {
        require(indexRegistry.globalOperatorList(0) == operatorId, "IndexRegistry.registerOperator: operator not registered correctly");
        require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: total operators not updated correctly");
        require(indexRegistry.totalOperatorsForQuorum(1) == 1, "IndexRegistry.registerOperator: total operators for quorum not updated correctly");
-       (uint32 index, uint32 toBlockNumber) = indexRegistry.operatorIdToIndexHistory(operatorId, 1, 0);
-       require(index == 0, "IndexRegistry.registerOperator: index not 0");
-       require(toBlockNumber == 0, "block number should not be set");
+       IIndexRegistry.OperatorIndexUpdate memory indexUpdate = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId, 1, 0);
+       require(indexUpdate.index == 0, "IndexRegistry.registerOperator: index not 0");
+       require(indexUpdate.toBlockNumber == 0, "block number should not be set");
     }
 
     function testRegisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
@@ -96,14 +96,13 @@ contract IndexRegistryUnitTests is Test {
         require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
         require(indexRegistry.globalOperatorList(0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
 
-        (uint32 toBlockNumber1, uint32 index1) = indexRegistry.operatorIdToIndexHistory(operatorId1, defaultQuorumNumber, 0);
+        IIndexRegistry.OperatorIndexUpdate memory indexUpdate1 = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId1, defaultQuorumNumber, 0);
+        require(indexUpdate1.toBlockNumber == block.number, "toBlockNumber not set correctly");
+        require(indexUpdate1.index == 0, "incorrect index");
 
-        require(toBlockNumber1 == block.number, "toBlockNumber not set correctly");
-        require(index1 == 0, "incorrect index");
-
-        (uint32 toBlockNumber2, uint32 index2) = indexRegistry.operatorIdToIndexHistory(operatorId2, defaultQuorumNumber, 1);
-        require(toBlockNumber2 == 0, "toBlockNumber not set correctly");
-        require(index2 == 0, "incorrect index");
+        IIndexRegistry.OperatorIndexUpdate memory indexUpdate2 = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId2, defaultQuorumNumber, 1);
+        require(indexUpdate2.toBlockNumber == 0, "toBlockNumber not set correctly");
+        require(indexUpdate2.index == 0, "incorrect index");
 
     }
 
