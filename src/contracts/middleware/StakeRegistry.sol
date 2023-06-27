@@ -440,7 +440,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
         // check if minimum requirements have been met
         if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {
-            operatorStakeUpdate.stake = uint96(0);
+            // set staker to 1 to note they are still active, but miniscule stake
+            operatorStakeUpdate.stake = uint96(1);
         }
         // get stakeBeforeUpdate and update with new stake
         uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
