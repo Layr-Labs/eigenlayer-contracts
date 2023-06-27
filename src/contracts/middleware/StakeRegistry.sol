@@ -171,7 +171,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
+     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's activity
      * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
@@ -208,7 +208,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId is the id of the operator of interest
      * @param blockNumber is the block number of interest
      * @param quorumNumber is the quorum number which the operator had no stake in
-     * @param stakeHistoryIndex specifies an index in `operatorIdToStakeHistory[operatorId]`
+     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's inactivity
      * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
      * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
      * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
