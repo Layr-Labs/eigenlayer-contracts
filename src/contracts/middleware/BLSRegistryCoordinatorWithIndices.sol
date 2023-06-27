@@ -34,7 +34,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
     /// @notice the mapping from quorum number to the maximum number of operators that can be registered for that quorum
-    mapping(uint8 => OperatorSetParam) public quorumOperatorSetParams;
+    mapping(uint8 => OperatorSetParam) internal _quorumOperatorSetParams;
     /// @notice the mapping from operator's operatorId to the updates of the bitmap of quorums they are registered for
     mapping(bytes32 => QuorumBitmapUpdate[]) internal _operatorIdToQuorumBitmapHistory;
     /// @notice the mapping from operator's address to the operator struct
@@ -70,8 +70,13 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // set the operator set params
         require(IVoteWeigher(address(stakeRegistry)).quorumCount() == _operatorSetParams.length, "BLSIndexRegistryCoordinator: operator set params length mismatch");
         for (uint8 i = 0; i < _operatorSetParams.length; i++) {
-            quorumOperatorSetParams[i] = _operatorSetParams[i];
+            _quorumOperatorSetParams[i] = _operatorSetParams[i];
         }
+    }
+
+    /// @notice Returns the operator set params for the given `quorumNumber`
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {
+        return _quorumOperatorSetParams[quorumNumber];
     }
 
     /// @notice Returns task number from when `operator` has been registered.
@@ -119,7 +124,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
      */
     function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
-        quorumOperatorSetParams[quorumNumber] = operatorSetParam;
+        _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
     }
 
     /**
@@ -165,7 +170,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // check that the quorum has reached the max operator count
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            OperatorSetParam memory operatorSetParam = quorumOperatorSetParams[quorumNumber];
+            OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
             {
                 uint32 numOperatorsForQuorum = indexRegistry.totalOperatorsForQuorum(quorumNumber);
                 require(

@@ -11,20 +11,7 @@ import "./IIndexRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
-    // STRUCTS
-
-    struct QuorumBitmapUpdate {
-        uint32 updateBlockNumber;
-        uint32 nextUpdateBlockNumber;
-        uint192 quorumBitmap;
-    }
-
-    struct OperatorSetParam {
-        uint32 maxOperatorCount;
-        uint8 kickPercentageOfOperatorStake;
-        uint8 kickPercentageOfAverageStake;
-        uint8 kickPercentageOfTotalStake;
-    }
+    // STRUCT
 
     struct OperatorKickParam {
         address operator;

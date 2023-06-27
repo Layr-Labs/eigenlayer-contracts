@@ -22,6 +22,8 @@ interface IRegistryCoordinator {
         DEREGISTERED
     }
 
+    // STRUCTS
+
     /**
      * @notice Data structure for storing info on operators
      */
@@ -33,6 +35,22 @@ interface IRegistryCoordinator {
         // indicates whether the operator is actively registered for serving the middleware or not
         OperatorStatus status;
     }
+
+    struct QuorumBitmapUpdate {
+        uint32 updateBlockNumber;
+        uint32 nextUpdateBlockNumber;
+        uint192 quorumBitmap;
+    }
+
+    struct OperatorSetParam {
+        uint32 maxOperatorCount;
+        uint8 kickPercentageOfOperatorStake;
+        uint8 kickPercentageOfAverageStake;
+        uint8 kickPercentageOfTotalStake;
+    }
+
+    /// @notice Returns the operator set params for the given `quorumNumber`
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
 
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory);

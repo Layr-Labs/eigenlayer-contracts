@@ -9,6 +9,8 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     /// @notice Returns the bitmap of the quroums the operator is registered for.
     function operatorIdToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256){}
 
+    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory){}
+
     function getOperator(address operator) external view returns (Operator memory){}
 
     /// @notice Returns the stored id for the specified `operator`.
