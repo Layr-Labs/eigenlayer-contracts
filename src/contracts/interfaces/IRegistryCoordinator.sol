@@ -31,7 +31,7 @@ interface IRegistryCoordinator {
         // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegsitry
         bytes32 operatorId;
         // start taskNumber from which the  operator has been registered
-        uint32 fromTaskNumber;
+        uint32 fromTaskNumber; // TODO: REMOVE
         // indicates whether the operator is actively registered for serving the middleware or not
         OperatorStatus status;
     }
