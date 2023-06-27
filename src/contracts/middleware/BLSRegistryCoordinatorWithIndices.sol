@@ -23,6 +23,8 @@ import "../libraries/BytesArrayBitmaps.sol";
 contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices {
     using BN254 for BN254.G1Point;
 
+    uint16 internal constant BIPS_DENOMINATOR = 10000;
+
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
     /// @notice the Service Manager for the service that this contract is coordinating
@@ -184,21 +186,21 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
                 uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorToKickId, quorumNumber);
                 uint96 registeringOperatorStake = stakeRegistry.getCurrentOperatorStakeForQuorum(registeringOperatorId, quorumNumber);
 
-                // check the registering operator has more than the kick percentage of the operator to kick's stake
+                // check the registering operator has more than the kick BIPs of the operator to kick's stake
                 require(
-                    registeringOperatorStake > operatorToKickStake * operatorSetParam.kickPercentageOfOperatorStake / 100,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: registering operator has less than kickPercentageOfOperatorStake"
+                    registeringOperatorStake > operatorToKickStake * operatorSetParam.kickBIPsOfOperatorStake / BIPS_DENOMINATOR,
+                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake"
                 );
                 
-                // check that the operator to kick has less than the kick percentage of the average stake
+                // check that the operator to kick has less than the kick BIPs of the average stake
                 require(
-                    operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickPercentageOfAverageStake / 100 / numOperatorsForQuorum,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickPercentageOfAverageStake"
+                    operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickBIPsOfAverageStake / BIPS_DENOMINATOR / numOperatorsForQuorum,
+                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPsOfAverageStake"
                 );
-                // check the that the operator to kick has lss than the kick percentage of the total stake
+                // check the that the operator to kick has lss than the kick BIPs of the total stake
                 require(
-                    operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickPercentageOfTotalStake / 100,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickPercentageOfTotalStake"
+                    operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickBIPsOfTotalStake / BIPS_DENOMINATOR,
+                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake"
                 );
             }
             

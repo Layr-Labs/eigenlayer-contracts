@@ -44,9 +44,9 @@ interface IRegistryCoordinator {
 
     struct OperatorSetParam {
         uint32 maxOperatorCount;
-        uint8 kickPercentageOfOperatorStake;
-        uint8 kickPercentageOfAverageStake;
-        uint8 kickPercentageOfTotalStake;
+        uint8 kickBIPsOfOperatorStake;
+        uint8 kickBIPsOfAverageStake;
+        uint8 kickBIPsOfTotalStake;
     }
 
     /// @notice Returns the operator set params for the given `quorumNumber`
