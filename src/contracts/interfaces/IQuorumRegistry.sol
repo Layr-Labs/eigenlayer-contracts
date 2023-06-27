@@ -51,7 +51,7 @@ interface IQuorumRegistry {
         uint96 stake;
     }
 
-    function pubkeyHashToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256);
+    function pubkeyHashToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint192);
 
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 

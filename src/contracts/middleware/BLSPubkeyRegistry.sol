@@ -19,7 +19,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     /// @notice the current aggregate pubkey of all operators registered in this contract, regardless of quorum
     BN254.G1Point public globalApk;
     /// @notice the registry coordinator contract
-    IRegistryCoordinator public registryCoordinator;
+    IRegistryCoordinator public immutable registryCoordinator;
     /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked
     IBLSPublicKeyCompendium public immutable pubkeyCompendium;
 
@@ -49,7 +49,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The operator's BLS public key.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
@@ -63,7 +63,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(quorumNumbers, pubkey);
+        _processQuorumApkUpdate(operator, quorumNumbers, pubkey);
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey);
         // emit event so offchain actors can update their state
@@ -74,28 +74,32 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
-     * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
+     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
-     * @dev Preconditions:
+     * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is the same as the parameter use when registering
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      *         6) `pubkey` is the same as the parameter used when registering
      */   
-    function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+    function deregisterOperator(address operator, bool completeDeregistration, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
 
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
-        // update the global aggregate pubkey
-        _processGlobalApkUpdate(pubkey.negate());
-        // emit event so offchain actors can update their state
-        emit PubkeyRemoved(operator, pubkey);
+        _processQuorumApkUpdate(operator, quorumNumbers, pubkey.negate());
+        
+        if(completeDeregistration){
+            // update the global aggregate pubkey
+            _processGlobalApkUpdate(pubkey.negate());
+            // emit event so offchain actors can update their state
+            emit PubkeyRemoved(operator, pubkey);
+        }
         return pubkeyHash;
     }
 
@@ -157,7 +161,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         globalApkUpdates.push(latestGlobalApkUpdate);
     }
 
-    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
+    function _processQuorumApkUpdate(address operator, bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory apkAfterUpdate;
 
         for (uint i = 0; i < quorumNumbers.length;) {
@@ -183,6 +187,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 ++i;
             }
         }
+
+        emit PubkeyRemoveFromQuorums(operator, quorumNumbers);
     }
 
     function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
