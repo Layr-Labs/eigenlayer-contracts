@@ -157,9 +157,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     }
 
     /**
-     * @notice Registers msg.sender as an operator with the middleware
+     * @notice Registers msg.sender as an operator with the middleware when the quorum operator limit is full. To register 
+     * while maintaining the limit, the operator chooses another registered opeerator with lower stake to kick.
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
+     * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked
      */
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
