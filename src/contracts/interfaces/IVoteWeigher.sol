@@ -25,13 +25,13 @@ interface IVoteWeigher {
     /// @notice Constant used as a divisor in calculating weights.
     function WEIGHTING_DIVISOR() external pure returns (uint256);
 
-    /// @notice Returns the strategy manager contract.
+    /// @notice Returns the EigenLayer strategy manager contract.
     function strategyManager() external view returns (IStrategyManager);
-    /// @notice Returns the stake registry contract.
+    /// @notice Returns the EigenLayer slasher contract.
     function slasher() external view returns (ISlasher);
-    /// @notice Returns the delegation manager contract.
+    /// @notice Returns the EigenLayer delegation manager contract.
     function delegation() external view returns (IDelegationManager);
-    /// @notice Returns the service manager contract.
+    /// @notice Returns the AVS service manager contract.
     function serviceManager() external view returns (IServiceManager);
 
     /**
