@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "./IRegistry.sol";
 
 /**
- * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quroums.
+ * @title Interface for a `Registry`-type contract that keeps track of an ordered list of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IIndexRegistry is IRegistry {
@@ -44,7 +44,7 @@ interface IIndexRegistry is IRegistry {
      * @param operatorId is the id of the operator that is being deregistered
      * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
-     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quroumNumbers`
+     * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quorumNumbers`
      * they will be swapped the operators current index
      * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator

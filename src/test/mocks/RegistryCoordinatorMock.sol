@@ -6,7 +6,7 @@ import "../../contracts/interfaces/IRegistryCoordinator.sol";
 
 
 contract RegistryCoordinatorMock is IRegistryCoordinator {
-    /// @notice Returns the bitmap of the quroums the operator is registered for.
+    /// @notice Returns the bitmap of the quorums the operator is registered for.
     function operatorIdToQuorumBitmap(bytes32 pubkeyHash) external view returns (uint256){}
 
     function getOperator(address operator) external view returns (Operator memory){}

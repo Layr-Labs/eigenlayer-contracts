@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "./IRegistry.sol";
 
 /**
- * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
@@ -38,7 +38,7 @@ interface IStakeRegistry is IRegistry {
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates

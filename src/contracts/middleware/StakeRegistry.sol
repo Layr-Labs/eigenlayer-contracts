@@ -8,7 +8,7 @@ import "../interfaces/IRegistryCoordinator.sol";
 import "./StakeRegistryStorage.sol";
 
 /**
- * @title A `Registry` that keeps track of stakes of operators for up to 256 quroums.
+ * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * Specifically, it keeps track of
  *      1) The stake of each operator in all the quorums they are apart of for block ranges
  *      2) The total stake of all operators in each quorum for block ranges
@@ -271,7 +271,7 @@ contract StakeRegistry is StakeRegistryStorage {
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
      * @param operatorId The id of the operator to deregister.
-     * @param quorumNumbers The quourm numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
+     * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -352,7 +352,7 @@ contract StakeRegistry is StakeRegistryStorage {
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // for each quorum, evaluate stake and add to total stake
         for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbersLength;) {
-            // get the next quourumNumber
+            // get the next quorumNumber
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // evaluate the stake for the operator
             // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
