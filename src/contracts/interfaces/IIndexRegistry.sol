@@ -17,7 +17,7 @@ interface IIndexRegistry is IRegistry {
     // DATA STRUCTURES
 
     // struct used to give definitive ordering to operators at each blockNumber
-    struct OperatorIndex {
+    struct OperatorIndexUpdate {
         // blockNumber number at which operator index changed
         // note that the operator's index is different *for this block number*, i.e. the *new* index is *inclusive* of this value
         uint32 toBlockNumber;
@@ -55,6 +55,12 @@ interface IIndexRegistry is IRegistry {
      *         5) `quorumNumbers` is the same as the parameter use when registering
      */
     function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
+
+    /// @notice Returns the _operatorIdToIndexHistory entry for the specified `operatorId` and `quorumNumber` at the specified `index`
+    function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
+
+    /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
+    function getTotalOperatorsUpdateForQuorumAtIndex(uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
 
     /**
      * @notice Looks up the `operator`'s index for `quorumNumber` at the specified `blockNumber` using the `index`.
