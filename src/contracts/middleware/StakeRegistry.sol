@@ -368,7 +368,7 @@ contract StakeRegistry is StakeRegistryStorage {
 
     // INTERNAL FUNCTIONS
 
-    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
+    function _registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is registering for only valid quorums
         require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");

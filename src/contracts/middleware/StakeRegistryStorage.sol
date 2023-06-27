@@ -16,8 +16,7 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     /// @notice the coordinator contract that this registry is associated with
     IRegistryCoordinator public immutable registryCoordinator;
 
-    // TODO: set these on initialization
-    /// @notice In order to register, an operator must have at least `minimumStakeFirstQuorum` or `minimumStakeSecondQuorum`, as
+    /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`, as
     /// evaluated by this contract's 'VoteWeigher' logic.
     uint96[256] public minimumStakeForQuorum;
 
