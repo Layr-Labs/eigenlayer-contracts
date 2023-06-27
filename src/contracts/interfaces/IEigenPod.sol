@@ -57,9 +57,6 @@ interface IEigenPod {
     /// @notice The amount of eth, in wei, that is restaked per validator
     function REQUIRED_BALANCE_WEI() external view returns(uint256);
 
-    /// @notice this is a mapping of validator indices to a Validator struct containing pertinent info about the validator
-    function validatorStatus(uint40 validatorIndex) external view returns(VALIDATOR_STATUS);
-
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
     function restakedExecutionLayerGwei() external view returns(uint64);
 
@@ -91,7 +88,11 @@ interface IEigenPod {
 
 
     ///@notice mapping that tracks proven partial withdrawals
-    function provenPartialWithdrawal(uint40 validatorIndex, uint64 slot) external view returns (bool);
+    function provenPartialWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
+
+    /// @notice this is a mapping of validator indices to a Validator struct containing pertinent info about the validator
+    function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS);
+
 
     /**
      * @notice This function verifies that the withdrawal credentials of the podOwner are pointed to
@@ -123,7 +124,7 @@ interface IEigenPod {
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyOvercommittedStake(
+    function verifyBalanceUpdate(
         uint40 validatorIndex,
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs calldata proofs,
         bytes32[] calldata validatorFields,

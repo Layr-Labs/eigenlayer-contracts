@@ -5,7 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/AddressUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/math/Math.sol";
+import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 import "../libraries/BytesLib.sol";
@@ -59,7 +59,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     
 
     ///@notice The maximum amount of ETH, in gwei, a validator can have staked in the beacon chain
-    uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI;
+    // TODO: consider making this settable by owner
+    uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI = 32e9;
 
     uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET;
 
@@ -231,8 +232,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit ValidatorRestaked(validatorIndex);
 
-        //record an increase in the validator's restaked balance
-        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei += REQUIRED_BALANCE_WEI;
+        //record validator's new restaked balance
+        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = REQUIRED_BALANCE_GWEI;
 
         // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
         eigenPodManager.restakeBeaconChainETH(podOwner, REQUIRED_BALANCE_WEI);
@@ -295,6 +296,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             proofs.validatorBalanceProof,
             proofs.balanceRoot
         );
+
+        //update the balance
+        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = validatorCurrentBalanceGwei;
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
@@ -303,8 +307,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.OVERCOMMITTED;
 
             emit ValidatorOvercommitted(validatorIndex);
-
-            _updateRestakedExecutionLayerGwei(validatorCurrentBalanceGwei);
 
             // remove and undelegate shares in EigenLayer
             eigenPodManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, REQUIRED_BALANCE_WEI);
@@ -374,9 +376,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
         if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-            _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, validatorStatus[validatorIndex]);
+            _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, validatorPubkeyHashToInfo[validatorPubkeyHash].status);
         } else {
-            _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorPubkeyHash, podOwner);
+            _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
         }
     }
 
@@ -479,6 +481,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _sendETH(podOwner, address(this).balance);
     }
 
+    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {
+        return validatorPubkeyHashToInfo[pubkeyHash].status;
+    }
+
     // INTERNAL FUNCTIONS
     function _podWithdrawalCredentials() internal view returns(bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
@@ -488,9 +494,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
     }
 
-    function _effectiveRestakedBalance(uint64 amountGwei) internal {
-        effectiveBalance = (amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET) / GWEI_TO_WEI * GWEI_TO_WEI;
-        return Math.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalance);
+    function _effectiveRestakedBalanceGwei(uint64 amountGwei) internal returns (uint64){
+        //calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET
+        uint64 effectiveBalance = uint64((amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET) / GWEI_TO_WEI * GWEI_TO_WEI);
+        return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalance));
     }
 
 
