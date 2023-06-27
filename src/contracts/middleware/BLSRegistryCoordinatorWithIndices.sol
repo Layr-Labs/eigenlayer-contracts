@@ -114,6 +114,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
+        if(_operatorIdToQuorumBitmapHistory[operatorId].length == 0) {
+            revert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: no quorum bitmap history for operatorId");
+        }
         return _operatorIdToQuorumBitmapHistory[operatorId][_operatorIdToQuorumBitmapHistory[operatorId].length - 1].quorumBitmap;
     }
 
