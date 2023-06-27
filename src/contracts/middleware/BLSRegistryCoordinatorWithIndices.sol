@@ -241,7 +241,8 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param pubkey is the BLS public key of the operator
-     * @param operatorIdsToSwap is the list of the operator ids that the should swap for the deregistering operator's index
+     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each 
+     * quorum when removing the operator from the quorum's ordered list
      * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
