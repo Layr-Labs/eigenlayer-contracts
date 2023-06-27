@@ -36,21 +36,15 @@ interface IRegistryCoordinator {
         OperatorStatus status;
     }
 
+    /**
+     * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the 
+     * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
+     */
     struct QuorumBitmapUpdate {
         uint32 updateBlockNumber;
         uint32 nextUpdateBlockNumber;
         uint192 quorumBitmap;
     }
-
-    struct OperatorSetParam {
-        uint32 maxOperatorCount;
-        uint8 kickBIPsOfOperatorStake;
-        uint8 kickBIPsOfAverageStake;
-        uint8 kickBIPsOfTotalStake;
-    }
-
-    /// @notice Returns the operator set params for the given `quorumNumber`
-    function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
 
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory);
