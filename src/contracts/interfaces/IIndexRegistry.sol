@@ -16,7 +16,8 @@ interface IIndexRegistry is IRegistry {
 
     // DATA STRUCTURES
 
-    // struct used to give definitive ordering to operators at each blockNumber
+    // struct used to give definitive ordering to operators at each blockNumber. 
+    // NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time
     struct OperatorIndexUpdate {
         // blockNumber number at which operator index changed
         // note that the operator's index is different *for this block number*, i.e. the *new* index is *inclusive* of this value
