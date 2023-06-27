@@ -339,6 +339,10 @@ contract StakeRegistry is StakeRegistryStorage {
 
     // INTERNAL FUNCTIONS
 
+    /** 
+     * @notice Updates the stake for the operator with `operatorId` for the specified `quorumNumbers`. The total stake
+     * for each quorum is updated accordingly in addition to the operator's individual stake history.
+     */ 
     function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is registering for only valid quorums
@@ -358,12 +362,14 @@ contract StakeRegistry is StakeRegistryStorage {
             require(stake != 0, "StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
             // add operator stakes to total stake before update (in memory)
             uint256 _totalStakeHistoryLength = _totalStakeHistory[quorumNumber].length;
+            // add calculate the total stake for the quorum
+            uint96 totalStakeAfterUpdate = stake;
             if (_totalStakeHistoryLength != 0) {
                 // only add the stake if there is a previous total stake
                 // overwrite `stake` variable
-                stake += _totalStakeHistory[quorumNumber][_totalStakeHistoryLength - 1].stake;
+                totalStakeAfterUpdate += _totalStakeHistory[quorumNumber][_totalStakeHistoryLength - 1].stake;
             }
-            _newTotalStakeUpdate.stake = stake;
+            _newTotalStakeUpdate.stake = totalStakeAfterUpdate;
             // update storage of total stake
             _recordTotalStakeUpdate(quorumNumber, _newTotalStakeUpdate);
             unchecked {
@@ -373,7 +379,9 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Removes the stakes of the operator
+     * @notice Removes the stakes of the operator with `operatorId` from the quorums specified in `quorumNumbers`
+     * the total stake of the quorums specified in `quorumNumbers` will be updated and so will the operator's individual
+     * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
         uint8 quorumNumbersLength = uint8(quorumNumbers.length);
@@ -425,7 +433,7 @@ contract StakeRegistry is StakeRegistryStorage {
         if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {
             operatorStakeUpdate.stake = uint96(0);
         }
-        // initialize stakeBeforeUpdate to 0
+        // get stakeBeforeUpdate and update with new stake
         uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
     
         emit StakeUpdate(
