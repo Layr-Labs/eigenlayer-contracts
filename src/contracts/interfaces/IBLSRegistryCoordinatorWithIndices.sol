@@ -22,9 +22,9 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
      */ 
     struct OperatorSetParam {
         uint32 maxOperatorCount;
-        uint8 kickBIPsOfOperatorStake;
-        uint8 kickBIPsOfAverageStake;
-        uint8 kickBIPsOfTotalStake;
+        uint16 kickBIPsOfOperatorStake;
+        uint16 kickBIPsOfAverageStake;
+        uint16 kickBIPsOfTotalStake;
     }
 
     /**
