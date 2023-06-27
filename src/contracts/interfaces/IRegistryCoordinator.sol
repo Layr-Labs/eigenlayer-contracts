@@ -39,6 +39,7 @@ interface IRegistryCoordinator {
     /**
      * @notice Data structure for storing info on quorum bitmap updates where the `quorumBitmap` is the bitmap of the 
      * quorums the operator is registered for starting at (inclusive)`updateBlockNumber` and ending at (exclusive) `nextUpdateBlockNumber`
+     * @dev nextUpdateBlockNumber is initialized to 0 for the latest update
      */
     struct QuorumBitmapUpdate {
         uint32 updateBlockNumber;
