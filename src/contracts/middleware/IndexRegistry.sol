@@ -69,7 +69,7 @@ contract IndexRegistry is IIndexRegistry {
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is the same as the parameter use when registering
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
         require(quorumNumbers.length == operatorIdsToSwap.length, "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
