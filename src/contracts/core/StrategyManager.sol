@@ -175,12 +175,12 @@ contract StrategyManager is
 
     /**
      * @notice Records an overcommitment event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
-     * @param overcommittedPodOwner is the pod owner to be slashed
+     * @param podOwner is the pod owner to be slashed
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
      * @dev Only callable by EigenPodManager.
      */
-    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
         external
         onlyEigenPodManager
         nonReentrant
@@ -188,8 +188,8 @@ contract StrategyManager is
         // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
         if (amount != 0) {
             // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
-            uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
-            _updateSharesToReflectBeaconChainETHBalance(overcommittedPodOwner, beaconChainETHStrategyIndex, userShares, amount);
+            uint256 userShares = stakerStrategyShares[podOwner][beaconChainETHStrategy];
+            _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, userShares, amount);
         }
     }
 

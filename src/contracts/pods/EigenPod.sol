@@ -301,7 +301,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 effectiveRestakedBalanceGwei = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
 
         //update the balance
-        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = effectiveRestakedBalance;
+        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = effectiveRestakedBalanceGwei;
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
