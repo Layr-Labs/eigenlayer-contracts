@@ -298,14 +298,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         // calculate the effective (pessimistic) restaked balance
-        uint64 effectiveRestakedBalance = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
+        uint64 effectiveRestakedBalanceGwei = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
 
         //update the balance
         validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = effectiveRestakedBalance;
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
-        if (effectiveRestakedBalance < REQUIRED_BALANCE_GWEI) {
+        if (effectiveRestakedBalanceGwei < REQUIRED_BALANCE_GWEI) {
             // mark the ETH validator as overcommitted
             validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.OVERCOMMITTED;
             emit ValidatorOvercommitted(validatorIndex);
@@ -318,7 +318,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // update shares in strategy manager
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, effectiveRestakedBalance);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, effectiveRestakedBalanceGwei * GWEI_TO_WEI);
     }
 
     /**
@@ -411,7 +411,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
                 restakedExecutionLayerGwei += withdrawalAmountGwei;
                 // remove and undelegate 'extra' (i.e. "overcommitted") shares in EigenLayer
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, uint256(REQUIRED_BALANCE_GWEI - withdrawalAmountGwei) * GWEI_TO_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             }
         // if the validator *has* previously been proven to be "overcommitted"
         } else if (status == VALIDATOR_STATUS.OVERCOMMITTED) {
@@ -425,15 +425,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                  * since in `verifyOvercommittedStake` the podOwner's beaconChainETH shares are decremented by `REQUIRED_BALANCE_WEI`, we must reverse the process here,
                  * in order to allow the podOwner to complete their withdrawal through EigenLayer's normal withdrawal process
                  */
-                eigenPodManager.restakeBeaconChainETH(podOwner, REQUIRED_BALANCE_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             } else {
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
                 restakedExecutionLayerGwei += withdrawalAmountGwei;
-                /**
-                 * since in `verifyOvercommittedStake` the podOwner's beaconChainETH shares are decremented by `REQUIRED_BALANCE_WEI`, we must reverse the process here,
-                 * in order to allow the podOwner to complete their withdrawal through EigenLayer's normal withdrawal process
-                 */
-                eigenPodManager.restakeBeaconChainETH(podOwner, uint256(withdrawalAmountGwei) * GWEI_TO_WEI);
+                
+                //update the shares for the withdrawer in the strategy manager
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             }
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
