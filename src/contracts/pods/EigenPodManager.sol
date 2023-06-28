@@ -152,7 +152,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * @dev Callable only by the podOwner's EigenPod contract.
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, amount);
     }
 
     /**

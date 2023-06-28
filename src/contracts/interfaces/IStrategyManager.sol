@@ -65,7 +65,7 @@ interface IStrategyManager {
      * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
      * @dev Only callable by EigenPodManager.
      */
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
         external;
 
     /**

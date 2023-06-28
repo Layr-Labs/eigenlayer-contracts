@@ -185,25 +185,12 @@ contract StrategyManager is
         onlyEigenPodManager
         nonReentrant
     {
-        // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
-        uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
-
-        // removes shares for the enshrined beacon chain ETH strategy
+        // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
         if (amount != 0) {
-            _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, userShares);   
-            _addShares(overcommittedPodOwner, beaconChainETHStrategyIndex, amount);        
+            // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
+            uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
+            _updateSharesToReflectBeaconChainETHBalance(userShares, amount);
         }
-        // create array wrappers for call to DelegationManager
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = beaconChainETHStrategy;
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = userShares;
-        // remove existing delegated shares
-        delegation.decreaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
-        
-        // add new delegated shares
-        shareAmounts[0] = amount;
-        delegation.increaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
     }
 
     /**
@@ -907,6 +894,33 @@ contract StrategyManager is
     function _setStrategyWhitelister(address newStrategyWhitelister) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
+    }
+
+
+    /**
+     * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
+        * @param newUserShares The new amount of shares that the user has
+        * @param currentUserShares The current amount of shares that the user has
+     */
+    function _updateSharesToReflectBeaconChainETHBalance(uint256 newUserShares, uint256 currentUserShares) internal {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        uint256[] memory shareAmounts = new uint256[](1);
+        
+
+        if (newUserShares > currentUserShares) {
+                uint256 shareIncrease = newUserShares - currentUserShares;
+                //if new balance is greater than current recorded shares, add the difference
+                _addShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, newShares);
+                shareAmounts[0] = shareIncrease;
+                delegation.increaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
+            } else if (newUserShares < currentUserShares) {
+                uint256 shareDecrease = currentUserShares - newUserShares;
+                //if new balance is less than current recorded shares, remove the difference
+                _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareDecrease);
+                shareAmounts[0] = shareDecrease;
+                delegation.decreaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
+            }     
     }
 
     // VIEW FUNCTIONS
