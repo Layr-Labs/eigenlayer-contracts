@@ -195,85 +195,6 @@ contract StakeRegistry is StakeRegistryStorage {
         return _totalStakeHistory[quorumNumber].length;
     }
 
-    /**
-     * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
-     * @param operatorId is the id of the operator of interest
-     * @param blockNumber is the block number of interest
-     * @param quorumNumber is the quorum number which the operator had stake in
-     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's activity
-     * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
-     * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
-     * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
-     * 2) `operatorIdToStakeHistory[operatorId][quorumNumber][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or
-     * is must be strictly greater than `blockNumber`
-     * 3) `operatorIdToStakeHistory[operatorId][quorumNumber][index].stake > 0` i.e. the operator had nonzero stake
-     * @dev Note that a return value of 'false' does not guarantee that the `operator` was inactive at `blockNumber`, since a
-     * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
-     */
-    function checkOperatorActiveAtBlockNumber(
-        bytes32 operatorId,
-        uint256 blockNumber,
-        uint8 quorumNumber,
-        uint256 stakeHistoryIndex
-        ) external view returns (bool)
-    {
-        // pull the stake history entry specified by `stakeHistoryIndex`
-        OperatorStakeUpdate memory operatorStakeUpdate = operatorIdToStakeHistory[operatorId][quorumNumber][stakeHistoryIndex];
-        return (
-            // check that the update specified by `stakeHistoryIndex` occurred at or prior to `blockNumber`
-            (operatorStakeUpdate.updateBlockNumber <= blockNumber)
-            &&
-            // if there is a next update, then check that the next update occurred strictly after `blockNumber`
-            (operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber)
-            &&
-            /// verify that the stake was non-zero at the time (note: here was use the assumption that the operator was 'inactive'
-            /// once their stake fell to zero)
-            operatorStakeUpdate.stake != 0 // this implicitly checks that the operator was a part of the quorum of interest
-        );
-    }
-
-    /**
-     * @notice Checks that the `operator` was inactive at the `blockNumber`, using the specified `stakeHistoryIndex` for `quorumNumber` as proof.
-     * @param operatorId is the id of the operator of interest
-     * @param blockNumber is the block number of interest
-     * @param quorumNumber is the quorum number which the operator had no stake in
-     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's inactivity
-     * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
-     * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
-     * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
-     * 2) `operatorIdToStakeHistory[operatorId][quorumNumber][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or
-     * is must be strictly greater than `blockNumber`
-     * 3) `operatorIdToStakeHistory[operatorId][quorumNumber][index].stake == 0` i.e. the operator had zero stake
-     * @dev Note that a return value of 'false' does not guarantee that the `operator` was active at `blockNumber`, since a
-     * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
-     * @dev One precondition that must be checked is that the operator is a part of the given `quorumNumber`
-     */
-    function checkOperatorInactiveAtBlockNumber(
-        bytes32 operatorId,
-        uint256 blockNumber,
-        uint8 quorumNumber,
-        uint256 stakeHistoryIndex
-        ) external view returns (bool)
-    {
-        // special case for `operatorIdToStakeHistory[operatorId]` having length zero -- in which case we know the operator was never registered
-        if (operatorIdToStakeHistory[operatorId][quorumNumber].length == 0) {
-            return true;
-        }
-        // pull the stake history entry specified by `stakeHistoryIndex`
-        OperatorStakeUpdate memory operatorStakeUpdate = operatorIdToStakeHistory[operatorId][quorumNumber][stakeHistoryIndex];
-        return (
-            // check that the update specified by `stakeHistoryIndex` occurred at or prior to `blockNumber`
-            (operatorStakeUpdate.updateBlockNumber <= blockNumber)
-            &&
-            // if there is a next update, then check that the next update occurred strictly after `blockNumber`
-            (operatorStakeUpdate.nextUpdateBlockNumber == 0 || operatorStakeUpdate.nextUpdateBlockNumber > blockNumber)
-            &&
-            /// verify that the stake was zero at the time (note: here was use the assumption that the operator was 'inactive'
-            /// once their stake fell to zero)
-            operatorStakeUpdate.stake == 0
-        );
-    }
-
     // MUTATING FUNCTIONS
 
     /// @notice Adjusts the `minimumStakeFirstQuorum` -- i.e. the node stake (weight) requirement for inclusion in the 1st quorum.
@@ -307,7 +228,7 @@ contract StakeRegistry is StakeRegistryStorage {
      *         2) `quorumNumbers.length` != 0
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already deregistered
-     *         5) `quorumNumbers` is the same as the parameter use when registering
+     *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
         _deregisterOperator(operatorId, quorumNumbers);
@@ -417,9 +338,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
-        uint8 quorumNumbersLength = uint8(quorumNumbers.length);
         // check the operator is deregistering from only valid quorums
-        require(uint8(quorumNumbers[quorumNumbersLength - 1]) < quorumCount, "StakeRegistry._deregisterOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
@@ -427,7 +346,7 @@ contract StakeRegistry is StakeRegistryStorage {
         // add the `updateBlockNumber` info
         _newTotalStakeUpdate.updateBlockNumber = uint32(block.number);
         // loop through the operator's quorums and remove the operator's stake for each quorum
-        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbersLength;) {
+        for (uint8 quorumNumbersIndex = 0; quorumNumbersIndex < quorumNumbers.length;) {
             uint8 quorumNumber = uint8(quorumNumbers[quorumNumbersIndex]);
             // update the operator's stake
             uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, _operatorStakeUpdate);
@@ -464,8 +383,8 @@ contract StakeRegistry is StakeRegistryStorage {
 
         // check if minimum requirements have been met
         if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {
-            // set staker to 1 to note they are still active, but miniscule stake
-            operatorStakeUpdate.stake = uint96(1);
+            // set staker to 0
+            operatorStakeUpdate.stake = uint96(0);
         }
         // get stakeBeforeUpdate and update with new stake
         uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
