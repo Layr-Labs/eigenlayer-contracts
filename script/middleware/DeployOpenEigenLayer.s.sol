@@ -69,12 +69,9 @@ contract DeployOpenEigenLayer is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
-    function deployEigenLayer(address executorMultisig, address operationsMultisig, address pauserMultisig, StrategyConfig[] memory strategyConfigs) public {
+    function _deployEigenLayer(address executorMultisig, address operationsMultisig, address pauserMultisig, StrategyConfig[] memory strategyConfigs) internal {
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
-
-        // START RECORDING TRANSACTIONS FOR DEPLOYMENT
-        vm.startBroadcast();
 
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
@@ -199,8 +196,5 @@ contract DeployOpenEigenLayer is Script, Test {
 
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);
-
-        // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
-        vm.stopBroadcast();
     }
 }
