@@ -151,7 +151,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * @param amount The amount of beacon chain ETH to decrement from the podOwner's shares in the strategyManager.
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
         strategyManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, amount);
     }
 

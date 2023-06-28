@@ -45,7 +45,7 @@ interface IEigenPodManager is IPausable {
      * @param amount The amount of ETH to remove.
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external;
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external;
     
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.

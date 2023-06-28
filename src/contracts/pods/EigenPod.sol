@@ -299,19 +299,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //update the balance
         validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = validatorCurrentBalanceGwei;
+
+        // calculate the effective (pessimistic) restaked balance
+        uint64 effectiveRestakedBalance = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
-        if (validatorCurrentBalanceGwei < REQUIRED_BALANCE_GWEI) {
+        if (effectiveRestakedBalance < REQUIRED_BALANCE_GWEI) {
             // mark the ETH validator as overcommitted
             validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.OVERCOMMITTED;
 
             emit ValidatorOvercommitted(validatorIndex);
-
-            // remove and undelegate shares in EigenLayer
-            eigenPodManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, REQUIRED_BALANCE_WEI);
-
         }
+
+
+        // update shares in strategy manager
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, effectiveRestakedBalance);
     }
 
     /**

@@ -180,30 +180,30 @@ contract StrategyManager is
      * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
      * @dev Only callable by EigenPodManager.
      */
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
         external
         onlyEigenPodManager
         nonReentrant
     {
         // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
         uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
-        // if the amount exceeds the user's shares, then record it as an amount to be "paid off" when the user completes a withdrawal
-        if (amount > userShares) {
-            uint256 debt = amount - userShares;
-            beaconChainETHSharesToDecrementOnWithdrawal[overcommittedPodOwner] += debt;
-            amount -= debt;
-        }
+
         // removes shares for the enshrined beacon chain ETH strategy
         if (amount != 0) {
-            _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, amount);            
+            _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, userShares);   
+            _addShares(overcommittedPodOwner, beaconChainETHStrategyIndex, amount);        
         }
         // create array wrappers for call to DelegationManager
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = beaconChainETHStrategy;
         uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = amount;
-        // modify delegated shares accordingly, if applicable
+        shareAmounts[0] = userShares;
+        // remove existing delegated shares
         delegation.decreaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
+        
+        // add new delegated shares
+        shareAmounts[0] = amount;
+        delegation.increaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
     }
 
     /**
