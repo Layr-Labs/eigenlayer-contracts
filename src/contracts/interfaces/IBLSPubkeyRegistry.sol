@@ -13,21 +13,16 @@ interface IBLSPubkeyRegistry is IRegistry {
     // Emitted when a new operator pubkey is registered
     event PubkeyAdded(
         address operator,
-        BN254.G1Point pubkey
+        BN254.G1Point pubkey,
+        bytes quorumNumbers
     );
 
     // Emitted when an operator pubkey is deregistered
     event PubkeyRemoved(
         address operator,
-        BN254.G1Point pubkey
-    );
-
-    // Emitted when an operator pubkey is removed from a set of quorums
-    event PubkeyRemoveFromQuorums(
-        address operator, 
+        BN254.G1Point pubkey,
         bytes quorumNumbers
     );
-
 
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
@@ -72,6 +67,9 @@ interface IBLSPubkeyRegistry is IRegistry {
     
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
+
+    /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quourmNumbers, uint256 blockNumber) external view returns(uint32[] memory);
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);

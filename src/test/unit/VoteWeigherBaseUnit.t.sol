@@ -18,7 +18,6 @@ import "../mocks/DelegationMock.sol";
 import "forge-std/Test.sol";
 
 contract VoteWeigherBaseUnitTests is Test {
-
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;

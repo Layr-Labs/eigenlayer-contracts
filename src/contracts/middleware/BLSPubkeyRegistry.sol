@@ -63,11 +63,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(operator, quorumNumbers, pubkey);
+        _processQuorumApkUpdate(quorumNumbers, pubkey);
         // update the global aggregate pubkey
         _processGlobalApkUpdate(pubkey);
         // emit event so offchain actors can update their state
-        emit PubkeyAdded(operator, pubkey);
+        emit PubkeyAdded(operator, pubkey, quorumNumbers);
         return pubkeyHash;
     }
 
@@ -92,15 +92,32 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
 
         // update each quorum's aggregate pubkey
-        _processQuorumApkUpdate(operator, quorumNumbers, pubkey.negate());
+        _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
         if(completeDeregistration){
             // update the global aggregate pubkey
             _processGlobalApkUpdate(pubkey.negate());
-            // emit event so offchain actors can update their state
-            emit PubkeyRemoved(operator, pubkey);
         }
+
+        // emit event so offchain actors can update their state
+        emit PubkeyRemoved(operator, pubkey, quorumNumbers);
         return pubkeyHash;
+    }
+
+    /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quourmNumbers, uint256 blockNumber) external view returns(uint32[] memory){
+        uint256[] memory indices = new uint256[](quourmNumbers.length);
+        for (uint i = 0; i < quourmNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quourmNumbers[i]);
+            uint32 length = uint32(quorumApkUpdates[quorumNumber].length);
+            for (uint32 j = 0; j < length; j++) {
+                if(quorumApkUpdates[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber){
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `
@@ -161,7 +178,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         globalApkUpdates.push(latestGlobalApkUpdate);
     }
 
-    function _processQuorumApkUpdate(address operator, bytes memory quorumNumbers, BN254.G1Point memory point) internal {
+    function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
         BN254.G1Point memory apkAfterUpdate;
 
         for (uint i = 0; i < quorumNumbers.length;) {
@@ -187,8 +204,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 ++i;
             }
         }
-
-        emit PubkeyRemoveFromQuorums(operator, quorumNumbers);
     }
 
     function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {

@@ -17,15 +17,7 @@ import "./StakeRegistryStorage.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
-    // EVENTS
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
-
-    /// @notice requires that the caller is the RegistryCoordinator
+    
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(registryCoordinator), "StakeRegistry.onlyRegistryCoordinator: caller is not the RegistryCoordinator");
         _;
@@ -90,6 +82,38 @@ contract StakeRegistry is StakeRegistryStorage {
      */
     function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {
         return _totalStakeHistory[quorumNumber][index];
+    }
+
+    /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint32)
+    {
+        uint32 length = uint32(operatorIdToStakeHistory[operatorId][quorumNumber].length);
+        for (uint32 i = 0; i < length; i++) {
+            if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
+                return length - i - 1;
+            }
+        }
+        revert("StakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: no stake update found for operatorId and quorumNumber");
+    }
+
+
+    /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quourmNumbers) external view returns(uint32[] memory) {
+        uint32[] memory indices = new uint32[](quourmNumbers.length);
+        for (uint256 i = 0; i < quourmNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quourmNumbers[i]);
+            uint32 length = uint32(_totalStakeHistory[quorumNumber].length);
+            for (uint32 j = 0; j < length; j++) {
+                if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        return indices;
     }
 
     /**

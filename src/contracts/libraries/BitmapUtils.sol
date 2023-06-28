@@ -3,10 +3,10 @@
 pragma solidity =0.8.12;
 
 /**
- * @title Library for converting between an array of bytes and a bitmap.
+ * @title Library for Bitmap utilities such as converting between an array of bytes and a bitmap and finding the number of 1s in a bitmap.
  * @author Layr Labs, Inc.
  */
-library BytesArrayBitmaps {
+library BitmapUtils {
     /**
      * @notice Byte arrays are meant to contain unique bytes.
      * If the array length exceeds 256, then it's impossible for all entries to be unique.
@@ -24,7 +24,7 @@ library BytesArrayBitmaps {
     function bytesArrayToBitmap(bytes calldata bytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long");
+            "BitmapUtils.bytesArrayToBitmap: bytesArray is too long");
 
         // return empty bitmap early if length of array is 0
         if (bytesArray.length == 0) {
@@ -45,7 +45,7 @@ library BytesArrayBitmaps {
             // construct a single-bit mask from the numerical value of the next byte out of the array
             bitMask = uint256(1 << uint8(bytesArray[i]));
             // check that the entry is not a repeat
-            require(bitmap & bitMask == 0, "BytesArrayBitmaps.bytesArrayToBitmap: repeat entry in bytesArray");
+            require(bitmap & bitMask == 0, "BitmapUtils.bytesArrayToBitmap: repeat entry in bytesArray");
             // add the entry to the bitmap
             bitmap = (bitmap | bitMask);
         }
@@ -63,7 +63,7 @@ library BytesArrayBitmaps {
     function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+            "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -84,7 +84,7 @@ library BytesArrayBitmaps {
             // construct a single-bit mask from the numerical value of the next byte of the array
             bitMask = uint256(1 << uint8(orderedBytesArray[i]));
             // check strictly ascending array ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
-            require(bitMask > bitmap, "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+            require(bitMask > bitmap, "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
             // add the entry to the bitmap
             bitmap = (bitmap | bitMask);
         }
@@ -102,7 +102,7 @@ library BytesArrayBitmaps {
     function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+            "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -141,7 +141,7 @@ library BytesArrayBitmaps {
                     )
                 // check strictly ascending ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
                 // TODO: revert with a good message instead of using `revert(0, 0)`
-                // REFERENCE: require(bitMask > bitmap, "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+                // REFERENCE: require(bitMask > bitmap, "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
                 if iszero(gt(bitMask, bitmap)) { revert(0, 0) }
                 // update the bitmap by adding the single bit in the mask
                 bitmap := or(bitmap, bitMask)
@@ -163,7 +163,7 @@ library BytesArrayBitmaps {
     function bytesArrayToBitmap_Yul(bytes calldata bytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long");
+            "BitmapUtils.bytesArrayToBitmap: bytesArray is too long");
 
         // return empty bitmap early if length of array is 0
         if (bytesArray.length == 0) {
@@ -202,7 +202,7 @@ library BytesArrayBitmaps {
                     )
                 // check against duplicates by comparing the bitmask and bitmap (revert if the bitmap already contains the entry, i.e. bitmap & bitMask != 0)
                 // TODO: revert with a good message instead of using `revert(0, 0)`
-                // REFERENCE: require(bitmap & bitMask == 0, "BytesArrayBitmaps.bytesArrayToBitmap: repeat entry in bytesArray");
+                // REFERENCE: require(bitmap & bitMask == 0, "BitmapUtils.bytesArrayToBitmap: repeat entry in bytesArray");
                 if gt(and(bitmap, bitMask), 0) { revert(0, 0) }
                 // update the bitmap by adding the single bit in the mask
                 bitmap := or(bitmap, bitMask)
@@ -270,5 +270,15 @@ library BytesArrayBitmaps {
             }
         }
         return bytesArray;
+    }
+
+    /// @return count number of ones in binary representation of `n`
+    function countNumOnes(uint256 n) public pure returns (uint16) {
+        uint16 count = 0;
+        while (n > 0) {
+            n &= (n - 1);
+            count++;
+        }
+        return count;
     }
 }
