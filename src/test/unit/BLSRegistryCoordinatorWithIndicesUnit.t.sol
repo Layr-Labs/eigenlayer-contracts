@@ -32,7 +32,7 @@ import "../harnesses/StakeRegistryHarness.sol";
 
 import "forge-std/Test.sol";
 
-contract StakeRegistryUnitTests is Test {
+contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -66,6 +66,8 @@ contract StakeRegistryUnitTests is Test {
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
+    BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
+
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
 
@@ -256,6 +258,24 @@ contract StakeRegistryUnitTests is Test {
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         registryCoordinator.initialize(operatorSetParams);
+    }
+
+    function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
+        bytes memory emptyQuorumNumbers = new bytes(0);
+        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
+        cheats.prank(defaultOperator);
+        registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey);
+    }
+
+    function testRegisterOperatorWithCoordinator_QuorumNumbersTooLarge_Reverts() public {
+        bytes memory quorumNumbersTooLarge = new bytes(1);
+        quorumNumbersTooLarge[0] = 0xC0;
+        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cant have more than 192 set bits");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey);
+    }
+
+    function testRegisterOperatorWithCoordinator_Valid() public {
+
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {

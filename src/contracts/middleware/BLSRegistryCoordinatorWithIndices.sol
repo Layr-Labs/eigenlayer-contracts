@@ -12,6 +12,8 @@ import "../interfaces/IIndexRegistry.sol";
 
 import "../libraries/BitmapUtils.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes (this is actually the contract itself, via inheritance)
@@ -20,7 +22,7 @@ import "../libraries/BitmapUtils.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices {
+contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, Test {
     using BN254 for BN254.G1Point;
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
@@ -275,16 +277,17 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     }
 
     function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
-        require(
-            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-            "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        );
+        // require(
+        //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
+        //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
+        // );
         
         // check that the sender is not already registered
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
         require(quorumBitmap != 0, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         require(quorumBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cant have more than 192 set bits");
 
@@ -323,7 +326,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumsToRemoveBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap cant have more than 192 set bits");
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
