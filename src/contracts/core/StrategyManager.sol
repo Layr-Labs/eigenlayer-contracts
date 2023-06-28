@@ -189,7 +189,7 @@ contract StrategyManager is
         if (amount != 0) {
             // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
             uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
-            _updateSharesToReflectBeaconChainETHBalance(userShares, amount);
+            _updateSharesToReflectBeaconChainETHBalance(overcommittedPodOwner, beaconChainETHStrategyIndex, userShares, amount);
         }
     }
 
@@ -902,23 +902,21 @@ contract StrategyManager is
         * @param newUserShares The new amount of shares that the user has
         * @param currentUserShares The current amount of shares that the user has
      */
-    function _updateSharesToReflectBeaconChainETHBalance(uint256 newUserShares, uint256 currentUserShares) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = beaconChainETHStrategy;
-        uint256[] memory shareAmounts = new uint256[](1);
-        
-
+    function _updateSharesToReflectBeaconChainETHBalance(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 newUserShares, uint256 currentUserShares) internal {
         if (newUserShares > currentUserShares) {
                 uint256 shareIncrease = newUserShares - currentUserShares;
                 //if new balance is greater than current recorded shares, add the difference
-                _addShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, newShares);
-                shareAmounts[0] = shareIncrease;
-                delegation.increaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
+                _addShares(overcommittedPodOwner, beaconChainETHStrategy, shareIncrease);
+                delegation.increaseDelegatedShares(overcommittedPodOwner, beaconChainETHStrategy, shareIncrease);
             } else if (newUserShares < currentUserShares) {
                 uint256 shareDecrease = currentUserShares - newUserShares;
+                IStrategy[] memory strategies = new IStrategy[](1);
+                strategies[0] = beaconChainETHStrategy;
+                uint256[] memory shareAmounts = new uint256[](1);
+                shareAmounts[0] = shareDecrease;
+
                 //if new balance is less than current recorded shares, remove the difference
                 _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareDecrease);
-                shareAmounts[0] = shareDecrease;
                 delegation.decreaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
             }     
     }

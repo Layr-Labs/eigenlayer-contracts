@@ -297,21 +297,25 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             proofs.balanceRoot
         );
 
-        //update the balance
-        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = validatorCurrentBalanceGwei;
-
         // calculate the effective (pessimistic) restaked balance
         uint64 effectiveRestakedBalance = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
+
+        //update the balance
+        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = effectiveRestakedBalance;
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
         if (effectiveRestakedBalance < REQUIRED_BALANCE_GWEI) {
             // mark the ETH validator as overcommitted
             validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.OVERCOMMITTED;
-
             emit ValidatorOvercommitted(validatorIndex);
         }
 
+        else {
+            // mark the ETH validator as active and no longer overcommitted
+            validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.ACTIVE;
+            emit ValidatorRestaked(validatorIndex);
+        }
 
         // update shares in strategy manager
         eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, effectiveRestakedBalance);
@@ -407,7 +411,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
                 restakedExecutionLayerGwei += withdrawalAmountGwei;
                 // remove and undelegate 'extra' (i.e. "overcommitted") shares in EigenLayer
-                eigenPodManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, uint256(REQUIRED_BALANCE_GWEI - withdrawalAmountGwei) * GWEI_TO_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, uint256(REQUIRED_BALANCE_GWEI - withdrawalAmountGwei) * GWEI_TO_WEI);
             }
         // if the validator *has* previously been proven to be "overcommitted"
         } else if (status == VALIDATOR_STATUS.OVERCOMMITTED) {
