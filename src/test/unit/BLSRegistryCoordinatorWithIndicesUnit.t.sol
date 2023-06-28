@@ -33,6 +33,8 @@ import "../harnesses/StakeRegistryHarness.sol";
 import "forge-std/Test.sol";
 
 contract BLSRegistryCoordinatorWithIndicesUnit is Test {
+    using BN254 for BN254.G1Point;
+
     Vm cheats = Vm(HEVM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -65,7 +67,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
-    bytes32 defaultOperatorId = keccak256("defaultOperatorId");
+    bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
 
     uint8 defaultQuorumNumber = 0;
@@ -81,9 +83,29 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         uint96 stake
     );
 
+    // Emitted when a new operator pubkey is registered
+    event PubkeyAdded(
+        address operator,
+        BN254.G1Point pubkey,
+        bytes quorumNumbers
+    );
+
+    // Emitted when an operator pubkey is deregistered
+    event PubkeyRemoved(
+        address operator,
+        BN254.G1Point pubkey,
+        bytes quorumNumbers
+    );
+
+    // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
+    event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
+    // emitted when an operator's index in the global operator list is updated
+    event GlobalIndexUpdate(bytes32 indexed operatorId, uint32 newIndex);
+
     function setUp() virtual public {
         emptyContract = new EmptyContract();
 
+        defaultOperatorId = defaultPubKey.hashG1Point();
 
         cheats.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
@@ -113,6 +135,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         );
 
         pubkeyCompendium = new BLSPublicKeyCompendiumMock();
+        pubkeyCompendium.setBLSPublicKey(defaultOperator, defaultPubKey);
 
         cheats.stopPrank();
 
@@ -275,7 +298,23 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     }
 
     function testRegisterOperatorWithCoordinator_Valid() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint96 defaultStake = 1 ether;
 
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+        uint256 gasBefore = gasleft();
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {

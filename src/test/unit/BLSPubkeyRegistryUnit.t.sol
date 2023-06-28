@@ -18,8 +18,6 @@ contract BLSPubkeyRegistryUnitTests is Test {
 
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
-
-
     BLSPubkeyRegistry public blsPubkeyRegistry;
     BLSPublicKeyCompendiumMock public pkCompendium;
     RegistryCoordinatorMock public registryCoordinator;
