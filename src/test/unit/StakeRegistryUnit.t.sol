@@ -189,7 +189,7 @@ contract StakeRegistryUnitTests is Test {
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
-    function testFirstRegisterOperator_Valid(
+    function testRegisterFirstOperator_Valid(
         uint256 quorumBitmap,
         uint80[] memory stakesForQuorum
     ) public {
@@ -227,18 +227,15 @@ contract StakeRegistryUnitTests is Test {
     }
 
     function testRegisterManyOperators_Valid(
-        uint256[] memory quorumBitmaps,
-        uint80[][] memory stakesForQuorums,
+        uint256 pseudoRandomNumber,
+        uint8 numOperators,
         uint24[] memory blocksPassed
     ) public {
-        cheats.assume(quorumBitmaps.length > 0 && quorumBitmaps.length <= 15);
+        cheats.assume(numOperators > 0 && numOperators <= 15);
+        // modulo so no overflow
+        pseudoRandomNumber = pseudoRandomNumber % type(uint128).max;
 
-        // append as needed to stakesForQuorums
-        uint80[][] memory appendedStakesForQuorums = new uint80[][](quorumBitmaps.length);
-        for (uint256 i = stakesForQuorums.length; i < quorumBitmaps.length; i++) {
-            appendedStakesForQuorums[i] = new uint80[](0);
-        }
-        stakesForQuorums = appendedStakesForQuorums;
+        uint256[] memory quorumBitmaps = new uint256[](numOperators);
 
         // append to blocksPassed as needed
         uint24[] memory appendedBlocksPassed = new uint24[](quorumBitmaps.length);
@@ -253,14 +250,12 @@ contract StakeRegistryUnitTests is Test {
 
         uint96[][] memory paddedStakesForQuorums = new uint96[][](quorumBitmaps.length);
         for (uint256 i = 0; i < quorumBitmaps.length; i++) {
-            emit log_named_uint("quorumBitmaps[i]", quorumBitmaps[i]);
-            // quorumBitmaps[i] = quorumBitmaps[i];
-            paddedStakesForQuorums[i] = _registerOperatorValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), quorumBitmaps[i], stakesForQuorums[i]);
+            (quorumBitmaps[i], paddedStakesForQuorums[i]) = _registerOperatorRandomValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), pseudoRandomNumber + i);
 
             cumulativeBlockNumber += blocksPassed[i];
             cheats.roll(cumulativeBlockNumber);
         }
-
+        
         // for each bit in each quorumBitmap, increment the number of operators in that quorum
         uint32[] memory numOperatorsInQuorum = new uint32[](192);
         for (uint256 i = 0; i < quorumBitmaps.length; i++) {
@@ -314,6 +309,101 @@ contract StakeRegistryUnitTests is Test {
                 }
                 cumulativeBlockNumber += blocksPassed[j];
             }   
+        }
+    }
+
+    function testDeregisterFirstOperator_Valid(
+        uint256 pseudoRandomNumber,
+        uint256 quorumBitmap,
+        uint256 deregistrationQuorumsFlag,
+        uint80[] memory stakesForQuorum,
+        uint8 numOperatorsRegisterBefore
+    ) public {
+        // modulo so no overflow
+        pseudoRandomNumber = pseudoRandomNumber % type(uint128).max;
+        // register a bunch of operators
+        cheats.roll(100);
+        uint32 cumulativeBlockNumber = 100;
+
+        uint256 numOperators = 1 + 2*numOperatorsRegisterBefore;
+        uint256[] memory quorumBitmaps = new uint256[](numOperators);
+
+        // register
+        for (uint i = 0; i < numOperatorsRegisterBefore; i++) {
+            (quorumBitmaps[i],) = _registerOperatorRandomValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), pseudoRandomNumber + i);
+            
+            cumulativeBlockNumber += 1;
+            cheats.roll(cumulativeBlockNumber);
+        }
+
+        // register the operator to be deregistered
+        quorumBitmaps[numOperatorsRegisterBefore] = quorumBitmap;
+        address operatorToDeregister = _incrementAddress(defaultOperator, numOperatorsRegisterBefore);
+        bytes32 operatorIdToDeregister = _incrementBytes32(defaultOperatorId, numOperatorsRegisterBefore);
+        uint96[] memory paddedStakesForQuorum = _registerOperatorValid(operatorToDeregister, operatorIdToDeregister, quorumBitmap, stakesForQuorum);
+
+        // register the rest of the operators
+        for (uint i = numOperatorsRegisterBefore + 1; i < 2*numOperatorsRegisterBefore; i++) {
+            cumulativeBlockNumber += 1;
+            cheats.roll(cumulativeBlockNumber);
+
+            (quorumBitmaps[i],) = _registerOperatorRandomValid(_incrementAddress(defaultOperator, i), _incrementBytes32(defaultOperatorId, i), pseudoRandomNumber + i);
+        }
+
+        {
+            bool shouldPassBlockBeforeDeregistration  = uint256(keccak256(abi.encodePacked(pseudoRandomNumber, "shouldPassBlockBeforeDeregistration"))) & 1 == 1;
+            if (shouldPassBlockBeforeDeregistration) {
+                cumulativeBlockNumber += 1;
+                cheats.roll(cumulativeBlockNumber);
+            }
+        }
+
+        // deregister the operator from a subset of the quorums
+        uint256 deregistrationQuroumBitmap = quorumBitmap & deregistrationQuorumsFlag;
+        _deregisterOperatorValid(operatorIdToDeregister, quorumBitmap);
+
+        // for each bit in each quorumBitmap, increment the number of operators in that quorum
+        uint32[] memory numOperatorsInQuorum = new uint32[](192);
+        for (uint256 i = 0; i < quorumBitmaps.length; i++) {
+            for (uint256 j = 0; j < 192; j++) {
+                if (quorumBitmaps[i] >> j & 1 == 1) {
+                    numOperatorsInQuorum[j]++;
+                }
+            }
+        }
+
+        uint8 quorumNumberIndex = 0;
+        for (uint8 i = 0; i < 192; i++) {
+            if (deregistrationQuroumBitmap >> i & 1 == 1) {
+                // check that the operator has 2 stake updates in the quorum numbers they registered for
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 2);
+                // make sure that the last stake update is as expected
+                IStakeRegistry.OperatorStakeUpdate memory lastStakeUpdate =
+                    stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(i, operatorIdToDeregister, 1);
+                assertEq(lastStakeUpdate.stake, 0);
+                assertEq(lastStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+                assertEq(lastStakeUpdate.nextUpdateBlockNumber, 0);
+
+                // make the analogous check for total stake history
+                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i] + 1);
+                // make sure that the last stake update is as expected
+                IStakeRegistry.OperatorStakeUpdate memory lastTotalStakeUpdate 
+                    = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i]);
+                assertEq(lastTotalStakeUpdate.stake, 
+                    stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i] - 1).stake // the previous total stake
+                        - paddedStakesForQuorum[quorumNumberIndex] // minus the stake that was deregistered
+                );
+                assertEq(lastTotalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
+                assertEq(lastTotalStakeUpdate.nextUpdateBlockNumber, 0);
+                quorumNumberIndex++;
+            } else if (quorumBitmap >> i & 1 == 1) {
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 1);
+                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i]);
+                quorumNumberIndex++;
+            } else {
+                // check that the operator has 0 stake updates in the quorum numbers they did not register for
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 0);
+            }
         }
     }
     
@@ -397,6 +487,24 @@ contract StakeRegistryUnitTests is Test {
         }
     }
 
+    // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
+    function _registerOperatorRandomValid(
+        address operator,
+        bytes32 operatorId,
+        uint256 psuedoRandomNumber
+    ) internal returns(uint256, uint96[] memory){
+        // generate uint256 quorumBitmap from psuedoRandomNumber
+        uint256 quorumBitmap = uint256(keccak256(abi.encodePacked(psuedoRandomNumber, "quorumBitmap")));
+        // generate uint80[] stakesForQuorum from psuedoRandomNumber
+        uint80[] memory stakesForQuorum = new uint80[](BitmapUtils.countNumOnes(quorumBitmap));
+        for(uint i = 0; i < stakesForQuorum.length; i++) {
+            stakesForQuorum[i] = uint80(uint256(keccak256(abi.encodePacked(psuedoRandomNumber, i, "stakesForQuorum"))));
+        }
+
+        return (quorumBitmap, _registerOperatorValid(operator, operatorId, quorumBitmap, stakesForQuorum));
+    }
+
+    // utility function for registering an operator
     function _registerOperatorValid(
         address operator,
         bytes32 operatorId,
@@ -430,6 +538,20 @@ contract StakeRegistryUnitTests is Test {
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
 
         return paddedStakesForQuorum;
+    }
+
+    // utility function for deregistering an operator
+    function _deregisterOperatorValid(
+        bytes32 operatorId,
+        uint256 quorumBitmap
+    ) internal {
+        quorumBitmap = quorumBitmap & type(uint192).max;
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        // deregister operator
+        cheats.prank(registryCoordinator);
+        stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
