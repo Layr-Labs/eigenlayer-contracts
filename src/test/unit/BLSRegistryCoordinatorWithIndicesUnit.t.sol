@@ -311,10 +311,30 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
-        uint256 gasBefore = gasleft();
+        // uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
-        uint256 gasAfter = gasleft();
-        emit log_named_uint("gasUsed", gasBefore - gasAfter);
+        // uint256 gasAfter = gasleft();
+        // emit log_named_uint("gasUsed", gasBefore - gasAfter);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {

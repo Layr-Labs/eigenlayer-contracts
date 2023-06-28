@@ -83,11 +83,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         return _quorumOperatorSetParams[quorumNumber];
     }
 
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return _operators[operator].fromTaskNumber;
-    }
-
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory) {
         return _operators[operator];
@@ -132,12 +127,22 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         return quorumBitmapUpdate.quorumBitmap;
     }
 
+    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {
+        return _operatorIdToQuorumBitmapHistory[operatorId][index];
+    }
+
     /// @notice Returns the current quorum bitmap for the given `operatorId`
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
         if(_operatorIdToQuorumBitmapHistory[operatorId].length == 0) {
             revert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: no quorum bitmap history for operatorId");
         }
         return _operatorIdToQuorumBitmapHistory[operatorId][_operatorIdToQuorumBitmapHistory[operatorId].length - 1].quorumBitmap;
+    }
+
+    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256) {
+        return _operatorIdToQuorumBitmapHistory[operatorId].length;
     }
 
     /// @notice Returns the number of registries
@@ -310,7 +315,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // set the operator struct
         _operators[operator] = Operator({
             operatorId: operatorId,
-            fromTaskNumber: serviceManager.taskNumber(),
             status: OperatorStatus.REGISTERED
         });
 
