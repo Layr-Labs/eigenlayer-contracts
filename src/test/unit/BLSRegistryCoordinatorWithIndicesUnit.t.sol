@@ -83,17 +83,15 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         uint96 stake
     );
 
-    // Emitted when a new operator pubkey is registered
-    event PubkeyAdded(
+    // Emitted when a new operator pubkey is registered for a set of quorums
+    event PubkeyAddedToQuorums(
         address operator,
-        BN254.G1Point pubkey,
         bytes quorumNumbers
     );
 
-    // Emitted when an operator pubkey is deregistered
-    event PubkeyRemoved(
-        address operator,
-        BN254.G1Point pubkey,
+    // Emitted when an operator pubkey is removed from a set of quorums
+    event PubkeyRemovedFromQuorums(
+        address operator, 
         bytes quorumNumbers
     );
 
@@ -305,7 +303,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
 
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
+        emit PubkeyAddedToQuorums(defaultOperator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -347,7 +345,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
 
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
+        emit PubkeyAddedToQuorums(defaultOperator, quorumNumbers);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -363,45 +361,6 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
         emit log_named_uint("numQuorums", quorumNumbers.length);
-
-        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
-        assertEq(
-            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
-            keccak256(abi.encode(IRegistryCoordinator.Operator({
-                operatorId: defaultOperatorId,
-                status: IRegistryCoordinator.OperatorStatus.REGISTERED
-            })))
-        );
-        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
-        assertEq(
-            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
-            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
-                quorumBitmap: uint192(quorumBitmap),
-                updateBlockNumber: uint32(block.number),
-                nextUpdateBlockNumber: 0
-            })))
-        );
-    }
-
-    function testRegisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-
-        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
-
-        cheats.prank(defaultOperator);
-        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
-        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
-        emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
-        cheats.expectEmit(true, true, true, true, address(indexRegistry));
-        emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
-        uint256 gasBefore = gasleft();
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
-        uint256 gasAfter = gasleft();
-        emit log_named_uint("gasUsed", gasBefore - gasAfter);
-
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
         assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
         assertEq(
