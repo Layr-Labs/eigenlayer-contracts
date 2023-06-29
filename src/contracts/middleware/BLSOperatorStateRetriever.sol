@@ -87,7 +87,7 @@ contract BLSOperatorStateRetriever {
      *          3) the indices of the stakes of each of the nonsigners in each of the quorums they are a 
      *             part of (for each nonsigner, an array of length the number of quorums they a part of 
      *             that are also part of the provided quorumNumbers) at the given blocknumber
-     *          4) the indices of the quourm apks for each of the provided quorums at the given blocknumber
+     *          4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
      * @param referenceBlockNumber is the block number to get the indices for
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param nonSignerOperatorIds are the ids of the nonsigning operators
