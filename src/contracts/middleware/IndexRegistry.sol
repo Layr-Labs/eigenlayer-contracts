@@ -136,7 +136,7 @@ contract IndexRegistry is IIndexRegistry {
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
     function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
-        bytes32[] memory quorumOperatorList = new bytes32[](_totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index);
+        bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
         for (uint i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
@@ -215,7 +215,7 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     /// @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`
-    function _getTotalOperatorsForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (uint32){
+    function _getTotalOperatorsForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) internal view returns (uint32){
         // if there are no entries in the total operator history, return 0
         if (_totalOperatorsHistory[quorumNumber].length == 0) {
             return 0;
