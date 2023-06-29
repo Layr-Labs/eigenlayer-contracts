@@ -37,7 +37,7 @@ contract BLSOperatorStateRetriever {
 
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
-     * @param operatorId the id of the operator calling the function
+     * @param operatorId the id of the operator to fetch the quorums lists 
      * @param blockNumber is the block number to get the operator state for
      * @return 1) the quorumBitmap of the operator at the given blockNumber
      *         2) 2d array of operators. For each quorum the provided operator is a part of, a ordered list of operators.
