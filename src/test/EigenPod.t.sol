@@ -439,10 +439,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
         setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
         _proveOverCommittedStake(newPod);
-        
+
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy());
 
-        require(beaconChainETHShares == 0, "strategyManager shares not updated correctly");
+        require(beaconChainETHShares == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "strategyManager shares not updated correctly");
     }
 
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
@@ -567,10 +568,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
 
-        uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
-        assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == newPod.REQUIRED_BALANCE_WEI(), "BeaconChainETHShares not updated");
+
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
+        uint256 shareDiff = beaconChainETHBefore - _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI;
+ 
+
+        assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(newPod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.OVERCOMMITTED, "validator status not set correctly");
     }
 
@@ -1071,6 +1076,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             );
             return proofs;
         }
+    }
+
+    function _getEffectiveRestakedBalanceGwei(uint64 amountGwei) internal returns (uint64){
+        //calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET
+        uint64 effectiveBalance = uint64((amountGwei - 25e5) / GWEI_TO_WEI * GWEI_TO_WEI);
+        return uint64(MathUpgradeable.min(32e9, effectiveBalance));
     }
 
  }

@@ -12,6 +12,8 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -29,7 +31,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    Test
 {
     using SafeERC20 for IERC20;
 
@@ -189,7 +192,7 @@ contract StrategyManager is
         if (amount != 0) {
             // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
             uint256 userShares = stakerStrategyShares[podOwner][beaconChainETHStrategy];
-            _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, userShares, amount);
+            _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, amount, userShares);
         }
     }
 

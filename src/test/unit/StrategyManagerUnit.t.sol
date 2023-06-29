@@ -252,7 +252,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
-        require(sharesAfter == sharesBefore - amount_2, "sharesAfter != sharesBefore - amount");
+        require(sharesAfter == amount_2, "sharesAfter != sharesBefore - amount");
     }
 
     function testRecordOvercommittedBeaconChainETHFailsWhenNotCalledByEigenPodManager(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
