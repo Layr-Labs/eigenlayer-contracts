@@ -378,6 +378,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
         uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
         uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        bytes32 validatorPubkeyHash = validatorFields[0];
 
         cheats.deal(address(newPod), stakeAmount);    
 
@@ -385,7 +386,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit PartialWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
-        require(newPod.provenPartialWithdrawal(validatorIndex, slot), "provenPartialWithdrawal should be true");
+        require(newPod.provenPartialWithdrawal(validatorPubkeyHash, slot), "provenPartialWithdrawal should be true");
         withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
             "pod delayed withdrawal balance hasn't been updated correctly");
@@ -519,8 +520,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //set slashed status to false, and balance to 0
         proofs.balanceRoot = bytes32(0);
         validatorFields[3] = bytes32(0);
-        cheats.expectRevert(bytes("EigenPod.verifyOvercommittedStake: Validator must be slashed to be overcommitted"));
-        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validator must be slashed to be overcommitted"));
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
 
     }
 
@@ -540,11 +541,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        uint40 validatorIndex = uint40(getValidatorIndex());
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
+
 
         uint256 beaconChainETHAfter = getBeaconChainETHShares(pod.podOwner());
         assertTrue(beaconChainETHAfter - beaconChainETHBefore == pod.REQUIRED_BALANCE_WEI());
-        assertTrue(pod.validatorStatus(validatorIndex) == IEigenPod.VALIDATOR_STATUS.ACTIVE);
+        assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
 
     // // 5. Prove overcommitted balance
@@ -566,9 +568,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _proveOverCommittedStake(newPod);
 
         uint40 validatorIndex = uint40(getValidatorIndex());
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
         assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == newPod.REQUIRED_BALANCE_WEI(), "BeaconChainETHShares not updated");
-        assertTrue(newPod.validatorStatus(validatorIndex) == IEigenPod.VALIDATOR_STATUS.OVERCOMMITTED, "validator status not set correctly");
+        assertTrue(newPod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.OVERCOMMITTED, "validator status not set correctly");
     }
 
     function testDeployingEigenPodRevertsWhenPaused() external {
@@ -684,7 +687,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, 0);    
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, 0);    
     }
 
 
@@ -696,7 +699,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit ValidatorOvercommitted(validatorIndex);
-        newPod.verifyOvercommittedStake(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {

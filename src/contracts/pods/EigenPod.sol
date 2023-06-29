@@ -62,7 +62,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // TODO: consider making this settable by owner
     uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI = 32e9;
 
-    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET;
+    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET = 25e5;
 
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -261,11 +261,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_OVERCOMMITTED) {
        // ensure that the blockNumber being proven against is not "too stale", i.e. that the validator was *recently* overcommitted.
         require(oracleBlockNumber + VERIFY_OVERCOMMITTED_WINDOW_BLOCKS >= block.number,
-            "EigenPod.verifyOvercommittedStake: specified blockNumber is too far in past");
+            "EigenPod.verifyBalanceUpdate: specified blockNumber is too far in past");
 
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
-        require(validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyOvercommittedStake: Validator not active");
+        require(validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
 
         // deserialize the balance field from the balanceRoot
         uint64 validatorCurrentBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
@@ -280,7 +280,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         if (validatorCurrentBalanceGwei == 0) {
             uint64 slashedStatus = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX]);
-            require(slashedStatus == 1, "EigenPod.verifyOvercommittedStake: Validator must be slashed to be overcommitted");
+            require(slashedStatus == 1, "EigenPod.verifyBalanceUpdate: Validator must be slashed to be overcommitted");
             //Verify the validator fields, which contain the validator's slashed status
             BeaconChainProofs.verifyValidatorFields(
                 validatorIndex,
@@ -364,28 +364,32 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyOvercommittedStake: Validator never proven to have withdrawal credentials pointed to this contract");
 
-        // fetch the beacon state root for the specified block
-        bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
+        {
+            // fetch the beacon state root for the specified block
+            bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
 
-        // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawalProofs(beaconStateRoot, withdrawalProofs, withdrawalFields);
-        // Verifying the validator fields, specifically the withdrawable epoch
-        BeaconChainProofs.verifyValidatorFields(validatorIndex, beaconStateRoot, validatorFieldsProof, validatorFields);
+            // Verifying the withdrawal as well as the slot
+            BeaconChainProofs.verifyWithdrawalProofs(beaconStateRoot, withdrawalProofs, withdrawalFields);
+            // Verifying the validator fields, specifically the withdrawable epoch
+            BeaconChainProofs.verifyValidatorFields(validatorIndex, beaconStateRoot, validatorFieldsProof, validatorFields);
+        }
 
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+        {
+            uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
 
-        //check if the withdrawal occured after mostRecentWithdrawalBlockNumber
-        uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
+            //check if the withdrawal occured after mostRecentWithdrawalBlockNumber
+            uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
 
-        /**
-         * if the validator's withdrawable epoch is less than or equal to the slot's epoch, then the validator has fully withdrawn because
-         * a full withdrawal is only processable after the withdrawable epoch has passed.
-         */
-        // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
-        if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-            _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, validatorPubkeyHashToInfo[validatorPubkeyHash].status);
-        } else {
-            _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
+            /**
+            * if the validator's withdrawable epoch is less than or equal to the slot's epoch, then the validator has fully withdrawn because
+            * a full withdrawal is only processable after the withdrawable epoch has passed.
+            */
+            // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+            if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
+                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, validatorPubkeyHashToInfo[validatorPubkeyHash].status);
+            } else {
+                _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
+            }
         }
     }
 
