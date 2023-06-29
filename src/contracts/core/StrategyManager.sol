@@ -12,8 +12,6 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -31,8 +29,7 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage,
-    Test
+    StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
 
