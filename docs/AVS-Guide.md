@@ -4,7 +4,7 @@
 This document aims to describe and summarize how actively validated services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the APIs for: 
 - enabling operators to opt-in to the AVS,
 - enabling operators to opt-out (withdraw stake) from the AVS,
-- enabling operators to update their amount staked into the AVS after they are delegated more on eigenlayer, and
+- enabling operators to continuously update their commitments to middlewares, and
 - enabling AVS to freeze operators for the purpose of slashing (the corresponding unfreeze actions are determined by the veto committee).
 
 We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
@@ -27,7 +27,7 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
     - Posting a state root of another blockchain for a bridge service
 
 2. *Stake is "At Stake" on Tasks for a Finite Duration*: <br/>
-    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that a predefined duration is specified in the AVS contract for each task. As a guideline, the EigenLabs team believes that the duration of a task should be aligned with the longest reasonable duration that would be acceptable for an operator to keep funds “at stake”. An AVS builder should recognize that extending the duration of a task may impose significant negative externalities on the stakers of EigenLayer, and may disincentivize operators from opting-in to serving their application (so that they can attract more delegated stakes).
+    It is assumed that every task (eventually) resolves. Each operator places their stake in EigenLayer “at stake” on the tasks that they perform. In order to “release” the stake (e.g. so the operator can withdraw their funds), these tasks need to eventually resolve. It is RECOMMENDED, but not required that a predefined duration is specified in the AVS contract for each task. As a guideline, the EigenLabs team believes that the duration of a task should be aligned with the longest reasonable duration that would be acceptable for an operator to keep funds “at stake”. An AVS builder should recognize that extending the duration of a task may impose significant negative externalities on the stakers of EigenLayer, and may disincentivize operators from opting-in to serving their application (so that they can attract more delegated stake).
 
 3. *Services Slash Only Objectively Attributable Behavior*: <br/>
     EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. An AVS SHOULD slash in EigenLayer only for such provable and attributable behavior. It is expected that operators will be very hesitant to opt-in to services that slash for other types of behavior, and other services may even choose to exclude operators who have opted-in to serving one or more AVSs with such “subjective slashing conditions”, as these slashing conditions present a significant challenge for risk modeling, and may be perceived as more dangerous in general. Some examples of on-chain-checkable, objectively attributable behavior: 
