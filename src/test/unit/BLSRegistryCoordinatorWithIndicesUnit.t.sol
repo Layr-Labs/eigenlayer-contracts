@@ -69,7 +69,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
-
+    uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
 
@@ -297,10 +297,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey);
     }
 
-    function testRegisterOperatorWithCoordinator_Valid() public {
+    function testRegisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        uint96 defaultStake = 1 ether;
 
         stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
 
@@ -311,10 +310,96 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
-        // uint256 gasBefore = gasleft();
+        uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
-        // uint256 gasAfter = gasleft();
-        // emit log_named_uint("gasUsed", gasBefore - gasAfter);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+
+    function testRegisterOperatorWithCoordinatorForFuzzedQuorums_Valid(uint256 quorumBitmap) public {
+        quorumBitmap = quorumBitmap & type(uint192).max;
+        cheats.assume(quorumBitmap != 0);
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+        }
+
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[i]), defaultStake);
+        }    
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(indexRegistry));
+            emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
+        }    
+        uint256 gasBefore = gasleft();
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
+        emit log_named_uint("numQuorums", quorumNumbers.length);
+
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(block.number),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+
+    function testRegisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyAdded(defaultOperator, defaultPubKey, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+        uint256 gasBefore = gasleft();
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
