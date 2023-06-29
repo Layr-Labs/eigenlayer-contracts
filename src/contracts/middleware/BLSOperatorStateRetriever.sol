@@ -8,7 +8,10 @@ import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
-
+/**
+ * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
+ * @author Layr Labs Inc.
+ */
 contract BLSOperatorStateRetriever {
     struct Operator {
         bytes32 operatorId;
@@ -40,7 +43,7 @@ contract BLSOperatorStateRetriever {
      * @param operatorId the id of the operator to fetch the quorums lists 
      * @param blockNumber is the block number to get the operator state for
      * @return 1) the quorumBitmap of the operator at the given blockNumber
-     *         2) 2d array of operators. For each quorum the provided operator is a part of, a ordered list of operators.
+     *         2) 2d array of Operator tructs. For each quorum the provided operator is a part of, an ordered list of operators.
      */
     function getOperatorState(bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
         bytes32[] memory operatorIds = new bytes32[](1);
@@ -57,7 +60,7 @@ contract BLSOperatorStateRetriever {
      * @notice returns the ordered list of operators (id and stake) for each quorum
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param blockNumber is the block number to get the operator state for
-     * @return 2d array of operators. For each quorum, a ordered list of operators
+     * @return 2d array of operators. For each quorum, an ordered list of operators
      */
     function getOperatorState(bytes memory quorumNumbers, uint32 blockNumber) public view returns(Operator[][] memory) {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
