@@ -234,8 +234,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
                 operatorKickParams[i].operator, 
                 quorumNumbers[i:i+1], 
                 operatorKickParams[i].pubkey, 
-                operatorKickParams[i].operatorIdsToSwap, 
-                operatorKickParams[i].globalOperatorListIndex
+                operatorKickParams[i].operatorIdsToSwap
             );
         }
     }
@@ -244,15 +243,14 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
-     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap, 
-     * and the operator's index in the global operator list
+     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
         // get the operator's deregistration information
-        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
-            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
+        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
+            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
         // call internal function to deregister the operator
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
     /**
@@ -261,10 +259,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param pubkey is the BLS public key of the operator
      * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each 
      * quorum when removing the operator from the quorum's ordered list
-     * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) external {
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
     // INTERNAL FUNCTIONS
@@ -315,7 +312,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         serviceManager.recordFirstStakeUpdate(operator, 0);
     }
 
-    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
+    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) internal {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operator is not registered");
 
         // get the operatorId of the operator
@@ -342,7 +339,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, completeDeregistration, quorumNumbers, operatorIdsToSwap, globalOperatorListIndex);
+        indexRegistry.deregisterOperator(operatorId, quorumNumbers, operatorIdsToSwap);
 
         // set the toBlockNumber of the operator's quorum bitmap update
         _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);

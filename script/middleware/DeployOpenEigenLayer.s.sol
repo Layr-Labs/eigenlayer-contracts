@@ -125,7 +125,7 @@ contract DeployOpenEigenLayer is Script, Test {
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(delegation))),
+            TransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
@@ -135,7 +135,7 @@ contract DeployOpenEigenLayer is Script, Test {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))),
+            TransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
@@ -147,7 +147,7 @@ contract DeployOpenEigenLayer is Script, Test {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(slasher))),
+            TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
@@ -157,7 +157,7 @@ contract DeployOpenEigenLayer is Script, Test {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
@@ -169,7 +169,7 @@ contract DeployOpenEigenLayer is Script, Test {
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
+            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
             abi.encodeWithSelector(DelayedWithdrawalRouter.initialize.selector,
                 executorMultisig,

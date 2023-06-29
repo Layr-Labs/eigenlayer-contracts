@@ -58,7 +58,6 @@ contract IndexRegistry is IIndexRegistry {
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quorumNumbers`
      * they will be swapped with the operator's current index when the operator is removed from the list
@@ -229,7 +228,7 @@ contract IndexRegistry is IIndexRegistry {
 
         // loop backwards through the total operator history to find the total number of operators at the given block number
         for (uint i = _totalOperatorsHistory[quorumNumber].length - 2; i >= 0; i--) {
-            totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][i];
+            OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][i];
             if(totalOperatorUpdate.toBlockNumber <= blockNumber){
                 return totalOperatorUpdate.index;
             }
@@ -239,7 +238,7 @@ contract IndexRegistry is IIndexRegistry {
     
 
     /// @notice Returns the index of the `operatorId` at the given `blockNumber` fro the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
-    function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal returns(uint32) {
+    function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
         OperatorIndexUpdate memory operatorIndexUpdate;
         // set to max uint32 value to indicate that the operator is not part of the quorum at all, until this is updated in the loop
         operatorIndexUpdate.toBlockNumber = type(uint32).max; 

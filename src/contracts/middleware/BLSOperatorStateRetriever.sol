@@ -38,24 +38,26 @@ contract BLSOperatorStateRetriever {
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
      * @param operatorId the id of the operator calling the function
+     * @param blockNumber is the block number to get the operator state for
      * @return 2d array of operators. For each quorum the provided operaor is a part of, a ordered list of operators
      */
-    function getOperatorState(bytes32 operatorId) external view returns (Operator[][] memory) {
+    function getOperatorState(bytes32 operatorId, uint32 blockNumber) external view returns (Operator[][] memory) {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorId));
 
-        return getOperatorState(quorumNumbers);
+        return getOperatorState(quorumNumbers, blockNumber);
     }
 
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
      * @param quorumNumbers are the ids of the quorums to get the operator state for
+     * @param blockNumber is the block number to get the operator state for
      * @return 2d array of operators. For each quorum, a ordered list of operators
      */
-    function getOperatorState(bytes memory quorumNumbers) public view returns(Operator[][] memory) {
+    function getOperatorState(bytes memory quorumNumbers, uint32 blockNumber) public view returns(Operator[][] memory) {
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
-            bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorum(quorumNumber);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorumAtBlockNumber(quorumNumber, blockNumber);
             operators[i] = new Operator[](operatorIds.length);
             for (uint256 j = 0; j < operatorIds.length; j++) {
                 bytes32 operatorId = bytes32(operatorIds[j]);
