@@ -336,7 +336,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         bool completeDeregistration = quorumBitmapBeforeUpdate == quorumsToRemoveBitmap;
         
         // deregister the operator from the BLSPubkeyRegistry
-        blsPubkeyRegistry.deregisterOperator(operator, completeDeregistration, quorumNumbers, pubkey);
+        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
 
         // deregister the operator from the StakeRegistry
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);

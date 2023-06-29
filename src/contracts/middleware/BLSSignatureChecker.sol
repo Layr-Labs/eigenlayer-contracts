@@ -89,7 +89,7 @@ abstract contract BLSSignatureChecker {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
-                nonSignerStakesAndSignature.quorumApks[i].hashG1Point() == 
+                bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
                     blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
