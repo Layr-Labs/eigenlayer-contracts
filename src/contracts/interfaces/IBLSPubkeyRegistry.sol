@@ -24,8 +24,8 @@ interface IBLSPubkeyRegistry is IRegistry {
 
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
-        // keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
-        bytes32 apkHash;
+        // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
+        bytes24 apkHash;
         // block number at which the update occurred
         uint32 updateBlockNumber;
         // block number at which the next update occurred
@@ -72,11 +72,11 @@ interface IBLSPubkeyRegistry is IRegistry {
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
 
     /**
-     * @notice get hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
+     * @notice get 24 byte hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.
      * @param quorumNumber is the quorum whose ApkHash is being retrieved
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32);
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24);
 }
