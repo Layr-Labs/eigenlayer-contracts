@@ -42,11 +42,9 @@ interface IIndexRegistry is IRegistry {
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quorumNumbers`
      * they will be swapped with the operator's current index when the operator is removed from the list
-     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -55,7 +53,7 @@ interface IIndexRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external;
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap) external;
 
     /// @notice Returns the _operatorIdToIndexHistory entry for the specified `operatorId` and `quorumNumber` at the specified `index`
     function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory);
@@ -89,9 +87,6 @@ interface IIndexRegistry is IRegistry {
     /// @notice Returns the current number of operators of this service.
     function totalOperators() external view returns (uint32);
 
-    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber`.
-    function getOperatorListForQuorum(uint8 quorumNumber) external view returns (bytes32[] memory);
-
-    /// @notice Returns an index of the given `operatorId` in the global operator list
-    function getIndexOfOperatorIdInGlobalOperatorList(bytes32 operatorId) external view returns (uint32);
+    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
+    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
 }

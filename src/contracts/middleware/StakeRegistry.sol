@@ -91,13 +91,7 @@ contract StakeRegistry is StakeRegistryStorage {
         view
         returns (uint32)
     {
-        uint32 length = uint32(operatorIdToStakeHistory[operatorId][quorumNumber].length);
-        for (uint32 i = 0; i < length; i++) {
-            if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
-                return length - i - 1;
-            }
-        }
-        revert("StakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: no stake update found for operatorId and quorumNumber");
+        return _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
     }
 
 
@@ -179,6 +173,15 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint96)
+    {
+        return operatorIdToStakeHistory[operatorId][quorumNumber][_getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)].stake;
+    }
     /**
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
      * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
@@ -289,6 +292,21 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     // INTERNAL FUNCTIONS
+
+    function _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
+        uint32 length = uint32(operatorIdToStakeHistory[operatorId][quorumNumber].length);
+        for (uint32 i = 0; i < length; i++) {
+            if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
+                require(
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber != 0 ||
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber > blockNumber,
+                    "StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: operatorId has no stake update at blockNumber"
+                );
+                return length - i - 1;
+            }
+        }
+        revert("StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: no stake update found for operatorId and quorumNumber at block number");
+    }
 
     function _setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) internal {
         minimumStakeForQuorum[quorumNumber] = minimumStake;
