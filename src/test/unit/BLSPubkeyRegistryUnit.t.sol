@@ -196,18 +196,18 @@ contract BLSPubkeyRegistryUnitTests is Test {
         cheats.assume(blockGap < 100);
 
         BN254.G1Point memory quorumApk = BN254.G1Point(0,0);
-        bytes32 quorumApkHash;
+        bytes24 quorumApkHash;
         for (uint256 i = 0; i < numRegistrants; i++) {
             bytes32 pk = _getRandomPk(i);
             testRegisterOperatorBLSPubkey(defaultOperator, pk);
             quorumApk = quorumApk.plus(BN254.hashToG1(pk));
-            quorumApkHash = BN254.hashG1Point(quorumApk);
+            quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
             require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i), "incorrect quorum aok updates");
             cheats.roll(block.number + 100);
             if(_generateRandomNumber(i) % 2 == 0){
                _deregisterOperator(pk);
                quorumApk = quorumApk.plus(BN254.hashToG1(pk).negate());
-               quorumApkHash = BN254.hashG1Point(quorumApk);
+               quorumApkHash = bytes24(BN254.hashG1Point(quorumApk));
                 require(quorumApkHash == blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(defaultQuorumNumber, uint32(block.number + blockGap) , i + 1), "incorrect quorum aok updates");
                 cheats.roll(block.number + 100);
                 i++;

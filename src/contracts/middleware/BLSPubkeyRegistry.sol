@@ -108,7 +108,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24){
         ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
         _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;
@@ -132,7 +132,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             quorumApk[quorumNumber] = apkAfterUpdate;
             //create new ApkUpdate to add to the mapping
             ApkUpdate memory latestApkUpdate;
-            latestApkUpdate.apkHash = BN254.hashG1Point(apkAfterUpdate);
+            latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
             latestApkUpdate.updateBlockNumber = uint32(block.number);
             quorumApkUpdates[quorumNumber].push(latestApkUpdate);
 
