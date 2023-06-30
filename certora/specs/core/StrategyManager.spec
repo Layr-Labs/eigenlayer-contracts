@@ -104,13 +104,13 @@ definition methodCanIncreaseShares(method f) returns bool =
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerStrategyShares[staker][strategy]`) should only decrease when
-* `queueWithdrawal`, `slashShares`, or `recordOvercommittedBeaconChainETH` has been called
+* `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
 */
 definition methodCanDecreaseShares(method f) returns bool =
     f.selector == queueWithdrawal(uint256[],address[],uint256[],address,bool).selector
     || f.selector == slashShares(address,address,address[],address[],uint256[],uint256[]).selector
     || f.selector == slashSharesSinglet(address,address,address,address,uint256,uint256).selector
-    || f.selector == recordOvercommittedBeaconChainETH(address,uint256,uint256).selector;
+    || f.selector == recordBeaconChainETHBalanceUpdate(address,uint256,uint256, uint256).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
     uint256 sharesBefore = stakerStrategyShares(staker, strategy);
