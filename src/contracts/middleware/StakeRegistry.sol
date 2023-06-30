@@ -298,7 +298,7 @@ contract StakeRegistry is StakeRegistryStorage {
         for (uint32 i = 0; i < length; i++) {
             if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
                 require(
-                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber != 0 ||
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber == 0 ||
                     operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber > blockNumber,
                     "StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: operatorId has no stake update at blockNumber"
                 );
