@@ -107,7 +107,7 @@ contract IndexRegistry is IIndexRegistry {
         require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
        
         // if there is an index update before the "index'th" update, the blocknumber must be after the previous entry's toBlockNumber
-        if(index != 0){
+        if (index != 0) {
             OperatorIndexUpdate memory previousOperatorIndex = _operatorIdToIndexHistory[operatorId][quorumNumber][index - 1];
             require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
         }
@@ -141,7 +141,7 @@ contract IndexRegistry is IIndexRegistry {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
             // if the operator was not in the quorum at the given block number, skip it
-            if(index == type(uint32).max)
+            if (index == type(uint32).max)
                 continue;
             quorumOperatorList[index] = operatorId;
         }
@@ -206,7 +206,7 @@ contract IndexRegistry is IIndexRegistry {
         require(_totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
-        if(operatorId != operatorIdToSwap){
+        if (operatorId != operatorIdToSwap) {
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexOfOperatorToRemove);
         } 
@@ -229,7 +229,7 @@ contract IndexRegistry is IIndexRegistry {
         // loop backwards through the total operator history to find the total number of operators at the given block number
         for (uint i = _totalOperatorsHistory[quorumNumber].length - 2; i >= 0; i--) {
             OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][i];
-            if(totalOperatorUpdate.toBlockNumber <= blockNumber){
+            if (totalOperatorUpdate.toBlockNumber <= blockNumber) {
                 return totalOperatorUpdate.index;
             }
         }        
@@ -246,7 +246,7 @@ contract IndexRegistry is IIndexRegistry {
         // this is less efficient than looping forwards, but is simpler logic and only called in view functions that aren't mined onchain
         for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
             operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][i];
-            if(operatorIndexUpdate.toBlockNumber >= blockNumber){
+            if (operatorIndexUpdate.toBlockNumber >= blockNumber) {
                 return operatorIndexUpdate.index;
             }
         }

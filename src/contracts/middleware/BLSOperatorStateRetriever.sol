@@ -26,7 +26,7 @@ contract BLSOperatorStateRetriever {
     }
 
     /**
-     * @notice returns the ordered list of operators (id and stake) for each quorum
+     * @notice This function is intended to by AVS nodes every time there is new triggered tasks
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param operatorId the id of the operator to fetch the quorums lists 
      * @param blockNumber is the block number to get the operator state for

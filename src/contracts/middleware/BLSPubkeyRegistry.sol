@@ -97,8 +97,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
-            for (uint32 j = 0; j < length; j++) {
-                if(quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber){
+            for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
+                if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = quorumApkUpdatesLength - j - 1;
                     break;
                 }
