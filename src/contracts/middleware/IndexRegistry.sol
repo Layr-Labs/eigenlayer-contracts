@@ -230,20 +230,20 @@ contract IndexRegistry is IIndexRegistry {
         for (uint i = _totalOperatorsHistory[quorumNumber].length - 2; i >= 0; i--) {
             OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][i];
             if (totalOperatorUpdate.toBlockNumber <= blockNumber) {
-                return totalOperatorUpdate.index;
+                return _totalOperatorsHistory[quorumNumber][i + 1].index;
             }
         }        
-        return 0;
+        return _totalOperatorsHistory[quorumNumber][0].index;
     }
     
 
-    /// @notice Returns the index of the `operatorId` at the given `blockNumber` fro the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
+    /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
     function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
         OperatorIndexUpdate memory operatorIndexUpdate;
         // set to max uint32 value to indicate that the operator is not part of the quorum at all, until this is updated in the loop
         operatorIndexUpdate.toBlockNumber = type(uint32).max; 
         // loop forward through index history to find the index of the operator at the given block number
-        // this is less efficient than looping forwards, but is simpler logic and only called in view functions that aren't mined onchain
+        // this is less efficient than looping backwards, but is simpler logic and only called in view functions that aren't mined onchain
         for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
             operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][i];
             if (operatorIndexUpdate.toBlockNumber >= blockNumber) {
