@@ -265,8 +265,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
-        require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
-
+        {
+            VALIDATOR_STATUS validatorStatus = _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
+            require(validatorStatus == VALIDATOR_STATUS.ACTIVE || validatorStatus == VALIDATOR_STATUS.OVERCOMMITTED, "EigenPod.verifyBalanceUpdate: Validator not active or overcommitted");
+        }
         // deserialize the balance field from the balanceRoot
         uint64 validatorCurrentBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
 

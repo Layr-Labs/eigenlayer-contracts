@@ -570,13 +570,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
 
-
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
-
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 shareDiff = beaconChainETHBefore - _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI;
+        uint256 shareDiff = beaconChainETHBefore - getBeaconChainETHShares(podOwner);
  
+        assertTrue(getBeaconChainETHShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
         assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");
         assertTrue(newPod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.OVERCOMMITTED, "validator status not set correctly");
@@ -588,13 +587,25 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
         uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
+        uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
         // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
         setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
-        
 
+        setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        _proveUnderCommittedStake(newPod);
+
+        uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
+
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
+        uint256 shareDiff = beaconChainETHBefore - getBeaconChainETHShares(podOwner);
+        
+        assertTrue(getBeaconChainETHShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
+        assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");    
     }
 
     function testDeployingEigenPodRevertsWhenPaused() external {
@@ -723,6 +734,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit ValidatorOvercommitted(validatorIndex);
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
+        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.OVERCOMMITTED);
+    }
+
+    function _proveUnderCommittedStake(IEigenPod newPod) internal {
+        validatorFields = getValidatorFields();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        bytes32 newBeaconStateRoot = getBeaconStateRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
+        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit ValidatorRestaked(validatorIndex);
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
+        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
+
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
