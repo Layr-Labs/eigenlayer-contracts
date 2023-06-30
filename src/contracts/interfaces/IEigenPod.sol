@@ -86,6 +86,9 @@ interface IEigenPod {
     /// @notice block number of the most recent withdrawal
     function mostRecentWithdrawalBlockNumber() external view returns (uint64);
 
+    /// @notice Returns the validatorInfo struct for the provided pubkeyHash
+    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
+
 
     ///@notice mapping that tracks proven partial withdrawals
     function provenPartialWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
