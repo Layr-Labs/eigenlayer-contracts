@@ -42,7 +42,7 @@ contract StrategyManagerMock is
     function depositBeaconChainETH(address staker, uint256 amount) external{}
 
 
-    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 currentAmount, uint256 newAmount)
         external{}
 
     function depositIntoStrategyWithSignature(

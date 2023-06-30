@@ -144,11 +144,12 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
-     * @param amount The amount of beacon chain ETH to decrement from the podOwner's shares in the strategyManager.
+     * @param newAmount The new amount of ETH to be credited to the podOwner.
+     * @param currentAmount The current amount of ETH credited to the podOwner.
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, amount);
+     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 currentAmount, uint256 newAmount) external onlyEigenPod(podOwner) {
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentAmount, newAmount);
     }
 
     /**

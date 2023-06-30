@@ -177,20 +177,17 @@ contract StrategyManager is
      * @notice Records an overcommitment event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
      * @param podOwner is the pod owner to be slashed
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
+     * @param currentAmount is the existing amount of beaconchain ETH shares in the strategy,
+     * @param newAmount is the new amount of beaconchain ETH shares in the strategy,
      * @dev Only callable by EigenPodManager.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 currentAmount, uint256 newAmount)
         external
         onlyEigenPodManager
         nonReentrant
     {
         // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
-        if (amount != 0) {
-            // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
-            uint256 userShares = stakerStrategyShares[podOwner][beaconChainETHStrategy];
-            _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, amount, userShares);
-        }
+        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, currentAmount, newAmount);
     }
 
     /**
@@ -899,10 +896,10 @@ contract StrategyManager is
 
     /**
      * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
-        * @param newUserShares The new amount of shares that the user has
         * @param currentUserShares The current amount of shares that the user has
+        * @param newUserShares The new amount of shares that the user has
      */
-    function _updateSharesToReflectBeaconChainETHBalance(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 newUserShares, uint256 currentUserShares) internal {
+    function _updateSharesToReflectBeaconChainETHBalance(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 currentUserShares, uint256 newUserShares) internal {
         if (newUserShares > currentUserShares) {
                 uint256 shareIncrease = newUserShares - currentUserShares;
                 //if new balance is greater than current recorded shares, add the difference

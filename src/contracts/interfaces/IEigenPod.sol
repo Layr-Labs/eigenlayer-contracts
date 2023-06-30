@@ -58,7 +58,7 @@ interface IEigenPod {
     function REQUIRED_BALANCE_WEI() external view returns(uint256);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
-    function restakedExecutionLayerGwei() external view returns(uint64);
+    function withdrawableRestakedExecutionLayerGwei() external view returns(uint64);
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external;

@@ -62,7 +62,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // TODO: consider making this settable by owner
     uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI = 32e9;
 
-    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET = 25e5;
+    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e5;
 
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -76,7 +76,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     // STORAGE VARIABLES
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer), 
-    uint64 public restakedExecutionLayerGwei;
+    uint64 public withdrawableRestakedExecutionLayerGwei;
 
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
@@ -297,15 +297,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             proofs.balanceRoot
         );
 
+        uint64 currentEffectiveRestakedBalanceGwei = validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei;
+
         // calculate the effective (pessimistic) restaked balance
-        uint64 effectiveRestakedBalanceGwei = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
+        uint64 newEffectiveRestakedBalanceGwei = _effectiveRestakedBalanceGwei(validatorCurrentBalanceGwei);
 
         //update the balance
-        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = effectiveRestakedBalanceGwei;
+        validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = newEffectiveRestakedBalanceGwei;
         
 
         //if the new balance is less than the current restaked balance of the pod, then the validator is overcommitted
-        if (effectiveRestakedBalanceGwei < REQUIRED_BALANCE_GWEI) {
+        if (newEffectiveRestakedBalanceGwei < REQUIRED_BALANCE_GWEI) {
             // mark the ETH validator as overcommitted
             validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.OVERCOMMITTED;
             emit ValidatorOvercommitted(validatorIndex);
@@ -318,7 +320,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // update shares in strategy manager
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, effectiveRestakedBalanceGwei * GWEI_TO_WEI);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentEffectiveRestakedBalanceGwei * GWEI_TO_WEI, newEffectiveRestakedBalanceGwei * GWEI_TO_WEI);
     }
 
     /**
@@ -403,6 +405,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) internal {
         uint256 amountToSend;
 
+        uint256 currentValidatorRestakedBalanceWei = validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei * GWEI_TO_WEI;
+
         // if the validator has not previously been proven to be "overcommitted"
         if (status == VALIDATOR_STATUS.ACTIVE) {
             // if the withdrawal amount is greater than the REQUIRED_BALANCE_GWEI (i.e. the amount restaked on EigenLayer, per ETH validator)
@@ -410,12 +414,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 // then the excess is immediately withdrawable
                 amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
                 // and the extra execution layer ETH in the contract is REQUIRED_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
-                restakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
+                withdrawableRestakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
             } else {
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
-                restakedExecutionLayerGwei += withdrawalAmountGwei;
+                withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
+
                 // remove and undelegate 'extra' (i.e. "overcommitted") shares in EigenLayer
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             }
         // if the validator *has* previously been proven to be "overcommitted"
         } else if (status == VALIDATOR_STATUS.OVERCOMMITTED) {
@@ -424,18 +429,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 // then the excess is immediately withdrawable
                 amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
                 // and the extra execution layer ETH in the contract is REQUIRED_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
-                restakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
+                withdrawableRestakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
+
                 /**
-                 * since in `verifyOvercommittedStake` the podOwner's beaconChainETH shares are decremented by `REQUIRED_BALANCE_WEI`, we must reverse the process here,
-                 * in order to allow the podOwner to complete their withdrawal through EigenLayer's normal withdrawal process
+                 * We need to update the share balance for the podOwner in the strategyManager
                  */
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             } else {
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
-                restakedExecutionLayerGwei += withdrawalAmountGwei;
+                withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
                 
                 //update the shares for the withdrawer in the strategy manager
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _effectiveRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
             }
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
@@ -475,8 +480,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         external
         onlyEigenPodManager
     {
-        // reduce the restakedExecutionLayerGwei
-        restakedExecutionLayerGwei -= uint64(amountWei / GWEI_TO_WEI);
+        // reduce the withdrawableRestakedExecutionLayerGwei
+        withdrawableRestakedExecutionLayerGwei -= uint64(amountWei / GWEI_TO_WEI);
 
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
 

@@ -248,7 +248,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint256 sharesBefore = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
 
         cheats.startPrank(address(eigenPodManagerMock));
-        strategyManager.recordBeaconChainETHBalanceUpdate(overcommittedPodOwner, beaconChainETHStrategyIndex, amount_2);
+        strategyManager.recordBeaconChainETHBalanceUpdate(overcommittedPodOwner, beaconChainETHStrategyIndex, amount_1, amount_2);
         cheats.stopPrank();
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
@@ -264,7 +264,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         cheats.expectRevert(bytes("StrategyManager.onlyEigenPodManager: not the eigenPodManager"));
         cheats.startPrank(address(improperCaller));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount, amount);
         cheats.stopPrank();
     }
 
@@ -283,7 +283,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.startPrank(address(reenterer));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount, amount);
         cheats.stopPrank();
     }
 
