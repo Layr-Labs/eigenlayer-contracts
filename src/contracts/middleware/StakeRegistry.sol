@@ -96,10 +96,10 @@ contract StakeRegistry is StakeRegistryStorage {
 
 
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quourmNumbers) external view returns(uint32[] memory) {
-        uint32[] memory indices = new uint32[](quourmNumbers.length);
-        for (uint256 i = 0; i < quourmNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quourmNumbers[i]);
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 length = uint32(_totalStakeHistory[quorumNumber].length);
             for (uint32 j = 0; j < length; j++) {
                 if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {

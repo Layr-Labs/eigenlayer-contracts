@@ -92,10 +92,10 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     }
 
     /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
-    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quourmNumbers, uint256 blockNumber) external view returns(uint32[] memory){
-        uint256[] memory indices = new uint256[](quourmNumbers.length);
-        for (uint i = 0; i < quourmNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quourmNumbers[i]);
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory){
+        uint256[] memory indices = new uint256[](quorumNumbers.length);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 length = uint32(quorumApkUpdates[quorumNumber].length);
             for (uint32 j = 0; j < length; j++) {
                 if(quorumApkUpdates[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber){

@@ -95,7 +95,7 @@ abstract contract BLSSignatureChecker {
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
                     ),
-                "BLSSignatureChecker.checkSignatures: quourmApkIndex does not match quorum apk"
+                "BLSSignatureChecker.checkSignatures: quorumApkIndex does not match quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
         }
