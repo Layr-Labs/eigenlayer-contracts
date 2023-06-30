@@ -77,8 +77,8 @@ contract BLSOperatorStateRetriever {
      * @notice returns 
      *          1) the indices of the quorumBitmaps for each of given operators at the given blocknumber
      *          2) the indices of the total stakes entries for the given quorums at the given blocknumber
-     *          3) the indices of the stakes of each of the nonsigners in each of the quorums they are a 
-     *             part of (for each nonsigner, an array of length the number of quorums they a part of 
+     *          3) the indices of the stakes of each of the nonsigners in each of the quorums they were a 
+     *             part of (for each nonsigner, an array of length the number of quorums they were a part of
      *             that are also part of the provided quorumNumbers) at the given blocknumber
      *          4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
@@ -107,11 +107,11 @@ contract BLSOperatorStateRetriever {
                     referenceBlockNumber, 
                     checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
                 );
-            // the number of quorums the operator is a part of that are also part of the provided quorumNumbers
+            // the number of quorums the operator was a part of that are also part of the provided quorumNumbers
             checkSignaturesIndices.nonSignerStakeIndices[i] = new uint32[](BitmapUtils.countNumOnes(nonSignerQuorumBitmap & quorumBitmap));
 
             for (uint8 j = 0; j < 192; j++) {
-                // if the operator is a part of the quorum and the quorum is a part of the provided quorums
+                // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
                 if (nonSignerQuorumBitmap >> j & (quorumBitmap >> j & 1) == 1) {
                     checkSignaturesIndices.nonSignerStakeIndices[i][j] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
                         nonSignerOperatorIds[i],
