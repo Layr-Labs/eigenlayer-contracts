@@ -25,27 +25,16 @@ contract BLSOperatorStateRetriever {
         uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
     }
 
-    IBLSRegistryCoordinatorWithIndices public registryCoordinator;
-    IStakeRegistry public stakeRegistry;
-    IBLSPubkeyRegistry public blsPubkeyRegistry;
-    IIndexRegistry public indexRegistry;
-
-    constructor(IBLSRegistryCoordinatorWithIndices _registryCoordinator) {
-        registryCoordinator = _registryCoordinator;
-
-        stakeRegistry = _registryCoordinator.stakeRegistry();
-        blsPubkeyRegistry = _registryCoordinator.blsPubkeyRegistry();
-        indexRegistry = _registryCoordinator.indexRegistry();
-    }
-
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param operatorId the id of the operator to fetch the quorums lists 
      * @param blockNumber is the block number to get the operator state for
      * @return 1) the quorumBitmap of the operator at the given blockNumber
-     *         2) 2d array of Operator tructs. For each quorum the provided operator is a part of, an ordered list of operators.
+     *         2) 2d array of Operator tructs. For each quorum the provided operator 
+     *            was a part of at `blockNumber`, an ordered list of operators.
      */
-    function getOperatorState(bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
+    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
         uint256 index = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(blockNumber, operatorIds)[0];
@@ -53,16 +42,20 @@ contract BLSOperatorStateRetriever {
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
-        return (quorumBitmap, getOperatorState(quorumNumbers, blockNumber));
+        return (quorumBitmap, getOperatorState(registryCoordinator, quorumNumbers, blockNumber));
     }
 
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param blockNumber is the block number to get the operator state for
      * @return 2d array of operators. For each quorum, an ordered list of operators
      */
-    function getOperatorState(bytes memory quorumNumbers, uint32 blockNumber) public view returns(Operator[][] memory) {
+    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public view returns(Operator[][] memory) {
+        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
+        IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+
         Operator[][] memory operators = new Operator[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
@@ -88,17 +81,19 @@ contract BLSOperatorStateRetriever {
      *             part of (for each nonsigner, an array of length the number of quorums they a part of 
      *             that are also part of the provided quorumNumbers) at the given blocknumber
      *          4) the indices of the quorum apks for each of the provided quorums at the given blocknumber
+     * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param referenceBlockNumber is the block number to get the indices for
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param nonSignerOperatorIds are the ids of the nonsigning operators
      */
     function getCheckSignaturesIndices(
+        IBLSRegistryCoordinatorWithIndices registryCoordinator,
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
     ) external view returns (CheckSignaturesIndices memory) {
         uint256 quorumBitmap = BitmapUtils.bytesArrayToBitmap(quorumNumbers);
-
+        IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
         checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
@@ -127,6 +122,7 @@ contract BLSOperatorStateRetriever {
             }
         }
 
+        IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();
         checkSignaturesIndices.quorumApkIndices = blsPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber(quorumNumbers, referenceBlockNumber);
 
         return checkSignaturesIndices;
