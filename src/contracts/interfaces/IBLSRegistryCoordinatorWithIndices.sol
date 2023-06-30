@@ -41,6 +41,8 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
 
     // EVENTS
 
+    event OperatorSocketUpdate(bytes32 operatorId, string socket);
+
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
     /// @notice Returns the operator set params for the given `quorumNumber`

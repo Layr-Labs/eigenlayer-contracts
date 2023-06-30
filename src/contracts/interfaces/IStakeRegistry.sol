@@ -143,50 +143,6 @@ interface IStakeRegistry is IRegistry {
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
 
     /**
-     * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
-     * @param operatorId is the id of the operator of interest
-     * @param blockNumber is the block number of interest
-     * @param quorumNumber is the quorum number which the operator had stake in
-     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's activity
-     * @return 'true' if it is succesfully proven that  the `operator` was active at the `blockNumber`, and 'false' otherwise
-     * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
-     * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
-     * 2) `operatorIdToStakeHistory[operatorId][quorumNumber][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or
-     * is must be strictly greater than `blockNumber`
-     * 3) `operatorIdToStakeHistory[operatorId][quorumNumber][index].stake > 0` i.e. the operator had nonzero stake
-     * @dev Note that a return value of 'false' does not guarantee that the `operator` was inactive at `blockNumber`, since a
-     * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
-     */
-    function checkOperatorActiveAtBlockNumber(
-        bytes32 operatorId,
-        uint256 blockNumber,
-        uint8 quorumNumber,
-        uint256 stakeHistoryIndex
-        ) external view returns (bool);
-
-    /**
-     * @notice Checks that the `operator` was inactive at the `blockNumber`, using the specified `stakeHistoryIndex` for `quorumNumber` as proof.
-     * @param operatorId is the id of the operator of interest
-     * @param blockNumber is the block number of interest
-     * @param quorumNumber is the quorum number which the operator had no stake in
-     * @param stakeHistoryIndex specifies the index in `operatorIdToStakeHistory[operatorId]` at which to check the claim of the operator's inactivity
-     * @return 'true' if it is succesfully proven that  the `operator` was inactive at the `blockNumber`, and 'false' otherwise
-     * @dev In order for this function to return 'true', the inputs must satisfy all of the following list:
-     * 1) `operatorIdToStakeHistory[operatorId][quorumNumber][index].updateBlockNumber <= blockNumber`
-     * 2) `operatorIdToStakeHistory[operatorId][quorumNumber][index].nextUpdateBlockNumber` must be either `0` (signifying no next update) or
-     * is must be strictly greater than `blockNumber`
-     * 3) `operatorIdToStakeHistory[operatorId][quorumNumber][index].stake == 0` i.e. the operator had zero stake
-     * @dev Note that a return value of 'false' does not guarantee that the `operator` was active at `blockNumber`, since a
-     * bad `stakeHistoryIndex` can be supplied in order to obtain a response of 'false'.
-     */
-    function checkOperatorInactiveAtBlockNumber(
-        bytes32 operatorId,
-        uint256 blockNumber,
-        uint8 quorumNumber,
-        uint256 stakeHistoryIndex
-        ) external view returns (bool);
-
-    /**
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      * @param operatorIds are the ids of the operators whose stake information is getting updated
