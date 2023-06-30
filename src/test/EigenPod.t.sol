@@ -315,7 +315,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes32 beaconStateRoot = getBeaconStateRoot();
         relay.verifyWithdrawalProofs(beaconStateRoot, proofs, withdrawalFields);
-
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
