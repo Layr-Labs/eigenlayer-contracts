@@ -26,13 +26,14 @@ contract BLSOperatorStateRetriever {
     }
 
     /**
-     * @notice This function is intended to by AVS nodes every time there is new triggered tasks. Since all of 
-     * crucial information is kept onchain, nodes don't need to run indexers to fetch the data.
+     * @notice This function is intended to to be called by AVS operators every time a new task is created (i.e.)
+     * the AVS coordinator makes a request to AVS operators. Since all of the crucial information is kept onchain, 
+     * operators don't need to run indexers to fetch the data.
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param operatorId the id of the operator to fetch the quorums lists 
      * @param blockNumber is the block number to get the operator state for
      * @return 1) the quorumBitmap of the operator at the given blockNumber
-     *         2) 2d array of Operator tructs. For each quorum the provided operator 
+     *         2) 2d array of Operator structs. For each quorum the provided operator 
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
     function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
@@ -48,7 +49,7 @@ contract BLSOperatorStateRetriever {
 
     /**
      * @notice returns the ordered list of operators (id and stake) for each quorum. The AVS coordinator 
-     * may call this function directly to get the operator state for a given block number.s
+     * may call this function directly to get the operator state for a given block number
      * @param registryCoordinator is the registry coordinator to fetch the AVS registry information from
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param blockNumber is the block number to get the operator state for
@@ -82,7 +83,7 @@ contract BLSOperatorStateRetriever {
      * @param referenceBlockNumber is the block number to get the indices for
      * @param quorumNumbers are the ids of the quorums to get the operator state for
      * @param nonSignerOperatorIds are the ids of the nonsigning operators
-     * @return 1) the indices of the quorumBitmaps for each of given operators at the given blocknumber
+     * @return 1) the indices of the quorumBitmaps for each of the operators in the @param nonSignerOperatorIds array at the given blocknumber
      *         2) the indices of the total stakes entries for the given quorums at the given blocknumber
      *         3) the indices of the stakes of each of the nonsigners in each of the quorums they were a 
      *            part of (for each nonsigner, an array of length the number of quorums they were a part of
