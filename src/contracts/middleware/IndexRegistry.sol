@@ -227,10 +227,12 @@ contract IndexRegistry is IIndexRegistry {
         }
 
         // loop backwards through the total operator history to find the total number of operators at the given block number
-        for (uint i = _totalOperatorsHistory[quorumNumber].length - 2; i >= 0; i--) {
-            OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][i];
+        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
+        for (uint i = 0; i <= totalOperatorsHistoryLength - 2; i++) {
+            uint256 index = totalOperatorsHistoryLength - 2 - i;
+            OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][index];
             if (totalOperatorUpdate.toBlockNumber <= blockNumber) {
-                return _totalOperatorsHistory[quorumNumber][i + 1].index;
+                return _totalOperatorsHistory[quorumNumber][index + 1].index;
             }
         }        
         return _totalOperatorsHistory[quorumNumber][0].index;
