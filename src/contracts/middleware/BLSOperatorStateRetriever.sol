@@ -95,7 +95,6 @@ contract BLSOperatorStateRetriever {
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
     ) external view returns (CheckSignaturesIndices memory) {
-        uint256 quorumBitmap = BitmapUtils.bytesArrayToBitmap(quorumNumbers);
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
@@ -111,16 +110,18 @@ contract BLSOperatorStateRetriever {
                     checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
                 );
             // the number of quorums the operator was a part of that are also part of the provided quorumNumbers
-            checkSignaturesIndices.nonSignerStakeIndices[i] = new uint32[](BitmapUtils.countNumOnes(nonSignerQuorumBitmap & quorumBitmap));
+            checkSignaturesIndices.nonSignerStakeIndices[i] = new uint32[](BitmapUtils.countNumOnes(nonSignerQuorumBitmap & BitmapUtils.bytesArrayToBitmap(quorumNumbers)));
 
+            uint256 stakeIndexIndex = 0;
             for (uint8 j = 0; j < 192; j++) {
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
-                if (nonSignerQuorumBitmap >> j & (quorumBitmap >> j & 1) == 1) {
-                    checkSignaturesIndices.nonSignerStakeIndices[i][j] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
+                if (nonSignerQuorumBitmap >> j & (BitmapUtils.bytesArrayToBitmap(quorumNumbers) >> j & 1) == 1) {
+                    checkSignaturesIndices.nonSignerStakeIndices[i][stakeIndexIndex] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
                         nonSignerOperatorIds[i],
                         uint8(j),
                         referenceBlockNumber
                     );
+                    stakeIndexIndex++;
                 }
             }
         }
