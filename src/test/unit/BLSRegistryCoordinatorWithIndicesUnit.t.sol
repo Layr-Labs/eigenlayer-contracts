@@ -308,6 +308,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+
         uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
         uint256 gasAfter = gasleft();
@@ -356,6 +357,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
             cheats.expectEmit(true, true, true, true, address(indexRegistry));
             emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
         }    
+
         uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
         uint256 gasAfter = gasleft();
@@ -377,6 +379,114 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
                 quorumBitmap: uint192(quorumBitmap),
                 updateBlockNumber: uint32(block.number),
                 nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+
+    function testDeregisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.startPrank(defaultOperator);
+        
+        cheats.roll(registrationBlockNumber);
+        
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = defaultOperatorId;
+
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyRemovedFromQuorums(defaultOperator, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+
+        cheats.roll(deregistrationBlockNumber);
+
+        uint256 gasBefore = gasleft();
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, operatorIdsToSwap);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
+
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
+            })))
+        );
+        cheats.expectRevert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: operator is not registered");
+        registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: registrationBlockNumber,
+                nextUpdateBlockNumber: deregistrationBlockNumber
+            })))
+        );
+    }
+
+    function testDeregisterOperatorWithCoordinatorForFuzzedQuorum_Valid(uint256 quorumBitmap) public {
+        uint32 registrationBlockNumber = 100;
+        uint32 deregistrationBlockNumber = 200;
+
+        quorumBitmap = quorumBitmap & type(uint192).max;
+        cheats.assume(quorumBitmap != 0);
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+        }
+
+        cheats.startPrank(defaultOperator);
+        
+        cheats.roll(registrationBlockNumber);
+        
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+
+        bytes32[] memory operatorIdsToSwap = new bytes32[](quorumNumbers.length);
+        for (uint i = 0; i < operatorIdsToSwap.length; i++) {
+            operatorIdsToSwap[i] = defaultOperatorId;
+        }
+
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyRemovedFromQuorums(defaultOperator, quorumNumbers);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+            emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
+        }
+
+        cheats.roll(deregistrationBlockNumber);
+
+        uint256 gasBefore = gasleft();
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, operatorIdsToSwap);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
+        emit log_named_uint("numQuorums", quorumNumbers.length);
+
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
+            })))
+        );
+        cheats.expectRevert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: operator is not registered");
+        registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: registrationBlockNumber,
+                nextUpdateBlockNumber: deregistrationBlockNumber
             })))
         );
     }
