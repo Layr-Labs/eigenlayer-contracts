@@ -384,6 +384,61 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         );
     }
 
+    function testDeregisterOperatorWithCoordinator_NotRegistered_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operator is not registered");
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
+    }
+
+    function testDeregisterOperatorWithCoordinator_IncorrectPubkey_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        BN254.G1Point memory incorrectPubKey = BN254.hashToG1(bytes32(uint256(123)));
+
+        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, incorrectPubKey, new bytes32[](0));
+    }
+
+    function testDeregisterOperatorWithCoordinator_InvalidQuorums_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        quorumNumbers[1] = bytes1(uint8(192));
+
+        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap cant have more than 192 set bits");
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
+    }
+
+    function testDeregisterOperatorWithCoordinator_IncorrectQuorums_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
+
+        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: cannot deregister operator for quorums that it is not a part of");
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
+    }
+
     function testDeregisterOperatorWithCoordinatorForSingleQuorumAndSingleOperator_Valid() public {
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
