@@ -71,6 +71,10 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
+
+    uint32 defaultMaxOperatorCount = 100;
+    uint16 defaultKickBIPsOfOperatorStake = 15000;
+    uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
     IBLSRegistryCoordinatorWithIndices.OperatorSetParam[] operatorSetParams;
@@ -223,9 +227,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
             for (uint i = 0; i < numQuorums; i++) {
                 // hard code these for now
                 operatorSetParams.push(IBLSRegistryCoordinatorWithIndices.OperatorSetParam({
-                    maxOperatorCount: 10000,
-                    kickBIPsOfOperatorStake: 15000,
-                    kickBIPsOfTotalStake: 100
+                    maxOperatorCount: defaultMaxOperatorCount,
+                    kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
+                    kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
                 }));
             }
             proxyAdmin.upgradeAndCall(
@@ -488,8 +492,8 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         );
     }
 
-    function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber, uint8 numOperators) public {
-        cheats.assume(numOperators > 0);
+    function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber) public {
+        uint8 numOperators = 100;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
@@ -504,7 +508,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
 
         cheats.roll(registrationBlockNumber);
         
-        bytes32[] memory lastOperatorInQuorum = new bytes32[](192);
+        bytes32[] memory lastOperatorInQuorum = new bytes32[](numQuorums);
         for (uint i = 0; i < numOperators; i++) {
             BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             bytes32 operatorId = pubKey.hashG1Point();
@@ -546,12 +550,95 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
                 emit QuorumIndexUpdate(operatorIdsToSwap[i], uint8(operatorToDeregisterQuorumNumbers[i]), 0);
             }
         }
-        
+
         cheats.roll(deregistrationBlockNumber);
 
         cheats.prank(operatorToDerigister);
         registryCoordinator.deregisterOperatorWithCoordinator(operatorToDeregisterQuorumNumbers, operatorToDeregisterPubKey, operatorIdsToSwap);
 
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(operatorToDerigister))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: operatorToDerigisterId,
+                status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
+            })))
+        );
+        cheats.expectRevert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: operator is not registered");
+        registryCoordinator.getCurrentQuorumBitmapByOperatorId(operatorToDerigisterId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(operatorToDerigisterId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(operatorToDeregisterQuorumBitmap),
+                updateBlockNumber: registrationBlockNumber,
+                nextUpdateBlockNumber: deregistrationBlockNumber
+            })))
+        );
+    }
+
+
+    function testRegisterOperatorWithCoordinatorWithKicks_Valid(uint256 pseudoRandomNumber) public {
+        uint32 numOperators = defaultMaxOperatorCount;
+        uint32 registrationBlockNumber = 100;
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        cheats.roll(registrationBlockNumber);
+
+        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams = new IBLSRegistryCoordinatorWithIndices.OperatorKickParam[](1);
+        for (uint i = 0; i < numOperators - 1; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
+        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
+        bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = operatorToRegisterId;
+        bytes32 operatorIdToKickId;
+        
+        // register last operator before kick
+        {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators - 1)));
+            operatorIdToKickId = pubKey.hashG1Point();
+            address operator = _incrementAddress(defaultOperator, numOperators - 1);
+
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+
+            operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
+                operator: operator,
+                pubkey: pubKey,
+                operatorIdsToSwap: operatorIdsToSwap
+            });
+        }
+
+        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+        uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
+        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+
+        cheats.prank(operatorToRegister);
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyAddedToQuorums(operatorToRegister, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(operatorToRegisterId, defaultQuorumNumber, registeringStake);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
+
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit PubkeyRemovedFromQuorums(operatorKickParams[0].operator, quorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(operatorIdToKickId, defaultQuorumNumber, 0);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
+
+        uint256 gasBefore = gasleft();
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, operatorKickParams);
+        uint256 gasAfter = gasleft();
+        emit log_named_uint("gasUsed", gasBefore - gasAfter);
     }
 
     /**
