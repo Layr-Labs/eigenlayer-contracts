@@ -122,7 +122,7 @@ contract StakeRegistryUnitTests is Test {
                     abi.encodeWithSelector(
                         StakeRegistry.initialize.selector,
                         minimumStakeForQuorum,
-                        quorumStrategiesConsideredAndMultipliers // initialize with 0ed out 128 quorums
+                        quorumStrategiesConsideredAndMultipliers
                     )
                 )
             )

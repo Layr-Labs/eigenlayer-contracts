@@ -79,7 +79,7 @@ interface IStakeRegistry is IRegistry {
         returns (uint32);
 
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quourmNumbers) external view returns(uint32[] memory) ;
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) ;
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -132,6 +132,12 @@ interface IStakeRegistry is IRegistry {
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
     function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint96);
 
     /**
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
