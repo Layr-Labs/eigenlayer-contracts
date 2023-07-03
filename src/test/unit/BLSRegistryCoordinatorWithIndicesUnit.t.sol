@@ -488,22 +488,20 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         );
     }
 
-    function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber, uint8 numOperators, uint256[] memory quorumBitmaps) public {
+    function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber, uint8 numOperators) public {
         cheats.assume(numOperators > 0);
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
         // pad quorumBitmap with 1 until it has numOperators elements
-        uint256[] memory quorumBitmapsPadded = new uint256[](numOperators);
+        uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint i = 0; i < numOperators; i++) {
-            if (i >= quorumBitmaps.length || quorumBitmaps[i] & type(uint192).max == 0) {
-                quorumBitmapsPadded[i] = 1;
-            } else {
-                quorumBitmapsPadded[i] = quorumBitmaps[i] & type(uint192).max;
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & type(uint192).max;
+            if (quorumBitmaps[i] == 0) {
+                quorumBitmaps[i] = 1;
             }
         }
-        quorumBitmaps = quorumBitmapsPadded;
-        
+
         cheats.roll(registrationBlockNumber);
         
         bytes32[] memory lastOperatorInQuorum = new bytes32[](192);
@@ -548,6 +546,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
                 emit QuorumIndexUpdate(operatorIdsToSwap[i], uint8(operatorToDeregisterQuorumNumbers[i]), 0);
             }
         }
+        
+        cheats.roll(deregistrationBlockNumber);
+
         cheats.prank(operatorToDerigister);
         registryCoordinator.deregisterOperatorWithCoordinator(operatorToDeregisterQuorumNumbers, operatorToDeregisterPubKey, operatorIdsToSwap);
 
