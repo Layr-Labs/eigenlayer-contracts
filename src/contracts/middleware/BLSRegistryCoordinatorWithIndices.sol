@@ -231,11 +231,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
                     "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake"
                 );
                 
-                // check that the operator to kick has less than the kick BIPs of the average stake
-                require(
-                    operatorToKickStake < (totalStakeForQuorum * operatorSetParam.kickBIPsOfAverageStake / BIPS_DENOMINATOR) / numOperatorsForQuorum,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPsOfAverageStake"
-                );
                 // check the that the operator to kick has less than the kick BIPs of the total stake
                 require(
                     operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickBIPsOfTotalStake / BIPS_DENOMINATOR,

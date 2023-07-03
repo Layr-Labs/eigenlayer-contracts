@@ -225,7 +225,6 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
                 operatorSetParams.push(IBLSRegistryCoordinatorWithIndices.OperatorSetParam({
                     maxOperatorCount: 10000,
                     kickBIPsOfOperatorStake: 15000,
-                    kickBIPsOfAverageStake: 5000,
                     kickBIPsOfTotalStake: 100
                 }));
             }
