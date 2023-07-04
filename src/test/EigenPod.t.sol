@@ -718,7 +718,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         // pause the contract
         cheats.startPrank(pauser);
-        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_OVERCOMMITTED);
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));

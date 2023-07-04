@@ -10,9 +10,5 @@ interface IBeaconChainProofs {
      * @param validatorRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation)
      */
     function verifyValidatorFields(uint40 validatorIndex, bytes32 validatorRoot) external view returns (bool);
-
-
-
-
 }
 

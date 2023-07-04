@@ -23,7 +23,6 @@ interface IEigenPod {
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
-        OVERCOMMITTED, // proven to be overcommitted to EigenLayer
         WITHDRAWN // withdrawn from the Beacon Chain
     }
 

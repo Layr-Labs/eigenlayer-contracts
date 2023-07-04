@@ -905,7 +905,7 @@ contract StrategyManager is
                 //if new balance is greater than current recorded shares, add the difference
                 _addShares(overcommittedPodOwner, beaconChainETHStrategy, shareIncrease);
                 delegation.increaseDelegatedShares(overcommittedPodOwner, beaconChainETHStrategy, shareIncrease);
-            } else if (newUserShares < currentUserShares) {
+        } else if (newUserShares < currentUserShares) {
                 uint256 shareDecrease = currentUserShares - newUserShares;
                 IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
