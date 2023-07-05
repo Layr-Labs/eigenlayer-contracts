@@ -39,6 +39,11 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return IStrategyManager(address(0));
     }
 
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
+
+
     function hasPod(address /*podOwner*/) external pure returns (bool) {
         return false;
     }

@@ -154,4 +154,8 @@ interface IEigenPod {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
+
+    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 }

@@ -382,14 +382,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint256 amountGwei = amountWei / GWEI_TO_WEI;
-        require(_withdrawableRestakedExecutionLayerGwei >= amountGwei , "EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
-        _withdrawableRestakedExecutionLayerGwei -= amountGwei;
+        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
+        require(withdrawableRestakedExecutionLayerGwei >= amountGwei , "EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
+        withdrawableRestakedExecutionLayerGwei -= amountGwei;
     }
 
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint256 amountGwei = amountWei / GWEI_TO_WEI;
-        _withdrawableRestakedExecutionLayerGwei += amountGwei;
+        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
+        withdrawableRestakedExecutionLayerGwei += amountGwei;
     }
 
     function _processFullWithdrawal(
@@ -460,11 +460,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         external
         onlyEigenPodManager
     {
-        // reduce the withdrawableRestakedExecutionLayerGwei
-        withdrawableRestakedExecutionLayerGwei -= uint64(amountWei / GWEI_TO_WEI);
-
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
-
         // transfer ETH from pod to `recipient`
         _sendETH(recipient, amountWei);
     }

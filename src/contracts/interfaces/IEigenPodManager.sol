@@ -62,6 +62,10 @@ interface IEigenPodManager is IPausable {
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
 
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
+
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(address podOwner) external view returns(IEigenPod);
 

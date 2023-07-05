@@ -239,4 +239,9 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function getBeaconChainStateRoot() external view returns(bytes32) {
         // return beaconChainOracle.getBeaconChainStateRoot();
     }
+
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+
 }
