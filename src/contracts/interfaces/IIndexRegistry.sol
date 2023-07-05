@@ -19,10 +19,10 @@ interface IIndexRegistry is IRegistry {
     // struct used to give definitive ordering to operators at each blockNumber. 
     // NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time
     struct OperatorIndexUpdate {
-        // blockNumber number at which operator index changed
-        // note that the operator's index is different *for this block number*, i.e. the *new* index is *inclusive* of this value
-        uint32 toBlockNumber;
+        // blockNumber number from which `index` was the operators index
+        uint32 fromBlockNumber;
         // index of the operator in array of operators, or the total number of operators if in the 'totalOperatorsHistory'
+        // index = type(uint32).max implies the operator was deregistered
         uint32 index;
     }
 
@@ -83,9 +83,6 @@ interface IIndexRegistry is IRegistry {
 
     /// @notice Returns the current number of operators of this service for `quorumNumber`.
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
-
-    /// @notice Returns the current number of operators of this service.
-    function totalOperators() external view returns (uint32);
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
     function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
