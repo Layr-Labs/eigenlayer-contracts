@@ -35,4 +35,12 @@ contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium, DSTest {
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
     }
+
+    function setBLSPublicKey(address account, BN254.G1Point memory pk) external {
+
+        bytes32 pubkeyHash = BN254.hashG1Point(pk);
+        // store updates
+        operatorToPubkeyHash[account] = pubkeyHash;
+        pubkeyHashToOperator[pubkeyHash] = account;
+    }
 }
