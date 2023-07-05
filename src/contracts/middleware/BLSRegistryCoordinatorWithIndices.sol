@@ -170,22 +170,23 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
-     * @dev `registrationData` should be a G1 point representing the operator's BLS public key
+     * @dev `registrationData` should be a G1 point representing the operator's BLS public key and their socket
      */
     function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
-        BN254.G1Point memory pubkey = abi.decode(registrationData, (BN254.G1Point));
+        (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
         // call internal function to register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
+     * @param socket is the socket of the operator
      */
-    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string calldata socket) external {
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
@@ -198,11 +199,12 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey,
+        string calldata socket,
         OperatorKickParam[] calldata operatorKickParams
     ) external {
         require(quorumNumbers.length == operatorKickParams.length, "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorumNumbers and operatorKickParams must be the same length");
         // register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
         // get the registering operator's operatorId
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
@@ -280,7 +282,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
     }
 
-    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
+    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
         // require(
         //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
@@ -319,6 +321,8 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
 
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         serviceManager.recordFirstStakeUpdate(operator, 0);
+
+        emit OperatorSocketUpdate(operatorId, socket);
     }
 
     function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) internal {

@@ -69,6 +69,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
+    string defaultSocket = "69.69.69.69:420";
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
 
@@ -79,6 +80,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
 
     IBLSRegistryCoordinatorWithIndices.OperatorSetParam[] operatorSetParams;
 
+    event OperatorSocketUpdate(bytes32 operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
@@ -286,14 +288,14 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         bytes memory emptyQuorumNumbers = new bytes(0);
         cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         cheats.prank(defaultOperator);
-        registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey, defaultSocket);
     }
 
     function testRegisterOperatorWithCoordinator_QuorumNumbersTooLarge_Reverts() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
         quorumNumbersTooLarge[0] = 0xC0;
         cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cant have more than 192 set bits");
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey, defaultSocket);
     }
 
     function testRegisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
@@ -309,9 +311,11 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
 
         uint256 gasBefore = gasleft();
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
@@ -358,9 +362,11 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
             cheats.expectEmit(true, true, true, true, address(indexRegistry));
             emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
         }    
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
 
         uint256 gasBefore = gasleft();
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
         emit log_named_uint("numQuorums", quorumNumbers.length);
@@ -452,7 +458,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         
         cheats.roll(registrationBlockNumber);
         
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
 
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
 
@@ -506,7 +512,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         
         cheats.roll(registrationBlockNumber);
         
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
 
         bytes32[] memory operatorIdsToSwap = new bytes32[](quorumNumbers.length);
         for (uint i = 0; i < operatorIdsToSwap.length; i++) {
@@ -691,7 +697,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
 
         uint256 gasBefore = gasleft();
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, operatorKickParams);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
     }
@@ -711,7 +717,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is Test {
         }
 
         cheats.prank(operator);
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, defaultSocket);
     }
 
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
