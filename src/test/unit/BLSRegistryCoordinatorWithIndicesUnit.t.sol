@@ -651,37 +651,4 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.expectRevert("BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
     }
-
-    /**
-     * @notice registers operator with coordinator 
-     */
-    function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey) internal {
-        _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey, defaultStake);
-    }
-
-    /**
-     * @notice registers operator with coordinator 
-     */
-    function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake) internal {
-        // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= type(uint192).max;
-
-        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
-
-        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
-        for (uint i = 0; i < quorumNumbers.length; i++) {
-            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
-        }
-
-        cheats.prank(operator);
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, defaultSocket);
-    }
-
-    function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
-        return address(uint160(uint256(uint160(start) + inc)));
-    }
-
-    function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
-        return bytes32(uint256(start) + inc);
-    }
 }

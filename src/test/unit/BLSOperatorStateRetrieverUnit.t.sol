@@ -10,7 +10,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         _deployMockEigenLayerAndAVS();
     }
 
-    function test_getOperatorState() public {
-        emit log("hello");
+    function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {
+        
     }
 }
