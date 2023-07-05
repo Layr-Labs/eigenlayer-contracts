@@ -177,6 +177,19 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         _setMaxPods(newMaxPods);
     }
 
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
+        external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
+    {
+        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(amountWei);
+    }
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
+        external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
+    {
+        ownerToPod[podOwner].incrementWithdrawableRestakedExecutionLayerGwei(amountWei);
+    }
+
+
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to

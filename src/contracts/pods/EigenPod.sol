@@ -94,7 +94,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event ValidatorRestaked(uint40 validatorIndex);
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 newBalanceGwei);
+    event ValidatorBalanceUpdated(uint40 validatorIndex);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
     event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 withdrawalAmountGwei);
@@ -232,7 +232,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = validatorEffectiveRestakedBalanceGwei;
 
         // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
-        eigenPodManager.restakeBeaconChainETH(podOwner, validatorEffectiveRestakedBalanceGwei);
+        eigenPodManager.restakeBeaconChainETH(podOwner, validatorEffectiveRestakedBalanceGwei * GWEI_TO_WEI);
     }
 
     /**
@@ -265,7 +265,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             require(validatorStatus == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         }
         // deserialize the balance field from the balanceRoot
-        uint64 validatorCurrentBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
+        uint64 validatorNewBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
 
         // verify ETH validator proof
         bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
@@ -275,7 +275,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * If the validator *has* been slashed, then this function can proceed. If they have *not* been slashed, then
          * the `verifyAndProcessWithdrawal` function should be called instead.
          */
-        if (validatorCurrentBalanceGwei == 0) {
+        if (validatorNewBalanceGwei == 0) {
             uint64 slashedStatus = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX]);
             require(slashedStatus == 1, "EigenPod.verifyBalanceUpdate: Validator must be slashed to be overcommitted");
             //Verify the validator fields, which contain the validator's slashed status
@@ -297,13 +297,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 currentEffectiveRestakedBalanceGwei = _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei;
 
         // calculate the effective (pessimistic) restaked balance
-        uint64 newEffectiveRestakedBalanceGwei = _calculateEffectedRestakedBalanceGwei(validatorCurrentBalanceGwei);
+        uint64 newEffectiveRestakedBalanceGwei = _calculateEffectedRestakedBalanceGwei(validatorNewBalanceGwei);
 
         //update the balance
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = newEffectiveRestakedBalanceGwei;
         
 
-        emit ValidatorBalanceUpdated(validatorIndex, newEffectiveRestakedBalanceGwei);
+        emit ValidatorBalanceUpdated(validatorIndex);
 
         // update shares in strategy manager
         eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentEffectiveRestakedBalanceGwei * GWEI_TO_WEI, newEffectiveRestakedBalanceGwei * GWEI_TO_WEI);
@@ -381,6 +381,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
     }
 
+    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
+        uint256 amountGwei = amountWei / GWEI_TO_WEI;
+        require(_withdrawableRestakedExecutionLayerGwei >= amountGwei , "EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
+        _withdrawableRestakedExecutionLayerGwei -= amountGwei;
+    }
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
+        uint256 amountGwei = amountWei / GWEI_TO_WEI;
+        _withdrawableRestakedExecutionLayerGwei += amountGwei;
+    }
+
     function _processFullWithdrawal(
         uint64 withdrawalAmountGwei,
         uint40 validatorIndex,
@@ -416,6 +427,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // set the ETH validator status to withdrawn
         _validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.WITHDRAWN;
+        // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = 0;
 
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei);
@@ -457,6 +469,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _sendETH(recipient, amountWei);
     }
 
+
+
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
         mostRecentWithdrawalBlockNumber = uint32(block.number);
@@ -480,7 +494,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
     }
 
-    function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal returns (uint64){
+    function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal pure returns (uint64){
         /**
         * calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET.  By using integer division 
         * (dividing by GWEI_TO_WEI = 1e9 and then multiplying by 1e9, we effectively "round down" amountGwei to 
