@@ -202,7 +202,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         string calldata socket,
         OperatorKickParam[] calldata operatorKickParams
     ) external {
-        require(quorumNumbers.length == operatorKickParams.length, "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorumNumbers and operatorKickParams must be the same length");
         // register the operator
         _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
@@ -216,10 +215,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
             {
                 uint32 numOperatorsForQuorum = indexRegistry.totalOperatorsForQuorum(quorumNumber);
-                require(
-                    numOperatorsForQuorum == operatorSetParam.maxOperatorCount + 1,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorum has not reached max operator count"
-                );
+                // if the number of operators for the quorum is less than or equal to the max operator count, 
+                // then the quorum has not reached the max operator count
+                if(numOperatorsForQuorum <= operatorSetParam.maxOperatorCount) {
+                    continue;
+                }
 
                 // get the total stake for the quorum
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
