@@ -103,7 +103,7 @@ contract IndexRegistry is IIndexRegistry {
     function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndexUpdate memory operatorIndexToCheck = _operatorIdToIndexHistory[operatorId][quorumNumber][index];
 
-        // blocknumber must be before the "index'th" entry's fromBlockNumber
+        // blocknumber must be at or after the "index'th" entry's fromBlockNumber
         require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
        
         // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
@@ -123,13 +123,13 @@ contract IndexRegistry is IIndexRegistry {
     function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndexUpdate memory operatorIndexToCheck = _totalOperatorsHistory[quorumNumber][index];
 
-        // blocknumber must be before the "index'th" entry's fromBlockNumber
+        // blocknumber must be at or after the "index'th" entry's fromBlockNumber
         require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
         
-        // if there is an index update after the "index'th" update, the blocknumber must be before the previous entry's fromBlockNumber
+        // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
         if (index != _totalOperatorsHistory[quorumNumber].length - 1){
-            OperatorIndexUpdate memory previousOperatorIndex = _totalOperatorsHistory[quorumNumber][index + 1];
-            require(blockNumber < previousOperatorIndex.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+            OperatorIndexUpdate memory nextOperatorIndex = _totalOperatorsHistory[quorumNumber][index + 1];
+            require(blockNumber < nextOperatorIndex.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
         }
         return operatorIndexToCheck.index;
     }

@@ -20,6 +20,7 @@ interface IIndexRegistry is IRegistry {
     // NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time
     struct OperatorIndexUpdate {
         // blockNumber number from which `index` was the operators index
+        // the operator's index or the total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
         uint32 fromBlockNumber;
         // index of the operator in array of operators, or the total number of operators if in the 'totalOperatorsHistory'
         // index = type(uint32).max implies the operator was deregistered
