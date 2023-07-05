@@ -39,11 +39,10 @@ contract IndexRegistryUnitTests is Test {
         cheats.stopPrank();
 
        require(indexRegistry.globalOperatorList(0) == operatorId, "IndexRegistry.registerOperator: operator not registered correctly");
-       require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: total operators not updated correctly");
        require(indexRegistry.totalOperatorsForQuorum(1) == 1, "IndexRegistry.registerOperator: total operators for quorum not updated correctly");
        IIndexRegistry.OperatorIndexUpdate memory indexUpdate = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId, 1, 0);
        require(indexUpdate.index == 0, "IndexRegistry.registerOperator: index not 0");
-       require(indexUpdate.toBlockNumber == 0, "block number should not be set");
+       require(indexUpdate.fromBlockNumber == block.number, "block number should not be set");
     }
 
     function testRegisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
@@ -78,7 +77,6 @@ contract IndexRegistryUnitTests is Test {
         _registerOperator(operatorId1, quorumNumbers);
         _registerOperator(operatorId2, quorumNumbers);
 
-        require(indexRegistry.totalOperators() == 2, "IndexRegistry.registerOperator: operator not registered correctly");
         require(indexRegistry.totalOperatorsForQuorum(1) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
         require(indexRegistry.totalOperatorsForQuorum(2) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
 
@@ -93,16 +91,12 @@ contract IndexRegistryUnitTests is Test {
         indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap);
         cheats.stopPrank();
 
-        require(indexRegistry.totalOperators() == 1, "IndexRegistry.registerOperator: operator not registered correctly");
-        require(indexRegistry.globalOperatorList(0) == operatorId2, "IndexRegistry.registerOperator: operator not deregistered and swapped correctly");
+        require(indexRegistry.totalOperatorsForQuorum(1) == 1, "operator not deregistered correctly");
+        require(indexRegistry.totalOperatorsForQuorum(2) == 1, "operator not deregistered correctly");
 
-        IIndexRegistry.OperatorIndexUpdate memory indexUpdate1 = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId1, defaultQuorumNumber, 0);
-        require(indexUpdate1.toBlockNumber == block.number, "toBlockNumber not set correctly");
-        require(indexUpdate1.index == 0, "incorrect index");
-
-        IIndexRegistry.OperatorIndexUpdate memory indexUpdate2 = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId2, defaultQuorumNumber, 1);
-        require(indexUpdate2.toBlockNumber == 0, "toBlockNumber not set correctly");
-        require(indexUpdate2.index == 0, "incorrect index");
+        IIndexRegistry.OperatorIndexUpdate memory indexUpdate = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId2, defaultQuorumNumber, 1);
+        require(indexUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
+        require(indexUpdate.index == 0, "incorrect index");
 
     }
 
@@ -147,7 +141,6 @@ contract IndexRegistryUnitTests is Test {
         for (uint256 i = 0; i < numOperators; i++) {
             _registerOperator(bytes32(i), quorumNumbers);
             require(indexRegistry.totalOperatorsForQuorum(1) - lengthBefore == 1, "incorrect update");
-            require(indexRegistry.totalOperators() - lengthBefore == 1, "incorrect update");
             lengthBefore++;
         }
     }
