@@ -53,6 +53,9 @@ interface IRegistryCoordinator {
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
 
+    /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds) external view returns (uint32[] memory);
+
     /**
      * @notice Returns the quorum bitmap for the given `operatorId` at the given `blockNumber` via the `index`
      * @dev reverts if `index` is incorrect 

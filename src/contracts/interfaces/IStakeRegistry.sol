@@ -8,6 +8,14 @@ import "./IRegistry.sol";
  * @author Layr Labs, Inc.
  */
 interface IStakeRegistry is IRegistry {
+    // EVENTS
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(
+        bytes32 indexed operatorId,
+        uint8 quorumNumber,
+        uint96 stake
+    );
+    
     // DATA STRUCTURES
 
     /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
@@ -61,6 +69,15 @@ interface IStakeRegistry is IRegistry {
      */
     function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
 
+    /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint32);
+
+    /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) ;
+
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
      * @param quorumNumber The quorum number to get the stake for.
@@ -72,6 +89,12 @@ interface IStakeRegistry is IRegistry {
         external
         view
         returns (OperatorStakeUpdate memory);
+
+    /**
+     * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
+     * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
+     */
+    function getMostRecentStakeUpdateByOperatorId(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
@@ -106,6 +129,12 @@ interface IStakeRegistry is IRegistry {
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
     function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint96);
 
     /**
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.

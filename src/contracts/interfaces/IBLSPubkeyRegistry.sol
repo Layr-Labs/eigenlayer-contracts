@@ -22,7 +22,6 @@ interface IBLSPubkeyRegistry is IRegistry {
         bytes quorumNumbers
     );
 
-
     /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
     struct ApkUpdate {
         // first 24 bytes of keccak256(apk_x0, apk_x1, apk_y0, apk_y1)
@@ -65,6 +64,9 @@ interface IBLSPubkeyRegistry is IRegistry {
     
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
+
+    /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory);
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);

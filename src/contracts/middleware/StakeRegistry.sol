@@ -17,13 +17,6 @@ import "./StakeRegistryStorage.sol";
  * @author Layr Labs, Inc.
  */
 contract StakeRegistry is StakeRegistryStorage {
-    // EVENTS
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
 
     /// @notice requires that the caller is the RegistryCoordinator
     modifier onlyRegistryCoordinator() {
@@ -92,6 +85,32 @@ contract StakeRegistry is StakeRegistryStorage {
         return _totalStakeHistory[quorumNumber][index];
     }
 
+    /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint32)
+    {
+        return _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
+    }
+
+
+    /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            uint32 length = uint32(_totalStakeHistory[quorumNumber].length);
+            for (uint32 j = 0; j < length; j++) {
+                if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = length - j - 1;
+                    break;
+                }
+            }
+        }
+        return indices;
+    }
+
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
      * `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array if it was the operator's
@@ -154,6 +173,15 @@ contract StakeRegistry is StakeRegistryStorage {
         return operatorStakeUpdate.stake;
     }
 
+
+    /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
+    function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
+        external
+        view
+        returns (uint96)
+    {
+        return operatorIdToStakeHistory[operatorId][quorumNumber][_getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)].stake;
+    }
     /**
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
      * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
@@ -264,6 +292,21 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     // INTERNAL FUNCTIONS
+
+    function _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
+        uint32 length = uint32(operatorIdToStakeHistory[operatorId][quorumNumber].length);
+        for (uint32 i = 0; i < length; i++) {
+            if (operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].updateBlockNumber <= blockNumber) {
+                require(
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber == 0 ||
+                    operatorIdToStakeHistory[operatorId][quorumNumber][length - i - 1].nextUpdateBlockNumber > blockNumber,
+                    "StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: operatorId has no stake update at blockNumber"
+                );
+                return length - i - 1;
+            }
+        }
+        revert("StakeRegistry._getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber: no stake update found for operatorId and quorumNumber at block number");
+    }
 
     function _setMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStake) internal {
         minimumStakeForQuorum[quorumNumber] = minimumStake;

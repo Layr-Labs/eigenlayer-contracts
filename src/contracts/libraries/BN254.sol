@@ -132,6 +132,30 @@ library BN254 {
     }
 
     /**
+     * @notice an optimized ecMul implementation that takes O(log_2(s)) ecAdds
+     * @param p the point to multiply
+     * @param s the scalar to multiply by
+     * @dev this function is only safe to use if the scalar is 9 bits or less
+     */ 
+    function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
+        require(s < 2**9, "scalar-too-large");
+        // the accumulated product to return
+        BN254.G1Point memory acc = BN254.G1Point(0, 0);
+        // the 2^n*p to add to the accumulated product in each iteration
+        BN254.G1Point memory p2n = p;
+        // loop through each bit of s
+        for (uint8 i = 0; i < 9; i++) {
+            // if the bit is 1, add the 2^n*p to the accumulated product
+            if (s >> i & 1 == 1) {
+                acc = plus(acc, p2n);
+            }
+            // double the 2^n*p for the next iteration
+            p2n = plus(p2n, p2n);
+        }
+        return acc;
+    }
+
+    /**
      * @return r the product of a point on G1 and a scalar, i.e.
      *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
      *         points p.

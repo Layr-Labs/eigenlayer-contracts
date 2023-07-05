@@ -91,6 +91,22 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         return pubkeyHash;
     }
 
+    /// @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory){
+        uint256[] memory indices = new uint256[](quorumNumbers.length);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
+            for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
+                if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = quorumApkUpdatesLength - j - 1;
+                    break;
+                }
+            }
+        }
+        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
+    }
+
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns(BN254.G1Point memory) {
         return quorumApk[quorumNumber];
@@ -112,6 +128,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
         _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;
+    }
+
+    /// @notice Returns the length of ApkUpdates for the provided `quorumNumber`
+    function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns(uint32){
+        return uint32(quorumApkUpdates[quorumNumber].length);
     }
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
