@@ -509,7 +509,7 @@ contract StrategyManager is
 
             if (strategies[i] == beaconChainETHStrategy) {
                  //withdraw the beaconChainETH to the recipient
-                _withdrawBeaconChainETH(slashedAddress, recipient, shareAmounts[i]);
+                eigenPodManager.withdrawRestakedBeaconChainETH(slashedAddress, recipient, shareAmounts[i]);
             }
             else {
                 // withdraw the shares and send funds to the recipient
@@ -569,7 +569,7 @@ contract StrategyManager is
             } else {
                 if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy){
                      //withdraw the beaconChainETH to the recipient
-                    _withdrawBeaconChainETH(queuedWithdrawal.depositor, recipient, queuedWithdrawal.shares[i]);
+                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, recipient, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
@@ -816,7 +816,7 @@ contract StrategyManager is
                 if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
 
                     // if the strategy is the beaconchaineth strat, then withdraw through the EigenPod flow
-                    _withdrawBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
+                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the depositor
                     queuedWithdrawal.strategies[i].withdraw(
@@ -847,31 +847,6 @@ contract StrategyManager is
     function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
-    }
-
-    /*
-     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any successfully withdrawn funds going to `recipient`.
-     * @param staker The address whose 'beaconChainETH' shares will be decremented
-     * @param recipient Passed on as the recipient input to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
-     * @param amount The amount of virtual 'beaconChainETH' shares to be 'withdrawn'
-     * @dev First, the amount is drawn-down by any applicable 'beaconChainETHSharesToDecrementOnWithdrawal' that the staker has, 
-     * before passing any remaining amount (if applicable) onto a call to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
-    */
-    function _withdrawBeaconChainETH(address staker, address recipient, uint256 amount) internal {
-        uint256 amountToDecrement = beaconChainETHSharesToDecrementOnWithdrawal[staker];
-        if (amountToDecrement != 0) {
-            if (amount > amountToDecrement) {
-                beaconChainETHSharesToDecrementOnWithdrawal[staker] = 0;
-                // decrease `amount` appropriately, so less is sent at the end
-                amount -= amountToDecrement;
-            } else {
-                beaconChainETHSharesToDecrementOnWithdrawal[staker] = (amountToDecrement - amount);
-                // rather than setting `amount` to 0, just return early
-                return;
-            }
-        }
-        // withdraw the beaconChainETH to the recipient
-        eigenPodManager.withdrawRestakedBeaconChainETH(staker, recipient, amount);
     }
 
     /**
