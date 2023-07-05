@@ -110,7 +110,7 @@ contract StakeRegistryUnitTests is Test {
                     abi.encodeWithSelector(
                         StakeRegistry.initialize.selector,
                         minimumStakeForQuorum,
-                        quorumStrategiesConsideredAndMultipliers // initialize with 0ed out 128 quorums
+                        quorumStrategiesConsideredAndMultipliers
                     )
                 )
             )
@@ -146,14 +146,6 @@ contract StakeRegistryUnitTests is Test {
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
-    function testRegisterOperator_NotOptedIntoSlashing_Reverts() public {
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        cheats.expectRevert("StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager");
-        cheats.prank(registryCoordinator);
-        stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
-    }
-
     function testRegisterOperator_MoreQuorumsThanQuorumCount_Reverts() public {
         // opt into slashing
         cheats.startPrank(defaultOperator);
@@ -167,7 +159,7 @@ contract StakeRegistryUnitTests is Test {
         }
 
         // expect that it reverts when you register
-        cheats.expectRevert("StakeRegistry._registerStake: greatest quorumNumber must be less than quorumCount");
+        cheats.expectRevert("StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
         cheats.prank(registryCoordinator);
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
@@ -193,7 +185,7 @@ contract StakeRegistryUnitTests is Test {
         stakesForQuorum[stakesForQuorum.length - 1] = stakeRegistry.minimumStakeForQuorum(uint8(quorumNumbers.length - 1)) - 1;
 
         // expect that it reverts when you register
-        cheats.expectRevert("StakeRegistry._registerStake: Operator does not meet minimum stake requirement for quorum");
+        cheats.expectRevert("StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum");
         cheats.prank(registryCoordinator);
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }

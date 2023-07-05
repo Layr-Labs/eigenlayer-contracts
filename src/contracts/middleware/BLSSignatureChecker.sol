@@ -89,13 +89,13 @@ abstract contract BLSSignatureChecker {
         BN254.G1Point memory apk = BN254.G1Point(0, 0);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             require(
-                nonSignerStakesAndSignature.quorumApks[i].hashG1Point() == 
+                bytes24(nonSignerStakesAndSignature.quorumApks[i].hashG1Point()) == 
                     blsPubkeyRegistry.getApkHashForQuorumAtBlockNumberFromIndex(
                         uint8(quorumNumbers[i]), 
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
                     ),
-                "BLSSignatureChecker.checkSignatures: quourmApkIndex does not match quorum apk"
+                "BLSSignatureChecker.checkSignatures: quorumApkIndex does not match quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
         }
@@ -129,7 +129,7 @@ abstract contract BLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul_tiny(
-                                countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
                             )
                     );
                 }
@@ -183,16 +183,6 @@ abstract contract BLSSignatureChecker {
 
         // return the total stakes that signed for each quorum, and a hash of the information required to prove the exact signers and stake
         return (quorumStakeTotals, signatoryRecordHash);
-    }
-
-    /// @return count number of ones in binary representation of `n`
-    function countNumOnes(uint256 n) public pure returns (uint16) {
-        uint16 count = 0;
-        while (n > 0) {
-            n &= (n - 1);
-            count++;
-        }
-        return count;
     }
 
     /**
