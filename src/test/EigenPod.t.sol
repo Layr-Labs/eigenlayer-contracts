@@ -426,13 +426,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
         uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.REQUIRED_BALANCE_GWEI()) * uint64(GWEI_TO_WEI);
         cheats.deal(address(newPod), leftOverBalanceWEI);
-        
+
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
         require(getBeaconChainETHShares(podOwner) - beaconChainSharesBefore == beaconChainSharesBefore, "beacon chain shares not incremented correctly");
-        emit log_named_uint("withdrawableRestakedGwei", withdrawableRestakedGwei);
-        emit log_named_uint("newPod.withdrawableRestakedExecutionLayerGwei()", newPod.withdrawableRestakedExecutionLayerGwei());
-
-
         require(newPod.withdrawableRestakedExecutionLayerGwei() - withdrawableRestakedGwei == withdrawableRestakedGwei, "withdrawableRestakedExecutionLayerGwei not incremented correctly");
     }
 

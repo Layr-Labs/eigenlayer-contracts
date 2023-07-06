@@ -404,7 +404,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         uint256 currentValidatorRestakedBalanceWei = _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei * GWEI_TO_WEI;
         
-        if (status == VALIDATOR_STATUS.ACTIVE) {
+        if (status == VALIDATOR_STATUS.ACTIVE || status == VALIDATOR_STATUS.WITHDRAWN) {
             // if the withdrawal amount is greater than the REQUIRED_BALANCE_GWEI (i.e. the amount restaked on EigenLayer, per ETH validator)
             if (withdrawalAmountGwei >= REQUIRED_BALANCE_GWEI) {
                 // then the excess is immediately withdrawable
@@ -417,16 +417,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
 
             }
-        //If the validator is already withdrawn 
-        } else if (status == VALIDATOR_STATUS.WITHDRAWN) {
-            if (withdrawalAmountGwei >= REQUIRED_BALANCE_GWEI) {
-                // then the excess is immediately withdrawable
-                amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
-                withdrawableRestakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
-            }
-            else {
-                withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
-            }
+        /**
+        * If the validator is already withdrawn and additional deposits are made, they will be automatically withdrawn
+        * in the beacon chain as a full withdrawal.  Thus we account for them in the strategyManager and increment
+        * the withdrawableRestakedExecutionLayerGwei balance.
+        */
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
             revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
