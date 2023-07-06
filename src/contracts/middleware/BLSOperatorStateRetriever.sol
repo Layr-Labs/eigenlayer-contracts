@@ -8,11 +8,13 @@ import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
  * @author Layr Labs Inc.
  */
-contract BLSOperatorStateRetriever {
+contract BLSOperatorStateRetriever is Test {
     struct Operator {
         bytes32 operatorId;
         uint96 stake;
@@ -36,10 +38,11 @@ contract BLSOperatorStateRetriever {
      *         2) 2d array of Operator structs. For each quorum the provided operator 
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
-    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
+    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external returns (uint256, Operator[][] memory) {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
         uint256 index = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(blockNumber, operatorIds)[0];
+    
         uint256 quorumBitmap = registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
@@ -55,7 +58,7 @@ contract BLSOperatorStateRetriever {
      * @param blockNumber is the block number to get the operator state for
      * @return 2d array of operators. For each quorum, an ordered list of operators
      */
-    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public view returns(Operator[][] memory) {
+    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public returns(Operator[][] memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
 

@@ -86,5 +86,5 @@ interface IIndexRegistry is IRegistry {
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32);
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory);
+    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external returns (bytes32[] memory);
 }

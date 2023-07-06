@@ -13,6 +13,7 @@ import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
 
 import "../../contracts/middleware/BLSPublicKeyCompendium.sol";
+import "../../contracts/middleware/BLSOperatorStateRetriever.sol";
 import "../../contracts/middleware/BLSRegistryCoordinatorWithIndices.sol";
 import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/middleware/IndexRegistry.sol";
@@ -51,6 +52,7 @@ contract MockAVSDeployer is Test {
     IBLSPubkeyRegistry public blsPubkeyRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
 
+    BLSOperatorStateRetriever public operatorStateRetriever;
     BLSRegistryCoordinatorWithIndices public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
@@ -238,6 +240,8 @@ contract MockAVSDeployer is Test {
             TransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
         );
+
+        operatorStateRetriever = new BLSOperatorStateRetriever();
 
         cheats.stopPrank();
     }

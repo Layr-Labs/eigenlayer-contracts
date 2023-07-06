@@ -6,7 +6,9 @@ import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
 
-contract IndexRegistry is IIndexRegistry {
+import "forge-std/Test.sol";
+
+contract IndexRegistry is Test, IIndexRegistry {
 
     IRegistryCoordinator public immutable registryCoordinator;
 
@@ -135,11 +137,13 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
+    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
+        emit log_named_uint("quorumOperatorList.length", quorumOperatorList.length);
         for (uint i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
+            emit log_named_uint("index", index);
             // if the operator was not in the quorum at the given block number, skip it
             if (index == type(uint32).max)
                 continue;
@@ -211,12 +215,9 @@ contract IndexRegistry is IIndexRegistry {
         if (totalOperatorsHistoryLength == 0) {
             return 0;
         }
-                
-        // if `blockNumber` is in future, return current number of operators
-        if (blockNumber > uint32(block.number)) {
-            return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].index;
-        // else if `blockNumber` is from before the `quorumNumber` existed, return `0`
-        } else if (blockNumber < _totalOperatorsHistory[quorumNumber][0].fromBlockNumber) {
+
+        // if `blockNumber` is from before the `quorumNumber` existed, return `0`
+        if (blockNumber < _totalOperatorsHistory[quorumNumber][0].fromBlockNumber) {
             return 0;
         }
 
@@ -225,7 +226,7 @@ contract IndexRegistry is IIndexRegistry {
             uint256 listIndex = (totalOperatorsHistoryLength - 1) - i;
             OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][listIndex];
             // look for the first update that began at or after `blockNumber`
-            if (totalOperatorUpdate.fromBlockNumber >= blockNumber) {
+            if (totalOperatorUpdate.fromBlockNumber <= blockNumber) {
                 return _totalOperatorsHistory[quorumNumber][listIndex].index;
             }
         }        
@@ -235,19 +236,18 @@ contract IndexRegistry is IIndexRegistry {
 
     /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
     function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
-        OperatorIndexUpdate memory operatorIndexUpdate;
-        // set to max uint32 value to indicate that the operator is not part of the quorum at all, until this is updated in the loop
-        operatorIndexUpdate.index = type(uint32).max; 
+        uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
         // loop forward through index history to find the index of the operator at the given block number
         // this is less efficient than looping backwards, but is simpler logic and only called in view functions that aren't mined onchain
         for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
-            operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][i];
+            uint256 listIndex = (operatorIndexHistoryLength - 1) - i;
+            OperatorIndexUpdate memory operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][listIndex];
             if (operatorIndexUpdate.fromBlockNumber <= blockNumber) {
                 return operatorIndexUpdate.index;
             }
         }
 
         // the operator is still active or not in the quorum, so we return the latest index or the default max uint32
-        return operatorIndexUpdate.index;
+        return type(uint32).max;
     }
 }
