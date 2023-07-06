@@ -360,7 +360,8 @@ contract StrategyManager is
                  * decrement the withdrawablRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal,
                  * effectively requiring a full withdrawal of a validator to queue a withdrawal of beacon chain ETH shares.  Remember that
                  * withdrawablRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  By doing this, we ensure
-                 * that the number of shares in EigenLayer matches the amount of withdrawable ETH in the pod.  
+                 * that the number of shares in EigenLayer matches the amount of withdrawable ETH in the pod plus any ETH still staked 
+                 * on the beacon chain via other validators pointed to the pod.
                  */         
                 eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);
             }   
@@ -823,7 +824,7 @@ contract StrategyManager is
             for (uint256 i = 0; i < strategiesLength;) {
                 if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
 
-                    // if the strategy is the beaconchaineth strat, then withdraw through the EigenPod flow
+                    // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
                     eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the depositor
