@@ -203,7 +203,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // deserialize the balance field from the balanceRoot
         uint64 validatorCurrentBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
 
-        emit log_named_uint("validatorCurrentBalanceGwei", validatorCurrentBalanceGwei);    
         // make sure the balance is greater than the amount restaked per validator
         require(validatorCurrentBalanceGwei >= REQUIRED_BALANCE_GWEI,
             "EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator");
