@@ -417,15 +417,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
 
             }
-            //update podOwner's shares in the strategy managers
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+        //If the validator is already withdrawn 
         } else if (status == VALIDATOR_STATUS.WITHDRAWN) {
-            
-
+            if (withdrawalAmountGwei >= REQUIRED_BALANCE_GWEI) {
+                // then the excess is immediately withdrawable
+                amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
+                withdrawableRestakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
+            }
+            else {
+                withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
+            }
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
             revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
         }
+        //update podOwner's shares in the strategy managers
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
 
         // set the ETH validator status to withdrawn
         _validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.WITHDRAWN;
