@@ -487,7 +487,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testVerifyWithdrawalCredentialsWithInadequateBalance() public {
          // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
-        setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
+        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
         // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
@@ -551,8 +551,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
         uint256 beaconChainETHAfter = getBeaconChainETHShares(pod.podOwner());
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == pod.REQUIRED_BALANCE_WEI());
-        assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE);
+        emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
+        emit log_named_uint("beaconChainETHAfter", beaconChainETHAfter);
+        emit log_named_uint("REQUIRED_BALANCE_WEI", pod.REQUIRED_BALANCE_WEI());
+        assertTrue(beaconChainETHAfter - beaconChainETHBefore == _getEffectiveRestakedBalanceGwei(uint64(pod.REQUIRED_BALANCE_WEI()/GWEI_TO_WEI))*GWEI_TO_WEI, "pod balance not updated correcty");
+        assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 
     // // 5. Prove overcommitted balance
@@ -748,7 +751,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorRestaked(validatorIndex);
+        emit ValidatorBalanceUpdated(validatorIndex);
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
 
