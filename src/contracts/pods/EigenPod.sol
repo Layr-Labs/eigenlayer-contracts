@@ -419,10 +419,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             }
             //update podOwner's shares in the strategy managers
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+        } else if (status == VALIDATOR_STATUS.WITHDRAWN) {
+            
 
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
-            revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is WITHDRAWN or invalid VALIDATOR_STATUS");
+            revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
         }
 
         // set the ETH validator status to withdrawn
