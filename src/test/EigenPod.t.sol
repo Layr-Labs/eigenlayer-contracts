@@ -111,7 +111,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint256 REQUIRED_BALANCE_WEI = 31 ether;
+    uint256 REQUIRED_BALANCE_WEI = 32 ether;
 
     //performs basic deployment before each test
     function setUp() public {
@@ -1009,13 +1009,15 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 blockNumber = 1;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
-        emit log("ehehe");
         newPod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex, proofs, validatorFields);
 
         IStrategy beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
 
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(_podOwner, beaconChainETHStrategy);
-        require(beaconChainETHShares == REQUIRED_BALANCE_WEI, "strategyManager shares not updated correctly");
+        uint256 effectiveBalance = uint256(_getEffectiveRestakedBalanceGwei(uint64(REQUIRED_BALANCE_WEI/GWEI_TO_WEI))) * GWEI_TO_WEI;
+        emit log_named_uint("effective balance", effectiveBalance);
+        emit log_named_uint("beaconChainETHShares", beaconChainETHShares);
+        require(beaconChainETHShares == effectiveBalance, "strategyManager shares not updated correctly");
         return newPod;
     }
 
