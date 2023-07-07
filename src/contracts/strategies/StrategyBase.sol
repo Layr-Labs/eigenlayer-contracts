@@ -165,7 +165,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
 
-        underlyingToken.safeTransfer(depositor, amountToSend);
+        token.safeTransfer(depositor, amountToSend);
     }
 
 
