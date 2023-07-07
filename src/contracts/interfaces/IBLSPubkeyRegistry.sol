@@ -66,7 +66,7 @@ interface IBLSPubkeyRegistry is IRegistry {
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);
 
     /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
-    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory);
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external returns(uint32[] memory);
 
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);

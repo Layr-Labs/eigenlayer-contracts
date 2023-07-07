@@ -92,11 +92,16 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
     }
 
     /// @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
-    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory){
-        uint256[] memory indices = new uint256[](quorumNumbers.length);
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external returns(uint32[] memory){
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
+            
+            if(quorumApkUpdatesLength == 0 || blockNumber < quorumApkUpdates[quorumNumber][0].updateBlockNumber) {
+                revert("BLSPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber: blockNumber is before the first update");
+            }
+
             for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
                 if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = quorumApkUpdatesLength - j - 1;
@@ -104,7 +109,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 }
             }
         }
-        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
+        return indices;
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `

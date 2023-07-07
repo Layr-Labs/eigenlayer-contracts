@@ -271,6 +271,24 @@ contract MockAVSDeployer is Test {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, defaultSocket);
     }
 
+    /**
+     * @notice registers operator with coordinator 
+     */
+    function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96[] memory stakes) internal {
+        // quorumBitmap can only have 192 least significant bits
+        quorumBitmap &= type(uint192).max;
+
+        pubkeyCompendium.setBLSPublicKey(operator, pubKey);
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stakes[uint8(quorumNumbers[i])]);
+        }
+
+        cheats.prank(operator);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, defaultSocket);
+    }
+
     function _incrementAddress(address start, uint256 inc) internal pure returns(address) {
         return address(uint160(uint256(uint160(start) + inc)));
     }
