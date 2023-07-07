@@ -12,7 +12,7 @@ import "../libraries/BitmapUtils.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-abstract contract BLSSignatureChecker {
+contract BLSSignatureChecker {
     using BN254 for BN254.G1Point;    
 
     // DATA STRUCTURES
@@ -44,7 +44,7 @@ abstract contract BLSSignatureChecker {
 
     // gas cost of multiplying 2 pairings
     // TODO: verify this
-    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 113000;
+    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 200000;
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
@@ -115,9 +115,9 @@ abstract contract BLSSignatureChecker {
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
-                    if (i != 0) {
-                        require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
-                    }
+                    // if (i != 0) {
+                    //     require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
+                    // }
                     nonSignerQuorumBitmaps[i] = 
                         registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
                             nonSignerPubkeyHashes[i], 

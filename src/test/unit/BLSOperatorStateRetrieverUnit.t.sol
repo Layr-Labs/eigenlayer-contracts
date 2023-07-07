@@ -6,19 +6,6 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
-    uint8 maxQuorumsToRegisterFor = 4;
-    uint256 maxOperatorsToRegister = 4;
-    uint32 registrationBlockNumber = 100;
-    uint32 blocksBetweenRegistrations = 10;
-
-    struct OperatorMetadata {
-        uint256 quorumBitmap;
-        address operator;
-        bytes32 operatorId;
-        BN254.G1Point pubkey;
-        uint96[] stakes; // in every quorum for simplicity
-    }
-
     function setUp() virtual public {
         _deployMockEigenLayerAndAVS();
     }
@@ -174,50 +161,6 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
                 assertEq(checkSignaturesIndices.nonSignerStakeIndices[i][j], 0);
             }
         }
-    }
-
-    function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
-        OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
-        for (uint i = 0; i < operatorMetadatas.length; i++) {
-            // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
-            operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
-            operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
-            operatorMetadatas[i].pubkey = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, i)));
-            operatorMetadatas[i].operatorId = operatorMetadatas[i].pubkey.hashG1Point();
-            operatorMetadatas[i].stakes = new uint96[](maxQuorumsToRegisterFor);
-            for (uint j = 0; j < maxQuorumsToRegisterFor; j++) {
-                operatorMetadatas[i].stakes[j] = uint96(uint64(uint256(keccak256(abi.encodePacked("stakes", pseudoRandomNumber, i, j)))));
-            }
-        }
-
-        // get the index in quorumBitmaps of each operator in each quorum in the order they will register
-        uint256[][] memory expectedOperatorOverallIndices = new uint256[][](numQuorums);
-        for (uint i = 0; i < numQuorums; i++) {
-            uint32 numOperatorsInQuorum;
-            // for each quorumBitmap, check if the i'th bit is set
-            for (uint j = 0; j < operatorMetadatas.length; j++) {
-                if (operatorMetadatas[j].quorumBitmap >> i & 1 == 1) {
-                    numOperatorsInQuorum++;
-                }
-            }
-            expectedOperatorOverallIndices[i] = new uint256[](numOperatorsInQuorum);
-            uint256 numOperatorCounter;
-            for (uint j = 0; j < operatorMetadatas.length; j++) {
-                if (operatorMetadatas[j].quorumBitmap >> i & 1 == 1) {
-                    expectedOperatorOverallIndices[i][numOperatorCounter] = j;
-                    numOperatorCounter++;
-                }
-            }
-        }
-
-        // register operators
-        for (uint i = 0; i < operatorMetadatas.length; i++) {
-            cheats.roll(registrationBlockNumber + blocksBetweenRegistrations * i);
-            
-            _registerOperatorWithCoordinator(operatorMetadatas[i].operator, operatorMetadatas[i].quorumBitmap, operatorMetadatas[i].pubkey, operatorMetadatas[i].stakes);
-        }
-
-        return (operatorMetadatas, expectedOperatorOverallIndices);
     }
 
     function _assertExpectedOperators(
