@@ -6,13 +6,15 @@ import "../libraries/MiddlewareUtils.sol";
 import "../libraries/BN254.sol";
 import "../libraries/BitmapUtils.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-contract BLSSignatureChecker {
+contract BLSSignatureChecker is Test {
     using BN254 for BN254.G1Point;    
 
     // DATA STRUCTURES
@@ -78,7 +80,7 @@ contract BLSSignatureChecker {
         uint32 referenceBlockNumber, 
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
-        public view
+        public 
         returns (
             QuorumStakeTotals memory,
             bytes32
@@ -124,11 +126,12 @@ contract BLSSignatureChecker {
                             referenceBlockNumber, 
                             nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
                         );
+                    
                     // subtract the nonSignerPubkey from the running apk to get the apk of all signers
                     apk = apk.plus(
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
-                            .scalar_mul_tiny(
+                            .scalar_mul(
                                 BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
                             )
                     );
