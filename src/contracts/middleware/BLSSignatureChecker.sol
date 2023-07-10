@@ -79,7 +79,7 @@ contract BLSSignatureChecker {
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
         public 
-        // view
+        view
         returns (
             QuorumStakeTotals memory,
             bytes32
