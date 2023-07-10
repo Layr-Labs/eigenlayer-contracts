@@ -132,7 +132,7 @@ contract BLSSignatureChecker is Test {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul(
-                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of, TODO: 
                             )
                     );
                 }
