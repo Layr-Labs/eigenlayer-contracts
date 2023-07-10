@@ -46,7 +46,7 @@ contract BLSSignatureChecker is Test {
 
     // gas cost of multiplying 2 pairings
     // TODO: verify this
-    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 200000;
+    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
@@ -81,6 +81,7 @@ contract BLSSignatureChecker is Test {
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
         public 
+        view
         returns (
             QuorumStakeTotals memory,
             bytes32
@@ -97,7 +98,7 @@ contract BLSSignatureChecker is Test {
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
                     ),
-                "BLSSignatureChecker.checkSignatures: quorumApkIndex does not match quorum apk"
+                "BLSSignatureChecker.checkSignatures: quorumApk hash in storage does not match provided quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
         }

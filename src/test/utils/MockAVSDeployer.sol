@@ -30,6 +30,7 @@ import "../mocks/BLSPublicKeyCompendiumMock.sol";
 import "../mocks/EmptyContract.sol";
 
 import "../harnesses/StakeRegistryHarness.sol";
+import "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -47,13 +48,13 @@ contract MockAVSDeployer is Test {
     EmptyContract public emptyContract;
     BLSPublicKeyCompendiumMock public pubkeyCompendium;
 
-    IBLSRegistryCoordinatorWithIndices public registryCoordinatorImplementation;
+    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSPubkeyRegistry public blsPubkeyRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
 
     BLSOperatorStateRetriever public operatorStateRetriever;
-    BLSRegistryCoordinatorWithIndices public registryCoordinator;
+    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     IBLSPubkeyRegistry public blsPubkeyRegistry;
     IIndexRegistry public indexRegistry;
@@ -135,7 +136,7 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(serviceManagerOwner);
         // make the serviceManagerOwner the owner of the serviceManager contract
         serviceManagerMock = new ServiceManagerMock(slasher);
-        registryCoordinator = BLSRegistryCoordinatorWithIndices(address(
+        registryCoordinator = BLSRegistryCoordinatorWithIndicesHarness(address(
             new TransparentUpgradeableProxy(
                 address(emptyContract),
                 address(proxyAdmin),
@@ -209,7 +210,7 @@ contract MockAVSDeployer is Test {
             )
         );
 
-        registryCoordinatorImplementation = new BLSRegistryCoordinatorWithIndices(
+        registryCoordinatorImplementation = new BLSRegistryCoordinatorWithIndicesHarness(
             slasher,
             serviceManagerMock,
             stakeRegistry,
