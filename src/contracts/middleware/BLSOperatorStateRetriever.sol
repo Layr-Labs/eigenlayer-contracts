@@ -96,7 +96,7 @@ contract BLSOperatorStateRetriever {
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
-    ) external returns (CheckSignaturesIndices memory) {
+    ) external view returns (CheckSignaturesIndices memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 
