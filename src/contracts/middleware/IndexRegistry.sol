@@ -6,9 +6,7 @@ import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
 
-import "forge-std/Test.sol";
-
-contract IndexRegistry is Test, IIndexRegistry {
+contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator public immutable registryCoordinator;
 
@@ -139,11 +137,9 @@ contract IndexRegistry is Test, IIndexRegistry {
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
     function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
-        emit log_named_uint("quorumOperatorList.length", quorumOperatorList.length);
         for (uint i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
-            emit log_named_uint("index", index);
             // if the operator was not in the quorum at the given block number, skip it
             if (index == type(uint32).max)
                 continue;

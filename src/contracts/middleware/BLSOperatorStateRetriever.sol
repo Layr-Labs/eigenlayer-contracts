@@ -8,13 +8,11 @@ import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
  * @author Layr Labs Inc.
  */
-contract BLSOperatorStateRetriever is Test {
+contract BLSOperatorStateRetriever {
     struct Operator {
         bytes32 operatorId;
         uint96 stake;
@@ -136,8 +134,6 @@ contract BLSOperatorStateRetriever is Test {
                 nonSignerStakeIndicesForQuorum[i] = checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
             }
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
-            emit log_named_uint("numNonSignersForQuorum", numNonSignersForQuorum);
-            emit log_named_uint("nonSignerOperatorIds.length", nonSignerOperatorIds.length);
         }
 
         IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();
