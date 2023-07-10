@@ -102,7 +102,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 0);
         assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length);
         assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, 0);
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length);
 
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
@@ -145,7 +145,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, nonSignerOperatorIds.length);
         assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length);
         assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, nonSignerOperatorIds.length);
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length);
 
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
@@ -154,9 +154,11 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
             assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1);
         }
 
-        // assert the indices are zero because there have been no kicks or stake updates
+        // assert the quorum bitmap and stake indices are zero because there have been no kicks or stake updates
         for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
             assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[i], 0);
+        }
+        for (uint i = 0; i < checkSignaturesIndices.nonSignerStakeIndices.length; i++) {
             for (uint j = 0; j < checkSignaturesIndices.nonSignerStakeIndices[i].length; j++) {
                 assertEq(checkSignaturesIndices.nonSignerStakeIndices[i][j], 0);
             }

@@ -138,7 +138,6 @@ contract BLSSignatureChecker is Test {
                     );
                 }
             }
-
             // loop through each quorum number
             for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {
                 // get the quorum number
@@ -147,7 +146,7 @@ contract BLSSignatureChecker is Test {
                 quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex] = 
                     stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[quorumNumberIndex]);
                 // copy total stake to signed stake
-                quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumber];
+                quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex];
                 // loop through all nonSigners, checking that they are a part of the quorum via their quorumBitmap
                 // if so, load their stake at referenceBlockNumber and subtract it from running stake signed
                 for (uint32 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
@@ -160,7 +159,7 @@ contract BLSSignatureChecker is Test {
                                 quorumNumber,
                                 referenceBlockNumber,
                                 nonSignerPubkeyHashes[i],
-                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumber][nonSignerForQuorumIndex]
+                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumberIndex][nonSignerForQuorumIndex]
                             );
                         unchecked {
                             ++nonSignerForQuorumIndex;
