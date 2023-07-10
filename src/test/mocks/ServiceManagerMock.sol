@@ -4,10 +4,9 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/ISlasher.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-import "forge-std/Test.sol";
-
-contract ServiceManagerMock is IServiceManager, DSTest {
+contract ServiceManagerMock is IServiceManager, Test {
     ISlasher public slasher;
 
     constructor(ISlasher _slasher) {
@@ -38,9 +37,14 @@ contract ServiceManagerMock is IServiceManager, DSTest {
         return IERC20(address(0));
     }
 
-    /// @notice The Delegation contract of EigenLayer.
-    function delegationManager() external pure returns (IDelegationManager) {
-        return IDelegationManager(address(0));
+    // @notice The service's VoteWeigher contract, which could be this contract itself
+    function voteWeigher() external pure returns (IVoteWeigher) {
+        return IVoteWeigher(address(0));
+    }
+
+    // @notice The service's PaymentManager contract, which could be this contract itself
+    function paymentManager() external pure returns (IPaymentManager) {
+        return IPaymentManager(address(0));
     }
 
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
