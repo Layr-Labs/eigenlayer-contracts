@@ -81,7 +81,7 @@ contract BLSSignatureChecker is Test {
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
         public 
-        view
+        // view
         returns (
             QuorumStakeTotals memory,
             bytes32
@@ -154,6 +154,8 @@ contract BLSSignatureChecker is Test {
                     uint32 nonSignerForQuorumIndex = 0;
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
                     if (nonSignerQuorumBitmaps[i] >> quorumNumber & 1 == 1) {
+                        emit log_named_uint("nonSignerForQuorumIndex", nonSignerForQuorumIndex);
+                        emit log_named_uint("nonSignerStakeIndicesLength", nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumberIndex].length);
                         quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] -=
                             stakeRegistry.getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(
                                 quorumNumber,

@@ -120,7 +120,7 @@ contract BLSOperatorStateRetriever is Test {
                     );
                 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
-                if (nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex]) == 1) {
+                if (nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex]) & 1 == 1) {
                     checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
                         nonSignerOperatorIds[i],
                         uint8(quorumNumbers[quorumNumberIndex]),
@@ -136,6 +136,8 @@ contract BLSOperatorStateRetriever is Test {
                 nonSignerStakeIndicesForQuorum[i] = checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
             }
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
+            emit log_named_uint("numNonSignersForQuorum", numNonSignersForQuorum);
+            emit log_named_uint("nonSignerOperatorIds.length", nonSignerOperatorIds.length);
         }
 
         IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();

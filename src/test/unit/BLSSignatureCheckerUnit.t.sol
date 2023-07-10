@@ -58,7 +58,7 @@ contract BLSSignatureCheckerUnitTests is MockAVSDeployer {
         // 2 nonSigners: 197410
     }
 
-    function testBLSSignatureChecker_FuzzedQuorum_Valid(uint256 pseudoRandomNumber) public { 
+    function testBLSSignatureChecker_100Quorums_Valid(uint256 pseudoRandomNumber) public { 
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
         // 100 set bits
@@ -72,8 +72,6 @@ contract BLSSignatureCheckerUnitTests is MockAVSDeployer {
         nonSignerStakesAndSignature.apkG2 = oneHundredQuorumApkG2;
 
         uint256 gasBefore = gasleft();
-        emit log_named_uint("numNonSigners", quorumNumbers.length);
-
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,

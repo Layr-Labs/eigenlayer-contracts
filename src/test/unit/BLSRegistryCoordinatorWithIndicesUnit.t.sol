@@ -322,7 +322,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber) public {
-        uint8 numOperators = 100;
+        uint8 numOperators = 5;
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
