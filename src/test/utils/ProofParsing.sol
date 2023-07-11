@@ -38,6 +38,10 @@ contract ProofParsing is Test{
         return stdJson.readUint(proofConfigJson, ".validatorIndex");
     }
 
+    function getValidatorPubkeyHash() public returns(bytes32) {
+        return stdJson.readBytes32(proofConfigJson, ".ValidatorFields[0]");
+    }
+
     function getWithdrawalIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".withdrawalIndex");
     }

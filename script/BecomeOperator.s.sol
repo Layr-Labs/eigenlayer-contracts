@@ -11,3 +11,6 @@ contract BecomeOperator is Script, DSTest, EigenLayerParser {
         delegation.registerAsOperator(IDelegationTerms(msg.sender));
     }
 }
+
+
+
