@@ -35,7 +35,6 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         uint256 operatorIndexToDeregister = pseudoRandomNumber % maxOperatorsToRegister;
         bytes memory quorumNumbersToDeregister = BitmapUtils.bitmapToBytesArray(operatorMetadatas[operatorIndexToDeregister].quorumBitmap);
-        BN254.G1Point memory pubkeyToDeregister = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, operatorIndexToDeregister)));
         bytes32[] memory operatorIdsToSwap = new bytes32[](quorumNumbersToDeregister.length);
         for (uint i = 0; i < quorumNumbersToDeregister.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbersToDeregister[i]);
@@ -46,7 +45,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         cheats.roll(deregistrationBlockNumber);
 
         cheats.prank(_incrementAddress(defaultOperator, operatorIndexToDeregister));
-        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbersToDeregister, pubkeyToDeregister, operatorIdsToSwap);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbersToDeregister, operatorMetadatas[operatorIndexToDeregister].pubkey, operatorIdsToSwap);
 
         // modify expectedOperatorOverallIndices accordingly
         for (uint i = 0; i < quorumNumbersToDeregister.length; i++) {
