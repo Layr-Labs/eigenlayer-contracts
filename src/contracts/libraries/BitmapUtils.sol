@@ -94,12 +94,12 @@ library BitmapUtils {
     /**
      * @notice Converts an ordered array of bytes into a bitmap. Optimized, Yul-heavy version of `orderedBytesArrayToBitmap`.
      * @param orderedBytesArray The array of bytes to convert/compress into a bitmap. Must be in strictly ascending order.
-     * @return The resulting bitmap.
+     * @return bitmap The resulting bitmap.
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap.
      * @dev This function will eventually revert in the event that the `orderedBytesArray` is not properly ordered (in ascending order).
      * @dev This function will also revert if the `orderedBytesArray` input contains any duplicate entries (i.e. duplicate bytes).
      */
-    function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) internal pure returns (uint256) {
+    function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) internal pure returns (uint256 bitmap) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
             "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");
@@ -111,7 +111,7 @@ library BitmapUtils {
 
         assembly {
             // get first entry in bitmap (single byte => single-bit mask)
-            let bitmap :=
+            bitmap :=
                 shl(
                     // extract single byte to get the correct value for the left shift
                     shr(
@@ -146,9 +146,6 @@ library BitmapUtils {
                 // update the bitmap by adding the single bit in the mask
                 bitmap := or(bitmap, bitMask)
             }
-            // after the loop is complete, store the bitmap at the value encoded at the free memory pointer, then return it
-            mstore(mload(0x40), bitmap)
-            return(mload(0x40), 32)
         }
     }
 
