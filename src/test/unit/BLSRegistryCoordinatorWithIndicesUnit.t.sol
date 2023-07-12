@@ -6,7 +6,7 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
-    event OperatorSocketUpdate(bytes32 operatorId, string socket);
+    event OperatorSocketUpdate(address operator, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
@@ -80,7 +80,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(defaultOperatorId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        emit OperatorSocketUpdate(defaultOperator, defaultSocket);
 
         uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
@@ -131,7 +131,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             emit QuorumIndexUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
         }    
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        emit OperatorSocketUpdate(defaultOperator, defaultSocket);
 
         uint256 gasBefore = gasleft();
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
