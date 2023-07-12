@@ -6,9 +6,7 @@ import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BN254.sol";
 
-import "forge-std/Test.sol";
-
-contract IndexRegistry is Test, IIndexRegistry {
+contract IndexRegistry is IIndexRegistry {
 
     IRegistryCoordinator public immutable registryCoordinator;
 
@@ -137,13 +135,11 @@ contract IndexRegistry is Test, IIndexRegistry {
     }
 
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
-    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external returns (bytes32[] memory){
+    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
-        emit log_named_uint("quorumOperatorList.length", quorumOperatorList.length);
         for (uint i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
-            emit log_named_uint("index", index);
             // if the operator was not in the quorum at the given block number, skip it
             if (index == type(uint32).max)
                 continue;
@@ -225,7 +221,7 @@ contract IndexRegistry is Test, IIndexRegistry {
         for (uint256 i = 0; i <= totalOperatorsHistoryLength - 1; i++) {
             uint256 listIndex = (totalOperatorsHistoryLength - 1) - i;
             OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][listIndex];
-            // look for the first update that began at or after `blockNumber`
+            // look for the first update that began before or at `blockNumber`
             if (totalOperatorUpdate.fromBlockNumber <= blockNumber) {
                 return _totalOperatorsHistory[quorumNumber][listIndex].index;
             }
@@ -237,8 +233,7 @@ contract IndexRegistry is Test, IIndexRegistry {
     /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
     function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
         uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
-        // loop forward through index history to find the index of the operator at the given block number
-        // this is less efficient than looping backwards, but is simpler logic and only called in view functions that aren't mined onchain
+        // loop backward through index history to find the index of the operator at the given block number
         for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
             uint256 listIndex = (operatorIndexHistoryLength - 1) - i;
             OperatorIndexUpdate memory operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][listIndex];
