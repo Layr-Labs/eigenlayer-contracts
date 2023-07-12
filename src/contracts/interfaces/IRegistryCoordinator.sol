@@ -30,8 +30,6 @@ interface IRegistryCoordinator {
     struct Operator {
         // the id of the operator, which is likely the keccak256 hash of the operator's public key if using BLSRegsitry
         bytes32 operatorId;
-        // start taskNumber from which the  operator has been registered
-        uint32 fromTaskNumber; // TODO: REMOVE
         // indicates whether the operator is actively registered for serving the middleware or not
         OperatorStatus status;
     }
@@ -62,11 +60,14 @@ interface IRegistryCoordinator {
      */ 
     function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external view returns (uint192);
 
+    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory);
+
     /// @notice Returns the current quorum bitmap for the given `operatorId`
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192);
 
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(address operator) external view returns (uint32);
+    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256);
 
     /// @notice Returns the registry at the desired index
     function registries(uint256) external view returns (address);

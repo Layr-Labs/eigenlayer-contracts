@@ -21,7 +21,7 @@ library BitmapUtils {
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      * @dev This function will also revert if the `bytesArray` input contains any duplicate entries (i.e. duplicate bytes).
      */
-    function bytesArrayToBitmap(bytes calldata bytesArray) internal pure returns (uint256) {
+    function bytesArrayToBitmap(bytes memory bytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
             "BitmapUtils.bytesArrayToBitmap: bytesArray is too long");
@@ -60,7 +60,7 @@ library BitmapUtils {
      * @dev This function will eventually revert in the event that the `orderedBytesArray` is not properly ordered (in ascending order).
      * @dev This function will also revert if the `orderedBytesArray` input contains any duplicate entries (i.e. duplicate bytes).
      */
-    function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) internal pure returns (uint256) {
+    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
             "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");

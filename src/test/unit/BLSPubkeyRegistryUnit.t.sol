@@ -5,7 +5,7 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/interfaces/IRegistryCoordinator.sol";
-import "../mocks/PublicKeyCompendiumMock.sol";
+import "../mocks/BLSPublicKeyCompendiumMock.sol";
 import "../mocks/RegistryCoordinatorMock.sol";
 
 
@@ -17,8 +17,6 @@ contract BLSPubkeyRegistryUnitTests is Test {
     address defaultOperator2 = address(4546);
 
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
-
-
 
     BLSPubkeyRegistry public blsPubkeyRegistry;
     BLSPublicKeyCompendiumMock public pkCompendium;
