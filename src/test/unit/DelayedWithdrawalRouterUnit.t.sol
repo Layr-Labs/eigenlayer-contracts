@@ -123,7 +123,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         cheats.assume(recipient != address(0));
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsBefore = delayedWithdrawalRouter.userWithdrawals(recipient);
         uint224 delayedWithdrawalAmount = 0;
-
+        cheats.assume(recipient != address(0)); 
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.deal(podAddress, delayedWithdrawalAmount);
         cheats.startPrank(podAddress);

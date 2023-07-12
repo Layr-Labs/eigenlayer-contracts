@@ -46,6 +46,10 @@ library BN254 {
         uint256[2] Y;
     }
 
+    function generatorG1() internal pure returns (G1Point memory) {
+        return G1Point(1, 2);
+    }
+
     // generator of group G2
     /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
     uint256 internal constant G2x1 =
@@ -125,6 +129,30 @@ library BN254 {
         }
 
         require(success, "ec-add-failed");
+    }
+
+    /**
+     * @notice an optimized ecMul implementation that takes O(log_2(s)) ecAdds
+     * @param p the point to multiply
+     * @param s the scalar to multiply by
+     * @dev this function is only safe to use if the scalar is 9 bits or less
+     */ 
+    function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
+        require(s < 2**9, "scalar-too-large");
+        // the accumulated product to return
+        BN254.G1Point memory acc = BN254.G1Point(0, 0);
+        // the 2^n*p to add to the accumulated product in each iteration
+        BN254.G1Point memory p2n = p;
+        // loop through each bit of s
+        for (uint8 i = 0; i < 9; i++) {
+            // if the bit is 1, add the 2^n*p to the accumulated product
+            if (s >> i & 1 == 1) {
+                acc = plus(acc, p2n);
+            }
+            // double the 2^n*p for the next iteration
+            p2n = plus(p2n, p2n);
+        }
+        return acc;
     }
 
     /**
@@ -260,11 +288,18 @@ library BN254 {
         return keccak256(abi.encodePacked(pk.X, pk.Y));
     }
 
+    /// @return the keccak256 hash of the G2 Point
+    /// @dev used for BLS signatures
+    function hashG2Point(
+        BN254.G2Point memory pk
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
+    }
 
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
      */
-    function hashToG1(bytes32 _x) internal view returns (uint256, uint256) {
+    function hashToG1(bytes32 _x) internal view returns (G1Point memory) {
         uint256 beta = 0;
         uint256 y = 0;
 
@@ -276,12 +311,12 @@ library BN254 {
 
             // y^2 == beta
             if( beta == mulmod(y, y, FP_MODULUS) ) {
-                return (x, y);
+                return G1Point(x, y);
             }
 
             x = addmod(x, 1, FP_MODULUS);
         }
-        return (0, 0);
+        return G1Point(0, 0);
     }
 
     /**

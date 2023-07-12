@@ -7,9 +7,15 @@ import "../../contracts/interfaces/IDelegationManager.sol";
 
 contract DelegationMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
+    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
+    }
+
+    /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
+    function setOperatorShares(address operator, IStrategy strategy, uint256 shares) external {
+        operatorShares[operator][strategy] = shares;
     }
 
     mapping (address => address) public delegatedTo;
@@ -20,9 +26,7 @@ contract DelegationMock is IDelegationManager, Test {
         delegatedTo[msg.sender] = operator;
     }
 
-
     function delegateToBySignature(address /*staker*/, address /*operator*/, uint256 /*expiry*/, bytes memory /*signature*/) external {}
-
 
     function undelegate(address staker) external {
         delegatedTo[staker] = address(0);
@@ -30,10 +34,6 @@ contract DelegationMock is IDelegationManager, Test {
 
     /// @notice returns the DelegationTerms of the `operator`, which may mediate their interactions with stakers who delegate to them.
     function delegationTerms(address /*operator*/) external view returns (IDelegationTerms) {}
-
-    /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-    function operatorShares(address /*operator*/, IStrategy /*strategy*/) external view returns (uint256) {}
-
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external {}
 
