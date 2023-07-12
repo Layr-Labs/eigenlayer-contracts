@@ -414,7 +414,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice verifies that multiple full withdrawals for a single validator fail
-    function testDoubleFullWithdrawal() public {
+    function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
         IEigenPod newPod = testFullWithdrawalFlow();
         BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
@@ -430,6 +430,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
         require(getBeaconChainETHShares(podOwner) - beaconChainSharesBefore == beaconChainSharesBefore, "beacon chain shares not incremented correctly");
         require(newPod.withdrawableRestakedExecutionLayerGwei() - withdrawableRestakedGwei == withdrawableRestakedGwei, "withdrawableRestakedExecutionLayerGwei not incremented correctly");
+
+        return newPod;
     }
 
     function testDeployAndVerifyNewEigenPod() public returns(IEigenPod) {
@@ -925,6 +927,56 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal(bytes memory signature, bytes32 depositDataRoot) external {
+        setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61336.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        strategyArray[0] = strategyManager.beaconChainETHStrategy();
+        uint256[] memory shareAmounts = new uint256[](1);
+        shareAmounts[0] = 31e18;
+        bool undelegateIfPossible = false;
+        cheats.expectRevert("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
+        _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
+    }
+
+    function testQueueBeaconChainETHWithdrawal(bytes memory signature, bytes32 depositDataRoot) external {
+        IEigenPod pod = testFullWithdrawalFlow();
+
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
+
+        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
+        
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        strategyArray[0] = strategyManager.beaconChainETHStrategy();
+        uint256[] memory shareAmounts = new uint256[](1);
+        shareAmounts[0] = _getEffectiveRestakedBalanceGwei(pod.REQUIRED_BALANCE_GWEI()) * GWEI_TO_WEI;
+        bool undelegateIfPossible = false;
+
+        emit log_named_uint("hello", strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy()));
+        _verifyEigenPodInvariant(podOwner, pod, validatorPubkeyHash);
+
+        _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
+        
+        _verifyEigenPodInvariant(podOwner, pod, validatorPubkeyHash);
+
+        require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmounts[0]/GWEI_TO_WEI, "withdrawableRestakedExecutionLayerGwei not decremented correctly");
+    }
+
+    function _verifyEigenPodInvariant(address podOwner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
+        uint256 sharesInSM = strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy());
+        uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        
+        EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
+
+        uint64 validatorBalanceGwei = info.restakedBalanceGwei;
+
+        require(sharesInSM/GWEI_TO_WEI == _getEffectiveRestakedBalanceGwei(validatorBalanceGwei) + _getEffectiveRestakedBalanceGwei(withdrawableRestakedExecutionLayerGwei), "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
+    }
+
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
     // verifies that the storage of DelegationManager contract is updated appropriately
     function _testRegisterAsOperator(address sender, IDelegationTerms dt) internal {
@@ -1151,6 +1203,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _getEffectiveRestakedBalanceGwei(uint64 amountGwei) internal returns (uint64){
+        if(amountGwei < 75e7) {
+            return 0;
+        }
         //calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET
         uint64 effectiveBalance = uint64((amountGwei - 75e7) / GWEI_TO_WEI * GWEI_TO_WEI);
         return uint64(MathUpgradeable.min(32e9, effectiveBalance));

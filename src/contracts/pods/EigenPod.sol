@@ -404,6 +404,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         uint256 currentValidatorRestakedBalanceWei = _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei * GWEI_TO_WEI;
         
+        /**
+        * If the validator is already withdrawn and additional deposits are made, they will be automatically withdrawn
+        * in the beacon chain as a full withdrawal.  Thus we account for them in the strategyManager and increment
+        * the withdrawableRestakedExecutionLayerGwei balance.
+        */
         if (status == VALIDATOR_STATUS.ACTIVE || status == VALIDATOR_STATUS.WITHDRAWN) {
             // if the withdrawal amount is greater than the REQUIRED_BALANCE_GWEI (i.e. the amount restaked on EigenLayer, per ETH validator)
             if (withdrawalAmountGwei >= REQUIRED_BALANCE_GWEI) {
@@ -420,11 +425,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             //update podOwner's shares in the strategy managers
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
 
-        /**
-        * If the validator is already withdrawn and additional deposits are made, they will be automatically withdrawn
-        * in the beacon chain as a full withdrawal.  Thus we account for them in the strategyManager and increment
-        * the withdrawableRestakedExecutionLayerGwei balance.
-        */
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
             revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
@@ -495,6 +495,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal pure returns (uint64){
+        if (amountGwei <= EFFECTIVE_RESTAKED_BALANCE_OFFSET) {
+            return 0;
+        }
         /**
         * calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET.  By using integer division 
         * (dividing by GWEI_TO_WEI = 1e9 and then multiplying by 1e9, we effectively "round down" amountGwei to 
