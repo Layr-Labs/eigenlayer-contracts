@@ -59,10 +59,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     
 
     ///@notice The maximum amount of ETH, in gwei, a validator can have staked in the beacon chain
-    // TODO: consider making this settable by owner
     uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI;
 
-    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET;
+    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
 
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -149,13 +148,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IEigenPodManager _eigenPodManager,
         uint256 _REQUIRED_BALANCE_WEI,
         uint64 _MAX_VALIDATOR_BALANCE_GWEI,
-        uint64 _EFFECTIVE_RESTAKED_BALANCE_OFFSET
+        uint64 _EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_VALIDATOR_BALANCE_GWEI = _MAX_VALIDATOR_BALANCE_GWEI;
-        EFFECTIVE_RESTAKED_BALANCE_OFFSET = _EFFECTIVE_RESTAKED_BALANCE_OFFSET;
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI = _EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
         REQUIRED_BALANCE_WEI = _REQUIRED_BALANCE_WEI;
         REQUIRED_BALANCE_GWEI = uint64(_REQUIRED_BALANCE_WEI / GWEI_TO_WEI);
         require(_REQUIRED_BALANCE_WEI % GWEI_TO_WEI == 0, "EigenPod.contructor: _REQUIRED_BALANCE_WEI is not a whole number of gwei");
@@ -204,7 +203,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == bytes32(_podWithdrawalCredentials()),
             "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod");
-        // deserialize the balance field from the balanceRoot
+        /**
+        * Deserialize the balance field from the Validator struct.  Note that this is the "effective" balance of the validator
+        * rather than the current balance.  Effective balance is generated via a hystersis function such that an effective 
+        * balance, always a multiple of 1 ETH, will only lower to the next multiple of 1 ETH if the current balance is less
+        * than 0.25 ETH below their current effective balance.  For example, if the effective balance is 31ETH, it only falls to 
+        * 30ETH when the true balance falls below 30.75ETH.  Thus in the worst case, the effective balance is overestimating the
+        * actual validator balance by 0.25 ETH.  In EigenLayer, we calculate our own "effective reskated balance" which is a further pessimistic
+        * view of the validator's effective balance.
+        */
         uint64 validatorCurrentBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
 
         // make sure the balance is greater than the amount restaked per validator
@@ -265,8 +272,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
         {
-            VALIDATOR_STATUS validatorStatus = _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
-            require(validatorStatus == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
+            require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         }
         // deserialize the balance field from the balanceRoot
         uint64 validatorNewBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
@@ -274,22 +280,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify ETH validator proof
         bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
  
-        /**
-         * If validator's balance is zero, then either they have fully withdrawn or they have been slashed down zero.
-         * If the validator *has* been slashed, then this function can proceed. If they have *not* been slashed, then
-         * the `verifyAndProcessWithdrawal` function should be called instead.
-         */
-        if (validatorNewBalanceGwei == 0) {
-            uint64 slashedStatus = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX]);
-            require(slashedStatus == 1, "EigenPod.verifyBalanceUpdate: Validator must be slashed to be overcommitted");
-            //Verify the validator fields, which contain the validator's slashed status
-            BeaconChainProofs.verifyValidatorFields(
-                validatorIndex,
-                beaconStateRoot,
-                proofs.validatorFieldsProof,
-                validatorFields
-            );
-        }
         // verify ETH validator's current balance, which is stored in the `balances` container of the beacon state
        BeaconChainProofs.verifyValidatorBalance(
             validatorIndex,
@@ -405,6 +395,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         VALIDATOR_STATUS status
     ) internal {
         uint256 amountToSend;
+        uint256 amountSharesToUpdate;
 
         uint256 currentValidatorRestakedBalanceWei = _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei * GWEI_TO_WEI;
         
@@ -420,14 +411,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
                 // and the extra execution layer ETH in the contract is REQUIRED_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
                 withdrawableRestakedExecutionLayerGwei += REQUIRED_BALANCE_GWEI;
+                amountSharesToUpdate = _calculateEffectedRestakedBalanceGwei(REQUIRED_BALANCE_GWEI) * GWEI_TO_WEI;
                 
             } else {
                 // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
                 withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
+                amountSharesToUpdate = _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI;
 
             }
-            //update podOwner's shares in the strategy managers
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, _calculateEffectedRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI);
+            //update podOwner's shares in the strategy manager
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, amountSharesToUpdate);
 
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
@@ -499,17 +492,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64){
-        if (amountGwei <= EFFECTIVE_RESTAKED_BALANCE_OFFSET) {
+        if (amountGwei <= EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI) {
             return 0;
         }
         /**
-        * calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET.  By using integer division 
+        * calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division 
         * (dividing by GWEI_TO_WEI = 1e9 and then multiplying by 1e9, we effectively "round down" amountGwei to 
         * the nearest ETH, effectively calculating the floor of amountGwei.
         */
-        uint64 effectiveBalance = uint64((amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET) / GWEI_TO_WEI * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalance));
+        uint64 effectiveBalanceGwei = uint64((amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
+        return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
+
+
 
 
     /**
