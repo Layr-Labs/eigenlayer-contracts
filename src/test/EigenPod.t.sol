@@ -112,6 +112,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
+    uint64  MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64  EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
 
     //performs basic deployment before each test
     function setUp() public {
@@ -148,7 +150,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 ethPOSDeposit, 
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
-                REQUIRED_BALANCE_WEI
+                REQUIRED_BALANCE_WEI,
+                MAX_VALIDATOR_BALANCE_GWEI,
+                EFFECTIVE_RESTAKED_BALANCE_OFFSET
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
@@ -956,17 +960,16 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         shareAmounts[0] = _getEffectiveRestakedBalanceGwei(pod.REQUIRED_BALANCE_GWEI()) * GWEI_TO_WEI;
         bool undelegateIfPossible = false;
 
-        emit log_named_uint("hello", strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy()));
-        _verifyEigenPodInvariant(podOwner, pod, validatorPubkeyHash);
+        _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
         _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
         
-        _verifyEigenPodInvariant(podOwner, pod, validatorPubkeyHash);
+        _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
         require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmounts[0]/GWEI_TO_WEI, "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
 
-    function _verifyEigenPodInvariant(address podOwner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
+    function _verifyEigenPodBalanceSharesInvariant(address podOwner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
         uint256 sharesInSM = strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy());
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         

@@ -72,7 +72,9 @@ contract GoerliUpgrade1 is Script, Test {
                 IETHPOSDeposit(0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b),
                 delayedWithdrawalRouter,
                 eigenPodManager,
-                31 ether
+                31 ether,
+                32e9,
+                75e7
             )
         );
 

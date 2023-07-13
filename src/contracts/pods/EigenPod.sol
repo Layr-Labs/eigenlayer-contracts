@@ -60,9 +60,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     ///@notice The maximum amount of ETH, in gwei, a validator can have staked in the beacon chain
     // TODO: consider making this settable by owner
-    uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI;
 
-    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
+    uint64 public immutable EFFECTIVE_RESTAKED_BALANCE_OFFSET;
 
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -147,11 +147,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IETHPOSDeposit _ethPOS,
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
-        uint256 _REQUIRED_BALANCE_WEI
+        uint256 _REQUIRED_BALANCE_WEI,
+        uint64 _MAX_VALIDATOR_BALANCE_GWEI,
+        uint64 _EFFECTIVE_RESTAKED_BALANCE_OFFSET
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
+        MAX_VALIDATOR_BALANCE_GWEI = _MAX_VALIDATOR_BALANCE_GWEI;
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET = _EFFECTIVE_RESTAKED_BALANCE_OFFSET;
         REQUIRED_BALANCE_WEI = _REQUIRED_BALANCE_WEI;
         REQUIRED_BALANCE_GWEI = uint64(_REQUIRED_BALANCE_WEI / GWEI_TO_WEI);
         require(_REQUIRED_BALANCE_WEI % GWEI_TO_WEI == 0, "EigenPod.contructor: _REQUIRED_BALANCE_WEI is not a whole number of gwei");
@@ -494,7 +498,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
     }
 
-    function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal pure returns (uint64){
+    function _calculateEffectedRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64){
         if (amountGwei <= EFFECTIVE_RESTAKED_BALANCE_OFFSET) {
             return 0;
         }

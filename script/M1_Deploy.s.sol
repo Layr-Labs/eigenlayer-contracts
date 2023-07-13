@@ -77,6 +77,8 @@ contract Deployer_M1 is Script, Test {
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
+    uint256 MAX_VALIDATOR_BALANCE_GWEI;
+    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -110,6 +112,8 @@ contract Deployer_M1 is Script, Test {
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
+        MAX_VALIDATOR_BALANCE_GWEI = stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI");
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET = stdJson.readUint(config_data, ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET");
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -171,7 +175,9 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI
+            REQUIRED_BALANCE_WEI,
+            uint64(MAX_VALIDATOR_BALANCE_GWEI),
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET)
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
