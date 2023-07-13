@@ -8,6 +8,9 @@ import "../libraries/BN254.sol";
 
 contract IndexRegistry is IIndexRegistry {
 
+    /// @notice The value that indices of deregistered operators are set to
+    uint32 public constant OPERATOR_DEREGISTERED_INDEX = type(uint32).max;
+
     IRegistryCoordinator public immutable registryCoordinator;
 
     // list of all operators ever registered, may include duplicates. used to avoid running an indexer on nodes
@@ -141,7 +144,7 @@ contract IndexRegistry is IIndexRegistry {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
             // if the operator was not in the quorum at the given block number, skip it
-            if (index == type(uint32).max)
+            if (index == OPERATOR_DEREGISTERED_INDEX)
                 continue;
             quorumOperatorList[index] = operatorId;
         }
@@ -195,8 +198,9 @@ contract IndexRegistry is IIndexRegistry {
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexOfOperatorToRemove);
         } 
-        // marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number, setting the index to type(uint32).max
-        _updateOperatorIdToIndexHistory(operatorId, quorumNumber, type(uint32).max);
+        // marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number, 
+        // setting the index to OPERATOR_DEREGISTERED_INDEX. Note that this is a special meaning, and any other index value represents a real index
+        _updateOperatorIdToIndexHistory(operatorId, quorumNumber, OPERATOR_DEREGISTERED_INDEX);
     }
 
 
@@ -238,11 +242,13 @@ contract IndexRegistry is IIndexRegistry {
             uint256 listIndex = (operatorIndexHistoryLength - 1) - i;
             OperatorIndexUpdate memory operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][listIndex];
             if (operatorIndexUpdate.fromBlockNumber <= blockNumber) {
+                // one special case is that this will be OPERATOR_DEREGISTERED_INDEX if the operator was deregistered from the quorum
                 return operatorIndexUpdate.index;
             }
         }
 
         // the operator is still active or not in the quorum, so we return the latest index or the default max uint32
-        return type(uint32).max;
+        // this will be hit if `blockNumber` is before when the operator registered or has not registered for the given quorum
+        return OPERATOR_DEREGISTERED_INDEX;
     }
 }

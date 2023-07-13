@@ -23,7 +23,7 @@ interface IIndexRegistry is IRegistry {
         // the operator's index or the total number of operators at a `blockNumber` is the first entry such that `blockNumber >= entry.fromBlockNumber`
         uint32 fromBlockNumber;
         // index of the operator in array of operators, or the total number of operators if in the 'totalOperatorsHistory'
-        // index = type(uint32).max implies the operator was deregistered
+        // index = type(uint32).max = OPERATOR_DEREGISTERED_INDEX implies the operator was deregistered
         uint32 index;
     }
 
