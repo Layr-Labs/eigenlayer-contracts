@@ -176,7 +176,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // get the operator's BLS public key
         (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
         // call internal function to register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
@@ -186,7 +186,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param socket is the socket of the operator
      */
     function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string calldata socket) external {
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
@@ -203,7 +203,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         OperatorKickParam[] calldata operatorKickParams
     ) external {
         // register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
         // get the registering operator's operatorId
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
@@ -214,10 +214,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
             {
-                uint32 numOperatorsForQuorum = indexRegistry.totalOperatorsForQuorum(quorumNumber);
                 // if the number of operators for the quorum is less than or equal to the max operator count, 
                 // then the quorum has not reached the max operator count
-                if(numOperatorsForQuorum <= operatorSetParam.maxOperatorCount) {
+                if(numOperatorsPerQuorum[i] <= operatorSetParam.maxOperatorCount) {
                     continue;
                 }
 
@@ -282,7 +281,8 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
     }
 
-    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
+    /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
+    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal returns(uint32[] memory) {
         // require(
         //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
@@ -304,7 +304,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
 
         // register the operator with the IndexRegistry
-        indexRegistry.registerOperator(operatorId, quorumNumbers);
+        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         // set the operatorId to quorum bitmap history
         _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
@@ -323,6 +323,18 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // serviceManager.recordFirstStakeUpdate(operator, 0);
 
         emit OperatorSocketUpdate(operatorId, socket);
+
+        return numOperatorsPerQuorum;
+    }
+
+    function _registerOperatorWithCoordinatorAndNoOverfilledQuorums(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(operator, quorumNumbers, pubkey, socket);
+        for (uint i = 0; i < numOperatorsPerQuorum.length; i++) {
+            require(
+                numOperatorsPerQuorum[i] <= _quorumOperatorSetParams[uint8(quorumNumbers[i])].maxOperatorCount,
+                "BLSIndexRegistryCoordinator._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled"
+            );
+        }
     }
 
     function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) internal {

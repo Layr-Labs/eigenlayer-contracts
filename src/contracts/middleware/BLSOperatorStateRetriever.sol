@@ -36,7 +36,7 @@ contract BLSOperatorStateRetriever {
      *         2) 2d array of Operator structs. For each quorum the provided operator 
      *            was a part of at `blockNumber`, an ordered list of operators.
      */
-    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external returns (uint256, Operator[][] memory) {
+    function getOperatorState(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes32 operatorId, uint32 blockNumber) external view returns (uint256, Operator[][] memory) {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
         uint256 index = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(blockNumber, operatorIds)[0];
@@ -96,7 +96,7 @@ contract BLSOperatorStateRetriever {
         uint32 referenceBlockNumber, 
         bytes calldata quorumNumbers, 
         bytes32[] calldata nonSignerOperatorIds
-    ) external returns (CheckSignaturesIndices memory) {
+    ) external view returns (CheckSignaturesIndices memory) {
         IStakeRegistry stakeRegistry = registryCoordinator.stakeRegistry();
         CheckSignaturesIndices memory checkSignaturesIndices;
 

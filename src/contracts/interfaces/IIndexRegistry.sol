@@ -31,6 +31,7 @@ interface IIndexRegistry is IRegistry {
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
+     * @return numOperatorsPerQuorum is a list of the number of operators (including the registering operator) in each of the quorums the operator is registered for
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -38,7 +39,7 @@ interface IIndexRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external;
+    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external returns(uint32[] memory);
 
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.

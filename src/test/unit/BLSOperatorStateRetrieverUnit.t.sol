@@ -7,7 +7,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
     uint8 maxQuorumsToRegisterFor = 4;
-    uint256 maxOperatorsToRegister = 4;
+    uint256 maxOperatorsToRegister = 10;
     uint32 registrationBlockNumber = 100;
     uint32 blocksBetweenRegistrations = 10;
 
@@ -178,7 +178,7 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
     function _registerRandomOperators(uint256 pseudoRandomNumber) internal returns(OperatorMetadata[] memory, uint256[][] memory) {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint i = 0; i < operatorMetadatas.length; i++) {
-            // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
+            // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
             operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
             operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
             operatorMetadatas[i].pubkey = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, i)));

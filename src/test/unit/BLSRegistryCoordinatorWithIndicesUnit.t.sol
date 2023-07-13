@@ -6,6 +6,8 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
+    uint8 maxQuorumsToRegisterFor = 4;
+
     event OperatorSocketUpdate(bytes32 operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
@@ -156,6 +158,36 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
                 nextUpdateBlockNumber: 0
             })))
         );
+    }
+
+    function testRegisterOperatorWithCoordinator_OverFilledQuorum_Reverts(uint256 pseudoRandomNumber) public {
+        uint32 numOperators = defaultMaxOperatorCount;
+        uint32 registrationBlockNumber = 200;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        cheats.roll(registrationBlockNumber);
+
+        for (uint i = 0; i < numOperators; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
+        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
+    
+        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
+
+        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
+
+        cheats.prank(operatorToRegister);
+        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket);
     }
 
     function testDeregisterOperatorWithCoordinator_NotRegistered_Reverts() public {
@@ -322,23 +354,23 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber) public {
-        uint8 numOperators = 100;
+        uint32 numOperators = defaultMaxOperatorCount;
+        
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
         // pad quorumBitmap with 1 until it has numOperators elements
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint i = 0; i < numOperators; i++) {
-            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & type(uint192).max;
-            if (quorumBitmaps[i] == 0) {
-                quorumBitmaps[i] = 1;
-            }
+            // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);
         
         bytes32[] memory lastOperatorInQuorum = new bytes32[](numQuorums);
         for (uint i = 0; i < numOperators; i++) {
+            emit log_named_uint("i", i);
             BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
             bytes32 operatorId = pubKey.hashG1Point();
             address operator = _incrementAddress(defaultOperator, i);
@@ -500,43 +532,6 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
                 nextUpdateBlockNumber: registrationBlockNumber
             })))
         );
-    }
-
-    function testRegisterOperatorWithCoordinatorWithKicks_Quorum_Reverts(uint256 pseudoRandomNumber) public {
-        uint32 numOperators = defaultMaxOperatorCount - 1;
-        uint32 kickRegistrationBlockNumber = 100;
-        uint32 registrationBlockNumber = 200;
-
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
-        cheats.roll(kickRegistrationBlockNumber);
-
-        for (uint i = 0; i < numOperators - 1; i++) {
-            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
-            address operator = _incrementAddress(defaultOperator, i);
-            
-            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
-        }
-
-        address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
-        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
-        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
-        // operatorIdsToSwap[0] = operatorToRegisterId
-        operatorIdsToSwap[0] = operatorToRegisterPubKey.hashG1Point();
-        
-        // register last operator before kick
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams = new IBLSRegistryCoordinatorWithIndices.OperatorKickParam[](1);
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
-
-        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
-
-        cheats.prank(operatorToRegister);
-        cheats.roll(registrationBlockNumber);
-        cheats.expectRevert("BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorum has not reached max operator count");
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
     }
 
     function testRegisterOperatorWithCoordinatorWithKicks_LessThanKickBIPsOfOperatorStake_Reverts(uint256 pseudoRandomNumber) public {
