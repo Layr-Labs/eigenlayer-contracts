@@ -36,7 +36,7 @@ interface IVoteWeigher {
 
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev returns zero in the case that `quorumNumber` is greater than or equal to `NUMBER_OF_QUORUMS`
+     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
     function weightOfOperator(uint8 quorumNumber, address operator) external returns (uint96);
 

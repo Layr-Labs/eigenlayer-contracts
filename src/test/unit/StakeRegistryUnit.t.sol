@@ -52,6 +52,8 @@ contract StakeRegistryUnitTests is Test {
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
 
+    uint256 gasUsed;
+
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
         bytes32 indexed operatorId,
@@ -120,7 +122,7 @@ contract StakeRegistryUnitTests is Test {
                     abi.encodeWithSelector(
                         StakeRegistry.initialize.selector,
                         minimumStakeForQuorum,
-                        quorumStrategiesConsideredAndMultipliers // initialize with 0ed out 128 quorums
+                        quorumStrategiesConsideredAndMultipliers
                     )
                 )
             )
@@ -193,6 +195,7 @@ contract StakeRegistryUnitTests is Test {
         uint256 quorumBitmap,
         uint80[] memory stakesForQuorum
     ) public {
+
         uint96[] memory paddedStakesForQuorum = _registerOperatorValid(defaultOperator, defaultOperatorId, quorumBitmap, stakesForQuorum);
 
         uint8 quorumNumberIndex = 0;
@@ -534,9 +537,11 @@ contract StakeRegistryUnitTests is Test {
         }
 
         // register operator
+        uint256 gasleftBefore = gasleft();
         cheats.prank(registryCoordinator);
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
-
+        gasUsed = gasleftBefore - gasleft();
+        
         return paddedStakesForQuorum;
     }
 

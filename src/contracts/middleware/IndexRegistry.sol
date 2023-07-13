@@ -8,9 +8,12 @@ import "../libraries/BN254.sol";
 
 contract IndexRegistry is IIndexRegistry {
 
+    /// @notice The value that indices of deregistered operators are set to
+    uint32 public constant OPERATOR_DEREGISTERED_INDEX = type(uint32).max;
+
     IRegistryCoordinator public immutable registryCoordinator;
 
-    // list of all unique registered operators
+    // list of all operators ever registered, may include duplicates. used to avoid running an indexer on nodes
     bytes32[] public globalOperatorList;
 
     // mapping of operatorId => quorumNumber => index history of that operator
@@ -33,6 +36,7 @@ contract IndexRegistry is IIndexRegistry {
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being registered
      * @param quorumNumbers is the quorum numbers the operator is registered for
+     * @return numOperatorsPerQuorum is a list of the number of operators (including the registering operator) in each of the quorums the operator is registered for
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -40,7 +44,8 @@ contract IndexRegistry is IIndexRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external onlyRegistryCoordinator {
+    function registerOperator(bytes32 operatorId, bytes calldata quorumNumbers) external onlyRegistryCoordinator returns(uint32[] memory) {
+        uint32[] memory numOperatorsPerQuorum = new uint32[](quorumNumbers.length);
         //add operator to operatorList
         globalOperatorList.push(operatorId);
 
@@ -52,17 +57,17 @@ contract IndexRegistry is IIndexRegistry {
             uint32 numOperators = quorumHistoryLength > 0 ? _totalOperatorsHistory[quorumNumber][quorumHistoryLength - 1].index : 0;
             _updateOperatorIdToIndexHistory(operatorId, quorumNumber, numOperators);
             _updateTotalOperatorHistory(quorumNumber, numOperators + 1);
+            numOperatorsPerQuorum[i] = numOperators + 1;
         }
+        return numOperatorsPerQuorum;
     }
 
     /**
      * @notice Deregisters the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.
      * @param operatorId is the id of the operator that is being deregistered
-     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers is the quorum numbers the operator is deregistered for
      * @param operatorIdsToSwap is the list of operatorIds that have the largest indexes in each of the `quorumNumbers`
      * they will be swapped with the operator's current index when the operator is removed from the list
-     * @param globalOperatorListIndex is the index of the operator that is to be removed from the list
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
@@ -71,7 +76,7 @@ contract IndexRegistry is IIndexRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bool completeDeregistration, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external onlyRegistryCoordinator {
+    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap) external onlyRegistryCoordinator {
         require(quorumNumbers.length == operatorIdsToSwap.length, "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
@@ -79,11 +84,6 @@ contract IndexRegistry is IIndexRegistry {
             uint32 indexOfOperatorToRemove = _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
             _processOperatorRemoval(operatorId, quorumNumber, indexOfOperatorToRemove, operatorIdsToSwap[i]);
             _updateTotalOperatorHistory(quorumNumber, _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1);
-        }
-
-        // remove operator from globalOperatorList if this is a complete deregistration
-        if(completeDeregistration){
-            _removeOperatorFromGlobalOperatorList(globalOperatorListIndex);  
         }
     }
 
@@ -110,13 +110,13 @@ contract IndexRegistry is IIndexRegistry {
     function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndexUpdate memory operatorIndexToCheck = _operatorIdToIndexHistory[operatorId][quorumNumber][index];
 
-        // blocknumber must be before the "index'th" entry's toBlockNumber
-        require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+        // blocknumber must be at or after the "index'th" entry's fromBlockNumber
+        require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
        
-        // if there is an index update before the "index'th" update, the blocknumber must be after the previous entry's toBlockNumber
-        if(index != 0){
-            OperatorIndexUpdate memory previousOperatorIndex = _operatorIdToIndexHistory[operatorId][quorumNumber][index - 1];
-            require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
+        // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
+        if (index != _operatorIdToIndexHistory[operatorId][quorumNumber].length - 1) {
+            OperatorIndexUpdate memory nextOperatorIndex = _operatorIdToIndexHistory[operatorId][quorumNumber][index + 1];
+            require(blockNumber < nextOperatorIndex.fromBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
         }
         return operatorIndexToCheck.index;
     }
@@ -130,48 +130,33 @@ contract IndexRegistry is IIndexRegistry {
     function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
         OperatorIndexUpdate memory operatorIndexToCheck = _totalOperatorsHistory[quorumNumber][index];
 
-        // blocknumber must be before the "index'th" entry's toBlockNumber
-        require(blockNumber <= operatorIndexToCheck.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+        // blocknumber must be at or after the "index'th" entry's fromBlockNumber
+        require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
         
-        // if there is an index update before the "index'th" update, the blocknumber must be after the previous entry's toBlockNumber
-        if (index != 0){
-            OperatorIndexUpdate memory previousOperatorIndex = _totalOperatorsHistory[quorumNumber][index - 1];
-            require(blockNumber > previousOperatorIndex.toBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
+        // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
+        if (index != _totalOperatorsHistory[quorumNumber].length - 1){
+            OperatorIndexUpdate memory nextOperatorIndex = _totalOperatorsHistory[quorumNumber][index + 1];
+            require(blockNumber < nextOperatorIndex.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
         }
         return operatorIndexToCheck.index;
     }
 
-    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber`
-    function getOperatorListForQuorum(uint8 quorumNumber) external view returns (bytes32[] memory){
-        bytes32[] memory quorumOperatorList = new bytes32[](_totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index);
+    /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
+    function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
+        bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
         for (uint i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
-            if(_operatorIdToIndexHistory[operatorId][quorumNumber].length > 0){
-                uint32 index = _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
-                quorumOperatorList[index - 1] = operatorId;
-            }
+            uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
+            // if the operator was not in the quorum at the given block number, skip it
+            if (index == OPERATOR_DEREGISTERED_INDEX)
+                continue;
+            quorumOperatorList[index] = operatorId;
         }
         return quorumOperatorList;
     }
 
-    /// @notice Returns an index of the given `operatorId` in the global operator list
-    function getIndexOfOperatorIdInGlobalOperatorList(bytes32 operatorId) external view returns (uint32){
-        for (uint i = 0; i < globalOperatorList.length; i++) {
-            if(globalOperatorList[i] == operatorId){
-                return uint32(i);
-            }
-        }
-        revert("IndexRegistry.getIndexOfOperatorIdInGlobalOperatorList: operatorId not found in globalOperatorList");
-    }
-
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
         return _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index;
-    }
-
-
-    /// @notice Returns the current number of operators of this service.
-    function totalOperators() external view returns (uint32){
-        return uint32(globalOperatorList.length);
     }
 
     /**
@@ -180,16 +165,11 @@ contract IndexRegistry is IIndexRegistry {
      * @param numOperators is the number of operators in the quorum
      */
     function _updateTotalOperatorHistory(uint8 quorumNumber, uint32 numOperators) internal {
-        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
-
-        //if there is a prior entry, update its "toBlockNumber"
-        if (totalOperatorsHistoryLength > 0) {
-            _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].toBlockNumber = uint32(block.number);
-        }
-
         OperatorIndexUpdate memory totalOperatorUpdate;
         // In the case of totalOperatorsHistory, the index parameter is the number of operators in the quorum
         totalOperatorUpdate.index = numOperators;
+        totalOperatorUpdate.fromBlockNumber = uint32(block.number);
+
         _totalOperatorsHistory[quorumNumber].push(totalOperatorUpdate);
     }
 
@@ -199,13 +179,9 @@ contract IndexRegistry is IIndexRegistry {
      * @param index the latest index of that operator in the list of operators registered for this quorum
      */ 
     function _updateOperatorIdToIndexHistory(bytes32 operatorId, uint8 quorumNumber, uint32 index) internal {
-        uint256 operatorIdToIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
-        //if there is a prior entry for the operator, set the previous entry's toBlocknumber
-        if (operatorIdToIndexHistoryLength > 0) {
-            _operatorIdToIndexHistory[operatorId][quorumNumber][operatorIdToIndexHistoryLength - 1].toBlockNumber = uint32(block.number);
-        }
         OperatorIndexUpdate memory latestOperatorIndex;
         latestOperatorIndex.index = index;
+        latestOperatorIndex.fromBlockNumber = uint32(block.number);
         _operatorIdToIndexHistory[operatorId][quorumNumber].push(latestOperatorIndex);
 
         emit QuorumIndexUpdate(operatorId, quorumNumber, index);
@@ -222,26 +198,61 @@ contract IndexRegistry is IIndexRegistry {
         require(_totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
-        if(operatorId != operatorIdToSwap){
+        if (operatorId != operatorIdToSwap) {
             //update the swapped operator's operatorIdToIndexHistory list with a new entry, as their index has now changed
             _updateOperatorIdToIndexHistory(operatorIdToSwap, quorumNumber, indexOfOperatorToRemove);
         } 
-        // marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number
-        _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].toBlockNumber = uint32(block.number);
+        // marking the final entry in the deregistering operator's operatorIdToIndexHistory entry with the deregistration block number, 
+        // setting the index to OPERATOR_DEREGISTERED_INDEX. Note that this is a special meaning, and any other index value represents a real index
+        _updateOperatorIdToIndexHistory(operatorId, quorumNumber, OPERATOR_DEREGISTERED_INDEX);
     }
 
+
     /**
-     * @notice remove an operator from the globalOperatorList  
-     * @param indexOfOperatorToRemove index of the operator to remove
-     */ 
-    function _removeOperatorFromGlobalOperatorList(uint32 indexOfOperatorToRemove) internal {
-        uint32 globalOperatorListLastIndex = uint32(globalOperatorList.length - 1);
-        bytes32 operatorIdToSwap;
-        if(indexOfOperatorToRemove != globalOperatorListLastIndex){
-            operatorIdToSwap = globalOperatorList[globalOperatorListLastIndex];
-            globalOperatorList[indexOfOperatorToRemove] = operatorIdToSwap;
-            emit GlobalIndexUpdate(operatorIdToSwap, indexOfOperatorToRemove);
+     * @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`
+     * @dev Returns zero if the @param blockNumber is from before the @param quorumNumber existed, and returns the current number of total operators if the @param blockNumber is in the future.
+     */
+    function _getTotalOperatorsForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) internal view returns (uint32){
+        // store list length in memory
+        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
+        // if there are no entries in the total operator history, return 0
+        if (totalOperatorsHistoryLength == 0) {
+            return 0;
         }
-        globalOperatorList.pop();
+
+        // if `blockNumber` is from before the `quorumNumber` existed, return `0`
+        if (blockNumber < _totalOperatorsHistory[quorumNumber][0].fromBlockNumber) {
+            return 0;
+        }
+
+        // loop backwards through the total operator history to find the total number of operators at the given block number
+        for (uint256 i = 0; i <= totalOperatorsHistoryLength - 1; i++) {
+            uint256 listIndex = (totalOperatorsHistoryLength - 1) - i;
+            OperatorIndexUpdate memory totalOperatorUpdate = _totalOperatorsHistory[quorumNumber][listIndex];
+            // look for the first update that began before or at `blockNumber`
+            if (totalOperatorUpdate.fromBlockNumber <= blockNumber) {
+                return _totalOperatorsHistory[quorumNumber][listIndex].index;
+            }
+        }        
+        return _totalOperatorsHistory[quorumNumber][0].index;
+    }
+    
+
+    /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
+    function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
+        uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
+        // loop backward through index history to find the index of the operator at the given block number
+        for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
+            uint256 listIndex = (operatorIndexHistoryLength - 1) - i;
+            OperatorIndexUpdate memory operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][listIndex];
+            if (operatorIndexUpdate.fromBlockNumber <= blockNumber) {
+                // one special case is that this will be OPERATOR_DEREGISTERED_INDEX if the operator was deregistered from the quorum
+                return operatorIndexUpdate.index;
+            }
+        }
+
+        // the operator is still active or not in the quorum, so we return the latest index or the default max uint32
+        // this will be hit if `blockNumber` is before when the operator registered or has not registered for the given quorum
+        return OPERATOR_DEREGISTERED_INDEX;
     }
 }

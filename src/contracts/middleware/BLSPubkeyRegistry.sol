@@ -16,15 +16,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
 
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
-    /// @notice the current aggregate pubkey of all operators registered in this contract, regardless of quorum
-    BN254.G1Point public globalApk;
     /// @notice the registry coordinator contract
     IRegistryCoordinator public immutable registryCoordinator;
     /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked
     IBLSPublicKeyCompendium public immutable pubkeyCompendium;
 
-    // list of all updates made to the global aggregate pubkey
-    ApkUpdate[] public globalApkUpdates;
     // mapping of quorumNumber => ApkUpdate[], tracking the aggregate pubkey updates of every quorum
     mapping(uint8 => ApkUpdate[]) public quorumApkUpdates;
     // mapping of quorumNumber => current aggregate pubkey of quorum
@@ -64,17 +60,14 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
-        // update the global aggregate pubkey
-        _processGlobalApkUpdate(pubkey);
         // emit event so offchain actors can update their state
-        emit PubkeyAdded(operator, pubkey, quorumNumbers);
+        emit PubkeyAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
     /**
      * @notice Deregisters the `operator`'s pubkey for the specified `quorumNumbers`.
      * @param operator The address of the operator to deregister.
-     * @param completeDeregistration Whether the operator is deregistering from all quorums or just some.
      * @param quorumNumbers The quorum numbers the operator is deregistering from, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The public key of the operator.
      * @dev access restricted to the RegistryCoordinator
@@ -86,7 +79,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      *         6) `pubkey` is the same as the parameter used when registering
      */   
-    function deregisterOperator(address operator, bool completeDeregistration, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+    function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
@@ -94,30 +87,32 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
-        if(completeDeregistration){
-            // update the global aggregate pubkey
-            _processGlobalApkUpdate(pubkey.negate());
-        }
-
-        // emit event so offchain actors can update their state
-        emit PubkeyRemoved(operator, pubkey, quorumNumbers);
+        emit PubkeyRemovedFromQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
-    /// @notice Returns the index of the quorumApk index at `blockNumber` for the provided `quorumNumber`
-    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quourmNumbers, uint256 blockNumber) external view returns(uint32[] memory){
-        uint256[] memory indices = new uint256[](quourmNumbers.length);
-        for (uint i = 0; i < quourmNumbers.length; i++) {
-            uint8 quorumNumber = uint8(quourmNumbers[i]);
-            uint32 length = uint32(quorumApkUpdates[quorumNumber].length);
-            for (uint32 j = 0; j < length; j++) {
-                if(quorumApkUpdates[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber){
-                    indices[i] = length - j - 1;
+    /**
+     * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
+     * @dev Returns the current indices if `blockNumber >= block.number`
+     */
+    function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory){
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
+            
+            if(quorumApkUpdatesLength == 0 || blockNumber < quorumApkUpdates[quorumNumber][0].updateBlockNumber) {
+                revert("BLSPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber: blockNumber is before the first update");
+            }
+
+            for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
+                if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
+                    indices[i] = quorumApkUpdatesLength - j - 1;
                     break;
                 }
             }
         }
-        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
+        return indices;
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `
@@ -137,45 +132,15 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
      * @param blockNumber is the number of the block for which the latest ApkHash will be retrieved
      * @param index is the index of the apkUpdate being retrieved from the list of quorum apkUpdates in storage
      */
-    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes32){
+    function getApkHashForQuorumAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (bytes24){
         ApkUpdate memory quorumApkUpdate = quorumApkUpdates[quorumNumber][index];
         _validateApkHashForQuorumAtBlockNumber(quorumApkUpdate, blockNumber);
         return quorumApkUpdate.apkHash;
     }
 
-	/**
-     * @notice get hash of the global apk among all quorums at `blockNumber` using the provided `index`;
-     * called by checkSignatures in BLSSignatureChecker.sol.
-     */
-    function getGlobalApkHashAtBlockNumberFromIndex(uint32 blockNumber, uint256 index) external view returns (bytes32){
-        ApkUpdate memory globalApkUpdate = globalApkUpdates[index];
-        _validateApkHashForQuorumAtBlockNumber(globalApkUpdate, blockNumber);
-        return globalApkUpdate.apkHash;
-    }
     /// @notice Returns the length of ApkUpdates for the provided `quorumNumber`
     function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns(uint32){
         return uint32(quorumApkUpdates[quorumNumber].length);
-    }
-    /// @notice Returns the length of ApkUpdates for the global APK
-    function getGlobalApkHistoryLength() external view returns(uint32){
-        return uint32(globalApkUpdates.length);
-    }
-
-    function _processGlobalApkUpdate(BN254.G1Point memory point) internal {
-        // load and store in memory in case we need to access the length again
-        uint256 globalApkUpdatesLength = globalApkUpdates.length;
-        // update the nextUpdateBlockNumber of the previous update
-        if (globalApkUpdatesLength > 0) {
-            globalApkUpdates[globalApkUpdatesLength - 1].nextUpdateBlockNumber = uint32(block.number);
-        }
-
-        // accumulate the given point into the globalApk
-        globalApk = globalApk.plus(point);
-        // add this update to the list of globalApkUpdates
-        ApkUpdate memory latestGlobalApkUpdate;
-        latestGlobalApkUpdate.apkHash = BN254.hashG1Point(globalApk);
-        latestGlobalApkUpdate.updateBlockNumber = uint32(block.number);
-        globalApkUpdates.push(latestGlobalApkUpdate);
     }
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {
@@ -196,7 +161,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
             quorumApk[quorumNumber] = apkAfterUpdate;
             //create new ApkUpdate to add to the mapping
             ApkUpdate memory latestApkUpdate;
-            latestApkUpdate.apkHash = BN254.hashG1Point(apkAfterUpdate);
+            latestApkUpdate.apkHash = bytes24(BN254.hashG1Point(apkAfterUpdate));
             latestApkUpdate.updateBlockNumber = uint32(block.number);
             quorumApkUpdates[quorumNumber].push(latestApkUpdate);
 

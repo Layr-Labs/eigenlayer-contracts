@@ -12,6 +12,8 @@ import "../interfaces/IIndexRegistry.sol";
 
 import "../libraries/BitmapUtils.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title A `RegistryCoordinator` that has three registries:
  *      1) a `StakeRegistry` that keeps track of operators' stakes (this is actually the contract itself, via inheritance)
@@ -20,7 +22,7 @@ import "../libraries/BitmapUtils.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices {
+contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, Test {
     using BN254 for BN254.G1Point;
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
@@ -81,11 +83,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         return _quorumOperatorSetParams[quorumNumber];
     }
 
-    /// @notice Returns task number from when `operator` has been registered.
-    function getFromTaskNumberForOperator(address operator) external view returns (uint32) {
-        return _operators[operator].fromTaskNumber;
-    }
-
     /// @notice Returns the operator struct for the given `operator`
     function getOperator(address operator) external view returns (Operator memory) {
         return _operators[operator];
@@ -102,7 +99,12 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         for (uint256 i = 0; i < operatorIds.length; i++) {
             uint32 length = uint32(_operatorIdToQuorumBitmapHistory[operatorIds[i]].length);
             for (uint32 j = 0; j < length; j++) {
-                if(_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
+                if (_operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].updateBlockNumber <= blockNumber) {
+                    require(
+                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber == 0 ||
+                        _operatorIdToQuorumBitmapHistory[operatorIds[i]][length - j - 1].nextUpdateBlockNumber > blockNumber,
+                        "BLSRegistryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber: operatorId has no quorumBitmaps at blockNumber"
+                    );
                     indices[i] = length - j - 1;
                     break;
                 }
@@ -130,12 +132,24 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         return quorumBitmapUpdate.quorumBitmap;
     }
 
+    /// @notice Returns the `index`th entry in the operator with `operatorId`'s bitmap history
+    function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {
+        return _operatorIdToQuorumBitmapHistory[operatorId][index];
+    }
+
     /// @notice Returns the current quorum bitmap for the given `operatorId`
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
-        if(_operatorIdToQuorumBitmapHistory[operatorId].length == 0) {
+        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        if (quorumBitmapHistoryLength == 0) {
             revert("BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: no quorum bitmap history for operatorId");
         }
-        return _operatorIdToQuorumBitmapHistory[operatorId][_operatorIdToQuorumBitmapHistory[operatorId].length - 1].quorumBitmap;
+        require(_operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber == 0, "BLSRegistryCoordinator.getCurrentQuorumBitmapByOperatorId: operator is not registered");
+        return _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].quorumBitmap;
+    }
+
+    /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
+    function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256) {
+        return _operatorIdToQuorumBitmapHistory[operatorId].length;
     }
 
     /// @notice Returns the number of registries
@@ -156,22 +170,23 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
-     * @dev `registrationData` should be a G1 point representing the operator's BLS public key
+     * @dev `registrationData` should be a G1 point representing the operator's BLS public key and their socket
      */
     function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
         // get the operator's BLS public key
-        BN254.G1Point memory pubkey = abi.decode(registrationData, (BN254.G1Point));
+        (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
         // call internal function to register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
+     * @param socket is the socket of the operator
      */
-    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external {
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string calldata socket) external {
+        _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
@@ -184,11 +199,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey,
+        string calldata socket,
         OperatorKickParam[] calldata operatorKickParams
     ) external {
-        require(quorumNumbers.length == operatorKickParams.length, "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorumNumbers and operatorKickParams must be the same length");
         // register the operator
-        _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey);
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
         // get the registering operator's operatorId
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
@@ -199,11 +214,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
             {
-                uint32 numOperatorsForQuorum = indexRegistry.totalOperatorsForQuorum(quorumNumber);
-                require(
-                    numOperatorsForQuorum == operatorSetParam.maxOperatorCount + 1,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: quorum has not reached max operator count"
-                );
+                // if the number of operators for the quorum is less than or equal to the max operator count, 
+                // then the quorum has not reached the max operator count
+                if(numOperatorsPerQuorum[i] <= operatorSetParam.maxOperatorCount) {
+                    continue;
+                }
 
                 // get the total stake for the quorum
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
@@ -217,11 +232,6 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
                     "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake"
                 );
                 
-                // check that the operator to kick has less than the kick BIPs of the average stake
-                require(
-                    operatorToKickStake < (totalStakeForQuorum * operatorSetParam.kickBIPsOfAverageStake / BIPS_DENOMINATOR) / numOperatorsForQuorum,
-                    "BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPsOfAverageStake"
-                );
                 // check the that the operator to kick has less than the kick BIPs of the total stake
                 require(
                     operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickBIPsOfTotalStake / BIPS_DENOMINATOR,
@@ -234,8 +244,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
                 operatorKickParams[i].operator, 
                 quorumNumbers[i:i+1], 
                 operatorKickParams[i].pubkey, 
-                operatorKickParams[i].operatorIdsToSwap, 
-                operatorKickParams[i].globalOperatorListIndex
+                operatorKickParams[i].operatorIdsToSwap
             );
         }
     }
@@ -244,15 +253,14 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @notice Deregisters the msg.sender as an operator from the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registered for
      * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
-     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap, 
-     * and the operator's index in the global operator list
+     * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
         // get the operator's deregistration information
-        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) 
-            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[], uint32));
+        (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
+            = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
         // call internal function to deregister the operator
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
     /**
@@ -261,10 +269,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param pubkey is the BLS public key of the operator
      * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each 
      * quorum when removing the operator from the quorum's ordered list
-     * @param globalOperatorListIndex is the operator's index in the global operator list in the IndexRegistry
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) external {
-        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap, globalOperatorListIndex);
+    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) external {
+        _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
     // INTERNAL FUNCTIONS
@@ -274,17 +281,19 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
     }
 
-    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) internal {
-        require(
-            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-            "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        );
+    /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
+    function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal returns(uint32[] memory) {
+        // require(
+        //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
+        //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
+        // );
         
         // check that the sender is not already registered
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: operator already registered");
 
         // get the quorum bitmap from the quorum numbers
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
         require(quorumBitmap != 0, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         require(quorumBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cant have more than 192 set bits");
 
@@ -295,7 +304,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
 
         // register the operator with the IndexRegistry
-        indexRegistry.registerOperator(operatorId, quorumNumbers);
+        uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
         // set the operatorId to quorum bitmap history
         _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
@@ -307,15 +316,28 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         // set the operator struct
         _operators[operator] = Operator({
             operatorId: operatorId,
-            fromTaskNumber: serviceManager.taskNumber(),
             status: OperatorStatus.REGISTERED
         });
 
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
-        serviceManager.recordFirstStakeUpdate(operator, 0);
+        // serviceManager.recordFirstStakeUpdate(operator, 0);
+
+        emit OperatorSocketUpdate(operatorId, socket);
+
+        return numOperatorsPerQuorum;
     }
 
-    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap, uint32 globalOperatorListIndex) internal {
+    function _registerOperatorWithCoordinatorAndNoOverfilledQuorums(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
+        uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(operator, quorumNumbers, pubkey, socket);
+        for (uint i = 0; i < numOperatorsPerQuorum.length; i++) {
+            require(
+                numOperatorsPerQuorum[i] <= _quorumOperatorSetParams[uint8(quorumNumbers[i])].maxOperatorCount,
+                "BLSIndexRegistryCoordinator._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled"
+            );
+        }
+    }
+
+    function _deregisterOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) internal {
         require(_operators[operator].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operator is not registered");
 
         // get the operatorId of the operator
@@ -323,7 +345,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         require(operatorId == pubkey.hashG1Point(), "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
 
         // get the quorumNumbers of the operator
-        uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap_Yul(quorumNumbers);
+        uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumsToRemoveBitmap <= type(uint192).max, "BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap cant have more than 192 set bits");
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
@@ -336,13 +358,13 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         bool completeDeregistration = quorumBitmapBeforeUpdate == quorumsToRemoveBitmap;
         
         // deregister the operator from the BLSPubkeyRegistry
-        blsPubkeyRegistry.deregisterOperator(operator, completeDeregistration, quorumNumbers, pubkey);
+        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
 
         // deregister the operator from the StakeRegistry
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, completeDeregistration, quorumNumbers, operatorIdsToSwap, globalOperatorListIndex);
+        indexRegistry.deregisterOperator(operatorId, quorumNumbers, operatorIdsToSwap);
 
         // set the toBlockNumber of the operator's quorum bitmap update
         _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);
