@@ -198,7 +198,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     {
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
-        require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.INACTIVE,
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+
+        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials");
 
         require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == bytes32(_podWithdrawalCredentials()),
@@ -228,7 +230,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         // set the status to active
-        _validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.ACTIVE;
+       validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
 
         // Sets "hasRestaked" to true if it hasn't been set yet. 
         if (!hasRestaked) {
@@ -240,7 +242,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 validatorEffectiveRestakedBalanceGwei = _calculateEffectedRestakedBalanceGwei(validatorCurrentBalanceGwei);
 
         //record validator's new restaked balance
-        _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = validatorEffectiveRestakedBalanceGwei;
+        validatorInfo.restakedBalanceGwei = validatorEffectiveRestakedBalanceGwei;
+
+        //record validatorInfo update in storage
+        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
         eigenPodManager.restakeBeaconChainETH(podOwner, validatorEffectiveRestakedBalanceGwei * GWEI_TO_WEI);
@@ -406,7 +411,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         */
         if (status == VALIDATOR_STATUS.ACTIVE || status == VALIDATOR_STATUS.WITHDRAWN) {
             // if the withdrawal amount is greater than the REQUIRED_BALANCE_GWEI (i.e. the amount restaked on EigenLayer, per ETH validator)
-            if (withdrawalAmountGwei >= REQUIRED_BALANCE_GWEI) {
+            if (withdrawalAmountGwei > REQUIRED_BALANCE_GWEI) {
                 // then the excess is immediately withdrawable
                 amountToSend = uint256(withdrawalAmountGwei - REQUIRED_BALANCE_GWEI) * uint256(GWEI_TO_WEI);
                 // and the extra execution layer ETH in the contract is REQUIRED_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
