@@ -113,7 +113,6 @@ contract ERC20Mock is Context, IERC20 {
      * `amount`.
      */
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
-        _mint(from, amount);
         _transfer(from, to, amount);
         return true;
     }
@@ -138,10 +137,9 @@ contract ERC20Mock is Context, IERC20 {
 
         _beforeTokenTransfer(from, to, amount);
 
-        uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        _mint(from, amount);
         unchecked {
-            _balances[from] = fromBalance - amount;
+            _balances[from] = _balances[from] - amount;
             // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
             // decrementing then incrementing.
             _balances[to] += amount;
