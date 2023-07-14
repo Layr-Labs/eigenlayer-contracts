@@ -271,7 +271,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerDelegated(staker, operator);
     }
 
-    function _checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) internal {
+    function _checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) internal view {
         /**
          * check validity of signature:
          * 1) if `signer` is an EOA, then `signature` must be a valid ECDSA signature from `signer`,

@@ -30,7 +30,7 @@ contract DelegationMock is IDelegationManager, Test {
     ) external pure {}
 
     function undelegate(address staker) external {
-        delegatedTo[staker] == address(0);
+        delegatedTo[staker] = address(0);
     }
 
     function forceUndelegation(address /*staker*/, address /*operator*/) external pure {}
@@ -56,7 +56,7 @@ contract DelegationMock is IDelegationManager, Test {
         return operator;
     }
 
-    function stakerOptOutWindowBlocks(address operator) external pure returns (uint256) {
+    function stakerOptOutWindowBlocks(address /*operator*/) external pure returns (uint256) {
         return 0;
     }
 
