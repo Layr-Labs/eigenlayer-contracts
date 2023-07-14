@@ -31,6 +31,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // chain id at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
+    /**
+     * @notice Maximum value that `_operatorDetails[operator].stakerOptOutWindowBlocks` is allowed to take, for any operator.
+     * @dev This is 6 months (technically 180 days) in blocks.
+     */
+    uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 * 24 * 60 * 60) / 12;
+
     /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
     modifier onlyStrategyManager() {
         require(msg.sender == address(strategyManager), "onlyStrategyManager");
@@ -63,7 +69,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function registerAsOperator(OperatorDetails calldata registeringOperatorDetails) external {
         require(
-            _operatorDetails.earningsReceiver == address(0),
+            _operatorDetails[msg.sender].earningsReceiver == address(0),
             "DelegationManager.registerAsOperator: operator has already registered"
         );
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
@@ -212,6 +218,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             newOperatorDetails.earningsReceiver != address(0),
             "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"
         );
+        require(newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
+            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS");
+        require(newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
+            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased");
         _operatorDetails[operator] = newOperatorDetails;
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
     }
@@ -232,28 +242,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 
         // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
-        address delegationApprover = _operatorDetails[operator].delegationApprover;
+        address _delegationApprover = _operatorDetails[operator].delegationApprover;
         /**
-         * Check the `delegationApprover`'s signature, if applicable.
-         * If the `delegationApprover` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
-         * If the `delegationApprover` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
+         * Check the `_delegationApprover`'s signature, if applicable.
+         * If the `_delegationApprover` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
+         * If the `_delegationApprover` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
          */
-        if (delegationApprover != address(0) && msg.sender != delegationApprover && msg.sender != operator) {
+        if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
             // check the signature expiry
             require(approverSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager._delegate: approver signature expired");
 
             // calculate the struct hash, then increment `delegationApprover`'s nonce
-            uint256 currentApproverNonce = delegationApproverNonce[delegationApprover];
-            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, delegationApprover, operator, currentApproverNonce, approverSignatureAndExpiry.expiry));
+            uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
+            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, operator, currentApproverNonce, approverSignatureAndExpiry.expiry));
             unchecked {
-                delegationApproverNonce[delegationApprover] = currentApproverNonce + 1;
+                delegationApproverNonce[_delegationApprover] = currentApproverNonce + 1;
             }
 
             // calculate the digest hash
             bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
 
             // actually check that the signature is valid
-            _checkSignature_EIP1271(delegationApprover, approverDigestHash, approverSignatureAndExpiry.approverSignature);
+            _checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
         }
 
         // record the delegation relation between the staker and operator, and emit an event
@@ -312,6 +322,21 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
+    }
+
+    // @notice Getter function for `_operatorDetails[operator].earningsReceiver`
+    function earningsReceiver(address operator) external view returns (address) {
+        return _operatorDetails[operator].earningsReceiver;
+    }
+
+    // @notice Getter function for `_operatorDetails[operator].delegationApprover`
+    function delegationApprover(address operator) external view returns (address) {
+        return _operatorDetails[operator].delegationApprover;
+    }
+
+    // @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
+    function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
+        return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
     function _calculateDomainSeparator() internal view returns (bytes32) {

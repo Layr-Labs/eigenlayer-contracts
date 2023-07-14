@@ -246,12 +246,12 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
         // Transfer back the challengeAmount to the operator as there was no successful challenge to the payment commitment made by the operator.
         paymentChallengeToken.safeTransfer(msg.sender, operatorToPayment[msg.sender].challengeAmount);
 
-        // look up payment amount and delegation terms address for the `msg.sender`
+        // look up payment amount and earnings receiver address for the `msg.sender`
         uint256 amount = operatorToPayment[msg.sender].amount;
-        IDelegationTerms dt = delegationManager.delegationTerms(msg.sender);
+        address earningsReceiver = delegationManager.earningsReceiver(msg.sender);
 
-        // transfer the amount due in the payment claim of the operator to its delegation terms contract, where the delegators can withdraw their rewards.
-        paymentToken.safeTransfer(address(dt), amount);
+        // transfer the amount due in the payment claim of the operator to its earnings receiver address, where the delegators can withdraw their rewards.
+        paymentToken.safeTransfer(earningsReceiver, amount);
 
         // emit event
         emit PaymentRedemption(msg.sender, amount);

@@ -33,7 +33,7 @@ interface IDelegationManager {
          * @dev note that for a specific operator, this value *cannot decrease*, i.e. if the operator wishes to modify their OperatorDetails,
          * then they are only allowed to either increase this value or keep it the same.
          */
-        uint32 registrationDelayBlocks;
+        uint32 stakerOptOutWindowBlocks;
     }
 
     // TODO: documentation
@@ -73,10 +73,13 @@ interface IDelegationManager {
     /**
      * @notice Called by a staker to delegate its assets to the @param operator.
      * @param operator is the operator to whom the staker (`msg.sender`) is delegating its assets for use in serving applications built on EigenLayer.
-     * @param operatorSignature is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
      * 1) the operator's `delegationApprover` address is set to a non-zero value.
+     * AND
+     * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
+     * is the `msg.sender`, then approval is assumed.
      */
-    function delegateTo(address operator, bytes memory operatorSignature) external;
+    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry) external;
 
     /**
      * @notice Delegates from @param staker to @param operator.
@@ -84,13 +87,18 @@ interface IDelegationManager {
      * @dev The @param stakerSignature is used as follows:
      * 1) If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
      * 2) If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
-     * @param approverSignature is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
      * 1) the operator's `delegationApprover` address is set to a non-zero value.
      * AND
      * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
      */
-    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory stakerSignature, bytes memory approverSignature) external;
+    function delegateToBySignature(
+        address staker,
+        address operator,
+        SignatureWithExpiry memory stakerSignatureAndExpiry,
+        SignatureWithExpiry memory approverSignatureAndExpiry
+    ) external;
 
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
@@ -137,6 +145,15 @@ interface IDelegationManager {
      * @notice Mapping: operator => OperatorDetails struct
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory);
+
+    // @notice Getter function for `_operatorDetails[operator].earningsReceiver`
+    function earningsReceiver(address operator) external view returns (address);
+
+    // @notice Getter function for `_operatorDetails[operator].delegationApprover`
+    function delegationApprover(address operator) external view returns (address);
+
+    // @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
+    function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.

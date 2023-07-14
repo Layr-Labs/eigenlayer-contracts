@@ -321,7 +321,7 @@ contract StrategyManager is
      */
     function forceUndelegation(address staker) external onlyDelegationManager {
         uint256 strategiesLength = stakerStrategyList[staker].length;
-        IStrategy[] memory strategies = new uint256[](strategiesLength);
+        IStrategy[] memory strategies = new IStrategy[](strategiesLength);
         uint256[] memory shares = new uint256[](strategiesLength);
         uint256[] memory strategyIndexes = new uint256[](strategiesLength);
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.8.9;
 
 import "../../contracts/strategies/StrategyBase.sol";
-import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IDelegationTerms.sol";
 
 
 contract SigPDelegationTerms is IDelegationTerms {

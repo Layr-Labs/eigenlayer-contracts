@@ -136,5 +136,9 @@ contract StrategyManagerMock is
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}    
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
+
+    function undelegate() external pure {}
+
+    function forceUndelegation(address /*staker*/) external pure {} 
 }
