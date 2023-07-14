@@ -73,7 +73,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.registerAsOperator: operator has already registered"
         );
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
-        // TODO: decide if this event is needed (+ details in particular), since we already emit an `OperatorDetailsModified` event in the above internal call
+        SignatureWithExpiry memory emptySignatureAndExpiry;
+        // delegate from the operator to themselves
+        _delegate(msg.sender, msg.sender, emptySignatureAndExpiry);
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
     }
 
