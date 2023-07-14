@@ -230,11 +230,11 @@ interface IStrategyManager {
     function undelegate() external;
 
     /**
-     * @notice Called by the DelegationManager to initiate the forced undelegation of the @param staker from the @param operator.
-     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themselves, and then undelegates the staker.
+     * @notice Called by the DelegationManager to initiate the forced undelegation of the @param staker from their delegated operator.
+     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      */
-    function forceUndelegation(address staker, address operator) external;
+    function forceUndelegation(address staker) external;
 
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into

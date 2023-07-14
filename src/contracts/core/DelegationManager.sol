@@ -12,24 +12,24 @@ import "../permissions/Pausable.sol";
 import "./Slasher.sol";
 
 /**
- * @title The primary delegation contract for EigenLayer.
+ * @title The interface for the primary delegation contract for EigenLayer.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
  * - enabling anyone to register as an operator in EigenLayer
- * - allowing new operators to provide a DelegationTerms-type contract, which may mediate their interactions with stakers who delegate to them
+ * - allowing operators to specify parameters related to stakers who delegate to them
  * - enabling any staker to delegate its stake to the operator of its choice
  * - enabling a staker to undelegate its assets from an operator (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
     // index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
+
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
+    bytes4 internal constant ERC1271_MAGICVALUE = 0x1626ba7e;
 
     // chain id at the time of contract deployment
-    uint256 immutable ORIGINAL_CHAIN_ID;
-
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
     modifier onlyStrategyManager() {
@@ -45,107 +45,126 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         ORIGINAL_CHAIN_ID = block.chainid;
     }
 
-    /// @dev Emitted when a low-level call to `delegationTerms.onDelegationReceived` fails, returning `returnData`
-    event OnDelegationReceivedCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
-
-    /// @dev Emitted when a low-level call to `delegationTerms.onDelegationWithdrawn` fails, returning `returnData`
-    event OnDelegationWithdrawnCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
-
-    /// @dev Emitted when an entity registers itself as an operator in the DelegationManager
-    event RegisterAsOperator(address indexed operator, IDelegationTerms indexed delegationTerms);
-
     function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus)
         external
         initializer
     {
         _initializePauser(_pauserRegistry, initialPausedStatus);
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), ORIGINAL_CHAIN_ID, address(this)));
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
     }
 
     // EXTERNAL FUNCTIONS
     /**
-     * @notice This will be called by an operator to register itself as an operator that stakers can choose to delegate to.
-     * @param dt is the `DelegationTerms` contract that the operator has for those who delegate to them.
-     * @dev An operator can set `dt` equal to their own address (or another EOA address), in the event that they want to split payments
-     * in a more 'trustful' manner.
-     * @dev In the present design, once set, there is no way for an operator to ever modify the address of their DelegationTerms contract.
+     * @notice Registers the `msg.sender` as an operator in EigenLayer, that stakers can choose to delegate to.
+     * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @dev Note that once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
+     * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
-    function registerAsOperator(IDelegationTerms dt) external {
+    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails) external {
         require(
-            address(delegationTerms[msg.sender]) == address(0),
+            _operatorDetails.earningsReceiver == address(0),
             "DelegationManager.registerAsOperator: operator has already registered"
         );
-        // store the address of the delegation contract that the operator is providing.
-        delegationTerms[msg.sender] = dt;
-        _delegate(msg.sender, msg.sender);
-        emit RegisterAsOperator(msg.sender, dt);
+        _setOperatorDetails(msg.sender, registeringOperatorDetails);
+        // TODO: decide if this event is needed (+ details in particular), since we already emit an `OperatorDetailsModified` event in the above internal call
+        emit OperatorRegistered(msg.sender, registeringOperatorDetails);
     }
 
     /**
-     *  @notice This will be called by a staker to delegate its assets to some operator.
-     *  @param operator is the operator to whom staker (msg.sender) is delegating its assets
+     * @notice Updates the `msg.sender`'s stored `OperatorDetails`.
+     * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
+     * @dev The `msg.sender` must have previously registered as an operator in EigenLayer via calling the `registerAsOperator` function.
+     * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
-    function delegateTo(address operator) external {
-        _delegate(msg.sender, operator);
+    function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
+        _setOperatorDetails(msg.sender, newOperatorDetails);
     }
 
     /**
-     * @notice Delegates from `staker` to `operator`.
-     * @dev requires that:
-     * 1) if `staker` is an EOA, then `signature` is valid ECDSA signature from `staker`, indicating their intention for this action
-     * 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271
+     * @notice Called by a staker to delegate its assets to the @param operator.
+     * @param operator is the operator to whom the staker (`msg.sender`) is delegating its assets for use in serving applications built on EigenLayer.
+     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * 1) the operator's `delegationApprover` address is set to a non-zero value.
+     * AND
+     * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
+     * is the `msg.sender`, then approval is assumed.
      */
-    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory signature)
-        external
-    {
-        require(expiry >= block.timestamp, "DelegationManager.delegateToBySignature: delegation signature expired");
+    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry) external {
+        // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
+        _delegate(msg.sender, operator, approverSignatureAndExpiry);
+    }
 
-        // calculate struct hash, then increment `staker`'s nonce
-        uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, staker, operator, nonce, expiry));
+    /**
+     * @notice Delegates from @param staker to @param operator.
+     * @notice This function will revert if the current `block.timestamp` is equal to or exceeds @param expiry
+     * @dev The @param stakerSignature is used as follows:
+     * 1) If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
+     * 2) If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
+     * @param approverSignatureAndExpiry is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * 1) the operator's `delegationApprover` address is set to a non-zero value.
+     * AND
+     * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
+     * is the `msg.sender`, then approval is assumed.
+     */
+    function delegateToBySignature(
+        address staker,
+        address operator,
+        SignatureWithExpiry memory stakerSignatureAndExpiry,
+        SignatureWithExpiry memory approverSignatureAndExpiry
+    ) external {
+        // check the signature expiry
+        require(stakerSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager.delegateToBySignature: staker signature expired");
+        // calculate the struct hash, then increment `staker`'s nonce
+        uint256 currentStakerNonce = stakerNonce[staker];
+        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, currentStakerNonce, stakerSignatureAndExpiry.expiry));
         unchecked {
-            nonces[staker] = nonce + 1;
+            stakerNonce[staker] = currentStakerNonce + 1;
         }
 
-        bytes32 digestHash;
-        if (block.chainid != ORIGINAL_CHAIN_ID) {
-            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
-            digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
-        } else{
-            digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
-        }
+        // calculate the digest hash
+        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
 
-        /**
-         * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
-         * indicating their intention for this action
-         * 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271
-         */
-        if (Address.isContract(staker)) {
-            require(IERC1271(staker).isValidSignature(digestHash, signature) == ERC1271_MAGICVALUE,
-                "DelegationManager.delegateToBySignature: ERC1271 signature verification failed");
-        } else {
-            require(ECDSA.recover(digestHash, signature) == staker,
-                "DelegationManager.delegateToBySignature: sig not from staker");
-        }
+        // actually check that the signature is valid
+        _checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
 
-        _delegate(staker, operator);
+        // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
+        _delegate(staker, operator, approverSignatureAndExpiry);
     }
 
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
      * @notice Callable only by the StrategyManager
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves
      */
     function undelegate(address staker) external onlyStrategyManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
+        emit StakerUndelegated(staker, delegatedTo[staker]);
         delegatedTo[staker] = address(0);
     }
 
+    // TODO: decide if on the right  auth for this. Perhaps could be another address for the operator to specify
     /**
-     * @notice Increases the `staker`'s delegated shares in `strategy` by `shares, typically called when the staker has further deposits into EigenLayer
-     * @dev Callable only by the StrategyManager
+     * @notice Called by the operator or the operator's `delegationApprover` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
+     * @param operator The operator who the @param staker is currently delegated to.
+     * @dev This function will revert if either:
+     * A) The `msg.sender` does not match `operatorDetails(operator).delegationApprover`.
+     * OR
+     * B) The `staker` is not currently delegated to the `operator`.
+     * @dev This function will also revert if the `staker` is the `operator`; operators are considered *permanently* delegated to themselves.
+     */
+    function forceUndelegation(address staker, address operator) external {
+        require(delegatedTo[staker] == operator, "DelegationManager.forceUndelegation: staker is not delegated to operator");
+        require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
+            "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
+        strategyManager.forceUndelegation(staker);
+    }
+
+    /**
+     * @notice *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
+     * Called by the StrategyManager whenever new shares are added to a user's share balance.
+     * @dev Callable only by the StrategyManager.
      */
     function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
         external
@@ -171,14 +190,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`, typically called when the staker withdraws from EigenLayer
-     * @dev Callable only by the StrategyManager
+     * @notice *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
+     * Called by the StrategyManager whenever shares are decremented from a user's share balance, for example when a new withdrawal is queued.
+     * @dev Callable only by the StrategyManager.
      */
-    function decreaseDelegatedShares(
-        address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares
-    )
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
         onlyStrategyManager
     {
@@ -201,141 +217,93 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     // INTERNAL FUNCTIONS
-
-    /** 
-     * @notice Makes a low-level call to `dt.onDelegationReceived(staker, strategies, shares)`, ignoring reverts and with a gas budget 
-     * equal to `LOW_LEVEL_GAS_BUDGET` (a constant defined in this contract).
-     * @dev *If* the low-level call fails, then this function emits the event `OnDelegationReceivedCallFailure(dt, returnData)`, where
-     * `returnData` is *only the first 32 bytes* returned by the call to `dt`.
+    /**
+     * @notice Internal function that sets the @param operator 's parameters in the `_operatorDetails` mapping to @param newOperatorDetails
+     * @dev This function will revert if the operator attempts to set their `earningsReceiver` to address(0).
      */
-    function _delegationReceivedHook(
-        IDelegationTerms dt,
-        address staker,
-        IStrategy[] memory strategies,
-        uint256[] memory shares
-    )
-        internal
-    {
-        /**
-         * We use low-level call functionality here to ensure that an operator cannot maliciously make this function fail in order to prevent undelegation.
-         * In particular, in-line assembly is also used to prevent the copying of uncapped return data which is also a potential DoS vector.
-         */
-        // format calldata
-        bytes memory lowLevelCalldata = abi.encodeWithSelector(IDelegationTerms.onDelegationReceived.selector, staker, strategies, shares);
-        // Prepare memory for low-level call return data. We accept a max return data length of 32 bytes
-        bool success;
-        bytes32[1] memory returnData;
-        // actually make the call
-        assembly {
-            success := call(
-                // gas provided to this context
-                LOW_LEVEL_GAS_BUDGET,
-                // address to call
-                dt,
-                // value in wei for call
-                0,
-                // memory location to copy for calldata
-                add(lowLevelCalldata, 32),
-                // length of memory to copy for calldata
-                mload(lowLevelCalldata),
-                // memory location to copy return data
-                returnData,
-                // byte size of return data to copy to memory
-                32
-            )
-        }
-        // if the call fails, we emit a special event rather than reverting
-        if (!success) {
-            emit OnDelegationReceivedCallFailure(dt, returnData[0]);
-        }
-    }
-
-    /** 
-     * @notice Makes a low-level call to `dt.onDelegationWithdrawn(staker, strategies, shares)`, ignoring reverts and with a gas budget 
-     * equal to `LOW_LEVEL_GAS_BUDGET` (a constant defined in this contract).
-     * @dev *If* the low-level call fails, then this function emits the event `OnDelegationReceivedCallFailure(dt, returnData)`, where
-     * `returnData` is *only the first 32 bytes* returned by the call to `dt`.
-     */
-    function _delegationWithdrawnHook(
-        IDelegationTerms dt,
-        address staker,
-        IStrategy[] memory strategies,
-        uint256[] memory shares
-    )
-        internal
-    {
-        /**
-         * We use low-level call functionality here to ensure that an operator cannot maliciously make this function fail in order to prevent undelegation.
-         * In particular, in-line assembly is also used to prevent the copying of uncapped return data which is also a potential DoS vector.
-         */
-        // format calldata
-        bytes memory lowLevelCalldata = abi.encodeWithSelector(IDelegationTerms.onDelegationWithdrawn.selector, staker, strategies, shares);
-        // Prepare memory for low-level call return data. We accept a max return data length of 32 bytes
-        bool success;
-        bytes32[1] memory returnData;
-        // actually make the call
-        assembly {
-            success := call(
-                // gas provided to this context
-                LOW_LEVEL_GAS_BUDGET,
-                // address to call
-                dt,
-                // value in wei for call
-                0,
-                // memory location to copy for calldata
-                add(lowLevelCalldata, 32),
-                // length of memory to copy for calldata
-                mload(lowLevelCalldata),
-                // memory location to copy return data
-                returnData,
-                // byte size of return data to copy to memory
-                32
-            )
-        }
-        // if the call fails, we emit a special event rather than reverting
-        if (!success) {
-            emit OnDelegationWithdrawnCallFailure(dt, returnData[0]);
-        }
+    function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
+        require(
+            newOperatorDetails.earningsReceiver != address(0),
+            "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"
+        );
+        _operatorDetails[operator] = newOperatorDetails;
+        emit OperatorDetailsModified(msg.sender, newOperatorDetails);
     }
 
     /**
      * @notice Internal function implementing the delegation *from* `staker` *to* `operator`.
      * @param staker The address to delegate *from* -- this address is delegating control of its own assets.
      * @param operator The address to delegate *to* -- this address is being given power to place the `staker`'s assets at risk on services
-     * @dev Ensures that the operator has registered as a delegate (`address(dt) != address(0)`), verifies that `staker` is not already
-     * delegated, and records the new delegation.
+     * @dev Ensures that:
+     * 1) the `staker` is not already delegated to an operator
+     * 2) the `operator` has indeed registered as an operator in EigenLayer
+     * 3) the `operator` is not actively frozen
+     * 4) if applicable, that the approver signature is valid and non-expired
      */ 
-    function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        IDelegationTerms dt = delegationTerms[operator];
-        require(
-            address(dt) != address(0), "DelegationManager._delegate: operator has not yet registered as a delegate"
-        );
-
+    function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal {
         require(isNotDelegated(staker), "DelegationManager._delegate: staker has existing delegation");
-        // checks that operator has not been frozen
+        require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 
-        // record delegation relation between the staker and operator
-        delegatedTo[staker] = operator;
+        // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
+        address delegationApprover = _operatorDetails[operator].delegationApprover;
+        /**
+         * Check the `delegationApprover`'s signature, if applicable.
+         * If the `delegationApprover` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
+         * If the `delegationApprover` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
+         */
+        if (delegationApprover != address(0) && msg.sender != delegationApprover && msg.sender != operator) {
+            // check the signature expiry
+            require(approverSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager._delegate: approver signature expired");
 
-        // retrieve list of strategies and their shares from strategy manager
-        (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
-
-        // add strategy shares to delegate's shares
-        uint256 stratsLength = strategies.length;
-        for (uint256 i = 0; i < stratsLength;) {
-            // update the share amounts for each of the operator's strategies
-            operatorShares[operator][strategies[i]] += shares[i];
+            // calculate the struct hash, then increment `delegationApprover`'s nonce
+            uint256 currentApproverNonce = delegationApproverNonce[delegationApprover];
+            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, delegationApprover, operator, currentApproverNonce, approverSignatureAndExpiry.expiry));
             unchecked {
-                ++i;
+                delegationApproverNonce[delegationApprover] = currentApproverNonce + 1;
             }
+
+            // calculate the digest hash
+            bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
+
+            // actually check that the signature is valid
+            _checkSignature_EIP1271(delegationApprover, approverDigestHash, approverSignatureAndExpiry.approverSignature);
         }
 
-        // call into hook in delegationTerms contract
-        _delegationReceivedHook(dt, staker, strategies, shares);
+        // record the delegation relation between the staker and operator, and emit an event
+        delegatedTo[staker] = operator;
+        emit StakerDelegated(staker, operator);
+    }
+
+    function _checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) internal {
+        /**
+         * check validity of signature:
+         * 1) if `signer` is an EOA, then `signature` must be a valid ECDSA signature from `signer`,
+         * indicating their intention for this action
+         * 2) if `signer` is a contract, then `signature` must will be checked according to EIP-1271
+         */
+        if (Address.isContract(signer)) {
+            require(IERC1271(signer).isValidSignature(digestHash, signature) == ERC1271_MAGICVALUE,
+                "DelegationManager._signatureCheck_EIP1271Compatible: ERC1271 signature verification failed");
+        } else {
+            require(ECDSA.recover(digestHash, signature) == signer,
+                "DelegationManager._signatureCheck_EIP1271Compatible: sig not from signer");
+        }
     }
 
     // VIEW FUNCTIONS
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     */
+    function domainSeparator() public view returns (bytes32) {
+        if (block.chainid == ORIGINAL_CHAIN_ID) {
+            return _DOMAIN_SEPARATOR;
+        }
+        else {
+            return _calculateDomainSeparator();
+        }
+    }
 
     /// @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
     function isDelegated(address staker) public view returns (bool) {
@@ -347,8 +315,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return (delegatedTo[staker] == address(0));
     }
 
-    /// @notice Returns if an operator can be delegated to, i.e. it has called `registerAsOperator`.
+    /// @notice Returns if an operator can be delegated to, i.e. the `operator` has previously called `registerAsOperator`.
     function isOperator(address operator) public view returns (bool) {
-        return (address(delegationTerms[operator]) != address(0));
+        return (_operatorDetails[operator].earningsReceiver != address(0));
+    }
+
+    /**
+     * @notice returns the OperatorDetails of the `operator`.
+     * @notice Mapping: operator => OperatorDetails struct
+     */
+    function operatorDetails(address operator) external view returns (OperatorDetails memory) {
+        return _operatorDetails[operator];
+    }
+
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

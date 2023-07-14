@@ -24,7 +24,7 @@ interface IDelegationManager {
          * 2) If this address is an EOA (i.e. it has no code), then we follow standard ECDSA signature verification for delegations to the operator.
          * 3) If this address is a contract (i.e. it has code) then we forward a call to the contract and verify that it returns the correct EIP-1271 "magic value".
          */
-        address delegationController;
+        address delegationApprover;
         /**
          * @notice A minimum delay -- measured in blocks -- enforced between:
          * 1) the operator signalling their intent to register for a service, via calling `Slasher.optIntoSlashing`
@@ -34,6 +34,12 @@ interface IDelegationManager {
          * then they are only allowed to either increase this value or keep it the same.
          */
         uint32 registrationDelayBlocks;
+    }
+
+    // TODO: documentation
+    struct SignatureWithExpiry {
+        bytes signature;
+        uint256 expiry;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
@@ -68,7 +74,7 @@ interface IDelegationManager {
      * @notice Called by a staker to delegate its assets to the @param operator.
      * @param operator is the operator to whom the staker (`msg.sender`) is delegating its assets for use in serving applications built on EigenLayer.
      * @param operatorSignature is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
-     * 1) the operator's `delegationController` address is set to a non-zero value.
+     * 1) the operator's `delegationApprover` address is set to a non-zero value.
      */
     function delegateTo(address operator, bytes memory operatorSignature) external;
 
@@ -78,25 +84,27 @@ interface IDelegationManager {
      * @dev The @param stakerSignature is used as follows:
      * 1) If `staker` is an EOA, then `stakerSignature` is verified to be a valid ECDSA stakerSignature from `staker`, indicating their intention for this action.
      * 2) If `staker` is a contract, then `stakerSignature` will be checked according to EIP-1271.
-     * @param operatorSignature is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
-     * 1) the operator's `delegationController` address is set to a non-zero value.
+     * @param approverSignature is a parameter that will be used for verifying that the operator approves of this delegation action in the event that:
+     * 1) the operator's `delegationApprover` address is set to a non-zero value.
      * AND
-     * 2) the operator is not the `msg.sender` (in the event that the operator is the `msg.sender`, approval is assumed).
+     * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
+     * is the `msg.sender`, then approval is assumed.
      */
-    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory stakerSignature, bytes memory operatorSignature) external;
+    function delegateToBySignature(address staker, address operator, uint256 expiry, bytes memory stakerSignature, bytes memory approverSignature) external;
 
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @notice Callable only by the StrategyManager.
+     * @notice Callable only by the StrategyManager
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves
      */
     function undelegate(address staker) external;
 
     /**
-     * @notice Called by an operator's `delegationController` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
+     * @notice Called by an operator's `delegationApprover` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
      * @param operator The operator who the @param staker is currently delegated to.
      * @dev This function will revert if either:
-     * A) The `msg.sender` does not match `operatorDetails(operator).delegationController`.
+     * A) The `msg.sender` does not match `operatorDetails(operator).delegationApprover`.
      * OR
      * B) The `staker` is not currently delegated to the `operator`.
      * @dev This function will also revert if the `staker` is the `operator`; operators are considered *permanently* delegated to themselves.
@@ -117,16 +125,23 @@ interface IDelegationManager {
      */
     function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares) external;
 
-    /// @notice returns the address of the operator that `staker` is delegated to.
-    /// @notice Mapping: staker => operator whom the staker has delegated to
+    /**
+     * @notice returns the address of the operator that `staker` is delegated to.
+     * @notice Mapping: staker => operator whom the staker is currently delegated to.
+     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
+     */
     function delegatedTo(address staker) external view returns (address);
 
-    /// @notice returns the OperatorDetails of the `operator`.
-    /// @notice Mapping: operator => OperatorDetails struct
-    function operatorDetails(address operator) external view returns (OperatorDetails);
+    /**
+     * @notice returns the OperatorDetails of the `operator`.
+     * @notice Mapping: operator => OperatorDetails struct
+     */
+    function operatorDetails(address operator) external view returns (OperatorDetails memory);
 
-    /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
-    /// @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator
+    /**
+     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     */
     function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
 
     /// @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
@@ -138,12 +153,12 @@ interface IDelegationManager {
     /// @notice Returns if an operator can be delegated to, i.e. the `operator` has previously called `registerAsOperator`.
     function isOperator(address operator) external view returns (bool);
 
-    /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`)
+    /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
     function stakerNonce(address staker) external view returns (uint256);
 
     /**
      * @notice Mapping: operator => number of signed delegation nonces (used in `delegateTo` and `delegateToBySignature` if the operator
-     * has specified a nonzero address as their `delegationController`)
+     * has specified a nonzero address as their `delegationApprover`)
      */
-    function operatorNonce(address operator) external view returns (uint256);
+    function delegationApproverNonce(address operator) external view returns (uint256);
 }

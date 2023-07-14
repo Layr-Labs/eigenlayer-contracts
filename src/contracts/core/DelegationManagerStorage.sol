@@ -13,19 +13,42 @@ import "../interfaces/ISlasher.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
-    /// @notice Gas budget provided in calls to DelegationTerms contracts
-    uint256 internal constant LOW_LEVEL_GAS_BUDGET = 1e5;
+    // TODO: documentation
+    struct StakerDelegation {
+        address staker;
+        address operator;
+        uint256 nonce;
+        uint256 expiry;
+    }
+
+    // TODO: documentation
+    struct DelegationApproval {
+        address staker;
+        address operator;
+        uint256 nonce;
+        uint256 expiry;
+    }
+
+    // TODO: add constants to interface
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-    /// @notice The EIP-712 typehash for the delegation struct used by the contract
-    bytes32 public constant DELEGATION_TYPEHASH =
-        keccak256("Delegation(address delegator,address operator,uint256 nonce,uint256 expiry)");
+    /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
+    bytes32 public constant STAKER_DELEGATION_TYPEHASH =
+        keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
 
-    /// @notice EIP-712 Domain separator
-    bytes32 public DOMAIN_SEPARATOR;
+    /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
+    bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
+        keccak256("Delegation(address staker,address operator,uint256 nonce,uint256 expiry)");
+
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
@@ -33,17 +56,33 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The Slasher contract for EigenLayer
     ISlasher public immutable slasher;
 
-    /// @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator
+    /**
+     * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
+     * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     */
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
-    /// @notice Mapping: operator => delegation terms contract
-    mapping(address => IDelegationTerms) public delegationTerms;
+    /**
+     * @notice Mapping: operator => OperatorDetails struct
+     * @dev This struct is internal with an external getter so we can return an `OperatorDetails memory` object
+     */
+    mapping(address => OperatorDetails) internal _operatorDetails;
 
-    /// @notice Mapping: staker => operator whom the staker has delegated to
+    /**
+     * @notice Mapping: staker => operator whom the staker is currently delegated to.
+     * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
+     */
     mapping(address => address) public delegatedTo;
 
-    /// @notice Mapping: delegator => number of signed delegation nonce (used in delegateToBySignature)
-    mapping(address => uint256) public nonces;
+    /// @notice Mapping: staker => number of signed messages (used in `delegateToBySignature`) from the staker that this contract has already checked.
+    mapping(address => uint256) public stakerNonce;
+
+    /**
+     * @notice Mapping: delegationApprover => number of signed delegation messages (used in `delegateTo` and `delegateToBySignature` from the delegationApprover
+     * that this contract has already checked.
+     * @dev Note that these functions only delegationApprover signatures if the operator being delegated to has specified a nonzero address as their `delegationApprover`
+     */
+    mapping(address => uint256) public delegationApproverNonce;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher) {
         strategyManager = _strategyManager;
@@ -55,5 +94,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
