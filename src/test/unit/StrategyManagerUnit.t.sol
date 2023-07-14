@@ -1015,7 +1015,8 @@ contract StrategyManagerUnitTests is Test, Utils {
     // TODO: set up delegation for the following three tests and check afterwords
     function testQueueWithdrawal_WithdrawEverything_DontUndelegate(uint256 amount) external {
         // delegate to self
-        delegationMock.delegateTo(address(this));
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationMock.delegateTo(address(this), signatureWithExpiry);
         require(delegationMock.isDelegated(address(this)), "delegation mock setup failed");
         bool undelegateIfPossible = false;
         // deposit and withdraw the same amount, don't undelegate

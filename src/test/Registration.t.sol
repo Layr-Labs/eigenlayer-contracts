@@ -89,7 +89,12 @@ contract RegistrationTests is EigenLayerTestHelper {
         uint256 eigenToDeposit = 1e18;
         _testDepositWeth(operator, wethToDeposit);
         _testDepositEigen(operator, eigenToDeposit);
-        _testRegisterAsOperator(operator, IDelegationTerms(operator));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        _testRegisterAsOperator(operator, operatorDetails);
         
         cheats.startPrank(operator);
         slasher.optIntoSlashing(address(dlsm));

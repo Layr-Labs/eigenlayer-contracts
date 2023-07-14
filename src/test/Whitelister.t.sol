@@ -139,8 +139,12 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
     function testWhitelistingOperator(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
-        IDelegationTerms dt = IDelegationTerms(address(89));
-        delegation.registerAsOperator(dt);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegation.registerAsOperator(operatorDetails);
         cheats.stopPrank();
 
         cheats.startPrank(theMultiSig);
@@ -173,8 +177,12 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
     function testNonWhitelistedOperatorRegistration(BN254.G1Point memory pk, string memory socket ) external {
         cheats.startPrank(operator);
-        IDelegationTerms dt = IDelegationTerms(address(89));
-        delegation.registerAsOperator(dt);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegation.registerAsOperator(operatorDetails);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("BLSRegistry._registerOperator: not whitelisted"));
@@ -190,8 +198,13 @@ contract WhitelisterTests is EigenLayerTestHelper {
         {
 
         address staker = whiteLister.getStaker(operator);
-        cheats.assume(staker!=operator);
-        _testRegisterAsOperator(operator, IDelegationTerms(operator));
+        cheats.assume(staker != operator);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        _testRegisterAsOperator(operator, operatorDetails);
 
         {
             cheats.startPrank(theMultiSig);

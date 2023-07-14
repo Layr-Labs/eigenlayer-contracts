@@ -66,7 +66,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testBadECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: delegation signature expired"));
-        delegationManager.delegateToBySignature(staker, operator, expiry, signature);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+            signature: signature,
+            expiry: expiry
+        });
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
     }
 
     function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator) {
@@ -78,7 +82,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
-        delegationManager.registerAsOperator(IDelegationTerms(address(this)));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegationManager.registerAsOperator(operatorDetails);
         cheats.stopPrank();
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
         
@@ -109,13 +118,19 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(operator != staker);
         
         cheats.startPrank(operator);
-        delegationManager.registerAsOperator(IDelegationTerms(address(this)));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegationManager.registerAsOperator(operatorDetails);
         cheats.stopPrank();
 
         slasherMock.setOperatorFrozenStatus(operator, true);
         cheats.expectRevert(bytes("DelegationManager._delegate: cannot delegate to a frozen operator"));
         cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationManager.delegateTo(operator, signatureWithExpiry);
         cheats.stopPrank();
     }
 
@@ -129,26 +144,33 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(staker != operator2);
 
         cheats.startPrank(operator);
-        delegationManager.registerAsOperator(IDelegationTerms(address(11)));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegationManager.registerAsOperator(operatorDetails);
         cheats.stopPrank();
 
         cheats.startPrank(operator2);
-        delegationManager.registerAsOperator(IDelegationTerms(address(10)));
+        delegationManager.registerAsOperator(operatorDetails);
         cheats.stopPrank();
 
         cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationManager.delegateTo(operator, signatureWithExpiry);
         cheats.stopPrank();
 
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: staker has existing delegation"));
-        delegationManager.delegateTo(operator2);
+        delegationManager.delegateTo(operator2, signatureWithExpiry);
         cheats.stopPrank();
     }
 
     function testDelegationToUnregisteredOperator(address operator) public{
         cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
-        delegationManager.delegateTo(operator);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationManager.delegateTo(operator, signatureWithExpiry);
     }
 
     function testDelegationWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
@@ -158,122 +180,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("Pausable: index is paused"));
-        delegationManager.delegateTo(operator);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationManager.delegateTo(operator, signatureWithExpiry);
         cheats.stopPrank();
     }
-
-    function testRevertingDelegationReceivedHook(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-
-        delegationTermsMock.setShouldRevert(true);
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        // cheats.expectEmit(true, true, true, true, address(delegationManager));
-        cheats.expectEmit(true, true, true, true);
-        emit OnDelegationReceivedCallFailure(delegationTermsMock, 0x08c379a000000000000000000000000000000000000000000000000000000000);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-    }
-
-    function testRevertingDelegationWithdrawnHook(
-        address operator, 
-        address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-        delegationTermsMock.setShouldRevert(true);
-
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
-
-        cheats.startPrank(address(strategyManagerMock));
-        // cheats.expectEmit(true, true, true, true, address(delegationManager));
-        cheats.expectEmit(true, true, true, true);
-        emit OnDelegationWithdrawnCallFailure(delegationTermsMock, 0x08c379a000000000000000000000000000000000000000000000000000000000);
-        delegationManager.decreaseDelegatedShares(staker, updatedStrategies, updatedShares);
-        cheats.stopPrank();
-    }
-
-    function testDelegationReceivedHookWithTooMuchReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-        delegationTermsMock.setShouldReturnData(true);
-
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-    }
-
-    function testDelegationWithdrawnHookWithTooMuchReturnData(
-        address operator, 
-        address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-
-        delegationTermsMock.setShouldReturnData(true);
-
-
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
-
-        cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, updatedStrategies, updatedShares);
-        cheats.stopPrank();
-    }
-
-    function testDelegationReceivedHookWithNoReturnData(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-    }
-
-    function testDelegationWithdrawnHookWithNoReturnData(
-        address operator, 
-        address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-
-        cheats.startPrank(operator);
-        delegationManager.registerAsOperator(delegationTermsMock);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        delegationManager.delegateTo(operator);
-        cheats.stopPrank();
-
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
-
-        cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, updatedStrategies, updatedShares);
-        cheats.stopPrank();
-    }
-
 }
