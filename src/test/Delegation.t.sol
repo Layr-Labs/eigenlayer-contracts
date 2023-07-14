@@ -228,9 +228,11 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry));
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
-
-        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes memory signature;
+        {
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
+            signature = abi.encodePacked(r, s, v);
+        }
         
         if (expiry < block.timestamp) {
             cheats.expectRevert("DelegationManager.delegateToBySignature: delegation signature expired");
@@ -267,10 +269,12 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
-
-        bytes memory signature = abi.encodePacked(r, s, v);
-        
+        bytes memory signature;
+        {
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
+            signature = abi.encodePacked(r, s, v);
+        }
+                
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -301,11 +305,13 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
-        // mess up the signature by flipping v's parity
-        v = (v == 27 ? 28 : 27);
-
-        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes memory signature;
+        {
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
+            // mess up the signature by flipping v's parity
+            v = (v == 27 ? 28 : 27);
+            signature = abi.encodePacked(r, s, v);
+        }
         
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: ERC1271 signature verification failed"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({

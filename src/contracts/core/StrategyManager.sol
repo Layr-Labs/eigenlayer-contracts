@@ -319,7 +319,12 @@ contract StrategyManager is
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      */
-    function forceUndelegation(address staker) external onlyDelegationManager {
+    function forceUndelegation(address staker) external
+        onlyDelegationManager
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyNotFrozen(staker)
+        nonReentrant
+    {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
         uint256[] memory shares = new uint256[](strategiesLength);
@@ -346,9 +351,6 @@ contract StrategyManager is
         bool undelegateIfPossible
     )
         internal
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(staker)
-        nonReentrant
         returns (bytes32)
     {
         require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
