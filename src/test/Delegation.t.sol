@@ -235,7 +235,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
         
         if (expiry < block.timestamp) {
-            cheats.expectRevert("DelegationManager.delegateToBySignature: delegation signature expired");
+            cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
         }
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
@@ -450,7 +450,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDepositStrategies(getOperatorAddress(1), 1e18, 1);
         _testDepositEigen(getOperatorAddress(1), 1e18);
 
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         cheats.startPrank(getOperatorAddress(1));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(delegate, signatureWithExpiry);
@@ -470,7 +470,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
     /// @notice This function tests that the delegationTerms cannot be set to address(0)
     function testCannotSetDelegationTermsZeroAddress() public{
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: msg.sender,
             delegationApprover: address(0),
@@ -497,10 +497,10 @@ contract DelegationTests is EigenLayerTestHelper {
     /// @notice This function checks that you can only delegate to an address that is already registered.
     function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
         vm.startPrank(_staker);
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_unregisteredOperator, signatureWithExpiry);
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         delegation.delegateTo(_staker, signatureWithExpiry);
         cheats.stopPrank();
         

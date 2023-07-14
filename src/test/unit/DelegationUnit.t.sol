@@ -65,7 +65,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     function testBadECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
         cheats.assume(expiry < block.timestamp);
-        cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: delegation signature expired"));
+        cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
@@ -168,7 +168,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     function testDelegationToUnregisteredOperator(address operator) public{
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry);
     }
