@@ -268,6 +268,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             _checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
         }
 
+        // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
+        (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
+
+        // add strategy shares to delegated `operator`'s shares
+        uint256 stratsLength = strategies.length;
+        for (uint256 i = 0; i < stratsLength;) {
+            // update the share amounts for each of the `operator`'s strategies
+            operatorShares[operator][strategies[i]] += shares[i];
+            unchecked {
+                ++i;
+            }
+        }
+
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
