@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "../interfaces/ISlasher.sol";
 import "./DelegationManagerStorage.sol";
 import "../permissions/Pausable.sol";
-import "./Slasher.sol";
+import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title The interface for the primary delegation contract for EigenLayer.
@@ -24,9 +21,6 @@ import "./Slasher.sol";
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
     // index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
-
-    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
-    bytes4 internal constant ERC1271_MAGICVALUE = 0x1626ba7e;
 
     // chain id at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -134,7 +128,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
 
         // actually check that the signature is valid
-        _checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
+        EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
 
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(staker, operator, approverSignatureAndExpiry);
@@ -238,7 +232,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * 3) the `operator` is not actively frozen
      * 4) if applicable, that the approver signature is valid and non-expired
      */ 
-    function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal {
+    function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         require(isNotDelegated(staker), "DelegationManager._delegate: staker has existing delegation");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
@@ -265,7 +259,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
 
             // actually check that the signature is valid
-            _checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
+            EIP1271SignatureUtils.checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
         }
 
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
@@ -284,22 +278,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
-    }
-
-    function _checkSignature_EIP1271(address signer, bytes32 digestHash, bytes memory signature) internal view {
-        /**
-         * check validity of signature:
-         * 1) if `signer` is an EOA, then `signature` must be a valid ECDSA signature from `signer`,
-         * indicating their intention for this action
-         * 2) if `signer` is a contract, then `signature` must will be checked according to EIP-1271
-         */
-        if (Address.isContract(signer)) {
-            require(IERC1271(signer).isValidSignature(digestHash, signature) == ERC1271_MAGICVALUE,
-                "DelegationManager._signatureCheck_EIP1271Compatible: ERC1271 signature verification failed");
-        } else {
-            require(ECDSA.recover(digestHash, signature) == signer,
-                "DelegationManager._signatureCheck_EIP1271Compatible: sig not from signer");
-        }
     }
 
     // VIEW FUNCTIONS

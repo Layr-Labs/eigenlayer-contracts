@@ -130,15 +130,13 @@ contract DelegationTests is EigenLayerTestHelper {
 
         // use storage to solve stack-too-deep
         operator = _operator;
-
-        SigPDelegationTerms dt = new SigPDelegationTerms();
         
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
         if (!delegation.isOperator(operator)) {
-            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: operator,
-                delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
-            });
             _testRegisterAsOperator(operator, operatorDetails);
         }
 
@@ -185,13 +183,9 @@ contract DelegationTests is EigenLayerTestHelper {
 
             cheats.startPrank(address(strategyManager));
 
-            // TODO: FIX THIS
-            // IDelegationTerms expectedDt = delegation.delegationTerms(operator);
-            // assertTrue(address(expectedDt) == address(dt), "failed to set dt");
-            delegation.increaseDelegatedShares(staker, _strat, 1);
-
-            // dt.delegate();
-            assertTrue(keccak256(dt.isDelegationReceived()) == keccak256(bytes("received")), "failed to fire expected onDelegationReceived callback");
+            IDelegationManager.OperatorDetails memory expectedOperatorDetails = delegation.operatorDetails(operator);
+            assertTrue(keccak256(abi.encode(expectedOperatorDetails)) == keccak256(abi.encode(operatorDetails)),
+            "failed to set correct operator details");
         }
     }
 
@@ -313,7 +307,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature = abi.encodePacked(r, s, v);
         }
         
-        cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: ERC1271 signature verification failed"));
+        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -468,11 +462,11 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.initialize(_attacker, eigenLayerPauserReg, 0);
     }
 
-    /// @notice This function tests that the delegationTerms cannot be set to address(0)
-    function testCannotSetDelegationTermsZeroAddress() public{
-        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+    /// @notice This function tests that the earningsReceiver cannot be set to address(0)
+    function testCannotSetEarningsReceiverToZeroAddress() public{
+        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: msg.sender,
+            earningsReceiver: address(0),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
