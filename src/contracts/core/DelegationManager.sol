@@ -176,16 +176,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // add strategy shares to delegate's shares
             operatorShares[operator][strategy] += shares;
-
-            //Calls into operator's delegationTerms contract to update weights of individual staker
-            IStrategy[] memory stakerStrategyList = new IStrategy[](1);
-            uint256[] memory stakerShares = new uint[](1);
-            stakerStrategyList[0] = strategy;
-            stakerShares[0] = shares;
-
-            // call into hook in delegationTerms contract
-            IDelegationTerms dt = delegationTerms[operator];
-            _delegationReceivedHook(dt, staker, stakerStrategyList, stakerShares);
         }
     }
 
@@ -209,10 +199,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     ++i;
                 }
             }
-
-            // call into hook in delegationTerms contract
-            IDelegationTerms dt = delegationTerms[operator];
-            _delegationWithdrawnHook(dt, staker, strategies, shares);
         }
     }
 
