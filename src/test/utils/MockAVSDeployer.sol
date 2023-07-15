@@ -19,6 +19,7 @@ import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/middleware/IndexRegistry.sol";
 
 import "../../contracts/libraries/BitmapUtils.sol";
+import "../../contracts/libraries/MiddlewareUtils.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
@@ -83,6 +84,10 @@ contract MockAVSDeployer is Test {
     IBLSRegistryCoordinatorWithIndices.OperatorSetParam[] operatorSetParams;
 
     function _deployMockEigenLayerAndAVS() internal {
+        _deployMockEigenLayerAndAVS(numQuorums);
+    }
+
+    function _deployMockEigenLayerAndAVS(uint8 numQuorumsToAdd) internal {
         emptyContract = new EmptyContract();
 
         defaultOperatorId = defaultPubKey.hashG1Point();
@@ -170,14 +175,14 @@ contract MockAVSDeployer is Test {
         cheats.startPrank(proxyAdminOwner);
 
         // setup the dummy minimum stake for quorum
-        uint96[] memory minimumStakeForQuorum = new uint96[](numQuorums);
+        uint96[] memory minimumStakeForQuorum = new uint96[](numQuorumsToAdd);
         for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
             minimumStakeForQuorum[i] = uint96(i+1);
         }
 
         // setup the dummy quorum strategies
         IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IVoteWeigher.StrategyAndWeightingMultiplier[][](numQuorums);
+            new IVoteWeigher.StrategyAndWeightingMultiplier[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
             quorumStrategiesConsideredAndMultipliers[i] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
             quorumStrategiesConsideredAndMultipliers[i][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
@@ -204,7 +209,8 @@ contract MockAVSDeployer is Test {
             indexRegistry
         );
         {
-            for (uint i = 0; i < numQuorums; i++) {
+            delete operatorSetParams;
+            for (uint i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(IBLSRegistryCoordinatorWithIndices.OperatorSetParam({
                     maxOperatorCount: defaultMaxOperatorCount,
@@ -212,6 +218,7 @@ contract MockAVSDeployer is Test {
                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
                 }));
             }
+
             proxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(registryCoordinator))),
                 address(registryCoordinatorImplementation),
@@ -258,7 +265,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= type(uint192).max;
+        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 
@@ -276,7 +283,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96[] memory stakes) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= type(uint192).max;
+        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 

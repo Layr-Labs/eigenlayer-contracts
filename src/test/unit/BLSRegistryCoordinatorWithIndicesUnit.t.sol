@@ -68,6 +68,15 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey, defaultSocket);
     }
 
+    function testRegisterOperatorWithCoordinator_QuorumNotCreated_Reverts() public {
+        _deployMockEigenLayerAndAVS(10);
+        bytes memory quorumNumbersNotCreated = new bytes(1);
+        quorumNumbersNotCreated[0] = 0x0B;
+        cheats.prank(defaultOperator);
+        cheats.expectRevert("StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbersNotCreated, defaultPubKey, defaultSocket);
+    }
+
     function testRegisterOperatorWithCoordinatorForSingleQuorum_Valid() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -111,7 +120,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testRegisterOperatorWithCoordinatorForFuzzedQuorums_Valid(uint256 quorumBitmap) public {
-        quorumBitmap = quorumBitmap & type(uint192).max;
+        quorumBitmap = quorumBitmap & MiddlewareUtils.MAX_QUORUM_BITMAP;
         cheats.assume(quorumBitmap != 0);
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -300,7 +309,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
-        quorumBitmap = quorumBitmap & type(uint192).max;
+        quorumBitmap = quorumBitmap & MiddlewareUtils.MAX_QUORUM_BITMAP;
         cheats.assume(quorumBitmap != 0);
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
