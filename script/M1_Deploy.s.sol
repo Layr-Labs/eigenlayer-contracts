@@ -78,7 +78,7 @@ contract Deployer_M1 is Script, Test {
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
     uint256 MAX_VALIDATOR_BALANCE_GWEI;
-    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET;
+    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -113,7 +113,7 @@ contract Deployer_M1 is Script, Test {
 
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
         MAX_VALIDATOR_BALANCE_GWEI = stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI");
-        EFFECTIVE_RESTAKED_BALANCE_OFFSET = stdJson.readUint(config_data, ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET");
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI = stdJson.readUint(config_data, ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI");
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -177,7 +177,7 @@ contract Deployer_M1 is Script, Test {
             eigenPodManager,
             REQUIRED_BALANCE_WEI,
             uint64(MAX_VALIDATOR_BALANCE_GWEI),
-            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET)
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));

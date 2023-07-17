@@ -38,9 +38,11 @@ interface IEigenPod {
     }
 
     struct ValidatorInfo {
+        // index of the validator in the beacon chain
         uint64 validatorIndex;
+        // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
-        uint32 lastWithdrawalBlockNumber;
+        // status of the validator
         VALIDATOR_STATUS status;
     }
 
@@ -154,8 +156,12 @@ interface IEigenPod {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
-
+    
+    /// @notice called by the eigenPodManager to decrement the withdrawableRestakedExecutionLayerGwei 
+    /// in the pod, to reflect a queued withdrawal from the beacon chain strategy
     function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 
+    /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei 
+    /// in the pod, to reflect a completetion of a queued withdrawal
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 }

@@ -145,7 +145,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
-     * @param podOwner is the pod owner to be slashed
+     * @param podOwner is the pod owner whose balance is being updated.
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param currentAmount is the podOwner's existing beaconChainETHStrategy shares
      * @param newAmount is the amount to change the podOwner's beaconChainETHStrategy shares
