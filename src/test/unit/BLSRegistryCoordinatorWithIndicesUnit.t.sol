@@ -56,7 +56,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
         bytes memory emptyQuorumNumbers = new bytes(0);
-        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey, defaultSocket);
     }
@@ -64,7 +64,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     function testRegisterOperatorWithCoordinator_QuorumNumbersTooLarge_Reverts() public {
         bytes memory quorumNumbersTooLarge = new bytes(1);
         quorumNumbersTooLarge[0] = 0xC0;
-        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbersTooLarge, defaultPubKey, defaultSocket);
     }
 
@@ -195,7 +195,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSIndexRegistryCoordinator._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinatorAndNoOverfilledQuorums: quorum is overfilled");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket);
     }
 
@@ -203,7 +203,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operator is not registered");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
     }
@@ -217,7 +217,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         BN254.G1Point memory incorrectPubKey = BN254.hashToG1(bytes32(uint256(123)));
 
-        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, incorrectPubKey, new bytes32[](0));
     }
@@ -233,7 +233,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         quorumNumbers[1] = bytes1(uint8(192));
 
-        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
     }
@@ -249,7 +249,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
 
-        cheats.expectRevert("BLSIndexRegistryCoordinator._deregisterOperatorWithCoordinator: cannot deregister operator for quorums that it is not a part of");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: cannot deregister operator for quorums that it is not a part of");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
     }
@@ -591,7 +591,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
-        cheats.expectRevert("BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
     }
 
@@ -649,7 +649,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
-        cheats.expectRevert("BLSIndexRegistryCoordinator.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
     }
 }
