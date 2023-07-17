@@ -337,10 +337,10 @@ function middlewareTimesLength(address operator) external view returns (uint256)
 
 Getter function for fetching `_operatorToMiddlewareTimes[operator].length`.
 
-### getMiddlewareTimesIndexBlock
+### getMiddlewareTimesIndexStalestUpdateBlock
 
 ```solidity
-function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns (uint32)
+function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns (uint32)
 ```
 
 Getter function for fetching `_operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
