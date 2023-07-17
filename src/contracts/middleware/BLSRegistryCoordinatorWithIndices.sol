@@ -195,7 +195,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
      * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
-     * quorum that will be filled after the operator registers.
+     * quorum that will be filled after the operator registers. It contains the pubkey and operators to swap with the kicked operator.
      */
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
