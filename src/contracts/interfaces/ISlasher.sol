@@ -126,7 +126,7 @@ interface ISlasher {
     function middlewareTimesLength(address operator) external view returns (uint256);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns(uint32);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.
     function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32);
