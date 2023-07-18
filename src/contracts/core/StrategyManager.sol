@@ -318,12 +318,15 @@ contract StrategyManager is
      * @notice Called by the DelegationManager to initiate the forced undelegation of the @param staker from their delegated operator.
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
+     * @param staker The staker to force-undelegate.
+     * @return The root of the newly queued withdrawal.
      */
     function forceUndelegation(address staker) external
         onlyDelegationManager
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(staker)
         nonReentrant
+        returns (bytes32)
     {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
@@ -339,108 +342,7 @@ contract StrategyManager is
                 ++i;
             }
         }
-        _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker, true);
-    }
-
-    function _queueWithdrawal(
-        address staker,
-        uint256[] memory strategyIndexes,
-        IStrategy[] memory strategies,
-        uint256[] memory shares,
-        address withdrawer,
-        bool undelegateIfPossible
-    )
-        internal
-        returns (bytes32)
-    {
-        require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
-        require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
-    
-        // modify delegated shares accordingly, if applicable
-        delegation.decreaseDelegatedShares(staker, strategies, shares);
-
-        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
-        
-        // keeps track of the current index in the `strategyIndexes` array
-        uint256 strategyIndexIndex;
-
-        /**
-         * Ensure that if the withdrawal includes beacon chain ETH, the specified 'withdrawer' is not different than the caller.
-         * This is because shares in the enshrined `beaconChainETHStrategy` ultimately represent tokens in **non-fungible** EigenPods,
-         * while other share in all other strategies represent purely fungible positions.
-         */
-        for (uint256 i = 0; i < strategies.length;) {
-            if (strategies[i] == beaconChainETHStrategy) {
-                require(withdrawer == staker,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
-                require(strategies.length == 1,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
-                require(shares[i] % GWEI_TO_WEI == 0,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-            }   
-
-            // the internal function will return 'true' in the event the strategy was
-            // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
-            if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
-                unchecked {
-                    ++strategyIndexIndex;
-                }
-            }
-
-            emit ShareWithdrawalQueued(staker, nonce, strategies[i], shares[i]);
-
-            //increment the loop
-            unchecked {
-                ++i;
-            }
-        }
-
-        // fetch the address that the `staker` is delegated to
-        address delegatedAddress = delegation.delegatedTo(staker);
-
-        QueuedWithdrawal memory queuedWithdrawal;
-
-        {
-            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({
-                withdrawer: withdrawer,
-                nonce: nonce
-            });
-            // increment the numWithdrawalsQueued of the sender
-            unchecked {
-                numWithdrawalsQueued[staker] = nonce + 1;
-            }
-
-            // copy arguments into struct and pull delegation info
-            queuedWithdrawal = QueuedWithdrawal({
-                strategies: strategies,
-                shares: shares,
-                depositor: staker,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: delegatedAddress
-            });
-
-        }
-
-        // calculate the withdrawal root
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-
-        // mark withdrawal as pending
-        withdrawalRootPending[withdrawalRoot] = true;
-
-        // If the `staker` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
-        /**
-         * Checking that `stakerStrategyList[staker].length == 0` is not strictly necessary here, but prevents reverting very late in logic,
-         * in the case that 'undelegate' is set to true but the `staker` still has active deposits in EigenLayer.
-         */
-        if (undelegateIfPossible && stakerStrategyList[staker].length == 0) {
-            _undelegate(staker);
-        }
-
-        emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
-
-        return withdrawalRoot;
-
+        return _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker, true);
     }
 
     /**
@@ -481,93 +383,7 @@ contract StrategyManager is
         nonReentrant
         returns (bytes32)
     {
-        require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
-        require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
-    
-        // modify delegated shares accordingly, if applicable
-        delegation.decreaseDelegatedShares(msg.sender, strategies, shares);
-
-        uint96 nonce = uint96(numWithdrawalsQueued[msg.sender]);
-        
-        // keeps track of the current index in the `strategyIndexes` array
-        uint256 strategyIndexIndex;
-
-        /**
-         * Ensure that if the withdrawal includes beacon chain ETH, the specified 'withdrawer' is not different than the caller.
-         * This is because shares in the enshrined `beaconChainETHStrategy` ultimately represent tokens in **non-fungible** EigenPods,
-         * while other share in all other strategies represent purely fungible positions.
-         */
-        for (uint256 i = 0; i < strategies.length;) {
-            if (strategies[i] == beaconChainETHStrategy) {
-                require(withdrawer == msg.sender,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
-                require(strategies.length == 1,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
-                require(shares[i] % GWEI_TO_WEI == 0,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-            }   
-
-            // the internal function will return 'true' in the event the strategy was
-            // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
-            if (_removeShares(msg.sender, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
-                unchecked {
-                    ++strategyIndexIndex;
-                }
-            }
-
-            emit ShareWithdrawalQueued(msg.sender, nonce, strategies[i], shares[i]);
-
-            //increment the loop
-            unchecked {
-                ++i;
-            }
-        }
-
-        // fetch the address that the `msg.sender` is delegated to
-        address delegatedAddress = delegation.delegatedTo(msg.sender);
-
-        QueuedWithdrawal memory queuedWithdrawal;
-
-        {
-            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({
-                withdrawer: withdrawer,
-                nonce: nonce
-            });
-            // increment the numWithdrawalsQueued of the sender
-            unchecked {
-                numWithdrawalsQueued[msg.sender] = nonce + 1;
-            }
-
-            // copy arguments into struct and pull delegation info
-            queuedWithdrawal = QueuedWithdrawal({
-                strategies: strategies,
-                shares: shares,
-                depositor: msg.sender,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: delegatedAddress
-            });
-
-        }
-
-        // calculate the withdrawal root
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-
-        // mark withdrawal as pending
-        withdrawalRootPending[withdrawalRoot] = true;
-
-        // If the `msg.sender` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
-        /**
-         * Checking that `stakerStrategyList[msg.sender].length == 0` is not strictly necessary here, but prevents reverting very late in logic,
-         * in the case that 'undelegate' is set to true but the `msg.sender` still has active deposits in EigenLayer.
-         */
-        if (undelegateIfPossible && stakerStrategyList[msg.sender].length == 0) {
-            _undelegate(msg.sender);
-        }
-
-        emit WithdrawalQueued(msg.sender, nonce, withdrawer, delegatedAddress, withdrawalRoot);
-
-        return withdrawalRoot;
+        return _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer, undelegateIfPossible);
     }
 
     /**
@@ -919,6 +735,109 @@ contract StrategyManager is
         stakerStrategyList[depositor].pop();
     }
 
+    // @notice Internal function for queuing a withdrawal from `staker` to `withdrawer` of `shares` in `strategies`.
+    function _queueWithdrawal(
+        address staker,
+        uint256[] memory strategyIndexes,
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        address withdrawer,
+        bool undelegateIfPossible
+    )
+        internal
+        returns (bytes32)
+    {
+        require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
+        require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
+    
+        // modify delegated shares accordingly, if applicable
+        delegation.decreaseDelegatedShares(staker, strategies, shares);
+
+        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
+        
+        // keeps track of the current index in the `strategyIndexes` array
+        uint256 strategyIndexIndex;
+
+        /**
+         * Ensure that if the withdrawal includes beacon chain ETH, the specified 'withdrawer' is not different than the caller.
+         * This is because shares in the enshrined `beaconChainETHStrategy` ultimately represent tokens in **non-fungible** EigenPods,
+         * while other share in all other strategies represent purely fungible positions.
+         */
+        for (uint256 i = 0; i < strategies.length;) {
+            if (strategies[i] == beaconChainETHStrategy) {
+                require(withdrawer == staker,
+                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
+                require(strategies.length == 1,
+                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
+                require(shares[i] % GWEI_TO_WEI == 0,
+                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
+            }   
+
+            // the internal function will return 'true' in the event the strategy was
+            // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
+            if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
+                unchecked {
+                    ++strategyIndexIndex;
+                }
+            }
+
+            emit ShareWithdrawalQueued(staker, nonce, strategies[i], shares[i]);
+
+            //increment the loop
+            unchecked {
+                ++i;
+            }
+        }
+
+        // fetch the address that the `staker` is delegated to
+        address delegatedAddress = delegation.delegatedTo(staker);
+
+        QueuedWithdrawal memory queuedWithdrawal;
+
+        {
+            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({
+                withdrawer: withdrawer,
+                nonce: nonce
+            });
+            // increment the numWithdrawalsQueued of the sender
+            unchecked {
+                numWithdrawalsQueued[staker] = nonce + 1;
+            }
+
+            // copy arguments into struct and pull delegation info
+            queuedWithdrawal = QueuedWithdrawal({
+                strategies: strategies,
+                shares: shares,
+                depositor: staker,
+                withdrawerAndNonce: withdrawerAndNonce,
+                withdrawalStartBlock: uint32(block.number),
+                delegatedAddress: delegatedAddress
+            });
+
+        }
+
+        // calculate the withdrawal root
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+
+        // mark withdrawal as pending
+        withdrawalRootPending[withdrawalRoot] = true;
+
+        // If the `staker` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
+        /**
+         * Checking that `stakerStrategyList[staker].length == 0` is not strictly necessary here, but prevents reverting very late in logic,
+         * in the case that 'undelegate' is set to true but the `staker` still has active deposits in EigenLayer.
+         */
+        if (undelegateIfPossible && stakerStrategyList[staker].length == 0) {
+            _undelegate(staker);
+        }
+
+        emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
+
+        return withdrawalRoot;
+
+    }
+
+
     /**
      * @notice Internal function for completing the given `queuedWithdrawal`.
      * @param queuedWithdrawal The QueuedWithdrawal to complete
@@ -927,7 +846,9 @@ contract StrategyManager is
      * @param receiveAsTokens If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy.
      * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
-    function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal {
+    function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens)
+        onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal
+    {
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
 
