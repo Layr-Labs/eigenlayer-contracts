@@ -11,9 +11,6 @@ import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/MiddlewareVoteWeigherMock.sol";
 import "./mocks/ServiceManagerMock.sol";
 
-import "./SigP/DelegationTerms.sol";
-
-
 contract DelegationTests is EigenLayerTestHelper {
     using Math for uint256;
 

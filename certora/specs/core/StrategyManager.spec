@@ -37,10 +37,6 @@ methods {
 	    
     // external calls to DelayedWithdrawalRouter (from EigenPod)
     createDelayedWithdrawal(address, address) => DISPATCHER(true)
-
-    // external calls to IDelegationTerms
-    onDelegationWithdrawn(address,address[],uint256[]) => CONSTANT
-    onDelegationReceived(address,address[],uint256[]) => CONSTANT
     
     // external calls to PauserRegistry
     pauser() returns (address) => DISPATCHER(true)

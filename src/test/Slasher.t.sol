@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import "./EigenLayerDeployer.t.sol";
 import "./EigenLayerTestHelper.t.sol";
-import "../contracts/operators/MerkleDelegationTerms.sol";
 
 contract SlasherTests is EigenLayerTestHelper {
     ISlasher instance;
@@ -12,12 +11,10 @@ contract SlasherTests is EigenLayerTestHelper {
     address middleware_2 = address(0x009849);
     address middleware_3 = address(0x001000);
     address middleware_4 = address(0x002000);
-    MerkleDelegationTerms delegationTerms;
 
      //performs basic deployment before each test
     function setUp() public override {
         super.setUp();
-        delegationTerms = new MerkleDelegationTerms();
     }
 
     /**

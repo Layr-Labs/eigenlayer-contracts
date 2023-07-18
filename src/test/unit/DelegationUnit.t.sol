@@ -8,7 +8,6 @@ import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
-import "../mocks/DelegationTermsMock.sol";
 import "../Delegation.t.sol";
 
 contract DelegationUnitTests is EigenLayerTestHelper {
@@ -16,23 +15,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyManagerMock strategyManagerMock;
     SlasherMock slasherMock;
     DelegationManager delegationManager;
-    DelegationTermsMock delegationTermsMock;
     DelegationManager delegationManagerImplementation;
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
-
-
-    uint256 GWEI_TO_WEI = 1e9;
-
-    event OnDelegationReceivedCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
-    event OnDelegationWithdrawnCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
-
 
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
 
         slasherMock = new SlasherMock();
-        delegationTermsMock = new DelegationTermsMock();
         delegationManager = DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         strategyManagerMock = new StrategyManagerMock();
 

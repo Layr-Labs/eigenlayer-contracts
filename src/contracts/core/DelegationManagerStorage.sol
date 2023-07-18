@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IStrategyManager.sol";
-import "../interfaces/IDelegationTerms.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
 

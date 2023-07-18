@@ -25,11 +25,7 @@ methods {
 	
     // external calls to EigenPod
 	withdrawBeaconChainETH(address,uint256) => DISPATCHER(true)
-    
-    // external calls to IDelegationTerms
-    onDelegationWithdrawn(address,address[],uint256[]) => CONSTANT
-    onDelegationReceived(address,address[],uint256[]) => CONSTANT
-    
+        
     // external calls to PauserRegistry
     pauser() returns (address) => DISPATCHER(true)
 	unpauser() returns (address) => DISPATCHER(true)
