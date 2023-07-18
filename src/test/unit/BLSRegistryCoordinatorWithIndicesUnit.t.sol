@@ -18,13 +18,13 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     );
 
     // Emitted when a new operator pubkey is registered for a set of quorums
-    event PubkeyAddedToQuorums(
+    event OperatorAddedToQuorums(
         address operator,
         bytes quorumNumbers
     );
 
     // Emitted when an operator pubkey is removed from a set of quorums
-    event PubkeyRemovedFromQuorums(
+    event OperatorRemovedToQuorums(
         address operator, 
         bytes quorumNumbers
     );
@@ -85,7 +85,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, defaultStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -130,7 +130,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
 
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -275,7 +275,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         operatorIdsToSwap[0] = defaultOperatorId;
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyRemovedFromQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, 0);
 
@@ -328,7 +328,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         }
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyRemovedFromQuorums(defaultOperator, quorumNumbers);
+        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
@@ -404,7 +404,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         }
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyRemovedFromQuorums(operatorToDerigister, operatorToDeregisterQuorumNumbers);
+        emit OperatorAddedToQuorums(operatorToDerigister, operatorToDeregisterQuorumNumbers);
         
         for (uint i = 0; i < operatorToDeregisterQuorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -496,14 +496,14 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyAddedToQuorums(operatorToRegister, quorumNumbers);
+        emit OperatorAddedToQuorums(operatorToRegister, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(operatorToRegisterId, defaultQuorumNumber, registeringStake);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit PubkeyRemovedFromQuorums(operatorKickParams[0].operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operatorKickParams[0].operator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
