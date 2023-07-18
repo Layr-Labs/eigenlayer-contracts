@@ -9,7 +9,7 @@ import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
- * @title The interface for the primary delegation contract for EigenLayer.
+ * @title The primary delegation contract for EigenLayer.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
@@ -335,6 +335,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
+    // @notice Internal function for calculating the current domain separator of this contract
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
