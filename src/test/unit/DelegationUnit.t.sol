@@ -59,6 +59,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         );
     }
 
+    /**
+     * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails)`
+     * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
+     * The set parameters should match the desired parameters (correct storage update)
+     * Operator becomes delegated to themselves
+     * Properly emits events – especially the `OperatorRegistered` event, but also `StakerDelegated` & `OperatorDetailsModified` events
+     * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
+     * @param operator and @param operatorDetails are fuzzed inputs
+     */
     function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
@@ -84,6 +93,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice Verifies that an operator cannot register with `stakerOptOutWindowBlocks` set larger than `MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`
+     * @param operatorDetails is a fuzzed input
+     */
     function testCannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(IDelegationManager.OperatorDetails memory operatorDetails) public {
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         cheats.assume(operatorDetails.earningsReceiver != address(0));
@@ -96,6 +109,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
     
+    /**
+     * @notice Verifies that an operator cannot register with `earningsReceiver` set to the zero address
+     * @dev This is an important check since we check `earningsReceiver != address(0)` to check if an address is an operator!
+     */
     function testCannotRegisterAsOperatorWithZeroAddressAsEarningsReceiver() public {
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails;
@@ -104,6 +121,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
     function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
         testRegisterAsOperator(operator, operatorDetails);
         cheats.startPrank(operator);
@@ -112,6 +130,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
     function testCannotRegisterAsOperatorWhileDelegated(address staker, IDelegationManager.OperatorDetails memory operatorDetails) public {
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
@@ -136,6 +155,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice Tests that an operator can modify their OperatorDetails by calling `DelegationManager.modifyOperatorDetails`
+     * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
+     * The set parameters should match the desired parameters (correct storage update)
+     * Properly emits an `OperatorDetailsModified` event
+     * Reverts appropriately if the caller is not an operator
+     * Reverts if operator tries to decrease their `stakerOptOutWindowBlocks` parameter
+     * @param initialOperatorDetails and @param modifiedOperatorDetails are fuzzed inputs
+     */
     function testModifyOperatorParameters(
         IDelegationManager.OperatorDetails memory initialOperatorDetails,
         IDelegationManager.OperatorDetails memory modifiedOperatorDetails
@@ -170,6 +198,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice Verifies that an operator cannot modify their `earningsReceiver` address to set it to the zero address
+     * @dev This is an important check since we check `earningsReceiver != address(0)` to check if an address is an operator!
+     */
     function testCannotModifyEarningsReceiverAddressToZeroAddress() public {
         // register *this contract* as an operator
         address operator = address(this);
@@ -185,7 +217,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
-    // since the operator does not require a signature, this should pass with any signature param
+    /**
+     * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
+     * via the `staker` calling `DelegationManager.delegateTo`
+     * The function should pass with any `operatorSignature` input (since it should be unused)
+     * Properly emits a `StakerDelegated` event
+     * Staker is correctly delegated after the call (i.e. correct storage update)
+     * Reverts if the staker is already delegated (to the operator or to anyone else)
+     * Reverts if the ‘operator’ is not actually registered as an operator
+     */
     function testDelegateToOperatorWhoAcceptsAllStakers(address staker, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public {
         // register *this contract* as an operator
         address operator = address(this);
@@ -211,9 +251,41 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
     }
 
-    // function testCannotDelegateWhileDelegated
+    /**
+     * @notice Delegates from `staker` to an operator, then verifies that the `staker` cannot delegate to another `operator` (at least without first undelegating)
+     */
+    function testCannotDelegateWhileDelegated(address staker, address operator, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public {
+        // delegate from the staker to an operator
+        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry);
 
-    // function testCannotDelegateToUnregisteredOperator
+        // register another operator
+        // filter out this contract, since we already register it as an operator in the above step
+        cheats.assume(operator != address(this));
+        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, _operatorDetails);
+
+        // try to delegate again and check that the call reverts
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
+
+    // @notice Verifies that `staker` cannot delegate to an unregistered `operator`
+    function testCannotDelegateToUnregisteredOperator(address staker, address operator) public {
+        require(!delegationManager.isOperator(operator), "incorrect test input?");
+
+        // try to delegate and check that the call reverts
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
 
 
 
