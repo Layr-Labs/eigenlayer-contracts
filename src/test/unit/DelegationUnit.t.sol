@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+
 import "forge-std/Test.sol";
 
 import "../mocks/StrategyManagerMock.sol";
-
 import "../mocks/SlasherMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
@@ -30,6 +31,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
+
+    // @notice reuseable modifier + associated mapping for filtering out weird fuzzed inputs, like making calls from the ProxyAdmin or the zero address
+    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
+    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
+        cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
+        _;
+    }
 
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
@@ -57,6 +65,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 )
             )
         );
+
+        // excude the zero address and the proxyAdmin from fuzzed inputs
+        addressIsExcludedFromFuzzedInputs[address(0)] = true;
+        addressIsExcludedFromFuzzedInputs[address(eigenLayerProxyAdmin)] = true;
     }
 
     /**
@@ -122,7 +134,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
-    function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public 
+        filterFuzzedAddressInputs(operator)
+    {
         testRegisterAsOperator(operator, operatorDetails);
         cheats.startPrank(operator);
         cheats.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
@@ -131,7 +145,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
-    function testCannotRegisterAsOperatorWhileDelegated(address staker, IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testCannotRegisterAsOperatorWhileDelegated(address staker, IDelegationManager.OperatorDetails memory operatorDetails) public 
+        filterFuzzedAddressInputs(staker)
+    {
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
 
@@ -144,7 +160,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, _operatorDetails);
 
-        // delegate from the `staker` to this contract
+        // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
@@ -226,7 +242,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoAcceptsAllStakers(address staker, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public {
+    function testDelegateToOperatorWhoAcceptsAllStakers(address staker, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public 
+        filterFuzzedAddressInputs(staker)
+    {
         // register *this contract* as an operator
         address operator = address(this);
         // filter inputs, since this will fail when the staker is already registered as an operator
@@ -239,7 +257,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
-        // delegate from the `staker` to this contract
+        // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
@@ -254,7 +272,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Delegates from `staker` to an operator, then verifies that the `staker` cannot delegate to another `operator` (at least without first undelegating)
      */
-    function testCannotDelegateWhileDelegated(address staker, address operator, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public {
+    function testCannotDelegateWhileDelegated(address staker, address operator, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public 
+        filterFuzzedAddressInputs(staker)
+        filterFuzzedAddressInputs(operator)
+    {
         // delegate from the staker to an operator
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry);
 
@@ -276,7 +297,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `staker` cannot delegate to an unregistered `operator`
-    function testCannotDelegateToUnregisteredOperator(address staker, address operator) public {
+    function testCannotDelegateToUnregisteredOperator(address staker, address operator) public 
+        filterFuzzedAddressInputs(staker)
+        filterFuzzedAddressInputs(operator)
+    {
         require(!delegationManager.isOperator(operator), "incorrect test input?");
 
         // try to delegate and check that the call reverts
@@ -287,12 +311,119 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice `staker` delegates to an operator who requires signature verification through an EOA (i.e. the operator’s `delegationApprover` address is set to a nonzero EOA)
+     * via the `staker` calling `DelegationManager.delegateTo`
+     * The function should pass *only with a valid ECDSA signature from the `delegationApprover`, OR if called by the operator or their delegationApprover themselves
+     * Properly emits a `StakerDelegated` event
+     * Staker is correctly delegated after the call (i.e. correct storage update)
+     * Reverts if the staker is already delegated (to the operator or to anyone else)
+     * Reverts if the ‘operator’ is not actually registered as an operator
+     */
+    function testDelegateToOperatorWhoRequiresECDSASignature(address staker, uint256 expiry) public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
+
+        uint256 delegationApproverPrivateKey = 123456789;
+        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        approverSignatureAndExpiry.expiry = expiry;
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationApprover);
+        {
+            bytes32 structHash = keccak256(abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationApprover, operator, currentApproverNonce, expiry));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegationManager.domainSeparator(), structHash));
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(staker, operator);
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+
+        require(delegationManager.isDelegated(staker), "staker not delegated correctly");
+        require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
+        require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+
+        // check that the nonce incremented appropriately
+        require(delegationManager.delegationApproverNonce(delegationApprover) == currentApproverNonce + 1, "delegationApprover nonce did not increment");
+    }
+
+    /**
+     * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
+     */
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithBadSignature(address staker, uint256 expiry)  public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
+
+        uint256 delegationApproverPrivateKey = 123456789;
+        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        approverSignatureAndExpiry.expiry = expiry;
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationApprover);
+        {
+            bytes32 structHash = keccak256(abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationApprover, operator, currentApproverNonce, expiry));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegationManager.domainSeparator(), structHash));
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
+            // mess up the signature by flipping v's parity
+            v = (v == 27 ? 28 : 27);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
+
+
+    // ERC1271WalletMock wallet = new ERC1271WalletMock(staker);
 
 
 
 
 
-    function testReinitializeDelegation() public {
+
+
+
+
+    // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    function testCannotReinitializeDelegationManager() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
     }
