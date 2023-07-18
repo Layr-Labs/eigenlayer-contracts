@@ -448,7 +448,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
             // mess up the signature by flipping v's parity
@@ -513,7 +513,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -560,7 +560,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -602,7 +602,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -633,7 +633,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -2617,7 +2617,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, dummyToken, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 

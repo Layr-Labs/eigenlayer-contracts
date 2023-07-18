@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
+import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -40,10 +38,8 @@ contract StrategyManager is
     // index for flag that pauses withdrawals when set
     uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
-    uint256 immutable ORIGINAL_CHAIN_ID;
-
-    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x1626ba7e;
+    // chain id at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /**
      * @notice Emitted when a new deposit occurs on behalf of `depositor`.
@@ -154,7 +150,7 @@ contract StrategyManager is
         external
         initializer
     {
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), ORIGINAL_CHAIN_ID, address(this)));
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
@@ -279,30 +275,18 @@ contract StrategyManager is
             nonces[staker] = nonce + 1;
         }
 
-        bytes32 digestHash;
-        //if chainid has changed, we must re-compute the domain separator
-        if (block.chainid != ORIGINAL_CHAIN_ID) {
-            bytes32 domain_separator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
-            digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
-        } else {
-            digestHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
-        }
-
+        // calculate the digest hash
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
 
         /**
          * check validity of signature:
          * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
          * indicating their intention for this action
-         * 2) if `staker` is a contract, then `signature` must will be checked according to EIP-1271
+         * 2) if `staker` is a contract, then `signature` will be checked according to EIP-1271
          */
-        if (Address.isContract(staker)) {
-            require(IERC1271(staker).isValidSignature(digestHash, signature) == ERC1271_MAGICVALUE,
-                "StrategyManager.depositIntoStrategyWithSignature: ERC1271 signature verification failed");
-        } else {
-            require(ECDSA.recover(digestHash, signature) == staker,
-                "StrategyManager.depositIntoStrategyWithSignature: signature not from staker");
-        }
+        EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
 
+        // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
         shares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
@@ -965,7 +949,6 @@ contract StrategyManager is
     }
 
     // VIEW FUNCTIONS
-
     /**
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @param depositor The staker of interest, whose deposits this function will fetch
@@ -989,6 +972,19 @@ contract StrategyManager is
         return stakerStrategyList[staker].length;
     }
 
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     */
+    function domainSeparator() public view returns (bytes32) {
+        if (block.chainid == ORIGINAL_CHAIN_ID) {
+            return _DOMAIN_SEPARATOR;
+        }
+        else {
+            return _calculateDomainSeparator();
+        }
+    }
+
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
     function calculateWithdrawalRoot(QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
         return (
@@ -1003,5 +999,9 @@ contract StrategyManager is
                 )
             )
         );
+    }
+
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }
