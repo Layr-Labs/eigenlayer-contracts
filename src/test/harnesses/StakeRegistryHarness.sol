@@ -22,6 +22,10 @@ contract StakeRegistryHarness is StakeRegistry {
         return _updateOperatorStake(operator, operatorId, quorumNumber);
     }
 
+    function recordTotalStakeUpdate(uint8 quorumNumber, OperatorStakeUpdate memory totalStakeUpdate) external {
+        _recordTotalStakeUpdate(quorumNumber, totalStakeUpdate);
+    }
+
     // mocked function so we can set this arbitrarily without having to mock other elements
     function weightOfOperator(uint8 quorumNumber, address operator) public override view returns(uint96) {
         return weightOfOperatorForQuorum[quorumNumber][operator];

@@ -40,6 +40,7 @@ contract BLSOperatorStateRetriever {
         bytes32[] memory operatorIds = new bytes32[](1);
         operatorIds[0] = operatorId;
         uint256 index = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(blockNumber, operatorIds)[0];
+    
         uint256 quorumBitmap = registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(operatorId, blockNumber, index);
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);

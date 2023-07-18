@@ -61,7 +61,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
         // emit event so offchain actors can update their state
-        emit PubkeyAddedToQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
@@ -87,16 +87,24 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
-        emit PubkeyRemovedFromQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
-    /// @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
+    /**
+     * @notice Returns the indices of the quorumApks index at `blockNumber` for the provided `quorumNumbers`
+     * @dev Returns the current indices if `blockNumber >= block.number`
+     */
     function getApkIndicesForQuorumsAtBlockNumber(bytes calldata quorumNumbers, uint256 blockNumber) external view returns(uint32[] memory){
-        uint256[] memory indices = new uint256[](quorumNumbers.length);
+        uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 quorumApkUpdatesLength = uint32(quorumApkUpdates[quorumNumber].length);
+            
+            if(quorumApkUpdatesLength == 0 || blockNumber < quorumApkUpdates[quorumNumber][0].updateBlockNumber) {
+                revert("BLSPubkeyRegistry.getApkIndicesForQuorumsAtBlockNumber: blockNumber is before the first update");
+            }
+
             for (uint32 j = 0; j < quorumApkUpdatesLength; j++) {
                 if (quorumApkUpdates[quorumNumber][quorumApkUpdatesLength - j - 1].updateBlockNumber <= blockNumber) {
                     indices[i] = quorumApkUpdatesLength - j - 1;
@@ -104,7 +112,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
                 }
             }
         }
-        revert("BLSPubkeyRegistry.getApkIndexForQuorumAtBlockNumber: no apk update found for quorum at block number");
+        return indices;
     }
 
     /// @notice Returns the current APK for the provided `quorumNumber `

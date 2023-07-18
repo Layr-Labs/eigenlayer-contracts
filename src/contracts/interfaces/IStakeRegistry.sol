@@ -60,6 +60,9 @@ interface IStakeRegistry is IRegistry {
      */
     function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
 
+    /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
+    function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);
+
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
     /**

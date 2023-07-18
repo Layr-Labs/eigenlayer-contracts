@@ -17,13 +17,11 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
      * @notice Data structure for storing operator set params for a given quorum. Specifically the 
      * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
      * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
-     * `kickBIPsOfAverageStake` is the basis points of the average stake of the quorum that an operator needs to be below to be kicked,
      * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
      */ 
     struct OperatorSetParam {
         uint32 maxOperatorCount;
         uint16 kickBIPsOfOperatorStake;
-        uint16 kickBIPsOfAverageStake;
         uint16 kickBIPsOfTotalStake;
     }
 
@@ -41,7 +39,7 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
 
     // EVENTS
 
-    event OperatorSocketUpdate(bytes32 operatorId, string socket);
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
