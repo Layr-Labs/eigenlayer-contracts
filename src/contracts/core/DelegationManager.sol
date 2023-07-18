@@ -235,7 +235,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * 4) if applicable, that the approver signature is valid and non-expired
      */ 
     function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        require(isNotDelegated(staker), "DelegationManager._delegate: staker has existing delegation");
+        require(isNotDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 

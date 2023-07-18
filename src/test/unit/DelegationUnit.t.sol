@@ -19,6 +19,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
 
+    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
+    event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
+
+    // @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
+    event OperatorDetailsModified(address indexed operator, IDelegationManager.OperatorDetails newOperatorDetails);
+
+    // @notice Emitted when @param staker delegates to @param operator.
+    event StakerDelegated(address indexed staker, address indexed operator);
+
+    // @notice Emitted when @param staker undelegates from @param operator.
+    event StakerUndelegated(address indexed staker, address indexed operator);
+
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
 
@@ -45,10 +57,170 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 )
             )
         );
-
     }
 
-    function testReinitializeDelegation() public{
+    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
+        // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
+        cheats.assume(operator != address(0));
+        // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
+        cheats.assume(operatorDetails.earningsReceiver != address(0));
+        // filter out disallowed stakerOptOutWindowBlocks values
+        cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
+
+        cheats.startPrank(operator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorDetailsModified(operator, operatorDetails);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(operator, operator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorRegistered(operator, operatorDetails);
+
+        delegationManager.registerAsOperator(operatorDetails);
+
+        require(operatorDetails.earningsReceiver == delegationManager.earningsReceiver(operator), "earningsReceiver not set correctly");
+        require(operatorDetails.delegationApprover == delegationManager.delegationApprover(operator), "delegationApprover not set correctly");
+        require(operatorDetails.stakerOptOutWindowBlocks == delegationManager.stakerOptOutWindowBlocks(operator), "stakerOptOutWindowBlocks not set correctly");
+        require(delegationManager.delegatedTo(operator) == operator, "operator not delegated to self");
+        cheats.stopPrank();
+    }
+
+    function testCannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(IDelegationManager.OperatorDetails memory operatorDetails) public {
+        // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
+        cheats.assume(operatorDetails.earningsReceiver != address(0));
+        // filter out *allowed* stakerOptOutWindowBlocks values
+        cheats.assume(operatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
+
+        cheats.startPrank(operator);
+        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"));
+        delegationManager.registerAsOperator(operatorDetails);
+        cheats.stopPrank();
+    }
+    
+    function testCannotRegisterAsOperatorWithZeroAddressAsEarningsReceiver() public {
+        cheats.startPrank(operator);
+        IDelegationManager.OperatorDetails memory operatorDetails;
+        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        delegationManager.registerAsOperator(operatorDetails);
+        cheats.stopPrank();
+    }
+
+    function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
+        testRegisterAsOperator(operator, operatorDetails);
+        cheats.startPrank(operator);
+        cheats.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
+        delegationManager.registerAsOperator(operatorDetails);
+        cheats.stopPrank();
+    }
+
+    function testCannotRegisterAsOperatorWhileDelegated(address staker, IDelegationManager.OperatorDetails memory operatorDetails) public {
+        // filter out disallowed stakerOptOutWindowBlocks values
+        cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, _operatorDetails);
+
+        // delegate from the `staker` to this contract
+        cheats.startPrank(staker);
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+
+        cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
+        delegationManager.registerAsOperator(operatorDetails);
+
+        cheats.stopPrank();
+    }
+
+    function testModifyOperatorParameters(
+        IDelegationManager.OperatorDetails memory initialOperatorDetails,
+        IDelegationManager.OperatorDetails memory modifiedOperatorDetails
+    ) public {
+        address operator = address(this);
+        testRegisterAsOperator(operator, initialOperatorDetails);
+        // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
+        cheats.assume(modifiedOperatorDetails.earningsReceiver != address(0));
+
+        cheats.startPrank(operator);
+
+        // either it fails for trying to set the stakerOptOutWindowBlocks
+        if (modifiedOperatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS()) {
+            cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"));
+            delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
+        // or the transition is allowed,
+        } else if (modifiedOperatorDetails.stakerOptOutWindowBlocks >= initialOperatorDetails.stakerOptOutWindowBlocks) {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorDetailsModified(operator, modifiedOperatorDetails);
+            delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
+
+            require(modifiedOperatorDetails.earningsReceiver == delegationManager.earningsReceiver(operator), "earningsReceiver not set correctly");
+            require(modifiedOperatorDetails.delegationApprover == delegationManager.delegationApprover(operator), "delegationApprover not set correctly");
+            require(modifiedOperatorDetails.stakerOptOutWindowBlocks == delegationManager.stakerOptOutWindowBlocks(operator), "stakerOptOutWindowBlocks not set correctly");
+            require(delegationManager.delegatedTo(operator) == operator, "operator not delegated to self");
+        // or else the transition is disallowed
+        } else {
+            cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased"));
+            delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
+        }
+
+        cheats.stopPrank();
+    }
+
+    function testCannotModifyEarningsReceiverAddressToZeroAddress() public {
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        operatorDetails.earningsReceiver = address(0);
+        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    // since the operator does not require a signature, this should pass with any signature param
+    function testDelegateToOperatorWhoAcceptsAllStakers(address staker, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public {
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // delegate from the `staker` to this contract
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(staker, operator);
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+
+        require(delegationManager.isDelegated(staker), "staker not delegated correctly");
+        require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
+        require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+    }
+
+    // function testCannotDelegateWhileDelegated
+
+    // function testCannotDelegateToUnregisteredOperator
+
+
+
+
+
+
+    function testReinitializeDelegation() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
     }
@@ -152,7 +324,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         cheats.startPrank(staker);
-        cheats.expectRevert(bytes("DelegationManager._delegate: staker has existing delegation"));
+        cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
         delegationManager.delegateTo(operator2, signatureWithExpiry);
         cheats.stopPrank();
     }
