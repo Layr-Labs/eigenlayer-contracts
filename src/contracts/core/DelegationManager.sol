@@ -215,8 +215,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
         require(
             newOperatorDetails.earningsReceiver != address(0),
-            "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"
-        );
+            "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
         require(newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
             "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS");
         require(newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
