@@ -411,7 +411,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
         }
 
-        // delegate from the `staker` to the operator
+        // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
         delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
@@ -504,7 +504,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         approverSignatureAndExpiry.expiry = expiry;
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
         {
-            bytes32 structHash = keccak256(abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationManager.delegationApprover(operator), operator, currentApproverNonce, expiry));
+            bytes32 structHash = keccak256(
+                abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationManager.delegationApprover(operator), operator, currentApproverNonce, expiry)
+            );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegationManager.domainSeparator(), structHash));
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
@@ -529,6 +531,44 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce + 1,
                 "delegationApprover nonce did not increment");
         }
+    }
+
+    /**
+     * @notice Like `testDelegateToOperatorWhoRequiresEIP1271Signature` but using a contract that
+     * returns a value other than the EIP1271 "magic bytes" and checking that reversion occurs appropriately
+     */
+    function testDelegateToOperatorWhoRequiresEIP1271Signature_RevertsOnBadReturnValue(address staker, uint256 expiry) public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        // deploy a ERC1271MaliciousMock contract that will return an incorrect value when called
+        ERC1271MaliciousMock wallet = new ERC1271MaliciousMock();
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(wallet),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // create the signature struct
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        approverSignatureAndExpiry.expiry = expiry;
+
+        // try to delegate from the `staker` to the operator, and check reversion
+        cheats.startPrank(staker);
+        // because the contract returns the wrong amount of data, we get a low-level "EvmError: Revert" message here rather than the error message bubbling up
+        // cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
+        cheats.expectRevert();
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
     }
 
 
