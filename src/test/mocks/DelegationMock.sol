@@ -73,4 +73,10 @@ contract DelegationMock is IDelegationManager, Test {
     function stakerNonce(address /*staker*/) external pure returns (uint256) {}
 
     function delegationApproverNonce(address /*operator*/) external pure returns (uint256) {}
+
+    function calculateStakerDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
+        external pure returns (bytes32 stakerDigestHash) {}
+
+    function calculateApproverDigestHash(address /*operator*/, uint256 /*expiry*/) external pure returns (bytes32 approverDigestHash) {}
+
 }

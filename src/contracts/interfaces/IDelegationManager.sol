@@ -78,6 +78,8 @@ interface IDelegationManager {
      * AND
      * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
+     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
+     * in this case to save on complexity + gas costs
      */
     function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry) external;
 
@@ -92,6 +94,8 @@ interface IDelegationManager {
      * AND
      * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
+     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
+     * in this case to save on complexity + gas costs
      */
     function delegateToBySignature(
         address staker,
@@ -181,4 +185,19 @@ interface IDelegationManager {
      * has specified a nonzero address as their `delegationApprover`)
      */
     function delegationApproverNonce(address operator) external view returns (uint256);
+
+    /**
+     * @notice External getter function that mirrors the staker signature hash calculation in the `delegateToBySignature` function
+     * @param staker The signing staker
+     * @param operator The operator who is being delegated
+     * @param expiry The desired expiry time of the staker's signature
+     */
+    function calculateStakerDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32 stakerDigestHash);
+
+    /**
+     * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @param operator The operator who is being delegated
+     * @param expiry The desired expiry time of the approver's signature
+     */
+    function calculateApproverDigestHash(address operator, uint256 expiry) external view returns (bytes32 approverDigestHash);
 }

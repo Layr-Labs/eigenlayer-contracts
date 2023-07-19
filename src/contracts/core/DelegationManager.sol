@@ -91,6 +91,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * AND
      * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
+     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
+     * in this case to save on complexity + gas costs
      */
     function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry) external {
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
@@ -108,6 +110,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * AND
      * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
      * is the `msg.sender`, then approval is assumed.
+     * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
+     * in this case to save on complexity + gas costs
      */
     function delegateToBySignature(
         address staker,
@@ -332,6 +336,37 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
+    }
+
+    /**
+     * @notice External getter function that mirrors the staker signature hash calculation in the `delegateToBySignature` function
+     * @param staker The signing staker
+     * @param operator The operator who is being delegated
+     * @param expiry The desired expiry time of the staker's signature
+     */
+    function calculateStakerDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
+        // get the staker's current nonce and caluclate the struct hash
+        uint256 currentStakerNonce = stakerNonce[staker];
+        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, currentStakerNonce, expiry));
+        // calculate the digest hash
+        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
+        return stakerDigestHash;
+    }
+
+    /**
+     * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @param operator The operator who is being delegated
+     * @param expiry The desired expiry time of the approver's signature
+     */
+    function calculateApproverDigestHash(address operator, uint256 expiry) external view returns (bytes32) {
+            // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
+            address _delegationApprover = _operatorDetails[operator].delegationApprover;
+            // get the approver's current nonce and caluclate the struct hash
+            uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
+            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, operator, currentApproverNonce, expiry));
+            // calculate the digest hash
+            bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
+            return approverDigestHash;
     }
 
     // @notice Internal function for calculating the current domain separator of this contract
