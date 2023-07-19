@@ -40,7 +40,6 @@ After staking an Ethereum validator with its withdrawal credentials pointed to t
 To convey to EigenLayer that an EigenPod has validator's restaked on it, anyone can submit a proof against a beacon chain state root the proves that a validator has their withdrawal credentials pointed to the pod.  The proof is verified and the EigenPod calls the EigenPodMananger that calls the StrategyManager which records the validators proven balance run through the hysteresis function worth of ETH in the "beaconChainETH" strategy.  Each EigenPod keeps track of all of the validators by the hash of their public key. For each validator, their validator index and current balance in EigenLayer is kept track of.
 
 ### Proofs of Validator Balance Updates
-
 EigenLayer pessimistically assumes the validator has less ETH that they actually have restaked in order for the protocol to have an accurate view of the validator's restaked assets even in the case of an uncorrelated slashing event, for which the penalty is >=1 ETH.
 In the case that a validator's balance drops close to or below what is noted in EigenLayer, AVSs need to be notified of that ASAP, in order to get an accurate view of their security. 
 In the case that a validator's balance, when run through the hysteresis function, is lower or higher than what is restaked on EigenLayer, anyone is allowed to permissionlessly prove that the balance of a certain validator. If the proof is valid, the StrategyManager decrements the pod owners beacon chain ETH shares by however much is staked on EigenLayer and adds the new proven stake, i.e., the strategyManager's view of the staker's shares is an accurate representation of the consensys layer as long as timely balance update proofs are submitted.  
@@ -62,6 +61,12 @@ In this second case, in order to withdraw their balance from the EigenPod, stake
 3. If the amount withdrawn is less than `REQUIRED_BALANCE_GWEI` and the validator was *not* previously proven to be "overcommitted", then the full withdrawal amount is held for processing through EigenLayer's normal withdrawal path, and any excess 'beaconChainETH' shares in EigenLayer are immediately removed, somewhat similar to the process outlined in [fraud proofs for overcommitted balances]. 
 
 4. If the amount withdrawn is less than `REQUIRED_BALANCE_GWEI` and the validator *was* previously proven to be "overcommitted", then the full withdrawal amount is held for processing through EigenLayer's normal withdrawal path, and the podOwner is credited with enough beaconChainETH shares in EigenLayer to complete the normal withdrawal process; this last step is necessary since the validator's virtual beaconChainETH shares were previously removed from EigenLayer as part of the overcommittment fraudproof process.
+
+### The EigenPod Invariant
+The core complexity of the EigenPods system is to ensure that EigenLayer continuously has an accurate picture of the state of the beacon chain balances repointed to it.  In other words, the invariant that governs this system is:
+`sum(shares_in_beaconChainETHStrategy) * WEI_TO_GWEI = sum(validator_restakedBalanceGwei) + withdrawableRestakedExecutionLayerGwei`
+
+Essentially this states that the podOwner's shares in the strategyManager's beaconChainETHStrategy must be equal to sum of all the podOwner's restakedBalanceGwei + any withdrawableRestakedExecutionLayerGwei they may have after proving full withdrawals.  
 
 
 ![Beacon Chain Withdrawal Proofs drawio](./images/Withdrawal_Proof_Diagram.png)
