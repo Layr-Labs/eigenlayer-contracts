@@ -483,7 +483,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 blockNumber = 1;
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex0, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex0, proofs, validatorFields);
         cheats.stopPrank();
     }
 
@@ -501,7 +501,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex0, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex0, proofs, validatorFields);
         cheats.stopPrank();
     }
 
@@ -519,7 +519,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex, proofs, validatorFields);
+        pod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
         cheats.stopPrank();
     }
 
@@ -726,7 +726,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
         cheats.stopPrank();
     }
 
@@ -1083,7 +1083,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // emit ValidatorRestaked(validatorIndex);
 
         cheats.startPrank(_podOwner);
-        newPod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
         IStrategy beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
         cheats.stopPrank();
 

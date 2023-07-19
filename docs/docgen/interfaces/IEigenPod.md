@@ -145,10 +145,10 @@ function provenPartialWithdrawal(uint40 validatorIndex, uint64 slot) external vi
 
 mapping that tracks proven partial withdrawals
 
-### verifyWithdrawalCredentialsAndBalance
+### verifyWithdrawalCredentials
 
 ```solidity
-function verifyWithdrawalCredentialsAndBalance(uint64 oracleBlockNumber, uint40 validatorIndex, struct BeaconChainProofs.ValidatorFieldsAndBalanceProofs proofs, bytes32[] validatorFields) external
+function verifyWithdrawalCredentials(uint64 oracleBlockNumber, uint40 validatorIndex, struct BeaconChainProofs.ValidatorFieldsAndBalanceProofs proofs, bytes32[] validatorFields) external
 ```
 
 This function verifies that the withdrawal credentials of the podOwner are pointed to

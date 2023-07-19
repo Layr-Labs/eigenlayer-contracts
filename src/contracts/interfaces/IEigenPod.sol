@@ -108,7 +108,7 @@ interface IEigenPod {
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyWithdrawalCredentialsAndBalance(
+    function verifyWithdrawalCredentials(
         uint64 oracleBlockNumber,
         uint40 validatorIndex,
         bytes memory proofs,

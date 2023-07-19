@@ -191,72 +191,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyWithdrawalCredentialsAndBalance(
+
+    function verifyWithdrawalCredentials(
         uint64 oracleBlockNumber,
-        uint40 validatorIndex,
-        bytes calldata proof,
-        bytes32[] calldata validatorFields
-    )
-        external
+        uint40[] validatorIndices,
+        bytes[] calldata proofs,
+        bytes32[][] calldata validatorFields
+    ) external 
+        onlyEigenPodOwner
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
         // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
         proofIsForValidBlockNumber(oracleBlockNumber)
-        onlyEigenPodOwner
     {
-        bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
-
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
-
-        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
-            "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials");
-
-        require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == bytes32(_podWithdrawalCredentials()),
-            "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod");
-        /**
-        * Deserialize the balance field from the Validator struct.  Note that this is the "effective" balance of the validator
-        * rather than the current balance.  Effective balance is generated via a hystersis function such that an effective 
-        * balance, always a multiple of 1 ETH, will only lower to the next multiple of 1 ETH if the current balance is less
-        * than 0.25 ETH below their current effective balance.  For example, if the effective balance is 31ETH, it only falls to 
-        * 30ETH when the true balance falls below 30.75ETH.  Thus in the worst case, the effective balance is overestimating the
-        * actual validator balance by 0.25 ETH.  In EigenLayer, we calculate our own "effective reskated balance" which is a further pessimistic
-        * view of the validator's effective balance.
-        */
-        uint64 validatorEffectiveBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
-
-        // make sure the balance is greater than the amount restaked per validator
-        require(validatorEffectiveBalanceGwei >= REQUIRED_BALANCE_GWEI,
-            "EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator");
-
-        // verify ETH validator proof
-        bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
-
-        uint gas = gasleft();
-        BeaconChainProofs.verifyValidatorFields(
-            validatorIndex,
-            beaconStateRoot,
-            proof,
-            validatorFields
-        );
-        emit log_named_uint("GASSSS", gas - gasleft());
-
-        // set the status to active
-       validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
-
-        // Sets "hasRestaked" to true if it hasn't been set yet. 
-        if (!hasRestaked) {
-            hasRestaked = true;
+        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
+        for (uint256 i = 0; i < validatorIndices.length; i++) {
+            _verifyWithdrawalCredentials(oracleBlockNumber, validatorIndices[i], proofs[i], validatorFields[i]);
         }
-
-        emit ValidatorRestaked(validatorIndex);
-
-        //record validator's new restaked balance
-        validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
-
-        //record validatorInfo update in storage
-        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
-
-        // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
-        eigenPodManager.restakeBeaconChainETH(podOwner, validatorInfo.restakedBalanceGwei * GWEI_TO_WEI);
     }
 
     /**
@@ -502,6 +452,68 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     // INTERNAL FUNCTIONS
+     function _verifyWithdrawalCredentials(
+        uint64 oracleBlockNumber,
+        uint40 validatorIndex,
+        bytes calldata proof,
+        bytes32[] calldata validatorFields
+    )
+        internal
+    {
+        bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
+
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+
+        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
+            "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials");
+
+        require(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] == bytes32(_podWithdrawalCredentials()),
+            "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod");
+        /**
+        * Deserialize the balance field from the Validator struct.  Note that this is the "effective" balance of the validator
+        * rather than the current balance.  Effective balance is generated via a hystersis function such that an effective 
+        * balance, always a multiple of 1 ETH, will only lower to the next multiple of 1 ETH if the current balance is less
+        * than 0.25 ETH below their current effective balance.  For example, if the effective balance is 31ETH, it only falls to 
+        * 30ETH when the true balance falls below 30.75ETH.  Thus in the worst case, the effective balance is overestimating the
+        * actual validator balance by 0.25 ETH.  In EigenLayer, we calculate our own "effective reskated balance" which is a further pessimistic
+        * view of the validator's effective balance.
+        */
+        uint64 validatorEffectiveBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
+
+        // make sure the balance is greater than the amount restaked per validator
+        require(validatorEffectiveBalanceGwei >= REQUIRED_BALANCE_GWEI,
+            "EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator");
+
+        // verify ETH validator proof
+        bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
+
+        BeaconChainProofs.verifyValidatorFields(
+            validatorIndex,
+            beaconStateRoot,
+            proof,
+            validatorFields
+        );
+
+        // set the status to active
+       validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
+
+        // Sets "hasRestaked" to true if it hasn't been set yet. 
+        if (!hasRestaked) {
+            hasRestaked = true;
+        }
+
+        emit ValidatorRestaked(validatorIndex);
+
+        //record validator's new restaked balance
+        validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
+
+        //record validatorInfo update in storage
+        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
+
+        // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
+        eigenPodManager.restakeBeaconChainETH(podOwner, validatorInfo.restakedBalanceGwei * GWEI_TO_WEI);
+    }
+
     function _podWithdrawalCredentials() internal view returns(bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }

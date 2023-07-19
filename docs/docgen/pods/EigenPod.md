@@ -230,10 +230,10 @@ function stake(bytes pubkey, bytes signature, bytes32 depositDataRoot) external 
 
 Called by EigenPodManager when the owner wants to create another ETH validator.
 
-### verifyWithdrawalCredentialsAndBalance
+### verifyWithdrawalCredentials
 
 ```solidity
-function verifyWithdrawalCredentialsAndBalance(uint64 oracleBlockNumber, uint40 validatorIndex, struct BeaconChainProofs.ValidatorFieldsAndBalanceProofs proofs, bytes32[] validatorFields) external
+function verifyWithdrawalCredentials(uint64 oracleBlockNumber, uint40 validatorIndex, struct BeaconChainProofs.ValidatorFieldsAndBalanceProofs proofs, bytes32[] validatorFields) external
 ```
 
 This function verifies that the withdrawal credentials of the podOwner are pointed to
