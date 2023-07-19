@@ -546,7 +546,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     /**
      * @notice `staker` becomes delegated to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
-     * via the `caller calling `DelegationManager.delegateToBySignature`
+     * via the `caller` calling `DelegationManager.delegateToBySignature`
      * The function should pass with any `operatorSignature` input (since it should be unused)
      * The function should pass only with a valid `stakerSignatureAndExpiry` input
      * Properly emits a `StakerDelegated` event
@@ -554,7 +554,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoWhoAcceptsAllStakers(address caller, uint256 expiry) public 
+    function testDelegateBySignatureToOperatorWhoAcceptsAllStakers(address caller, uint256 expiry) public 
         filterFuzzedAddressInputs(caller)
     {
         // filter to only valid `expiry` values
@@ -583,7 +583,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
-        // use an empty approver signature input since none is needed
+        // use an empty approver signature input since none is needed / the input is unchecked
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry);        
         cheats.stopPrank();
@@ -593,38 +593,76 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
-        // check that the nonce incremented appropriately
+        // check that the staker nonce incremented appropriately
         require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
-            "delegationApprover nonce did not increment");
+            "staker nonce did not increment");
     }
 
+    /**
+     * @notice `staker` becomes delegated to an operator who requires signature verification through an EOA (i.e. the operator’s `delegationApprover` address is set to a nonzero EOA)
+     * via the `caller` calling `DelegationManager.delegateToBySignature`
+     * The function should pass *only with a valid ECDSA signature from the `delegationApprover`, OR if called by the operator or their delegationApprover themselves
+     * AND with a valid `stakerSignatureAndExpiry` input
+     * Properly emits a `StakerDelegated` event
+     * Staker is correctly delegated after the call (i.e. correct storage update)
+     * Reverts if the staker is already delegated (to the operator or to anyone else)
+     * Reverts if the ‘operator’ is not actually registered as an operator
+     */
+    function testDelegateBySignatureToOperatorWhoRequiresECDSASignature(address caller, uint256 expiry) public 
+        filterFuzzedAddressInputs(caller)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
 
-    // function testDelegateToOperatorWhoAcceptsAllStakers(address staker, IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) public 
-    //     filterFuzzedAddressInputs(staker)
-    // {
-    //     // register *this contract* as an operator
-    //     address operator = address(this);
-    //     // filter inputs, since this will fail when the staker is already registered as an operator
-    //     cheats.assume(staker != operator);
+        address staker = cheats.addr(stakerPrivateKey);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
-    //     IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-    //         earningsReceiver: operator,
-    //         delegationApprover: address(0),
-    //         stakerOptOutWindowBlocks: 0
-    //     });
-    //     testRegisterAsOperator(operator, operatorDetails);
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
 
-    //     // delegate from the `staker` to the operator
-    //     cheats.startPrank(staker);
-    //     cheats.expectEmit(true, true, true, true, address(delegationManager));
-    //     emit StakerDelegated(staker, operator);
-    //     delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
-    //     cheats.stopPrank();
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
 
-    //     require(delegationManager.isDelegated(staker), "staker not delegated correctly");
-    //     require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
-    //     require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
-    // }
+        // fetch the delegationApprover's current nonce
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
+
+        // fetch the staker's current nonce
+        uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
+        // calculate the staker signature
+        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, expiry);
+
+        // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
+        cheats.startPrank(caller);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(staker, operator);
+        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+
+        require(delegationManager.isDelegated(staker), "staker not delegated correctly");
+        require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
+        require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+
+        // check that the delegationApprover nonce incremented appropriately
+        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+                "delegationApprover nonce incremented inappropriately");
+        } else {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce + 1,
+                "delegationApprover nonce did not increment");
+        }
+
+        // check that the staker nonce incremented appropriately
+        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
+            "staker nonce did not increment");
+    }
 
 
 
@@ -648,7 +686,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
-    function testBadECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
+    function testBadStakerECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
