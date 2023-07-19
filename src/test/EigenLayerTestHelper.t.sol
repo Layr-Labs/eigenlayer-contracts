@@ -366,7 +366,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
-        assertTrue(delegation.isNotDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);

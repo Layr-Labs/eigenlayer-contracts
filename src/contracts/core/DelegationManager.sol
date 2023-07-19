@@ -29,7 +29,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Maximum value that `_operatorDetails[operator].stakerOptOutWindowBlocks` is allowed to take, for any operator.
      * @dev This is 6 months (technically 180 days) in blocks.
      */
-    uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 * 24 * 60 * 60) / 12;
+    uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
     /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
     modifier onlyStrategyManager() {
@@ -239,7 +239,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * 4) if applicable, that the approver signature is valid and non-expired
      */ 
     function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        require(isNotDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
+        require(!isDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 
@@ -305,11 +305,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /// @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
     function isDelegated(address staker) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
-    }
-
-    /// @notice Returns 'true' if `staker` is *not* actively delegated, and 'false' otherwise.
-    function isNotDelegated(address staker) public view returns (bool) {
-        return (delegatedTo[staker] == address(0));
     }
 
     /// @notice Returns if an operator can be delegated to, i.e. the `operator` has previously called `registerAsOperator`.

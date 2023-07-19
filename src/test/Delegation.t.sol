@@ -143,7 +143,7 @@ contract DelegationTests is EigenLayerTestHelper {
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the  strategies
-        assertTrue(delegation.isNotDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);
@@ -535,14 +535,14 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //assert still delegated
         assertTrue(delegation.isDelegated(_staker));
-        assertFalse(delegation.isNotDelegated(_staker));
+        assertFalse(!delegation.isDelegated(_staker));
         assertTrue(delegation.isOperator(_operator));
 
         //strategyManager can undelegate _staker
         vm.prank(address(strategyManager));
         delegation.undelegate(_staker);
         assertFalse(delegation.isDelegated(_staker));
-        assertTrue(delegation.isNotDelegated(_staker));
+        assertTrue(!delegation.isDelegated(_staker));
 
     }
 
@@ -589,7 +589,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         //making additional deposits to the strategies
-        assertTrue(delegation.isNotDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
     }

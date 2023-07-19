@@ -37,6 +37,24 @@ interface IDelegationManager {
     }
 
     // TODO: documentation
+    struct StakerDelegation {
+        address staker;
+        address operator;
+        uint256 nonce;
+        uint256 expiry;
+    }
+
+    // TODO: documentation
+    struct DelegationApproval {
+        address staker;
+        address operator;
+        uint256 nonce;
+        uint256 expiry;
+    }
+
+    // TODO: add constants to interface
+
+    // TODO: documentation
     struct SignatureWithExpiry {
         bytes signature;
         uint256 expiry;
@@ -170,9 +188,6 @@ interface IDelegationManager {
 
     /// @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
     function isDelegated(address staker) external view returns (bool);
-
-    /// @notice Returns 'true' if `staker` is *not* actively delegated, and 'false' otherwise.
-    function isNotDelegated(address staker) external view returns (bool);
 
     /// @notice Returns if an operator can be delegated to, i.e. the `operator` has previously called `registerAsOperator`.
     function isOperator(address operator) external view returns (bool);

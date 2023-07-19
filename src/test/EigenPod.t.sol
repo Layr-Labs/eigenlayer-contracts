@@ -923,7 +923,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         }
 
         //making additional deposits to the strategies
-        assertTrue(delegation.isNotDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 

@@ -12,24 +12,6 @@ import "../interfaces/ISlasher.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
-    // TODO: documentation
-    struct StakerDelegation {
-        address staker;
-        address operator;
-        uint256 nonce;
-        uint256 expiry;
-    }
-
-    // TODO: documentation
-    struct DelegationApproval {
-        address staker;
-        address operator;
-        uint256 nonce;
-        uint256 expiry;
-    }
-
-    // TODO: add constants to interface
-
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
