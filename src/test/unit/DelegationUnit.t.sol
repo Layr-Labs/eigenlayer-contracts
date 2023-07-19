@@ -664,6 +664,78 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "staker nonce did not increment");
     }
 
+    /**
+     * @notice `staker` becomes delegated to an operatorwho requires signature verification through an EIP1271-compliant contract (i.e. the operator’s `delegationApprover` address is
+     * set to a nonzero and code-containing address) via the `caller` calling `DelegationManager.delegateToBySignature`
+     * The function uses OZ's ERC1271WalletMock contract, and thus should pass *only when a valid ECDSA signature from the `owner` of the ERC1271WalletMock contract,
+     * OR if called by the operator or their delegationApprover themselves
+     * AND with a valid `stakerSignatureAndExpiry` input
+     * Properly emits a `StakerDelegated` event
+     * Staker is correctly delegated after the call (i.e. correct storage update)
+     * Reverts if the staker is already delegated (to the operator or to anyone else)
+     * Reverts if the ‘operator’ is not actually registered as an operator
+     */
+    function testDelegateBySignatureToOperatorWhoRequiresEIP1271Signature(address caller, uint256 expiry) public 
+        filterFuzzedAddressInputs(caller)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
+
+        address staker = cheats.addr(stakerPrivateKey);
+        address delegationSigner = cheats.addr(delegationSignerPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        /**
+         * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
+         * so that we can create valid signatures from the `delegationSigner` for the contract to check when called
+         */
+        ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(wallet),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // fetch the delegationApprover's current nonce
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
+
+        // fetch the staker's current nonce
+        uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
+        // calculate the staker signature
+        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, expiry);
+
+        // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
+        cheats.startPrank(caller);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(staker, operator);
+        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+
+        require(delegationManager.isDelegated(staker), "staker not delegated correctly");
+        require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
+        require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+
+        // check that the delegationApprover nonce incremented appropriately
+        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+                "delegationApprover nonce incremented inappropriately");
+        } else {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce + 1,
+                "delegationApprover nonce did not increment");
+        }
+
+        // check that the staker nonce incremented appropriately
+        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
+            "staker nonce did not increment");
+    }
 
 
 
