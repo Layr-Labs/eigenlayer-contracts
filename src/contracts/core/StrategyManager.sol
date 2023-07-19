@@ -177,17 +177,17 @@ contract StrategyManager is
      * @notice Records a beacon chain balance update event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
      * @param podOwner is the pod owner whose beaconchain ETH balance is being updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param currentAmount is the existing amount of beaconchain ETH shares in the strategy,
-     * @param newAmount is the new amount of beaconchain ETH shares in the strategy,
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     * @param isNegative is whether or not change in shares is negative or positive
      * @dev Only callable by EigenPodManager.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 currentAmount, uint256 newAmount)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
         external
         onlyEigenPodManager
         nonReentrant
     {
         // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
-        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, currentAmount, newAmount);
+        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
     }
 
     /**
@@ -885,26 +885,25 @@ contract StrategyManager is
 
     /**
      * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
-        * @param currentUserShares The current amount of shares that the user has
-        * @param newUserShares The new amount of shares that the user has
+        * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+        * @param isNegative is whether or not change in shares is negative or positive
      */
-    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 currentUserShares, uint256 newUserShares) internal {
-        if (newUserShares > currentUserShares) {
-                uint256 shareIncrease = newUserShares - currentUserShares;
-                //if new balance is greater than current recorded shares, add the difference
-                _addShares(podOwner, beaconChainETHStrategy, shareIncrease);
-                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareIncrease);
-        } else if (newUserShares < currentUserShares) {
-                uint256 shareDecrease = currentUserShares - newUserShares;
+    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative) internal {
+        
+        if (isNegative) {
                 IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
                 uint256[] memory shareAmounts = new uint256[](1);
-                shareAmounts[0] = shareDecrease;
+                shareAmounts[0] = sharesDelta;
 
                 //if new balance is less than current recorded shares, remove the difference
-                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareDecrease);
+                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, sharesDelta);
                 delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
-            }     
+        }   else {
+                //if new balance is greater than current recorded shares, add the difference
+                _addShares(podOwner, beaconChainETHStrategy, sharesDelta);
+                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, sharesDelta);
+            }      
     }
 
     // VIEW FUNCTIONS

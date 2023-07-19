@@ -312,8 +312,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit ValidatorBalanceUpdated(validatorIndex, newRestakedBalanceGwei);
 
-        // update shares in strategy manager
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentRestakedBalanceGwei * GWEI_TO_WEI, newRestakedBalanceGwei * GWEI_TO_WEI);
+        if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
+            (uint256 sharesDelta, bool isNegative) = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
+            // update shares in strategy manager
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta * GWEI_TO_WEI, isNegative);
+        }
     }
 
     /**
@@ -432,8 +435,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 withdrawalAmountWei = _calculateRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI;
 
             }
-            //update podOwner's shares in the strategy manager
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, currentValidatorRestakedBalanceWei, withdrawalAmountWei);
+            if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
+                (uint256 sharesDelta, bool isNegative) = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
+                //update podOwner's shares in the strategy manager
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+            }
 
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
         }  else {
@@ -515,6 +521,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         */
         uint64 effectiveBalanceGwei = uint64((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
+    }
+
+    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal returns(uint256, bool){
+        uint256 sharesDelta;
+        bool isNegative;
+        if (currentAmountGwei > newAmountGwei){
+            sharesDelta = currentAmountGwei - newAmountGwei;
+            isNegative = true;
+        } else {
+            sharesDelta = newAmountGwei - currentAmountGwei;
+        }
+        return (sharesDelta * GWEI_TO_WEI, isNegative);
     }
 
 

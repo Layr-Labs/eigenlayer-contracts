@@ -40,11 +40,11 @@ interface IEigenPodManager is IPausable {
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      * @param podOwner is the pod owner to be slashed
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param currentAmount is the podOwner's existing beaconChainETHStrategy shares
-     * @param newAmount is the amount to change the podOwner's beaconChainETHStrategy shares
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     * @param isNegative is whether or not change in shares is negative or positive
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 currentAmount, uint256 newAmount) external;
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative) external;
     
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.

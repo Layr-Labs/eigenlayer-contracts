@@ -68,6 +68,8 @@ contract Withdraw is Script, Test {
             delegatedAddress: address(0)
         });
 
+        //queuedwithdrawal transaction: https://etherscan.io/tx/0x7a36696e52b8713de955aeeac50ebd8ba7c5c1f370badd1a213f48ba09505e3f
+
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(0xBe9895146f7AF43049ca1c1AE358B0541Ea49704);
 

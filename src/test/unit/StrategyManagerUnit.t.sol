@@ -237,24 +237,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
     }
 
-    function testRecordOvercommittedBeaconChainETHSuccessfully(uint256 amount_1, uint256 amount_2) public {
-        // zero inputs will revert, and cannot reduce more than full amount
-        cheats.assume(amount_2 <= amount_1 && amount_1 != 0 && amount_2 != 0);
-
-        address overcommittedPodOwner = address(this);
-        uint256 beaconChainETHStrategyIndex = 0;
-        testDepositBeaconChainETHSuccessfully(overcommittedPodOwner, amount_1);
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
-
-        cheats.startPrank(address(eigenPodManagerMock));
-        strategyManager.recordBeaconChainETHBalanceUpdate(overcommittedPodOwner, beaconChainETHStrategyIndex, amount_1, amount_2);
-        cheats.stopPrank();
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
-        require(sharesAfter == amount_2, "sharesAfter != sharesBefore - amount");
-    }
-
     function testRecordOvercommittedBeaconChainETHFailsWhenNotCalledByEigenPodManager(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
         uint256 amount = 1e18;
         address staker = address(this);
@@ -262,14 +244,17 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         testDepositBeaconChainETHSuccessfully(staker, amount);
 
+        (uint256 delta, bool isNegative) = _calculateSharesDelta(amount, amount);
+
         cheats.expectRevert(bytes("StrategyManager.onlyEigenPodManager: not the eigenPodManager"));
         cheats.startPrank(address(improperCaller));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, delta, isNegative);
         cheats.stopPrank();
     }
 
     function testRecordOvercommittedBeaconChainETHFailsWhenReentering() public {
         uint256 amount = 1e18;
+        uint256 amount2 = 2e18;
         address staker = address(this);
         uint256 beaconChainETHStrategyIndex = 0;
 
@@ -282,8 +267,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amount);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
+        (uint256 delta, bool isNegative) = _calculateSharesDelta(amount2, amount);
+
         cheats.startPrank(address(reenterer));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amount, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, delta, isNegative);
         cheats.stopPrank();
     }
 
@@ -2601,6 +2588,18 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         array[0] = dummyToken;
         array[1] = dummyToken;
         return array;
+    }
+
+    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal returns(uint256, bool){
+        uint256 sharesDelta;
+        bool isNegative;
+        if (currentAmountGwei > newAmountGwei){
+            sharesDelta = currentAmountGwei - newAmountGwei;
+            isNegative = true;
+        } else {
+            sharesDelta = newAmountGwei - currentAmountGwei;
+        }
+        return (sharesDelta * GWEI_TO_WEI, isNegative);
     }
 
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
