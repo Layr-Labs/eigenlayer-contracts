@@ -14,6 +14,7 @@ import "./IStrategy.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 interface IDelegationManager {
+    // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         // @notice address to receive the rewards that the operator earns via serving applications built on EigenLayer.
         address earningsReceiver;
@@ -36,27 +37,41 @@ interface IDelegationManager {
         uint32 stakerOptOutWindowBlocks;
     }
 
-    // TODO: documentation
+    /**
+     * @notice Abstract struct used in calculating an EIP712 signature for a staker to approve that they (the staker themselves) delegate to a specific operator.
+     * @dev Used in computing the `STAKER_DELEGATION_TYPEHASH` and as a reference in the computation of the stakerDigestHash in the `delegateToBySignature` function.
+     */
     struct StakerDelegation {
+        // the staker who is delegating
         address staker;
+        // the operator being delegated to
         address operator;
+        // the staker's nonce
         uint256 nonce;
+        // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
 
-    // TODO: documentation
+    /**
+     * @notice Abstract struct used in calculating an EIP712 signature for an operator's delegationApprover to approve that a specific staker delegate to the operator.
+     * @dev Used in computing the `DELEGATION_APPROVAL_TYPEHASH` and as a reference in the computation of the approverDigestHash in the `_delegate` function.
+     */
     struct DelegationApproval {
+        // the staker who is delegating
         address staker;
+        // the operator being delegated to
         address operator;
+        // the operator's nonce
         uint256 nonce;
+        // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
 
-    // TODO: add constants to interface
-
-    // TODO: documentation
+    // @notice Struct that bundles together a signature and an expiration time for the signature. Used primarily for stack management.
     struct SignatureWithExpiry {
+        // the signature itself, formatted as a single bytes object
         bytes signature;
+        // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
 
@@ -216,4 +231,19 @@ interface IDelegationManager {
      * @param expiry The desired expiry time of the approver's signature
      */
     function calculateApproverDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
+
+    /// @notice The EIP-712 typehash for the contract's domain
+    function DOMAIN_TYPEHASH() external view returns (bytes32);
+
+    /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
+    function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32);
+
+    /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
+    function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
+
+    /**
+     * @notice Getter function for the current EIP-712 domain separator for this contract.
+     * @dev The domain separator will change in the event of a fork that changes the ChainID.
+     */
+    function domainSeparator() external view returns (bytes32);
 }
