@@ -167,7 +167,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(delegatedTo[staker] == operator, "DelegationManager.forceUndelegation: staker is not delegated to operator");
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
-        return strategyManager.forceUndelegation(staker);
+        return strategyManager.forceTotalWithdrawal(staker);
     }
 
     /**

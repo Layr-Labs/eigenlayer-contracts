@@ -140,5 +140,5 @@ contract StrategyManagerMock is
 
     function undelegate() external pure {}
 
-    function forceUndelegation(address /*staker*/) external pure returns (bytes32) {} 
+    function forceTotalWithdrawal(address /*staker*/) external pure returns (bytes32) {} 
 }
