@@ -674,4 +674,20 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, socket);
     }
+
+    function testUpdateSocket() public {
+        testRegisterOperatorWithCoordinator_PP();
+
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperator, "localhost:32004");
+        registryCoordinator.updateSocket("localhost:32004");
+
+    }
+
+    function testUpdateSocket_NotRegistered_Reverts() public {
+        cheats.prank(defaultOperator);
+        cheats.expectRevert("BLSIndexRegistryCoordinator.updateSocket: operator is not registered");
+        registryCoordinator.updateSocket("localhost:32004");
+    }
 }

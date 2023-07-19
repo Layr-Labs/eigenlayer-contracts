@@ -275,6 +275,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
+    function updateSocket(string memory socket) external {
+        require(_operators[msg.sender].status == OperatorStatus.REGISTERED, "BLSIndexRegistryCoordinator.updateSocket: operator is not registered");
+        emit OperatorSocketUpdate(msg.sender, socket);
+    }
+
     // INTERNAL FUNCTIONS
 
     function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
