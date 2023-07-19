@@ -196,8 +196,9 @@ interface IDelegationManager {
 
     /**
      * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @param staker The staker who is delegating to the operator
      * @param operator The operator who is being delegated
      * @param expiry The desired expiry time of the approver's signature
      */
-    function calculateApproverDigestHash(address operator, uint256 expiry) external view returns (bytes32 approverDigestHash);
+    function calculateApproverDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
 }

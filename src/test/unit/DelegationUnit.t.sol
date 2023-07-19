@@ -20,7 +20,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
 
-    uint256 hardhatAccountZeroPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
+    uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
     uint256 stakerPrivateKey = uint256(123456789);
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
@@ -329,8 +329,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
-        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
-        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         // register *this contract* as an operator
         address operator = address(this);
@@ -344,15 +343,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
-        // calculate the signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
-        approverSignatureAndExpiry.expiry = expiry;
-        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationApprover);
-        {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
-            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
+        // fetch the delegationApprover's current nonce
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -383,8 +377,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
-        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
-        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         // register *this contract* as an operator
         address operator = address(this);
@@ -402,8 +395,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         approverSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
+            bytes32 digestHash = delegationManager.calculateApproverDigestHash(staker, operator, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             // mess up the signature by flipping v's parity
             v = (v == 27 ? 28 : 27);
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
@@ -427,8 +420,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only *invalid* `expiry` values
         cheats.assume(expiry < block.timestamp);
 
-        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
-        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         // register *this contract* as an operator
         address operator = address(this);
@@ -442,14 +434,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
-        // calculate the signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
-        approverSignatureAndExpiry.expiry = expiry;
-        {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
-            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -474,7 +460,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
-        uint256 delegationSignerPrivateKey = hardhatAccountZeroPrivateKey;
         address delegationSigner = cheats.addr(delegationSignerPrivateKey);
 
         // register *this contract* as an operator
@@ -495,15 +480,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
-        // calculate the signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
-        approverSignatureAndExpiry.expiry = expiry;
+        // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
-        {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
-            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -594,15 +574,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
-        // calculate the staker signature
-        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry;
-        stakerSignatureAndExpiry.expiry = expiry;
+        // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
-        {
-            bytes32 digestHash = delegationManager.calculateStakerDigestHash(staker, operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(stakerPrivateKey, digestHash);
-            stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
+        // calculate the staker signature
+        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, expiry);
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
@@ -672,6 +647,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
     }
 
+    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
     function testBadECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
@@ -682,13 +658,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
     }
 
-    function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator) {
-        cheats.assume(undelegator != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
-        cheats.startPrank(undelegator);
-        delegationManager.undelegate(address(this));
-    }
-
+    // @notice Verifies that an operator cannot undelegate from themselves (this should always be forbidden)
     function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
@@ -705,6 +675,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
+    function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator) {
+        cheats.assume(undelegator != address(strategyManagerMock));
+        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.startPrank(undelegator);
+        delegationManager.undelegate(address(this));
+    }
+
+    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
     function testIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
@@ -712,6 +691,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
 
+    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager
     function testDecreaseDelegatedSharesFromNonStrategyManagerAddress(
         address operator,  
         IStrategy[] memory strategies,  
@@ -723,6 +703,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
 
+    // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
     function testDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
         
@@ -743,6 +724,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
     function testDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
         fuzzedAddress(staker)
         fuzzedAddress(operator)
@@ -776,12 +758,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testDelegationToUnregisteredOperator(address operator) public{
+    // @notice Verifies that it is not possible to delegate to an unregistered operator
+    function testDelegationToUnregisteredOperator(address operator) public {
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry);
     }
 
+    // @notice Verifies that delegating is not possible when the "new delegations paused" switch is flipped
     function testDelegationWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.startPrank(pauser);
         delegationManager.pause(1);
@@ -792,5 +776,38 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry);
         cheats.stopPrank();
+    }
+
+    /**
+     * @notice internal function for calculating a signature from the delegationSigner corresponding to `_delegationSignerPrivateKey`, approving
+     * the `staker` to delegate to `operator`, and expiring at `expiry`.
+     */
+    function _getApproverSignature(uint256 _delegationSignerPrivateKey, address staker, address operator, uint256 expiry)
+        internal view returns (IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry)
+    {
+        approverSignatureAndExpiry.expiry = expiry;
+        {
+            bytes32 digestHash = delegationManager.calculateApproverDigestHash(staker, operator, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+        return approverSignatureAndExpiry;
+    }
+
+    /**
+     * @notice internal function for calculating a signature from the staker corresponding to `_stakerPrivateKey`, delegating them to
+     * the `operator`, and expiring at `expiry`.
+     */
+    function _getStakerSignature(uint256 _stakerPrivateKey, address operator, uint256 expiry)
+        internal view returns (IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry)
+    {
+        address staker = cheats.addr(stakerPrivateKey);
+        stakerSignatureAndExpiry.expiry = expiry;
+        {
+            bytes32 digestHash = delegationManager.calculateStakerDigestHash(staker, operator, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
+            stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+        return stakerSignatureAndExpiry;
     }
 }

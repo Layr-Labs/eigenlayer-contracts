@@ -256,7 +256,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // calculate the struct hash, then increment `delegationApprover`'s nonce
             uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
-            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, operator, currentApproverNonce, approverSignatureAndExpiry.expiry));
+            bytes32 approverStructHash = keccak256(
+                abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, currentApproverNonce, approverSignatureAndExpiry.expiry)
+            );
             unchecked {
                 delegationApproverNonce[_delegationApprover] = currentApproverNonce + 1;
             }
@@ -355,15 +357,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @param staker The staker who is delegating to the operator
      * @param operator The operator who is being delegated
      * @param expiry The desired expiry time of the approver's signature
      */
-    function calculateApproverDigestHash(address operator, uint256 expiry) external view returns (bytes32) {
+    function calculateApproverDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
             // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
             address _delegationApprover = _operatorDetails[operator].delegationApprover;
             // get the approver's current nonce and caluclate the struct hash
             uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
-            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, operator, currentApproverNonce, expiry));
+            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, currentApproverNonce, expiry));
             // calculate the digest hash
             bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
             return approverDigestHash;
