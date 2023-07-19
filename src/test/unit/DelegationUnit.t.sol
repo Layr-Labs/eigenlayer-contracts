@@ -20,6 +20,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
 
+    uint256 hardhatAccountZeroPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
 
@@ -326,7 +328,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
-        uint256 delegationApproverPrivateKey = 123456789;
+        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
         address delegationApprover = cheats.addr(delegationApproverPrivateKey);
 
         // register *this contract* as an operator
@@ -363,8 +365,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
-        // check that the nonce incremented appropriately
-        require(delegationManager.delegationApproverNonce(delegationApprover) == currentApproverNonce + 1, "delegationApprover nonce did not increment");
+        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+                "delegationApprover nonce incremented inappropriately");
+        } else {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce + 1,
+                "delegationApprover nonce did not increment");
+        }
     }
 
     /**
@@ -376,7 +383,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
-        uint256 delegationApproverPrivateKey = 123456789;
+        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
         address delegationApprover = cheats.addr(delegationApproverPrivateKey);
 
         // register *this contract* as an operator
@@ -411,8 +418,120 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
+     */
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredSignature(address staker, uint256 expiry)  public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // roll to a very late timestamp
+        cheats.roll(type(uint256).max / 2);
+        // filter to only *invalid* `expiry` values
+        cheats.assume(expiry < block.timestamp);
 
-    // ERC1271WalletMock wallet = new ERC1271WalletMock(staker);
+        uint256 delegationApproverPrivateKey = hardhatAccountZeroPrivateKey;
+        address delegationApprover = cheats.addr(delegationApproverPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        approverSignatureAndExpiry.expiry = expiry;
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationApprover);
+        {
+            bytes32 structHash = keccak256(abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationApprover, operator, currentApproverNonce, expiry));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegationManager.domainSeparator(), structHash));
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationApproverPrivateKey, digestHash);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice `staker` delegates to an operator who requires signature verification through an EIP1271-compliant contract (i.e. the operator’s `delegationApprover` address is
+     * set to a nonzero and code-containing address) via the `staker` calling `DelegationManager.delegateTo`
+     * The function uses OZ's ERC1271WalletMock contract, and thus should pass *only when a valid ECDSA signature from the `owner` of the ERC1271WalletMock contract,
+     * OR if called by the operator or their delegationApprover themselves
+     * Properly emits a `StakerDelegated` event
+     * Staker is correctly delegated after the call (i.e. correct storage update)
+     * Reverts if the staker is already delegated (to the operator or to anyone else)
+     * Reverts if the ‘operator’ is not actually registered as an operator
+     */
+    function testDelegateToOperatorWhoRequiresEIP1271Signature(address staker, uint256 expiry) public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // filter to only valid `expiry` values
+        cheats.assume(expiry >= block.timestamp);
+
+        uint256 delegationSignerPrivateKey = hardhatAccountZeroPrivateKey;
+        address delegationSigner = cheats.addr(delegationSignerPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        /**
+         * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
+         * so that we can create valid signatures from the `delegationSigner` for the contract to check when called
+         */
+        ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(wallet),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        approverSignatureAndExpiry.expiry = expiry;
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
+        {
+            bytes32 structHash = keccak256(abi.encode(delegationManager.DELEGATION_APPROVAL_TYPEHASH(), delegationManager.delegationApprover(operator), operator, currentApproverNonce, expiry));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegationManager.domainSeparator(), structHash));
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerDelegated(staker, operator);
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+
+        require(delegationManager.isDelegated(staker), "staker not delegated correctly");
+        require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
+        require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+
+        // check that the nonce incremented appropriately
+        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+                "delegationApprover nonce incremented inappropriately");
+        } else {
+            require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce + 1,
+                "delegationApprover nonce did not increment");
+        }
+    }
+
+
 
 
 
