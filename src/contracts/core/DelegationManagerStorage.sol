@@ -16,13 +16,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-    /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
+    /// @notice The EIP-712 typehash for the `StakerDelegation` struct used by the contract
     bytes32 public constant STAKER_DELEGATION_TYPEHASH =
         keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
 
-    /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
+    /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
-        keccak256("Delegation(address staker,address operator,uint256 nonce,uint256 expiry)");
+        keccak256("DelegationApproval(address staker,address operator,uint256 nonce,uint256 expiry)");
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
