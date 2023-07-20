@@ -316,7 +316,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     /// @notice Getter function for fetching `_operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns (uint32) {
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns (uint32) {
         return _operatorToMiddlewareTimes[operator][index].stalestUpdateBlock;
     }
 

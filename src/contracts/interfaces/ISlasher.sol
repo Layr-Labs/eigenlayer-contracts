@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 /**
  * @title Interface for the primary 'slashing' contract for EigenLayer.
@@ -128,7 +128,7 @@ interface ISlasher {
     function middlewareTimesLength(address operator) external view returns (uint256);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns(uint32);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.
     function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32);
