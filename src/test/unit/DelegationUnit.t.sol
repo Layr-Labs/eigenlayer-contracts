@@ -112,7 +112,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
      * @param operator and @param operatorDetails are fuzzed inputs
      */
-    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails, string memory metadataURI) public {
+    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails, string memory metadataURI) public 
+        filterFuzzedAddressInputs(operator)
+    {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
@@ -184,6 +186,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     {
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
+        // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
+        cheats.assume(operatorDetails.earningsReceiver != address(0));
 
         // register *this contract* as an operator
         address operator = address(this);
@@ -245,6 +249,36 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
         }
 
+        cheats.stopPrank();
+    }
+
+    // @notice Tests that an operator who calls `updateOperatorMetadataURI` will correctly see an `OperatorMetadataURIUpdated` event emitted with their input
+    function testUpdateOperatorMetadataURI(string memory metadataURI) public {
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+
+        // call `updateOperatorMetadataURI` and check for event
+        cheats.startPrank(operator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorMetadataURIUpdated(operator, metadataURI);
+        delegationManager.updateOperatorMetadataURI(metadataURI);
+        cheats.stopPrank();
+    }
+
+    // @notice Tests that an address which is not an operator cannot successfully call `updateOperatorMetadataURI`.
+    function testCannotUpdateOperatorMetadataURIWithoutRegisteringFirst() public {
+        address operator = address(this);
+        require(!delegationManager.isOperator(operator), "bad test setup");
+
+        cheats.startPrank(operator);
+        cheats.expectRevert(bytes("DelegationManager.updateOperatorMetadataURI: caller must be an operator"));
+        delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -316,6 +350,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         filterFuzzedAddressInputs(staker)
         filterFuzzedAddressInputs(operator)
     {
+        // filter out input since if the staker tries to delegate again after registering as an operator, we will revert earlier than this test is designed to check
+        cheats.assume(staker != operator);
+
         // delegate from the staker to an operator
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry);
 
@@ -693,7 +730,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
         // check that the delegationApprover nonce incremented appropriately
-        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+        if (caller == operator || caller == delegationManager.delegationApprover(operator)) {
             require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
                 "delegationApprover nonce incremented inappropriately");
         } else {
@@ -766,7 +803,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
         // check that the delegationApprover nonce incremented appropriately
-        if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
+        if (caller == operator || caller == delegationManager.delegationApprover(operator)) {
             require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
                 "delegationApprover nonce incremented inappropriately");
         } else {
