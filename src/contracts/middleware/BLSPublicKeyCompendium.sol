@@ -50,7 +50,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
         require(shouldBeZero.X == 0 && shouldBeZero.Y == 0, "BLSPublicKeyCompendium.registerBLSPublicKey: incorrect schnorr singature");
 
         // verify that the G2 pubkey has the same discrete log as the G1 pubkey
-        // e(P, [1]_2) = e([-1]_1, P')
+        // e(P, [1]_2)e([-1]_1, P') = [1]_T
         require(BN254.pairing(
             pubkeyG1,
             BN254.generatorG2(),
