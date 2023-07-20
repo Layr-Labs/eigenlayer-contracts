@@ -55,7 +55,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation));
         cheats.stopPrank();
         
-        delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
+        address initalOwner = address(this);
+        uint256 initialPausedStatus = 0;
+        delegationManager.initialize(initalOwner, eigenLayerPauserReg, initialPausedStatus);
 
         strategyImplementation = new StrategyBase(strategyManager);
 
@@ -72,6 +74,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // excude the zero address and the proxyAdmin from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(eigenLayerProxyAdmin)] = true;
+
+        // check setup (constructor + initializer)
+        require(delegationManager.strategyManager() == strategyManagerMock,
+            "constructor / initializer incorrect, strategyManager set wrong");
+        require(delegationManager.slasher() == slasherMock,
+            "constructor / initializer incorrect, slasher set wrong");
+        require(delegationManager.pauserRegistry() == eigenLayerPauserReg,
+            "constructor / initializer incorrect, pauserRegistry set wrong");
+        require(delegationManager.owner() == initalOwner,
+            "constructor / initializer incorrect, owner set wrong");
+        require(delegationManager.paused() == initialPausedStatus,
+            "constructor / initializer incorrect, paused status set wrong");
     }
 
     // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
@@ -266,6 +280,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
+        // fetch the delegationApprover's current nonce
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
+
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -276,6 +293,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
         require(delegationManager.delegatedTo(staker) == operator, "staker delegated to the wrong address");
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
+
+        require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+            "delegationApprover nonce incremented inappropriately");
     }
 
     /**
@@ -580,6 +600,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         testRegisterAsOperator(operator, operatorDetails);
 
+        // fetch the delegationApprover's current nonce
+        uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
@@ -602,6 +624,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // check that the staker nonce incremented appropriately
         require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
             "staker nonce did not increment");
+        // check that the delegationApprover nonce did not increment
+        require(delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator)) == currentApproverNonce,
+            "delegationApprover nonce incremented inappropriately");
     }
 
     /**
@@ -754,7 +779,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
     }
 
-    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the delegationApprover's signature has expired
+    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the delegationApprover's signature has expired and their signature is checked
     function testDelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(address caller, uint256 stakerExpiry, uint256 delegationApproverExpiry) public 
         filterFuzzedAddressInputs(caller)
     {
