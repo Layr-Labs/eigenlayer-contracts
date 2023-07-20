@@ -78,7 +78,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the nonSignerQuorumBitmapIndices to a different value
         nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[0] = 1;
 
-        cheats.expectRevert("BLSRegistryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.getQuorumBitmapByOperatorIdAtBlockNumberByIndex: quorumBitmapUpdate is from after blockNumber");
         blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
