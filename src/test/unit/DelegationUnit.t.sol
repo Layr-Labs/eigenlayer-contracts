@@ -74,6 +74,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         addressIsExcludedFromFuzzedInputs[address(eigenLayerProxyAdmin)] = true;
     }
 
+    // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    function testCannotReinitializeDelegationManager() public {
+        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
+        delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
+    }
+
     /**
      * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails)`
      * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
@@ -822,27 +828,31 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+    /**
+     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the StrategyManager address.
+     * Reverts if called by any address that is not the StrategyManager
+     * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
+     * Does nothing if the staker is already undelegated
+     * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
+     * Emits a `StakerUndelegated` event
+     */
+    function testUndelegateFromOperator(address staker) public {
+        // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry);
 
+        cheats.startPrank(address(strategyManagerMock));
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
+        delegationManager.undelegate(staker);
+        cheats.stopPrank();
 
-
-
-
-
-
-
-
-
-
-
-
-    // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
-    function testCannotReinitializeDelegationManager() public {
-        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
+        require(!delegationManager.isDelegated(staker), "staker not undelegated!");
+        require(delegationManager.delegatedTo(staker) == address(0), "undelegated staker should be delegated to zero address");
     }
 
-    // @notice Verifies that an operator cannot undelegate from themselves (this should always be forbidden)
-    function testUndelegateByOperatorFromThemselves(address operator) public fuzzedAddress(operator) {
+    // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
+    function testOperatorCannotUndelegateFromThemself(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -859,15 +869,122 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
-    function testUndelegateFromNonStrategyManagerAddress(address undelegator) public fuzzedAddress(undelegator) {
-        cheats.assume(undelegator != address(strategyManagerMock));
+    function testCannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
+        cheats.assume(caller != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
-        cheats.startPrank(undelegator);
+        cheats.startPrank(caller);
         delegationManager.undelegate(address(this));
     }
 
+    /**
+     * @notice Verifies that `DelegationManager.increaseDelegatedShares` properly increases the delegated `shares` that the operator
+     * who the `staker` is delegated to has in the strategy
+     * @dev Checks that there is no change if the staker is not delegated
+     */
+    function testIncreaseDelegatedShares(address staker, uint256 shares, bool delegateFromStakerToOperator) public {
+        IStrategy strategy = strategyMock;
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+        if (delegateFromStakerToOperator) {
+            cheats.startPrank(staker);
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit StakerDelegated(staker, operator);
+            delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+            cheats.stopPrank();            
+        }
+
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+
+        cheats.startPrank(address(strategyManagerMock));
+        delegationManager.increaseDelegatedShares(staker, strategy, shares);
+        cheats.stopPrank();
+
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+
+        if (delegationManager.isDelegated(staker)) {
+            require(delegatedSharesAfter == delegatedSharesBefore + shares, "delegated shares did not increment correctly");
+        } else {
+            require(delegatedSharesAfter == delegatedSharesBefore, "delegated shares incremented incorrectly");
+            require(delegatedSharesBefore == 0, "nonzero shares delegated to zero address!");
+        }
+    }
+
+    /**
+     * @notice Verifies that `DelegationManager.decreaseDelegatedShares` properly decreases the delegated `shares` that the operator
+     * who the `staker` is delegated to has in the strategies
+     * @dev Checks that there is no change if the staker is not delegated
+     */
+    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint256 shares, bool delegateFromStakerToOperator) public {
+        // sanity-filtering on fuzzed input length
+        cheats.assume(strategies.length <= 64);
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
+        if (delegateFromStakerToOperator) {
+            cheats.startPrank(staker);
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit StakerDelegated(staker, operator);
+            delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+            cheats.stopPrank();            
+        }
+
+        uint256[] memory delegatedSharesBefore = new uint256[](strategies.length);
+        uint256[] memory sharesInputArray = new uint256[](strategies.length);
+
+        // for each strategy in `strategies`, increase delegated shares by `shares`
+        cheats.startPrank(address(strategyManagerMock));
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            delegationManager.increaseDelegatedShares(staker, strategies[i], shares); 
+            delegatedSharesBefore[i] = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]);   
+            // also construct an array which we'll use in another loop
+            sharesInputArray[i] = shares;
+        }
+        cheats.stopPrank();
+
+        // for each strategy in `strategies`, decrease delegated shares by `shares`
+        cheats.startPrank(address(strategyManagerMock));
+        delegationManager.decreaseDelegatedShares(delegationManager.delegatedTo(staker), strategies, sharesInputArray);
+        cheats.stopPrank();
+
+        // check shares after call to `decreaseDelegatedShares`
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]); 
+
+            if (delegationManager.isDelegated(staker)) {
+                require(delegatedSharesAfter == delegatedSharesBefore[i] - sharesInputArray[i], "delegated shares did not decrement correctly");
+            } else {
+                require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
+                require(delegatedSharesBefore[i] == 0, "nonzero shares delegated to zero address!");
+            }
+        }
+    }
+
     // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
-    function testIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
+    function testCannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.expectRevert(bytes("onlyStrategyManager"));
         cheats.startPrank(operator);
@@ -875,7 +992,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager
-    function testDecreaseDelegatedSharesFromNonStrategyManagerAddress(
+    function testCannotCallDecreaseDelegatedSharesFromNonStrategyManagerAddress(
         address operator,  
         IStrategy[] memory strategies,  
         uint256[] memory shareAmounts
@@ -887,7 +1004,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+    function testCannotDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
         
         cheats.startPrank(operator);
@@ -908,7 +1025,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
-    function testDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
+    function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
         fuzzedAddress(staker)
         fuzzedAddress(operator)
         fuzzedAddress(operator2)
@@ -942,14 +1059,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible to delegate to an unregistered operator
-    function testDelegationToUnregisteredOperator(address operator) public {
+    function testCannotDelegateToUnregisteredOperator(address operator) public {
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry);
     }
 
     // @notice Verifies that delegating is not possible when the "new delegations paused" switch is flipped
-    function testDelegationWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+    function testCannotDelegateWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.startPrank(pauser);
         delegationManager.pause(1);
         cheats.stopPrank();
