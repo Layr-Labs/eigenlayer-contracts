@@ -412,7 +412,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredSignature(address staker, uint256 expiry)  public 
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredDelegationApproverSignature(address staker, uint256 expiry)  public 
         filterFuzzedAddressInputs(staker)
     {
         // roll to a very late timestamp
@@ -737,6 +737,90 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "staker nonce did not increment");
     }
 
+    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
+    function testDelegateBySignatureRevertsWhenStakerSignatureExpired(address staker, address operator, uint256 expiry, bytes memory signature) public{
+        cheats.assume(expiry < block.timestamp);
+        cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+            signature: signature,
+            expiry: expiry
+        });
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+    }
+
+    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the delegationApprover's signature has expired
+    function testDelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(address caller, uint256 stakerExpiry, uint256 delegationApproverExpiry) public 
+        filterFuzzedAddressInputs(caller)
+    {
+        // filter to only valid `stakerExpiry` values
+        cheats.assume(stakerExpiry >= block.timestamp);
+        // roll to a very late timestamp
+        cheats.roll(type(uint256).max / 2);
+        // filter to only *invalid* `delegationApproverExpiry` values
+        cheats.assume(delegationApproverExpiry < block.timestamp);
+
+        address staker = cheats.addr(stakerPrivateKey);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, delegationApproverExpiry);
+
+        // calculate the staker signature
+        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, stakerExpiry);
+
+        // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
+        cheats.startPrank(caller);
+        cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
+     */
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredSignature(address staker, uint256 expiry)  public 
+        filterFuzzedAddressInputs(staker)
+    {
+        // roll to a very late timestamp
+        cheats.roll(type(uint256).max / 2);
+        // filter to only *invalid* `expiry` values
+        cheats.assume(expiry < block.timestamp);
+
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+
+        // register *this contract* as an operator
+        address operator = address(this);
+        // filter inputs, since this will fail when the staker is already registered as an operator
+        cheats.assume(staker != operator);
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, operatorDetails);
+
+        // calculate the delegationSigner's signature
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
+
+        // delegate from the `staker` to the operator
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
+        cheats.stopPrank();
+    }
 
 
 
@@ -755,17 +839,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testCannotReinitializeDelegationManager() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
-    }
-
-    // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
-    function testBadStakerECDSASignatureExpiry(address staker, address operator, uint256 expiry, bytes memory signature) public{
-        cheats.assume(expiry < block.timestamp);
-        cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: expiry
-        });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
     }
 
     // @notice Verifies that an operator cannot undelegate from themselves (this should always be forbidden)
