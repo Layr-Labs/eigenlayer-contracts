@@ -33,8 +33,6 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
     uint256 public constant paymentFraudproofInterval = 7 days;
     /// @notice Constant used as a divisor in dealing with BIPS amounts
     uint256 internal constant MAX_BIPS = 10000;
-    /// @notice Gas budget provided in calls to DelegationTerms contracts
-    uint256 internal constant LOW_LEVEL_GAS_BUDGET = 1e5;
 
     /**
      * @notice The global EigenLayer Delegation contract, which is primarily used by
