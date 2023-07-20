@@ -140,14 +140,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @notice Callable only by the StrategyManager
+     * @notice Callable only by the StrategyManager.
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
-     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
     function undelegate(address staker) external onlyStrategyManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
-        emit StakerUndelegated(staker, delegatedTo[staker]);
-        delegatedTo[staker] = address(0);
+        address _delegatedTo = delegatedTo[staker];
+        // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
+        if (_delegatedTo != address(0)) {
+            emit StakerUndelegated(staker, delegatedTo[staker]);
+            delegatedTo[staker] = address(0);
+        }
     }
 
     // TODO: decide if on the right  auth for this. Perhaps could be another address for the operator to specify

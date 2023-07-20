@@ -139,9 +139,10 @@ interface IDelegationManager {
 
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @notice Callable only by the StrategyManager
+     * @notice Callable only by the StrategyManager.
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
-     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
     function undelegate(address staker) external;
 
