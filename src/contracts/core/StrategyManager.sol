@@ -12,6 +12,9 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
+
+import "forge-std/Test.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -29,7 +32,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    Test
 {
     using SafeERC20 for IERC20;
 
@@ -722,6 +726,9 @@ contract StrategyManager is
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[depositor][strategy];
+
+        emit log_named_uint("userShares", userShares);
+        emit log_named_uint("shareAmount", shareAmount);
         
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above

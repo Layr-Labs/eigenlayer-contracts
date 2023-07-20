@@ -230,14 +230,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify ETH validator proof
         bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
 
-        uint gas = gasleft();
         BeaconChainProofs.verifyValidatorFields(
             validatorIndex,
             beaconStateRoot,
             proof,
             validatorFields
         );
-        emit log_named_uint("GASSSS", gas - gasleft());
 
         // set the status to active
        validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
@@ -315,7 +313,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
             (uint256 sharesDelta, bool isNegative) = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
             // update shares in strategy manager
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta * GWEI_TO_WEI, isNegative);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
         }
     }
 
@@ -523,16 +521,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
 
-    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal returns(uint256, bool){
+    function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal returns(uint256, bool){
         uint256 sharesDelta;
         bool isNegative;
-        if (currentAmountGwei > newAmountGwei){
-            sharesDelta = currentAmountGwei - newAmountGwei;
+        if (currentAmountWei > newAmountWei){
+            sharesDelta = currentAmountWei - newAmountWei;
             isNegative = true;
         } else {
-            sharesDelta = newAmountGwei - currentAmountGwei;
+            sharesDelta = newAmountWei - currentAmountWei;
         }
-        return (sharesDelta * GWEI_TO_WEI, isNegative);
+        return (sharesDelta, isNegative);
     }
 
 

@@ -81,7 +81,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     event ValidatorRestaked(uint40 validatorIndex);
 
     /// @notice Emitted when an ETH validator's balance is updated in EigenLayer
-    event ValidatorBalanceUpdated(uint40 validatorIndex);
+    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 newBalanceGwei);
 
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
@@ -589,8 +589,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // get beaconChainETH shares
         uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
 
+        emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
+
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
+        
 
         // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
         setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
@@ -760,7 +763,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex);
+        emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
     }
 
@@ -771,10 +774,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex);
+        emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
-
     }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
@@ -1064,7 +1066,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
 
-                emit log_named_uint("current balance", Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]));
+        emit log_named_uint("current balance", Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]));
 
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         uint40 validatorIndex = uint40(getValidatorIndex());
@@ -1090,7 +1092,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(_podOwner, beaconChainETHStrategy);
         uint256 effectiveBalance = uint256(_getEffectiveRestakedBalanceGwei(uint64(REQUIRED_BALANCE_WEI/GWEI_TO_WEI))) * GWEI_TO_WEI;
         emit log_named_uint("effective balance", effectiveBalance);
-        emit log_named_uint("beaconChainETHShares", beaconChainETHShares);
         require(beaconChainETHShares == effectiveBalance, "strategyManager shares not updated correctly");
         return newPod;
     }
