@@ -163,7 +163,6 @@ contract ERC20Mock is Context, IERC20 {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _totalSupply += amount;
-        _balances[account] += amount;
         unchecked {
             // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
             _balances[account] += amount;
