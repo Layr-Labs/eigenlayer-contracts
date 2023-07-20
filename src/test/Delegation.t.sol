@@ -467,7 +467,8 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
     /// @notice This function tests to ensure that an address can only call registerAsOperator() once
@@ -479,9 +480,10 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.expectRevert("DelegationManager.registerAsOperator: operator has already registered");
-        delegation.registerAsOperator(operatorDetails);
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -513,7 +515,8 @@ contract DelegationTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.prank(_staker);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_operator, signatureWithExpiry);

@@ -76,7 +76,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      */
     function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
         cheats.startPrank(sender);
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
 
         // TODO: FIX THIS

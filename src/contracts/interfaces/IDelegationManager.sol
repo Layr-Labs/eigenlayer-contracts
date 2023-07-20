@@ -81,6 +81,12 @@ interface IDelegationManager {
     // @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
     event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
 
+    /**
+     * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
+
     // @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
 
@@ -90,10 +96,12 @@ interface IDelegationManager {
     /**
      * @notice Registers the `msg.sender` as an operator in EigenLayer, that stakers can choose to delegate to.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      * @dev Note that once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
+     * @dev Note that the `metadataURI` is *never stored in storage* and is instead purely emitted in an `OperatorMetadataURIUpdated` event
      */
-    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails) external;
+    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external;
 
     /**
      * @notice Updates the `msg.sender`'s stored `OperatorDetails`.
@@ -102,6 +110,14 @@ interface IDelegationManager {
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
     function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external;
+
+    /**
+     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event, signalling that information about the operator (or at least where this
+     * information is stored) has changed.
+     * @param metadataURI is the new metadata URI for the `msg.sender`, i.e. the operator.
+     * @dev This function will revert if the caller is not an operator.
+     */
+    function updateOperatorMetadataURI(string calldata metadataURI) external;
 
     /**
      * @notice Called by a staker to delegate its assets to the @param operator.

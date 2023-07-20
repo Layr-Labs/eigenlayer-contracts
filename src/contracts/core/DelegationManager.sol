@@ -58,10 +58,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Registers the `msg.sender` as an operator in EigenLayer, that stakers can choose to delegate to.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
+     * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      * @dev Note that once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
+     * @dev Note that the `metadataURI` is *never stored in storage* and is instead purely emitted in an `OperatorMetadataURIUpdated` event
      */
-    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails) external {
+    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external {
         require(
             _operatorDetails[msg.sender].earningsReceiver == address(0),
             "DelegationManager.registerAsOperator: operator has already registered"
@@ -70,7 +72,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
         _delegate(msg.sender, msg.sender, emptySignatureAndExpiry);
+        // emit events
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
+        emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
@@ -81,6 +85,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
         _setOperatorDetails(msg.sender, newOperatorDetails);
+    }
+
+    /**
+     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event, signalling that information about the operator (or at least where this
+     * information is stored) has changed.
+     * @param metadataURI is the new metadata URI for the `msg.sender`, i.e. the operator.
+     * @dev This function will revert if the caller is not an operator.
+     */
+    function updateOperatorMetadataURI(string calldata metadataURI) external {
+        require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
+        emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**

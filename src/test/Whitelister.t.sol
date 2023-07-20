@@ -144,7 +144,8 @@ contract WhitelisterTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.startPrank(theMultiSig);
@@ -182,7 +183,8 @@ contract WhitelisterTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("BLSRegistry._registerOperator: not whitelisted"));

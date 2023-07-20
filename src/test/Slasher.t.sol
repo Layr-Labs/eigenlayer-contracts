@@ -100,7 +100,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_2);
         slasher.optIntoSlashing(middleware_3);
@@ -143,7 +144,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
@@ -180,8 +182,9 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
-         slasher.optIntoSlashing(middleware);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
 
@@ -224,7 +227,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
@@ -257,7 +261,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         //slasher cannot call stake update unless operator has oped in
         cheats.prank(_slasher);
@@ -287,7 +292,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(_slasher);
         cheats.stopPrank();
     }
@@ -299,7 +305,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         
         //cannot freeze until operator has oped in
         cheats.prank(middleware);
@@ -326,7 +333,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         cheats.prank(operator);
         slasher.optIntoSlashing(middleware);
@@ -358,7 +366,8 @@ contract SlasherTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         cheats.stopPrank();
 

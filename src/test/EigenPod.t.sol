@@ -863,7 +863,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // verifies that the storage of DelegationManager contract is updated appropriately
     function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
         cheats.startPrank(sender);
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a delegate");
 
         // TODO: FIX THIS

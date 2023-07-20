@@ -23,11 +23,20 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
     uint256 stakerPrivateKey = uint256(123456789);
 
+    // empty string reused across many tests
+    string emptyStringForMetadataURI;
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
 
     // @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
     event OperatorDetailsModified(address indexed operator, IDelegationManager.OperatorDetails newOperatorDetails);
+
+    /**
+     * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
     // @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -95,7 +104,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails)`
+     * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails, metadataURI)`
      * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
      * The set parameters should match the desired parameters (correct storage update)
      * Operator becomes delegated to themselves
@@ -103,7 +112,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
      * @param operator and @param operatorDetails are fuzzed inputs
      */
-    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails, string memory metadataURI) public {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
@@ -118,8 +127,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit StakerDelegated(operator, operator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorRegistered(operator, operatorDetails);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorMetadataURIUpdated(operator, metadataURI);
 
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, metadataURI);
 
         require(operatorDetails.earningsReceiver == delegationManager.earningsReceiver(operator), "earningsReceiver not set correctly");
         require(operatorDetails.delegationApprover == delegationManager.delegationApprover(operator), "delegationApprover not set correctly");
@@ -140,7 +151,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         cheats.startPrank(operator);
         cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"));
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
     
@@ -152,7 +163,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails;
         cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -160,10 +171,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public 
         filterFuzzedAddressInputs(operator)
     {
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
         cheats.startPrank(operator);
         cheats.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
@@ -181,7 +192,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, _operatorDetails);
+        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -189,7 +200,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
 
         cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         cheats.stopPrank();
     }
@@ -208,7 +219,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.OperatorDetails memory modifiedOperatorDetails
     ) public {
         address operator = address(this);
-        testRegisterAsOperator(operator, initialOperatorDetails);
+        testRegisterAsOperator(operator, initialOperatorDetails, emptyStringForMetadataURI);
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         cheats.assume(modifiedOperatorDetails.earningsReceiver != address(0));
 
@@ -249,7 +260,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         operatorDetails.earningsReceiver = address(0);
         cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
@@ -278,7 +289,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -316,7 +327,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, _operatorDetails);
+        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         // try to delegate again and check that the call reverts
         cheats.startPrank(staker);
@@ -367,7 +378,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -415,7 +426,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -458,7 +469,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
@@ -504,7 +515,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -555,7 +566,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // create the signature struct
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -598,7 +609,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -658,7 +669,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -731,7 +742,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // fetch the delegationApprover's current nonce
         uint256 currentApproverNonce = delegationManager.delegationApproverNonce(delegationManager.delegationApprover(operator));
@@ -803,7 +814,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, delegationApproverExpiry);
@@ -841,7 +852,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, expiry);
@@ -884,7 +895,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
         
@@ -920,7 +931,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -966,7 +977,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails);
+        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -1038,7 +1049,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         slasherMock.setOperatorFrozenStatus(operator, true);
@@ -1065,11 +1076,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.startPrank(operator2);
-        delegationManager.registerAsOperator(operatorDetails);
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.startPrank(staker);

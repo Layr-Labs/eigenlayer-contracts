@@ -13,6 +13,7 @@ contract BecomeOperator is Script, DSTest, EigenLayerParser {
         });
         parseEigenLayerParams();
         vm.broadcast(msg.sender);
-        delegation.registerAsOperator(operatorDetails);
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 }

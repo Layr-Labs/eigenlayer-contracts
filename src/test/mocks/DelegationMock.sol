@@ -14,7 +14,9 @@ contract DelegationMock is IDelegationManager, Test {
 
     mapping(address => address) public delegatedTo;
 
-    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/) external pure {}
+    function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
+    
+    function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
     function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/) external {
         delegatedTo[msg.sender] = operator;
