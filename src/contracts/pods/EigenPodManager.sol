@@ -148,11 +148,10 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * @param podOwner is the pod owner whose balance is being updated.
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param isNegative is whether or not change in shares is negative or positive
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**

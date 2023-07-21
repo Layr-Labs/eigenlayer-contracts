@@ -311,9 +311,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit ValidatorBalanceUpdated(validatorIndex, newRestakedBalanceGwei);
 
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
-            (uint256 sharesDelta, bool isNegative) = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
+            int256 sharesDelta = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
             // update shares in strategy manager
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
         }
     }
 
@@ -434,9 +434,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
             }
             if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
-                (uint256 sharesDelta, bool isNegative) = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
+                int256 sharesDelta = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
                 //update podOwner's shares in the strategy manager
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
             }
 
         // If the validator status is withdrawn, they have already processed their ETH withdrawal
@@ -521,16 +521,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
 
-    function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal returns(uint256, bool){
-        uint256 sharesDelta;
-        bool isNegative;
+    function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal returns(int256){
+        int256 sharesDelta;
         if (currentAmountWei > newAmountWei){
-            sharesDelta = currentAmountWei - newAmountWei;
-            isNegative = true;
+            sharesDelta = -1 * int256(currentAmountWei - newAmountWei);
         } else {
-            sharesDelta = newAmountWei - currentAmountWei;
+            sharesDelta = int256(newAmountWei - currentAmountWei);
         }
-        return (sharesDelta, isNegative);
+        return sharesDelta;
     }
 
 

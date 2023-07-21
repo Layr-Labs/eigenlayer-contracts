@@ -145,11 +145,10 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param isNegative is whether or not change in shares is negative or positive
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**

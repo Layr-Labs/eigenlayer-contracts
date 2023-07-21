@@ -182,16 +182,15 @@ contract StrategyManager is
      * @param podOwner is the pod owner whose beaconchain ETH balance is being updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @param isNegative is whether or not change in shares is negative or positive
      * @dev Only callable by EigenPodManager.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external
         onlyEigenPodManager
         nonReentrant
     {
         // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
-        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, sharesDelta, isNegative);
+        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**
@@ -893,23 +892,24 @@ contract StrategyManager is
     /**
      * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
         * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-        * @param isNegative is whether or not change in shares is negative or positive
      */
-    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative) internal {
+    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) internal {
         
-        if (isNegative) {
+        if (sharesDelta < 0) {
                 IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
                 uint256[] memory shareAmounts = new uint256[](1);
-                shareAmounts[0] = sharesDelta;
+                int256 shareAmount = sharesDelta >= 0 ? sharesDelta : -sharesDelta;
+                shareAmounts[0] = uint256(shareAmount);
 
                 //if new balance is less than current recorded shares, remove the difference
-                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, sharesDelta);
+                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);
                 delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
         }   else {
+                uint256 shareAmount = uint256(sharesDelta);
                 //if new balance is greater than current recorded shares, add the difference
-                _addShares(podOwner, beaconChainETHStrategy, sharesDelta);
-                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, sharesDelta);
+                _addShares(podOwner, beaconChainETHStrategy, shareAmount);
+                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
             }      
     }
 

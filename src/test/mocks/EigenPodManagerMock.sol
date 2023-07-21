@@ -13,7 +13,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function restakeBeaconChainETH(address /*podOwner*/, uint256 /*amount*/) external pure {}
 
-    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, uint256 /*sharesDelta*/, bool /*isNegative*/) external pure {}
+    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, int256 /*sharesDelta*/) external pure {}
     
     function withdrawRestakedBeaconChainETH(address /*podOwner*/, address /*recipient*/, uint256 /*amount*/) external pure {}
 

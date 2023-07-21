@@ -244,11 +244,9 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         testDepositBeaconChainETHSuccessfully(staker, amount);
 
-        (uint256 delta, bool isNegative) = _calculateSharesDelta(amount, amount);
-
         cheats.expectRevert(bytes("StrategyManager.onlyEigenPodManager: not the eigenPodManager"));
         cheats.startPrank(address(improperCaller));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, delta, isNegative);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, 0);
         cheats.stopPrank();
     }
 
@@ -264,14 +262,14 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         address targetToUse = address(strategyManager);
         uint256 msgValueToUse = 0;
+
+        int256 amountDelta = int256(amount2 - amount);
         // reference: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
-        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amount, true);
+        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amountDelta);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
-        (uint256 delta, bool isNegative) = _calculateSharesDelta(amount2, amount);
-
         cheats.startPrank(address(reenterer));
-        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, delta, isNegative);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amountDelta);
         cheats.stopPrank();
     }
 
