@@ -899,8 +899,7 @@ contract StrategyManager is
                 IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
                 uint256[] memory shareAmounts = new uint256[](1);
-                int256 shareAmount = sharesDelta >= 0 ? sharesDelta : -sharesDelta;
-                shareAmounts[0] = uint256(shareAmount);
+                shareAmounts[0] = uint256(-sharesDelta);
 
                 //if new balance is less than current recorded shares, remove the difference
                 _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);

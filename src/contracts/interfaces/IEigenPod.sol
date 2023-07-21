@@ -103,16 +103,16 @@ interface IEigenPod {
      * this contract. It also verifies the current (not effective) balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param proofs is the bytes that prove the ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param validatorIndices is the list of indices of the validator being proven, refer to consensus specs 
+     * @param proofs is an array of proofs, where each proof proves the ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyWithdrawalCredentialsAndBalance(
+    function verifyWithdrawalCredentials(
         uint64 oracleBlockNumber,
-        uint40 validatorIndex,
-        bytes memory proofs,
-        bytes32[] calldata validatorFields
+        uint40[] calldata validatorIndices,
+        bytes[] calldata proofs,
+        bytes32[][] calldata validatorFields
     ) external;
     
     /**
