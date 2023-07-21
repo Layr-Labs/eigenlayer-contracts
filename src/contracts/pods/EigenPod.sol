@@ -148,6 +148,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
+    modifier proofIsForValidWithdrawal(bytes32 pubkeyHash, uint64 slot) {
+        require(!provenWithdrawal[pubkeyHash][slot],
+            "EigenPod.proofIsForValidWithdrawal: withdrawal has already been proven for this slot");
+    }
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
@@ -348,6 +353,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
          */
         proofIsForValidBlockNumber(Endian.fromLittleEndianUint64(withdrawalProofs.blockNumberRoot))
+        proofIsForValidWithdrawal(validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX], Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))
     {
         /**
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
