@@ -10,7 +10,7 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     certora/munged/pods/EigenPodManager.sol certora/munged/pods/EigenPod.sol certora/munged/pods/DelayedWithdrawalRouter.sol \
     certora/munged/strategies/StrategyBase.sol certora/munged/core/DelegationManager.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
-    --verify StrategyManagerHarness:certora/specs2/core/StrategyManager.spec \
+    --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
     --optimistic_loop \
     --send_only \
     --prover_args '-optimisticFallback true' \

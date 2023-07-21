@@ -2,53 +2,53 @@
 methods {
     //// External Calls
 	// external calls to DelegationManager 
-    undelegate(address) 
-    decreaseDelegatedShares(address,address[],uint256[]) 
-	increaseDelegatedShares(address,address,uint256) 
+    function undelegate(address) external;
+    function decreaseDelegatedShares(address,address[],uint256[]) external;
+	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
-    isFrozen(address) returns (bool) => DISPATCHER(true)
-	canWithdraw(address,uint32,uint256) returns (bool) => DISPATCHER(true)
+    function _.isFrozen(address) external => DISPATCHER(true);
+	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
 
 	// external calls to StrategyManager
-    getDeposits(address) returns (address[],uint256[]) => DISPATCHER(true)
-    slasher() returns (address) => DISPATCHER(true)
-	deposit(address,uint256) returns (uint256) => DISPATCHER(true)
-	withdraw(address,address,uint256) => DISPATCHER(true)
+    function _.getDeposits(address) external => DISPATCHER(true);
+    function _.slasher() external => DISPATCHER(true);
+	function _.deposit(address,uint256) external => DISPATCHER(true);
+	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	withdrawBeaconChainETH(address,address,uint256) => DISPATCHER(true)
+	function _.withdrawBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	
     // external calls to EigenPod
-	withdrawBeaconChainETH(address,uint256) => DISPATCHER(true)
+	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
-	unpauser() returns (address) => DISPATCHER(true)
+    function _.pauser() external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
-    isValidSignature(bytes32, bytes) returns (bytes4) => DISPATCHER(true)
+    function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
 	
     //// Harnessed Functions
     // Harnessed calls
-    decreaseDelegatedShares(address,address,address,uint256,uint256)
+    function decreaseDelegatedShares(address,address,address,uint256,uint256) external;
     // Harmessed getters
-    get_operatorShares(address,address) returns(uint256) envfree
+    function get_operatorShares(address,address) external returns (uint256) envfree;
 
     //// Summarized Functions
-    _delegationReceivedHook(address,address,address[],uint256[]) => NONDET
-    _delegationWithdrawnHook(address,address,address[],uint256[]) => NONDET
+    function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
+    function _._delegationWithdrawnHook(address,address,address[]memory, uint256[] memory) internal => NONDET;
 
     //envfree functions
-    isDelegated(address staker) returns (bool) envfree
-    isNotDelegated(address staker) returns (bool) envfree
-    isOperator(address operator) returns (bool) envfree
-    delegatedTo(address staker) returns (address) envfree
-    delegationTerms(address operator) returns (address) envfree
-    operatorShares(address operator, address strategy) returns (uint256) envfree
-    owner() returns (address) envfree
-    strategyManager() returns (address) envfree
+    function isDelegated(address staker) external returns (bool) envfree;
+    function isNotDelegated(address staker) external returns (bool) envfree;
+    function isOperator(address operator) external returns (bool) envfree;
+    function delegatedTo(address staker) external returns (address) envfree;
+    function delegationTerms(address operator) external returns (address) envfree;
+    function operatorShares(address operator, address strategy) external returns (uint256) envfree;
+    function owner() external returns (address) envfree;
+    function strategyManager() external returns (address) envfree;
 }
 
 /*
@@ -133,7 +133,7 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     method f;
     env e;
     // the only way the staker can become undelegated is if `undelegate` is called
-    if (f.selector == undelegate(address).selector) {
+    if (f.selector == sig:undelegate(address).selector) {
         address toUndelegate;
         undelegate(e, toUndelegate);
         // either the `strategyManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
@@ -160,7 +160,7 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     // perform arbitrary function call
     method f;
     env e;
-    if (f.selector == delegateTo(address).selector) {
+    if (f.selector == sig:delegateTo(address).selector) {
         address operator;
         delegateTo(e, operator);
         // we check against operator being the zero address here, since we view being delegated to the zero address as *not* being delegated
@@ -169,7 +169,7 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
         } else {
             assert (isNotDelegated(staker), "staker delegated to inappropriate address?");
         }
-    } else if (f.selector == delegateToBySignature(address, address, uint256, bytes).selector) {
+    } else if (f.selector == sig:delegateToBySignature(address, address, uint256, bytes).selector) {
         address toDelegateFrom;
         address operator;
         uint256 expiry;
@@ -177,7 +177,7 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
         delegateToBySignature(e, toDelegateFrom, operator, expiry, signature);
         // TODO: this check could be stricter! need to filter when the block timestamp is appropriate for expiry and signature is valid
         assert (isNotDelegated(staker) || delegatedTo(staker) == operator, "delegateToBySignature bug?");
-    } else if (f.selector == registerAsOperator(address).selector) {
+    } else if (f.selector == sig:registerAsOperator(address).selector) {
         address delegationTerms;
         registerAsOperator(e, delegationTerms);
         if (e.msg.sender == staker && delegationTerms != 0) {

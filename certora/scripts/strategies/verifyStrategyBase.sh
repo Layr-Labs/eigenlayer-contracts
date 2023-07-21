@@ -10,7 +10,7 @@ certoraRun certora/munged/strategies/StrategyBase.sol \
     certora/munged/core/StrategyManager.sol \
     certora/munged/permissions/PauserRegistry.sol \
     certora/munged/core/Slasher.sol \
-    --verify StrategyBase:certora/specs2/strategies/StrategyBase.spec \
+    --verify StrategyBase:certora/specs/strategies/StrategyBase.spec \
     --optimistic_loop \
     --send_only \
     --prover_args '-optimisticFallback true -recursionErrorAsAssert false -recursionEntryLimit 3' \
