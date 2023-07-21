@@ -899,15 +899,14 @@ contract StrategyManager is
                 IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
                 uint256[] memory shareAmounts = new uint256[](1);
-                int256 shareAmount = sharesDelta >= 0 ? sharesDelta : -sharesDelta;
-                shareAmounts[0] = uint256(shareAmount);
+                shareAmounts[0] = uint256(-sharesDelta);
 
-                //if new balance is less than current recorded shares, remove the difference
+                //if change in shares is negative, remove the shares
                 _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);
                 delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
         }   else {
                 uint256 shareAmount = uint256(sharesDelta);
-                //if new balance is greater than current recorded shares, add the difference
+                //if change in shares is positive, add the shares
                 _addShares(podOwner, beaconChainETHStrategy, shareAmount);
                 delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
             }      
