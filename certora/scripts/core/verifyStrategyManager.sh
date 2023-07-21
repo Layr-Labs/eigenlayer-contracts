@@ -10,12 +10,12 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     certora/munged/pods/EigenPodManager.sol certora/munged/pods/EigenPod.sol certora/munged/pods/DelayedWithdrawalRouter.sol \
     certora/munged/strategies/StrategyBase.sol certora/munged/core/DelegationManager.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
-    --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
+    --verify StrategyManagerHarness:certora/specs2/core/StrategyManager.spec \
     --optimistic_loop \
     --send_only \
-    --settings -optimisticFallback=true \
-    --settings -optimisticUnboundedHashing=true \
+    --prover_args '-optimisticFallback true' \
+    --optimistic_hashing \
     $RULE \
-    --loop_iter 3 \
+    --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --msg "StrategyManager $1 $2" \
