@@ -292,10 +292,10 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     }
 
     function _registerOperatorWithCoordinator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string memory socket) internal {
-        // require(
-        //     slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
-        //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
-        // );
+        require(
+            slasher.contractCanSlashOperatorUntilBlock(operator, address(serviceManager)) == type(uint32).max,
+            "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator must be opted into slashing by the serviceManager"
+        );
         
         // check that the sender is not already registered
         require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndicies._registerOperatorWithCoordinator: operator already registered");
