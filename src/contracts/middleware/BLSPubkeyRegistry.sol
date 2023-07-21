@@ -61,7 +61,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
         // emit event so offchain actors can update their state
-        emit PubkeyAddedToQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
@@ -87,7 +87,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
-        emit PubkeyRemovedFromQuorums(operator, quorumNumbers);
+        emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 
