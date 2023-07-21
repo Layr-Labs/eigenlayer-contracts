@@ -34,7 +34,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     IDelegationManager public immutable delegation;
     // operator => whitelisted contract with slashing permissions => (the time before which the contract is allowed to slash the user, block it was last updated)
     mapping(address => mapping(address => MiddlewareDetails)) internal _whitelistedContractDetails;
-    // staker => if their funds are 'frozen' and potentially subject to slashing or not
+    // operator => if their funds are 'frozen' and potentially subject to slashing or not
     mapping(address => bool) internal frozenStatus;
 
     uint32 internal constant MAX_CAN_SLASH_UNTIL = type(uint32).max;

@@ -39,7 +39,7 @@ interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
 
     // EVENTS
 
-    event OperatorSocketUpdate(address operator, string socket);
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
