@@ -252,7 +252,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
     }
 
-    function testRecordOvercommittedBeaconChainETHFailsWhenReentering() public {
+    function testRecordBeaconChainETHBalanceUpdateFailsWhenReentering() public {
         uint256 amount = 1e18;
         uint256 amount2 = 2e18;
         address staker = address(this);
@@ -264,7 +264,8 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         address targetToUse = address(strategyManager);
         uint256 msgValueToUse = 0;
-        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amount);
+        // reference: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
+        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amount, true);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         (uint256 delta, bool isNegative) = _calculateSharesDelta(amount2, amount);
@@ -2590,7 +2591,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         return array;
     }
 
-    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal returns(uint256, bool){
+    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal view returns(uint256, bool) {
         uint256 sharesDelta;
         bool isNegative;
         if (currentAmountGwei > newAmountGwei){
