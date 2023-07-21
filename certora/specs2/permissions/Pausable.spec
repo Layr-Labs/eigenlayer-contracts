@@ -1,8 +1,8 @@
 
 methods {
     // external calls to PauserRegistry
-    function _.pauser() external returns (address) => DISPATCHER(true);
-	function _.unpauser() external returns (address) => DISPATCHER(true);
+    function _.pauser() external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // envfree functions
     function paused() external returns (uint256) envfree;
@@ -10,7 +10,7 @@ methods {
     function pauserRegistry() external returns (address) envfree;
 
     // harnessed functions
-    function pauser() external returns (address) envfree;
+    function isPauser(address) external returns (bool) envfree;
     function unpauser() external returns (address) envfree;
     function bitwise_not(uint256) external returns (uint256) envfree;
     function bitwise_and(uint256, uint256) external returns (uint256) envfree;
@@ -20,7 +20,9 @@ rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     method f;
     env e;
     uint256 pausedStatusBefore = paused();
-    address pauser = pauser();
+    address pauser;
+    // filter down to addresses that actually hold the pauser role
+    require(isPauser(pauser));
     address unpauser = unpauser();
     if (f.selector == sig:pause(uint256).selector) {
         uint256 newPausedStatus;
