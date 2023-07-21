@@ -725,9 +725,6 @@ contract StrategyManager is
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[depositor][strategy];
-
-        emit log_named_uint("userShares", userShares);
-        emit log_named_uint("shareAmount", shareAmount);
         
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
