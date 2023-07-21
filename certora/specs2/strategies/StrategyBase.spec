@@ -1,20 +1,20 @@
 using StrategyManager as strategyManager;
 methods {
     // external calls to StrategyManager
-    function _.stakerStrategyShares(address, address) external returns (uint256) => DISPATCHER(true);
+    function _.stakerStrategyShares(address, address) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    function _.pauser() external returns (address) => DISPATCHER(true);
-	function _.unpauser() external returns (address) => DISPATCHER(true);
+    function _.pauser() external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC20
-    function _.balanceOf(address) external returns (uint256) => DISPATCHER(true);
-    function _.transfer(address, uint256) external returns (bool) => DISPATCHER(true);
-    function _.transferFrom(address, address, uint256) external returns (bool) => DISPATCHER(true);
+    function _.balanceOf(address) external => DISPATCHER(true);
+    function _.transfer(address, uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
 
 	// external calls from StrategyManager to Slasher
-    function _.isFrozen(address) external returns (bool) => DISPATCHER(true);
-	function _.canWithdraw(address,uint32,uint256) external returns (bool) => DISPATCHER(true);
+    function _.isFrozen(address) external => DISPATCHER(true);
+	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
 
     // envfree functions
     function totalShares() external returns (uint256) envfree;
@@ -33,7 +33,7 @@ methods {
 */
 invariant totalSharesNeverTooSmall()
     // CVL doesn't appear to parse 1e9, so the literal value is typed out instead.
-    (totalShares() == 0) || (totalShares() >= 1000000000)
+    (totalShares() == 0) || (totalShares() >= 1000000000);
 
 // // idea based on OpenZeppelin invariant -- see https://github.com/OpenZeppelin/openzeppelin-contracts/blob/formal-verification/certora/specs/ERC20.spec#L8-L22
 // ghost sumOfShares() returns uint256 {
