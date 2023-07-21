@@ -148,11 +148,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    modifier proofIsForValidWithdrawal(bytes32 pubkeyHash, uint64 slot) {
-        require(!provenWithdrawal[pubkeyHash][slot],
-            "EigenPod.proofIsForValidWithdrawal: withdrawal has already been proven for this slot");
-    }
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
@@ -353,7 +348,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
          */
         proofIsForValidBlockNumber(Endian.fromLittleEndianUint64(withdrawalProofs.blockNumberRoot))
-        proofIsForValidWithdrawal(validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX], Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))
     {
         /**
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
@@ -365,6 +359,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
+        require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
+            "EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
         {
             // fetch the beacon state root for the specified block
@@ -466,7 +462,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _processPartialWithdrawal(uint64 withdrawalHappenedSlot, uint64 partialWithdrawalAmountGwei, uint40 validatorIndex, bytes32 validatorPubkeyHash, address recipient) internal {
-        require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot], "EigenPod._processPartialWithdrawal: partial withdrawal has already been proven for this slot");
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
         emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei);
