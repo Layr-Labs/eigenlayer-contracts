@@ -3,6 +3,8 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IDelegationManager.sol";
+import "./IStrategyManager.sol";
+import "./ISlasher.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
@@ -10,6 +12,12 @@ import "./IDelegationManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IServiceManager {
+
+    // ServiceManager has a dependency on the following contracts
+    function delegationManager() external view returns (IDelegationManager);
+    function strategyManager() external view returns (IStrategyManager);
+    function slasher() external view returns (ISlasher);
+
     /// @notice Returns the current 'taskNumber' for the middleware
     function taskNumber() external view returns (uint32);
 
