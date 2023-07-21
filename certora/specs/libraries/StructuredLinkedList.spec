@@ -1,15 +1,15 @@
 methods {
-    listExists() returns (bool) envfree
-    nodeExists(uint256) returns (bool) envfree
-    sizeOf() returns (uint256) envfree
-    getHead() returns (uint256) envfree
-    getNode(uint256) returns (bool, uint256, uint256) envfree
-    getAdjacent(uint256,bool) returns (bool, uint256) envfree
-    getAdjacentStrict(uint256,bool) returns (uint256) envfree
-    getNextNode(uint256) returns (bool, uint256) envfree
-    getPreviousNode(uint256) returns (bool, uint256) envfree
-    insert(uint256,uint256,bool) envfree
-    remove(uint256) envfree
+    function listExists() external returns (bool) envfree;
+    function nodeExists(uint256) external returns (bool) envfree;
+    function sizeOf() external returns (uint256) envfree;
+    function getHead() external returns (uint256) envfree;
+    function getNode(uint256) external returns (bool, uint256, uint256) envfree;
+    function getAdjacent(uint256,bool) external returns (bool, uint256) envfree;
+    function getAdjacentStrict(uint256,bool) external returns (uint256) envfree;
+    function getNextNode(uint256) external returns (bool, uint256) envfree;
+    function getPreviousNode(uint256) external returns (bool, uint256) envfree;
+    function insert(uint256,uint256,bool) external envfree;
+    function remove(uint256) external envfree;
 }
 
 ghost mapping(uint256 => bool) connectsToHead {
@@ -168,7 +168,7 @@ function safeAssumptions() {
 
 invariant zeroEmpty()
     isEmpty(0)
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
 
 rule zeroEmptyPreservedInsertSorted(address _id, uint256 _value) {
     address prev;
@@ -198,7 +198,7 @@ invariant headWellFormed()
 
 invariant tailWellFormed()
     isTailWellFormed()
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
     { preserved remove(address _id) {
         requireInvariant zeroEmpty();
         requireInvariant twoWayLinked(getPrev(_id), _id);
@@ -235,7 +235,7 @@ invariant tipsZero()
 
 invariant noPrevIsHead(address addr)
     hasNoPrevIsHead(addr)
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
     { preserved remove(address _id) {
         safeAssumptions();
         requireInvariant twoWayLinked(_id, getNext(_id));
@@ -264,7 +264,7 @@ rule noPrevIsHeadPreservedInsertSorted(address _id, uint256 _value) {
 
 invariant noNextIsTail(address addr)
     hasNoNextIsTail(addr)
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
     { preserved remove(address _id) {
         safeAssumptions();
         requireInvariant twoWayLinked(_id, getNext(_id));
@@ -293,7 +293,7 @@ rule noNextisTailPreservedInsertSorted(address _id, uint256 _value) {
 
 invariant linkedIsInDLL(address addr)
     isLinked(addr) => isInDLL(addr)
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
     { preserved remove(address _id) {
         safeAssumptions();
         requireInvariant twoWayLinked(_id, getNext(_id));
@@ -323,7 +323,7 @@ rule linkedIsInDllPreservedInsertSorted(address _id, uint256 _value) {
 
 invariant twoWayLinked(address first, address second)
     isTwoWayLinked(first, second)
-    filtered { f -> f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:insertSorted(address, uint256, uint256).selector }
     { preserved remove(address _id) {
         safeAssumptions();
         requireInvariant twoWayLinked(getPrev(_id), _id);
@@ -349,8 +349,8 @@ rule twoWayLinkedPreservedInsertSorted(address _id, uint256 _value) {
 
 invariant forwardLinked(address addr)
     isInDLL(addr) => isForwardLinkedBetween(getHead(), addr)
-    filtered { f -> f.selector != remove(address).selector &&
-                    f.selector != insertSorted(address, uint256, uint256).selector }
+    filtered { f -> f.selector != sig:remove(address).selector &&
+                    f.selector != sig:insertSorted(address, uint256, uint256).selector }
 
 rule forwardLinkedPreservedInsertSorted(address _id, uint256 _value) {
     address addr; address prev;

@@ -9,7 +9,7 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     certora/munged/pods/EigenPodManager.sol certora/munged/pods/EigenPod.sol certora/munged/strategies/StrategyBase.sol certora/munged/core/StrategyManager.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
-    --verify DelegationManagerHarness:certora/specs2/core/DelegationManager.spec \
+    --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
     --optimistic_loop \
     --send_only \
     --prover_args '-optimisticFallback true' \
