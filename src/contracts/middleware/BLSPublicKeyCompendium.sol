@@ -22,6 +22,61 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     /// @notice Emitted when `operator` registers with the public key `pk`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
+    function registerBLSPublicKey(BN254.G1Point memory sigma, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+        BN254.G1Point memory h = BN254.scalar_mul(
+            BN254.generatorG1(),
+            uint256(keccak256(abi.encodePacked(msg.sender, block.chainid, "EigenLayer"))) % BN254.FR_MODULUS
+        );
+        
+        uint256 gamma = uint256(keccak256(abi.encodePacked(
+            sigma.X, 
+            sigma.Y, 
+            pubkeyG1.X, 
+            pubkeyG1.Y, 
+            pubkeyG2.X, 
+            pubkeyG2.Y, 
+            h.X, 
+            h.Y
+        ))) % BN254.FR_MODULUS;
+
+        BN254.G1Point memory a = BN254.plus(
+            sigma,
+            BN254.scalar_mul(pubkeyG1, gamma)
+        );
+
+        BN254.G1Point memory b = BN254.plus(
+            h,
+            BN254.scalar_mul(
+                BN254.generatorG1(),
+                gamma
+            )
+        );
+        
+        require(BN254.pairing(
+            a,
+            BN254.generatorG2(),
+            b,
+            pubkeyG2
+        ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
+
+        bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
+
+        require(
+            operatorToPubkeyHash[msg.sender] == bytes32(0),
+            "BLSPublicKeyCompendium.registerBLSPublicKey: operator already registered pubkey"
+        );
+        require(
+            pubkeyHashToOperator[pubkeyHash] == address(0),
+            "BLSPublicKeyCompendium.registerBLSPublicKey: public key already registered"
+        );
+
+        // store updates
+        operatorToPubkeyHash[msg.sender] = pubkeyHash;
+        pubkeyHashToOperator[pubkeyHash] = msg.sender;
+
+        emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
+    }
+
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
      * @param s is the field element of the operator's Schnorr signature
