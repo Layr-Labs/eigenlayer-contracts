@@ -23,6 +23,9 @@ broadcast
 # Deployment tools
 /data
 
+# IDE
+.idea
+
 # Certora Outputs
 .certora_internal/
 .certora_recent_jobs.json
