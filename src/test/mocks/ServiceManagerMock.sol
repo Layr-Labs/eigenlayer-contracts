@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
+import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/ISlasher.sol";
 
 import "forge-std/Test.sol";
@@ -14,7 +15,6 @@ contract ServiceManagerMock is IServiceManager, DSTest {
     constructor(ISlasher _slasher) {
         owner = msg.sender;
         slasher = _slasher;
-
     }
 
     /// @notice Returns the current 'taskNumber' for the middleware
@@ -26,15 +26,26 @@ contract ServiceManagerMock is IServiceManager, DSTest {
     function freezeOperator(address operator) external {
         slasher.freezeOperator(operator);
     }
-    
+
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording an initial stake update (on operator registration)
-    function recordFirstStakeUpdate(address operator, uint32 serveUntil) external pure {}
+    function recordFirstStakeUpdate(
+        address operator,
+        uint32 serveUntil
+    ) external pure {}
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external pure {}
+    function recordStakeUpdate(
+        address operator,
+        uint32 updateBlock,
+        uint32 serveUntilBlock,
+        uint256 prevElement
+    ) external pure {}
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntil) external pure {}
+    function recordLastStakeUpdateAndRevokeSlashingAbility(
+        address operator,
+        uint32 serveUntil
+    ) external pure {}
 
     /// @notice Token used for placing guarantee on challenges & payment commits
     function paymentChallengeToken() external pure returns (IERC20) {
@@ -44,6 +55,11 @@ contract ServiceManagerMock is IServiceManager, DSTest {
     /// @notice The Delegation contract of EigenLayer.
     function delegationManager() external pure returns (IDelegationManager) {
         return IDelegationManager(address(0));
+    }
+
+    /// @notice The Delegation contract of EigenLayer.
+    function strategyManager() external pure returns (IStrategyManager) {
+        return IStrategyManager(address(0));
     }
 
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
