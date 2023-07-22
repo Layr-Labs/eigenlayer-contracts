@@ -18,6 +18,7 @@ interface IServiceManager {
     function delegationManager() external view returns (IDelegationManager);
     function strategyManager() external view returns (IStrategyManager);
     function slasher() external view returns (ISlasher);
+    function registryCoordinator() external view returns (IRegistryCoordinator);
 
     /// @notice Returns the current 'taskNumber' for the middleware
     function taskNumber() external view returns (uint32);
