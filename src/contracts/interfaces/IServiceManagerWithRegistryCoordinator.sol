@@ -1,42 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IDelegationManager.sol";
-import "./IStrategyManager.sol";
-import "./ISlasher.sol";
-import "./IRegistryCoordinator.sol";
+import "./IServiceManager.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-interface IServiceManager {
-
-    // ServiceManager has a dependency on the following contracts
-    function delegationManager() external view returns (IDelegationManager);
-    function strategyManager() external view returns (IStrategyManager);
-    function slasher() external view returns (ISlasher);
+interface IServiceManagerWithRegistryCoordinator is IServiceManager {
     function registryCoordinator() external view returns (IRegistryCoordinator);
-
-    /// @notice Returns the current 'taskNumber' for the middleware
-    function taskNumber() external view returns (uint32);
-
-    /// @notice Permissioned function that causes the ServiceManager to freeze the operator on EigenLayer, through a call to the Slasher contract
-    function freezeOperator(address operator) external;
-
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording an initial stake update (on operator registration)
-    function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external;
-
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external;
-
-    /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;
-
-    /// @notice Returns the latest block until which operators must serve.
-    function latestServeUntilBlock() external view returns (uint32);
-
-    function owner() external view returns (address);
 }
