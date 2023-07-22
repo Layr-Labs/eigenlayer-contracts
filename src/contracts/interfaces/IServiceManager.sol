@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IDelegationManager.sol";
 import "./IStrategyManager.sol";
 import "./ISlasher.sol";
+import "./IRegistryCoordinator.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
@@ -17,6 +18,7 @@ interface IServiceManager {
     function delegationManager() external view returns (IDelegationManager);
     function strategyManager() external view returns (IStrategyManager);
     function slasher() external view returns (ISlasher);
+    function registryCoordinator() external view returns (IRegistryCoordinator);
 
     /// @notice Returns the current 'taskNumber' for the middleware
     function taskNumber() external view returns (uint32);
