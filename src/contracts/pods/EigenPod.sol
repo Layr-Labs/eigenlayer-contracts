@@ -223,7 +223,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyBalanceUpdate(
         uint40 validatorIndex,
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs calldata proofs,
+        BeaconChainProofs.BalanceUpdateProofs calldata proofs,
         bytes32[] calldata validatorFields,
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
@@ -232,10 +232,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(oracleBlockNumber + VERIFY_BALANCE_UPDATE_WINDOW_BLOCKS >= block.number,
             "EigenPod.verifyBalanceUpdate: specified blockNumber is too far in past");
 
+
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+
         {
-            require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
+            require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
+            require(validatorInfo.mostRecentBalanceUpdateSlot < Endian.fromLittleEndianUint64(proofs.slotRoot),
+                "EigenPod.verifyBalanceUpdate: Validator's balance has already been updated for this slot");
         }
         // deserialize the balance field from the balanceRoot
         uint64 validatorNewBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
@@ -244,11 +249,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
  
         // verify ETH validator's current balance, which is stored in the `balances` container of the beacon state
-       BeaconChainProofs.verifyValidatorBalance(
+        BeaconChainProofs.verifyValidatorBalance(
             validatorIndex,
             beaconStateRoot,
             proofs.validatorBalanceProof,
             proofs.balanceRoot
+        );
+        //verify provided slot is valid against beaconStateRoot
+        BeaconChainProofs.verifySlotRoot(
+            proofs.slotProof,
+            beaconStateRoot,
+            proofs.slotRoot
         );
 
         uint64 currentRestakedBalanceGwei = _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei;
@@ -257,7 +268,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorNewBalanceGwei);
 
         //update the balance
-        _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = newRestakedBalanceGwei;
+        validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
+
+        //update the most recent balance update slot
+        validatorInfo.mostRecentBalanceUpdateSlot = Endian.fromLittleEndianUint64(proofs.slotRoot);
+
+        //record validatorInfo update in storage
+        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
         
 
         emit ValidatorBalanceUpdated(validatorIndex, newRestakedBalanceGwei);

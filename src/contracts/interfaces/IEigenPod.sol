@@ -130,7 +130,7 @@ interface IEigenPod {
      */
     function verifyBalanceUpdate(
         uint40 validatorIndex,
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs calldata proofs,
+        BeaconChainProofs.BalanceUpdateProofs calldata proofs,
         bytes32[] calldata validatorFields,
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber

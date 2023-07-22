@@ -117,9 +117,11 @@ library BeaconChainProofs {
         bytes32 executionPayloadRoot;
     }
 
-    struct ValidatorFieldsAndBalanceProofs {
+    struct BalanceUpdateProofs {
         bytes validatorFieldsProof;
         bytes validatorBalanceProof;
+        bytes slotProof;
+        bytes32 slotRoot;
         bytes32 balanceRoot;
     }
 
@@ -196,6 +198,16 @@ library BeaconChainProofs {
         balanceIndex = (BALANCE_INDEX << (BALANCE_TREE_HEIGHT + 1)) | balanceIndex;
 
         require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, balanceRoot, balanceIndex), "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
+    }
+
+    function verifySlotRoot(
+        bytes32 beaconStateRoot,
+        bytes calldata proof,
+        bytes32 slotRoot
+    ) internal view {
+        require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
+        //Next we verify the slot against the blockHeaderRoot
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
     }
 
     /**
