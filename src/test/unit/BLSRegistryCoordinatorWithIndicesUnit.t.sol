@@ -368,7 +368,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint i = 0; i < numOperators; i++) {
             // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
-            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);

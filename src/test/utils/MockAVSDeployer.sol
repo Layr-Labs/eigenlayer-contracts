@@ -314,7 +314,7 @@ contract MockAVSDeployer is Test {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
-            operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
+            operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
             operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
             operatorMetadatas[i].pubkey = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, i)));
             operatorMetadatas[i].operatorId = operatorMetadatas[i].pubkey.hashG1Point();
