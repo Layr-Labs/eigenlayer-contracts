@@ -12,7 +12,7 @@ import "../libraries/BitmapUtils.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-abstract contract BLSSignatureChecker {
+contract BLSSignatureChecker {
     using BN254 for BN254.G1Point;    
 
     // DATA STRUCTURES
@@ -44,7 +44,7 @@ abstract contract BLSSignatureChecker {
 
     // gas cost of multiplying 2 pairings
     // TODO: verify this
-    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 113000;
+    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
@@ -78,7 +78,8 @@ abstract contract BLSSignatureChecker {
         uint32 referenceBlockNumber, 
         NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) 
-        public view
+        public 
+        view
         returns (
             QuorumStakeTotals memory,
             bytes32
@@ -95,7 +96,7 @@ abstract contract BLSSignatureChecker {
                         referenceBlockNumber, 
                         nonSignerStakesAndSignature.quorumApkIndices[i]
                     ),
-                "BLSSignatureChecker.checkSignatures: quorumApkIndex does not match quorum apk"
+                "BLSSignatureChecker.checkSignatures: quorumApk hash in storage does not match provided quorum apk"
             );
             apk = apk.plus(nonSignerStakesAndSignature.quorumApks[i]);
         }
@@ -115,26 +116,26 @@ abstract contract BLSSignatureChecker {
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
-                    if (i != 0) {
-                        require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
-                    }
+                    // if (i != 0) {
+                    //     require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
+                    // }
                     nonSignerQuorumBitmaps[i] = 
                         registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
                             nonSignerPubkeyHashes[i], 
                             referenceBlockNumber, 
                             nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices[i]
                         );
+                    
                     // subtract the nonSignerPubkey from the running apk to get the apk of all signers
                     apk = apk.plus(
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
-                            .scalar_mul_tiny(
-                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of
+                            .scalar_mul(
+                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of, TODO: 
                             )
                     );
                 }
             }
-
             // loop through each quorum number
             for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length;) {
                 // get the quorum number
@@ -143,7 +144,7 @@ abstract contract BLSSignatureChecker {
                 quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex] = 
                     stakeRegistry.getTotalStakeAtBlockNumberFromIndex(quorumNumber, referenceBlockNumber, nonSignerStakesAndSignature.totalStakeIndices[quorumNumberIndex]);
                 // copy total stake to signed stake
-                quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumber];
+                quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] = quorumStakeTotals.totalStakeForQuorum[quorumNumberIndex];
                 // loop through all nonSigners, checking that they are a part of the quorum via their quorumBitmap
                 // if so, load their stake at referenceBlockNumber and subtract it from running stake signed
                 for (uint32 i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
@@ -156,7 +157,7 @@ abstract contract BLSSignatureChecker {
                                 quorumNumber,
                                 referenceBlockNumber,
                                 nonSignerPubkeyHashes[i],
-                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumber][nonSignerForQuorumIndex]
+                                nonSignerStakesAndSignature.nonSignerStakeIndices[quorumNumberIndex][nonSignerForQuorumIndex]
                             );
                         unchecked {
                             ++nonSignerForQuorumIndex;

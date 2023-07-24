@@ -103,29 +103,37 @@ contract BLSOperatorStateRetriever {
         checkSignaturesIndices.nonSignerQuorumBitmapIndices = registryCoordinator.getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(referenceBlockNumber, nonSignerOperatorIds);
         checkSignaturesIndices.totalStakeIndices = stakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber(referenceBlockNumber, quorumNumbers);
         
-        checkSignaturesIndices.nonSignerStakeIndices = new uint32[][](nonSignerOperatorIds.length);
-        for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
-            uint192 nonSignerQuorumBitmap = 
-                registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
-                    nonSignerOperatorIds[i], 
-                    referenceBlockNumber, 
-                    checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
-                );
-            // the number of quorums the operator was a part of that are also part of the provided quorumNumbers
-            checkSignaturesIndices.nonSignerStakeIndices[i] = new uint32[](BitmapUtils.countNumOnes(nonSignerQuorumBitmap & BitmapUtils.bytesArrayToBitmap(quorumNumbers)));
+        checkSignaturesIndices.nonSignerStakeIndices = new uint32[][](quorumNumbers.length);
+        for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length; quorumNumberIndex++) {
+            uint256 numNonSignersForQuorum = 0;
+            // this array's length will be at most the number of nonSignerOperatorIds
+            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = new uint32[](nonSignerOperatorIds.length);
 
-            uint256 stakeIndexIndex = 0;
-            for (uint8 j = 0; j < 192; j++) {
+            for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
+                uint192 nonSignerQuorumBitmap = 
+                    registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
+                        nonSignerOperatorIds[i], 
+                        referenceBlockNumber, 
+                        checkSignaturesIndices.nonSignerQuorumBitmapIndices[i]
+                    );
+                
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
-                if (nonSignerQuorumBitmap >> j & (BitmapUtils.bytesArrayToBitmap(quorumNumbers) >> j & 1) == 1) {
-                    checkSignaturesIndices.nonSignerStakeIndices[i][stakeIndexIndex] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
+                if (nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex]) & 1 == 1) {
+                    checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
                         nonSignerOperatorIds[i],
-                        uint8(j),
+                        uint8(quorumNumbers[quorumNumberIndex]),
                         referenceBlockNumber
                     );
-                    stakeIndexIndex++;
+                    numNonSignersForQuorum++;
                 }
             }
+
+            // resize the array to the number of nonSigners for this quorum
+            uint32[] memory nonSignerStakeIndicesForQuorum = new uint32[](numNonSignersForQuorum);
+            for (uint i = 0; i < numNonSignersForQuorum; i++) {
+                nonSignerStakeIndicesForQuorum[i] = checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][i];
+            }
+            checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = nonSignerStakeIndicesForQuorum;
         }
 
         IBLSPubkeyRegistry blsPubkeyRegistry = registryCoordinator.blsPubkeyRegistry();
