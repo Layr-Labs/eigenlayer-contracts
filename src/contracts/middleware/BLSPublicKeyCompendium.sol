@@ -10,6 +10,7 @@ import "../libraries/BN254.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
+    using BN254 for BN254.G1Point;
     //Hash of the zero public key: BN254.hashG1Point(G1Point(0,0))
     bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
@@ -22,40 +23,37 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     /// @notice Emitted when `operator` registers with the public key `pk`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
-    function registerBLSPublicKey(BN254.G1Point memory sigma, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
-        BN254.G1Point memory h = BN254.scalar_mul(
-            BN254.generatorG1(),
-            uint256(keccak256(abi.encodePacked(msg.sender, block.chainid, "EigenLayer"))) % BN254.FR_MODULUS
-        );
-        
+    /**
+     * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
+     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyG1 is the corresponding G1 public key of the operator 
+     * @param pubkeyG2 is the corresponding G2 public key of the operator
+     */
+    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+        // H(m) 
+        BN254.G1Point memory messageHash = BN254.hashToG1(keccak256(abi.encodePacked(
+            msg.sender, 
+            block.chainid, 
+            "EigenLayer_BN254_Pubkey_Registration"
+        )));
+
+        // gamma = h(sigma, P, P', H(m))
         uint256 gamma = uint256(keccak256(abi.encodePacked(
-            sigma.X, 
-            sigma.Y, 
+            signedMessageHash.X, 
+            signedMessageHash.Y, 
             pubkeyG1.X, 
             pubkeyG1.Y, 
             pubkeyG2.X, 
             pubkeyG2.Y, 
-            h.X, 
-            h.Y
+            messageHash.X, 
+            messageHash.Y
         ))) % BN254.FR_MODULUS;
-
-        BN254.G1Point memory a = BN254.plus(
-            sigma,
-            BN254.scalar_mul(pubkeyG1, gamma)
-        );
-
-        BN254.G1Point memory b = BN254.plus(
-            h,
-            BN254.scalar_mul(
-                BN254.generatorG1(),
-                gamma
-            )
-        );
         
+        // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
         require(BN254.pairing(
-            a,
-            BN254.generatorG2(),
-            b,
+            signedMessageHash.plus(BN254.scalar_mul(pubkeyG1, gamma)),
+            BN254.negGeneratorG2(),
+            messageHash.plus(BN254.scalar_mul(BN254.generatorG1(), gamma)),
             pubkeyG2
         ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
 
@@ -70,62 +68,6 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
             "BLSPublicKeyCompendium.registerBLSPublicKey: public key already registered"
         );
 
-        // store updates
-        operatorToPubkeyHash[msg.sender] = pubkeyHash;
-        pubkeyHashToOperator[pubkeyHash] = msg.sender;
-
-        emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
-    }
-
-    /**
-     * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
-     * @param s is the field element of the operator's Schnorr signature
-     * @param rPoint is the group element of the operator's Schnorr signature
-     * @param pubkeyG1 is the the G1 pubkey of the operator
-     * @param pubkeyG2 is the G2 with the same private key as the pubkeyG1
-     */
-    function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
-        // calculate -g1
-        BN254.G1Point memory negGeneratorG1 = BN254.negate(BN254.G1Point({X: 1, Y: 2}));
-        // verify a Schnorr signature (s, R) of pubkeyG1
-        // calculate s*-g1 + (R + H(msg.sender, P, R)*P) = 0
-        // which is the Schnorr signature verification equation
-        BN254.G1Point memory shouldBeZero = 
-            BN254.plus(
-                BN254.scalar_mul(negGeneratorG1, s),
-                BN254.plus(
-                    rPoint,
-                    BN254.scalar_mul(
-                        pubkeyG1,
-                        uint256(keccak256(abi.encodePacked(msg.sender, pubkeyG1.X, pubkeyG1.Y, rPoint.X, rPoint.Y))) % BN254.FR_MODULUS
-                    )
-                )
-            );
-
-        require(shouldBeZero.X == 0 && shouldBeZero.Y == 0, "BLSPublicKeyCompendium.registerBLSPublicKey: incorrect schnorr singature");
-
-        // verify that the G2 pubkey has the same discrete log as the G1 pubkey
-        // e(P, [1]_2)e([-1]_1, P') = [1]_T
-        require(BN254.pairing(
-            pubkeyG1,
-            BN254.generatorG2(),
-            negGeneratorG1,
-            pubkeyG2
-        ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
-
-        // getting pubkey hash
-        bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
-
-        require(
-            operatorToPubkeyHash[msg.sender] == bytes32(0),
-            "BLSPublicKeyCompendium.registerBLSPublicKey: operator already registered pubkey"
-        );
-        require(
-            pubkeyHashToOperator[pubkeyHash] == address(0),
-            "BLSPublicKeyCompendium.registerBLSPublicKey: public key already registered"
-        );
-
-        // store updates
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
 
