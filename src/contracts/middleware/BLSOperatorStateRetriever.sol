@@ -108,7 +108,7 @@ contract BLSOperatorStateRetriever {
         checkSignaturesIndices.nonSignerStakeIndices = new uint32[][](quorumNumbers.length);
         for (uint8 quorumNumberIndex = 0; quorumNumberIndex < quorumNumbers.length; quorumNumberIndex++) {
             uint256 numNonSignersForQuorum = 0;
-            // this array's length will be at most the number of nonSignerOperatorIds
+            // this array's length will be at most the number of nonSignerOperatorIds, this will be trimmed after it is filled
             checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex] = new uint32[](nonSignerOperatorIds.length);
 
             for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
@@ -121,7 +121,7 @@ contract BLSOperatorStateRetriever {
                     );
                 
                 // if the operator was a part of the quorum and the quorum is a part of the provided quorumNumbers
-                if (nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex]) & 1 == 1) {
+                if ((nonSignerQuorumBitmap >> uint8(quorumNumbers[quorumNumberIndex])) & 1 == 1) {
                     // get the index of the stake update for the operator at the given blocknumber and quorum number
                     checkSignaturesIndices.nonSignerStakeIndices[quorumNumberIndex][numNonSignersForQuorum] = stakeRegistry.getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(
                         nonSignerOperatorIds[i],

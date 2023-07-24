@@ -15,6 +15,9 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         blsSignatureChecker = new BLSSignatureChecker(registryCoordinator);
     }
 
+    // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
+    // correctly on the BLSSignatureChecker contract when all operators are only regsitered for a single quorum and
+    // the signature is only checked for stakes on that quorum
     function testBLSSignatureChecker_SingleQuorum_Valid(uint256 pseudoRandomNumber) public { 
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
@@ -39,6 +42,9 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // 2 nonSigners: 197410
     }
 
+    // this test checks that a valid signature from maxOperatorsToRegister with a random number of nonsigners is checked
+    // correctly on the BLSSignatureChecker contract when all operators are registered for the first 100 quorums
+    // and the signature is only checked for stakes on those quorums
     function testBLSSignatureChecker_100Quorums_Valid(uint256 pseudoRandomNumber) public { 
         uint256 numNonSigners = pseudoRandomNumber % (maxOperatorsToRegister - 1);
 
