@@ -28,7 +28,10 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
             _registerSignatoriesAndGetNonSignerStakeAndSignatureRandom(pseudoRandomNumber, numNonSigners, quorumBitmap);
 
         uint256 gasBefore = gasleft();
-        blsSignatureChecker.checkSignatures(
+        (
+            BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
+            bytes32 signatoryRecordHash
+        ) = blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,
             referenceBlockNumber, 
