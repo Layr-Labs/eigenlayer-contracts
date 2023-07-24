@@ -238,7 +238,7 @@ contract IndexRegistry is IIndexRegistry {
     }
     
 
-    /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or max uint32 if the operator is not active in the quorum
+    /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or `OPERATOR_DEREGISTERED_INDEX` if the operator was not registered for the `quorumNumber` at blockNumber
     function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
         uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
         // loop backward through index history to find the index of the operator at the given block number
@@ -252,7 +252,7 @@ contract IndexRegistry is IIndexRegistry {
         }
 
         // the operator is still active or not in the quorum, so we return the latest index or the default max uint32
-        // this will be hit if `blockNumber` is before when the operator registered or has not registered for the given quorum
+        // this will be hit if `blockNumber` is before when the operator registered or the operator has never registered for the given quorum
         return OPERATOR_DEREGISTERED_INDEX;
     }
 }

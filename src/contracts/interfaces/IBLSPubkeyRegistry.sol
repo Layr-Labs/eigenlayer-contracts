@@ -11,13 +11,13 @@ import "../libraries/BN254.sol";
 interface IBLSPubkeyRegistry is IRegistry {
     // EVENTS
     // Emitted when a new operator pubkey is registered for a set of quorums
-    event PubkeyAddedToQuorums(
+    event OperatorAddedToQuorums(
         address operator,
         bytes quorumNumbers
     );
 
     // Emitted when an operator pubkey is removed from a set of quorums
-    event PubkeyRemovedFromQuorums(
+    event OperatorRemovedToQuorums(
         address operator, 
         bytes quorumNumbers
     );
