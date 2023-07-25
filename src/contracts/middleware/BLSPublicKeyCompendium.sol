@@ -11,8 +11,6 @@ import "../libraries/BN254.sol";
  */
 contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     using BN254 for BN254.G1Point;
-    //Hash of the zero public key: BN254.hashG1Point(G1Point(0,0))
-    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
 
     /// @notice mapping from operator address to pubkey hash
     mapping(address => bytes32) public operatorToPubkeyHash;
