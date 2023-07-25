@@ -17,7 +17,7 @@ interface IBLSPubkeyRegistry is IRegistry {
     );
 
     // Emitted when an operator pubkey is removed from a set of quorums
-    event OperatorRemovedToQuorums(
+    event OperatorRemovedFromQuorums(
         address operator, 
         bytes quorumNumbers
     );
