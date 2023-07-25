@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
+import "../../contracts/interfaces/IDelegationManager.sol";
 import "../../contracts/interfaces/ISlasher.sol";
 
 import "forge-std/Test.sol";
@@ -39,6 +40,10 @@ contract ServiceManagerMock is IServiceManager, DSTest {
     /// @notice Token used for placing guarantee on challenges & payment commits
     function paymentChallengeToken() external pure returns (IERC20) {
         return IERC20(address(0));
+    }
+
+    function avsStateViewer() external pure returns (IAVSStateViewer) {
+        return IAVSStateViewer(address(0));
     }
 
     /// @notice The Delegation contract of EigenLayer.

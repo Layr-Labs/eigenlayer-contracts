@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IDelegationManager.sol";
+import "./IAVSStateViewer.sol";
 
 /**
  * @title Interface for a `ServiceManager`-type contract.
@@ -10,6 +10,13 @@ import "./IDelegationManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IServiceManager {
+    // EVENTS
+    event AVSStateViewerUpdated(address prevAVSStateViewer, address newAVSStateViewer);
+
+    // FUNCTIONS
+    /// @notice Returns the AVSStateViewer contract address for this AVS
+    function avsStateViewer() external view returns (IAVSStateViewer);
+
     /// @notice Returns the current 'taskNumber' for the middleware
     function taskNumber() external view returns (uint32);
 
