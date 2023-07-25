@@ -49,9 +49,9 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
         
         // e(sigma + P * gamma, [-1]_2) = e(H(m) + [1]_1 * gamma, P') 
         require(BN254.pairing(
-            signedMessageHash.plus(BN254.scalar_mul(pubkeyG1, gamma)),
+            signedMessageHash.plus(pubkeyG1.scalar_mul(gamma)),
             BN254.negGeneratorG2(),
-            messageHash.plus(BN254.scalar_mul(BN254.generatorG1(), gamma)),
+            messageHash.plus(BN254.generatorG1().scalar_mul(gamma)),
             pubkeyG2
         ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
 
