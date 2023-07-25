@@ -118,11 +118,10 @@ library BeaconChainProofs {
     }
 
     struct BalanceUpdateProofs {
-        bytes validatorFieldsProof;
         bytes validatorBalanceProof;
         bytes slotProof;
-        bytes32 slotRoot;
         bytes32 balanceRoot;
+        bytes32 slotRoot;
     }
 
     struct ValidatorFieldsProof {

@@ -1130,7 +1130,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes32 balanceRoot = getBalanceRoot();
         BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = BeaconChainProofs.ValidatorFieldsAndBalanceProofs(
-            abi.encodePacked(getWithdrawalCredentialProof()),
             abi.encodePacked(getValidatorBalanceProof()),
             balanceRoot
         );
