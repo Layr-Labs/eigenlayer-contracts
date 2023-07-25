@@ -36,8 +36,8 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
         vm.prank(alice);
         compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
 
-        assert(compendium.operatorToPubkeyHash(alice) == BN254.hashG1Point(pubKeyG1));
-        assert(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)) == alice);
+        assertEq(compendium.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
+        assertEq(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
     }
 
     function testRegisterBLSPublicKey_NoMatch_Reverts() public {
