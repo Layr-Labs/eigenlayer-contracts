@@ -200,7 +200,7 @@ contract BLSSignatureChecker {
         BN254.G1Point memory apk,
         BN254.G2Point memory apkG2,
         BN254.G1Point memory sigma
-    ) internal view returns(bool pairingSuccessful, bool siganatureIsValid) {
+    ) public view returns(bool pairingSuccessful, bool siganatureIsValid) {
         // gamma = keccak256(abi.encodePacked(msgHash, apk, apkG2, sigma))
         uint256 gamma = uint256(keccak256(abi.encodePacked(msgHash, apk.X, apk.Y, apkG2.X[0], apkG2.X[1], apkG2.Y[0], apkG2.Y[1], sigma.X, sigma.Y))) % BN254.FR_MODULUS;
         // verify the signature
