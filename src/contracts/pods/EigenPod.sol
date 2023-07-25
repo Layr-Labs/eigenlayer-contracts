@@ -86,8 +86,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
 
-    /// @notice This is a mapping of validatorPubkeyHash to withdrawalIndex to whether or not they have proven a withdrawal for that index
-    mapping(bytes32 => mapping(uint64 => bool)) public provenPartialWithdrawal;
+    /// @notice This is a mapping of validatorPubkeyHash to slot to whether or not they have proven a withdrawal for that index
+    mapping(bytes32 => mapping(uint64 => bool)) public provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
@@ -329,6 +329,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
+        require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
+            "EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
         {
             // fetch the beacon state root for the specified block
@@ -352,7 +354,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status);
+                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
             } else {
                 _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
             }
@@ -442,7 +444,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash,
         uint256 beaconChainETHStrategyIndex,
         address recipient,
-        VALIDATOR_STATUS status
+        VALIDATOR_STATUS status,
+        uint64 withdrawalHappenedSlot
     ) internal {
         uint256 amountToSend;
         uint256 withdrawalAmountWei;
@@ -484,6 +487,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = 0;
 
+        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
+
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei);
 
         // send ETH to the `recipient`, if applicable
@@ -493,9 +498,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _processPartialWithdrawal(uint64 withdrawalHappenedSlot, uint64 partialWithdrawalAmountGwei, uint40 validatorIndex, bytes32 validatorPubkeyHash, address recipient) internal {
-        require(!provenPartialWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot], "EigenPod._processPartialWithdrawal: partial withdrawal has already been proven for this slot");
 
-        provenPartialWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
+        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
         emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei);
 
         // send the ETH to the `recipient`

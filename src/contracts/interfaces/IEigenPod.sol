@@ -92,7 +92,7 @@ interface IEigenPod {
 
 
     ///@notice mapping that tracks proven partial withdrawals
-    function provenPartialWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
+    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
 
     /// @notice this is a mapping of validator indices to a Validator struct containing pertinent info about the validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS);

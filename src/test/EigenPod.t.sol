@@ -394,7 +394,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit PartialWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
-        require(newPod.provenPartialWithdrawal(validatorPubkeyHash, slot), "provenPartialWithdrawal should be true");
+        require(newPod.provenWithdrawal(validatorPubkeyHash, slot), "provenPartialWithdrawal should be true");
         withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
             "pod delayed withdrawal balance hasn't been updated correctly");
@@ -407,7 +407,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice verifies that multiple partial withdrawals can be made before a full withdrawal
-    function testProvingMultipleWithdrawalsForSameSlot(/*uint256 numPartialWithdrawals*/) public {
+    function testProvingMultiplePartialWithdrawalsForSameSlot(/*uint256 numPartialWithdrawals*/) public {
         IEigenPod newPod = testPartialWithdrawalFlow();
 
         BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
@@ -415,7 +415,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
 
-        cheats.expectRevert(bytes("EigenPod._processPartialWithdrawal: partial withdrawal has already been proven for this slot"));
+        cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot"));
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
     }
 
@@ -433,10 +433,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.REQUIRED_BALANCE_GWEI()) * uint64(GWEI_TO_WEI);
         cheats.deal(address(newPod), leftOverBalanceWEI);
 
+        cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot"));
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
-        require(getBeaconChainETHShares(podOwner) - beaconChainSharesBefore == beaconChainSharesBefore, "beacon chain shares not incremented correctly");
-        require(newPod.withdrawableRestakedExecutionLayerGwei() - withdrawableRestakedGwei == withdrawableRestakedGwei, "withdrawableRestakedExecutionLayerGwei not incremented correctly");
-
+        
         return newPod;
     }
 

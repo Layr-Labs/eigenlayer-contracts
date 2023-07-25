@@ -725,9 +725,6 @@ contract StrategyManager is
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[depositor][strategy];
-
-        emit log_named_uint("userShares", userShares);
-        emit log_named_uint("shareAmount", shareAmount);
         
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
@@ -901,12 +898,12 @@ contract StrategyManager is
                 uint256[] memory shareAmounts = new uint256[](1);
                 shareAmounts[0] = uint256(-sharesDelta);
 
-                //if new balance is less than current recorded shares, remove the difference
+                //if change in shares is negative, remove the shares
                 _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);
                 delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
         }   else {
                 uint256 shareAmount = uint256(sharesDelta);
-                //if new balance is greater than current recorded shares, add the difference
+                //if change in shares is positive, add the shares
                 _addShares(podOwner, beaconChainETHStrategy, shareAmount);
                 delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
             }      
