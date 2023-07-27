@@ -75,9 +75,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /**
      * @notice The latest block number at which the pod owner withdrew the balance of the pod.
      * @dev This variable is only updated when the `withdraw` function is called, which can only occur before `hasRestaked` is set to true for this pod.
-     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to blocks after the stored `mostRecentWithdrawalBlockNumber`.
+     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to blocks after the stored `mostRecentWithdrawalTimeStamp`.
      */
-    uint64 public mostRecentWithdrawalBlockNumber;
+    uint64 public mostRecentWithdrawalTimeStamp;
 
     // STORAGE VARIABLES
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer), 
@@ -131,10 +131,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    /// @notice Checks that `blockNumber` is strictly greater than the value stored in `mostRecentWithdrawalBlockNumber`
-    modifier proofIsForValidBlockNumber(uint64 blockNumber) {
-        require(blockNumber > mostRecentWithdrawalBlockNumber,
-            "EigenPod.proofIsForValidBlockNumber: beacon chain proof must be for block number after mostRecentWithdrawalBlockNumber");
+    /// @notice Checks that `blockNumber` is strictly greater than the value stored in `mostRecentWithdrawalTimeStamp`
+    modifier proofIsForValidTimestamp(uint64 timestamp) {
+        require(timestamp > mostRecentWithdrawalTimeStamp,
+            "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for block number after mostRecentWithdrawalTimeStamp");
         _;
     }
 
@@ -199,8 +199,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // ) external 
     //     onlyEigenPodOwner
     //     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-    //     // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
-    //     proofIsForValidBlockNumber(oracleBlockNumber)
+    //     // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalTimeStamp`
+    //     proofIsForValidTimestampmber(oracleBlockNumber)
     // {
     //     require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
     //     for (uint256 i = 0; i < validatorIndices.length; i++) {
@@ -241,8 +241,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         {
             require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
             //checking that the balance update being made is chronologically ahead of the previous balance update
-            emit log_named_uint("slotRoot", Endian.fromLittleEndianUint64(proofs.slotRoot));
-
             require(validatorInfo.mostRecentBalanceUpdateSlot < Endian.fromLittleEndianUint64(proofs.slotRoot),
                 "EigenPod.verifyBalanceUpdate: Validator's balance has already been updated for this slot");
         }
@@ -312,7 +310,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL)
         onlyNotFrozen
         /** 
-         * Check that the provided block number being proven against is after the `mostRecentWithdrawalBlockNumber`.
+         * Check that the provided block number being proven against is after the `mostRecentWithdrawalTimeStamp`.
          * Without this check, there is an edge case where a user proves a past withdrawal for a validator whose funds they already withdrew,
          * as a way to "withdraw the same funds twice" without providing adequate proof.
          * Note that this check is not made using the oracleBlockNumber as in the `verifyWithdrawalCredentials` proof; instead this proof
@@ -320,7 +318,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * This difference in modifier usage is OK, since it is still not possible to `verifyAndProcessWithdrawal` against a slot that occurred
          * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
          */
-        proofIsForValidBlockNumber(Endian.fromLittleEndianUint64(withdrawalProofs.blockNumberRoot))
+        proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.blockNumberRoot))
     {
         /**
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
@@ -348,7 +346,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         {
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
 
-            //check if the withdrawal occured after mostRecentWithdrawalBlockNumber
+            //check if the withdrawal occured after mostRecentWithdrawalTimeStamp
             uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
 
             /**
@@ -376,15 +374,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function verifyWithdrawalCredentials(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40 validatorIndex,
         bytes calldata proof,
         bytes32[] calldata validatorFields
     )
         external
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-        // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
-        proofIsForValidBlockNumber(oracleBlockNumber)
+        // check that the provided `oracleTimestamp` is after the `mostRecentWithdrawalTimeStamp`
+        proofIsForValidTimestamp(oracleTimestamp)
         onlyEigenPodOwner
     {
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
@@ -412,7 +410,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator");
 
         // verify ETH validator proof
-        bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleBlockNumber);
+        bytes32 beaconStateRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
 
         BeaconChainProofs.verifyValidatorFields(
             validatorIndex,
@@ -423,11 +421,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // set the status to active
        validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
-
-        // Sets "hasRestaked" to true if it hasn't been set yet. 
-        if (!hasRestaked) {
-            hasRestaked = true;
-        }
 
         emit ValidatorRestaked(validatorIndex);
 
@@ -528,10 +521,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
 
-
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
-        mostRecentWithdrawalBlockNumber = uint32(block.number);
+    /// @notice Called by the pod owner to activate restaking by withdrawing all existing ETH from the pod
+    function activateRestaking() external onlyEigenPodOwner hasNeverRestaked {
+        mostRecentWithdrawalTimeStamp = uint32(block.timestamp);
+        hasRestaked = true;
         _sendETH(podOwner, address(this).balance);
     }
 
