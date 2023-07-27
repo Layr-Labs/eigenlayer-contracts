@@ -27,6 +27,11 @@ contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium, DSTest {
     function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
     }
 
+    /**
+     * @notice mapping from pubkey hash to BN254 pubkeys.
+     **/
+    function getBN254PubkeysFromOperatorID(bytes32 operatorID) external view returns (BN254Pubkeys memory) {
+    }
 
     function registerPublicKey(BN254.G1Point memory pk) external {
 

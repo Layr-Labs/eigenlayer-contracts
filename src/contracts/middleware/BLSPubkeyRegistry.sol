@@ -6,6 +6,8 @@ import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../interfaces/IBLSPublicKeyCompendium.sol";
 
+
+
 import "../libraries/BN254.sol";
 
 import "forge-std/Test.sol";

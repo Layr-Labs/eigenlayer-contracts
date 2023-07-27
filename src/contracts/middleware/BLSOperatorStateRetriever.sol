@@ -2,11 +2,12 @@
 pragma solidity =0.8.12;
 
 import "./BLSRegistryCoordinatorWithIndices.sol";
-
+import "../libraries/BN254.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "./BLSPubkeyRegistry.sol";
 
 /**
  * @title BLSOperatorStateRetriever with view functions that allow to retrieve the state of an AVSs registry system.
@@ -16,6 +17,7 @@ contract BLSOperatorStateRetriever {
     struct Operator {
         bytes32 operatorId;
         uint96 stake;
+        IBLSPublicKeyCompendium.BN254Pubkeys bn254pubkeys;
     }
 
     struct CheckSignaturesIndices {
@@ -69,7 +71,8 @@ contract BLSOperatorStateRetriever {
                 bytes32 operatorId = bytes32(operatorIds[j]);
                 operators[i][j] = Operator({
                     operatorId: operatorId,
-                    stake: stakeRegistry.getStakeForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)
+                    stake: stakeRegistry.getStakeForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber),
+                    bn254pubkeys: BLSPubkeyRegistry(address(registryCoordinator.blsPubkeyRegistry())).pubkeyCompendium().getBN254PubkeysFromOperatorID(operatorId)
                 });
             }
         }

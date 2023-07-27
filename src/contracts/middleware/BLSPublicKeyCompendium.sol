@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IBLSPublicKeyCompendium.sol";
+
 import "../libraries/BN254.sol";
 
 /**
@@ -17,6 +18,8 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     mapping(address => bytes32) public operatorToPubkeyHash;
     /// @notice mapping from pubkey hash to operator address
     mapping(bytes32 => address) public pubkeyHashToOperator;
+    /// @notice mapping from operatorID to pubkey
+    mapping(bytes32 => BN254Pubkeys) internal _operatorIDToBN254Pubkeys;
 
     // EVENTS
     /// @notice Emitted when `operator` registers with the public key `pk`.
@@ -73,7 +76,14 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
         // store updates
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
+        _operatorIDToBN254Pubkeys[pubkeyHash].pubkeyG1 = pubkeyG1;
+        // _operatorIDToBN254Pubkeys[pubkeyHash].pubkeyG2 = pubkeyG2;
 
         emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
     }
+
+    function getBN254PubkeysFromOperatorID(bytes32 operatorID) external view returns (BN254Pubkeys memory) {
+        return _operatorIDToBN254Pubkeys[operatorID];
+    }
+
 }
