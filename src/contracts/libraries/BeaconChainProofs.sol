@@ -73,6 +73,7 @@ library BeaconChainProofs {
     uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
     uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
+    uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
 
     // in validator
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
@@ -206,7 +207,7 @@ library BeaconChainProofs {
     ) internal view {
         require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
     }
 
     /**

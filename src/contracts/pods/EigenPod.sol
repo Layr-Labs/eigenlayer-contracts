@@ -102,7 +102,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 withdrawalAmountGwei);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint256 withdrawalAmountWei);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
     event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei);
@@ -191,22 +191,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyWithdrawalCredentials(
-        uint64 oracleBlockNumber,
-        uint40[] calldata validatorIndices,
-        bytes[] calldata proofs,
-        bytes32[][] calldata validatorFields
-    ) external 
-        onlyEigenPodOwner
-        onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-        // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
-        proofIsForValidBlockNumber(oracleBlockNumber)
-    {
-        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
-        for (uint256 i = 0; i < validatorIndices.length; i++) {
-            _verifyWithdrawalCredentials(oracleBlockNumber, validatorIndices[i], proofs[i], validatorFields[i]);
-        }
-    }
+    // function verifyWithdrawalCredentials(
+    //     uint64 oracleBlockNumber,
+    //     uint40[] calldata validatorIndices,
+    //     bytes[] calldata proofs,
+    //     bytes32[][] calldata validatorFields
+    // ) external 
+    //     onlyEigenPodOwner
+    //     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
+    //     // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
+    //     proofIsForValidBlockNumber(oracleBlockNumber)
+    // {
+    //     require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
+    //     for (uint256 i = 0; i < validatorIndices.length; i++) {
+    //         _verifyWithdrawalCredentials(oracleBlockNumber, validatorIndices[i], proofs[i], validatorFields[i]);
+    //     }
+    // }
 
 
     /**
@@ -237,9 +237,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
+
         {
             require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
             //checking that the balance update being made is chronologically ahead of the previous balance update
+            emit log_named_uint("slotRoot", Endian.fromLittleEndianUint64(proofs.slotRoot));
+
             require(validatorInfo.mostRecentBalanceUpdateSlot < Endian.fromLittleEndianUint64(proofs.slotRoot),
                 "EigenPod.verifyBalanceUpdate: Validator's balance has already been updated for this slot");
         }
@@ -258,8 +261,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
         //verify provided slot is valid against beaconStateRoot
         BeaconChainProofs.verifySlotRoot(
-            proofs.slotProof,
             beaconStateRoot,
+            proofs.slotProof,
             proofs.slotRoot
         );
 
@@ -372,13 +375,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         withdrawableRestakedExecutionLayerGwei += amountGwei;
     }
 
-    function _verifyWithdrawalCredentials(
+    function verifyWithdrawalCredentials(
         uint64 oracleBlockNumber,
         uint40 validatorIndex,
         bytes calldata proof,
         bytes32[] calldata validatorFields
     )
-        internal
+        external
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
         // check that the provided `oracleBlockNumber` is after the `mostRecentWithdrawalBlockNumber`
         proofIsForValidBlockNumber(oracleBlockNumber)
@@ -472,6 +475,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 withdrawalAmountWei = _calculateRestakedBalanceGwei(withdrawalAmountGwei) * GWEI_TO_WEI;
 
             }
+            // if the amount being withdrawn is not equal to the current accounted for validator balance, an update must be made
             if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
                 int256 sharesDelta = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
                 //update podOwner's shares in the strategy manager
@@ -489,7 +493,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
 
-        emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei);
+        emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
 
         // send ETH to the `recipient`, if applicable
         if (amountToSend != 0) {

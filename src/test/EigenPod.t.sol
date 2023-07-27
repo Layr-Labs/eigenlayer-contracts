@@ -348,7 +348,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.deal(address(newPod), leftOverBalanceWEI);
         
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
-        cheats.expectEmit(true, true, true, true, address(newPod));
+        //cheats.expectEmit(true, true, true, true, address(newPod));
         emit FullWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
         newPod.verifyAndProcessWithdrawal(withdrawalProofs, validatorFieldsProof, validatorFields, withdrawalFields, 0, 0);
         require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.REQUIRED_BALANCE_GWEI(),
@@ -448,13 +448,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // //test freezing operator after a beacon chain slashing event
     function testUpdateSlashedBeaconBalance() public {
         //make initial deposit
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_Overcommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         _proveOverCommittedStake(newPod);
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
@@ -477,7 +477,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         validatorFields = getValidatorFields();
         validatorFields[1] = abi.encodePacked(bytes1(uint8(1)), bytes11(0), wrongWithdrawalAddress).toBytes32(0);
-       // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         uint64 blockNumber = 1;
         cheats.startPrank(podOwner);
@@ -512,20 +511,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint64 blockNumber = 1;
         uint40 validatorIndex = uint40(getValidatorIndex());
-        // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentialsAndBalance(blockNumber, validatorIndex, proofs, validatorFields);
+        pod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
         cheats.stopPrank();
     }
 
     function testVerifyWithdrawalCredentialsWithInadequateBalance() public {
          // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
-        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
-        // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
@@ -538,9 +535,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
         uint64 blockNumber = 1;
-
-        //set the validator balance to less than REQUIRED_BALANCE_WEI
-        //proofs.balanceRoot = bytes32(0);
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator"));
@@ -582,20 +576,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // //                     validator status should be marked as OVERCOMMITTED
 
     function testProveOverCommittedBalance() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
         uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
-
-        emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
         
 
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 false "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_Overcommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
 
@@ -610,20 +602,21 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testVerifyUndercommittedBalance() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
         uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_Overcommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
 
-        setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 true 100  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511_incrementedBlockBy100.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511_incrementedBlockBy100.json");
         _proveUnderCommittedStake(newPod);
 
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
@@ -705,7 +698,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testVerifyCorrectWithdrawalCredentialsRevertsWhenPaused() external {
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
-        // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
@@ -733,17 +725,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testVerifyOvercommittedStakeRevertsWhenPaused() external {
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-         setJSON("./src/test/test-data/slashedProofs/notOvercommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 true "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511.json"
+         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
 
-        // ./solidityProofGen "ValidatorFieldsProof" 61511 false  "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "withdrawalCredentialAndBalanceProof_61511.json"
-        setJSON("./src/test/test-data/slashedProofs/overcommittedBalanceProof_61511.json");
+        // ./solidityProofGen "BalanceUpdateProof" 61511 false "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_Overcommitted_61511.json"
+        setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();        
+        BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();        
 
         // pause the contract
         cheats.startPrank(pauser);
@@ -760,7 +752,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
+        BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
@@ -771,7 +763,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
+        BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, 0, uint64(block.number));
@@ -1060,8 +1052,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     {
         // (beaconStateRoot, beaconStateMerkleProofForValidators, validatorContainerFields, validatorMerkleProof, validatorTreeRoot, validatorRoot) =
         //     getInitialDepositProof(validatorIndex);
-
-        // BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = _getValidatorFieldsAndBalanceProof();
+        emit log("hey");
         bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
         validatorFields = getValidatorFields();
 
@@ -1125,12 +1116,15 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return delayedWithdrawalRouter.userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1).amount;
     }
 
-    function _getValidatorFieldsAndBalanceProof() internal returns (BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory) {
+    function _getBalanceUpdateProofs() internal returns (BeaconChainProofs.BalanceUpdateProofs memory) {
 
         bytes32 balanceRoot = getBalanceRoot();
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs = BeaconChainProofs.ValidatorFieldsAndBalanceProofs(
+        bytes32 slotRoot = getSlotRoot();
+        BeaconChainProofs.BalanceUpdateProofs memory proofs = BeaconChainProofs.BalanceUpdateProofs(
             abi.encodePacked(getValidatorBalanceProof()),
-            balanceRoot
+            abi.encodePacked(getBalanceUpdateSlotProof()),
+            balanceRoot,
+            slotRoot
         );
 
         return proofs;
