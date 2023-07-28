@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/IStakeRegistry.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
@@ -17,9 +15,7 @@ import "../../contracts/libraries/BitmapUtils.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/ServiceManagerMock.sol";
-import "../mocks/OwnableMock.sol";
 import "../mocks/DelegationMock.sol";
-import "../mocks/SlasherMock.sol";
 
 import "../harnesses/StakeRegistryHarness.sol";
 
