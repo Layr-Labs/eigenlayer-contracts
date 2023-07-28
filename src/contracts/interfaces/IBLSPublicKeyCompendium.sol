@@ -15,7 +15,7 @@ interface IBLSPublicKeyCompendium {
         // G1 public key over BN254 curve for the operator
         BN254.G1Point pubkeyG1;
         // G2 public key over BN254 curve for the operator
-        // BN254.G2Point pubkeyG2;
+        BN254.G2Point pubkeyG2;
     }
 
     /**

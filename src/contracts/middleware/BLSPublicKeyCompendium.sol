@@ -77,7 +77,7 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
         operatorToPubkeyHash[msg.sender] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = msg.sender;
         _operatorIDToBN254Pubkeys[pubkeyHash].pubkeyG1 = pubkeyG1;
-        // _operatorIDToBN254Pubkeys[pubkeyHash].pubkeyG2 = pubkeyG2;
+        _operatorIDToBN254Pubkeys[pubkeyHash].pubkeyG2 = pubkeyG2;
 
         emit NewPubkeyRegistration(msg.sender, pubkeyG1, pubkeyG2);
     }
