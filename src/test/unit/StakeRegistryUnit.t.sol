@@ -341,10 +341,12 @@ contract StakeRegistryUnitTests is Test {
 
         // register the operator to be deregistered
         quorumBitmaps[numOperatorsRegisterBefore] = quorumBitmap;
-        address operatorToDeregister = _incrementAddress(defaultOperator, numOperatorsRegisterBefore);
         bytes32 operatorIdToDeregister = _incrementBytes32(defaultOperatorId, numOperatorsRegisterBefore);
-        uint96[] memory paddedStakesForQuorum = _registerOperatorValid(operatorToDeregister, operatorIdToDeregister, quorumBitmap, stakesForQuorum);
-
+        uint96[] memory paddedStakesForQuorum;
+        {
+            address operatorToDeregister = _incrementAddress(defaultOperator, numOperatorsRegisterBefore);
+            paddedStakesForQuorum = _registerOperatorValid(operatorToDeregister, operatorIdToDeregister, quorumBitmap, stakesForQuorum);
+        }
         // register the rest of the operators
         for (uint i = numOperatorsRegisterBefore + 1; i < 2*numOperatorsRegisterBefore; i++) {
             cumulativeBlockNumber += 1;
