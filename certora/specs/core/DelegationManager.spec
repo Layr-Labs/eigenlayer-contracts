@@ -23,7 +23,7 @@ methods {
 	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)

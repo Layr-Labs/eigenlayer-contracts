@@ -27,7 +27,7 @@ methods {
 	withdrawBeaconChainETH(address,uint256) => DISPATCHER(true)
         
     // external calls to PauserRegistry
-    function _.isPauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 	
     //// Harnessed Functions
