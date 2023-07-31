@@ -225,10 +225,11 @@ interface IDelegationManager {
     function stakerNonce(address staker) external view returns (uint256);
 
     /**
-     * @notice Mapping: operator => number of signed delegation nonces (used in `delegateTo` and `delegateToBySignature` if the operator
-     * has specified a nonzero address as their `delegationApprover`)
+     * @notice Mapping: delegationApprover => number of signed delegation messages (used in `delegateTo` and `delegateToBySignature` from the delegationApprover
+     * that this contract has already checked.
+     * @dev Note that these functions only delegationApprover signatures if the operator being delegated to has specified a nonzero address as their `delegationApprover`
      */
-    function delegationApproverNonce(address operator) external view returns (uint256);
+    function delegationApproverNonce(address delegationApprover) external view returns (uint256);
 
     /**
      * @notice External function that calculates the digestHash for a `staker` to sign in order to approve their delegation to an `operator`,
