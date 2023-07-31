@@ -269,7 +269,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, delayedWithdrawalRouter.userWithdrawalsLength(podOwner));
         pod.withdrawBeforeRestaking();
         require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
-        require(pod.mostRecentWithdrawalBlockNumber() == uint64(block.number), "Most recent withdrawal block number not updated");
+        require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
     }
 
     function testWithdrawBeforeRestakingAfterRestaking() public {
@@ -477,11 +477,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         validatorFields = getValidatorFields();
         validatorFields[1] = abi.encodePacked(bytes1(uint8(1)), bytes11(0), wrongWithdrawalAddress).toBytes32(0);
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        uint64 blockNumber = 1;
+        uint64 timestamp = 1;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = validatorFields;
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(validatorIndex0);
+
+
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex0, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -493,13 +501,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
 
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        validatorFields = getValidatorFields();
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        uint64 blockNumber = 1;
+ 
+        uint64 timestamp = 1;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(validatorIndex0);
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex0, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -509,24 +523,25 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
         IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
 
-        uint64 blockNumber = 1;
-        uint40 validatorIndex = uint40(getValidatorIndex());
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        validatorFields = getValidatorFields();
+        uint64 timestamp = 1;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
+        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
     function testVerifyWithdrawalCredentialsWithInadequateBalance() public {
          // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        validatorFields = getValidatorFields();
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        uint40 validatorIndex = uint40(getValidatorIndex());
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
 
 
@@ -534,11 +549,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        uint64 blockNumber = 1;
+        uint64 timestamp = 1;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator"));
-        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -724,10 +748,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testVerifyCorrectWithdrawalCredentialsRevertsWhenPaused() external {
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        validatorFields = getValidatorFields();
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        uint40 validatorIndex = uint40(getValidatorIndex());
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
 
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
@@ -737,16 +758,26 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-        uint64 blockNumber = 1;
+        uint64 timestamp = 1;
 
         // pause the contract
         cheats.startPrank(pauser);
         eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
         cheats.stopPrank();
 
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -1078,14 +1109,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     {
         // (beaconStateRoot, beaconStateMerkleProofForValidators, validatorContainerFields, validatorMerkleProof, validatorTreeRoot, validatorRoot) =
         //     getInitialDepositProof(validatorIndex);
-        emit log("hey");
-        bytes memory proofs = abi.encodePacked(getWithdrawalCredentialProof());
-        validatorFields = getValidatorFields();
-
-        emit log_named_uint("current balance", Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]));
 
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        uint40 validatorIndex = uint40(getValidatorIndex());
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
 
         IEigenPod newPod = eigenPodManager.getPod(_podOwner);
@@ -1096,12 +1121,23 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, _signature, _depositDataRoot);
         cheats.stopPrank();
 
-        uint64 blockNumber = 1;
+        uint64 timestamp = 1;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
 
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
+
+
         cheats.startPrank(_podOwner);
-        newPod.verifyWithdrawalCredentials(blockNumber, validatorIndex, proofs, validatorFields);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         IStrategy beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
         cheats.stopPrank();
 
