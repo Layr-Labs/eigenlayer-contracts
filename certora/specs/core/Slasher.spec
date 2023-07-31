@@ -21,10 +21,10 @@ methods {
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	function _.withdrawBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
+	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	
     // external calls to EigenPod
-	withdrawBeaconChainETH(address,uint256) => DISPATCHER(true)
+	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
         
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
