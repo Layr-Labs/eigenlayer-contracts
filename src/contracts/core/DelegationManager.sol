@@ -162,10 +162,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function undelegate(address staker) external onlyStrategyManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
-        address _delegatedTo = delegatedTo[staker];
+        address operator = delegatedTo[staker];
         // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
-        if (_delegatedTo != address(0)) {
-            emit StakerUndelegated(staker, delegatedTo[staker]);
+        if (operator != address(0)) {
+            emit StakerUndelegated(staker, operator);
             delegatedTo[staker] = address(0);
         }
     }
