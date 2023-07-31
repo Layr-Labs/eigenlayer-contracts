@@ -207,7 +207,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // check that the provided `oracleTimestamp` is after the `mostRecentWithdrawalTimestamp`
         proofIsForValidTimestamp(oracleTimestamp)
         //ensure that caller has restaking enabled by calling "activateRestaking()"
-        //hasRestakingEnabled
+        hasRestakingEnabled
     {
         require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
         for (uint256 i = 0; i < validatorIndices.length; i++) {
@@ -429,10 +429,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
-
-        if(!hasRestaked) {
-           hasRestaked = true;
-        }
 
         //record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;

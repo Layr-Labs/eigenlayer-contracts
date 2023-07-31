@@ -477,7 +477,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         validatorFields = getValidatorFields();
         validatorFields[1] = abi.encodePacked(bytes1(uint8(1)), bytes11(0), wrongWithdrawalAddress).toBytes32(0);
-        uint64 timestamp = 1;
+        uint64 timestamp = 0;
 
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = validatorFields;
@@ -488,6 +488,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
         cheats.startPrank(podOwner);
+        cheats.warp(timestamp);
+        newPod.activateRestaking();
+        cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
@@ -549,7 +552,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        uint64 timestamp = 1;
+        uint64 timestamp = 0;
 
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = getValidatorFields();
@@ -561,6 +564,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorIndices[0] = uint40(getValidatorIndex());
 
         cheats.startPrank(podOwner);
+        cheats.warp(timestamp);
+        newPod.activateRestaking();
+        cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: ETH validator's balance must be greater than or equal to the restaked balance per validator"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
@@ -1121,7 +1127,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, _signature, _depositDataRoot);
         cheats.stopPrank();
 
-        uint64 timestamp = 1;
+        uint64 timestamp = 0;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
 
@@ -1135,8 +1141,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorIndices[0] = uint40(getValidatorIndex());
 
 
-
         cheats.startPrank(_podOwner);
+        cheats.warp(timestamp);
+        newPod.activateRestaking();
+        emit log_named_uint("restaking activated", newPod.mostRecentWithdrawalTimestamp());
+        cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         IStrategy beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
         cheats.stopPrank();
