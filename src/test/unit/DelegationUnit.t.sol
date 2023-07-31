@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 import "forge-std/Test.sol";
 
@@ -68,7 +69,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256 initialPausedStatus = 0;
         delegationManager.initialize(initalOwner, eigenLayerPauserReg, initialPausedStatus);
 
-        strategyImplementation = new StrategyBase(strategyManager);
+        strategyImplementation = new StrategyBase(strategyManagerMock);
 
         strategyMock = StrategyBase(
             address(
@@ -1148,6 +1149,100 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.expectRevert(bytes("Pausable: index is paused"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry);
+        cheats.stopPrank();
+    }
+
+    // special event purely used in the StrategyManagerMock contract, inside of `testForceUndelegation` to verify that the correct call is made
+    event ForceTotalWithdrawalCalled(address staker);
+
+    /**
+     * @notice Verifies that the `forceUndelegation` function properly calls `strategyManager.forceTotalWithdrawal`
+     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
+     */
+    function testForceUndelegation(address staker, bool callFromOperatorOrApprover) public
+        fuzzedAddress(staker)
+    {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        address operator = address(this);
+
+        // filtering since you can't delegate to yourself after registering as an operator
+        cheats.assume(staker != operator);
+
+        // register this contract as an operator and delegate from the staker to it
+        uint256 expiry = type(uint256).max;
+        testDelegateToOperatorWhoRequiresECDSASignature(staker, expiry);
+
+        address caller;
+        if (callFromOperatorOrApprover) {
+            caller = delegationApprover;
+        } else {
+            caller = operator;
+        }
+
+        // call the `forceUndelegation` function and check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
+        cheats.startPrank(caller);
+        cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
+        emit ForceTotalWithdrawalCalled(staker);
+        bytes32 returnValue = delegationManager.forceUndelegation(staker);
+        // check that the return value is empty, as specified in the mock contract
+        require(returnValue == bytes32(uint256(0)), "mock contract returned wrong return value");
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice Verifies that the `forceUndelegation` function has proper access controls (can only be called by the operator who the `staker` has delegated
+     * to or the operator's `delegationApprover`)
+     */
+    function testCannotCallForceUndelegationFromImproperAddress(address staker, address caller) public
+        fuzzedAddress(staker)
+        fuzzedAddress(caller)
+    {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        address operator = address(this);
+
+        // filtering since you can't delegate to yourself after registering as an operator
+        cheats.assume(staker != operator);
+
+        // filter out addresses that are actually allowed to call the function
+        cheats.assume(caller != operator);
+        cheats.assume(caller != delegationApprover);
+
+        // register this contract as an operator and delegate from the staker to it
+        uint256 expiry = type(uint256).max;
+        testDelegateToOperatorWhoRequiresECDSASignature(staker, expiry);
+
+        // try to call the `forceUndelegation` function and check for reversion
+        cheats.startPrank(caller);
+        cheats.expectRevert(bytes("DelegationManager.forceUndelegation: caller must be operator or their delegationApprover"));
+        delegationManager.forceUndelegation(staker);
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice verifies that `DelegationManager.forceUndelegation` reverts if trying to undelegate an operator from themselves
+     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
+     */
+    function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
+        // register *this contract* as an operator
+        address operator = address(this);
+        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+
+        address caller;
+        if (callFromOperatorOrApprover) {
+            caller = delegationApprover;
+        } else {
+            caller = operator;
+        }
+
+        // try to call the `forceUndelegation` function and check for reversion
+        cheats.startPrank(caller);
+        cheats.expectRevert(bytes("DelegationManager.forceUndelegation: operators cannot be force-undelegated"));
+        delegationManager.forceUndelegation(operator);
         cheats.stopPrank();
     }
 

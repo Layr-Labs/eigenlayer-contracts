@@ -163,18 +163,15 @@ interface IDelegationManager {
     function undelegate(address staker) external;
 
     /**
-     * @notice Called by an operator's `delegationApprover` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
-     * @param operator The operator who the @param staker is currently delegated to.
-     * @dev This function will revert if either:
-     * A) The `msg.sender` does not match `operatorDetails(operator).delegationApprover`.
-     * OR
-     * B) The `staker` is not currently delegated to the `operator`.
-     * @dev This function will also revert if the `staker` is the `operator`; operators are considered *permanently* delegated to themselves.
+     * @notice Called by the operator or the operator's `delegationApprover` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
+     * @param staker The staker to be force-undelegated.
+     * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
+     * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
      * @return The root of the newly queued withdrawal.
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
      * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
      */
-    function forceUndelegation(address staker, address operator) external returns (bytes32);
+    function forceUndelegation(address staker) external returns (bytes32);
 
     /**
      * @notice *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.

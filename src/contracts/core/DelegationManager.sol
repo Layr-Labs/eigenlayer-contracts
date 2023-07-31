@@ -171,18 +171,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // TODO: decide if on the right  auth for this. Perhaps could be another address for the operator to specify
     /**
      * @notice Called by the operator or the operator's `delegationApprover` address, in order to forcibly undelegate a staker who is currently delegated to the operator.
-     * @param operator The operator who the @param staker is currently delegated to.
-     * @dev This function will revert if either:
-     * A) The `msg.sender` does not match `operatorDetails(operator).delegationApprover`.
-     * OR
-     * B) The `staker` is not currently delegated to the `operator`.
-     * @dev This function will also revert if the `staker` is the `operator`; operators are considered *permanently* delegated to themselves.
+     * @param staker The staker to be force-undelegated.
+     * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
+     * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
      * @return The root of the newly queued withdrawal.
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
      * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
      */
-    function forceUndelegation(address staker, address operator) external returns (bytes32) {
-        require(delegatedTo[staker] == operator, "DelegationManager.forceUndelegation: staker is not delegated to operator");
+    function forceUndelegation(address staker) external returns (bytes32) {
+        address operator = delegatedTo[staker];
+        require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
         return strategyManager.forceTotalWithdrawal(staker);

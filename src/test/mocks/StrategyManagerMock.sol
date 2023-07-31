@@ -140,5 +140,11 @@ contract StrategyManagerMock is
 
     function undelegate() external pure {}
 
-    function forceTotalWithdrawal(address /*staker*/) external pure returns (bytes32) {} 
+    event ForceTotalWithdrawalCalled(address staker);
+
+    function forceTotalWithdrawal(address staker) external returns (bytes32) {
+        bytes32 emptyReturnValue;
+        emit ForceTotalWithdrawalCalled(staker);
+        return emptyReturnValue;
+    }
 }

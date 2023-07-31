@@ -35,7 +35,7 @@ contract DelegationMock is IDelegationManager, Test {
         delegatedTo[staker] = address(0);
     }
 
-    function forceUndelegation(address /*staker*/, address /*operator*/) external pure returns (bytes32) {}
+    function forceUndelegation(address /*staker*/) external pure returns (bytes32) {}
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
