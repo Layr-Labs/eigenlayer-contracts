@@ -136,15 +136,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) external {
         // check the signature expiry
         require(stakerSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager.delegateToBySignature: staker signature expired");
-        // calculate the struct hash, then increment `staker`'s nonce
+
+        // calculate the digest hash, then increment `staker`'s nonce
         uint256 currentStakerNonce = stakerNonce[staker];
-        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, currentStakerNonce, stakerSignatureAndExpiry.expiry));
+        bytes32 stakerDigestHash = calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, stakerSignatureAndExpiry.expiry);
         unchecked {
             stakerNonce[staker] = currentStakerNonce + 1;
         }
-
-        // calculate the digest hash
-        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
 
         // actually check that the signature is valid
         EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
@@ -274,17 +272,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             // check the signature expiry
             require(approverSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager._delegate: approver signature expired");
 
-            // calculate the struct hash, then increment `delegationApprover`'s nonce
+            // calculate the digest hash, then increment `delegationApprover`'s nonce
             uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
-            bytes32 approverStructHash = keccak256(
-                abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, currentApproverNonce, approverSignatureAndExpiry.expiry)
-            );
+            bytes32 approverDigestHash =
+                calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, currentApproverNonce, approverSignatureAndExpiry.expiry);
             unchecked {
                 delegationApproverNonce[_delegationApprover] = currentApproverNonce + 1;
             }
 
-            // calculate the digest hash
-            bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
 
             // actually check that the signature is valid
             EIP1271SignatureUtils.checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
@@ -356,35 +351,69 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice External getter function that mirrors the staker signature hash calculation in the `delegateToBySignature` function
+     * @notice External function that calculates the digestHash for a `staker` to sign in order to approve their delegation to an `operator`,
+     * using the staker's current nonce and specifying an expiration of `expiry`
      * @param staker The signing staker
-     * @param operator The operator who is being delegated
+     * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateStakerDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
-        // get the staker's current nonce and caluclate the struct hash
+    function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
+        // fetch the staker's current nonce
         uint256 currentStakerNonce = stakerNonce[staker];
-        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, currentStakerNonce, expiry));
         // calculate the digest hash
-        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
-        return stakerDigestHash;
+        return calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, expiry);
     }
 
     /**
-     * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @notice Public function for the staker signature hash calculation in the `delegateToBySignature` function
+     * @param staker The signing staker
+     * @param stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
+     * @param operator The operator who is being delegated to
+     * @param expiry The desired expiry time of the staker's signature
+     */
+    function calculateStakerDelegationDigestHash(address staker, uint256 stakerNonce, address operator, uint256 expiry) public view returns (bytes32) {
+        // calculate the struct hash
+        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, stakerNonce, expiry));
+        // calculate the digest hash
+        bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
+        return stakerDigestHash;
+    }        
+
+    /**
+     * @notice Exneral function that calculates the digestHash for the `operator`'s "delegationApprover" to sign in order to approve the
+     * delegation of `staker` to the `operator`, using the approver's current nonce and specifying an expiration of `expiry`
      * @param staker The staker who is delegating to the operator
-     * @param operator The operator who is being delegated
+     * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the approver's signature
      */
-    function calculateApproverDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
-            // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
+    function calculateCurrentDelegationApprovalDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
+            // fetch the operator's `delegationApprover` address and store it in memory
             address _delegationApprover = _operatorDetails[operator].delegationApprover;
             // get the approver's current nonce and caluclate the struct hash
             uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
-            bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, currentApproverNonce, expiry));
-            // calculate the digest hash
-            bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
-            return approverDigestHash;
+            return calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, currentApproverNonce, expiry);
+    }
+
+    /**
+     * @notice Public function for the the approver signature hash calculation in the `_delegate` function
+     * @param staker The staker who is delegating to the operator
+     * @param operator The operator who is being delegated to
+     * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
+     * @param approverNonce The nonce of the approver. In practice we use the approver's current nonce, stored at `delegationApproverNonce[_delegationApprover]`
+     * @param expiry The desired expiry time of the approver's signature
+     */
+    function calculateDelegationApprovalDigestHash(
+        address staker,
+        address operator,
+        address _delegationApprover,
+        uint256 approverNonce,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the struct hash
+        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverNonce, expiry));
+        // calculate the digest hash
+        bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
+        return approverDigestHash;
     }
 
     // @notice Internal function for calculating the current domain separator of this contract

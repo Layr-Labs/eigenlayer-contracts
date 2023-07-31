@@ -469,7 +469,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         approverSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(staker, operator, expiry);
+            bytes32 digestHash = delegationManager.calculateCurrentDelegationApprovalDigestHash(staker, operator, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             // mess up the signature by flipping v's parity
             v = (v == 27 ? 28 : 27);
@@ -611,7 +611,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
-        // because the contract returns the wrong amount of data, we get a low-level "EvmError: Revert" message here rather than the error message bubbling up
+        // because the ERC1271MaliciousMock contract returns the wrong amount of data, we get a low-level "EvmError: Revert" message here rather than the error message bubbling up
         // cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
         cheats.expectRevert();
         delegationManager.delegateTo(operator, approverSignatureAndExpiry);        
@@ -1160,7 +1160,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     {
         approverSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateApproverDigestHash(staker, operator, expiry);
+            bytes32 digestHash = delegationManager.calculateCurrentDelegationApprovalDigestHash(staker, operator, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
         }
@@ -1177,7 +1177,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address staker = cheats.addr(stakerPrivateKey);
         stakerSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateStakerDigestHash(staker, operator, expiry);
+            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(staker, operator, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
             stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
         }

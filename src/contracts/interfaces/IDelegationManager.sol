@@ -234,20 +234,47 @@ interface IDelegationManager {
     function delegationApproverNonce(address operator) external view returns (uint256);
 
     /**
-     * @notice External getter function that mirrors the staker signature hash calculation in the `delegateToBySignature` function
+     * @notice External function that calculates the digestHash for a `staker` to sign in order to approve their delegation to an `operator`,
+     * using the staker's current nonce and specifying an expiration of `expiry`
      * @param staker The signing staker
-     * @param operator The operator who is being delegated
+     * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateStakerDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32 stakerDigestHash);
+    function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
 
     /**
-     * @notice External getter function that mirrors the approver signature hash calculation in the `_delegate` function
+     * @notice Public function for the staker signature hash calculation in the `delegateToBySignature` function
+     * @param staker The signing staker
+     * @param stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
+     * @param operator The operator who is being delegated to
+     * @param expiry The desired expiry time of the staker's signature
+     */
+    function calculateStakerDelegationDigestHash(address staker, uint256 stakerNonce, address operator, uint256 expiry) external view returns (bytes32);
+
+    /**
+     * @notice Exneral function that calculates the digestHash for the `operator`'s "delegationApprover" to sign in order to approve the
+     * delegation of `staker` to the `operator`, using the approver's current nonce and specifying an expiration of `expiry`
      * @param staker The staker who is delegating to the operator
-     * @param operator The operator who is being delegated
+     * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the approver's signature
      */
-    function calculateApproverDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
+    function calculateCurrentDelegationApprovalDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
+
+    /**
+     * @notice Public function for the the approver signature hash calculation in the `_delegate` function
+     * @param staker The staker who is delegating to the operator
+     * @param operator The operator who is being delegated to
+     * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
+     * @param approverNonce The nonce of the approver. In practice we use the approver's current nonce, stored at `delegationApproverNonce[_delegationApprover]`
+     * @param expiry The desired expiry time of the approver's signature
+     */
+    function calculateDelegationApprovalDigestHash(
+        address staker,
+        address operator,
+        address _delegationApprover,
+        uint256 approverNonce,
+        uint256 expiry
+    ) external view returns (bytes32);
 
     /// @notice The EIP-712 typehash for the contract's domain
     function DOMAIN_TYPEHASH() external view returns (bytes32);
