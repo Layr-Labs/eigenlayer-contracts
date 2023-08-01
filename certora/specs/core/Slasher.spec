@@ -21,17 +21,13 @@ methods {
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	function _.withdrawBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
+	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	
     // external calls to EigenPod
-	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
-    
-    // external calls to IDelegationTerms
-    function _.onDelegationWithdrawn(address,address[],uint256[]) external => CONSTANT;
-    function _.onDelegationReceived(address,address[],uint256[]) external => CONSTANT;
-    
+	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
+        
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 	
     //// Harnessed Functions
