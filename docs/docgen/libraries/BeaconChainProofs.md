@@ -304,7 +304,7 @@ struct WithdrawalProofs {
   bytes32 blockHeaderRoot;
   bytes32 blockBodyRoot;
   bytes32 slotRoot;
-  bytes32 blockNumberRoot;
+  bytes32 timestampRoot;
   bytes32 executionPayloadRoot;
 }
 ```

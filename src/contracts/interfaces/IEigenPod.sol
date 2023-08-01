@@ -44,6 +44,8 @@ interface IEigenPod {
         uint64 restakedBalanceGwei;
         // status of the validator
         VALIDATOR_STATUS status;
+        //slot number of the validator's most recent balance update
+        uint64 mostRecentBalanceUpdateSlot;
     }
 
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
@@ -84,8 +86,8 @@ interface IEigenPod {
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     function hasRestaked() external view returns (bool);
 
-    /// @notice block number of the most recent withdrawal
-    function mostRecentWithdrawalBlockNumber() external view returns (uint64);
+    /// @notice block timestamp of the most recent withdrawal
+    function mostRecentWithdrawalTimestamp() external view returns (uint64);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
@@ -103,17 +105,18 @@ interface IEigenPod {
      * this contract. It also verifies the current (not effective) balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param proofs is the bytes that prove the ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param validatorIndices is the list of indices of the validator being proven, refer to consensus specs 
+     * @param proofs is an array of proofs, where each proof proves the ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyWithdrawalCredentialsAndBalance(
+    function verifyWithdrawalCredentials(
         uint64 oracleBlockNumber,
-        uint40 validatorIndex,
-        bytes memory proofs,
-        bytes32[] calldata validatorFields
+        uint40[] calldata validatorIndices,
+        BeaconChainProofs.WithdrawalCredentialProofs[] calldata proofs,
+        bytes32[][] calldata validatorFields
     ) external;
+
     
     /**
      * @notice This function records an overcommitment of stake to EigenLayer on behalf of a certain ETH validator.
@@ -130,7 +133,7 @@ interface IEigenPod {
      */
     function verifyBalanceUpdate(
         uint40 validatorIndex,
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs calldata proofs,
+        BeaconChainProofs.BalanceUpdateProofs calldata proofs,
         bytes32[] calldata validatorFields,
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
@@ -153,6 +156,9 @@ interface IEigenPod {
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
     ) external;
+
+    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
+    function activateRestaking() external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;

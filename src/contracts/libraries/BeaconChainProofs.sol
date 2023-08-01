@@ -73,6 +73,8 @@ library BeaconChainProofs {
     uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
     uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
+    uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
+    uint256 internal constant LATEST_BLOCK_HEADER_ROOT_INDEX = 4;
 
     // in validator
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
@@ -82,7 +84,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
     
     // in execution payload header
-    uint256 internal constant BLOCK_NUMBER_INDEX = 6;
+    uint256 internal constant TIMESTAMP_INDEX = 9;
     uint256 internal constant WITHDRAWALS_ROOT_INDEX = 14;
 
     //in execution payload
@@ -103,29 +105,36 @@ library BeaconChainProofs {
 
 
     struct WithdrawalProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
         bytes blockHeaderProof;
         bytes withdrawalProof;
         bytes slotProof;
         bytes executionPayloadProof;
-        bytes blockNumberProof;
+        bytes timestampProof;
         uint64 blockHeaderRootIndex;
         uint64 withdrawalIndex;
         bytes32 blockHeaderRoot;
         bytes32 blockBodyRoot;
         bytes32 slotRoot;
-        bytes32 blockNumberRoot;
+        bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
     }
 
-    struct ValidatorFieldsAndBalanceProofs {
-        bytes validatorFieldsProof;
+    struct BalanceUpdateProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
         bytes validatorBalanceProof;
+        bytes slotProof;
         bytes32 balanceRoot;
+        bytes32 slotRoot;
     }
 
-    struct ValidatorFieldsProof {
-        bytes validatorProof;
-        uint40 validatorIndex;
+    //struct ValidatorFieldsProof {
+    struct WithdrawalCredentialProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
+        bytes validatorFieldsProof;
     }
 
     /**
@@ -198,6 +207,26 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, balanceRoot, balanceIndex), "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
     }
 
+    function verifySlotRoot(
+        bytes32 beaconStateRoot,
+        bytes calldata proof,
+        bytes32 slotRoot
+    ) internal view {
+        require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
+        //Next we verify the slot against the blockHeaderRoot
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
+    }
+
+    function verifyStateRootAgainstLatestBlockHeaderRoot(
+        bytes32 beaconStateRoot,
+        bytes32 latestBlockHeaderRoot,
+        bytes calldata proof
+    ) internal view {
+        require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Proof has incorrect length");
+        //Next we verify the slot against the blockHeaderRoot
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, latestBlockHeaderRoot, LATEST_BLOCK_HEADER_ROOT_INDEX), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
+    }
+
     /**
      * @notice This function verifies the slot and the withdrawal fields for a given withdrawal
      * @param beaconStateRoot is the beacon chain state root to be proven against.
@@ -223,8 +252,8 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: executionPayloadProof has incorrect length");
         require(proofs.slotProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: slotProof has incorrect length");
-        require(proofs.blockNumberProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
-            "BeaconChainProofs.verifyWithdrawalProofs: blockNumberProof has incorrect length");
+        require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
 
         /**
@@ -244,8 +273,8 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proofs.executionPayloadProof, proofs.blockHeaderRoot, proofs.executionPayloadRoot, executionPayloadIndex),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid executionPayload merkle proof");
 
-        // Next we verify the blockNumberRoot against the executionPayload root
-        require(Merkle.verifyInclusionSha256(proofs.blockNumberProof, proofs.executionPayloadRoot, proofs.blockNumberRoot, BLOCK_NUMBER_INDEX),
+        // Next we verify the timestampRoot against the executionPayload root
+        require(Merkle.verifyInclusionSha256(proofs.timestampProof, proofs.executionPayloadRoot, proofs.timestampRoot, TIMESTAMP_INDEX),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid blockNumber merkle proof");
 
         /**
