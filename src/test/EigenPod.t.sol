@@ -272,6 +272,57 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
     }
 
+    function testDeployEigenPodWithoutActivateRestaking() public {
+        // ./solidityProofGen "ValidatorFieldsProof" 61336 true "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61336.json"
+        setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61336.json");
+
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.startPrank(podOwner);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+
+        uint64 timestamp = 0;
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        BeaconChainProofs.WithdrawalCredentialProofs[] memory proofsArray = new BeaconChainProofs.WithdrawalCredentialProofs[](1);
+        proofsArray[0] = _getWithdrawalCredentialProof();
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
+
+        cheats.startPrank(podOwner);
+        cheats.warp(timestamp += 1);
+        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is not enabled"));
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        cheats.stopPrank();
+    }
+
+    function testDeployEigenPodTooSoon() public {
+        // ./solidityProofGen "ValidatorFieldsProof" 61336 true "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61336.json"
+        setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61336.json");
+
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.startPrank(podOwner);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+
+        uint64 timestamp = 0;
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        BeaconChainProofs.WithdrawalCredentialProofs[] memory proofsArray = new BeaconChainProofs.WithdrawalCredentialProofs[](1);
+        proofsArray[0] = _getWithdrawalCredentialProof();
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for block number after mostRecentWithdrawalTimestamp"));
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        cheats.stopPrank();
+    }
+
     function testWithdrawBeforeRestakingAfterRestaking() public {
         // ./solidityProofGen "ValidatorFieldsProof" 61336 true "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61336.json"
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61336.json");
