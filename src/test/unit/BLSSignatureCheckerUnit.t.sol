@@ -39,6 +39,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         );
         uint256 gasAfter = gasleft();
         emit log_named_uint("gasUsed", gasBefore - gasAfter);
+        assertTrue(quorumStakeTotals.signedStakeForQuorum[0] > 0);
 
         // 0 nonSigners: 159908
         // 1 nonSigner: 178683
@@ -227,6 +228,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         // set the sigma to a different value
         nonSignerStakesAndSignature.sigma.X++;
 
+        // expect a non-specific low-level revert, since this call will ultimately fail as part of the precompile call
         cheats.expectRevert();
         blsSignatureChecker.checkSignatures(
             msgHash, 
