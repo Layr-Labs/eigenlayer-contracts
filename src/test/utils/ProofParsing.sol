@@ -76,6 +76,10 @@ contract ProofParsing is Test{
     function getExecutionPayloadRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".executionPayloadRoot");
     }
+
+    function getLatestBlockHeaderRoot() public returns(bytes32) {
+        return stdJson.readBytes32(proofConfigJson, ".latestBlockHeaderRoot");
+    }
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {
         for (uint i = 0; i < 7; i++) {
             prefix = string.concat(".ExecutionPayloadProof[", string.concat(vm.toString(i), "]"));
@@ -106,6 +110,15 @@ contract ProofParsing is Test{
             slotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
         return slotProof;
+    }
+
+    function getLatestBlockHeaderProof() public returns(bytes32[] memory) {
+        bytes32[] memory latestBlockHeaderProof = new bytes32[](5);
+        for (uint i = 0; i < 5; i++) {
+            prefix = string.concat(".LatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
+            latestBlockHeaderProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return latestBlockHeaderProof;
     }
 
     function getWithdrawalProof() public returns(bytes32[9] memory) {

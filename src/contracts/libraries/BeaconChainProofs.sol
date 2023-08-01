@@ -74,6 +74,7 @@ library BeaconChainProofs {
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
     uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
     uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
+    uint256 internal constant LATEST_BLOCK_HEADER_ROOT_INDEX = 4;
 
     // in validator
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
@@ -104,6 +105,8 @@ library BeaconChainProofs {
 
 
     struct WithdrawalProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
         bytes blockHeaderProof;
         bytes withdrawalProof;
         bytes slotProof;
@@ -119,15 +122,19 @@ library BeaconChainProofs {
     }
 
     struct BalanceUpdateProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
         bytes validatorBalanceProof;
         bytes slotProof;
         bytes32 balanceRoot;
         bytes32 slotRoot;
     }
 
-    struct ValidatorFieldsProof {
-        bytes validatorProof;
-        uint40 validatorIndex;
+    //struct ValidatorFieldsProof {
+    struct WithdrawalCredentialProofs {
+        bytes32 beaconStateRoot;
+        bytes latestBlockHeaderProof;
+        bytes validatorFieldsProof;
     }
 
     /**
@@ -208,6 +215,16 @@ library BeaconChainProofs {
         require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
         require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
+    }
+
+    function verifyStateRootAgainstLatestBlockHeaderRoot(
+        bytes32 beaconStateRoot,
+        bytes32 latestBlockHeaderRoot,
+        bytes calldata proof
+    ) internal view {
+        require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Proof has incorrect length");
+        //Next we verify the slot against the blockHeaderRoot
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, latestBlockHeaderRoot, LATEST_BLOCK_HEADER_ROOT_INDEX), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
     }
 
     /**
