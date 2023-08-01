@@ -1220,7 +1220,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32 blockHeaderRoot = getBlockHeaderRoot();
             bytes32 blockBodyRoot = getBlockBodyRoot();
             bytes32 slotRoot = getSlotRoot();
-            bytes32 blockNumberRoot = getBlockNumberRoot();
+            bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
 
 
@@ -1234,13 +1234,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 abi.encodePacked(getWithdrawalProof()),
                 abi.encodePacked(getSlotProof()),
                 abi.encodePacked(getExecutionPayloadProof()),
-                abi.encodePacked(getBlockNumberProof()),
+                abi.encodePacked(getTimestampProof()),
                 uint64(blockHeaderRootIndex),
                 uint64(withdrawalIndex),
                 blockHeaderRoot,
                 blockBodyRoot,
                 slotRoot,
-                blockNumberRoot,
+                timestampRoot,
                 executionPayloadRoot
             );
             return proofs;

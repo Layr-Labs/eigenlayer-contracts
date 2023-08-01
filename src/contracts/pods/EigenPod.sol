@@ -325,7 +325,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * This difference in modifier usage is OK, since it is still not possible to `verifyAndProcessWithdrawal` against a slot that occurred
          * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
          */
-        proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.blockNumberRoot))
+        proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.timestampRoot))
     {
         /**
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,

@@ -83,7 +83,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
     
     // in execution payload header
-    uint256 internal constant BLOCK_NUMBER_INDEX = 6;
+    uint256 internal constant TIMESTAMP_INDEX = 9;
     uint256 internal constant WITHDRAWALS_ROOT_INDEX = 14;
 
     //in execution payload
@@ -108,13 +108,13 @@ library BeaconChainProofs {
         bytes withdrawalProof;
         bytes slotProof;
         bytes executionPayloadProof;
-        bytes blockNumberProof;
+        bytes timestampProof;
         uint64 blockHeaderRootIndex;
         uint64 withdrawalIndex;
         bytes32 blockHeaderRoot;
         bytes32 blockBodyRoot;
         bytes32 slotRoot;
-        bytes32 blockNumberRoot;
+        bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
     }
 
@@ -235,8 +235,8 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: executionPayloadProof has incorrect length");
         require(proofs.slotProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: slotProof has incorrect length");
-        require(proofs.blockNumberProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
-            "BeaconChainProofs.verifyWithdrawalProofs: blockNumberProof has incorrect length");
+        require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
 
         /**
@@ -256,8 +256,8 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proofs.executionPayloadProof, proofs.blockHeaderRoot, proofs.executionPayloadRoot, executionPayloadIndex),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid executionPayload merkle proof");
 
-        // Next we verify the blockNumberRoot against the executionPayload root
-        require(Merkle.verifyInclusionSha256(proofs.blockNumberProof, proofs.executionPayloadRoot, proofs.blockNumberRoot, BLOCK_NUMBER_INDEX),
+        // Next we verify the timestampRoot against the executionPayload root
+        require(Merkle.verifyInclusionSha256(proofs.timestampProof, proofs.executionPayloadRoot, proofs.timestampRoot, TIMESTAMP_INDEX),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid blockNumber merkle proof");
 
         /**
