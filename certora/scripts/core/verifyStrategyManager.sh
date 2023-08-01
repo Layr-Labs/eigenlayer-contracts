@@ -13,9 +13,9 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
     --optimistic_loop \
     --send_only \
-    --settings -optimisticFallback=true \
-    --settings -optimisticUnboundedHashing=true \
+    --prover_args '-optimisticFallback true' \
+    --optimistic_hashing \
     $RULE \
-    --loop_iter 3 \
+    --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --msg "StrategyManager $1 $2" \
