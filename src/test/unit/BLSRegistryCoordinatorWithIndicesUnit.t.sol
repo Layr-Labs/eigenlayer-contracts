@@ -6,8 +6,6 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
-    uint8 maxQuorumsToRegisterFor = 4;
-
     event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
@@ -361,7 +359,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber) public {
-        uint32 numOperators = defaultMaxOperatorCount;
+        uint32 numOperators = 5;
         
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
