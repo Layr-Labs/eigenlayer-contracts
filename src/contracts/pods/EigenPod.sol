@@ -19,8 +19,6 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
@@ -35,7 +33,7 @@ import "forge-std/Test.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
     using BytesLib for bytes;
 
     // CONSTANTS + IMMUTABLES
@@ -344,8 +342,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
         {
-            emit log_named_bytes32("withdrawalProofs.beaconStateRoot", withdrawalProofs.beaconStateRoot);
-            emit log_named_bytes32("withdrawalProofs.latestBlockHeaderRoot", eigenPodManager.getBeaconChainStateRoot(oracleTimestamp));
             // verify that the provided state root is verified against the oracle-provided latest block header
             BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(withdrawalProofs.beaconStateRoot, eigenPodManager.getBeaconChainStateRoot(oracleTimestamp), withdrawalProofs.latestBlockHeaderProof);
 
