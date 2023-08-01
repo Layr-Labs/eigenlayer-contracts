@@ -14,9 +14,14 @@ import "./BLSPubkeyRegistry.sol";
  * @author Layr Labs Inc.
  */
 contract BLSOperatorStateRetriever {
+    // Ideally Operator would also contain bn254pubkeys, but we were hitting a stack too deep error in the getOperatorState function below
+    // so decided to split it up into two structs and two getter functions.
     struct Operator {
         bytes32 operatorId;
         uint96 stake;
+    }
+    struct OperatorPubkeys {
+        bytes32 operatorId;
         IBLSPublicKeyCompendium.BN254Pubkeys bn254pubkeys;
     }
 
@@ -71,12 +76,31 @@ contract BLSOperatorStateRetriever {
                 bytes32 operatorId = bytes32(operatorIds[j]);
                 operators[i][j] = Operator({
                     operatorId: operatorId,
-                    stake: stakeRegistry.getStakeForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber),
-                    bn254pubkeys: BLSPubkeyRegistry(address(registryCoordinator.blsPubkeyRegistry())).pubkeyCompendium().getBN254PubkeysFromOperatorID(operatorId)
+                    stake: stakeRegistry.getStakeForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber)
+                    // bn254pubkeys: BLSPubkeyRegistry(address(registryCoordinator.blsPubkeyRegistry())).pubkeyCompendium().getBN254PubkeysFromOperatorID(operatorId)
                 });
             }
         }
             
+        return operators;
+    }
+
+    function getOperatorPubkeys(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public view returns(OperatorPubkeys[][] memory operators) {
+        IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
+
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
+            uint8 quorumNumber = uint8(quorumNumbers[i]);
+            bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorumAtBlockNumber(quorumNumber, blockNumber);
+            operators[i] = new OperatorPubkeys[](operatorIds.length);
+            for (uint256 j = 0; j < operatorIds.length; j++) {
+                bytes32 operatorId = bytes32(operatorIds[j]);
+                operators[i][j] = OperatorPubkeys({
+                    operatorId: operatorId,
+                    bn254pubkeys: BLSPubkeyRegistry(address(registryCoordinator.blsPubkeyRegistry())).pubkeyCompendium().getBN254PubkeysFromOperatorID(operatorId)
+                });
+            }
+        }
+
         return operators;
     }
 
