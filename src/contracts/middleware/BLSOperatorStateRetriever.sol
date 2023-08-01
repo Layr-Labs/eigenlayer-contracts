@@ -85,9 +85,10 @@ contract BLSOperatorStateRetriever {
         return operators;
     }
 
-    function getOperatorPubkeys(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public view returns(OperatorPubkeys[][] memory operators) {
+    function getOperatorPubkeys(IBLSRegistryCoordinatorWithIndices registryCoordinator, bytes memory quorumNumbers, uint32 blockNumber) public view returns(OperatorPubkeys[][] memory) {
         IIndexRegistry indexRegistry = registryCoordinator.indexRegistry();
 
+        OperatorPubkeys[][] memory operators = new OperatorPubkeys[][](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             bytes32[] memory operatorIds = indexRegistry.getOperatorListForQuorumAtBlockNumber(quorumNumber, blockNumber);
