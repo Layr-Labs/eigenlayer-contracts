@@ -299,7 +299,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /**
      * @notice This function records a full withdrawal on behalf of one of the Ethereum validators for this EigenPod
      * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
-     * @param validatorFieldsProof is the information needed to check the veracity of the validator fields being proven
+     * @param validatorFieldsProofs is the information needed to check the veracity of the validator fields being proven
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
@@ -307,66 +307,25 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @param oracleTimestamp is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
      */
     function verifyAndProcessWithdrawal(
-        BeaconChainProofs.WithdrawalProofs calldata withdrawalProofs, 
-        bytes calldata validatorFieldsProof,
-        bytes32[] calldata validatorFields,
-        bytes32[] calldata withdrawalFields,
+        BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
+        bytes[] calldata validatorFieldsProofs,
+        bytes32[][] calldata validatorFields,
+        bytes32[][] calldata withdrawalFields,
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleTimestamp
     )
         external
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL)
         onlyNotFrozen
-        /** 
-         * Check that the provided block number being proven against is after the `mostRecentWithdrawalTimestamp`.
-         * Without this check, there is an edge case where a user proves a past withdrawal for a validator whose funds they already withdrew,
-         * as a way to "withdraw the same funds twice" without providing adequate proof.
-         * Note that this check is not made using the oracleTimestamp as in the `verifyWithdrawalCredentials` proof; instead this proof
-         * proof is made for the block number of the withdrawal, which may be within 8192 slots of the oracleTimestamp. 
-         * This difference in modifier usage is OK, since it is still not possible to `verifyAndProcessWithdrawal` against a slot that occurred
-         * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
-         */
-        proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.timestampRoot))
     {
-        /**
-         * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
-         * and thus we cannot know that the validator is related to this EigenPod at all!
-         */
-        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
-        
-        bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
+        require(
+            (validatorFields.length == validatorFieldsProofs.length) && 
+            (validatorFieldsProofs.length == withdrawalProofs.length) && 
+            (withdrawalProofs.length == withdrawalFields.length), "EigenPod.verifyAndProcessWithdrawal: inputs must be same length"
+        );
 
-        require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
-            "EigenPod.verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
-        require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
-            "EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
-
-        {
-            // verify that the provided state root is verified against the oracle-provided latest block header
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(withdrawalProofs.beaconStateRoot, eigenPodManager.getBeaconChainStateRoot(oracleTimestamp), withdrawalProofs.latestBlockHeaderProof);
-
-            // Verifying the withdrawal as well as the slot
-            BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalProofs, withdrawalFields);
-            // Verifying the validator fields, specifically the withdrawable epoch
-            BeaconChainProofs.verifyValidatorFields(validatorIndex, withdrawalProofs.beaconStateRoot, validatorFieldsProof, validatorFields);
-        }
-
-        {
-            uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-
-            //check if the withdrawal occured after mostRecentWithdrawalTimestamp
-            uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
-
-            /**
-            * if the validator's withdrawable epoch is less than or equal to the slot's epoch, then the validator has fully withdrawn because
-            * a full withdrawal is only processable after the withdrawable epoch has passed.
-            */
-            // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
-            if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
-            } else {
-                _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
-            }
+        for (uint256 i = 0; i < withdrawalFields.length; i++) {
+            _verifyAndProcessWithdrawal(withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i], beaconChainETHStrategyIndex, oracleTimestamp);
         }
     }
 
@@ -440,6 +399,68 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // virtually deposit REQUIRED_BALANCE_WEI for new ETH validator
         eigenPodManager.restakeBeaconChainETH(podOwner, validatorInfo.restakedBalanceGwei * GWEI_TO_WEI);
+    }
+
+    function _verifyAndProcessWithdrawal(
+        BeaconChainProofs.WithdrawalProofs calldata withdrawalProofs, 
+        bytes calldata validatorFieldsProof,
+        bytes32[] calldata validatorFields,
+        bytes32[] calldata withdrawalFields,
+        uint256 beaconChainETHStrategyIndex,
+        uint64 oracleTimestamp
+    )
+        internal
+        /** 
+         * Check that the provided block number being proven against is after the `mostRecentWithdrawalTimestamp`.
+         * Without this check, there is an edge case where a user proves a past withdrawal for a validator whose funds they already withdrew,
+         * as a way to "withdraw the same funds twice" without providing adequate proof.
+         * Note that this check is not made using the oracleTimestamp as in the `verifyWithdrawalCredentials` proof; instead this proof
+         * proof is made for the block number of the withdrawal, which may be within 8192 slots of the oracleTimestamp. 
+         * This difference in modifier usage is OK, since it is still not possible to `verifyAndProcessWithdrawal` against a slot that occurred
+         * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
+         */
+        proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.timestampRoot))
+    {
+        /**
+         * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
+         * and thus we cannot know that the validator is related to this EigenPod at all!
+         */
+        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        
+        bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
+
+        require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
+            "EigenPod.verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
+        require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
+            "EigenPod.verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
+
+        {
+            // verify that the provided state root is verified against the oracle-provided latest block header
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(withdrawalProofs.beaconStateRoot, eigenPodManager.getBeaconChainStateRoot(oracleTimestamp), withdrawalProofs.latestBlockHeaderProof);
+
+            // Verifying the withdrawal as well as the slot
+            BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalProofs, withdrawalFields);
+            // Verifying the validator fields, specifically the withdrawable epoch
+            BeaconChainProofs.verifyValidatorFields(validatorIndex, withdrawalProofs.beaconStateRoot, validatorFieldsProof, validatorFields);
+        }
+
+        {
+            uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+
+            //check if the withdrawal occured after mostRecentWithdrawalTimestamp
+            uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
+
+            /**
+            * if the validator's withdrawable epoch is less than or equal to the slot's epoch, then the validator has fully withdrawn because
+            * a full withdrawal is only processable after the withdrawable epoch has passed.
+            */
+            // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+            if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
+                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
+            } else {
+                _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
+            }
+        }
     }
 
     function _processFullWithdrawal(

@@ -142,19 +142,19 @@ interface IEigenPod {
     /**
      * @notice This function records a full withdrawal on behalf of one of the Ethereum validators for this EigenPod
      * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
-     * @param validatorFieldsProof is the proof of the validator's fields in the validator tree
+     * @param validatorFieldsProofs is the proof of the validator's fields in the validator tree
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      */
     function verifyAndProcessWithdrawal(
-        BeaconChainProofs.WithdrawalProofs calldata withdrawalProofs, 
-        bytes calldata validatorFieldsProof,
-        bytes32[] calldata validatorFields,
-        bytes32[] calldata withdrawalFields,
+        BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
+        bytes[] calldata validatorFieldsProofs,
+        bytes32[][] calldata validatorFields,
+        bytes32[][] calldata withdrawalFields,
         uint256 beaconChainETHStrategyIndex,
-        uint64 oracleBlockNumber
+        uint64 oracleTimestamp
     ) external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
