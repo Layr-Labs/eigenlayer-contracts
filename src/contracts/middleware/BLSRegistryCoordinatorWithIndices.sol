@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "../interfaces/ISocketUpdater.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IVoteWeigher.sol";
@@ -23,7 +24,7 @@ import "forge-std/Test.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, Test {
+contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater {
     using BN254 for BN254.G1Point;
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
@@ -274,6 +275,15 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      */
     function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) external {
         _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
+    }
+
+    /**
+     * @notice Updates the socket of the msg.sender given they are a registered operator
+     * @param socket is the new socket of the operator
+     */
+    function updateSocket(string memory socket) external {
+        require(_operators[msg.sender].status == OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndicies.updateSocket: operator is not registered");
+        emit OperatorSocketUpdate(_operators[msg.sender].operatorId, socket);
     }
 
     // INTERNAL FUNCTIONS
