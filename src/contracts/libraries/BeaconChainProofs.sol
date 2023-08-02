@@ -281,6 +281,7 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proofs.timestampProof, proofs.executionPayloadRoot, proofs.timestampRoot, TIMESTAMP_INDEX),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid blockNumber merkle proof");
 
+
         {
             /**
             * Next we verify the withdrawal fields against the blockHeaderRoot:
