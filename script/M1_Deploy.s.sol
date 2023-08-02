@@ -175,7 +175,6 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI,
             uint64(MAX_VALIDATOR_BALANCE_GWEI),
             uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
         );
@@ -440,8 +439,6 @@ contract Deployer_M1 is Script, Test {
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 REQUIRED_BALANCE_WEI = 31 ether;
-        require(eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
-            "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly");
 
         require(strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly");

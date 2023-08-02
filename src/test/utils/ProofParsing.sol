@@ -184,4 +184,13 @@ contract ProofParsing is Test{
         }
         return withdrawalCredenitalProof;
     }
+
+    function getValidatorFieldsProof() public returns(bytes32[] memory) {
+        bytes32[] memory validatorFieldsProof = new bytes32[](46);
+        for (uint i = 0; i < 46; i++) {
+            prefix = string.concat(".ValidatorFieldsProof[", string.concat(vm.toString(i), "]"));
+            validatorFieldsProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return validatorFieldsProof;
+    }
 }

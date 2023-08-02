@@ -54,11 +54,8 @@ interface IEigenPod {
         FAILED
     }
 
-    /// @notice The amount of eth, in gwei, that is restaked per validator
-    function REQUIRED_BALANCE_GWEI() external view returns(uint64);
-
-    /// @notice The amount of eth, in wei, that is restaked per validator
-    function REQUIRED_BALANCE_WEI() external view returns(uint256);
+    /// @notice The max amount of eth, in gwei, that can be restaked per validator
+    function MAX_VALIDATOR_BALANCE_GWEI() external view returns(uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
     function withdrawableRestakedExecutionLayerGwei() external view returns(uint64);
@@ -148,7 +145,7 @@ interface IEigenPod {
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      */
-    function verifyAndProcessWithdrawal(
+    function verifyAndProcessWithdrawals(
         BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
