@@ -11,8 +11,8 @@ When an operator registers in EigenLayer, the following flow of calls between co
 
 ![Registering as an Operator in EigenLayer](images/EL_operator_registration.png?raw=true "Registering as an Operator in EigenLayer")
 
-1. The would-be operator calls `DelegationManager.registerAsOperator`, providing either a `DelegationTerms`-type contract or an EOA as input. The DelegationManager contract stores the `DelegationTerms`-type contract provided by the operator, which may act as an intermediary to help facilitate the relationship between the operator and any stakers who delegate to them.
-All of the remaining steps (2-4) proceed as outlined in the delegation process below; the DelegationManager contract treats things as if the operator has delegated *to themselves*.
+1. The would-be operator calls `DelegationManager.registerAsOperator`, providing their `OperatorDetails` and an (optional) `metadataURI` string as an input. The DelegationManager contract stores the `OperatorDetails` provided by the operator and emits an event containing the `metadataURI`. The `OperatorDetails` help define the terms of the relationship between the operator and any stakers who delegate to them, and the `metadataURI` can provide additional details about the operator.
+All of the remaining steps (2 and 3) proceed as outlined in the delegation process below; the DelegationManager contract treats things as if the operator has delegated *to themselves*.
 
 ## Staker Delegation
 
@@ -28,4 +28,5 @@ In either case, the end result is the same, and the flow of calls between contra
 1. As outlined above, either the staker themselves calls `DelegationManager.delegateTo`, or the operator (or a third party) calls `DelegationManager.delegateToBySignature`, in which case the DelegationManager contract verifies the provided ECDSA signature
 2. The DelegationManager contract calls `Slasher.isFrozen` to verify that the operator being delegated to is not frozen
 3. The DelegationManager contract calls `StrategyManager.getDeposits` to get the full list of the staker (who is delegating)'s deposits. It then increases the delegated share amounts of operator (who is being delegated to) appropriately
-4. The DelegationManager contract makes a call into the operator's stored `DelegationTerms`-type contract, calling the `onDelegationReceived` function to inform it of the new delegation
+
+TODO: complete explanation of signature-checking. For the moment, you can look at the IDelegationManager interface or the DelegationManager contract itself for more details on this.

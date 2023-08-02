@@ -20,8 +20,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
-    /// @notice EIP-712 Domain separator
-    bytes32 public DOMAIN_SEPARATOR;
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
     // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
     mapping(address => uint256) public nonces;
 

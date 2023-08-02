@@ -4,7 +4,7 @@ methods {
     function _.stakerStrategyShares(address, address) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC20

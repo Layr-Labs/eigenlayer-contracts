@@ -38,12 +38,8 @@ methods {
     // external calls to DelayedWithdrawalRouter (from EigenPod)
     function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
 
-    // external calls to IDelegationTerms
-    function _.onDelegationWithdrawn(address,address[],uint256[]) external => CONSTANT;
-    function _.onDelegationReceived(address,address[],uint256[]) external => CONSTANT;
-    
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC20
