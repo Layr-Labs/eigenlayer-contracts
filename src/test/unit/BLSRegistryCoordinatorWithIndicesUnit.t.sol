@@ -359,7 +359,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testDeregisterOperatorWithCoordinatorForFuzzedQuorumAndManyOperators_Valid(uint256 pseudoRandomNumber) public {
-        uint32 numOperators = 5;
+        uint32 numOperators = defaultMaxOperatorCount;
         
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
@@ -368,7 +368,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint i = 0; i < numOperators; i++) {
             // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
-            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);
@@ -649,5 +649,25 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
+    }
+
+    function testUpdateSocket() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, "localhost:32004");
+        registryCoordinator.updateSocket("localhost:32004");
+
+    }
+
+    function testUpdateSocket_NotRegistered_Reverts() public {
+        cheats.prank(defaultOperator);
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndicies.updateSocket: operator is not registered");
+        registryCoordinator.updateSocket("localhost:32004");
     }
 }

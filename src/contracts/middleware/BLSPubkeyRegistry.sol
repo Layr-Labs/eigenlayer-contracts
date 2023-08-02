@@ -8,10 +8,7 @@ import "../interfaces/IBLSPublicKeyCompendium.sol";
 
 import "../libraries/BN254.sol";
 
-import "forge-std/Test.sol";
-
-
-contract BLSPubkeyRegistry is IBLSPubkeyRegistry, Test {
+contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     using BN254 for BN254.G1Point;
 
     /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
