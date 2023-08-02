@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
+import "../interfaces/ISocketUpdater.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IVoteWeigher.sol";
@@ -23,7 +24,7 @@ import "forge-std/Test.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, Test {
+contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater {
     using BN254 for BN254.G1Point;
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
