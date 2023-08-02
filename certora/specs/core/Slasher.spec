@@ -2,61 +2,60 @@
 methods {
 	//// External Calls
 	// external calls to DelegationManager 
-    undelegate(address) => DISPATCHER(true)
-    isDelegated(address) returns (bool) => DISPATCHER(true)
-    delegatedTo(address) returns (address) => DISPATCHER(true)
-	decreaseDelegatedShares(address,address[],uint256[]) => DISPATCHER(true)
-	increaseDelegatedShares(address,address,uint256) => DISPATCHER(true)
-	_delegationReceivedHook(address,address,address[],uint256[]) => NONDET
-    _delegationWithdrawnHook(address,address,address[],uint256[]) => NONDET
+    function _.undelegate(address) external => DISPATCHER(true);
+    function _.isDelegated(address) external => DISPATCHER(true);
+    function _.delegatedTo(address) external => DISPATCHER(true);
+	function _.decreaseDelegatedShares(address,address[],uint256[]) external => DISPATCHER(true);
+	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
+	function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
+    function _._delegationWithdrawnHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
 
 	// external calls to Slasher
-    isFrozen(address) returns (bool) envfree 
-	canWithdraw(address,uint32,uint256) returns (bool) 
+    function isFrozen(address) external returns (bool) envfree;
+	function canWithdraw(address,uint32,uint256) external returns (bool);
 
 	// external calls to StrategyManager
-    getDeposits(address) returns (address[],uint256[]) => DISPATCHER(true)
-    slasher() returns (address) => DISPATCHER(true)
-	deposit(address,uint256) returns (uint256) => DISPATCHER(true)
-	withdraw(address,address,uint256) => DISPATCHER(true)
+    function _.getDeposits(address) external => DISPATCHER(true);
+    function _.slasher() external => DISPATCHER(true);
+	function _.deposit(address,uint256) external => DISPATCHER(true);
+	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	withdrawBeaconChainETH(address,address,uint256) => DISPATCHER(true)
+	function _.withdrawBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	
     // external calls to EigenPod
-	withdrawBeaconChainETH(address,uint256) => DISPATCHER(true)
+	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
     // external calls to IDelegationTerms
-    onDelegationWithdrawn(address,address[],uint256[]) => CONSTANT
-    onDelegationReceived(address,address[],uint256[]) => CONSTANT
+    function _.onDelegationWithdrawn(address,address[],uint256[]) external => CONSTANT;
+    function _.onDelegationReceived(address,address[],uint256[]) external => CONSTANT;
     
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
-	unpauser() returns (address) => DISPATCHER(true)
+    function _.pauser() external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 	
     //// Harnessed Functions
     // Harnessed calls
     // Harnessed getters
-	get_is_operator(address) returns (bool) envfree
-	get_is_delegated(address) returns (bool) envfree
-	get_list_exists(address) returns (bool) envfree
-	get_next_node_exists(address, uint256) returns (bool) envfree
-	get_next_node(address, uint256) returns (uint256) envfree
-	get_previous_node_exists(address, uint256) returns (bool) envfree
-	get_previous_node(address, uint256) returns (uint256) envfree
-	get_node_exists(address, address) returns (bool) envfree
-	get_list_head(address) returns (uint256) envfree
-	get_lastest_update_block_at_node(address, uint256) returns (uint256) envfree
-	get_lastest_update_block_at_head(address) returns (uint256) envfree
-	get_linked_list_entry(address operator, uint256 node, bool direction) returns (uint256) envfree
+	function get_is_operator(address) external returns (bool) envfree;
+	function get_is_delegated(address) external returns (bool) envfree;
+	function get_list_exists(address) external returns (bool) envfree;
+	function get_next_node_exists(address, uint256) external returns (bool) envfree;
+	function get_next_node(address, uint256) external returns (uint256) envfree;
+	function get_previous_node_exists(address, uint256) external returns (bool) envfree;
+	function get_previous_node(address, uint256) external returns (uint256) envfree;
+	function get_list_head(address) external returns (uint256) envfree;
+	function get_lastest_update_block_at_node(address, uint256) external returns (uint256) envfree;
+	function get_lastest_update_block_at_head(address) external returns (uint256) envfree;
+	function get_linked_list_entry(address operator, uint256 node, bool direction) external returns (uint256) envfree;
 
 	// nodeDoesExist(address operator, uint256 node) returns (bool) envfree
-	nodeIsWellLinked(address operator, uint256 node) returns (bool) envfree
+	//function nodeIsWellLinked(address operator, uint256 node) external returns (bool) envfree;
 	
 	//// Normal Functions
-	owner() returns(address) envfree
-	contractCanSlashOperatorUntil(address, address) returns (uint32) envfree
-	paused(uint8) returns (bool) envfree
+	function owner() external returns(address) envfree;
+	function contractCanSlashOperatorUntilBlock(address, address) external returns (uint32) envfree;
+	function paused(uint8) external returns (bool) envfree;
 }
 
 // uses that _HEAD = 0. Similar to StructuredLinkedList.nodeExists but slightly better defined
@@ -92,29 +91,29 @@ rule cantBeUnfrozen(method f) {
 /*
 verifies that `contractCanSlashOperatorUntil[operator][contractAddress]` only changes when either:
 the `operator` themselves calls `allowToSlash`
-or
+rule or
 the `contractAddress` calls `recordLastStakeUpdateAndRevokeSlashingAbility`
 */
 rule canOnlyChangecontractCanSlashOperatorUntilWithSpecificFunctions(address operator, address contractAddress) {
-	uint256 valueBefore = contractCanSlashOperatorUntil(operator, contractAddress);
+	uint256 valueBefore = contractCanSlashOperatorUntilBlock(operator, contractAddress);
     // perform arbitrary function call
     method f;
     env e;
-    if (f.selector == recordLastStakeUpdateAndRevokeSlashingAbility(address, uint32).selector) {
+    if (f.selector == sig:recordLastStakeUpdateAndRevokeSlashingAbility(address, uint32).selector) {
         address operator2;
 		uint32 serveUntil;
         recordLastStakeUpdateAndRevokeSlashingAbility(e, operator2, serveUntil);
-		uint256 valueAfter = contractCanSlashOperatorUntil(operator, contractAddress);
+		uint256 valueAfter = contractCanSlashOperatorUntilBlock(operator, contractAddress);
         if (e.msg.sender == contractAddress && operator2 == operator/* TODO: proper check */) {
 			/* TODO: proper check */
             assert (true, "failure in recordLastStakeUpdateAndRevokeSlashingAbility");
         } else {
             assert (valueBefore == valueAfter, "bad permissions on recordLastStakeUpdateAndRevokeSlashingAbility?");
         }
-	} else if (f.selector == optIntoSlashing(address).selector) {
+	} else if (f.selector == sig:optIntoSlashing(address).selector) {
 		address arbitraryContract;
 		optIntoSlashing(e, arbitraryContract);
-		uint256 valueAfter = contractCanSlashOperatorUntil(operator, contractAddress);
+		uint256 valueAfter = contractCanSlashOperatorUntilBlock(operator, contractAddress);
 		// uses that the `PAUSED_OPT_INTO_SLASHING` index is 0, as an input to the `paused` function
 		if (e.msg.sender == operator && arbitraryContract == contractAddress && get_is_operator(operator) && !paused(0)) {
 			// uses that `MAX_CAN_SLASH_UNTIL` is equal to max_uint32
@@ -125,7 +124,7 @@ rule canOnlyChangecontractCanSlashOperatorUntilWithSpecificFunctions(address ope
 	} else {
 		calldataarg arg;
 		f(e, arg);
-		uint256 valueAfter = contractCanSlashOperatorUntil(operator, contractAddress);
+		uint256 valueAfter = contractCanSlashOperatorUntilBlock(operator, contractAddress);
         assert(valueBefore == valueAfter, "bondedAfter value changed when it shouldn't have!");
 	}
 }

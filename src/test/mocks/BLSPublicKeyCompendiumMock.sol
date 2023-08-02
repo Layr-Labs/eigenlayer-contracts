@@ -19,14 +19,12 @@ contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium, DSTest {
 
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
-     * @param s is the field element of the operator's Schnorr signature
-     * @param rPoint is the group element of the operator's Schnorr signature
-     * @param pubkeyG1 is the the G1 pubkey of the operator
-     * @param pubkeyG2 is the G2 with the same private key as the pubkeyG1
+     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyG1 is the corresponding G1 public key of the operator 
+     * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
     }
-
 
     function registerPublicKey(BN254.G1Point memory pk) external {
 

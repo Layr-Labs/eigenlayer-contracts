@@ -138,7 +138,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
             
 
@@ -147,10 +147,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             slasher.recordFirstStakeUpdate(staker, serveUntilBlock+1);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 1) == 6, "middleware serveUntil update incorrect");
             //check old entry has not changed
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
 
             //move ahead a block before queuing the withdrawal
@@ -180,7 +180,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 2) == 7, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware_2);
@@ -188,7 +188,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock+3, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 3) == 10, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware);
@@ -199,7 +199,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");
 
         //move timestamp to 6, one middleware is past serveUntilBlock but the second middleware is still using the restaked funds.
@@ -210,7 +210,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.startPrank(staker);
         //when called with the correct middlewareTimesIndex the call reverts
 
-        slasher.getMiddlewareTimesIndexBlock(staker, 3);
+        slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 3);
         
         
         {
