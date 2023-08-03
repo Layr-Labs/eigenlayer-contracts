@@ -288,8 +288,11 @@ contract MockAVSDeployer is Test {
             stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), operator, stake);
         }
 
-        cheats.prank(operator);
+        cheats.startPrank(operator);
+        delegationMock.setIsOperator(operator, true);
+        slasher.optIntoSlashing(address(serviceManagerMock));
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, defaultSocket);
+        cheats.stopPrank();
     }
 
     /**
