@@ -1,5 +1,5 @@
-// // SPDX-License-Identifier: BUSL-1.1
-// pragma solidity =0.8.12;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity =0.8.12;
 
 // import "./EigenLayerTestHelper.t.sol";
 
@@ -83,12 +83,17 @@
 //         cheats.assume(operatorIndex < 15);
 //         BN254.G1Point memory pk = getOperatorPubkeyG1(operatorIndex);
 
-//         //register as both ETH and EIGEN operator
-//         uint256 wethToDeposit = 1e18;
-//         uint256 eigenToDeposit = 1e18;
-//         _testDepositWeth(operator, wethToDeposit);
-//         _testDepositEigen(operator, eigenToDeposit);
-//         _testRegisterAsOperator(operator, IDelegationTerms(operator));
+        //register as both ETH and EIGEN operator
+        // uint256 wethToDeposit = 1e18;
+        // uint256 eigenToDeposit = 1e18;
+        // _testDepositWeth(operator, wethToDeposit);
+        // _testDepositEigen(operator, eigenToDeposit);
+        // IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        //     earningsReceiver: operator,
+        //     delegationApprover: address(0),
+        //     stakerOptOutWindowBlocks: 0
+        // });
+        // _testRegisterAsOperator(operator, operatorDetails);
         
 //         cheats.startPrank(operator);
 //         slasher.optIntoSlashing(address(dlsm));

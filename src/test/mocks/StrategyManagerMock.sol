@@ -136,5 +136,15 @@ contract StrategyManagerMock is
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}    
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
+
+    function undelegate() external pure {}
+
+    event ForceTotalWithdrawalCalled(address staker);
+
+    function forceTotalWithdrawal(address staker) external returns (bytes32) {
+        bytes32 emptyReturnValue;
+        emit ForceTotalWithdrawalCalled(staker);
+        return emptyReturnValue;
+    }
 }

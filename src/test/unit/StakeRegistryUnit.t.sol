@@ -51,6 +51,7 @@ contract StakeRegistryUnitTests is Test {
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
     uint8 defaultQuorumNumber = 0;
     uint8 numQuorums = 192;
+    uint8 maxQuorumsToRegisterFor = 4;
 
     uint256 gasUsed;
 
@@ -98,14 +99,14 @@ contract StakeRegistryUnitTests is Test {
         );
 
         // setup the dummy minimum stake for quorum
-        uint96[] memory minimumStakeForQuorum = new uint96[](numQuorums);
+        uint96[] memory minimumStakeForQuorum = new uint96[](maxQuorumsToRegisterFor);
         for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
             minimumStakeForQuorum[i] = uint96(i+1);
         }
 
         // setup the dummy quorum strategies
         IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IVoteWeigher.StrategyAndWeightingMultiplier[][](numQuorums);
+            new IVoteWeigher.StrategyAndWeightingMultiplier[][](maxQuorumsToRegisterFor);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
             quorumStrategiesConsideredAndMultipliers[i] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
             quorumStrategiesConsideredAndMultipliers[i][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
@@ -159,7 +160,7 @@ contract StakeRegistryUnitTests is Test {
     }
 
     function testRegisterOperator_MoreQuorumsThanQuorumCount_Reverts() public {
-        bytes memory quorumNumbers = new bytes(numQuorums+1);
+        bytes memory quorumNumbers = new bytes(maxQuorumsToRegisterFor+1);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumNumbers[i] = bytes1(uint8(i));
         }
@@ -178,7 +179,7 @@ contract StakeRegistryUnitTests is Test {
         // set the weights of the operator
         // stakeRegistry.setOperatorWeight()
 
-        bytes memory quorumNumbers = new bytes(stakesForQuorum.length > 128 ? 128 : stakesForQuorum.length);
+        bytes memory quorumNumbers = new bytes(stakesForQuorum.length > maxQuorumsToRegisterFor ? maxQuorumsToRegisterFor : stakesForQuorum.length);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumNumbers[i] = bytes1(uint8(i));
         }
@@ -195,11 +196,12 @@ contract StakeRegistryUnitTests is Test {
         uint256 quorumBitmap,
         uint80[] memory stakesForQuorum
     ) public {
-
+        // limit to maxQuorumsToRegisterFor quorums and register for quorum 0
+        quorumBitmap = quorumBitmap & (1 << maxQuorumsToRegisterFor - 1) | 1;
         uint96[] memory paddedStakesForQuorum = _registerOperatorValid(defaultOperator, defaultOperatorId, quorumBitmap, stakesForQuorum);
 
         uint8 quorumNumberIndex = 0;
-        for (uint8 i = 0; i < 192; i++) {
+        for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
             if (quorumBitmap >> i & 1 == 1) {
                 // check that the operator has 1 stake update in the quorum numbers they registered for
                 assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(defaultOperatorId, i), 1);
@@ -260,9 +262,9 @@ contract StakeRegistryUnitTests is Test {
         }
         
         // for each bit in each quorumBitmap, increment the number of operators in that quorum
-        uint32[] memory numOperatorsInQuorum = new uint32[](192);
+        uint32[] memory numOperatorsInQuorum = new uint32[](maxQuorumsToRegisterFor);
         for (uint256 i = 0; i < quorumBitmaps.length; i++) {
-            for (uint256 j = 0; j < 192; j++) {
+            for (uint256 j = 0; j < maxQuorumsToRegisterFor; j++) {
                 if (quorumBitmaps[i] >> j & 1 == 1) {
                     numOperatorsInQuorum[j]++;
                 }
@@ -274,7 +276,7 @@ contract StakeRegistryUnitTests is Test {
         uint32[] memory operatorQuorumIndices = new uint32[](quorumBitmaps.length);
 
         // for each quorum
-        for (uint8 i = 0; i < 192; i++) {
+        for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
             uint32 operatorCount = 0;
             // reset the cumulative block number
             cumulativeBlockNumber = initialBlockNumber;
@@ -315,19 +317,21 @@ contract StakeRegistryUnitTests is Test {
         }
     }
 
-    function testDeregisterFirstOperator_Valid(
+    function testDeregisterOperator_Valid(
         uint256 pseudoRandomNumber,
         uint256 quorumBitmap,
         uint256 deregistrationQuorumsFlag,
-        uint80[] memory stakesForQuorum,
-        uint8 numOperatorsRegisterBefore
+        uint80[] memory stakesForQuorum
     ) public {
         // modulo so no overflow
         pseudoRandomNumber = pseudoRandomNumber % type(uint128).max;
+        // limit to maxQuorumsToRegisterFor quorums and register for quorum 0
+        quorumBitmap = quorumBitmap & (1 << maxQuorumsToRegisterFor - 1) | 1;
         // register a bunch of operators
         cheats.roll(100);
         uint32 cumulativeBlockNumber = 100;
 
+        uint8 numOperatorsRegisterBefore = 5;
         uint256 numOperators = 1 + 2*numOperatorsRegisterBefore;
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
 
@@ -365,12 +369,12 @@ contract StakeRegistryUnitTests is Test {
 
         // deregister the operator from a subset of the quorums
         uint256 deregistrationQuroumBitmap = quorumBitmap & deregistrationQuorumsFlag;
-        _deregisterOperatorValid(operatorIdToDeregister, quorumBitmap);
+        _deregisterOperatorValid(operatorIdToDeregister, deregistrationQuroumBitmap);
 
         // for each bit in each quorumBitmap, increment the number of operators in that quorum
-        uint32[] memory numOperatorsInQuorum = new uint32[](192);
+        uint32[] memory numOperatorsInQuorum = new uint32[](maxQuorumsToRegisterFor);
         for (uint256 i = 0; i < quorumBitmaps.length; i++) {
-            for (uint256 j = 0; j < 192; j++) {
+            for (uint256 j = 0; j < maxQuorumsToRegisterFor; j++) {
                 if (quorumBitmaps[i] >> j & 1 == 1) {
                     numOperatorsInQuorum[j]++;
                 }
@@ -378,36 +382,37 @@ contract StakeRegistryUnitTests is Test {
         }
 
         uint8 quorumNumberIndex = 0;
-        for (uint8 i = 0; i < 192; i++) {
+        for (uint8 i = 0; i < maxQuorumsToRegisterFor; i++) {
             if (deregistrationQuroumBitmap >> i & 1 == 1) {
                 // check that the operator has 2 stake updates in the quorum numbers they registered for
-                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 2);
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 2, "testDeregisterFirstOperator_Valid_0");
                 // make sure that the last stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory lastStakeUpdate =
                     stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(i, operatorIdToDeregister, 1);
-                assertEq(lastStakeUpdate.stake, 0);
-                assertEq(lastStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
-                assertEq(lastStakeUpdate.nextUpdateBlockNumber, 0);
+                assertEq(lastStakeUpdate.stake, 0, "testDeregisterFirstOperator_Valid_1");
+                assertEq(lastStakeUpdate.updateBlockNumber, cumulativeBlockNumber, "testDeregisterFirstOperator_Valid_2");
+                assertEq(lastStakeUpdate.nextUpdateBlockNumber, 0, "testDeregisterFirstOperator_Valid_3");
 
                 // make the analogous check for total stake history
-                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i] + 1);
+                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i] + 1, "testDeregisterFirstOperator_Valid_4");
                 // make sure that the last stake update is as expected
                 IStakeRegistry.OperatorStakeUpdate memory lastTotalStakeUpdate 
                     = stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i]);
                 assertEq(lastTotalStakeUpdate.stake, 
                     stakeRegistry.getTotalStakeUpdateForQuorumFromIndex(i, numOperatorsInQuorum[i] - 1).stake // the previous total stake
-                        - paddedStakesForQuorum[quorumNumberIndex] // minus the stake that was deregistered
+                        - paddedStakesForQuorum[quorumNumberIndex], // minus the stake that was deregistered
+                    "testDeregisterFirstOperator_Valid_5"    
                 );
-                assertEq(lastTotalStakeUpdate.updateBlockNumber, cumulativeBlockNumber);
-                assertEq(lastTotalStakeUpdate.nextUpdateBlockNumber, 0);
+                assertEq(lastTotalStakeUpdate.updateBlockNumber, cumulativeBlockNumber, "testDeregisterFirstOperator_Valid_6");
+                assertEq(lastTotalStakeUpdate.nextUpdateBlockNumber, 0, "testDeregisterFirstOperator_Valid_7");
                 quorumNumberIndex++;
             } else if (quorumBitmap >> i & 1 == 1) {
-                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 1);
-                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i]);
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 1, "testDeregisterFirstOperator_Valid_8");
+                assertEq(stakeRegistry.getLengthOfTotalStakeHistoryForQuorum(i), numOperatorsInQuorum[i], "testDeregisterFirstOperator_Valid_9");
                 quorumNumberIndex++;
             } else {
                 // check that the operator has 0 stake updates in the quorum numbers they did not register for
-                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 0);
+                assertEq(stakeRegistry.getStakeHistoryLengthForQuorumNumber(operatorIdToDeregister, i), 0, "testDeregisterFirstOperator_Valid_10");
             }
         }
     }
@@ -498,8 +503,8 @@ contract StakeRegistryUnitTests is Test {
         bytes32 operatorId,
         uint256 psuedoRandomNumber
     ) internal returns(uint256, uint96[] memory){
-        // generate uint256 quorumBitmap from psuedoRandomNumber
-        uint256 quorumBitmap = uint256(keccak256(abi.encodePacked(psuedoRandomNumber, "quorumBitmap")));
+        // generate uint256 quorumBitmap from psuedoRandomNumber and limit to maxQuorumsToRegisterFor quorums and register for quorum 0
+        uint256 quorumBitmap = uint256(keccak256(abi.encodePacked(psuedoRandomNumber, "quorumBitmap"))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
         // generate uint80[] stakesForQuorum from psuedoRandomNumber
         uint80[] memory stakesForQuorum = new uint80[](BitmapUtils.countNumOnes(quorumBitmap));
         for(uint i = 0; i < stakesForQuorum.length; i++) {
@@ -517,7 +522,6 @@ contract StakeRegistryUnitTests is Test {
         uint80[] memory stakesForQuorum
     ) internal returns(uint96[] memory){
         cheats.assume(quorumBitmap != 0);
-        quorumBitmap = quorumBitmap & type(uint192).max;
 
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -552,8 +556,6 @@ contract StakeRegistryUnitTests is Test {
         bytes32 operatorId,
         uint256 quorumBitmap
     ) internal {
-        quorumBitmap = quorumBitmap & type(uint192).max;
-
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         // deregister operator

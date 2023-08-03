@@ -111,7 +111,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         {   
             assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
-            _testRegisterAsOperator(staker, IDelegationTerms(staker));
+            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                earningsReceiver: staker,
+                delegationApprover: address(0),
+                stakerOptOutWindowBlocks: 0
+            });
+            _testRegisterAsOperator(staker, operatorDetails);
             assertTrue(
                 delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
             );

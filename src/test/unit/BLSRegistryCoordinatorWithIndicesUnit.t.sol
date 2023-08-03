@@ -368,7 +368,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint256[] memory quorumBitmaps = new uint256[](numOperators);
         for (uint i = 0; i < numOperators; i++) {
             // limit to maxQuorumsToRegisterFor quorums via mask so we don't run out of gas, make them all register for quorum 0 as well
-            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
+            quorumBitmaps[i] = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
         }
 
         cheats.roll(registrationBlockNumber);
@@ -651,31 +651,12 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
     }
 
-    function testRegisterOperatorWithCoordinator_PP() public {
-        //create the quorum numbers
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(0);
-
-        //create the g1 point
-        BN254.G1Point memory pubKey;
-        pubKey.X = 6005246670872149419078671036095145476947522049019278055157211161021967739575;
-        pubKey.Y = 18964291258812839254497845242312850792612198462429467760274856936515915651672;
-        // pubKey = pubKey.scalar_mul(12279165382821919694974402004679820771477260886196601546024512883505555857144);
-
-        emit log_named_uint("pubkey.X", pubKey.X);
-        emit log_named_uint("pubkey.Y", pubKey.Y);
-        
-        string memory socket = "localhost:32003";
-
-        pubkeyCompendium.setBLSPublicKey(defaultOperator, pubKey);
-        stakeRegistry.setOperatorWeight(0, defaultOperator, 1 ether);
-
-        cheats.prank(defaultOperator);
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, pubKey, socket);
-    }
-
     function testUpdateSocket() public {
-        testRegisterOperatorWithCoordinator_PP();
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
         cheats.prank(defaultOperator);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
