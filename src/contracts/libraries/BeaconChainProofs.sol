@@ -218,6 +218,13 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
     }
 
+    /**
+     * @notice This function verifies the latestBlockHeader against the state root. the latestBlockHeader is 
+     * a tracked in the beacon state.
+     * @param beaconStateRoot is the beacon chain state root to be proven against.
+     * @param proofs is the provided set of merkle proofs
+     * @param latestBlockHeaderRoot is hashtree root of the latest block header in the beacon state
+     */
     function verifyStateRootAgainstLatestBlockHeaderRoot(
         bytes32 beaconStateRoot,
         bytes32 latestBlockHeaderRoot,

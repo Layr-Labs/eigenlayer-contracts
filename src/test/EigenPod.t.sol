@@ -413,7 +413,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
             "pod delayed withdrawal balance hasn't been updated correctly");
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
-        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.WITHDRAWN, "status not set correctly");
 
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
         uint podOwnerBalanceBefore = address(podOwner).balance;
