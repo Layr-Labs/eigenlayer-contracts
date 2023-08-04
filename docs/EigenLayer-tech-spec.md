@@ -24,7 +24,7 @@ A **staker** is any party who has assets deposited into EigenLayer. In general, 
 ### Watchers
 **NOTE: at present, EigenLayer does not feature any optimistically rolled up claims. This paragraph reflects a potential future state of the system.**
 
-Some operations in EigenLayer are "**optimisitically rolled up**". This is a design pattern used where it is either impossible or infeasible to prove that some claim is true, but *easy to check a counterexample that proves the claim is false*. The general pattern is:
+Some operations in EigenLayer are "**optimistically rolled up**". This is a design pattern used where it is either impossible or infeasible to prove that some claim is true, but *easy to check a counterexample that proves the claim is false*. The general pattern is:
 1. A "rolled-up" claim is made, asserting that some condition is true.
 2. There is a "fraudproof period", during which anyone can *disprove* the claim with a single counterexample. If a claim is disproven, then the original claimant is punished in some way (e.g. by forfeiting some amount or being slashed).
 3. If the claim is *not* disproved during the fraudproof period, then it is assumed to be true, and the system proceeds from this assumption.
@@ -32,7 +32,7 @@ Some operations in EigenLayer are "**optimisitically rolled up**". This is a des
 **Watchers** are parties who passively observe these "rolled up" claims, and step in only in the case of an invalid or false claim. In such a case, an honest watcher will perform the fraudproof, disproving the claim.
 
 ### Services / Middleware
-We refer to software built on top of EigenLayer as either **services** or **middleware**. Since we anticipate a wide variety of services built on top of EigenLayer, the EigenLayer team has endeavored to make a minimal amount of assumptions about the struture of services.
+We refer to software built on top of EigenLayer as either **services** or **middleware**. Since we anticipate a wide variety of services built on top of EigenLayer, the EigenLayer team has endeavored to make a minimal amount of assumptions about the structure of services.
 
 ## Key Assumptions
 ### Discretization of Services ("Tasks")
@@ -85,12 +85,12 @@ OR
 
 2. a **delegator**, choosing to allow an operator to use their restaked assets in securing applications built on EigenLayer
 
-Stakers can choose which path they’d like to take by interacting with the DelegationManager contract. Stakers who wish to delegate select an operator whom they trust to use their restaked assets to serve applications, while operators register to allow others to delegate to them, specifying a `DelegationTerms`-type contract (or EOA) which receives the funds they earn and can potentially help to mediate their relationship with any stakers who delegate to them.
+Stakers can choose which path they’d like to take by interacting with the DelegationManager contract. Stakers who wish to delegate select an operator whom they trust to use their restaked assets to serve applications, while operators register to allow others to delegate to them, specifying their `OperatorDetails` and (optionally) providing a `metadataURI` to help structure and explain their relationship with any stakers who delegate to them.
 
 #### Storage in DelegationManager
 
 The `DelegationManager` contract relies heavily upon the `StrategyManager` contract. It keeps track of all active operators -- specifically by storing the `Delegation Terms` for each operator -- as well as storing what operator each staker is delegated to.
-A **staker** becomes an **operator** by calling `registerAsOperator`. Once registered as an operator, the mapping entry `delegationTerms[operator]` is set **irrevocably** -- in fact we define someone as an operator if `delegationTerms[operator]` returns a nonzero address. Querying `delegationTerms(operator)` returns a `DelegationTerms`-type contract; however, the returned address may be an EOA, in which case the operator is assumed to handle payments through more "trusted" means, such as by doing off-chain computations and separate distributions.
+A **staker** becomes an **operator** by calling `registerAsOperator`. By design, registered as an operator, an address can never "deregister" as an operator in EigenLayer.
 The mapping `delegatedTo` stores which operator each staker is delegated to. Querying `delegatedTo(staker)` will return the *address* of the operator that `staker` is delegated to. Note that operators are *always considered to be delegated to themselves*.
 
 DelegationManager defines when an operator is delegated or not, as well as defining what makes someone an operator:

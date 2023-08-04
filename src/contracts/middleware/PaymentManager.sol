@@ -33,8 +33,6 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
     uint256 public constant paymentFraudproofInterval = 7 days;
     /// @notice Constant used as a divisor in dealing with BIPS amounts
     uint256 internal constant MAX_BIPS = 10000;
-    /// @notice Gas budget provided in calls to DelegationTerms contracts
-    uint256 internal constant LOW_LEVEL_GAS_BUDGET = 1e5;
 
     /**
      * @notice The global EigenLayer Delegation contract, which is primarily used by
@@ -92,9 +90,6 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
 
     /// @notice Emitted upon successful resolution of a payment challenge, within a call to `resolveChallenge`
     event PaymentChallengeResolution(address indexed operator, bool operatorWon);
-
-    /// @dev Emitted when a low-level call to `delegationTerms.payForService` fails, returning `returnData`
-    event OnPayForServiceCallFailure(IDelegationTerms indexed delegationTerms, bytes32 returnData);
 
     /// @notice when applied to a function, ensures that the function is only callable by the `serviceManager`
     modifier onlyServiceManager() {
@@ -249,54 +244,15 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
         // Transfer back the challengeAmount to the operator as there was no successful challenge to the payment commitment made by the operator.
         paymentChallengeToken.safeTransfer(msg.sender, operatorToPayment[msg.sender].challengeAmount);
 
-        // look up payment amount and delegation terms address for the `msg.sender`
+        // look up payment amount and earnings receiver address for the `msg.sender`
         uint256 amount = operatorToPayment[msg.sender].amount;
-        IDelegationTerms dt = delegationManager.delegationTerms(msg.sender);
+        address earningsReceiver = delegationManager.earningsReceiver(msg.sender);
 
-        // transfer the amount due in the payment claim of the operator to its delegation terms contract, where the delegators can withdraw their rewards.
-        paymentToken.safeTransfer(address(dt), amount);
+        // transfer the amount due in the payment claim of the operator to its earnings receiver address, where the delegators can withdraw their rewards.
+        paymentToken.safeTransfer(earningsReceiver, amount);
 
         // emit event
         emit PaymentRedemption(msg.sender, amount);
-
-        // inform the DelegationTerms contract of the payment, which will determine the rewards the operator and its delegators are eligible for
-        _payForServiceHook(dt, amount);
-    }
-
-    // inform the DelegationTerms contract of the payment, which will determine the rewards the operator and its delegators are eligible for
-    function _payForServiceHook(IDelegationTerms dt, uint256 amount) internal {
-        /**
-         * We use low-level call functionality here to ensure that an operator cannot maliciously make this function fail in order to prevent undelegation.
-         * In particular, in-line assembly is also used to prevent the copying of uncapped return data which is also a potential DoS vector.
-         */
-        // format calldata
-        bytes memory lowLevelCalldata = abi.encodeWithSelector(IDelegationTerms.payForService.selector, paymentToken, amount);
-        // Prepare memory for low-level call return data. We accept a max return data length of 32 bytes
-        bool success;
-        bytes32[1] memory returnData;
-        // actually make the call
-        assembly {
-            success := call(
-                // gas provided to this context
-                LOW_LEVEL_GAS_BUDGET,
-                // address to call
-                dt,
-                // value in wei for call
-                0,
-                // memory location to copy for calldata
-                add(lowLevelCalldata, 32),
-                // length of memory to copy for calldata
-                mload(lowLevelCalldata),
-                // memory location to copy return data
-                returnData,
-                // byte size of return data to copy to memory
-                32
-            )
-        }
-        // if the call fails, we emit a special event rather than reverting
-        if (!success) {
-            emit OnPayForServiceCallFailure(dt, returnData[0]);
-        }
     }
 
     /**

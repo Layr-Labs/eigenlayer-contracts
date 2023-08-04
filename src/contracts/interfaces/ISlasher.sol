@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 /**
  * @title Interface for the primary 'slashing' contract for EigenLayer.
@@ -18,6 +18,8 @@ interface ISlasher {
 
     // struct used to store details relevant to a single middleware that an operator has opted-in to serving
     struct MiddlewareDetails {
+        // the block at which the contract begins being able to finalize the operator's registration with the service via calling `recordFirstStakeUpdate`
+        uint32 registrationMayBeginAtBlock;
         // the block before which the contract is allowed to slash the user
         uint32 contractCanSlashOperatorUntilBlock;
         // the block at which the middleware's view of the operator's stake was most recently updated
@@ -126,7 +128,7 @@ interface ISlasher {
     function middlewareTimesLength(address operator) external view returns (uint256);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns(uint32);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.
     function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32);

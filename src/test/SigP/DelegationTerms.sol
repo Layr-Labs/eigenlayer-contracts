@@ -4,7 +4,7 @@ import "../../contracts/strategies/StrategyBase.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 
 
-contract SigPDelegationTerms is IDelegationTerms {
+contract SigPDelegationTerms {
     uint256 public paid;
     bytes public isDelegationWithdrawn;
     bytes public isDelegationReceived;

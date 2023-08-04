@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISlasher.sol";
@@ -223,14 +223,20 @@ interface IStrategyManager {
     function slashQueuedWithdrawal(address recipient, QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256[] calldata indicesToSkip)
         external;
 
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32);
+    /**
+     * @notice Called by a staker to undelegate entirely from EigenLayer. The staker must first withdraw all of their existing deposits
+     * (through use of the `queueWithdrawal` function), or else otherwise have never deposited in EigenLayer prior to delegating.
+     */
+    function undelegate() external;
 
+    /**
+     * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
+     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
+     * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
+     * @param staker The staker to force-undelegate.
+     * @return The root of the newly queued withdrawal.
+     */
+    function forceTotalWithdrawal(address staker) external returns (bytes32);
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
@@ -242,6 +248,14 @@ interface IStrategyManager {
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
     */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
+
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
+    function calculateWithdrawalRoot(
+        QueuedWithdrawal memory queuedWithdrawal
+    )
+        external
+        pure
+        returns (bytes32);
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
