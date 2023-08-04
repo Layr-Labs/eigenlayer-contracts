@@ -222,7 +222,7 @@ library BeaconChainProofs {
      * @notice This function verifies the latestBlockHeader against the state root. the latestBlockHeader is 
      * a tracked in the beacon state.
      * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param proofs is the provided set of merkle proofs
+     * @param proof is the provided merkle proof
      * @param latestBlockHeaderRoot is hashtree root of the latest block header in the beacon state
      */
     function verifyStateRootAgainstLatestBlockHeaderRoot(

@@ -317,7 +317,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
         cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for block number after mostRecentWithdrawalTimestamp"));
+        cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
@@ -388,9 +388,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         withdrawalFields = getWithdrawalFields();
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
 
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_VALIDATOR_BALANCE_GWEI()) * uint64(GWEI_TO_WEI);
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - _getEffectiveRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI())) * uint64(GWEI_TO_WEI);
         uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
         cheats.deal(address(newPod), leftOverBalanceWEI);
+        emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
+        emit log_named_uint("address(newPod)", address(newPod).balance);
         
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
         {
@@ -408,7 +410,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             emit FullWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0, 0);
         }
-        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.MAX_VALIDATOR_BALANCE_GWEI(),
+        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == _getEffectiveRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI()),
             "restakedExecutionLayerGwei has not been incremented correctly");
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
             "pod delayed withdrawal balance hasn't been updated correctly");
@@ -1056,7 +1058,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
     }
 
-    function testQueueBeaconChainETHWithdrawal(bytes memory signature, bytes32 depositDataRoot) external {
+    function testQueueBeaconChainETHWithdrawal123(bytes memory signature, bytes32 depositDataRoot) external {
         IEigenPod pod = testFullWithdrawalFlow();
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
@@ -1070,11 +1072,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = _getEffectiveRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
         bool undelegateIfPossible = false;
-
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
-
         _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
-        
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
         require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmounts[0]/GWEI_TO_WEI, "withdrawableRestakedExecutionLayerGwei not decremented correctly");
@@ -1087,8 +1086,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
 
         uint64 validatorBalanceGwei = info.restakedBalanceGwei;
-
-        require(sharesInSM/GWEI_TO_WEI == _getEffectiveRestakedBalanceGwei(validatorBalanceGwei) + _getEffectiveRestakedBalanceGwei(withdrawableRestakedExecutionLayerGwei), "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
+        emit log_named_uint("shares", sharesInSM/GWEI_TO_WEI);
+        emit log_named_uint("validatorBalanceGwei", validatorBalanceGwei);
+        emit log_named_uint("withdrawableRestakedExecutionLayerGwei", withdrawableRestakedExecutionLayerGwei);
+        require(sharesInSM/GWEI_TO_WEI == validatorBalanceGwei + withdrawableRestakedExecutionLayerGwei, "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
     }
 
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
@@ -1208,7 +1209,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(_podOwner, beaconChainETHStrategy);
         uint256 effectiveBalance = uint256(_getEffectiveRestakedBalanceGwei(uint64(REQUIRED_BALANCE_WEI/GWEI_TO_WEI))) * GWEI_TO_WEI;
-        emit log_named_uint("effective balance", effectiveBalance);
         require(beaconChainETHShares == effectiveBalance, "strategyManager shares not updated correctly");
         return newPod;
     }

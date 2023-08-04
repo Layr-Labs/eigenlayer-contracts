@@ -141,10 +141,8 @@ contract ProofParsing is Test{
         bytes32[] memory withdrawalFields = new bytes32[](4);
         for (uint i = 0; i < 4; i++) {
             prefix = string.concat(".WithdrawalFields[", string.concat(vm.toString(i), "]"));
-            emit log_named_bytes32("prefix", stdJson.readBytes32(proofConfigJson, prefix));
             withdrawalFields[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-         emit log_named_uint("length withdrawal firle", withdrawalFields.length);
          return withdrawalFields;
 
     }

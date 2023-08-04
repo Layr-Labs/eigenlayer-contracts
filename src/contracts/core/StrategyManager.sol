@@ -738,7 +738,16 @@ contract StrategyManager is
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
                 require(shares[i] % GWEI_TO_WEI == 0,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-            }   
+            }
+            /**
+            * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
+            * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
+            * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
+            * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
+            * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
+            * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
+            */         
+            eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);   
 
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
