@@ -70,6 +70,9 @@ contract MockAVSDeployer is Test {
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
+    uint256 churnerPrivateKey = uint256(keccak256("churnerPrivateKey"));
+    address churner = cheats.addr(churnerPrivateKey);
+
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -238,6 +241,7 @@ contract MockAVSDeployer is Test {
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
+                    churner,
                     operatorSetParams
                 )
             );
@@ -360,5 +364,20 @@ contract MockAVSDeployer is Test {
 
     function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
         return bytes32(uint256(start) + inc);
+    }
+
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, uint256 expiry) internal  returns(ISignatureUtils.SignatureWithExpiry memory) {
+        bytes32 digestHash = registryCoordinator.calculateCurrentOperatorChurnApprovalDigestHash(
+            registeringOperatorId,
+            operatorKickParams,
+            expiry
+        );
+        emit log_named_address("churner", churner);
+        emit log_named_bytes32("digestHash", digestHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnerPrivateKey, digestHash);
+        return ISignatureUtils.SignatureWithExpiry({
+            signature: abi.encodePacked(r, s, v),
+            expiry: expiry
+        });
     }
 }

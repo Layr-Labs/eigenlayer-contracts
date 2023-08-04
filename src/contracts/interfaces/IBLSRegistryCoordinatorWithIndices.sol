@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import "./ISignatureUtils.sol";
 import "./IRegistryCoordinator.sol";
 import "./IStakeRegistry.sol";
 import "./IBLSPubkeyRegistry.sol";
@@ -10,7 +11,7 @@ import "./IIndexRegistry.sol";
  * @title Minimal interface for the `IBLSStakeRegistryCoordinator` contract.
  * @author Layr Labs, Inc.
  */
-interface IBLSRegistryCoordinatorWithIndices is IRegistryCoordinator {
+interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordinator {
     // STRUCT
 
     /**

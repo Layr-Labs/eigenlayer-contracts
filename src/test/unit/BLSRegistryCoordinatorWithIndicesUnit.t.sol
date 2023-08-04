@@ -49,7 +49,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        registryCoordinator.initialize(operatorSetParams);
+        registryCoordinator.initialize(churner, operatorSetParams);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
@@ -491,7 +491,6 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
 
-        cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
         emit OperatorAddedToQuorums(operatorToRegister, quorumNumbers);
@@ -508,8 +507,16 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
 
         {
+            ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp + 10);
+            cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();
-            registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
+            registryCoordinator.registerOperatorWithCoordinator(
+                quorumNumbers, 
+                operatorToRegisterPubKey, 
+                defaultSocket, 
+                operatorKickParams, 
+                signatureWithExpiry
+            );
             uint256 gasAfter = gasleft();
             emit log_named_uint("gasUsed", gasBefore - gasAfter);
         }
@@ -587,10 +594,11 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
-        cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp + 10);
+        cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake");
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 
     function testRegisterOperatorWithCoordinatorWithKicks_LessThanKickBIPsOfTotalStake_Reverts(uint256 pseudoRandomNumber) public {
@@ -645,10 +653,11 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         // set the stake of the operator to register to the defaultKickBIPsOfOperatorStake multiple of the operatorToKickStake
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
 
-        cheats.prank(operatorToRegister);
         cheats.roll(registrationBlockNumber);
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp + 10);
+        cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
-        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 
     function testUpdateSocket() public {
