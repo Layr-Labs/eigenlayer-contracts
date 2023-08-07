@@ -37,8 +37,8 @@ interface IEigenPodManager is IPausable {
     function restakeBeaconChainETH(address podOwner, uint256 amount) external;
 
     /**
-     * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
-     * @param podOwner is the pod owner to be slashed
+     * @notice Records an update in beacon chain strategy shares in the strategy manager
+     * @param podOwner is the pod owner whose shares are to be updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
@@ -61,8 +61,10 @@ interface IEigenPodManager is IPausable {
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
 
+    /// @notice decrements the proven amount of withdrawable ETH to reflect decrementation of shares
     function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
 
+    /// @notice increments the proven amount of withdrawable ETH to reflect incrementation of shares when a podOwner completes a withdrawal as shares
     function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.

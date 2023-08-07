@@ -90,20 +90,20 @@ interface IEigenPod {
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
 
 
-    ///@notice mapping that tracks proven partial withdrawals
+    ///@notice mapping that tracks proven withdrawals
     function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
 
-    /// @notice this is a mapping of validator indices to a Validator struct containing pertinent info about the validator
+    /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS);
 
 
     /**
-     * @notice This function verifies that the withdrawal credentials of the podOwner are pointed to
-     * this contract. It also verifies the current (not effective) balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
+     * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
+     * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
-     * @param validatorIndices is the list of indices of the validator being proven, refer to consensus specs 
-     * @param proofs is an array of proofs, where each proof proves the ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
+     * @param proofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -144,6 +144,7 @@ interface IEigenPod {
      * @param validatorFields are the fields of the validator being proven
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
+     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
         BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
@@ -165,6 +166,6 @@ interface IEigenPod {
     function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 
     /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei 
-    /// in the pod, to reflect a completetion of a queued withdrawal
+    /// in the pod, to reflect a completion of a queued withdrawal as shares
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 }

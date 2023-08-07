@@ -59,11 +59,11 @@ interface IStrategyManager {
     function depositBeaconChainETH(address staker, uint256 amount) external;
 
     /**
-     * @notice Records an overcommitment event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
-     * @param podOwner is the pod owner to be slashed
+     * @notice Records an update in beacon chain strategy shares in the strategy manager
+     * @param podOwner is the pod owner whose shares are to be updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @dev Only callable by EigenPodManager.
+     * @dev Callable only by the podOwner's EigenPod contract.
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external;

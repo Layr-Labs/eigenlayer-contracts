@@ -369,7 +369,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         Relayer relay = new Relayer();
 
         bytes32 beaconStateRoot = getBeaconStateRoot();
-        relay.verifyWithdrawalProofs(beaconStateRoot, proofs, withdrawalFields);
+        relay.verifyWithdrawalProofs(beaconStateRoot, withdrawalFields, proofs);
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
@@ -1350,9 +1350,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
  contract Relayer is Test {
     function verifyWithdrawalProofs(
         bytes32 beaconStateRoot,
-        BeaconChainProofs.WithdrawalProofs calldata proofs,
-        bytes32[] calldata withdrawalFields
+        bytes32[] calldata withdrawalFields,
+        BeaconChainProofs.WithdrawalProofs calldata proofs
     ) public view {
-        BeaconChainProofs.verifyWithdrawalProofs(beaconStateRoot, proofs, withdrawalFields);
+        BeaconChainProofs.verifyWithdrawalProofs(beaconStateRoot, withdrawalFields, proofs);
     }
  }

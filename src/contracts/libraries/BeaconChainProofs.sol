@@ -103,7 +103,7 @@ library BeaconChainProofs {
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
 
 
-
+    /// @notice This struct contains the merkle proofs and leaves needed to verify a partial/full withdrawal
     struct WithdrawalProofs {
         bytes32 beaconStateRoot;
         bytes latestBlockHeaderProof;
@@ -121,6 +121,7 @@ library BeaconChainProofs {
         bytes32 executionPayloadRoot;
     }
 
+    /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
     struct BalanceUpdateProofs {
         bytes32 beaconStateRoot;
         bytes latestBlockHeaderProof;
@@ -131,7 +132,7 @@ library BeaconChainProofs {
         bytes32 slotRoot;
     }
 
-    //struct ValidatorFieldsProof {
+    // @notice This struct contains the merkle proofs and leaves needed to verify a validator's withdrawal credential
     struct WithdrawalCredentialProofs {
         bytes32 beaconStateRoot;
         bytes latestBlockHeaderProof;
@@ -162,10 +163,10 @@ library BeaconChainProofs {
      * @param validatorFields the claimed fields of the validator
      */
     function verifyValidatorFields(
-        uint40 validatorIndex,
         bytes32 beaconStateRoot,
-        bytes calldata proof, 
-        bytes32[] calldata validatorFields
+        bytes32[] calldata validatorFields,
+        bytes calldata proof,
+        uint40 validatorIndex
     ) internal view {
         
         require(validatorFields.length == 2**VALIDATOR_FIELD_TREE_HEIGHT, "BeaconChainProofs.verifyValidatorFields: Validator fields has incorrect length");
@@ -191,10 +192,10 @@ library BeaconChainProofs {
      * @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation)
      */
     function verifyValidatorBalance(
-        uint40 validatorIndex,
         bytes32 beaconStateRoot,
+        bytes32 balanceRoot,
         bytes calldata proof,
-        bytes32 balanceRoot
+        uint40 validatorIndex
     ) internal view {
         require(proof.length == 32 * ((BALANCE_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length");
 
@@ -208,6 +209,13 @@ library BeaconChainProofs {
         require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, balanceRoot, balanceIndex), "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
     }
 
+    /**
+     * @notice This function verifies the slot against the state root. the slot is 
+     * a tracked in the beacon state.
+     * @param beaconStateRoot is the beacon chain state root to be proven against.
+     * @param proof is the provided merkle proof
+     * @param slotRoot is hashtree root of the slot in the beacon state
+     */
     function verifySlotRoot(
         bytes32 beaconStateRoot,
         bytes32 slotRoot,
@@ -243,8 +251,8 @@ library BeaconChainProofs {
      */
     function verifyWithdrawalProofs(
         bytes32 beaconStateRoot,
-        WithdrawalProofs calldata proofs,
-        bytes32[] calldata withdrawalFields
+        bytes32[] calldata withdrawalFields,
+        WithdrawalProofs calldata proofs
     ) internal view {
         require(withdrawalFields.length == 2**WITHDRAWAL_FIELD_TREE_HEIGHT, "BeaconChainProofs.verifyWithdrawalProofs: withdrawalFields has incorrect length");
 
