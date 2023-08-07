@@ -49,7 +49,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        registryCoordinator.initialize(churner, operatorSetParams);
+        registryCoordinator.initialize(churnApprover, operatorSetParams);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
@@ -628,7 +628,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(registrationBlockNumber);
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp - 1);
         cheats.prank(operatorToRegister);
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnerSignatureOnOperatorChurnApproval: churner signature expired");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 

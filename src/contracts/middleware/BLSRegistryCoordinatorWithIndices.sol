@@ -46,13 +46,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
 
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
-
     /// @notice the mapping from quorum number to the maximum number of operators that can be registered for that quorum
     mapping(uint8 => OperatorSetParam) internal _quorumOperatorSetParams;
     /// @notice the mapping from operator's operatorId to the updates of the bitmap of quorums they are registered for
@@ -62,9 +55,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
     /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
-    address public churner;
-    /// @notice the nonce of the churner used in EIP-712 signatures
-    uint256 public churnerNonce;
+    address public churnApprover;
+    /// @notice the nonce of the churnApprover used in EIP-712 signatures
+    uint256 public churnApproverNonce;
 
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
@@ -85,9 +78,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         indexRegistry = _indexRegistry;
     }
 
-    function initialize(address _churner, OperatorSetParam[] memory _operatorSetParams) external initializer {
-        // set the churner
-        churner = _churner;
+    function initialize(address _churnApprover, OperatorSetParam[] memory _operatorSetParams) external initializer {
+        // set the churnApprover
+        churnApprover = _churnApprover;
         // the stake registry is this contract itself
         registries.push(address(stakeRegistry));
         registries.push(address(blsPubkeyRegistry));
@@ -181,10 +174,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /**
-     * @notice Public function for the the churner signature hash calculation when operators are being kicked from quorums
+     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
      * @param registeringOperatorId The is of the registering operator 
      * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param expiry The desired expiry time of the churner's signature
+     * @param expiry The desired expiry time of the churnApprover's signature
      */
     function calculateCurrentOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
@@ -192,24 +185,24 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnerNonce, expiry);
+        return calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnApproverNonce, expiry);
     }
 
     /**
-     * @notice Public function for the the churner signature hash calculation when operators are being kicked from quorums
+     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
      * @param registeringOperatorId The is of the registering operator 
      * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param churnerNonceToUse nonce of the churner. In practice we use the churner's current nonce, stored at `churnerNonce`
-     * @param expiry The desired expiry time of the churner's signature
+     * @param churnApproverNonceToUse nonce of the churnApprover. In practice we use the churnApprover's current nonce, stored at `churnApproverNonce`
+     * @param expiry The desired expiry time of the churnApprover's signature
      */
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
         OperatorKickParam[] memory operatorKickParams,
-        uint256 churnerNonceToUse,
+        uint256 churnApproverNonceToUse,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, churnerNonceToUse, expiry)));
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, churnApproverNonceToUse, expiry)));
     }
 
     // STATE CHANGING FUNCTIONS
@@ -218,9 +211,19 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Sets parameters of the operator set for the given `quorumNumber`
      * @param quorumNumber is the quorum number to set the maximum number of operators for
      * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
+     * @dev only callable by the service manager owner
      */
     function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
         _setOperatorSetParams(quorumNumber, operatorSetParam);
+    }
+
+    /**
+     * @notice Sets the churnApprover
+     * @param _churnApprover is the address of the churnApprover
+     * @dev only callable by the service manager owner
+     */
+    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
+        churnApprover = _churnApprover;
     }
 
     /**
@@ -268,8 +271,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // get the registering operator's operatorId
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
 
-        // verify the churner's signature
-        _verifyChurnerSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureAndExpiry);
+        // verify the churnApprover's signature
+        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureAndExpiry);
 
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -459,12 +462,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         }
     }
 
-    /// @notice verifies churner's signature on operator churn approval and increments the churner nonce
-    function _verifyChurnerSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithExpiry memory signatureWithExpiry) internal {
-        uint256 churnerNonceMem = churnerNonce;
-        require(signatureWithExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnerSignatureOnOperatorChurnApproval: churner signature expired");        
-        EIP1271SignatureUtils.checkSignature_EIP1271(churner, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnerNonceMem, signatureWithExpiry.expiry), signatureWithExpiry.signature);
-        // increment the churner nonce
-        churnerNonce = churnerNonceMem + 1;
+    /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
+    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithExpiry memory signatureWithExpiry) internal {
+        uint256 churnApproverNonceMem = churnApproverNonce;
+        require(signatureWithExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
+        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnApproverNonceMem, signatureWithExpiry.expiry), signatureWithExpiry.signature);
+        // increment the churnApprover nonce
+        churnApproverNonce = churnApproverNonceMem + 1;
     }
 }

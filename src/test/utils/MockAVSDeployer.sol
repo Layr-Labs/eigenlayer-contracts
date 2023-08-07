@@ -70,8 +70,8 @@ contract MockAVSDeployer is Test {
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
-    uint256 churnerPrivateKey = uint256(keccak256("churnerPrivateKey"));
-    address churner = cheats.addr(churnerPrivateKey);
+    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
+    address churnApprover = cheats.addr(churnApproverPrivateKey);
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
@@ -241,7 +241,7 @@ contract MockAVSDeployer is Test {
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
-                    churner,
+                    churnApprover,
                     operatorSetParams
                 )
             );
@@ -372,9 +372,7 @@ contract MockAVSDeployer is Test {
             operatorKickParams,
             expiry
         );
-        emit log_named_address("churner", churner);
-        emit log_named_bytes32("digestHash", digestHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnerPrivateKey, digestHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
         return ISignatureUtils.SignatureWithExpiry({
             signature: abi.encodePacked(r, s, v),
             expiry: expiry
