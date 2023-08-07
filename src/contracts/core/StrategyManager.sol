@@ -10,8 +10,6 @@ import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -29,8 +27,7 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage,
-    Test
+    StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
 
@@ -831,16 +828,12 @@ contract StrategyManager is
     {
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-        emit log("HELLO");
 
         // verify that the queued withdrawal is pending
         require(
             withdrawalRootPending[withdrawalRoot],
             "StrategyManager.completeQueuedWithdrawal: withdrawal is not pending"
         );
-
-        emit log("HELLO");
-        
 
 
         require(
@@ -865,11 +858,8 @@ contract StrategyManager is
         // store length for gas savings
         uint256 strategiesLength = queuedWithdrawal.strategies.length;
         // if the withdrawer has flagged to receive the funds as tokens, withdraw from strategies
-        emit log("HELLO");
 
         if (receiveAsTokens) {
-            emit log("HEYEYEYE");
-
             require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.completeQueuedWithdrawal: input length mismatch");
             // actually withdraw the funds
             for (uint256 i = 0; i < strategiesLength;) {
@@ -879,7 +869,6 @@ contract StrategyManager is
                     eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the depositor
-                    emit log("HEYEYEYE");
                     queuedWithdrawal.strategies[i].withdraw(
                         msg.sender, tokens[i], queuedWithdrawal.shares[i]
                     );
