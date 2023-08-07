@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
 
 /**
@@ -13,7 +14,7 @@ import "./IStrategy.sol";
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager {
+interface IDelegationManager is ISignatureUtils {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         // @notice address to receive the rewards that the operator earns via serving applications built on EigenLayer.
@@ -66,15 +67,7 @@ interface IDelegationManager {
         // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
-
-    // @notice Struct that bundles together a signature and an expiration time for the signature. Used primarily for stack management.
-    struct SignatureWithExpiry {
-        // the signature itself, formatted as a single bytes object
-        bytes signature;
-        // the expiration timestamp (UTC) of the signature
-        uint256 expiry;
-    }
-
+    
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 

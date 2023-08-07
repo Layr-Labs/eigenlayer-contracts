@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
@@ -11,6 +12,7 @@ import "../interfaces/IVoteWeigher.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
 
+import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/BitmapUtils.sol";
 import "../libraries/MiddlewareUtils.sol";
 
@@ -24,8 +26,12 @@ import "forge-std/Test.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater {
+contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater, Test {
     using BN254 for BN254.G1Point;
+
+    /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
+    bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
+        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
 
@@ -39,6 +45,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     IStakeRegistry public immutable stakeRegistry;
     /// @notice the Index Registry contract that will keep track of operators' indexes
     IIndexRegistry public immutable indexRegistry;
+
     /// @notice the mapping from quorum number to the maximum number of operators that can be registered for that quorum
     mapping(uint8 => OperatorSetParam) internal _quorumOperatorSetParams;
     /// @notice the mapping from operator's operatorId to the updates of the bitmap of quorums they are registered for
@@ -47,6 +54,10 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     mapping(address => Operator) internal _operators;
     /// @notice the dynamic-length array of the registries this coordinator is coordinating
     address[] public registries;
+    /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
+    address public churnApprover;
+    /// @notice whether the salt has been used for an operator churn approval
+    mapping(bytes32 => bool) public isChurnApproverSaltUsed;
 
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
@@ -59,7 +70,7 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         IStakeRegistry _stakeRegistry,
         IBLSPubkeyRegistry _blsPubkeyRegistry,
         IIndexRegistry _indexRegistry
-    ) {
+    ) EIP712("AVSRegistryCoordinator", "v0.0.1") {
         slasher = _slasher;
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
@@ -67,7 +78,9 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
         indexRegistry = _indexRegistry;
     }
 
-    function initialize(OperatorSetParam[] memory _operatorSetParams) external initializer {
+    function initialize(address _churnApprover, OperatorSetParam[] memory _operatorSetParams) external initializer {
+        // set the churnApprover
+        churnApprover = _churnApprover;
         // the stake registry is this contract itself
         registries.push(address(stakeRegistry));
         registries.push(address(blsPubkeyRegistry));
@@ -79,6 +92,8 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             _setOperatorSetParams(i, _operatorSetParams[i]);
         }
     }
+    
+    // VIEW FUNCTIONS
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory) {
@@ -159,12 +174,41 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     }
 
     /**
+     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
+     * @param registeringOperatorId The is of the registering operator 
+     * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
+     * @param salt The salt to use for the churnApprover's signature
+     * @param expiry The desired expiry time of the churnApprover's signature
+     */
+    function calculateOperatorChurnApprovalDigestHash(
+        bytes32 registeringOperatorId,
+        OperatorKickParam[] memory operatorKickParams,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the digest hash
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
+    }
+
+    // STATE CHANGING FUNCTIONS
+
+    /**
      * @notice Sets parameters of the operator set for the given `quorumNumber`
      * @param quorumNumber is the quorum number to set the maximum number of operators for
      * @param operatorSetParam is the parameters of the operator set for the `quorumNumber`
+     * @dev only callable by the service manager owner
      */
     function setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) external onlyServiceManagerOwner {
         _setOperatorSetParams(quorumNumber, operatorSetParam);
+    }
+
+    /**
+     * @notice Sets the churnApprover
+     * @param _churnApprover is the address of the churnApprover
+     * @dev only callable by the service manager owner
+     */
+    function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
+        _setChurnApprover(_churnApprover);
     }
 
     /**
@@ -198,18 +242,23 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
      * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
      * quorum that will be filled after the operator registers. These parameters should include an operator, their pubkey, 
      * and ids of the operators to swap with the kicked operator. 
+     * @param signatureWithSaltAndExpiry is the signature of the churnApprover on the operator kick params with a salt and expiry
      */
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey,
         string calldata socket,
-        OperatorKickParam[] calldata operatorKickParams
+        OperatorKickParam[] calldata operatorKickParams,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
     ) external {
         // register the operator
         uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
         // get the registering operator's operatorId
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
+
+        // verify the churnApprover's signature
+        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry);
 
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -291,6 +340,11 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
     function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
         _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
         emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
+    }
+    
+    function _setChurnApprover(address newChurnApprover) internal {
+        churnApprover = newChurnApprover;
+        emit ChurnApproverUpdated(newChurnApprover);
     }
 
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
@@ -397,5 +451,15 @@ contract BLSRegistryCoordinatorWithIndices is Initializable, IBLSRegistryCoordin
             // set the status of the operator to DEREGISTERED
             _operators[operator].status = OperatorStatus.DEREGISTERED;
         }
+    }
+
+    /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
+    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
+        // make sure the salt hasn't been used already
+        require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
+        require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
+        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+        // set salt used to true
+        isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt] = true;
     }
 }
