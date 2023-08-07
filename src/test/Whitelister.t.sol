@@ -251,14 +251,12 @@ contract WhitelisterTests is EigenLayerTestHelper {
             strategyIndexes[0] = 0;
             tokensArray[0] = dummyToken;
         }
-
         _testQueueWithdrawal(
             staker,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
             strategyIndexes
         );
-
         {
             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
 
@@ -276,7 +274,6 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
             require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
-
         }        
     }
 
