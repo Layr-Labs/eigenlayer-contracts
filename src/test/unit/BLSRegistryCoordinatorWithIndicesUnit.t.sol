@@ -71,6 +71,13 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
     function testSetChurnApprover_NotServiceManagerOwner_Reverts() public {
         address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.prank(defaultOperator);
+        registryCoordinator.setChurnApprover(newChurnApprover);
+    }
+
+    function testSetChurnApprover_Valid() public {
+        address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
         cheats.prank(serviceManagerOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit ChurnApproverUpdated(newChurnApprover);
