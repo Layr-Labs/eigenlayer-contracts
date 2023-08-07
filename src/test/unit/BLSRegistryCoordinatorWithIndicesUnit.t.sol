@@ -30,6 +30,10 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
+    event OperatorSetParamsUpdated(uint8 indexed quorumNumber, IBLSRegistryCoordinatorWithIndices.OperatorSetParam operatorSetParams);
+
+    event ChurnApproverUpdated(address churnApprover);
+
     function setUp() virtual public {
         _deployMockEigenLayerAndAVS();
     }
@@ -50,6 +54,27 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         registryCoordinator.initialize(churnApprover, operatorSetParams);
+    }
+
+    function testSetOperatorSetParams_NotServiceManagerOwner_Reverts() public {
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.prank(defaultOperator);
+        registryCoordinator.setOperatorSetParams(0, operatorSetParams[0]);
+    }
+
+    function testSetOperatorSetParams_Valid() public {
+        cheats.prank(serviceManagerOwner);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSetParamsUpdated(0, operatorSetParams[1]);
+        registryCoordinator.setOperatorSetParams(0, operatorSetParams[1]);
+    }
+
+    function testSetChurnApprover_NotServiceManagerOwner_Reverts() public {
+        address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
+        cheats.prank(serviceManagerOwner);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit ChurnApproverUpdated(newChurnApprover);
+        registryCoordinator.setChurnApprover(newChurnApprover);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {

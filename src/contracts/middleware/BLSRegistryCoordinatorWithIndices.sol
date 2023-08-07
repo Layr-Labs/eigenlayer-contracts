@@ -208,7 +208,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @dev only callable by the service manager owner
      */
     function setChurnApprover(address _churnApprover) external onlyServiceManagerOwner {
-        churnApprover = _churnApprover;
+        _setChurnApprover(_churnApprover);
     }
 
     /**
@@ -340,6 +340,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _setOperatorSetParams(uint8 quorumNumber, OperatorSetParam memory operatorSetParam) internal {
         _quorumOperatorSetParams[quorumNumber] = operatorSetParam;
         emit OperatorSetParamsUpdated(quorumNumber, operatorSetParam);
+    }
+    
+    function _setChurnApprover(address newChurnApprover) internal {
+        churnApprover = newChurnApprover;
+        emit ChurnApproverUpdated(newChurnApprover);
     }
 
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
