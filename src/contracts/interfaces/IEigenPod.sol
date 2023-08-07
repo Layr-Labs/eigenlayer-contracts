@@ -42,10 +42,10 @@ interface IEigenPod {
         uint64 validatorIndex;
         // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
-        // status of the validator
-        VALIDATOR_STATUS status;
         //slot number of the validator's most recent balance update
         uint64 mostRecentBalanceUpdateSlot;
+        // status of the validator
+        VALIDATOR_STATUS status;
     }
 
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
