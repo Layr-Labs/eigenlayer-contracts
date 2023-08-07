@@ -546,51 +546,16 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testRegisterOperatorWithCoordinatorWithKicks_LessThanKickBIPsOfOperatorStake_Reverts(uint256 pseudoRandomNumber) public {
-        uint32 numOperators = defaultMaxOperatorCount;
-        uint32 kickRegistrationBlockNumber = 100;
-        uint32 registrationBlockNumber = 200;
-
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
-        cheats.roll(kickRegistrationBlockNumber);
-
-        for (uint i = 0; i < numOperators - 1; i++) {
-            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
-            address operator = _incrementAddress(defaultOperator, i);
-            
-            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
-        }
-
-        address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
-        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
+        uint96 operatorToKickStake = defaultMaxOperatorCount * defaultStake;
+        (   
+            address operatorToRegister, 
+            BN254.G1Point memory operatorToRegisterPubKey,
+            IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams
+        ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
         bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
-        bytes32 operatorToKickId;
-        address operatorToKick;
-        
-        // register last operator before kick
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams = new IBLSRegistryCoordinatorWithIndices.OperatorKickParam[](1);
-        {
-            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators - 1)));
-            operatorToKickId = pubKey.hashG1Point();
-            operatorToKick = _incrementAddress(defaultOperator, numOperators - 1);
-
-            _registerOperatorWithCoordinator(operatorToKick, quorumBitmap, pubKey);
-
-            bytes32[] memory operatorIdsToSwap = new bytes32[](1);
-            // operatorIdsToSwap[0] = operatorToRegisterId
-            operatorIdsToSwap[0] = operatorToRegisterId;
-
-            operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
-                operator: operatorToKick,
-                pubkey: pubKey,
-                operatorIdsToSwap: operatorIdsToSwap
-            });
-        }
-
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
@@ -602,53 +567,17 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testRegisterOperatorWithCoordinatorWithKicks_LessThanKickBIPsOfTotalStake_Reverts(uint256 pseudoRandomNumber) public {
-        uint32 numOperators = defaultMaxOperatorCount;
-        uint32 kickRegistrationBlockNumber = 100;
-        uint32 registrationBlockNumber = 200;
-
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
-        cheats.roll(kickRegistrationBlockNumber);
-
-        for (uint i = 0; i < numOperators - 1; i++) {
-            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
-            address operator = _incrementAddress(defaultOperator, i);
-            
-            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
-        }
-
-        address operatorToRegister = _incrementAddress(defaultOperator, numOperators);
-        BN254.G1Point memory operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators)));
+        uint96 operatorToKickStake = defaultMaxOperatorCount * defaultStake;
+        (   
+            address operatorToRegister, 
+            BN254.G1Point memory operatorToRegisterPubKey,
+            IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams
+        ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, operatorToKickStake);
         bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
-        bytes32 operatorToKickId;
-        address operatorToKick;
-        uint96 operatorToKickStake = defaultStake * numOperators;
-        
-        // register last operator before kick
-        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams = new IBLSRegistryCoordinatorWithIndices.OperatorKickParam[](1);
-        {
-            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, numOperators - 1)));
-            operatorToKickId = pubKey.hashG1Point();
-            operatorToKick = _incrementAddress(defaultOperator, numOperators - 1);
 
-            // register last operator with much more than the kickBIPsOfTotalStake stake
-            _registerOperatorWithCoordinator(operatorToKick, quorumBitmap, pubKey, operatorToKickStake);
-
-            bytes32[] memory operatorIdsToSwap = new bytes32[](1);
-            // operatorIdsToSwap[0] = operatorToRegisterId
-            operatorIdsToSwap[0] = operatorToRegisterId;
-
-            operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
-                operator: operatorToKick,
-                pubkey: pubKey,
-                operatorIdsToSwap: operatorIdsToSwap
-            });
-        }
-
-        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
 
         // set the stake of the operator to register to the defaultKickBIPsOfOperatorStake multiple of the operatorToKickStake
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
@@ -657,6 +586,49 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp + 10);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
+    }
+
+    function testRegisterOperatorWithCoordinatorWithKicks_InvalidSignatures_Reverts(uint256 pseudoRandomNumber) public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        (   
+            address operatorToRegister, 
+            BN254.G1Point memory operatorToRegisterPubKey,
+            IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams
+        ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
+
+        uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
+        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+
+        cheats.roll(registrationBlockNumber);
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
+        signatureWithExpiry.expiry = block.timestamp + 10;
+        signatureWithExpiry.signature = hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001B";
+        cheats.prank(operatorToRegister);
+        cheats.expectRevert("ECDSA: invalid signature");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
+    }
+
+    function testRegisterOperatorWithCoordinatorWithKicks_ExpiredSignatures_Reverts(uint256 pseudoRandomNumber) public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        (   
+            address operatorToRegister, 
+            BN254.G1Point memory operatorToRegisterPubKey,
+            IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams
+        ) = _testRegisterOperatorWithKicks_SetUp(pseudoRandomNumber, quorumNumbers, defaultStake);
+        bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
+
+        uint96 registeringStake = defaultKickBIPsOfOperatorStake * defaultStake;
+        stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
+
+        cheats.roll(registrationBlockNumber);
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, block.timestamp - 1);
+        cheats.prank(operatorToRegister);
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnerSignatureOnOperatorChurnApproval: churner signature expired");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
     }
 
@@ -678,5 +650,50 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.prank(defaultOperator);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndicies.updateSocket: operator is not registered");
         registryCoordinator.updateSocket("localhost:32004");
+    }
+
+    function _testRegisterOperatorWithKicks_SetUp(uint256 pseudoRandomNumber, bytes memory quorumNumbers, uint96 operatorToKickStake) internal returns(address operatorToRegister, BN254.G1Point memory operatorToRegisterPubKey, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams) {
+        uint32 kickRegistrationBlockNumber = 100;
+        uint32 registrationBlockNumber = 200;
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        cheats.roll(kickRegistrationBlockNumber);
+
+        for (uint i = 0; i < defaultMaxOperatorCount - 1; i++) {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, i)));
+            address operator = _incrementAddress(defaultOperator, i);
+            
+            _registerOperatorWithCoordinator(operator, quorumBitmap, pubKey);
+        }
+
+        operatorToRegister = _incrementAddress(defaultOperator, defaultMaxOperatorCount);
+        operatorToRegisterPubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount)));
+        bytes32 operatorToRegisterId = operatorToRegisterPubKey.hashG1Point();
+        bytes32 operatorToKickId;
+        address operatorToKick;
+        
+        // register last operator before kick
+        operatorKickParams = new IBLSRegistryCoordinatorWithIndices.OperatorKickParam[](1);
+        {
+            BN254.G1Point memory pubKey = BN254.hashToG1(keccak256(abi.encodePacked(pseudoRandomNumber, defaultMaxOperatorCount - 1)));
+            operatorToKickId = pubKey.hashG1Point();
+            operatorToKick = _incrementAddress(defaultOperator, defaultMaxOperatorCount - 1);
+
+            // register last operator with much more than the kickBIPsOfTotalStake stake
+            _registerOperatorWithCoordinator(operatorToKick, quorumBitmap, pubKey, operatorToKickStake);
+
+            bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+            // operatorIdsToSwap[0] = operatorToRegisterId
+            operatorIdsToSwap[0] = operatorToRegisterId;
+
+            operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
+                operator: operatorToKick,
+                pubkey: pubKey,
+                operatorIdsToSwap: operatorIdsToSwap
+            });
+        }
+
+        pubkeyCompendium.setBLSPublicKey(operatorToRegister, operatorToRegisterPubKey);
     }
 }
