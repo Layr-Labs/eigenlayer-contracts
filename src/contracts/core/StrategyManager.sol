@@ -10,6 +10,8 @@ import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -27,7 +29,8 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    Test
 {
     using SafeERC20 for IERC20;
 
@@ -738,17 +741,18 @@ contract StrategyManager is
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
                 require(shares[i] % GWEI_TO_WEI == 0,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-            }
-            /**
-            * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
-            * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
-            * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
-            * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
-            * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
-            * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
-            */         
-            eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);   
+                /**
+                * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
+                * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
+                * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
+                * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
+                * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
+                * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
+                */         
+                eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);   
 
+            }
+            
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
             if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
@@ -827,12 +831,17 @@ contract StrategyManager is
     {
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+        emit log("HELLO");
 
         // verify that the queued withdrawal is pending
         require(
             withdrawalRootPending[withdrawalRoot],
             "StrategyManager.completeQueuedWithdrawal: withdrawal is not pending"
         );
+
+        emit log("HELLO");
+        
+
 
         require(
             slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
@@ -856,7 +865,11 @@ contract StrategyManager is
         // store length for gas savings
         uint256 strategiesLength = queuedWithdrawal.strategies.length;
         // if the withdrawer has flagged to receive the funds as tokens, withdraw from strategies
+        emit log("HELLO");
+
         if (receiveAsTokens) {
+            emit log("HEYEYEYE");
+
             require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.completeQueuedWithdrawal: input length mismatch");
             // actually withdraw the funds
             for (uint256 i = 0; i < strategiesLength;) {
@@ -866,6 +879,7 @@ contract StrategyManager is
                     eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the depositor
+                    emit log("HEYEYEYE");
                     queuedWithdrawal.strategies[i].withdraw(
                         msg.sender, tokens[i], queuedWithdrawal.shares[i]
                     );

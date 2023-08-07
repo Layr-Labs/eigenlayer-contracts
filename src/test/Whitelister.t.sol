@@ -277,7 +277,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("Balance Before Withdrawal", balanceBeforeWithdrawal);
             emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
-            require(delegatorShares[0] == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
+            require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
         }        
     }
 
