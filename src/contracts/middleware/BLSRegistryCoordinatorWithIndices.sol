@@ -56,8 +56,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     address[] public registries;
     /// @notice the address of the entity allowed to sign off on operators getting kicked out of the AVS during registration
     address public churnApprover;
-    /// @notice the nonce of the churnApprover used in EIP-712 signatures
-    uint256 public churnApproverNonce;
+    /// @notice whether the salt has been used for an operator churn approval
+    mapping(bytes32 => bool) public isChurnApproverSaltUsed;
 
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
@@ -177,32 +177,17 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
      * @param registeringOperatorId The is of the registering operator 
      * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param expiry The desired expiry time of the churnApprover's signature
-     */
-    function calculateCurrentOperatorChurnApprovalDigestHash(
-        bytes32 registeringOperatorId,
-        OperatorKickParam[] memory operatorKickParams,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        // calculate the digest hash
-        return calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnApproverNonce, expiry);
-    }
-
-    /**
-     * @notice Public function for the the churnApprover signature hash calculation when operators are being kicked from quorums
-     * @param registeringOperatorId The is of the registering operator 
-     * @param operatorKickParams The parameters needed to kick the operator from the quorums that have reached their caps
-     * @param churnApproverNonceToUse nonce of the churnApprover. In practice we use the churnApprover's current nonce, stored at `churnApproverNonce`
+     * @param salt The salt to use for the churnApprover's signature
      * @param expiry The desired expiry time of the churnApprover's signature
      */
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
         OperatorKickParam[] memory operatorKickParams,
-        uint256 churnApproverNonceToUse,
+        bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, churnApproverNonceToUse, expiry)));
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
     }
 
     // STATE CHANGING FUNCTIONS
@@ -257,13 +242,14 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
      * quorum that will be filled after the operator registers. These parameters should include an operator, their pubkey, 
      * and ids of the operators to swap with the kicked operator. 
+     * @param signatureWithSaltAndExpiry is the signature of the churnApprover on the operator kick params with a salt and expiry
      */
     function registerOperatorWithCoordinator(
         bytes calldata quorumNumbers, 
         BN254.G1Point memory pubkey,
         string calldata socket,
         OperatorKickParam[] calldata operatorKickParams,
-        SignatureWithExpiry memory signatureAndExpiry
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
     ) external {
         // register the operator
         uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
@@ -272,7 +258,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
 
         // verify the churnApprover's signature
-        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureAndExpiry);
+        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry);
 
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -463,11 +449,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
-    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithExpiry memory signatureWithExpiry) internal {
-        uint256 churnApproverNonceMem = churnApproverNonce;
-        require(signatureWithExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
-        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, churnApproverNonceMem, signatureWithExpiry.expiry), signatureWithExpiry.signature);
-        // increment the churnApprover nonce
-        churnApproverNonce = churnApproverNonceMem + 1;
+    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
+        // make sure the salt hasn't been used already
+        require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
+        require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
+        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+        // set salt used to true
+        isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt] = true;
     }
 }

@@ -72,6 +72,7 @@ contract MockAVSDeployer is Test {
 
     uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
     address churnApprover = cheats.addr(churnApproverPrivateKey);
+    bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
@@ -366,16 +367,18 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, uint256 expiry) internal  returns(ISignatureUtils.SignatureWithExpiry memory) {
-        bytes32 digestHash = registryCoordinator.calculateCurrentOperatorChurnApprovalDigestHash(
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperatorId,
             operatorKickParams,
+            salt,
             expiry
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
-        return ISignatureUtils.SignatureWithExpiry({
+        return ISignatureUtils.SignatureWithSaltAndExpiry({
             signature: abi.encodePacked(r, s, v),
-            expiry: expiry
+            expiry: expiry,
+            salt: salt
         });
     }
 }
