@@ -8,9 +8,7 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
 
-import "forge-std/Test.sol";
-
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter, Test{
+contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -61,7 +59,6 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
     function createDelayedWithdrawal(address podOwner, address recipient) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
         require(recipient != address(0), "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address");
         uint224 withdrawalAmount = uint224(msg.value);
-        emit log_named_uint("withdrawalAmount", withdrawalAmount);
         if (withdrawalAmount != 0) {
             DelayedWithdrawal memory delayedWithdrawal = DelayedWithdrawal({
                 amount: withdrawalAmount,
