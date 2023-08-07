@@ -179,12 +179,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /**
-     * @notice  This function verifies that the withdrawal credentials for one or many validators of the podOwner that are pointed to
-     * this contract. It also verifies the current (not effective) balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
+     * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
+     * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
-     * @param validatorIndices is a list of indices of the validators being proven, refer to consensus specs 
-     * @param proofs is the bytes that prove the ETH validator's  withdrawal credentials against a beacon chain state root
+     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
+     * @param proofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -236,7 +236,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past");
 
-
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
@@ -249,26 +248,27 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // deserialize the balance field from the balanceRoot
         uint64 validatorNewBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
 
-        // verify ETH validator proof
-        bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
+        {
+            // verify ETH validator proof
+            bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
 
-        // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
-
+            // verify that the provided state root is verified against the oracle-provided latest block header
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
+        }
         // verify validator fields
         BeaconChainProofs.verifyValidatorFields(
-            validatorIndex,
             proofs.beaconStateRoot,
+            validatorFields,            
             proofs.validatorFieldsProof,
-            validatorFields
+            validatorIndex
         );
  
         // verify ETH validator's current balance, which is stored in the `balances` container of the beacon state
         BeaconChainProofs.verifyValidatorBalance(
-            validatorIndex,
             proofs.beaconStateRoot,
+            proofs.balanceRoot,
             proofs.validatorBalanceProof,
-            proofs.balanceRoot
+            validatorIndex
         );
         //verify provided slot is valid against beaconStateRoot
         BeaconChainProofs.verifySlotRoot(
@@ -303,13 +303,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /**
      * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
-     * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
-     * @param validatorFieldsProofs is the information needed to check the veracity of the validator fields being proven
-     * @param withdrawalFields are the fields of the withdrawal being proven
-     * @param validatorFields are the fields of the validator being proven
+     * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
+     * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
+     * @param withdrawalFields are the fields of the withdrawals being proven
+     * @param validatorFields are the fields of the validators being proven
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
-     * @param oracleTimestamp is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
+     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
         BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
@@ -396,10 +396,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
 
         BeaconChainProofs.verifyValidatorFields(
-            validatorIndex,
             proofs.beaconStateRoot,
+            validatorFields,
             proofs.validatorFieldsProof,
-            validatorFields
+            validatorIndex
         );
 
         // set the status to active
@@ -454,9 +454,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(withdrawalProofs.beaconStateRoot, eigenPodManager.getBeaconChainStateRoot(oracleTimestamp), withdrawalProofs.latestBlockHeaderProof);
 
         // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalProofs, withdrawalFields);
+        BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalFields, withdrawalProofs);
         // Verifying the validator fields, specifically the withdrawable epoch
-        BeaconChainProofs.verifyValidatorFields(validatorIndex, withdrawalProofs.beaconStateRoot, validatorFieldsProof, validatorFields);
+        BeaconChainProofs.verifyValidatorFields(withdrawalProofs.beaconStateRoot, validatorFields, validatorFieldsProof, validatorIndex);
 
         {
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);

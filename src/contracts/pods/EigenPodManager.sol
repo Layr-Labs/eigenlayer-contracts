@@ -176,12 +176,20 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         _setMaxPods(newMaxPods);
     }
 
+    /**
+     * @notice This function is called to decrement withdrawableRestakedExecutionLayerGwei when a validator queues a withdrawal.
+     * @param amountWei is the amount of ETH in wei to decrement withdrawableRestakedExecutionLayerGwei by
+     */
     function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
         external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
     {
         ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(amountWei);
     }
 
+    /**
+     * @notice This function is called to increment withdrawableRestakedExecutionLayerGwei when a validator's withdrawal is completed.
+     * @param amountWei is the amount of ETH in wei to increment withdrawableRestakedExecutionLayerGwei by
+     */
     function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
         external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
     {

@@ -61,6 +61,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
+    uint256 internal _deprecatedStorage;
+
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
