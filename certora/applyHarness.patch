@@ -1,17 +1,17 @@
 diff -druN ../score/DelegationManager.sol core/DelegationManager.sol
---- ../score/DelegationManager.sol	2023-01-13 14:12:34
-+++ core/DelegationManager.sol	2023-01-13 14:24:43
-@@ -160,10 +160,10 @@
+--- ../score/DelegationManager.sol	2023-07-31 15:26:59
++++ core/DelegationManager.sol	2023-07-31 15:49:22
+@@ -209,8 +209,11 @@
+      * Called by the StrategyManager whenever shares are decremented from a user's share balance, for example when a new withdrawal is queued.
+      * @dev Callable only by the StrategyManager.
       */
-     function decreaseDelegatedShares(
-         address staker,
--        IStrategy[] calldata strategies,
--        uint256[] calldata shares
-+        IStrategy[] memory strategies, // MUNGED calldata => memory
-+        uint256[] memory shares // MUNGED calldata => memory
-     )
+-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
 -        external
-+        public // MUNGED external => public
++    function decreaseDelegatedShares(
++        // MUNGED calldata => memory
++        address staker, IStrategy[] memory strategies, uint256[] memory shares)
++        // MUNGED external => public
++        public
          onlyStrategyManager
      {
          if (isDelegated(staker)) {

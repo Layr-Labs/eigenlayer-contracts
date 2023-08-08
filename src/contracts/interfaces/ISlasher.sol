@@ -18,6 +18,8 @@ interface ISlasher {
 
     // struct used to store details relevant to a single middleware that an operator has opted-in to serving
     struct MiddlewareDetails {
+        // the block at which the contract begins being able to finalize the operator's registration with the service via calling `recordFirstStakeUpdate`
+        uint32 registrationMayBeginAtBlock;
         // the block before which the contract is allowed to slash the user
         uint32 contractCanSlashOperatorUntilBlock;
         // the block at which the middleware's view of the operator's stake was most recently updated
