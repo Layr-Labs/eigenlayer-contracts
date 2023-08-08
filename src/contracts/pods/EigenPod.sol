@@ -42,6 +42,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
+    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyWithdrawalCredential` may be proven.
+    uint256 internal constant VERIFY_WITHDRAWAL_CREDENTIAL_WINDOW = 7 days;
+
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -201,6 +204,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //ensure that caller has restaking enabled by calling "activateRestaking()"
         hasEnabledRestaking
     {
+        // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's effective balance *recently* changed.
+        require(oracleTimestamp + VERIFY_WITHDRAWAL_CREDENTIAL_WINDOW >= block.timestamp,
+            "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
+
+
+
         require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
         
         uint256 totalAmountToBeRestakedWei;
