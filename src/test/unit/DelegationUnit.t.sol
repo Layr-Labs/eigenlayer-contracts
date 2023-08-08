@@ -84,6 +84,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // excude the zero address and the proxyAdmin from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(eigenLayerProxyAdmin)] = true;
+        addressIsExcludedFromFuzzedInputs[address(strategyManagerMock)] = true;
+        addressIsExcludedFromFuzzedInputs[address(delegationManager)] = true;
+        addressIsExcludedFromFuzzedInputs[address(slasherMock)] = true;
 
         // check setup (constructor + initializer)
         require(delegationManager.strategyManager() == strategyManagerMock,

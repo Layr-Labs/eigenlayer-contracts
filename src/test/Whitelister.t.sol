@@ -200,6 +200,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
         {
 
         address staker = whiteLister.getStaker(operator);
+        
         cheats.assume(staker != operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -228,6 +229,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
             //delegator-specific information
             (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) =
                 strategyManager.getDeposits(staker);
+            emit log_named_uint("delegatorShares of staker", delegatorShares[0]);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
 
@@ -251,15 +253,15 @@ contract WhitelisterTests is EigenLayerTestHelper {
             strategyIndexes[0] = 0;
             tokensArray[0] = dummyToken;
         }
-
         _testQueueWithdrawal(
             staker,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
             strategyIndexes
         );
-
         {
+            (, uint256[] memory delegatorShares) =
+                strategyManager.getDeposits(staker);
             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
 
             _testCompleteQueuedWithdrawal(
@@ -276,7 +278,6 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
             require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
-
         }        
     }
 
