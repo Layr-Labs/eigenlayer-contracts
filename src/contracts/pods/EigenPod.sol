@@ -77,6 +77,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer), 
     uint64 public withdrawableRestakedExecutionLayerGwei;
 
+
+    /// @notice any ETH received by the eigenpod that has not originated from consensus layer stake or yield
+    uint256 nonBeaconChainETHBalanceWei;
+
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
 
@@ -107,6 +111,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Emitted when podOwner enables restaking
     event restakingActivated(address indexed podOwner);
+
+    /// @notice emitted when ETH is received by the eigenPod that is not from consensus layer stake or yield
+    event nonBeaconChainETHReceived(uint256 amount);
     
 
     modifier onlyEigenPodManager {
@@ -596,6 +603,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
+    /// @notice payable fallback function that receives ether deposited to the eigenpods contract
+    function receive() external payable {
+        nonBeaconChainETHBalanceWei += msg.value;
+        emit nonBeaconChainETHReceived(msg.value);
+    }
+
+    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
+    function withdrawnonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external onlyEigenPodOwner {
+        require(amountToWithdraw <= nonBeaconChainETHBalanceWei, "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
+        AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
+        nonBeaconChainETHBalanceWei -= amountToWithdraw;
+    }
 
     // INTERNAL FUNCTIONS
     function _podWithdrawalCredentials() internal view returns(bytes memory) {
@@ -636,5 +655,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
