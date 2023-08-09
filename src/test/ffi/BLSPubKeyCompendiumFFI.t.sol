@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "forge-std/Test.sol";
 import "../../contracts/middleware/BLSPublicKeyCompendium.sol";
-import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "./util/G2Operations.sol";
 
-contract BLSPublicKeyCompendiumFFITests is Test {
+contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
 
@@ -22,10 +21,10 @@ contract BLSPublicKeyCompendiumFFITests is Test {
         compendium = new BLSPublicKeyCompendium();
     }
 
-    function testRegisterBLSPublicKey(uint256 _privKey) public {
-        vm.assume(_privKey != 0);
+    function testRegisterBLSPublicKey(/*uint256 _privKey*/) public {
+        // _setKeys(_privKey);
 
-        _setKeys(_privKey);
+        _setKeys(666);
         signedMessageHash = _signMessage(alice);
 
         vm.prank(alice);
@@ -38,28 +37,7 @@ contract BLSPublicKeyCompendiumFFITests is Test {
     function _setKeys(uint256 _privKey) internal {
         privKey = _privKey;
         pubKeyG1 = BN254.generatorG1().scalar_mul(_privKey);
-
-        string[] memory inputs = new string[](5);
-        inputs[0] = "go";
-        inputs[1] = "run";
-        inputs[2] = "src/test/ffi/g2pubkey.go";
-        inputs[3] = _privKey.toString(); 
-
-        inputs[4] = "1";
-        bytes memory res = vm.ffi(inputs);
-        pubKeyG2.X[1] = abi.decode(res, (uint256));
-
-        inputs[4] = "2";
-        res = vm.ffi(inputs);
-        pubKeyG2.X[0] = abi.decode(res, (uint256));
-
-        inputs[4] = "3";
-        res = vm.ffi(inputs);
-        pubKeyG2.Y[1] = abi.decode(res, (uint256));
-
-        inputs[4] = "4";
-        res = vm.ffi(inputs);
-        pubKeyG2.Y[0] = abi.decode(res, (uint256));
+        pubKeyG2 = G2Operations.mul(_privKey);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {

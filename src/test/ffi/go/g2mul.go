@@ -37,13 +37,13 @@ func main() {
 
 	switch os.Args[2] {
     case "1":
-        fmt.Printf("0x%x\n", pxsInt)
+        fmt.Printf("0x%x", pxsInt)
     case "2":
-        fmt.Printf("0x%x\n", pxssInt)
+        fmt.Printf("0x%x", pxssInt)
     case "3":
-        fmt.Printf("0x%x\n", pysInt)
+        fmt.Printf("0x%x", pysInt)
 	case "4":
-		fmt.Printf("0x%x\n", pyssInt)
+		fmt.Printf("0x%x", pyssInt)
     }
 }
 
