@@ -232,7 +232,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature: signature,
             expiry: expiry
         });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         if (expiry >= block.timestamp) {
             assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
             assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
@@ -270,7 +270,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature: signature,
             expiry: type(uint256).max
         });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
         assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
@@ -309,7 +309,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature: signature,
             expiry: type(uint256).max
         });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
     /// @notice  tries delegating using a wallet that does not comply with EIP 1271
@@ -336,7 +336,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature: signature,
             expiry: type(uint256).max
         });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
     /// @notice tests delegation to EigenLayer via an ECDSA signatures with invalid signature
@@ -363,7 +363,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature: signature,
             expiry: type(uint256).max
         });
-        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry);
+        delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
     /// @notice registers a fixed address as a delegate, delegates to it from a second address,
@@ -444,7 +444,7 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         cheats.startPrank(getOperatorAddress(1));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(delegate, signatureWithExpiry);
+        delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
     }
 
@@ -492,9 +492,9 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.startPrank(_staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(_unregisteredOperator, signatureWithExpiry);
+        delegation.delegateTo(_unregisteredOperator, signatureWithExpiry, bytes32(0));
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
-        delegation.delegateTo(_staker, signatureWithExpiry);
+        delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
         
     }
@@ -519,7 +519,7 @@ contract DelegationTests is EigenLayerTestHelper {
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.prank(_staker);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(_operator, signatureWithExpiry);
+        delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
         //operators cannot undelegate from themselves
         vm.prank(address(strategyManager));
