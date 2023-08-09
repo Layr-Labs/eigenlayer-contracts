@@ -624,7 +624,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
 
-    function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal returns(int256){
+    function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal pure returns(int256){
         return (int256(newAmountWei) - int256(currentAmountWei));
     }
 
