@@ -71,7 +71,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _setOperatorDetails(msg.sender, registeringOperatorDetails);
         SignatureWithExpiry memory emptySignatureAndExpiry;
         // delegate from the operator to themselves
-        _delegate(msg.sender, msg.sender, emptySignatureAndExpiry);
+        _delegate(msg.sender, msg.sender, emptySignatureAndExpiry, bytes32(0));
         // emit events
         emit OperatorRegistered(msg.sender, registeringOperatorDetails);
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
@@ -108,10 +108,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
+     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
      */
-    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry) external {
+    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) external {
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
-        _delegate(msg.sender, operator, approverSignatureAndExpiry);
+        _delegate(msg.sender, operator, approverSignatureAndExpiry, approverSalt);
     }
 
     /**
@@ -127,12 +128,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
+     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
      */
     function delegateToBySignature(
         address staker,
         address operator,
         SignatureWithExpiry memory stakerSignatureAndExpiry,
-        SignatureWithExpiry memory approverSignatureAndExpiry
+        SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt
     ) external {
         // check the signature expiry
         require(stakerSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager.delegateToBySignature: staker signature expired");
@@ -148,7 +151,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         EIP1271SignatureUtils.checkSignature_EIP1271(staker, stakerDigestHash, stakerSignatureAndExpiry.signature);
 
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
-        _delegate(staker, operator, approverSignatureAndExpiry);
+        _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
     /**
@@ -248,13 +251,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Internal function implementing the delegation *from* `staker` *to* `operator`.
      * @param staker The address to delegate *from* -- this address is delegating control of its own assets.
      * @param operator The address to delegate *to* -- this address is being given power to place the `staker`'s assets at risk on services
+     * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
      * @dev Ensures that:
      * 1) the `staker` is not already delegated to an operator
      * 2) the `operator` has indeed registered as an operator in EigenLayer
      * 3) the `operator` is not actively frozen
      * 4) if applicable, that the approver signature is valid and non-expired
      */ 
-    function _delegate(address staker, address operator, SignatureWithExpiry memory approverSignatureAndExpiry) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
+    function _delegate(
+        address staker,
+        address operator,
+        SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt
+    ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         require(!isDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
@@ -269,15 +278,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
             // check the signature expiry
             require(approverSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager._delegate: approver signature expired");
+            // check that the salt hasn't been used previously, then mark the salt as spent
+            require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], "DelegationManager._delegate: approverSalt already spent");
+            delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
 
-            // calculate the digest hash, then increment `delegationApprover`'s nonce
-            uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
+            // calculate the digest hash
             bytes32 approverDigestHash =
-                calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, currentApproverNonce, approverSignatureAndExpiry.expiry);
-            unchecked {
-                delegationApproverNonce[_delegationApprover] = currentApproverNonce + 1;
-            }
-
+                calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, approverSalt, approverSignatureAndExpiry.expiry);
 
             // actually check that the signature is valid
             EIP1271SignatureUtils.checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
@@ -378,37 +385,25 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }        
 
     /**
-     * @notice Exneral function that calculates the digestHash for the `operator`'s "delegationApprover" to sign in order to approve the
-     * delegation of `staker` to the `operator`, using the approver's current nonce and specifying an expiration of `expiry`
-     * @param staker The staker who is delegating to the operator
-     * @param operator The operator who is being delegated to
-     * @param expiry The desired expiry time of the approver's signature
-     */
-    function calculateCurrentDelegationApprovalDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
-            // fetch the operator's `delegationApprover` address and store it in memory
-            address _delegationApprover = _operatorDetails[operator].delegationApprover;
-            // get the approver's current nonce and caluclate the struct hash
-            uint256 currentApproverNonce = delegationApproverNonce[_delegationApprover];
-            return calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, currentApproverNonce, expiry);
-    }
-
-    /**
-     * @notice Public function for the the approver signature hash calculation in the `_delegate` function
+     * @notice Public function for the the approver signature hash calculation in the internal `_delegate` function, which is called by both
+     * the `delegateTo` and `delegateToBySignature` functions.
+     * Calculates the digestHash for the `operator`'s "delegationApprover" to sign in order to approve the
+     * delegation of `staker` to the `operator`, using the approver's provided `salt` and specifying an expiration of `expiry`
      * @param staker The staker who is delegating to the operator
      * @param operator The operator who is being delegated to
      * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
-     * @param approverNonce The nonce of the approver. In practice we use the approver's current nonce, stored at `delegationApproverNonce[_delegationApprover]`
+     * @param approverSalt The salt provided by the approver. Each salt can only be used once by a given approver.
      * @param expiry The desired expiry time of the approver's signature
      */
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,
         address _delegationApprover,
-        uint256 approverNonce,
+        bytes32 approverSalt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverNonce, expiry));
+        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverSalt, expiry));
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
