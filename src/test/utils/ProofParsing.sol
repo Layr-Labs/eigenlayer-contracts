@@ -166,12 +166,12 @@ contract ProofParsing is Test{
     }
 
     function getBalanceUpdateSlotProof() public returns(bytes32[] memory) {
-        bytes32[] memory slotProof = new bytes32[](5);
+        bytes32[] memory balanceUpdateSlotProof = new bytes32[](5);
         for (uint i = 0; i < 5; i++) {
             prefix = string.concat(".slotProof[", string.concat(vm.toString(i), "]"));
-            slotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            balanceUpdateSlotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return slotProof;
+        return balanceUpdateSlotProof;
     }
 
     function getWithdrawalCredentialProof() public returns(bytes32[] memory) {

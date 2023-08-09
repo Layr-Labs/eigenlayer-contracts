@@ -495,7 +495,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     /// @notice verifies that multiple full withdrawals for a single validator fail
     function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
-        IEigenPod newPod = testFullWithdrawalFlow();
+        newPod = testFullWithdrawalFlow();
         BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
         withdrawalFields = getWithdrawalFields();   
@@ -712,7 +712,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "BalanceUpdateProof" 61511 true 0 "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_notOvercommitted_61511.json"
         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        
+
         // ./solidityProofGen "BalanceUpdateProof" 61511 false 0 "data/slot_209635/oracle_capella_beacon_state_209635.ssz" "balanceUpdateProof_Overcommitted_61511.json"
         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_Overcommitted_61511.json");
         // prove overcommitted balance
