@@ -1002,7 +1002,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     function testQueueWithdrawal_WithdrawEverything_DontUndelegate(uint256 amount) external {
         // delegate to self
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegationMock.delegateTo(address(this), signatureWithExpiry);
+        delegationMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
         require(delegationMock.isDelegated(address(this)), "delegation mock setup failed");
         bool undelegateIfPossible = false;
         // deposit and withdraw the same amount, don't undelegate

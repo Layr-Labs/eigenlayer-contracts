@@ -30,7 +30,7 @@ contract DepositAndDelegate is Script, DSTest, EigenLayerParser {
         weth.approve(address(strategyManager), wethAmount);
         strategyManager.depositIntoStrategy(wethStrat, weth, wethAmount);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(dlnAddr, signatureWithExpiry);
+        delegation.delegateTo(dlnAddr, signatureWithExpiry, bytes32(0));
         vm.stopBroadcast();
     }
 }

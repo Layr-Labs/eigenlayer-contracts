@@ -260,8 +260,6 @@ contract WhitelisterTests is EigenLayerTestHelper {
             strategyIndexes
         );
         {
-            (, uint256[] memory delegatorShares) =
-                strategyManager.getDeposits(staker);
             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
 
             _testCompleteQueuedWithdrawal(
