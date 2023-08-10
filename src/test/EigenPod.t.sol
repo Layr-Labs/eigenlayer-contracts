@@ -1058,7 +1058,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
     }
 
-    function testQueueBeaconChainETHWithdrawal123(bytes memory signature, bytes32 depositDataRoot) external {
+    function testQueueBeaconChainETHWithdrawal(bytes memory signature, bytes32 depositDataRoot) external {
         IEigenPod pod = testFullWithdrawalFlow();
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
@@ -1078,6 +1078,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmounts[0]/GWEI_TO_WEI, "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
+
+    fun
 
     function _verifyEigenPodBalanceSharesInvariant(address podOwner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
         uint256 sharesInSM = strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy());

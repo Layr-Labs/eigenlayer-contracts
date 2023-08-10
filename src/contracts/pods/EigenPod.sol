@@ -616,6 +616,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
     }
 
+    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
+        require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            tokenList[i].transfer(recipient, amountsToWithdraw[i]);
+        }
+    }
+
     // INTERNAL FUNCTIONS
     function _podWithdrawalCredentials() internal view returns(bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
