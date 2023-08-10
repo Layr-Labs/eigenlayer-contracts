@@ -37,14 +37,15 @@ func main() {
 
 	switch os.Args[2] {
     case "1":
-        fmt.Printf("0x%x", pxsInt)
+        fmt.Printf("0x%064X", pxsInt)
     case "2":
-        fmt.Printf("0x%x", pxssInt)
+        fmt.Printf("0x%064X", pxssInt)
     case "3":
-        fmt.Printf("0x%x", pysInt)
+        fmt.Printf("0x%064X", pysInt)
 	case "4":
-		fmt.Printf("0x%x", pyssInt)
+		fmt.Printf("0x%064X", pyssInt)
     }
+
 }
 
 func GetG2Generator() *bn254.G2Affine {
