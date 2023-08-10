@@ -597,6 +597,26 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
+        /// @notice payable fallback function that receives ether deposited to the eigenpods contract
+    function receive() external payable {
+        nonBeaconChainETHBalanceWei += msg.value;
+        emit nonBeaconChainETHReceived(msg.value);
+    }
+
+    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
+    function withdrawnonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external onlyEigenPodOwner {
+        require(amountToWithdraw <= nonBeaconChainETHBalanceWei, "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
+        AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
+        nonBeaconChainETHBalanceWei -= amountToWithdraw;
+    }
+
+    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
+        require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            tokenList[i].transfer(recipient, amountsToWithdraw[i]);
+        }
+    }
+
     // INTERNAL FUNCTIONS
     function _podWithdrawalCredentials() internal view returns(bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
