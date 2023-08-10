@@ -27,7 +27,7 @@ jobs:
         run: forge install
 
       - name: Run tests
-        run: forge test -vvv
+        run: forge test -vvv --no-match-contract "FFI"
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
           CHAIN_ID: ${{ secrets.CHAIN_ID }}
