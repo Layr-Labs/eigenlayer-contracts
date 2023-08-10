@@ -86,6 +86,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
 
+
+    /// @notice This variable tracks any ETH deposited into this contract via the receive fallback
+    uint256 public nonBeaconChainETHBalanceWei;
+
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
 
@@ -107,6 +111,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Emitted when podOwner enables restaking
     event restakingActivated(address indexed podOwner);
+
+    /// @notice Emitted when ETH is received via the receive fallback
+    event nonBeaconChainETHReceived(uint256 amountReceived);
     
 
     modifier onlyEigenPodManager {
@@ -656,5 +663,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
