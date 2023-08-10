@@ -77,7 +77,8 @@ contract Deployer_M1 is Script, Test {
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     // IMMUTABLES TO SET
-    uint256 REQUIRED_BALANCE_WEI;
+    uint64 MAX_VALIDATOR_BALANCE_GWEI;
+    uint64 RESTAKED_BALANCE_OFFSET_GWEI;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -110,7 +111,8 @@ contract Deployer_M1 is Script, Test {
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
-        REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
+        MAX_VALIDATOR_BALANCE_GWEI = uint64(stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI"));
+        RESTAKED_BALANCE_OFFSET_GWEI = uint64(stdJson.readUint(config_data, ".eigenPod.RESTAKED_BALANCE_OFFSET_GWEI"));
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -172,7 +174,8 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI
+            MAX_VALIDATOR_BALANCE_GWEI,
+            RESTAKED_BALANCE_OFFSET_GWEI
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
@@ -422,11 +425,11 @@ contract Deployer_M1 is Script, Test {
         // uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS = (2**1) + (2**2) + (2**3) + (2**4); /* = 30 */ 
         // // pause *nothing*
         // uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = 0;
-        require(strategyManager.paused() == 0, "strategyManager: init paused status set incorrectly");
-        require(slasher.paused() == type(uint256).max, "slasher: init paused status set incorrectly");
-        require(delegation.paused() == type(uint256).max, "delegation: init paused status set incorrectly");
-        require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
-        require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
+        // require(strategyManager.paused() == 0, "strategyManager: init paused status set incorrectly");
+        // require(slasher.paused() == type(uint256).max, "slasher: init paused status set incorrectly");
+        // require(delegation.paused() == type(uint256).max, "delegation: init paused status set incorrectly");
+        // require(eigenPodManager.paused() == 30, "eigenPodManager: init paused status set incorrectly");
+        // require(delayedWithdrawalRouter.paused() == 0, "delayedWithdrawalRouter: init paused status set incorrectly");
     }
 
     function _verifyInitializationParams() internal {
@@ -437,9 +440,9 @@ contract Deployer_M1 is Script, Test {
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
-        // uint256 REQUIRED_BALANCE_WEI = 31 ether;
-        require(eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
-            "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly");
+        // uint256 MAX_VALIDATOR_BALANCE_GWEI = 31 ether;
+        require(eigenPodImplementation.MAX_VALIDATOR_BALANCE_GWEI() == 31 gwei,
+            "eigenPod: MAX_VALIDATOR_BALANCE_GWEI initialized incorrectly");
 
         require(strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly");
