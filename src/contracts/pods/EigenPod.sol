@@ -535,6 +535,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = 0;
 
+        // update the validator's status to WITHDRAWN
+        _validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.WITHDRAWN;
+
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
 
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
