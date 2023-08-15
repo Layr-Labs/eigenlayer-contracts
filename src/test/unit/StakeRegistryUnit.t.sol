@@ -129,8 +129,7 @@ contract StakeRegistryTest is Test {
 
         vm.stopPrank();
     }
-}
-contract Initialize is StakeRegistryTest {
+
     function test_RevertsIf_AlreadyInitialized_Initialize() public {
         // make sure the contract intializers are disabled
         vm.expectRevert(ALREADY_INITIALIZED);
@@ -150,9 +149,7 @@ contract Initialize is StakeRegistryTest {
         );
 
     }
-}
 
-contract UpdateStakes is StakeRegistryTest {
     function test_UpdateStakes() public {
         address[] memory operators = new address[](2);
         bytes32[] memory operatorIds = new bytes32[](2);
@@ -186,15 +183,12 @@ contract UpdateStakes is StakeRegistryTest {
     function test_RevertsIf_OperatorStateIsAfterBlock_UpdateStake() public {}
 
     function test_RevertsIf_NewerOperatorStakeUpdateAvailable_UpdateStake() public {}
-}
-contract SetMinimumStakeForQuorum is StakeRegistryTest {
+
     function test_RevertsIf_NotServiceManager_SetMinimumStakeForQuorum() public {
         vm.expectRevert(ONLY_SERVICE_MANAGER);
         stakeRegistry.setMinimumStakeForQuorum(DEFAULT_QUORUM_NUMBER, 0);
     }
-}
 
-contract RegisterOperator is StakeRegistryTest{
     function test_RegisterOperator() public {
         stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
         stakeRegistry.updateOperatorStake(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER );
@@ -217,9 +211,7 @@ contract RegisterOperator is StakeRegistryTest{
         vm.prank(address(registryCoordinatorMock));
         stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
     }
-}
 
-contract GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber is StakeRegistryTest {
     function test_GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber() public {
         stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
         stakeRegistry.updateOperatorStake(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER );
@@ -241,20 +233,14 @@ contract GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber is StakeRegistry
 
     function test_RevertsIf_NoStakeForOperatorAndQuorumAtBlock_GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber() public {}
 
-}
-
-contract DereigsterOperator is StakeRegistryTest {
     function test_DeregisterOperator() public {}
     
     function test_RevertsIf_NotRegistryCoordinator_DeregisterOperator() public {}
 
     function test_RevertsIf_MoreQuorumsThanQuorumCounter_DeregisterOperator() public {}
-}
-contract CheckOperatorInactiveAtBlockNumber is StakeRegistryTest{
-    function test_checkOperatorInactiveAtBlockNumber() public {}
-}
 
-contract StakeRegistryFuzzTests is StakeRegistryTest{ 
+    function test_checkOperatorInactiveAtBlockNumber() public {}
+
     function testFuzz_SetMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStakeForQuorum) public {
         // set the minimum stake for quorum
         vm.prank(SERVICE_MANAGER_OWNER);
