@@ -165,7 +165,8 @@ contract StakeRegistryTest is Test {
         stakeRegistry.updateStakes(operators, operatorIds, prevElements);
     }
 
-    function test_RevertsIf_OperatorAndOperatorIdMismatch() public {
+    function test_RevertsIf_OperatorAndOperatorIdMismatch_UpdateStakes() public {
+        /// TODO: This should revert
         address[] memory operators = new address[](2);
         bytes32[] memory operatorIds = new bytes32[](2);
         uint256[] memory prevElements = new uint256[](2);
@@ -180,9 +181,9 @@ contract StakeRegistryTest is Test {
         stakeRegistry.updateStakes(operators, operatorIds, prevElements);
     }
 
-    function test_RevertsIf_OperatorStateIsAfterBlock_UpdateStake() public {}
+    function test_RevertsIf_OperatorStakesAfterBlock_UpdateStakes() public {}
 
-    function test_RevertsIf_NewerOperatorStakeUpdateAvailable_UpdateStake() public {}
+    function test_RevertsIf_NewerOperatorStakeUpdateAvailable_UpdateStakes() public {}
 
     function test_RevertsIf_NotServiceManager_SetMinimumStakeForQuorum() public {
         vm.expectRevert(ONLY_SERVICE_MANAGER);
@@ -648,4 +649,3 @@ contract StakeRegistryTest is Test {
     }
 
 }
-
