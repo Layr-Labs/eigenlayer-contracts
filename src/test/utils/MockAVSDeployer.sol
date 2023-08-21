@@ -367,9 +367,10 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, bytes memory quorumNumbers, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperatorId,
+            quorumNumbers,
             operatorKickParams,
             salt,
             expiry

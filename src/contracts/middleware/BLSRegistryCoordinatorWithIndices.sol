@@ -31,7 +31,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
-        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
+        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, bytes quorumNumbers, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
 
     uint16 internal constant BIPS_DENOMINATOR = 10000;
 
@@ -182,12 +182,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      */
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
+        bytes calldata quorumNumbers,
         OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, operatorKickParams, salt, expiry)));
+        return _hashTypedDataV4(keccak256(abi.encode(OPERATOR_CHURN_APPROVAL_TYPEHASH, registeringOperatorId, quorumNumbers, operatorKickParams, salt, expiry)));
     }
 
     // STATE CHANGING FUNCTIONS
@@ -258,7 +259,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
 
         // verify the churnApprover's signature
-        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry);
+        _verifyChurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, quorumNumbers, operatorKickParams, signatureWithSaltAndExpiry);
 
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -454,11 +455,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
-    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
+    function _verifyChurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, bytes calldata quorumNumbers, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
         // make sure the salt hasn't been used already
         require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
         require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
-        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, quorumNumbers, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
         // set salt used to true
         isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt] = true;
     }
