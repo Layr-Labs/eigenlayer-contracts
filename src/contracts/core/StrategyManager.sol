@@ -941,8 +941,8 @@ contract StrategyManager is
         }   else {
                 uint256 shareAmount = uint256(sharesDelta);
                 //if change in shares is positive, add the shares
+                //note: _addShares calls increaseDelegatedShares while _removeShares does not.
                 _addShares(podOwner, beaconChainETHStrategy, shareAmount);
-                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
             }      
     }
 
