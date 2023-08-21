@@ -539,7 +539,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators - 1);
 
         {
-            ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+            ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, quorumNumbers, operatorKickParams, defaultSalt, block.timestamp + 10);
             cheats.prank(operatorToRegister);
             uint256 gasBefore = gasleft();
             registryCoordinator.registerOperatorWithCoordinator(
@@ -592,7 +592,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, defaultStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, quorumNumbers, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: registering operator has less than kickBIPsOfOperatorStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
@@ -615,7 +615,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp + 10);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithExpiry = _signOperatorChurnApproval(operatorToRegisterId, quorumNumbers, operatorKickParams, defaultSalt, block.timestamp + 10);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithExpiry);
@@ -659,7 +659,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         stakeRegistry.setOperatorWeight(defaultQuorumNumber, operatorToRegister, registeringStake);
 
         cheats.roll(registrationBlockNumber);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry = _signOperatorChurnApproval(operatorToRegisterId, operatorKickParams, defaultSalt, block.timestamp - 1);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry = _signOperatorChurnApproval(operatorToRegisterId, quorumNumbers, operatorKickParams, defaultSalt, block.timestamp - 1);
         cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithSaltAndExpiry);
