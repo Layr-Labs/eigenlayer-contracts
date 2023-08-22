@@ -9,14 +9,17 @@ import (
 )
 
 func main() {
+	//parse args
 	arg1 := os.Args[1]
 	n := new(big.Int)
-    n, _ = n.SetString(arg1, 10)
+	n, _ = n.SetString(arg1, 10)
 
+	//g2 mul
 	pubkey := new(bn254.G2Affine).ScalarMultiplication(GetG2Generator(), n)
 	px := pubkey.X.String()
 	py := pubkey.Y.String()
 
+	//parse out point coords to big ints
 	pxs := strings.Split(px, "+")	
 	pxss := strings.Split(pxs[1], "*")
 
@@ -35,16 +38,17 @@ func main() {
 	pyssInt := new(big.Int)
 	pyssInt, _ = pyssInt.SetString(pyss[0], 10)
 
+	//swtich to print coord requested
 	switch os.Args[2] {
-    case "1":
-        fmt.Printf("0x%064X", pxsInt)
-    case "2":
-        fmt.Printf("0x%064X", pxssInt)
-    case "3":
-        fmt.Printf("0x%064X", pysInt)
+	case "1":
+		fmt.Printf("0x%064X", pxsInt)
+	case "2":
+		fmt.Printf("0x%064X", pxssInt)
+	case "3":
+		fmt.Printf("0x%064X", pysInt)
 	case "4":
 		fmt.Printf("0x%064X", pyssInt)
-    }
+	}
 
 }
 
