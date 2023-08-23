@@ -44,6 +44,12 @@ library BeaconChainProofs {
     uint256 internal constant STATE_ROOTS_TREE_HEIGHT = 13;
     uint256 internal constant BLOCK_ROOTS_TREE_HEIGHT = 13;
 
+    //HISTORICAL_ROOTS_LIMIT = 2**24, so tree height is 24
+    uint256 internal constant HISTORICAL_SUMMARIES_TREE_HEIGHT = 24;
+
+    //Index of block_summary_root in historical_summary container
+    uint256 internal constant BLOCK_SUMMARY_ROOT_INDEX = 0;
+
 
     uint256 internal constant NUM_WITHDRAWAL_FIELDS = 4;
     // tree height for hash tree of an individual withdrawal container
@@ -72,6 +78,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_TREE_ROOT_INDEX = 11;
     uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
+    uint256 internal constant HISTORICAL_SUMMARIES_INDEX = 27;
     uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
     uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
     uint256 internal constant LATEST_BLOCK_HEADER_ROOT_INDEX = 4;
@@ -223,7 +230,7 @@ library BeaconChainProofs {
     ) internal view {
         require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, slotRoot, BEACON_STATE_SLOT_INDEX), "BeaconChainProofs.verifySlotRoot: Invalid slot merkle proof");
     }
 
     /**
@@ -270,6 +277,11 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: slotProof has incorrect length");
         require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
+
+        if(proofs.proveHistoricalRoot){
+            uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
+                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
+        }
 
         {
             /**
