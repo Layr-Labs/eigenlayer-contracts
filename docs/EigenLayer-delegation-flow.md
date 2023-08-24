@@ -1,10 +1,11 @@
 # Delegation Flow
 
-While delegating to an operator is designed to be a simple process from the staker's perspective, a lot happens "under the hood".
+In the delegation flow there are two types of users: Stakers and Operators. Stakers are users who delegate their staked collateral to Operators. Operators receive delegated stakes from Stakers and run services built on top of EigenLayer. While delegating to an operator is designed to be a simple process from the staker's perspective, a lot happens "under the hood".
 
 ## Operator Registration
 
-In order to be delegated _to_, an operator must have first called `DelegationManager.registerAsOperator`. If a staker tries to delegate to someone who has not previously registered as an operator, their transaction will fail.
+An Operator can register themselves in the system by calling the
+registerAsOperator function, providing their OperatorDetails which include the earningsReceiver (the address to receive the operator's earnings), delegationApprover (the address that approves delegations to the operator), and stakerOptOutWindowBlocks (the number of blocks for which a staker can opt out of delegating to the operator). In order to be delegated _to_, an operator must have first called `DelegationManager.registerAsOperator`. Once registered, an operator cannot deregister and is considered permanently delegated to themselves.
 
 When an operator registers in EigenLayer, the following flow of calls between contracts occurs:
 
@@ -27,7 +28,17 @@ For a staker to delegate to an operator, the staker must either:
    OR
 2. Supply an appropriate ECDSA signature, which can then be submitted by the operator (or a third party) as part of a call to `DelegationManager.delegateToBySignature`
 
+If a staker tries to delegate to someone who has not previously registered as an operator, their transaction will fail.
+
 In either case, the end result is the same, and the flow of calls between contracts looks identical:
+
+```mermaid
+sequenceDiagram
+participant Staker as Staker
+participant DelegationManager as DelegationManager
+Staker->>DelegationManager: delegateTo(operator, signatureWithExpiry)
+DelegationManager->>Staker: StakerDelegated event
+```
 
 ![Delegating in EigenLayer](images/EL_delegating.png?raw=true "Delegating in EigenLayer")
 
