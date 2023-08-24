@@ -36,7 +36,15 @@ In either case, the end result is the same, and the flow of calls between contra
 sequenceDiagram
 participant Staker as Staker
 participant DelegationManager as DelegationManager
-Staker->>DelegationManager: delegateTo(operator, signatureWithExpiry)
+Staker->>DelegationManager: delegateTo(operator, approverSignatureWithExpirhy, approverSalt)
+DelegationManager->>Staker: StakerDelegated event
+```
+
+```mermaid
+sequenceDiagram
+participant Staker as Staker
+participant DelegationManager as DelegationManager
+Staker->>DelegationManager: delegateToWithSignature(staker, operator, stakerSignatureWithExpiry, approverSignatureWithExpiry, approverSalt)
 DelegationManager->>Staker: StakerDelegated event
 ```
 
