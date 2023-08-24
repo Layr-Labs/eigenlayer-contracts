@@ -4,8 +4,7 @@ In the delegation flow there are two types of users: Stakers and Operators. Stak
 
 ## Operator Registration
 
-An Operator can register themselves in the system by calling the
-registerAsOperator function, providing their OperatorDetails which include the earningsReceiver (the address to receive the operator's earnings), delegationApprover (the address that approves delegations to the operator), and stakerOptOutWindowBlocks (the number of blocks for which a staker can opt out of delegating to the operator). In order to be delegated _to_, an operator must have first called `DelegationManager.registerAsOperator`. Once registered, an operator cannot deregister and is considered permanently delegated to themselves.
+An Operator can register themselves in the system by calling the registerAsOperator function, providing their OperatorDetails which include the earningsReceiver (the address to receive the operator's earnings), delegationApprover (the address that approves delegations to the operator), and stakerOptOutWindowBlocks (the number of blocks for which a staker can opt out of delegating to the operator). In order to be delegated _to_, an operator must have first called `DelegationManager.registerAsOperator`. Once registered, an operator cannot deregister and is considered permanently delegated to themselves.
 
 When an operator registers in EigenLayer, the following flow of calls between contracts occurs:
 
