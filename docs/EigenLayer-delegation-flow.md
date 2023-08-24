@@ -18,7 +18,7 @@ sequenceDiagram
 ```
 
 1. The would-be operator calls `DelegationManager.registerAsOperator`, providing their `OperatorDetails` and an (optional) `metadataURI` string as an input. The DelegationManager contract stores the `OperatorDetails` provided by the operator and emits an event containing the `metadataURI`. The `OperatorDetails` help define the terms of the relationship between the operator and any stakers who delegate to them, and the `metadataURI` can provide additional details about the operator.
-   All of the remaining steps (2 and 3) proceed as outlined in the delegation process below; the DelegationManager contract treats things as if the operator has delegated _to themselves_.
+   All of the remaining steps (2 and 3) proceed as outlined in the delegation process below;
 
 ## Staker Delegation
 
@@ -48,10 +48,6 @@ Staker->>DelegationManager: delegateToWithSignature(staker, operator, stakerSign
 DelegationManager->>Staker: StakerDelegated event
 ```
 
-![Delegating in EigenLayer](images/EL_delegating.png?raw=true "Delegating in EigenLayer")
-
 1. As outlined above, either the staker themselves calls `DelegationManager.delegateTo`, or the operator (or a third party) calls `DelegationManager.delegateToBySignature`, in which case the DelegationManager contract verifies the provided ECDSA signature
 2. The DelegationManager contract calls `Slasher.isFrozen` to verify that the operator being delegated to is not frozen
 3. The DelegationManager contract calls `StrategyManager.getDeposits` to get the full list of the staker (who is delegating)'s deposits. It then increases the delegated share amounts of operator (who is being delegated to) appropriately
-
-TODO: complete explanation of signature-checking. For the moment, you can look at the IDelegationManager interface or the DelegationManager contract itself for more details on this.
