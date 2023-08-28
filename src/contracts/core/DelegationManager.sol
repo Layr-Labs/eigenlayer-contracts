@@ -31,12 +31,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /**
-     * @notice Maximum value that `_operatorDetails[operator].stakerOptOutWindowBlocks` is allowed to take, for any operator.
-     * @dev Approximately equivalent to 6 months in blocks.
+     * @dev Maximum Value for stakerOptOutWindowApproximately that is approximately equivalent to 6 months in blocks.
      */
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
-    /// @dev Throws if called by an account that is not the StrategyManager.
+    /**
+      * @dev Throws if called by an account that is not the StrategyManager.
+      */
     modifier onlyStrategyManager() {
         require(msg.sender == address(strategyManager), "onlyStrategyManager");
         _;
@@ -67,10 +68,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     *******************************************************************************/
 
     /**
-     * @notice Registers the `msg.sender` as an operator in EigenLayer, that stakers can choose to delegate to.
+     * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
-     * @dev Note that once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
+     * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
@@ -89,9 +90,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Updates the `msg.sender`'s stored `OperatorDetails`.
+     * @notice Updates an operators stored `OperatorDetails`.
      * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-     * @dev The `msg.sender` must have previously registered as an operator in EigenLayer.
+     * @dev The caller must have previously registered as an operator in EigenLayer.
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
     function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
@@ -99,10 +100,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event, signalling that information about the operator (or at least where this
-     * information is stored) has changed.
-     * @param metadataURI is the new metadata URI for the `msg.sender`, i.e. the operator.
-     * @dev This function will revert if the caller is not an operator.
+     * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an operator
      */
     function updateOperatorMetadataURI(string calldata metadataURI) external {
         require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
@@ -110,7 +109,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Called by a staker to delegate its assets to an operator.
+     * @notice Caller delegates their stake to an operator.
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param approverSalt A unique single use value tied to an individual signature.
@@ -128,7 +127,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Called by a third party to delegate a staker's assets to an operator with valid signatures from both parties
+     * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
      * @param staker The account delegating stake to an `operator` account
      * @param operator The account (`staker`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param stakerSignatureAndExpiry Signed data from the staker authorizing delegating stake to an operator
@@ -347,7 +346,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    /// @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+    /**
+      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+      */
     function isDelegated(address staker) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
@@ -359,23 +360,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice returns the OperatorDetails of the `operator`.
-     * @notice Mapping: operator => OperatorDetails struct
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
-    // @notice Getter function for `_operatorDetails[operator].earningsReceiver`
+    /* 
+     * @notice Getter function for `_operatorDetails[operator].earningsReceiver`
+     */
     function earningsReceiver(address operator) external view returns (address) {
         return _operatorDetails[operator].earningsReceiver;
     }
 
-    // @notice Getter function for `_operatorDetails[operator].delegationApprover`
+    /** 
+      * @notice Getter function for `_operatorDetails[operator].delegationApprover`
+      */
     function delegationApprover(address operator) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
-    // @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
+    /**
+      * @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
+      */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
@@ -434,8 +440,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return approverDigestHash;
     }
 
-    // @notice Recalculates the current domain separator of this contract
-    // @dev Called in the event the original chain id differs, ie a chain fork occurs 
+    /** 
+      * @dev Recalculates the current domain separator of this contract in the event chainid changes, ie a fork occurs 
+      */
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
