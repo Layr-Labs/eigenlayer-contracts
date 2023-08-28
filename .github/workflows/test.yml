@@ -26,6 +26,9 @@ jobs:
       - name: Install forge dependencies
         run: forge install
 
+      - name: Run build and check contract sizes
+        run: forge build --sizes
+
       - name: Run tests
         run: forge test -vvv
         env:
