@@ -61,14 +61,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
-    // this replaces the datastructure mapping(address => uint256) public beaconChainETHSharesToDecrementOnWithdrawal;
-    // this mapping tracked beaconChainETH debt in case updates were made to shares retroactively.  However this design was
-    // replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which
-    // makes tracking debt unnecessary.
-    uint256 internal _deprecatedStorage;
-
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;
@@ -80,5 +72,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[42] private __gap;
 }
