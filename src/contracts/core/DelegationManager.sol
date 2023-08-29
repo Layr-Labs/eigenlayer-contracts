@@ -70,7 +70,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /*******************************************************************************
-                            External Functions
+                            EXTERNAL FUNCTIONS 
     *******************************************************************************/
 
     /**
@@ -262,7 +262,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /*******************************************************************************
-                            Internal Functions
+                            INTERNAL FUNCTIONS
     *******************************************************************************/
 
     /**
@@ -347,7 +347,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /*******************************************************************************
-                            View Functions
+                            VIEW FUNCTIONS
     *******************************************************************************/
 
     /**
