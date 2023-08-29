@@ -119,13 +119,16 @@ library BeaconChainProofs {
         bytes slotProof;
         bytes executionPayloadProof;
         bytes timestampProof;
+        bytes historicalSummaryBlockRootProof;
         uint64 blockHeaderRootIndex;
+        uint64 historicalSummaryIndex;
         uint64 withdrawalIndex;
         bytes32 blockHeaderRoot;
         bytes32 blockBodyRoot;
         bytes32 slotRoot;
         bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
+        bool proveHistoricalRoot;
     }
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
@@ -279,11 +282,15 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
         if(proofs.proveHistoricalRoot){
+            //calculate the blockHeaderRoot Index for a block that is very old
             uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
-                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
-        }
+                                                uint256(proofs.historicalSummaryIndex) << (1 + (BLOCK_ROOTS_TREE_HEIGHT)) |
+                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | 
+                                                uint256(proofs.blockHeaderRootIndex);
 
-        {
+            require(Merkle.verifyInclusionSha256(proofs.historicalSummaryBlockRootProof, beaconStateRoot, proofs.blockHeaderRoot, historicalBlockHeaderIndex),
+                "BeaconChainProofs.verifyWithdrawalProofs: invalid historical summary proof");
+        } else {
             /**
             * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
             * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree

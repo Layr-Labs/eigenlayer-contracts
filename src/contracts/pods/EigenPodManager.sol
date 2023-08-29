@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+
 
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
@@ -29,7 +31,14 @@ import "./EigenPodPausingConstants.sol";
  * - keeping track of the balances of all validators of EigenPods, and their stake in EigenLayer
  * - withdrawing eth when withdrawals are initiated
  */
-contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenPodManager, EigenPodPausingConstants {
+contract EigenPodManager is 
+    Initializable, 
+    OwnableUpgradeable, 
+    Pausable, 
+    IEigenPodManager,
+    EigenPodPausingConstants,
+    ReentrancyGuardUpgradeable
+{
     /**
      * @notice Stored code of type(BeaconProxy).creationCode
      * @dev Maintained as a constant to solve an edge case - changes to OpenZeppelin's BeaconProxy code should not cause
@@ -54,6 +63,9 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
+
+    /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
+    mapping(address => uint256) public podOwnerShares;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
@@ -81,6 +93,14 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
 
     modifier onlyStrategyManager {
         require(msg.sender == address(strategyManager), "EigenPodManager.onlyStrategyManager: not strategyManager");
+        _;
+    }
+
+    modifier onlyNotFrozen(address staker) {
+        require(
+            !slasher.isFrozen(staker),
+            "EigenPodManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
+        );
         _;
     }
 
@@ -137,8 +157,18 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
      * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.depositBeaconChainETH(podOwner, amount);
+    function restakeBeaconChainETH(address podOwner, uint256 amount) 
+        external 
+        onlyEigenPod(podOwner) 
+        onlyWhenNotPaused(PAUSED_DEPOSITS)
+        onlyNotFrozen(podOwner)
+        nonReentrant
+    {
+        // strategyManager.depositBeaconChainETH(podOwner, amount);
+        require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
+        require(amount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
+
+        podOwnerShares[podOwner] += amount;]       
         emit BeaconChainETHDeposited(podOwner, amount);
     }
 

@@ -613,14 +613,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawnonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external onlyEigenPodOwner {
         require(amountToWithdraw <= nonBeaconChainETHBalanceWei, "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
-        AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
+        AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
     }
 
     function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
         require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
         for (uint256 i = 0; i < tokenList.length; i++) {
-            tokenList[i].transfer(recipient, amountsToWithdraw[i]);
+            tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
     }
 
