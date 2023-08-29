@@ -84,6 +84,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
     function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external {
+        require(isOperator(msg.sender), "DelegationManager.modifyOperatorDetails: caller must be an operator");
         _setOperatorDetails(msg.sender, newOperatorDetails);
     }
 
