@@ -9,7 +9,7 @@ import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
- * @title The primary delegation contract for EigenLayer.
+ * @title DelegationManager
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
@@ -21,7 +21,7 @@ import "../libraries/EIP1271SignatureUtils.sol";
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
 
     /**
-     *@dev Index for flag that pauses new delegations when set
+     * @dev Index for flag that pauses new delegations when set
      */
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -47,6 +47,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             INITIALIZING FUNCTIONS
     *******************************************************************************/
 
+    /**
+     * @dev Initializes the immutable addresses of the strategy mananger and slasher.
+     */
     constructor(IStrategyManager _strategyManager, ISlasher _slasher) 
         DelegationManagerStorage(_strategyManager, _slasher)
     {
@@ -54,6 +57,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         ORIGINAL_CHAIN_ID = block.chainid;
     }
 
+    /**
+     * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     */
     function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus)
         external
         initializer
@@ -71,6 +77,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
+     * 
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
@@ -92,6 +99,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Updates an operators stored `OperatorDetails`.
      * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
+     * 
      * @dev The caller must have previously registered as an operator in EigenLayer.
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
@@ -113,11 +121,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param approverSalt A unique single use value tied to an individual signature.
-     * The approverSignatureAndExpiry is used in the event that:
-     * 1) the operator's `delegationApprover` address is set to a non-zero value.
-     * AND
-     * 2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator or their delegationApprover
-     * is the `msg.sender`, then approval is assumed.
+     * @dev The approverSignatureAndExpiry is used in the event that:
+     *          1) the operator's `delegationApprover` address is set to a non-zero value.
+     *                  AND
+     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator 
+     *             or their delegationApprover is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
      */
@@ -170,6 +178,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Undelegates `staker` from the operator who they are delegated to.
      * @param staker The account undelegating.
+     *
      * @dev Callable only by the StrategyManager.
      * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
@@ -189,6 +198,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Forcibly undelegates a staker who is currently delegated to the operator.
      * @param staker The account to be force-undelegated.
      * @return The root of the newly queued withdrawal.
+     *
      * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
@@ -204,6 +214,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
+     * @param staker The address to increase the delegated shares for their operator.
+     * @param strategy The strategy in which to increase the delegated shares.
+     * @param shares The number of shares to increase.
+     * 
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
@@ -222,6 +236,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
+     * @param staker The address to decrease the delegated shares for their operator.
+     * @param strategies An array of strategies to crease the delegated shares.
+     * @param shares An array of the number of shares to decrease for a operator and strategy.
+     * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
@@ -251,6 +269,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Sets operator parameters in the `_operatorDetails` mapping.
      * @param operator The account registered as an operator updating their operatorDetails
      * @param newOperatorDetails The new parameters for the operator
+     * 
      * @dev This function will revert if the operator attempts to set their `earningsReceiver` to address(0).
      */
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
@@ -272,10 +291,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param approverSalt Is a salt used to help guarantee signature uniqueness. Each salt can only be used once by a given approver.
      * @dev Ensures that:
-     * 1) the `staker` is not already delegated to an operator
-     * 2) the `operator` has indeed registered as an operator in EigenLayer
-     * 3) the `operator` is not actively frozen
-     * 4) if applicable, that the approver signature is valid and non-expired
+     *          1) the `staker` is not already delegated to an operator
+     *          2) the `operator` has indeed registered as an operator in EigenLayer
+     *          3) the `operator` is not actively frozen
+     *          4) if applicable, that the approver signature is valid and non-expired
      */ 
     function _delegate(
         address staker,
@@ -333,6 +352,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice Getter function for the current EIP-712 domain separator for this contract.
+     *
      * @dev The domain separator will change in the event of a fork that changes the ChainID.
      * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
      * for more detailed information please read EIP-712.
@@ -353,42 +373,43 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return (delegatedTo[staker] != address(0));
     }
 
-    /// @notice Returns if an operator can be delegated to, i.e. the `operator` has previously called `registerAsOperator`.
+    /**
+      * @notice Returns true is an operator has previously registered for delegation.
+      */
     function isOperator(address operator) public view returns (bool) {
         return (_operatorDetails[operator].earningsReceiver != address(0));
     }
 
     /**
-     * @notice returns the OperatorDetails of the `operator`.
+     * @notice Returns the OperatorDetails struct associated with an `operator`.
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
     }
 
     /* 
-     * @notice Getter function for `_operatorDetails[operator].earningsReceiver`
+     * @notice Returns the earnings receiver address for an operator
      */
     function earningsReceiver(address operator) external view returns (address) {
         return _operatorDetails[operator].earningsReceiver;
     }
 
     /** 
-      * @notice Getter function for `_operatorDetails[operator].delegationApprover`
+      * @notice Returns the delegationApprover account for an operator
       */
     function delegationApprover(address operator) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
     /**
-      * @notice Getter function for `_operatorDetails[operator].stakerOptOutWindowBlocks`
+      * @notice Returns the stakerOptOutWindowBlocks for an operator
       */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
     /**
-     * @notice External function that calculates the digestHash for a `staker` to sign in order to approve their delegation to an `operator`,
-     * using the staker's current nonce and specifying an expiration of `expiry`
+     * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
      * @param staker The signing staker
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
@@ -401,7 +422,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Public function for the staker signature hash calculation in the `delegateToBySignature` function
+     * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
      * @param staker The signing staker
      * @param stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
      * @param operator The operator who is being delegated to
@@ -416,10 +437,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }        
 
     /**
-     * @notice Public function for the the approver signature hash calculation in the internal `_delegate` function, which is called by both
-     * the `delegateTo` and `delegateToBySignature` functions.
-     * Calculates the digestHash for the `operator`'s "delegationApprover" to sign in order to approve the
-     * delegation of `staker` to the `operator`, using the approver's provided `salt` and specifying an expiration of `expiry`
+     * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
      * @param staker The account delegating their stake
      * @param operator The account receiving delegated stake
      * @param delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
@@ -441,7 +459,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /** 
-      * @dev Recalculates the current domain separator of this contract in the event chainid changes, ie a fork occurs 
+      * @dev Recalculates the domain separator when the chainid changes due to a fork.
       */
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
