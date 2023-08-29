@@ -55,11 +55,17 @@ contract EigenPodManager is
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
+    /// @notice EigenLayer's DelegationManager contract
+    IDelegationManager public immutable delegationManager;
+
     /// @notice EigenLayer's Slasher contract
     ISlasher public immutable slasher;
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
     IBeaconChainOracle public beaconChainOracle;
+
+    /// @notice Canonical beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
@@ -109,6 +115,7 @@ contract EigenPodManager is
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
         slasher = _slasher;
+        delegationManager = strategyManager.delegation();
         _disableInitializers();
     }
 
@@ -168,7 +175,10 @@ contract EigenPodManager is
         require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
         require(amount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
 
-        podOwnerShares[podOwner] += amount;]       
+        podOwnerShares[podOwner] += amount;     
+
+        //if the podOwner has delegated shares, record an increase in their delegated shares
+        delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, amount);
         emit BeaconChainETHDeposited(podOwner, amount);
     }
 
