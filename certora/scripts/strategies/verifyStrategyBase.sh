@@ -17,4 +17,4 @@ certoraRun certora/munged/strategies/StrategyBase.sol \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --link StrategyBase:strategyManager=StrategyManager \
     $RULE \
-    --msg "Pausable $1 $2" \
+    --msg "StrategyBase $1 $2" \
