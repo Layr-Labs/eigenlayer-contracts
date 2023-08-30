@@ -213,19 +213,17 @@ contract EigenPodManager is
      * @dev Callable only by the podOwner's EigenPod contract.
      */
     function queueWithdrawal(
-        address podOwner, 
         uint256 amountWei, 
         bool undelegateIfPossible
     ) 
-        internal
+        external
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyNotFrozen(msg.sender)
+        nonReentrant
     {
+        address podOwner = msg.sender;
         require(receiver != address(0), "EigenPodManager.queueWithdrawal: receiver cannot be zero address");
-        require(shareAmount > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
-
-        //decrease any shares that may be delegated
-        uint256[] memory amounts;
-        amounts[0] = amountWei;
-        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, amounts);
+        require(amountWei > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
 
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
 
@@ -258,6 +256,51 @@ contract EigenPodManager is
 
         emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);   
     }
+
+
+    function queueRedelegation() 
+        external
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyNotFrozen(msg.sender)
+        nonReentrant
+    {
+        address podOwner = msg.sender;
+        require(receiver != address(0), "EigenPodManager.queueWithdrawal: receiver cannot be zero address");
+        require(shareAmount > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
+
+        currentBeaconChainShares = podOwnerShares[podOwner];
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = currentBeaconChainShares;
+        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, amounts);
+        delegationManager.undelegate(podOwner);
+
+        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
+
+        require(amountWei % GWEI_TO_WEI == 0,
+                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
+
+        address delegatedAddress = delegationManager.delegatedTo(podOwner);
+
+        unchecked {
+            numWithdrawalsQueued[podOwner] = nonce + 1;
+        }
+
+        BeaconChainQueuedWithdrawal memory queuedWithdrawal = BeaconChainQueuedWithdrawal({
+            shares: currentBeaconChainShares,
+            podOwner: podOwner,
+            nonce: nonce,
+            withdrawalStartBlock: block.number,
+            delegatedAddress: delegatedAddress
+        });
+
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+        withdrawalRootPending[withdrawalroot] = true;
+
+        emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);  
+
+    }
+
+
 
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.

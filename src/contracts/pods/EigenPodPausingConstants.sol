@@ -21,4 +21,6 @@ abstract contract EigenPodPausingConstants {
 
     /// @notice Index for flag that pauses deposits to EigenPodManager when set.
     uint8 internal constant PAUSED_DEPOSITS = 5;
+    /// @notice Index for flag that pauses withdrawals from EigenPodManager when set.
+    uint8 internal constant PAUSED_WITHDRAWALS = 6;
 }
