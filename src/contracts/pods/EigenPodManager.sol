@@ -66,12 +66,20 @@ contract EigenPodManager is
 
     /// @notice Canonical beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+    IStrategy[] public beaconChainETHStrategyList;
     
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
 
     /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
     mapping(address => uint256) public podOwnerShares;
+
+    /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
+    mapping(address => uint256) public numWithdrawalsQueued;
+
+    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
+    mapping(bytes32 => bool) public withdrawalRootPending;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
@@ -91,6 +99,9 @@ contract EigenPodManager is
 
     /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when a withdrawal of beacon chain ETH is queued
+    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 amount, uint96 nonce);
 
     modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, "EigenPodManager.onlyEigenPod: not a pod");
@@ -116,6 +127,7 @@ contract EigenPodManager is
         strategyManager = _strategyManager;
         slasher = _slasher;
         delegationManager = strategyManager.delegation();
+        beaconChainETHStrategyList[0] = beaconChainETHStrategy;
         _disableInitializers();
     }
 
@@ -161,25 +173,24 @@ contract EigenPodManager is
     /**
      * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
      * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
+     * @param amountWei The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) 
+    function restakeBeaconChainETH(address podOwner, uint256 amountWei) 
         external 
         onlyEigenPod(podOwner) 
         onlyWhenNotPaused(PAUSED_DEPOSITS)
         onlyNotFrozen(podOwner)
         nonReentrant
     {
-        // strategyManager.depositBeaconChainETH(podOwner, amount);
         require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
-        require(amount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
+        require(amountWei > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
 
-        podOwnerShares[podOwner] += amount;     
+        podOwnerShares[podOwner] += amountWei;     
 
         //if the podOwner has delegated shares, record an increase in their delegated shares
-        delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, amount);
-        emit BeaconChainETHDeposited(podOwner, amount);
+        delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, amountWei);
+        emit BeaconChainETHDeposited(podOwner, amountWei);
     }
 
     /**
@@ -190,8 +201,62 @@ contract EigenPodManager is
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
+    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner) nonReentrant {
+       _updateSharesToReflectBeaconChainETHBalance(podOwner, sharesDelta);
+    }
+
+    /**
+     * @notice Queues a withdrawal for beacon chain ETH shares on behalf of the owner of an EigenPod.
+     * @param podOwner The owner of the pod whose balance must be withdrawn.
+     * @param amount The amount of ETH to withdraw.
+     * @param undelegateIfPossible If true, the podOwner's shares will be undelegated if they are not currently delegated.
+     * @dev Callable only by the podOwner's EigenPod contract.
+     */
+    function queueWithdrawal(
+        address podOwner, 
+        uint256 amountWei, 
+        bool undelegateIfPossible
+    ) 
+        internal
+    {
+        require(receiver != address(0), "EigenPodManager.queueWithdrawal: receiver cannot be zero address");
+        require(shareAmount > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
+
+        //decrease any shares that may be delegated
+        uint256[] memory amounts;
+        amounts[0] = amountWei;
+        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, amounts);
+
+        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
+
+        require(amountWei % GWEI_TO_WEI == 0,
+                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
+
+        decrementWithdrawableRestakedExecutionLayerGwei(podOwner, amountWei);  
+        bool undelegationPossible = _removeShares(podOwner, amountWei);  
+
+        address delegatedAddress = delegationManager.delegatedTo(podOwner);
+
+        unchecked {
+            numWithdrawalsQueued[podOwner] = nonce + 1;
+        }
+
+        BeaconChainQueuedWithdrawal memory queuedWithdrawal = BeaconChainQueuedWithdrawal({
+            shares: amountWei,
+            podOwner: podOwner,
+            nonce: nonce,
+            withdrawalStartBlock: block.number,
+            delegatedAddress: delegatedAddress
+        });
+
+        if (undelegateIfPossible && undelegationPossibe){
+            delegationManager.undelegate(podOwner);
+        }
+
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+        withdrawalRootPending[withdrawalroot] = true;
+
+        emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);   
     }
 
     /**
@@ -313,10 +378,71 @@ contract EigenPodManager is
         return stateRoot;
     }
 
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
+        return (
+            keccak256(
+                abi.encode(
+                    queuedWithdrawal.shares,
+                    queuedWithdrawal.podOwner,
+                    queuedWithdrawal.nonce,
+                    queuedWithdrawal.withdrawalStartBlock,
+                    queuedWithdrawal.delegatedAddress
+                )
+            )
+        );
+    }
+
+    function _addShares(address podOwner, uint256 shareAmount) internal {
+        require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
+        require(shareAmount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
+
+        podOwnerShares[podOwner] += shareAmount;     
+
+        //if the podOwner has delegated shares, record an increase in their delegated shares
+        delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
+    }
+
+    function _removeShares(address podOwner, uint256 shareAmount) internal returns(bool) {
+        require(podOwner != address(0), "EigenPodManager._removeShares: depositor cannot be zero address");
+        require(shareAmount != 0, "EigenPodManager._removeShares: shareAmount should not be zero!");
+
+        uint256 currentPodOwnerShares = podOwnerShares[podOwner];
+        require(shareAmount <= currentPodOwnerShares, "EigenPodManager._removeShares: shareAmount too high");
+
+        unchecked {
+            currentPodOwnerShares = currentPodOwnerShares - shareAmount;
+        }
+
+        podOwnerShares[podOwner] = currentPodOwnerShares;
+
+        uint256[] memory shareAmounts = new uint256[](1);
+        shareAmounts[0] = uint256(shareAmount);
+
+        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
+
+        if (currentPodOwnerShares == 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, int256 sharesDelta) internal {
+        
+        if (sharesDelta < 0) {
+                //if change in shares is negative, remove the shares
+                _removeShares(podOwner, uint256(-sharesDelta));
+        }   else {
+                uint256 shareAmount = uint256(sharesDelta);
+                //if change in shares is positive, add the shares
+                _addShares(podOwner, shareAmount);
+            }      
+    }
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[41] private __gap;
 }

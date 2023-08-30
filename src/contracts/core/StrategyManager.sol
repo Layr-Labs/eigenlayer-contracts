@@ -158,39 +158,6 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
-     * @param staker is the entity that is restaking in eigenlayer,
-     * @param amount is the amount of beaconchain ETH being restaked,
-     * @dev Only callable by EigenPodManager.
-     */
-    function depositBeaconChainETH(address staker, uint256 amount)
-        external
-        onlyEigenPodManager
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(staker)
-        nonReentrant
-    {
-        // add shares for the enshrined beacon chain ETH strategy
-        _addShares(staker, beaconChainETHStrategy, amount);
-    }
-
-    /**
-     * @notice Records a beacon chain balance update event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
-     * @param podOwner is the pod owner whose beaconchain ETH balance is being updated,
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @dev Only callable by EigenPodManager.
-     */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
-        external
-        onlyEigenPodManager
-        nonReentrant
-    {
-        // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
-        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, sharesDelta);
-    }
-
-    /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
@@ -920,30 +887,6 @@ contract StrategyManager is
     function _setStrategyWhitelister(address newStrategyWhitelister) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
-    }
-
-
-    /**
-     * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
-        * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     */
-    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) internal {
-        
-        if (sharesDelta < 0) {
-                IStrategy[] memory strategies = new IStrategy[](1);
-                strategies[0] = beaconChainETHStrategy;
-                uint256[] memory shareAmounts = new uint256[](1);
-                shareAmounts[0] = uint256(-sharesDelta);
-
-                //if change in shares is negative, remove the shares
-                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);
-                delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
-        }   else {
-                uint256 shareAmount = uint256(sharesDelta);
-                //if change in shares is positive, add the shares
-                //note: _addShares calls increaseDelegatedShares while _removeShares does not.
-                _addShares(podOwner, beaconChainETHStrategy, shareAmount);
-            }      
     }
 
     // VIEW FUNCTIONS

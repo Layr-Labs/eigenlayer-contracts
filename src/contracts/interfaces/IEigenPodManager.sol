@@ -14,6 +14,20 @@ import "./IPausable.sol";
 
 interface IEigenPodManager is IPausable {
     /**
+     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
+     * In functions that operate on existing queued withdrawals -- e.g. `startQueuedWithdrawalWaitingPeriod` or `completeQueuedWithdrawal`,
+     * the data is resubmitted and the hash of the submitted data is computed by `calculateWithdrawalRoot` and checked against the
+     * stored hash in order to confirm the integrity of the submitted data.
+     */
+    struct BeaconChainQueuedWithdrawal {
+        uint256 shares;
+        address podOwner;
+        uint96 nonce;
+        uint32 withdrawalStartBlock;
+        address delegatedAddress;
+    }
+
+    /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
      */
