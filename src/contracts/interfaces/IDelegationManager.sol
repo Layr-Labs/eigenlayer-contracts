@@ -255,7 +255,7 @@ interface IDelegationManager {
      * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
-    function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external view returns (bool);
+    function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
 
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
@@ -268,24 +268,24 @@ interface IDelegationManager {
     /**
      * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
      * @param staker The signing staker
-     * @param stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
+     * @param _stakerNonce The nonce of the staker. In practice we use the staker's current nonce, stored at `stakerNonce[staker]`
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateStakerDelegationDigestHash(address staker, uint256 stakerNonce, address operator, uint256 expiry) external view returns (bytes32);
+    function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) external view returns (bytes32);
 
     /**
      * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
      * @param staker The account delegating their stake
      * @param operator The account receiving delegated stake
-     * @param delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
+     * @param _delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
      * @param approverSalt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,
-        address delegationApprover,
+        address _delegationApprover,
         bytes32 approverSalt,
         uint256 expiry
     ) external view returns (bytes32);
