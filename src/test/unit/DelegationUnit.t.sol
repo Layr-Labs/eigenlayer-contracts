@@ -307,6 +307,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
+     * @notice Verifies that a staker cannot call cannot modify their `OperatorDetails` without first registering as an operator
+     * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
+     * invariant that 'operators' are always delegated to themselves
+     */
+    function testCannotModifyOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
+        cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    /**
      * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
      * via the `staker` calling `DelegationManager.delegateTo`
      * The function should pass with any `operatorSignature` input (since it should be unused)
