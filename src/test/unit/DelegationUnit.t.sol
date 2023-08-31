@@ -58,6 +58,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         _;
     }
 
+    // @notice mapping used to handle duplicate entries in fuzzed address array input
+    mapping(address => uint256) public totalSharesForStrategyInArray;
+
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
 
@@ -1050,6 +1053,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegatedSharesBefore[i] = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]);   
             // also construct an array which we'll use in another loop
             sharesInputArray[i] = shares;
+            totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
         }
         cheats.stopPrank();
 
@@ -1063,7 +1067,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]); 
 
             if (delegationManager.isDelegated(staker)) {
-                require(delegatedSharesAfter == delegatedSharesBefore[i] - sharesInputArray[i], "delegated shares did not decrement correctly");
+                require(delegatedSharesAfter == delegatedSharesBefore[i] - totalSharesForStrategyInArray[address(strategies[i])],
+                    "delegated shares did not decrement correctly");
             } else {
                 require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
                 require(delegatedSharesBefore[i] == 0, "nonzero shares delegated to zero address!");
