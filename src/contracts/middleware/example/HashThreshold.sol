@@ -13,8 +13,8 @@ import "./ECDSARegistry.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract HashThreshold is Ownable, IServiceManager {
-    uint32 constant disputePeriodBlocks = 1 days / 12 seconds;
-    uint8 constant numZeroes = 5;
+    uint32 public constant disputePeriodBlocks = 1 days / 12 seconds;
+    uint8 public constant numZeroes = 5;
     ISlasher public immutable slasher;
     ECDSARegistry public immutable registry;
 
@@ -65,7 +65,8 @@ contract HashThreshold is Ownable, IServiceManager {
         // we check that the message has not already been certified
         require(certifiedMessageMetadatas[message].validAfterBlock == 0, "Message already certified");
         // this makes it so that the signatures are viewable in calldata
-        require(msg.sender == tx.origin, "EOA must call this function");
+        // solhint-disable-next-line avoid-tx-origin
+       require(msg.sender == tx.origin, "EOA must call this function");
         uint128 stakeSigned = 0;
         for(uint256 i = 0; i < signatures.length; i += 65) {
             // we fetch all the signers and check their signatures and their stake
