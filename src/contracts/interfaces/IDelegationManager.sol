@@ -105,7 +105,7 @@ interface IDelegationManager {
     function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external;
 
     /**
-     * @notice Updates an operators stored `OperatorDetails`.
+     * @notice Updates an operator's stored `OperatorDetails`.
      * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
      * 
      * @dev The caller must have previously registered as an operator in EigenLayer.
