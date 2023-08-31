@@ -214,7 +214,8 @@ contract EigenPodManager is
      */
     function queueWithdrawal(
         uint256 amountWei, 
-        bool undelegateIfPossible
+        bool undelegateIfPossible,
+        bool alsoWithdraw
     ) 
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
@@ -225,13 +226,26 @@ contract EigenPodManager is
         require(receiver != address(0), "EigenPodManager.queueWithdrawal: receiver cannot be zero address");
         require(amountWei > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
 
+        //if the user does not want to withdraw but rather redelegate to another operator, they must be queueing a withdrawal
+        //for all their shares.
+        if(!alsoWithdraw){
+            require(amountWei == podOwnerShares[podOwner], "EigenPodManager.queueWithdrawal: amount must equal podOwnerShares[podOwner]")
+        }
+
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
 
         require(amountWei % GWEI_TO_WEI == 0,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
 
-        decrementWithdrawableRestakedExecutionLayerGwei(podOwner, amountWei);  
-        bool undelegationPossible = _removeShares(podOwner, amountWei);  
+
+        if(alsoWithdraw){
+            bool undelegationPossible = _removeShares(podOwner, amountWei);  
+            decrementWithdrawableRestakedExecutionLayerGwei(podOwner, amountWei);  
+        }
+
+        uint256[] memory shareAmounts = new uint256[](1);
+        shareAmounts[0] = amountWei;
+        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
 
         address delegatedAddress = delegationManager.delegatedTo(podOwner);
 
@@ -245,6 +259,7 @@ contract EigenPodManager is
             nonce: nonce,
             withdrawalStartBlock: block.number,
             delegatedAddress: delegatedAddress
+            alsoWithdraw: alsoWithdraw
         });
 
         if (undelegateIfPossible && undelegationPossibe){
@@ -257,48 +272,35 @@ contract EigenPodManager is
         emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);   
     }
 
-
-    function queueRedelegation() 
+    function completeWithdrawal(
+        BeaconChainQueuedWithdrawal memory queuedWithdrawal,
+        uint256 middlewareTimesIndexre
+    )
         external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(msg.sender)
+        onlyNotFrozen(queuedWithdrawal.delegatedAddress)
         nonReentrant
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
     {
-        address podOwner = msg.sender;
-        require(receiver != address(0), "EigenPodManager.queueWithdrawal: receiver cannot be zero address");
-        require(shareAmount > 0, "EigenPodManager.queueWithdrawal: amount must be greater than zero");
-
-        currentBeaconChainShares = podOwnerShares[podOwner];
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = currentBeaconChainShares;
-        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, amounts);
-        delegationManager.undelegate(podOwner);
-
-        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
-
-        require(amountWei % GWEI_TO_WEI == 0,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-
-        address delegatedAddress = delegationManager.delegatedTo(podOwner);
-
-        unchecked {
-            numWithdrawalsQueued[podOwner] = nonce + 1;
-        }
-
-        BeaconChainQueuedWithdrawal memory queuedWithdrawal = BeaconChainQueuedWithdrawal({
-            shares: currentBeaconChainShares,
-            podOwner: podOwner,
-            nonce: nonce,
-            withdrawalStartBlock: block.number,
-            delegatedAddress: delegatedAddress
-        });
-
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-        withdrawalRootPending[withdrawalroot] = true;
+        require(withdrawalRootPending[withdrawalRoot], "EigenPodManager.completeWithdrawal: withdrawal root not pending");
+        require(
+            slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
+            "StrategyManager.completeWithdrawal: shares pending withdrawal are still slashable"
+        );
 
-        emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);  
+        require(msg.sender == queuedWithdrawal.podOwner, "EigenPodManager.completeWithdrawal: msg.sender must be podOwner");
 
+        // reset the storage slot in mapping of queued withdrawals
+        withdrawalRootPending[withdrawalRoot] = false;
+
+        //If the user chooses to completely withdraw their ETH
+        if(alsoWithdraw){
+            // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
+            withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
+        //The user chooses to simply redelegate their shares to a new operator 
+        } 
     }
+    
 
 
 
@@ -440,9 +442,6 @@ contract EigenPodManager is
         require(shareAmount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
 
         podOwnerShares[podOwner] += shareAmount;     
-
-        //if the podOwner has delegated shares, record an increase in their delegated shares
-        delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
     }
 
     function _removeShares(address podOwner, uint256 shareAmount) internal returns(bool) {
@@ -458,11 +457,6 @@ contract EigenPodManager is
 
         podOwnerShares[podOwner] = currentPodOwnerShares;
 
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = uint256(shareAmount);
-
-        delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
-
         if (currentPodOwnerShares == 0) {
             return true;
         }
@@ -475,10 +469,15 @@ contract EigenPodManager is
         if (sharesDelta < 0) {
                 //if change in shares is negative, remove the shares
                 _removeShares(podOwner, uint256(-sharesDelta));
+                uint256[] memory shareAmounts = new uint256[](1);
+                shareAmounts[0] = uint256(-sharesDelta);
+                delegation.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
         }   else {
                 uint256 shareAmount = uint256(sharesDelta);
                 //if change in shares is positive, add the shares
                 _addShares(podOwner, shareAmount);
+                 //if the podOwner has delegated shares, record an increase in their delegated shares
+                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
             }      
     }
 

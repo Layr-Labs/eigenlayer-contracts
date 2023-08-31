@@ -25,6 +25,7 @@ interface IEigenPodManager is IPausable {
         uint96 nonce;
         uint32 withdrawalStartBlock;
         address delegatedAddress;
+        bool alsoWithdraw;
     }
 
     /**
