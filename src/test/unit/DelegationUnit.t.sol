@@ -1018,7 +1018,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint256 shares, bool delegateFromStakerToOperator) public {
+    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint128 shares, bool delegateFromStakerToOperator) public {
         // sanity-filtering on fuzzed input length
         cheats.assume(strategies.length <= 64);
         // register *this contract* as an operator
