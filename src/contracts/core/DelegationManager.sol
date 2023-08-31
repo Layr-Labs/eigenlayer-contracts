@@ -181,12 +181,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
      * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
      */
-    function forceUndelegation(address staker) external returns (bytes32) {
+    function forceUndelegation(address staker) external returns (bytes32, bytes32) {
         address operator = delegatedTo[staker];
         require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
-        return strategyManager.forceTotalWithdrawal(staker);
+        
+        bytes32[] memory queuedWithdrawals = new bytes32[](2);
+
+        //check if they have beaconChainETH shares
+        bytes32 beaconChainQueuedWithdrawal = eigenPodManager.getBeaconChainETHShares(staker) > 0 ? eigenPodManager.forceWithdrawal(staker) : bytes32(0);
+        
+        return (strategyManager.forceTotalWithdrawal(staker), beaconChainQueuedWithdrawal);
+
     }
 
     /**
@@ -292,6 +299,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
         (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
+
+        uint256 beaconChainETHShares = eigenPodManager.getBeaconChainETHShares(staker);
+        IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
+        if(beaconChainETHShares > 0) {
+            // add beaconChainETH shares to the staker's shares
+            strategies.push(beaconChainETHStrategy);
+            shares.push(beaconChainETHShares);
+        }
 
         // add strategy shares to delegated `operator`'s shares
         uint256 stratsLength = strategies.length;

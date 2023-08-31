@@ -605,7 +605,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
         /// @notice payable fallback function that receives ether deposited to the eigenpods contract
-    function receive() external payable {
+    function receiveETH() external payable {
         nonBeaconChainETHBalanceWei += msg.value;
         emit nonBeaconChainETHReceived(msg.value);
     }
