@@ -441,19 +441,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
      * @param staker The account delegating their stake
      * @param operator The account receiving delegated stake
-     * @param delegationApprover the operator's `delegationApprover` who will be signing the delegationHash (in general)
+     * @param _delegationApprover the operator's `_delegationApprover` who will be signing the delegationHash (in general)
      * @param approverSalt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
     function calculateDelegationApprovalDigestHash(
         address staker,
         address operator,
-        address delegationApprover,
+        address _delegationApprover,
         bytes32 approverSalt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, delegationApprover, staker, operator, approverSalt, expiry));
+        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverSalt, expiry));
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
