@@ -12,17 +12,17 @@ struct StrategyAndWeightingMultiplier {
 }
 ```
 
-# Flows
+## Flows
 
-## createQuorum
+### createQuorum
 
 The owner of the StakeRegistry can create a quorum by providing the list of `StrategyAndWeightingMultiplier`s. Quorums cannot be removed.
 
-## modifyQuorum
+### modifyQuorum
 
 The owner of the StakeRegistry can modify the set of strategies and they multipliers for a certain quorum.
 
-## registerOperator
+### registerOperator
 
 The RegistryCoordinator for the AVS makes call to the StakeRegistry to register an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry calculates a linear combination of the operator's delegated shares of each `strategy` in the quorum and their corresponding `multiplier` to get a `stake`. The contract then stores the the stake in the following struct:
 ```
@@ -39,16 +39,16 @@ struct OperatorStakeUpdate {
 ```
 For each quorum the operator is a part of.
 
-## deregisterOperator
+### deregisterOperator
 
 The RegistryCoordinator for the AVS makes call to the StakeRegistry to deregister an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry ends the block range of the current `OperatorStakeUpdate` for the operator for the quorum.
 
 Note that the contract does not check that the quorums that the operator is being deregistered from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
 
-## updateStakes
+### updateStakes
 
 An offchain actor can provide a list of operator ids, their corresponding addresses, and a few other witnesses in order to recalculate the stakes of the provided operators for all of the quorums each operator is registered for. This ends block range of the current `OperatorStakeUpdate`s for each of the quorums for each of the provided operators and pushes a new update for each of them.
 
-# Integrations
+## Integrations
 
 The main integration with the StakeRegistry is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide in a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number,

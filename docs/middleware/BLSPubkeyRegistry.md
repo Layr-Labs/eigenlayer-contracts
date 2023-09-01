@@ -33,4 +33,4 @@ Note that the contract does not check that the quorums that the operator's publi
 
 ## Integrations 
 
-The main integration with the BLSPubkeyCompendium is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides a public key and an index in the array of aggregate quorum public key hashes, and the AVS's signature checker verifies that a certain quorum's aggregate public key hash at a certain block number was in fact the hash of the provided public key. Look at `getApkHashForQuorumAtBlockNumberFromIndex`.
+The main integration with the BLSPubkeyCompendium is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides a public key, a quorum id, and an index in the array of aggregate quorum public key hashes, and the AVS's signature checker verifies that a certain quorum's aggregate public key hash at a certain block number was in fact the hash of the provided public key. Look at `getApkHashForQuorumAtBlockNumberFromIndex`.
