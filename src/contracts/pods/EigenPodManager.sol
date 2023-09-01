@@ -248,6 +248,14 @@ contract EigenPodManager is
         bool undelegationPossible;
         if(alsoWithdraw){
             undelegationPossible = _removeShares(podOwner, amountWei);  
+            /**
+            * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
+            * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
+            * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
+            * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
+            * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
+            * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
+            */      
             decrementWithdrawableRestakedExecutionLayerGwei(podOwner, amountWei);  
         }
 
@@ -307,12 +315,9 @@ contract EigenPodManager is
         if(queuedWithdrawal.alsoWithdraw){
             // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
             withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
-            incrementWithdrawableRestakedExecutionLayerGwei(queuedWithdrawal.podOwner, queuedWithdrawal.amountWei);
-        //The user chooses to simply redelegate their shares to a new operator 
         } 
     }
     
-
     function slashShares(
         address slashedPodOwner,
         address slashedFundsRecipient,

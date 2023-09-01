@@ -103,11 +103,6 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyEigenPodManager {
-        require(address(eigenPodManager) == msg.sender, "StrategyManager.onlyEigenPodManager: not the eigenPodManager");
-        _;
-    }
-
     modifier onlyStrategyWhitelister {
         require(msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
         _;
@@ -407,14 +402,8 @@ contract StrategyManager is
                 }
             }
 
-            if (strategies[i] == beaconChainETHStrategy) {
-                 //withdraw the beaconChainETH to the recipient
-                eigenPodManager.withdrawRestakedBeaconChainETH(slashedAddress, recipient, shareAmounts[i]);
-            }
-            else {
-                // withdraw the shares and send funds to the recipient
-                strategies[i].withdraw(recipient, tokens[i], shareAmounts[i]);
-            }
+            // withdraw the shares and send funds to the recipient
+            strategies[i].withdraw(recipient, tokens[i], shareAmounts[i]);
 
             // increment the loop
             unchecked {
@@ -467,13 +456,8 @@ contract StrategyManager is
                     ++indicesToSkipIndex;
                 }
             } else {
-                if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy){
-                     //withdraw the beaconChainETH to the recipient
-                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, recipient, queuedWithdrawal.shares[i]);
-                } else {
-                    // tell the strategy to send the appropriate amount of funds to the recipient
-                    queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
-                }
+                // tell the strategy to send the appropriate amount of funds to the recipient
+                queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
             }
             unchecked {
                     ++i;
@@ -692,30 +676,7 @@ contract StrategyManager is
         // keeps track of the current index in the `strategyIndexes` array
         uint256 strategyIndexIndex;
 
-        /**
-         * Ensure that if the withdrawal includes beacon chain ETH, the specified 'withdrawer' is not different than the caller.
-         * This is because shares in the enshrined `beaconChainETHStrategy` ultimately represent tokens in **non-fungible** EigenPods,
-         * while other share in all other strategies represent purely fungible positions.
-         */
         for (uint256 i = 0; i < strategies.length;) {
-            if (strategies[i] == beaconChainETHStrategy) {
-                require(withdrawer == staker,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH to a different address");
-                require(strategies.length == 1,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
-                require(shares[i] % GWEI_TO_WEI == 0,
-                    "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-                /**
-                * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
-                * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
-                * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
-                * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
-                * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
-                * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
-                */         
-                eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);   
-
-            }
             
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
@@ -830,16 +791,12 @@ contract StrategyManager is
             require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.completeQueuedWithdrawal: input length mismatch");
             // actually withdraw the funds
             for (uint256 i = 0; i < strategiesLength;) {
-                if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
 
-                    // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
-                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
-                } else {
-                    // tell the strategy to send the appropriate amount of funds to the depositor
-                    queuedWithdrawal.strategies[i].withdraw(
-                        msg.sender, tokens[i], queuedWithdrawal.shares[i]
-                    );
-                }
+                // tell the strategy to send the appropriate amount of funds to the depositor
+                queuedWithdrawal.strategies[i].withdraw(
+                    msg.sender, tokens[i], queuedWithdrawal.shares[i]
+                );
+                
                 unchecked {
                     ++i;
                 }
@@ -848,10 +805,6 @@ contract StrategyManager is
             // else increase their shares
             for (uint256 i = 0; i < strategiesLength;) {
                 _addShares(msg.sender, queuedWithdrawal.strategies[i], queuedWithdrawal.shares[i]);
-                if(queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
-                    //increase the withdrawableRestakedExecutionLayerGwei so that shares and withdrawableRestakedExecutionLayerGwei in the pod are in sync.
-                    eigenPodManager.incrementWithdrawableRestakedExecutionLayerGwei(queuedWithdrawal.depositor, queuedWithdrawal.shares[i]);
-                }
                 unchecked {
                     ++i;
                 }
