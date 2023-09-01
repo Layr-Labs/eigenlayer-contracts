@@ -40,9 +40,10 @@ methods {
     function getOperatorSetParams(uint8 quorumNumber) external returns (IBLSRegistryCoordinatorWithIndices.OperatorSetParam) envfree;
     function getOperator(address operator) external returns (IRegistryCoordinator.Operator) envfree;
     function getOperatorId(address operator) external returns (bytes32) envfree;
-    function function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] memory operatorIds)
+    function getOperatorStatus(address operator) external returns (IRegistryCoordinator.OperatorStatus) envfree;
+    function getQuorumBitmapIndicesByOperatorIdsAtBlockNumber(uint32 blockNumber, bytes32[] operatorIds)
         external returns (uint32[]) envfree;
-    getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external returns (uint192) envfree;
+    function getQuorumBitmapByOperatorIdAtBlockNumberByIndex(bytes32 operatorId, uint32 blockNumber, uint256 index) external returns (uint192) envfree;
     function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index)
         external returns (IRegistryCoordinator.QuorumBitmapUpdate) envfree;
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external returns (uint192) envfree;
@@ -50,11 +51,20 @@ methods {
     function numRegistries() external returns (uint256) envfree;
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
-        bytes calldata quorumNumbers,
-        OperatorKickParam[] memory operatorKickParams,
+        bytes quorumNumbers,
+        IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) external returns (bytes32) envfree;
 }
 
 // TODOs: add properties in English + rules in CVL
+
+// If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
+invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
+    // getOperator(operator).status == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
+    //     getCurrentQuorumBitmapByOperatorId(getOperator(operator).operatorId) != 0;
+    getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED <=>
+        getCurrentQuorumBitmapByOperatorId(getOperatorId(operator)) != 0;
+    // uint8(getOperator(operator)) == 1 <=>
+    //     getCurrentQuorumBitmapByOperatorId(getOperator(operator).operatorId) != 0;

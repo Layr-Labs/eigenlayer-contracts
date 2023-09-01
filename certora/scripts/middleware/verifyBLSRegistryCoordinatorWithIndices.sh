@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.12
 
 certoraRun certora/munged/middleware/BLSRegistryCoordinatorWithIndices.sol \
-    lib/openzeppelin-contracts/contracts/utils/cryptography/draft-EIP712.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
+    lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     certora/munged/middleware/StakeRegistry.sol certora/munged/middleware/BLSPubkeyRegistry.sol certora/munged/middleware/IndexRegistry.sol \
     certora/munged/core/Slasher.sol \
     --verify BLSRegistryCoordinatorWithIndices:certora/specs/middleware/BLSRegistryCoordinatorWithIndices.spec \
