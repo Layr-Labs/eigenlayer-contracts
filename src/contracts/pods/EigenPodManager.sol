@@ -87,8 +87,6 @@ contract EigenPodManager is
     /// @notice Canonical beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    IStrategy[] public beaconChainETHStrategyList;
-
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
 
@@ -141,7 +139,6 @@ contract EigenPodManager is
         strategyManager = _strategyManager;
         slasher = _slasher;
         delegationManager = strategyManager.delegation();
-        beaconChainETHStrategyList[0] = beaconChainETHStrategy;
         _disableInitializers();
     }
 
@@ -268,7 +265,9 @@ contract EigenPodManager is
 
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = shareAmount;
-        delegationManager.decreaseDelegatedShares(slashedPodOwner, beaconChainETHStrategyList, shareAmounts);
+        IStrategy[] public strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        delegationManager.decreaseDelegatedShares(slashedPodOwner, strategies, shareAmounts);
     }
 
     function slashQueuedWithdrawal(
@@ -370,7 +369,9 @@ contract EigenPodManager is
 
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = amountWei;
-        delegationManager.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
+        IStrategy[] public strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
 
         address delegatedAddress = delegationManager.delegatedTo(podOwner);
 
@@ -538,7 +539,9 @@ contract EigenPodManager is
                 _removeShares(podOwner, uint256(-sharesDelta));
                 uint256[] memory shareAmounts = new uint256[](1);
                 shareAmounts[0] = uint256(-sharesDelta);
-                delegationManager.decreaseDelegatedShares(podOwner, beaconChainETHStrategyList, shareAmounts);
+                IStrategy[] public strategies = new IStrategy[](1);
+                strategies[0] = beaconChainETHStrategy;
+                delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
         }   else {
                 uint256 shareAmount = uint256(sharesDelta);
                 //if change in shares is positive, add the shares
@@ -576,5 +579,5 @@ contract EigenPodManager is
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[41] private __gap;
+    uint256[42] private __gap;
 }
