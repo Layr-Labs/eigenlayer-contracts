@@ -125,8 +125,6 @@ interface IEigenPod {
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
      * @param proofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
-     *                                    the StrategyManager in case it must be removed from the list of the podOwners strategies
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -134,7 +132,6 @@ interface IEigenPod {
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProofs calldata proofs,
         bytes32[] calldata validatorFields,
-        uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
     ) external;
 
@@ -144,8 +141,6 @@ interface IEigenPod {
      * @param validatorFieldsProofs is the proof of the validator's fields in the validator tree
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
-     *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
@@ -153,7 +148,6 @@ interface IEigenPod {
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields,
-        uint256 beaconChainETHStrategyIndex,
         uint64 oracleTimestamp
     ) external;
 

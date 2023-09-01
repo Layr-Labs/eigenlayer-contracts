@@ -303,9 +303,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256 beaconChainETHShares = eigenPodManager.getBeaconChainETHShares(staker);
         IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
         if(beaconChainETHShares > 0) {
+            uint256 numStrategies = strategies.length;
+            IStrategy[] memory newStrategies = new IStrategy[](numStrategies + 1);
+            uint256[] memory newShares = new uint256[](numStrategies + 1);
             // add beaconChainETH shares to the staker's shares
-            strategies.push(beaconChainETHStrategy);
-            shares.push(beaconChainETHShares);
+            for (uint256 i = 0; i < numStrategies; i++) {
+                if(i == numStrategies - 1) {
+                    newStrategies[i] = beaconChainETHStrategy;
+                    newShares[i] = beaconChainETHShares;
+                } else {
+                    newStrategies[i] = strategies[i];
+                    newShares[i] = shares[i];
+                }
+            }
         }
 
         // add strategy shares to delegated `operator`'s shares

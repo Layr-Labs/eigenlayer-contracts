@@ -292,7 +292,7 @@ contract EigenPodManager is
         // reset the storage slot in mapping of queued withdrawals
         withdrawalRootPending[withdrawalRoot] = false;
 
-        _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, slashedFundsRecipient, queuedWithdrawal.amountWei);
+        _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, slashedFundsRecipient, queuedWithdrawal.shares);
     }
 
     /**
@@ -382,7 +382,7 @@ contract EigenPodManager is
             shares: amountWei,
             podOwner: podOwner,
             nonce: nonce,
-            withdrawalStartBlock: block.number,
+            withdrawalStartBlock: uint32(block.number),
             delegatedAddress: delegatedAddress,
             alsoWithdraw: alsoWithdraw
         });

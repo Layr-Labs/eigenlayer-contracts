@@ -238,7 +238,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
      * @param proofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
      *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -247,7 +246,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProofs calldata proofs,
         bytes32[] calldata validatorFields,
-        uint256 beaconChainETHStrategyIndex,
         uint64 oracleTimestamp
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
        // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's balance *recently* changed.
@@ -315,7 +313,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
             int256 sharesDelta = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
             // update shares in strategy manager
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
         }
     }
 
@@ -325,8 +323,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
      * @param withdrawalFields are the fields of the withdrawals being proven
      * @param validatorFields are the fields of the validators being proven
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
-     *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
@@ -334,7 +330,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields,
-        uint256 beaconChainETHStrategyIndex,
         uint64 oracleTimestamp
     )
         external
@@ -348,7 +343,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
-            _verifyAndProcessWithdrawal(withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i], beaconChainETHStrategyIndex, oracleTimestamp);
+            _verifyAndProcessWithdrawal(withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i], oracleTimestamp);
         }
     }
 
@@ -439,7 +434,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
         bytes32[] calldata withdrawalFields,
-        uint256 beaconChainETHStrategyIndex,
         uint64 oracleTimestamp
     )
         internal
@@ -487,7 +481,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, beaconChainETHStrategyIndex, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
+                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
             } else {
                 _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
             }
@@ -498,7 +492,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalAmountGwei,
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
-        uint256 beaconChainETHStrategyIndex,
         address recipient,
         VALIDATOR_STATUS status,
         uint64 withdrawalHappenedSlot
@@ -535,7 +528,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
                 int256 sharesDelta = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
                 //update podOwner's shares in the strategy manager
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
+                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
             }
 
         }  else {

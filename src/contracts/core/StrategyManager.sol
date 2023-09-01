@@ -563,7 +563,7 @@ contract StrategyManager is
         onlyStrategiesWhitelistedForDeposit(strategy)
         returns (uint256 shares)
     {
-        require(strategy != eigenPodManager.beaconChainETHStrategy, "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
+        require(address(strategy) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
@@ -591,7 +591,7 @@ contract StrategyManager is
         internal
         returns (bool)
     {
-        require(strategy != eigenPodManager.beaconChainETHStrategy, "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
+        require(address(strategy) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
         // sanity checks on inputs
         require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
@@ -679,7 +679,7 @@ contract StrategyManager is
         uint256 strategyIndexIndex;
 
         for (uint256 i = 0; i < strategies.length;) {
-            require(strategies[i] != eigenPodManager.beaconChainETHStrategy, "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
+            require(address(strategies[i]) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
 
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
