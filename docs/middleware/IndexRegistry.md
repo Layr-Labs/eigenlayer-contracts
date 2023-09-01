@@ -4,7 +4,7 @@ This contract assigns each operator an index (0 indexed) within each of its quor
 
 ## Flows
 
-### RegisterOperator
+### registerOperator
 
 The RegistryCoordinator for the AVS makes call to the IndexRegistry to register an operator for a certain set of quorums. The IndexRegistry will the assign the next index in each of the quorums the operator is registering for to the operator storing the following struct:
 ```solidity
@@ -22,7 +22,7 @@ struct OperatorIndexUpdate {
 
 The IndexRegistry also adds the operator's id to the append only list of operators that have registered for the middleware and it stores the total number of operators after the registering operator has registered for each of the quorums the operator is registering for by pushing the above struct to a growing array.
 
-### DeregisterOperator
+### deregisterOperator
 
 The RegistryCoordinator for the AVS makes call to the IndexRegistry to deregister an operator for a certain set of quorums. The RegistryCoordinator provides a witness of the ids of the operators that have the greatest index in each of the quorums that the operator is deregistering from. The IndexRegistry then, for each quorum the operator is deregistering from, 
 1. Decrements the total number of operators in the quorum
@@ -32,7 +32,7 @@ The RegistryCoordinator for the AVS makes call to the IndexRegistry to deregiste
 
 Steps 3 and 4 are done via pushing the above struct to a growing array that is kept track of for each operator.
 
-Note that the contract does not check that the quorums that the operator's public key is being subtracted from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
+Note that the contract does not check that the quorums that the operator is being deregistered from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
 
 ## Integrations
 

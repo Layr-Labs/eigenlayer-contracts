@@ -1,12 +1,12 @@
-# BLSPublicKeyRegistry
+# BLSPubkeyRegistry
 
 This contract is a registry that keeps track of aggregate public key hashes of the quorums of an AVS over time. AVSs that want access to the aggragate public keys of their operator set over time should integrate this registry with their RegistryCoordinator.
 
 ## Flows
 
-### RegisterOperator
+### registerOperator
 
-The RegistryCoordinator for the AVS makes call to the BLSPublicKeyRegistry to register an operator with a certain public key for a certain set of quorums. The BLSPublicKeyRegistry verifies that the operator in fact owns the public key by [making a call to the BLSPublicKeyCompendium](./BLSPublicKeyCompendium.md#integrations). It then, for each quorum the operator is registering for, adds its public key to the aggregate quorum public key, ends the active block range for the previous public key, and begins a the active block range for the new aggregate quorum public key. Updates are stored using the following struct:
+The RegistryCoordinator for the AVS makes call to the BLSPubkeyRegistry to register an operator with a certain public key for a certain set of quorums. The BLSPubkeyRegistry verifies that the operator in fact owns the public key by [making a call to the BLSPublicKeyCompendium](./BLSPublicKeyCompendium.md#integrations). It then, for each quorum the operator is registering for, adds its public key to the aggregate quorum public key, ends the active block range for the previous public key, and begins a the active block range for the new aggregate quorum public key. Updates are stored using the following struct:
 ```solidity
 /// @notice Data structure used to track the history of the Aggregate Public Key of all operators
 struct ApkUpdate {
@@ -23,9 +23,9 @@ The aggregate quorum public key stored in the contract is also overwritten with 
 
 The function also returns the hash of the operator's public key as it may be used as the is for the operator in the AVS.
 
-### DeregisterOperator
+### deregisterOperator
 
-The RegistryCoordinator for the AVS makes call to the BLSPublicKeyRegistry to deregister an operator with a certain public key for a certain set of quorums. The BLSPublicKeyRegistry verifies that the operator in fact owns the public key by [making a call to the BLSPublicKeyCompendium](./BLSPublicKeyCompendium.md#integrations) (redundant check). It then, for each quorum the operator is registering for, subtracts its public key from the aggregate quorum public key, ends the active block range for the previous public key, and begins a the active block range for the new aggregate quorum public key. 
+The RegistryCoordinator for the AVS makes call to the BLSPubkeyRegistry to deregister an operator with a certain public key for a certain set of quorums. The BLSPubkeyRegistry verifies that the operator in fact owns the public key by [making a call to the BLSPublicKeyCompendium](./BLSPublicKeyCompendium.md#integrations) (redundant check). It then, for each quorum the operator is registering for, subtracts its public key from the aggregate quorum public key, ends the active block range for the previous public key, and begins a the active block range for the new aggregate quorum public key. 
 
 The aggregate quorum public key stored in the contract is also overwritten with the new aggregate quorum public key.
 
