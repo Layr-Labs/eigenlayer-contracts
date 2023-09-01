@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./ISlasher.sol";
 import "./IDelegationManager.sol";
+import "./IEigenPodManager.sol";
 
 /**
  * @title Interface for the primary entrypoint for funds into EigenLayer.
@@ -48,25 +49,6 @@ interface IStrategyManager {
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         returns (uint256 shares);
-
-
-    /**
-     * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
-     * @param staker is the entity that is restaking in eigenlayer,
-     * @param amount is the amount of beaconchain ETH being restaked,
-     * @dev Only callable by EigenPodManager.
-     */
-    function depositBeaconChainETH(address staker, uint256 amount) external;
-
-    /**
-     * @notice Records an update in beacon chain strategy shares in the strategy manager
-     * @param podOwner is the pod owner whose shares are to be updated,
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
-        external;
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -263,8 +245,8 @@ interface IStrategyManager {
     /// @notice Returns the single, central Slasher contract of EigenLayer
     function slasher() external view returns (ISlasher);
 
-    /// @notice returns the enshrined, virtual 'beaconChainETH' Strategy
-    function beaconChainETHStrategy() external view returns (IStrategy);
+    /// @notice Returns the EigenPodManager contract of EigenLayer
+    function eigenPodManager() external view returns (IEigenPodManager);
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);

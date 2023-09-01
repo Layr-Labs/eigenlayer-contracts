@@ -5,6 +5,8 @@ import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
+import "./ISlasher.sol";
+import "./IStrategy.sol";
 
 /**
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
@@ -54,33 +56,57 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice Records an update in beacon chain strategy shares in the strategy manager
      * @param podOwner is the pod owner whose shares are to be updated,
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external;
-    
-    /**
-     * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
-     * @param podOwner The owner of the pod whose balance must be withdrawn.
-     * @param recipient The recipient of the withdrawn ETH.
-     * @param amount The amount of ETH to withdraw.
-     * @dev Callable only by the StrategyManager contract.
-     */
-    function withdrawRestakedBeaconChainETH(address podOwner, address recipient, uint256 amount) external;
+    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
+
+    /**
+     * @notice queues a withdrawal beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod.
+     * @param amountWei is the amount of ETH to withdraw
+     * @param undelegateIfPossible is whether or not to undelegate the shares if possible
+     * @param alsoWithdraw is whether or not to also withdraw the ETH from the beacon chain vs. redelegating to a new operator in EL
+     */
+    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible, bool alsoWithdraw) external returns(bytes32);
+
+    /**
+     * @notice forces a withdrawal of the podOwner's beaconChainETHStrategy shares
+     * @param podOwner is the pod owner whose shares are to be removed
+     */
+    function forceWithdrawal(address podOwner) external returns (bytes32);
+
+
+    /** 
+     * @notice slashes a pending queued withdrawal of the podOwner's beaconChainETHStrategy shares
+     * @param slashedFundsRecipient is the address to receive the slashed funds
+     * @param queuedWithdrawal is the queued withdrawal to be slashed
+     */
+    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external;
+
+    /**
+     * @notice slashes shares of the podOwner and sends them to the slashedFundsRecipient
+     * @param slashedPodOwner is the address of the pod owner whose shares are to be slashed
+     * @param slashedFundsRecipient is the address to receive the slashed funds
+     * @param shareAmount is the amount of shares to be slashed     
+     */
+    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external;
+
+
+    /**
+     * @notice Completes an existing queuedWithdrawal either by sending the ETH to the recipient or allowing the podOwner to re-delegate it
+     * @param queuedWithdrawal is the queued withdrawal to be completed
+     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     * @dev Callable only by the podOwner's EigenPod contract.
+     */
+    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
+    
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
-
-    /// @notice decrements the proven amount of withdrawable ETH to reflect decrementation of shares
-    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
-
-    /// @notice increments the proven amount of withdrawable ETH to reflect incrementation of shares when a podOwner completes a withdrawal as shares
-    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(address podOwner) external view returns(IEigenPod);
@@ -101,4 +127,10 @@ interface IEigenPodManager is IPausable {
     function slasher() external view returns(ISlasher);
 
     function hasPod(address podOwner) external view returns (bool);
+
+    /// @notice returns shares of provided podOwner
+    function getBeaconChainETHShares(address podOwner) external returns (uint256);
+
+    /// @notice returns canonical beaconChainETH strategy
+    function beaconChainETHStrategy() external view returns (IStrategy);
 }

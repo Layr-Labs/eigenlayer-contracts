@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/AddressUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 import "../libraries/BytesLib.sol";
@@ -35,6 +36,7 @@ import "./EigenPodPausingConstants.sol";
  */
 contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
     using BytesLib for bytes;
+    using SafeERC20 for IERC20;
 
     // CONSTANTS + IMMUTABLES
     uint256 internal constant GWEI_TO_WEI = 1e9;
@@ -611,12 +613,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawnonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external onlyEigenPodOwner {
+    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external onlyEigenPodOwner {
         require(amountToWithdraw <= nonBeaconChainETHBalanceWei, "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
         AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
     }
 
+    /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
         require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
         for (uint256 i = 0; i < tokenList.length; i++) {

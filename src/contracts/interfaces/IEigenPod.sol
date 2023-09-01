@@ -4,6 +4,8 @@ pragma solidity >=0.5.0;
 import "../libraries/BeaconChainProofs.sol";
 import "./IEigenPodManager.sol";
 import "./IBeaconChainOracle.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
@@ -168,4 +170,13 @@ interface IEigenPod {
     /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei 
     /// in the pod, to reflect a completion of a queued withdrawal as shares
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
+
+    /// @notice called to deposit ETH into the pod
+    function receiveETH() external payable;
+
+    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
+    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;
+
+    /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
+    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 }

@@ -147,9 +147,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
-    }
+     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner){}
 
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
@@ -239,8 +237,19 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         // return beaconChainOracle.getBeaconChainStateRoot();
     }
 
-    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+    function getBeaconChainETHShares(address podOwner) external returns (uint256){
+        // return podOwner[podOwner];
+    }
 
-    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible, bool alsoWithdraw) external returns(bytes32){}
 
+    function forceWithdrawal(address podOwner) external returns (bytes32){}
+
+    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
+
+    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
+
+    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+
+    function beaconChainETHStrategy() external view returns (IStrategy){}
 }

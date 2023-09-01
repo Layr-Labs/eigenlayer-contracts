@@ -13,7 +13,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function restakeBeaconChainETH(address /*podOwner*/, uint256 /*amount*/) external pure {}
 
-    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, int256 /*sharesDelta*/) external pure {}
+    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
     
     function withdrawRestakedBeaconChainETH(address /*podOwner*/, address /*recipient*/, uint256 /*amount*/) external pure {}
 
@@ -38,12 +38,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function strategyManager() external pure returns(IStrategyManager) {
         return IStrategyManager(address(0));
     }
-
-    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
-
-    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
-
-
+    
     function hasPod(address /*podOwner*/) external pure returns (bool) {
         return false;
     }
@@ -67,4 +62,18 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     }
 
     function unpause(uint256 /*newPausedStatus*/) external{}
+
+    function getBeaconChainETHShares(address podOwner) external returns (uint256){}
+
+    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible, bool alsoWithdraw) external returns(bytes32) {}
+
+    function forceWithdrawal(address podOwner) external returns (bytes32){}
+
+    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
+
+    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
+
+    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    function beaconChainETHStrategy() external view returns (IStrategy){}
+    
 }
