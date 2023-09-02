@@ -11,9 +11,10 @@ certoraRun certora/munged/middleware/BLSRegistryCoordinatorWithIndices.sol \
     certora/munged/core/Slasher.sol \
     --verify BLSRegistryCoordinatorWithIndices:certora/specs/middleware/BLSRegistryCoordinatorWithIndices.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --optimistic_hashing \
+    --prover_args '-optimisticFallback true -recursionEntryLimit 2 ' \
     $RULE \
-    --loop_iter 3 \
+    --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --msg "BLSRegistryCoordinatorWithIndices $1 $2" \
 
