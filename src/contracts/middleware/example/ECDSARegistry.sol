@@ -50,6 +50,7 @@ contract ECDSARegistry is RegistryBase {
             _serviceManager,
             1 // set the number of quorums to 1
         )
+    // solhint-disable-next-line no-empty-blocks
     {}
 
     /// @notice Initialize whitelister and the quorum strategies + multipliers.

@@ -12,7 +12,7 @@ library BytesArrayBitmaps {
      * If the array length exceeds 256, then it's impossible for all entries to be unique.
      * This constant captures the max allowed array length (inclusive, i.e. 256 is allowed).
      */
-    uint256 constant MAX_BYTE_ARRAY_LENGTH = 256;
+    uint256 internal constant MAX_BYTE_ARRAY_LENGTH = 256;
 
     /**
      * @notice Converts an array of bytes into a bitmap.

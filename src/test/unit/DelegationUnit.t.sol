@@ -58,6 +58,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         _;
     }
 
+    // @notice mapping used to handle duplicate entries in fuzzed address array input
+    mapping(address => uint256) public totalSharesForStrategyInArray;
+
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
 
@@ -303,6 +306,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         operatorDetails.earningsReceiver = address(0);
         cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    /**
+     * @notice Verifies that a staker cannot call cannot modify their `OperatorDetails` without first registering as an operator
+     * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
+     * invariant that 'operators' are always delegated to themselves
+     */
+    function testCannotModifyOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
+        cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
@@ -1005,7 +1018,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint256 shares, bool delegateFromStakerToOperator) public {
+    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint128 shares, bool delegateFromStakerToOperator) public {
         // sanity-filtering on fuzzed input length
         cheats.assume(strategies.length <= 64);
         // register *this contract* as an operator
@@ -1040,6 +1053,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegatedSharesBefore[i] = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]);   
             // also construct an array which we'll use in another loop
             sharesInputArray[i] = shares;
+            totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
         }
         cheats.stopPrank();
 
@@ -1053,7 +1067,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]); 
 
             if (delegationManager.isDelegated(staker)) {
-                require(delegatedSharesAfter == delegatedSharesBefore[i] - sharesInputArray[i], "delegated shares did not decrement correctly");
+                require(delegatedSharesAfter == delegatedSharesBefore[i] - totalSharesForStrategyInArray[address(strategies[i])],
+                    "delegated shares did not decrement correctly");
             } else {
                 require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
                 require(delegatedSharesBefore[i] == 0, "nonzero shares delegated to zero address!");
