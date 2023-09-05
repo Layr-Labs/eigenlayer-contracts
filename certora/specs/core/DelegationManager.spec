@@ -50,7 +50,7 @@ methods {
     function isDelegated(address staker) external returns (bool) envfree;
     function isOperator(address operator) external returns (bool) envfree;
     function stakerNonce(address staker) external returns (uint256) envfree;
-    function delegationApproverNonce(address delegationApprover) external returns (uint256) envfree;
+    function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
 }
@@ -107,11 +107,9 @@ The exception is the zero address, since by default an address is 'delegated to 
 //definition notDelegated -- defined as delegatedTo(staker) == address(0), likewise returned by !isDelegated(staker)--
 
 // verify that anyone who is registered as an operator is also always delegated to themselves
+// the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
 invariant operatorsAlwaysDelegatedToSelf(address operator)
-    isOperator(operator) <=> delegatedTo(operator) == operator
-    { preserved {
-        require operator != 0;
-    } }
+    operator != 0 => (isOperator(operator) <=> delegatedTo(operator) == operator);
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
@@ -164,22 +162,24 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     // perform arbitrary function call
     method f;
     env e;
-    if (f.selector == sig:delegateTo(address, IDelegationManager.SignatureWithExpiry).selector) {
+    if (f.selector == sig:delegateTo(address, IDelegationManager.SignatureWithExpiry, bytes32).selector) {
         address operator;
         IDelegationManager.SignatureWithExpiry approverSignatureAndExpiry;
-        delegateTo(e, operator, approverSignatureAndExpiry);
+        bytes32 salt;
+        delegateTo(e, operator, approverSignatureAndExpiry, salt);
         // we check against operator being the zero address here, since we view being delegated to the zero address as *not* being delegated
         if (e.msg.sender == staker && isOperator(operator) && operator != 0) {
             assert (isDelegated(staker) && delegatedTo(staker) == operator, "failure in delegateTo");
         } else {
             assert (!isDelegated(staker), "staker delegated to inappropriate address?");
         }
-    } else if (f.selector == sig:delegateToBySignature(address, address, IDelegationManager.SignatureWithExpiry, IDelegationManager.SignatureWithExpiry).selector) {
+    } else if (f.selector == sig:delegateToBySignature(address, address, IDelegationManager.SignatureWithExpiry, IDelegationManager.SignatureWithExpiry, bytes32).selector) {
         address toDelegateFrom;
         address operator;
         IDelegationManager.SignatureWithExpiry stakerSignatureAndExpiry;
         IDelegationManager.SignatureWithExpiry approverSignatureAndExpiry;
-        delegateToBySignature(e, toDelegateFrom, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry);
+        bytes32 salt;
+        delegateToBySignature(e, toDelegateFrom, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);
         // TODO: this check could be stricter! need to filter when the block timestamp is appropriate for expiry and signature is valid
         assert (!isDelegated(staker) || delegatedTo(staker) == operator, "delegateToBySignature bug?");
     } else if (f.selector == sig:registerAsOperator(IDelegationManager.OperatorDetails, string).selector) {

@@ -22,7 +22,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
-        keccak256("DelegationApproval(address staker,address operator,uint256 nonce,uint256 expiry)");
+        keccak256("DelegationApproval(address staker,address operator,bytes32 salt,uint256 expiry)");
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -59,11 +59,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     mapping(address => uint256) public stakerNonce;
 
     /**
-     * @notice Mapping: delegationApprover => number of signed delegation messages (used in `delegateTo` and `delegateToBySignature` from the delegationApprover
-     * that this contract has already checked.
-     * @dev Note that these functions only delegationApprover signatures if the operator being delegated to has specified a nonzero address as their `delegationApprover`
+     * @notice Mapping: delegationApprover => 32-byte salt => whether or not the salt has already been used by the delegationApprover.
+     * @dev Salts are used in the `delegateTo` and `delegateToBySignature` functions. Note that these functions only process the delegationApprover's
+     * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
-    mapping(address => uint256) public delegationApproverNonce;
+    mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher) {
         strategyManager = _strategyManager;

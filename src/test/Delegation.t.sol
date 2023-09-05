@@ -222,12 +222,16 @@ pragma solidity =0.8.12;
     //     bytes memory signature = abi.encodePacked(r, s, v);
         
     //     if (expiry < block.timestamp) {
-    //         cheats.expectRevert("DelegationManager.delegateToBySignature: delegation signature expired");
+    //         cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
     //     }
-    //     delegation.delegateToBySignature(staker, operator, expiry, signature);
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: expiry
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     //     if (expiry >= block.timestamp) {
     //         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
-    //         assertTrue(nonceBefore + 1 == delegation.nonces(staker), "nonce not incremented correctly");
+    //         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
     //         assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");            
     //     }
     // }
@@ -252,13 +256,19 @@ pragma solidity =0.8.12;
     //     bytes32 structHash = keccak256(abi.encode(delegation.DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
     //     bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.DOMAIN_SEPARATOR(), structHash));
 
-    //     (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
-
-    //     bytes memory signature = abi.encodePacked(r, s, v);
-        
-    //     delegation.delegateToBySignature(staker, operator, type(uint256).max, signature);
+    //     bytes memory signature;
+    //     {
+    //         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
+    //         signature = abi.encodePacked(r, s, v);
+    //     }
+                
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: type(uint256).max
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     //     assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
-    //     assertTrue(nonceBefore + 1 == delegation.nonces(staker), "nonce not incremented correctly");
+    //     assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
     //     assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
     // }
 
@@ -277,7 +287,13 @@ pragma solidity =0.8.12;
 
 //         _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
         
-    //     uint256 nonceBefore = delegation.nonces(staker);
+    //     cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: type(uint256).max
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
+    // }
 
     //     bytes32 structHash = keccak256(abi.encode(delegation.DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
     //     bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.DOMAIN_SEPARATOR(), structHash));
@@ -286,10 +302,45 @@ pragma solidity =0.8.12;
     //     // mess up the signature by flipping v's parity
     //     v = (v == 27 ? 28 : 27);
 
+    //     _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
+
+    //     cheats.assume(staker != operator);
+
+    //     bytes memory signature = abi.encodePacked(r, s, v);
+
+    //     cheats.expectRevert();
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: type(uint256).max
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
+    // }
+
+    /// @notice tests delegation to EigenLayer via an ECDSA signatures with invalid signature
+    /// @param operator is the operator being delegated to.
+    // function testDelegateToByInvalidSignature(
+    //     address operator, 
+    //     uint96 ethAmount, 
+    //     uint96 eigenAmount, 
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // )
+    //     public
+    //     fuzzedAddress(operator)
+    //     fuzzedAmounts(ethAmount, eigenAmount)
+    // {
+    //     address staker = cheats.addr(PRIVATE_KEY);
+    //     _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
+
     //     bytes memory signature = abi.encodePacked(r, s, v);
         
-    //     cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: ERC1271 signature verification failed"));
-    //     delegation.delegateToBySignature(staker, operator, type(uint256).max, signature);
+    //     cheats.expectRevert();
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+    //         signature: signature,
+    //         expiry: type(uint256).max
+    //     });
+    //     delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     // }
 
 //     /// @notice  tries delegating using a wallet that does not comply with EIP 1271
@@ -403,9 +454,10 @@ pragma solidity =0.8.12;
 //         _testDepositStrategies(getOperatorAddress(1), 1e18, 1);
 //         _testDepositEigen(getOperatorAddress(1), 1e18);
 
-    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
+    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
     //     cheats.startPrank(getOperatorAddress(1));
-    //     delegation.delegateTo(delegate);
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+    //     delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
     //     cheats.stopPrank();
     // }
 
@@ -439,10 +491,11 @@ pragma solidity =0.8.12;
     /// @notice This function checks that you can only delegate to an address that is already registered.
     // function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
     //     vm.startPrank(_staker);
-    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
-    //     delegation.delegateTo(_unregisteredOperator);
-    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator has not yet registered as a delegate"));
-    //     delegation.delegateTo(_staker);
+    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+    //     IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+    //     delegation.delegateTo(_unregisteredOperator, signatureWithExpiry, bytes32(0));
+    //     cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+    //     delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
     //     cheats.stopPrank();
         
 //     }
@@ -458,9 +511,16 @@ pragma solidity =0.8.12;
 
         //setup delegation
         // vm.prank(_operator);
-        // delegation.registerAsOperator(IDelegationTerms(_dt));
+        // IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+        //     earningsReceiver:_dt,
+        //     delegationApprover: address(0),
+        //     stakerOptOutWindowBlocks: 0
+        // });
+        // string memory emptyStringForMetadataURI;
+        // delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         // vm.prank(_staker);
-        // delegation.delegateTo(_operator);
+        // IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        // delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
 //         //operators cannot undelegate from themselves
 //         vm.prank(address(strategyManager));

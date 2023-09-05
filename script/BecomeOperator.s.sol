@@ -17,3 +17,6 @@ contract BecomeOperator is Script, DSTest, EigenLayerParser {
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 }
+
+
+

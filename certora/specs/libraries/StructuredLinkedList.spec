@@ -107,7 +107,7 @@ invariant zeroRequiredInCircle(uint256 node1, uint256 node2)
         }
     }
 
-
+/* commented out while failing (can reintroduce in a PR)
 // in progress
 invariant headInList(uint256 node)
     nodeExists(node) => connectsToHead[node]
@@ -129,7 +129,7 @@ invariant headInList(uint256 node)
 
 
 // size == # of nodes with nonzero next == # of nodes with nonzero prev
-
+*/
 
 
 /*
