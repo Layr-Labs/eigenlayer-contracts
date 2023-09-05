@@ -481,7 +481,7 @@ contract VoteWeigherBaseUnitTests is Test {
         voteWeigher.modifyStrategyWeights(quorumNumber, new uint256[](0), new uint96[](0));
     }
 
-    function testWeightOfOperator(
+    function testWeightOfOperatorForQuorum(
         address operator,
         IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndMultipliers,
         uint96[] memory shares
@@ -510,7 +510,7 @@ contract VoteWeigherBaseUnitTests is Test {
             expectedWeight += shares[i] * strategiesAndMultipliers[i].multiplier / voteWeigher.WEIGHTING_DIVISOR();
         }
 
-        assertEq(voteWeigher.weightOfOperator(quorumNumber, operator), expectedWeight);
+        assertEq(voteWeigher.weightOfOperatorForQuorum(quorumNumber, operator), expectedWeight);
     }
 
     function _removeDuplicates(IVoteWeigher.StrategyAndWeightingMultiplier[] memory strategiesAndWeightingMultipliers) 

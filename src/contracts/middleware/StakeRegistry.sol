@@ -398,7 +398,7 @@ contract StakeRegistry is StakeRegistryStorage {
         // determine new stakes
         OperatorStakeUpdate memory operatorStakeUpdate;
         operatorStakeUpdate.updateBlockNumber = uint32(block.number);
-        operatorStakeUpdate.stake = weightOfOperator(quorumNumber, operator);
+        operatorStakeUpdate.stake = weightOfOperatorForQuorum(quorumNumber, operator);
 
         // check if minimum requirements have been met
         if (operatorStakeUpdate.stake < minimumStakeForQuorum[quorumNumber]) {

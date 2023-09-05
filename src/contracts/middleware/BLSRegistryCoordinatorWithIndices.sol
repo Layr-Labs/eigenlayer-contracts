@@ -272,6 +272,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                     continue;
                 }
 
+                require(
+                    operatorKickParams[i].quorumNumber == quorumNumber, 
+                    "BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: quorumNumber not the same as signed"
+                );
+
                 // get the total stake for the quorum
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
                 bytes32 operatorToKickId = _operators[operatorKickParams[i].operator].operatorId;
