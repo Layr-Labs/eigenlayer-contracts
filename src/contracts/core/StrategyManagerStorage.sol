@@ -60,17 +60,15 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(address => uint256) public numWithdrawalsQueued;
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
-    /*
-     * @notice Mapping: staker => virtual 'beaconChainETH' shares that the staker 'owes' due to overcommitments of beacon chain ETH.
-     * When overcommitment is proven, `StrategyManager.recordOvercommittedBeaconChainETH` is called. However, it is possible that the
-     * staker already queued a withdrawal for more beaconChainETH shares than the `amount` input to this function. In this edge case,
-     * the amount that cannot be decremented is added to the staker's `beaconChainETHSharesToDecrementOnWithdrawal` -- then when the staker completes a
-     * withdrawal of beaconChainETH, the amount they are withdrawing is first decreased by their `beaconChainETHSharesToDecrementOnWithdrawal` amount.
-     * In other words, a staker's `beaconChainETHSharesToDecrementOnWithdrawal` must be 'paid down' before they can "actually withdraw" beaconChainETH.
-     * @dev In practice, this means not passing a call to `eigenPodManager.withdrawRestakedBeaconChainETH` until the staker's 
-     * `beaconChainETHSharesToDecrementOnWithdrawal` has first been reduced to zero.
-    */
-    mapping(address => uint256) public beaconChainETHSharesToDecrementOnWithdrawal;
+
+    /* 
+     * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
+     * This mapping tracked beaconChainETH "debt" in case updates were made to shares retroactively.  However, this design was
+     * replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which
+     * makes this tracking unnecessary.
+     */
+    // slither-disable-next-line incorrect-shift-in-assembly
+    uint256[1] internal _deprecatedStorage;
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 

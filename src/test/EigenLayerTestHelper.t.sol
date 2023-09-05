@@ -196,7 +196,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         cheats.startPrank(staker);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(operator, signatureWithExpiry);
+        delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
 
         assertTrue(
