@@ -512,6 +512,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             operatorIdsToSwap[0] = operatorToRegisterId;
 
             operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
+                quorumNumber: defaultQuorumNumber,
                 operator: operatorToKick,
                 pubkey: pubKey,
                 operatorIdsToSwap: operatorIdsToSwap
@@ -721,6 +722,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
             operatorIdsToSwap[0] = operatorToRegisterId;
 
             operatorKickParams[0] = IBLSRegistryCoordinatorWithIndices.OperatorKickParam({
+                quorumNumber: uint8(quorumNumbers[0]),
                 operator: operatorToKick,
                 pubkey: pubKey,
                 operatorIdsToSwap: operatorIdsToSwap
