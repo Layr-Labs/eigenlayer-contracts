@@ -58,9 +58,16 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     address public churnApprover;
     /// @notice whether the salt has been used for an operator churn approval
     mapping(bytes32 => bool) public isChurnApproverSaltUsed;
+    /// @notice the address of the entity allowed to eject operators from the AVS
+    address public ejector;
 
     modifier onlyServiceManagerOwner {
         require(msg.sender == serviceManager.owner(), "BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
+        _;
+    }
+
+    modifier onlyEjector {
+        require(msg.sender == ejector, "BLSRegistryCoordinatorWithIndices.onlyEjector: caller is not the ejector");
         _;
     }
 
@@ -78,9 +85,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         indexRegistry = _indexRegistry;
     }
 
-    function initialize(address _churnApprover, OperatorSetParam[] memory _operatorSetParams) external initializer {
+    function initialize(address _churnApprover, address _ejector, OperatorSetParam[] memory _operatorSetParams) external initializer {
         // set the churnApprover
-        churnApprover = _churnApprover;
+        _setChurnApprover(_churnApprover);
+        // set the ejector
+        _setEjector(_ejector);
         // the stake registry is this contract itself
         registries.push(address(stakeRegistry));
         registries.push(address(blsPubkeyRegistry));
@@ -212,6 +221,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /**
+     * @notice Sets the ejector
+     * @param _ejector is the address of the ejector
+     * @dev only callable by the service manager owner
+     */
+    function setEjector(address _ejector) external onlyServiceManagerOwner {
+        _setEjector(_ejector);
+    }
+
+    /**
      * @notice Registers msg.sender as an operator with the middleware
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param registrationData is the data that is decoded to get the operator's registration information
@@ -333,6 +351,22 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /**
+     * @notice Ejects the provided operator from the provided quorums from the AVS
+     * @param operator is the operator to eject
+     * @param quorumNumbers are the quorum numbers to eject the operator from
+     * @param pubkey is the BLS public key of the operator
+     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each
+     */
+    function ejectOperatorFromCoordinator(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        bytes32[] memory operatorIdsToSwap
+    ) external onlyEjector {
+        _deregisterOperatorWithCoordinator(operator, quorumNumbers, pubkey, operatorIdsToSwap);
+    }
+
+    /**
      * @notice Updates the socket of the msg.sender given they are a registered operator
      * @param socket is the new socket of the operator
      */
@@ -351,6 +385,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _setChurnApprover(address newChurnApprover) internal {
         churnApprover = newChurnApprover;
         emit ChurnApproverUpdated(newChurnApprover);
+    }
+
+    function _setEjector(address newEjector) internal {
+        ejector = newEjector;
+        emit EjectorUpdated(newEjector);
     }
 
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss

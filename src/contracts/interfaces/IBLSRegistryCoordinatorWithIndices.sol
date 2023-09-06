@@ -42,6 +42,8 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
 
     event ChurnApproverUpdated(address churnApprover);
 
+    event EjectorUpdated(address ejector);
+
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
     /// @notice the stake registry for this corrdinator is the contract itself
@@ -50,4 +52,18 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
     function blsPubkeyRegistry() external view returns (IBLSPubkeyRegistry);
     /// @notice the Index Registry contract that will keep track of operators' indexes
     function indexRegistry() external view returns (IIndexRegistry);
+
+    /**
+     * @notice Ejects the provided operator from the provided quorums from the AVS
+     * @param operator is the operator to eject
+     * @param quorumNumbers are the quorum numbers to eject the operator from
+     * @param pubkey is the BLS public key of the operator
+     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each
+     */
+    function ejectOperatorFromCoordinator(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        bytes32[] memory operatorIdsToSwap
+    ) external;
 }

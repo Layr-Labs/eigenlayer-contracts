@@ -74,6 +74,8 @@ contract MockAVSDeployer is Test {
     address churnApprover = cheats.addr(churnApproverPrivateKey);
     bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
 
+    address ejector = address(uint160(uint256(keccak256("ejector"))));
+
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -243,6 +245,7 @@ contract MockAVSDeployer is Test {
                 abi.encodeWithSelector(
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
                     churnApprover,
+                    ejector,
                     operatorSetParams
                 )
             );

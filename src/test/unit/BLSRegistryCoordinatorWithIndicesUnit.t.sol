@@ -34,6 +34,8 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
     event ChurnApproverUpdated(address churnApprover);
 
+    event EjectorUpdated(address ejector);
+
     function setUp() virtual public {
         _deployMockEigenLayerAndAVS();
     }
@@ -53,7 +55,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        registryCoordinator.initialize(churnApprover, operatorSetParams);
+        registryCoordinator.initialize(churnApprover, ejector, operatorSetParams);
     }
 
     function testSetOperatorSetParams_NotServiceManagerOwner_Reverts() public {
@@ -82,6 +84,21 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit ChurnApproverUpdated(newChurnApprover);
         registryCoordinator.setChurnApprover(newChurnApprover);
+    }
+
+    function testSetEjector_NotServiceManagerOwner_Reverts() public {
+        address newEjector = address(uint160(uint256(keccak256("newEjector"))));
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.onlyServiceManagerOwner: caller is not the service manager owner");
+        cheats.prank(defaultOperator);
+        registryCoordinator.setEjector(newEjector);
+    }
+
+    function testSetEjector_Valid() public {
+        address newEjector = address(uint160(uint256(keccak256("newEjector"))));
+        cheats.prank(serviceManagerOwner);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit EjectorUpdated(newEjector);
+        registryCoordinator.setEjector(newEjector);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
@@ -305,7 +322,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         operatorIdsToSwap[0] = defaultOperatorId;
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, defaultQuorumNumber, 0);
 
@@ -358,7 +375,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         }
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit OperatorAddedToQuorums(defaultOperator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
             emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[i]), 0);
@@ -434,7 +451,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         }
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit OperatorAddedToQuorums(operatorToDerigister, operatorToDeregisterQuorumNumbers);
+        emit OperatorRemovedFromQuorums(operatorToDerigister, operatorToDeregisterQuorumNumbers);
         
         for (uint i = 0; i < operatorToDeregisterQuorumNumbers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(stakeRegistry));
@@ -532,7 +549,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
 
         cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
-        emit OperatorAddedToQuorums(operatorKickParams[0].operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operatorKickParams[0].operator, quorumNumbers);
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(operatorToKickId, defaultQuorumNumber, 0);
         cheats.expectEmit(true, true, true, true, address(indexRegistry));
@@ -663,6 +680,54 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.prank(operatorToRegister);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithSaltAndExpiry);
+    }
+
+    function testEjectOperatorFromCoordinator_Valid() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.prank(defaultOperator);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = defaultOperatorId;
+
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbers);
+
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[0]), 0);
+
+        cheats.prank(ejector);
+        registryCoordinator.ejectOperatorFromCoordinator(defaultOperator, quorumNumbers, defaultPubKey, operatorIdsToSwap);
+
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), 0);
+    } 
+
+    function testEjectOperatorFromCoordinator_NotEjector_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+
+        cheats.prank(defaultOperator);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = defaultOperatorId;
+
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices.onlyEjector: caller is not the ejector");
+        cheats.prank(defaultOperator);
+        registryCoordinator.ejectOperatorFromCoordinator(defaultOperator, quorumNumbers, defaultPubKey, operatorIdsToSwap);
     }
 
     function testUpdateSocket() public {
