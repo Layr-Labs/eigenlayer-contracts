@@ -408,6 +408,9 @@ contract StakeRegistry is StakeRegistryStorage {
         // get stakeBeforeUpdate and update with new stake
         uint96 stakeBeforeUpdate = _recordOperatorStakeUpdate(operatorId, quorumNumber, operatorStakeUpdate);
     
+        /// TODO: Seems like logic in _regordOperatorStakeUpdate should be in here
+        /// TODO: Make result of WeightOf operator a param of UpdateOperatorStake
+        /// TODO: Move logic for getting prior stake to a separate function
         emit StakeUpdate(
             operatorId,
             quorumNumber,
@@ -422,6 +425,8 @@ contract StakeRegistry is StakeRegistryStorage {
         // initialize stakeBeforeUpdate to 0
         uint96 stakeBeforeUpdate;
         uint256 operatorStakeHistoryLength = operatorIdToStakeHistory[operatorId][quorumNumber].length; 
+
+        /// TODO: Make this the inverse condition of if length is 0
         if (operatorStakeHistoryLength != 0) {
             // set nextUpdateBlockNumber in prev stakes
             operatorIdToStakeHistory[operatorId][quorumNumber][operatorStakeHistoryLength - 1].nextUpdateBlockNumber =
