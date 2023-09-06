@@ -59,9 +59,11 @@ methods {
         bytes32 salt,
         uint256 expiry
     ) external returns (bytes32) envfree;
-}
 
-// TODOs: add properties in English + rules in CVL
+    // harnessed functions
+    function bytesArrayContainsDuplicates(bytes bytesArray) external returns (bool) envfree;
+    function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes arrayWhichShouldBeASubsetOfTheReference) external returns (bool) envfree;
+}
 
 // If my Operator status is REGISTERED ⇔ my quorum bitmap MUST BE nonzero
 invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
@@ -70,7 +72,6 @@ invariant registeredOperatorsHaveNonzeroBitmaps(address operator)
 
 // if two operators have different addresses, then they have different IDs
 // excludes the case in which the operator is not registered, since then they can both have ID zero (the default)
-// TODO: seems like this needs to be more carefully defined, might need to assume something about existing IDs first?
 invariant operatorIdIsUnique(address operator1, address operator2)
     operator1 != operator2 =>
         (getOperatorStatus(operator1) == IRegistryCoordinator.OperatorStatus.REGISTERED => getOperatorId(operator1) != getOperatorId(operator2));
@@ -111,7 +112,31 @@ definition methodCanRemoveFromBitmap(method f) returns bool =
     || f.selector == sig:deregisterOperatorWithCoordinator(bytes, bytes).selector
     || f.selector == sig:deregisterOperatorWithCoordinator(bytes, BN254.G1Point, bytes32[]).selector;
 
-/* TODD: this is a Work In Progress
+// verify that quorumNumbers provided as an input to deregister operator MUST BE a subset of the operator’s current quorums
+rule canOnlyDeregisterFromExistingQuorums(address operator) {
+    requireInvariant registeredOperatorsHaveNonzeroBitmaps(operator);
+
+    // TODO: store this status, verify that all calls to `deregisterOperatorWithCoordinator` *fail* if the operator is not registered first!
+    require(getOperatorStatus(operator) == IRegistryCoordinator.OperatorStatus.REGISTERED);
+
+    uint256 bitmapBefore = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));
+
+    bytes quorumNumbers;
+    BN254.G1Point pubkey;
+    bytes32[] operatorIdsToSwap;
+    env e;
+
+    deregisterOperatorWithCoordinator(e, quorumNumbers, pubkey, operatorIdsToSwap);
+
+    // if deregistration is successful, verify that `quorumNumbers` input was proper
+    if (getOperatorStatus(operator) != IRegistryCoordinator.OperatorStatus.REGISTERED) {
+        assert(bytesArrayIsSubsetOfBitmap(bitmapBefore, quorumNumbers));
+    } else {
+        assert(true);
+    }
+}
+
+/* TODO: this is a Work In Progress
 rule canOnlyModifyBitmapWithSpecificFunctions(address operator) {
     requireInvariant registeredOperatorsHaveNonzeroBitmaps(operator);
     uint256 bitmapBefore = getCurrentQuorumBitmapByOperatorId(getOperatorId(operator));

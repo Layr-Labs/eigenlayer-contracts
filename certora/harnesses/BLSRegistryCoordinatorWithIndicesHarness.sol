@@ -15,8 +15,7 @@ contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithI
     {}
 
     // @notice function based upon `BitmapUtils.bytesArrayToBitmap`, used to determine if an array contains any duplicates
-    function bytesArrayContainsDuplicates(bytes calldata bytesArray) public pure returns (bool) {
-        uint256 bitmap;
+    function bytesArrayContainsDuplicates(bytes memory bytesArray) public pure returns (bool) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
         if (bytesArray.length > 256) {
             return false;
@@ -41,5 +40,15 @@ contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithI
 
         // if the loop is completed without returning early, then the array contains no duplicates
         return true;
+    }
+
+    // @notice verifies that a bytes array is a (non-strict) subset of a bitmap
+    function bytesArrayIsSubsetOfBitmap(uint256 referenceBitmap, bytes memory arrayWhichShouldBeASubsetOfTheReference) public pure returns (bool) {
+        uint256 arrayWhichShouldBeASubsetOfTheReferenceBitmap = BitmapUtils.bytesArrayToBitmap(arrayWhichShouldBeASubsetOfTheReference);
+        if (referenceBitmap | arrayWhichShouldBeASubsetOfTheReferenceBitmap == referenceBitmap) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
