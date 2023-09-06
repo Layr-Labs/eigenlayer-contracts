@@ -254,11 +254,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // register the operator
         uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
-        // get the registering operator's operatorId
-        bytes32 registeringOperatorId = _operators[msg.sender].operatorId;
+        // get the registering operator's operatorId and set the operatorIdsToSwap to it because the registering operator is the one with the greatest index
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = pubkey.hashG1Point();
 
         // verify the churnApprover's signature
-        _verifychurnApproverSignatureOnOperatorChurnApproval(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry);
+        _verifyChurnApproverSignatureOnOperatorChurnApproval(operatorIdsToSwap[0], operatorKickParams, signatureWithSaltAndExpiry);
 
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
@@ -281,7 +282,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                 uint96 totalStakeForQuorum = stakeRegistry.getCurrentTotalStakeForQuorum(quorumNumber);
                 bytes32 operatorToKickId = _operators[operatorKickParams[i].operator].operatorId;
                 uint96 operatorToKickStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorToKickId, quorumNumber);
-                uint96 registeringOperatorStake = stakeRegistry.getCurrentOperatorStakeForQuorum(registeringOperatorId, quorumNumber);
+                uint96 registeringOperatorStake = stakeRegistry.getCurrentOperatorStakeForQuorum(operatorIdsToSwap[0], quorumNumber);
 
                 // check the registering operator has more than the kick BIPs of the operator to kick's stake
                 require(
@@ -301,7 +302,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                 operatorKickParams[i].operator, 
                 quorumNumbers[i:i+1], 
                 operatorKickParams[i].pubkey, 
-                operatorKickParams[i].operatorIdsToSwap
+                operatorIdsToSwap
             );
         }
     }
@@ -459,7 +460,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
 
     /// @notice verifies churnApprover's signature on operator churn approval and increments the churnApprover nonce
-    function _verifychurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
+    function _verifyChurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
         // make sure the salt hasn't been used already
         require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
         require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        

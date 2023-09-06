@@ -29,14 +29,11 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
     /**
      * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
      * Specifically the `operator` is the address of the operator to kick, `pubkey` is the BLS public key of the operator,
-     * `operatorIdsToSwap` is the list of operatorIds to swap with the operator being kicked in the indexRegistry,
-     * and `globalOperatorListIndex` is the index of the operator in the global operator list in the indexRegistry.
      */
     struct OperatorKickParam {
         uint8 quorumNumber;
         address operator;
         BN254.G1Point pubkey; 
-        bytes32[] operatorIdsToSwap; // should be a single length array when kicking
     }
 
     // EVENTS
