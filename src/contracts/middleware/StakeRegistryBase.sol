@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-abstract contract StakeRegistryBase {
+import "./StakeRegistryStorage.sol";
+
+abstract contract StakeRegistryBase is StakeRegistryStorage {
 
     function _beforeRegisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual;
 
@@ -11,8 +13,12 @@ abstract contract StakeRegistryBase {
 
     function _afterDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual;
 
+    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual;
 
-    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
+    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual;
+
+
+    function __registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
         _beforeRegisterOperator(operatorId, quorumNumbers);
 
         _registerOperator(operator, operatorId, quorumNumbers);
@@ -20,7 +26,7 @@ abstract contract StakeRegistryBase {
         _afterRegisterOperator(operatorId, quorumNumbers);
     }
 
-    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
+    function __deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
         _beforeDeregisterOperator(operatorId, quorumNumbers);
 
         _deregisterOperator(operatorId, quorumNumbers);
