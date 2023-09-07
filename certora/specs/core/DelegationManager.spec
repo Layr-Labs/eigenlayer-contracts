@@ -107,11 +107,9 @@ The exception is the zero address, since by default an address is 'delegated to 
 //definition notDelegated -- defined as delegatedTo(staker) == address(0), likewise returned by !isDelegated(staker)--
 
 // verify that anyone who is registered as an operator is also always delegated to themselves
+// the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
 invariant operatorsAlwaysDelegatedToSelf(address operator)
-    isOperator(operator) <=> delegatedTo(operator) == operator
-    { preserved {
-        require operator != 0;
-    } }
+    operator != 0 => (isOperator(operator) <=> delegatedTo(operator) == operator);
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
