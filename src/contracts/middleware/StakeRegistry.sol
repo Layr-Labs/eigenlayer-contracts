@@ -219,7 +219,11 @@ contract StakeRegistry is StakeRegistryBase {
      *         4) the operator is not already registered
      */
     function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
+        _beforeRegisterOperator(operator, operatorId, quorumNumbers);
+
         _registerOperator(operator, operatorId, quorumNumbers);
+
+        _afterRegisterOperator(operator,operatorId, quorumNumbers);
     }
 
     /**
@@ -235,7 +239,11 @@ contract StakeRegistry is StakeRegistryBase {
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
     function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers) external virtual onlyRegistryCoordinator {
+        _beforeDeregisterOperator(operatorId, quorumNumbers);
+
         _deregisterOperator(operatorId, quorumNumbers);
+
+        _afterDeregisterOperator(operatorId, quorumNumbers);
     }
 
     /**
@@ -449,9 +457,9 @@ contract StakeRegistry is StakeRegistryBase {
         _totalStakeHistory[quorumNumber].push(_totalStake);
     }
 
-    function _beforeRegisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override{} 
+    function _beforeRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal override{} 
 
-    function _afterRegisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override {}
+    function _afterRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal override {}
     
     function _beforeDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override {}
 
