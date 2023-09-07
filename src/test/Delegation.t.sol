@@ -228,7 +228,7 @@
 //         if (expiry < block.timestamp) {
 //             cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
 //         }
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
 //             signature: signature,
 //             expiry: expiry
 //         });
@@ -266,7 +266,7 @@
 //             signature = abi.encodePacked(r, s, v);
 //         }
                 
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
 //             signature: signature,
 //             expiry: type(uint256).max
 //         });
@@ -305,7 +305,7 @@
 //         }
         
 //         cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
 //             signature: signature,
 //             expiry: type(uint256).max
 //         });
@@ -332,7 +332,7 @@
 //         bytes memory signature = abi.encodePacked(r, s, v);
 
 //         cheats.expectRevert();
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
 //             signature: signature,
 //             expiry: type(uint256).max
 //         });
@@ -359,7 +359,7 @@
 //         bytes memory signature = abi.encodePacked(r, s, v);
         
 //         cheats.expectRevert();
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
 //             signature: signature,
 //             expiry: type(uint256).max
 //         });
@@ -443,7 +443,7 @@
 
 //         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
 //         cheats.startPrank(getOperatorAddress(1));
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
 //         delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
 //         cheats.stopPrank();
 //     }
@@ -491,7 +491,7 @@
 //     function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
 //         vm.startPrank(_staker);
 //         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
 //         delegation.delegateTo(_unregisteredOperator, signatureWithExpiry, bytes32(0));
 //         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
 //         delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
@@ -518,7 +518,7 @@
 //         string memory emptyStringForMetadataURI;
 //         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 //         vm.prank(_staker);
-//         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+//         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
 //         delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
 //         //operators cannot undelegate from themselves

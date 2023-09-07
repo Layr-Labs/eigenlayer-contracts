@@ -21,7 +21,7 @@ contract Staker is Ownable {
     ) Ownable() {
         token.approve(address(strategyManager), type(uint256).max);
         strategyManager.depositIntoStrategy(strategy, token, amount);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
     }
     
