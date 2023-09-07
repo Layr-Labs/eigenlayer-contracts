@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
-import "./StakeRegistryBase.sol";
+import "./StakeRegistryStorage.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -16,7 +16,7 @@ import "./StakeRegistryBase.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is StakeRegistryBase {
+contract StakeRegistry is StakeRegistryStorage {
 
     /// @notice requires that the caller is the RegistryCoordinator
     modifier onlyRegistryCoordinator() {
@@ -325,7 +325,7 @@ contract StakeRegistry is StakeRegistryBase {
      * @notice Updates the stake for the operator with `operatorId` for the specified `quorumNumbers`. The total stake
      * for each quorum is updated accordingly in addition to the operator's individual stake history.
      */ 
-    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal override {
+    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
         // check the operator is registering for only valid quorums
         require(uint8(quorumNumbers[quorumNumbers.length - 1]) < quorumCount, "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _newTotalStakeUpdate;
@@ -364,7 +364,7 @@ contract StakeRegistry is StakeRegistryBase {
      * the total stake of the quorums specified in `quorumNumbers` will be updated and so will the operator's individual
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
-    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override {
+    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
         // check the operator is deregistering from only valid quorums
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
@@ -457,13 +457,13 @@ contract StakeRegistry is StakeRegistryBase {
         _totalStakeHistory[quorumNumber].push(_totalStake);
     }
 
-    function _beforeRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal override{} 
+    function _beforeRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual{} 
 
-    function _afterRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal override {}
+    function _afterRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
     
-    function _beforeDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override {}
+    function _beforeDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
 
-    function _afterDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal override {}
+    function _afterDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
 
     /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`
     function _validateOperatorStakeUpdateAtBlockNumber(OperatorStakeUpdate memory operatorStakeUpdate, uint32 blockNumber) internal pure {
