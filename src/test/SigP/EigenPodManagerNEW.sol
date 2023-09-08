@@ -135,10 +135,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.depositBeaconChainETH(podOwner, amount);
-        emit BeaconChainETHDeposited(podOwner, amount);
-    }
+    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {}
 
     /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
@@ -147,7 +144,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner){}
+    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner){}
 
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
