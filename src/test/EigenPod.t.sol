@@ -791,9 +791,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         address recipient = address(this);
         uint256 amount = 1e18;
-        cheats.startPrank(address(eigenPodManager.strategyManager()));
+        IEigenPod eigenPod = eigenPodManager.getPod(podOwner);
+        cheats.startPrank(address(eigenPodManager));
         cheats.expectRevert(bytes("Pausable: index is paused"));
-        eigenPodManager.withdrawRestakedBeaconChainETH(podOwner, recipient, amount);
+        eigenPod.withdrawRestakedBeaconChainETH(eigenPod, recipient, amount);
         cheats.stopPrank();
     }
 
