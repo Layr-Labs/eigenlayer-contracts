@@ -294,10 +294,6 @@ contract StrategyManager is
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
      * `stakerStrategyList` to lowest index
-     * @dev Note that if the withdrawal includes shares in the enshrined 'beaconChainETH' strategy, then it must *only* include shares in this strategy, and
-     * `withdrawer` must match the caller's address. The first condition is because slashing of queued withdrawals cannot be guaranteed 
-     * for Beacon Chain ETH (since we cannot trigger a withdrawal from the beacon chain through a smart contract) and the second condition is because shares in
-     * the enshrined 'beaconChainETH' strategy technically represent non-fungible positions (deposits to the Beacon Chain, each pointed at a specific EigenPod).
      */
     function queueWithdrawal(
         uint256[] calldata strategyIndexes,
@@ -563,7 +559,6 @@ contract StrategyManager is
         onlyStrategiesWhitelistedForDeposit(strategy)
         returns (uint256 shares)
     {
-        require(address(strategy) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
@@ -591,7 +586,6 @@ contract StrategyManager is
         internal
         returns (bool)
     {
-        require(address(strategy) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
         // sanity checks on inputs
         require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
@@ -679,8 +673,6 @@ contract StrategyManager is
         uint256 strategyIndexIndex;
 
         for (uint256 i = 0; i < strategies.length;) {
-            require(address(strategies[i]) != address(eigenPodManager.beaconChainETHStrategy()), "StrategyManager._depositIntoStrategy: cannot deposit into the canonical beaconChainETHStrategy via the StrategyManager");
-
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
             if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
@@ -772,9 +764,8 @@ contract StrategyManager is
             "StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
         );
 
-        // enforce minimum delay lag (not applied to withdrawals of 'beaconChainETH', since the EigenPods enforce their own delay)
-        require(queuedWithdrawal.withdrawalStartBlock + withdrawalDelayBlocks <= block.number 
-                || queuedWithdrawal.strategies[0] == beaconChainETHStrategy,
+        // enforce minimum delay lag
+        require(queuedWithdrawal.withdrawalStartBlock + withdrawalDelayBlocks <= block.number,
             "StrategyManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
         );
 
