@@ -357,7 +357,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param operator is the operator to eject
      * @param quorumNumbers are the quorum numbers to eject the operator from
      * @param pubkey is the BLS public key of the operator
-     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each
+     * @param operatorIdsToSwap is the list of the operator ids to swap the index of the operator with in each 
+     * quorum when removing the operator from the quorum's ordered list. The provided operator ids should be the 
+     * those of the operator's with the largest index in each quorum that the operator is being ejected from, in
+     * ascending order of quorum number.
      */
     function ejectOperatorFromCoordinator(
         address operator, 
