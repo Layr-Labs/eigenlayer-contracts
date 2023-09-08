@@ -8,6 +8,7 @@ import "forge-std/Test.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
+import "../mocks/EigenPodManagerMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../Delegation.t.sol";
@@ -20,6 +21,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     DelegationManager delegationManagerImplementation;
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
+    EigenPodManagerMock eigenPodManagerMock;
 
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
     uint256 stakerPrivateKey = uint256(123456789);
@@ -64,8 +66,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         slasherMock = new SlasherMock();
         delegationManager = DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         strategyManagerMock = new StrategyManagerMock();
+        eigenPodManagerMock = new EigenPodManagerMock();
 
-        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock);
+        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
 
         cheats.startPrank(eigenLayerProxyAdmin.owner());
         eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation));

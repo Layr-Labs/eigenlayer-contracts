@@ -38,8 +38,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     // INITIALIZING FUNCTIONS
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) 
-        DelegationManagerStorage(_strategyManager, _slasher)
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
+        DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager)
     {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;

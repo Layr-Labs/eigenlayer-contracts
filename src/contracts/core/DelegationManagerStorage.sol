@@ -69,9 +69,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     IEigenPodManager public immutable eigenPodManager;
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) {
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
-        eigenPodManager = strategyManager.eigenPodManager();
+        eigenPodManager = _eigenPodManager;
         slasher = _slasher;
     }
 

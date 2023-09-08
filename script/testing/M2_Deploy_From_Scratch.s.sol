@@ -181,7 +181,7 @@ contract Deployer_M1 is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);

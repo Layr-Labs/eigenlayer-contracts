@@ -161,7 +161,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         );
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher);
+        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, IEigenPodManager(podManagerAddress), slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
@@ -622,10 +622,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function getBeaconChainETHShares(address staker) internal view returns(uint256) {
-        return strategyManager.stakerStrategyShares(staker, eigenPodManager.beaconChainETHStrategy());
-    }
-
     // // 3. Single withdrawal credential
     // // Test: Owner proves an withdrawal credential.
     // // Expected Behaviour: beaconChainETH shares should increment by REQUIRED_BALANCE_WEI
@@ -633,7 +629,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testProveSingleWithdrawalCredential() public {
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
+        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
         // ./solidityProofGen "ValidatorFieldsProof" 61068 false "data/slot_58000/oracle_capella_beacon_state_58100.ssz" "withdrawalCredentialAndBalanceProof_61068.json"
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
@@ -641,7 +637,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
 
-        uint256 beaconChainETHAfter = getBeaconChainETHShares(pod.podOwner());
+        uint256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
         emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
         emit log_named_uint("beaconChainETHAfter", beaconChainETHAfter);
         assertTrue(beaconChainETHAfter - beaconChainETHBefore == _getEffectiveRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
@@ -659,7 +655,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
+        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
@@ -673,10 +669,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 shareDiff = beaconChainETHBefore - getBeaconChainETHShares(podOwner);
+        uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
  
-        assertTrue(getBeaconChainETHShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
-        assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");
     }
 
@@ -685,7 +681,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/slashedProofs/balanceUpdateProof_notOvercommitted_61511.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = getBeaconChainETHShares(podOwner);
+        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
@@ -701,10 +697,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 shareDiff = beaconChainETHBefore - getBeaconChainETHShares(podOwner);
+        uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
         
-        assertTrue(getBeaconChainETHShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
-        assertTrue(beaconChainETHBefore - getBeaconChainETHShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");    
     }
 
