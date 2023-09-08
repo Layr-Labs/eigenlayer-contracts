@@ -187,8 +187,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
         
-        bytes32[] memory queuedWithdrawals = new bytes32[](2);
-
         //check if they have beaconChainETH shares
         bytes32 beaconChainQueuedWithdrawal = eigenPodManager.getBeaconChainETHShares(staker) > 0 ? eigenPodManager.forceWithdrawal(staker) : bytes32(0);
         
@@ -300,29 +298,21 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
         (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
 
+
+        //retrieve any beacon chain ETH shares the staker might have
         uint256 beaconChainETHShares = eigenPodManager.getBeaconChainETHShares(staker);
         IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
-        if(beaconChainETHShares > 0) {
-            uint256 numStrategies = strategies.length;
-            IStrategy[] memory newStrategies = new IStrategy[](numStrategies + 1);
-            uint256[] memory newShares = new uint256[](numStrategies + 1);
-            // add beaconChainETH shares to the staker's shares
-            for (uint256 i = 0; i < numStrategies; i++) {
-                if(i == numStrategies - 1) {
-                    newStrategies[i] = beaconChainETHStrategy;
-                    newShares[i] = beaconChainETHShares;
-                } else {
-                    newStrategies[i] = strategies[i];
-                    newShares[i] = shares[i];
-                }
-            }
-        }
-
+        
         // add strategy shares to delegated `operator`'s shares
-        uint256 stratsLength = strategies.length;
+        uint256 stratsLength = beaconChainETHShares > 0 ? strategies.length +=1 : strategies.length;
+
         for (uint256 i = 0; i < stratsLength;) {
-            // update the share amounts for each of the `operator`'s strategies
-            operatorShares[operator][strategies[i]] += shares[i];
+            if(beaconChainETHShares > 0 && i == stratsLength - 1) {
+                operatorShares[operator][beaconChainETHStrategy] += beaconChainETHShares;
+            } else {
+                // update the share amounts for each of the `operator`'s strategies
+                operatorShares[operator][strategies[i]] += shares[i];
+            }
             unchecked {
                 ++i;
             }
