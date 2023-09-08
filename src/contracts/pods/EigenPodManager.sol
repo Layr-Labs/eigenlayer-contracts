@@ -303,6 +303,7 @@ contract EigenPodManager is
     /**
      * @notice forces a withdrawal of the podOwner's beaconChainETHStrategy shares
      * @param podOwner is the pod owner whose shares are to be removed
+     * @dev This function can only be called by the DelegationManager contract
      */
     function forceWithdrawal(address podOwner) external 
         onlyDelegationManager 
