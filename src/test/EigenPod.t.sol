@@ -1116,7 +1116,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         }
 
         cheats.startPrank(sender);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
 
