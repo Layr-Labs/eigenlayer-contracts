@@ -123,6 +123,7 @@ contract EigenPodManager is
         _;
     }
 
+
     modifier onlyFrozen(address staker) {
         require(slasher.isFrozen(staker), "EigenPodManager.onlyFrozen: staker has not been frozen");
         _;
@@ -254,7 +255,7 @@ contract EigenPodManager is
     )
         external
         onlyOwner
-        onlyNotFrozen(slashedPodOwner)
+        onlyFrozen(slashedPodOwner)
         nonReentrant
     {
         require(shareAmount > 0, "EigenPodManager.slashShares: shares must be greater than zero");
