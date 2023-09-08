@@ -71,6 +71,7 @@ contract EigenPodManager is
     /// @notice The maximum number of EigenPods that can be deployed
     uint256 public maxPods;
 
+    // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
     mapping(address => uint256) public podOwnerShares;
 
@@ -83,7 +84,7 @@ contract EigenPodManager is
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
 
-    /// @notice Canonical beacon chain ETH strategy
+    /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     uint256 internal constant GWEI_TO_WEI = 1e9;

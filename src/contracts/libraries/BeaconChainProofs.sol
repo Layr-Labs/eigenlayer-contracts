@@ -281,6 +281,8 @@ library BeaconChainProofs {
         require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
+        // TODO: make historical proofs actually work. this is not compelete and does not function correctly right now
+        // @Sidu28 please delete this note once you've actually implemented this
         if(proofs.proveHistoricalRoot){
             //calculate the blockHeaderRoot Index for a block that is very old
             uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 

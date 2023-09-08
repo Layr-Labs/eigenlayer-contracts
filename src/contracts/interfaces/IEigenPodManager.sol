@@ -73,6 +73,7 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice forces a withdrawal of the podOwner's beaconChainETHStrategy shares
      * @param podOwner is the pod owner whose shares are to be removed
+     * @dev This function can only be called by the DelegationManager contract
      */
     function forceWithdrawal(address podOwner) external returns (bytes32);
 
@@ -131,6 +132,6 @@ interface IEigenPodManager is IPausable {
     /// @notice returns shares of provided podOwner
     function podOwnerShares(address podOwner) external returns (uint256);
 
-    /// @notice returns canonical beaconChainETH strategy
+    /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 }
