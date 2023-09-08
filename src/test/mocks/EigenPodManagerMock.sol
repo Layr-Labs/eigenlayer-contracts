@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPodManager.sol";
 
 contract EigenPodManagerMock is IEigenPodManager, Test {
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     function slasher() external view returns(ISlasher) {}
 
     function createPod() external pure {}
@@ -74,6 +76,5 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
     function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
-    function beaconChainETHStrategy() external view returns (IStrategy){}
     
 }

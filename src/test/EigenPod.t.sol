@@ -539,7 +539,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _proveOverCommittedStake(newPod);
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(podOwner, strategyManager.beaconChainETHStrategy());
+        uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(podOwner, eigenPodManager.beaconChainETHStrategy());
 
         require(beaconChainETHShares == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "strategyManager shares not updated correctly");
     }
@@ -623,7 +623,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function getBeaconChainETHShares(address staker) internal view returns(uint256) {
-        return strategyManager.stakerStrategyShares(staker, strategyManager.beaconChainETHStrategy());
+        return strategyManager.stakerStrategyShares(staker, eigenPodManager.beaconChainETHStrategy());
     }
 
     // // 3. Single withdrawal credential
@@ -1044,7 +1044,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = strategyManager.beaconChainETHStrategy();
+        strategyArray[0] = eigenPodManager.beaconChainETHStrategy();
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = 31e18;
         bool undelegateIfPossible = false;
@@ -1062,7 +1062,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = strategyManager.beaconChainETHStrategy();
+        strategyArray[0] = eigenPodManager.beaconChainETHStrategy();
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = _getEffectiveRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
         bool undelegateIfPossible = false;
@@ -1074,7 +1074,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
-        uint256 sharesInSM = strategyManager.stakerStrategyShares(podowner, strategyManager.beaconChainETHStrategy());
+        uint256 sharesInSM = strategyManager.stakerStrategyShares(podowner, eigenPodManager.beaconChainETHStrategy());
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         
         EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
@@ -1198,7 +1198,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
-        IStrategy beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
+        IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
         cheats.stopPrank();
 
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(_podOwner, beaconChainETHStrategy);

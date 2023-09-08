@@ -157,7 +157,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
-        beaconChainETHStrategy = strategyManager.beaconChainETHStrategy();
+        beaconChainETHStrategy = eigenPodManagerMock.beaconChainETHStrategy();
 
         // excude the zero address, the proxyAdmin and the eigenPodManagerMock from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
@@ -723,7 +723,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         bool undelegateIfPossible = false;
 
         {
-            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[0] = REQUIRED_BALANCE_WEI;
             strategyIndexes[0] = 0;
         }
@@ -741,7 +741,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         bool undelegateIfPossible = false;
 
         {
-            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[0] = REQUIRED_BALANCE_WEI;
             strategyIndexes[0] = 0;
             strategyArray[1] = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
@@ -756,7 +756,7 @@ contract StrategyManagerUnitTests is Test, Utils {
             strategyArray[0] = dummyStrat;
             shareAmounts[0] = 1;
             strategyIndexes[0] = 0;
-            strategyArray[1] = strategyManager.beaconChainETHStrategy();
+            strategyArray[1] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[1] = REQUIRED_BALANCE_WEI;
             strategyIndexes[1] = 1;
         }
@@ -772,7 +772,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         bool undelegateIfPossible = false;
 
         {
-            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[0] = REQUIRED_BALANCE_WEI - 1243895959494;
             strategyIndexes[0] = 0;
         }
@@ -788,7 +788,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         bool undelegateIfPossible = false;
 
         {
-            strategyArray[0] = strategyManager.beaconChainETHStrategy();
+            strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[0] = 1;    
             shareAmounts[1] = 1;    
             strategyIndexes[0] = 0;
