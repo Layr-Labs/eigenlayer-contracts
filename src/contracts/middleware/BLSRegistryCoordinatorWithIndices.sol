@@ -416,7 +416,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         uint256 operatorQuorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
         if(operatorQuorumBitmapHistoryLength > 0) {
             uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].quorumBitmap;
-            require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums");
+            require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
             // new stored quorumBitmap is the previous quorumBitmap or'd with the new quorumBitmap to register for
             quorumBitmap |= prevQuorumBitmap;
         }

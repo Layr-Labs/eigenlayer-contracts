@@ -295,6 +295,24 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket);
     }
 
+    function testRegisterOperatorWithCoordinator_RegisteredOperatorForSameQuorums_Reverts() public {
+        uint256 registrationBlockNumber = block.number + 100;
+        uint256 nextRegistrationBlockNumber = registrationBlockNumber + 100;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.prank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        cheats.prank(defaultOperator);
+        cheats.roll(nextRegistrationBlockNumber);
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+    }
+
     function testDeregisterOperatorWithCoordinator_NotRegistered_Reverts() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
