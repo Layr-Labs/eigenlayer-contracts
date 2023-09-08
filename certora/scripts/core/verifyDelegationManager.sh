@@ -11,7 +11,6 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
     --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
     --optimistic_loop \
-    --send_only \
     --prover_args '-optimisticFallback true' \
     $RULE \
     --loop_iter 3 \

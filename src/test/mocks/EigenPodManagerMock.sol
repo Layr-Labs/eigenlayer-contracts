@@ -13,7 +13,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function restakeBeaconChainETH(address /*podOwner*/, uint256 /*amount*/) external pure {}
 
-    function recordOvercommittedBeaconChainETH(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, uint256 /*amount*/) external pure {}
+    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, int256 /*sharesDelta*/) external pure {}
     
     function withdrawRestakedBeaconChainETH(address /*podOwner*/, address /*recipient*/, uint256 /*amount*/) external pure {}
 
@@ -38,6 +38,11 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function strategyManager() external pure returns(IStrategyManager) {
         return IStrategyManager(address(0));
     }
+
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
+
 
     function hasPod(address /*podOwner*/) external pure returns (bool) {
         return false;

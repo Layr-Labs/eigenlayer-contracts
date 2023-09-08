@@ -21,8 +21,8 @@ contract Staker is Ownable {
     ) Ownable() {
         token.approve(address(strategyManager), type(uint256).max);
         strategyManager.depositIntoStrategy(strategy, token, amount);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(operator, signatureWithExpiry);
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
+        delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
     }
     
     function callAddress(address implementation, bytes memory data) external onlyOwner returns(bytes memory) {

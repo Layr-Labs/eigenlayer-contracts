@@ -111,7 +111,8 @@ contract DeployOpenEigenLayer is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            31 ether
+            31 gwei,
+            0.5 gwei
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
