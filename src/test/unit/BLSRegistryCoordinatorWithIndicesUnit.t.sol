@@ -6,7 +6,7 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
-    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
+    event OperatorSocketUpdate(bytes32 operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
