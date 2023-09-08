@@ -536,9 +536,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _proveOverCommittedStake(newPod);
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(podOwner, eigenPodManager.beaconChainETHStrategy());
+        uint256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
-        require(beaconChainETHShares == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "strategyManager shares not updated correctly");
+        require(beaconChainETHShares == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI,
+            "eigenPodManager shares not updated correctly");
     }
 
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
@@ -1066,16 +1067,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
-        uint256 sharesInSM = strategyManager.stakerStrategyShares(podowner, eigenPodManager.beaconChainETHStrategy());
+        uint256 shares = eigenPodManager.podOwnerShares(podowner);
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         
         EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
 
         uint64 validatorBalanceGwei = info.restakedBalanceGwei;
-        emit log_named_uint("shares", sharesInSM/GWEI_TO_WEI);
+        emit log_named_uint("shares", shares/GWEI_TO_WEI);
         emit log_named_uint("validatorBalanceGwei", validatorBalanceGwei);
         emit log_named_uint("withdrawableRestakedExecutionLayerGwei", withdrawableRestakedExecutionLayerGwei);
-        require(sharesInSM/GWEI_TO_WEI == validatorBalanceGwei + withdrawableRestakedExecutionLayerGwei, "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
+        require(shares/GWEI_TO_WEI == validatorBalanceGwei + withdrawableRestakedExecutionLayerGwei,
+            "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
     }
 
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
