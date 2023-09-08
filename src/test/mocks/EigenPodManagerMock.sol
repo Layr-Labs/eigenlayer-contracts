@@ -63,7 +63,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function unpause(uint256 /*newPausedStatus*/) external{}
 
-    function getBeaconChainETHShares(address podOwner) external returns (uint256){}
+    function podOwnerShares(address podOwner) external returns (uint256){}
 
     function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible, bool alsoWithdraw) external returns(bytes32) {}
 

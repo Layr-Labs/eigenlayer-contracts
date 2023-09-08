@@ -165,9 +165,6 @@ interface IEigenPod {
     /// in the pod, to reflect a completion of a queued withdrawal as shares
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 
-    /// @notice called to deposit ETH into the pod
-    function receiveETH() external payable;
-
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;
 

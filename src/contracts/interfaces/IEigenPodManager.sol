@@ -129,7 +129,7 @@ interface IEigenPodManager is IPausable {
     function hasPod(address podOwner) external view returns (bool);
 
     /// @notice returns shares of provided podOwner
-    function getBeaconChainETHShares(address podOwner) external returns (uint256);
+    function podOwnerShares(address podOwner) external returns (uint256);
 
     /// @notice returns canonical beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);

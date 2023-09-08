@@ -188,7 +188,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
         
         //check if they have beaconChainETH shares
-        bytes32 beaconChainQueuedWithdrawal = eigenPodManager.getBeaconChainETHShares(staker) > 0 ? eigenPodManager.forceWithdrawal(staker) : bytes32(0);
+        bytes32 beaconChainQueuedWithdrawal = eigenPodManager.podOwnerShares(staker) > 0 ? eigenPodManager.forceWithdrawal(staker) : bytes32(0);
         
         return (strategyManager.forceTotalWithdrawal(staker), beaconChainQueuedWithdrawal);
 
@@ -300,11 +300,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
 
         //retrieve any beacon chain ETH shares the staker might have
-        uint256 beaconChainETHShares = eigenPodManager.getBeaconChainETHShares(staker);
+        uint256 beaconChainETHShares = eigenPodManager.podOwnerShares(staker);
         IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
-        
-        // add strategy shares to delegated `operator`'s shares
-        uint256 stratsLength = beaconChainETHShares > 0 ? strategies.length +=1 : strategies.length;
+
+        uint256 stratsLength = strategies.length;
+
+        if (beaconChainETHShares > 0){
+            stratsLength += 1;
+        }
 
         for (uint256 i = 0; i < stratsLength;) {
             if(beaconChainETHShares > 0 && i == stratsLength - 1) {

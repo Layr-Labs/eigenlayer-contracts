@@ -64,9 +64,6 @@ contract EigenPodManager is
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
 
-    /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
-    mapping(address => uint256) public numWithdrawalsQueued;
-
     // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
     uint256 public numPods;
@@ -77,6 +74,8 @@ contract EigenPodManager is
     /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
     mapping(address => uint256) public podOwnerShares;
 
+    /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
+    mapping(address => uint256) public numWithdrawalsQueued;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;
@@ -306,10 +305,6 @@ contract EigenPodManager is
         returns (bytes32)
     {
         return _queueWithdrawal(podOwner, podOwnerShares[podOwner], true, true);
-    }
-
-    function getBeaconChainETHShares(address podOwner) external returns (uint256) {
-        return podOwnerShares[podOwner];
     }
 
     /**
