@@ -1036,15 +1036,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61336.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = eigenPodManager.beaconChainETHStrategy();
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = 31e18;
+        uint256 shareAmount = 31e18;
         bool undelegateIfPossible = false;
         cheats.expectRevert("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
-        _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
+        _testQueueWithdrawal(podOwner, shareAmount, undelegateIfPossible);
     }
 
     function testQueueBeaconChainETHWithdrawal() external {
@@ -1054,18 +1049,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
         
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = eigenPodManager.beaconChainETHStrategy();
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
+        uint256 shareAmount = _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
         bool undelegateIfPossible = false;
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
-        _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
+        _testQueueWithdrawal(podOwner, shareAmount, undelegateIfPossible);
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
-        require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmounts[0]/GWEI_TO_WEI, "withdrawableRestakedExecutionLayerGwei not decremented correctly");
+        require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmount/GWEI_TO_WEI,
+            "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
 
     function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
@@ -1205,25 +1196,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _testQueueWithdrawal(
-        address depositor,
-        uint256[] memory strategyIndexes,
-        IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts,
+        address podOwner,
+        uint256 amountWei,
         bool undelegateIfPossible
     )
         internal
         returns (bytes32)
     {
-        cheats.startPrank(depositor);
+        cheats.startPrank(podOwner);
+        bool alsoWithdraw = true;
 
-        //make a call with depositor aka podOwner also as withdrawer.
-        bytes32 withdrawalRoot = strategyManager.queueWithdrawal(
-            strategyIndexes,
-            strategyArray,
-            shareAmounts,
-            depositor,
+        //make a call from podOwner to queue the withdrawal
+        bytes32 withdrawalRoot = eigenPodManager.queueWithdrawal(
+            amountWei,
+            undelegateIfPossible,
             // TODO: make this an input
-            undelegateIfPossible
+            alsoWithdraw
         );
 
         cheats.stopPrank();
