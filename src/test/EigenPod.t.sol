@@ -1196,17 +1196,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _testQueueWithdrawal(
-        address podOwner,
+        address _podOwner,
         uint256 amountWei,
         bool undelegateIfPossible
     )
         internal
         returns (bytes32)
     {
-        cheats.startPrank(podOwner);
+        cheats.startPrank(_podOwner);
         bool alsoWithdraw = true;
 
-        //make a call from podOwner to queue the withdrawal
+        //make a call from _podOwner to queue the withdrawal
         bytes32 withdrawalRoot = eigenPodManager.queueWithdrawal(
             amountWei,
             undelegateIfPossible,
