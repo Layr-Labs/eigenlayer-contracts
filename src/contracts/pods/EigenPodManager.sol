@@ -132,12 +132,18 @@ contract EigenPodManager is
         _;
     }
 
-    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IStrategyManager _strategyManager, ISlasher _slasher) {
+    constructor(
+        IETHPOSDeposit _ethPOS,
+        IBeacon _eigenPodBeacon,
+        IStrategyManager _strategyManager,
+        ISlasher _slasher,
+        IDelegationManager _delegationManager
+    ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
         slasher = _slasher;
-        delegationManager = strategyManager.delegation();
+        delegationManager = _delegationManager;
         _disableInitializers();
     }
 
