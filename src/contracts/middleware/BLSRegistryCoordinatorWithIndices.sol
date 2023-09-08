@@ -406,9 +406,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         //     "StakeRegistry._registerOperator: operator must be opted into slashing by the serviceManager"
         // );
         
-        // check that the sender is not already registered
-        require(_operators[operator].status != OperatorStatus.REGISTERED, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered");
-
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
         require(quorumBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");

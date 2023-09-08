@@ -216,6 +216,55 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         );
     }
 
+    function testRegisterOperatorWithCoordinator_RegisteredOperatorForNewQuorums_Valid() public {
+        uint256 registrationBlockNumber = block.number + 100;
+        uint256 nextRegistrationBlockNumber = registrationBlockNumber + 100;
+
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+
+        stakeRegistry.setOperatorWeight(uint8(quorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.prank(defaultOperator);
+        cheats.roll(registrationBlockNumber);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        bytes memory newQuorumNumbers = new bytes(1);
+        newQuorumNumbers[0] = bytes1(defaultQuorumNumber+1);
+
+        stakeRegistry.setOperatorWeight(uint8(newQuorumNumbers[0]), defaultOperator, defaultStake);
+        cheats.prank(defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit OperatorAddedToQuorums(defaultOperator, newQuorumNumbers);
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), defaultStake);
+        cheats.expectEmit(true, true, true, true, address(indexRegistry));
+        emit QuorumIndexUpdate(defaultOperatorId, uint8(newQuorumNumbers[0]), 0);
+        cheats.expectEmit(true, true, true, true, address(registryCoordinator));
+        emit OperatorSocketUpdate(defaultOperatorId, defaultSocket);
+        cheats.roll(nextRegistrationBlockNumber);
+        registryCoordinator.registerOperatorWithCoordinator(newQuorumNumbers, defaultPubKey, defaultSocket);
+
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers) | BitmapUtils.orderedBytesArrayToBitmap(newQuorumNumbers);
+
+        assertEq(registryCoordinator.getOperatorId(defaultOperator), defaultOperatorId);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 1))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(quorumBitmap),
+                updateBlockNumber: uint32(nextRegistrationBlockNumber),
+                nextUpdateBlockNumber: 0
+            })))
+        );
+    }
+
     function testRegisterOperatorWithCoordinator_OverFilledQuorum_Reverts(uint256 pseudoRandomNumber) public {
         uint32 numOperators = defaultMaxOperatorCount;
         uint32 registrationBlockNumber = 200;
