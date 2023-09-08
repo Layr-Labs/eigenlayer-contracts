@@ -283,12 +283,12 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         // record stake updates in the EigenLayer Slasher
-        for (uint i = 0; i < operators.length;) {
-            serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
-            unchecked {
-                ++i;
-            }
-        }     
+        // for (uint i = 0; i < operators.length;) {
+        //     serviceManager.recordStakeUpdate(operators[i], uint32(block.number), serviceManager.latestServeUntilBlock(), prevElements[i]);
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }     
     }
 
     // INTERNAL FUNCTIONS

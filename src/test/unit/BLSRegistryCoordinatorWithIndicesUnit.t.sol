@@ -32,9 +32,9 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, IBLSRegistryCoordinatorWithIndices.OperatorSetParam operatorSetParams);
 
-    event ChurnApproverUpdated(address churnApprover);
+    event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
-    event EjectorUpdated(address ejector);
+    event EjectorUpdated(address prevEjector, address newEjector);
 
     function setUp() virtual public {
         _deployMockEigenLayerAndAVS();
@@ -82,7 +82,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         address newChurnApprover = address(uint160(uint256(keccak256("newChurnApprover"))));
         cheats.prank(serviceManagerOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit ChurnApproverUpdated(newChurnApprover);
+        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
         registryCoordinator.setChurnApprover(newChurnApprover);
     }
 
@@ -97,7 +97,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         address newEjector = address(uint160(uint256(keccak256("newEjector"))));
         cheats.prank(serviceManagerOwner);
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
-        emit EjectorUpdated(newEjector);
+        emit EjectorUpdated(ejector, newEjector);
         registryCoordinator.setEjector(newEjector);
     }
 

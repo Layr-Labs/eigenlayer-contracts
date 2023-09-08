@@ -383,13 +383,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
     
     function _setChurnApprover(address newChurnApprover) internal {
+        address prevChurnApprover = churnApprover;
         churnApprover = newChurnApprover;
-        emit ChurnApproverUpdated(newChurnApprover);
+        emit ChurnApproverUpdated(prevChurnApprover, newChurnApprover);
     }
 
     function _setEjector(address newEjector) internal {
+        address prevEjector = ejector;
         ejector = newEjector;
-        emit EjectorUpdated(newEjector);
+        emit EjectorUpdated(prevEjector, newEjector);
     }
 
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss
@@ -404,12 +406,18 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
-        require(quorumBitmap != 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         require(quorumBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
-
+        require(quorumBitmap != 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
         bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
+
+        uint256 operatorQuorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        if(operatorQuorumBitmapHistoryLength > 0) {
+            uint256 prevQuorumBitmap = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLength - 1].quorumBitmap;
+            require(prevQuorumBitmap & quorumBitmap == 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums");
+            // new stored quorumBitmap is the previous quorumBitmap or'd with the new quorumBitmap to register for
+            quorumBitmap |= prevQuorumBitmap;
+        }
 
         // register the operator with the StakeRegistry
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
@@ -492,7 +500,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
 
             // record a stake update unbonding the operator after `latestServeUntilBlock`
-            serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
+            // serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
             // set the status of the operator to DEREGISTERED
             _operators[operator].status = OperatorStatus.DEREGISTERED;
         }

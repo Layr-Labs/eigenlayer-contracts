@@ -40,9 +40,9 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
-    event ChurnApproverUpdated(address churnApprover);
+    event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
-    event EjectorUpdated(address ejector);
+    event EjectorUpdated(address prevEjector, address newEjector);
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
