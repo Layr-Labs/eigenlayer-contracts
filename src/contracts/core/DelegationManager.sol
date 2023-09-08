@@ -37,6 +37,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _;
     }
 
+    // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
+    modifier onlyStrategyManagerOrEigenPodManager() {
+        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
+            "DelegationManager: onlyStrategyManagerOrEigenPodManager");
+        _;
+    }
+
     // INITIALIZING FUNCTIONS
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
         DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager)
@@ -201,8 +208,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
         external
-        onlyStrategyManager
+        onlyStrategyManagerOrEigenPodManager
     {
+        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
+            "DelegationManager.increaseDelegatedShares: only strategyManager or eigenPodManager"
+        
+        );
         //if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
@@ -219,7 +230,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
-        onlyStrategyManager
+        onlyStrategyManagerOrEigenPodManager
     {
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];

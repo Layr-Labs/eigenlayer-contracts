@@ -1064,22 +1064,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
     }
 
-    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
+    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallIncreaseDelegatedSharesFromNonPermissionedAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(operator != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
 
-    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallDecreaseDelegatedSharesFromNonStrategyManagerAddress(
+    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallDecreaseDelegatedSharesFromNonPermissionedAddress(
         address operator,  
         IStrategy[] memory strategies,  
         uint256[] memory shareAmounts
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(operator != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
