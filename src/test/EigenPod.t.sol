@@ -774,7 +774,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pod.withdrawBeforeRestaking();
     }
     
-
+    /* test deprecated since this is checked on the EigenPodManager level, rather than the EigenPod level
+    TODO: @Sidu28 - check whether we have adequate coverage of the correct function
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
         // pause the contract
         cheats.startPrank(pauser);
@@ -789,6 +790,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPod.withdrawRestakedBeaconChainETH(recipient, amount);
         cheats.stopPrank();
     }
+    */
 
     function testVerifyCorrectWithdrawalCredentialsRevertsWhenPaused() external {
         setJSON("./src/test/test-data/withdrawalCredentialAndBalanceProof_61068.json");
@@ -1185,7 +1187,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
-        IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
