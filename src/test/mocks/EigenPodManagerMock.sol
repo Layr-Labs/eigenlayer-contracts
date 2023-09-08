@@ -75,6 +75,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
-    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
     
 }

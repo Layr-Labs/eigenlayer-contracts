@@ -246,7 +246,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
-    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
 }

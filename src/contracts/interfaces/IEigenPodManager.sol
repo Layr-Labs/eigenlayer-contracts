@@ -100,7 +100,7 @@ interface IEigenPodManager is IPausable {
      * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function completeWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
     
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root

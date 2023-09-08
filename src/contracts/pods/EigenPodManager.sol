@@ -115,6 +115,11 @@ contract EigenPodManager is
         _;
     }
 
+    modifier onlyDelegationManager {
+        require(msg.sender == address(delegationManager), "EigenPodManager.onlyDelegationManager: not the DelegationManager");
+        _;
+    }
+
     modifier onlyNotFrozen(address staker) {
         require(
             !slasher.isFrozen(staker),
@@ -123,14 +128,8 @@ contract EigenPodManager is
         _;
     }
 
-
     modifier onlyFrozen(address staker) {
         require(slasher.isFrozen(staker), "EigenPodManager.onlyFrozen: staker has not been frozen");
-        _;
-    }
-
-    modifier onlyDelegationManager {
-        require(msg.sender == address(delegationManager), "EigenPodManager.onlyDelegationManager: not the DelegationManager");
         _;
     }
 
@@ -181,7 +180,7 @@ contract EigenPodManager is
      */
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable {
         IEigenPod pod = ownerToPod[msg.sender];
-        if(address(pod) == address(0)) {
+        if (address(pod) == address(0)) {
             //deploy a pod if the sender doesn't have one already
             pod = _deployPod();
         }
@@ -236,7 +235,7 @@ contract EigenPodManager is
         return _queueWithdrawal(msg.sender, amountWei, undelegateIfPossible, alsoWithdraw);
     }
 
-    function completeWithdrawal(
+    function completeQueuedWithdrawal(
         BeaconChainQueuedWithdrawal memory queuedWithdrawal,
         uint256 middlewareTimesIndex
     )
@@ -245,7 +244,7 @@ contract EigenPodManager is
         nonReentrant
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
     {
-        _completeWithdrawal(queuedWithdrawal, middlewareTimesIndex);
+        _completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
     }
     
     function slashShares(
@@ -336,7 +335,7 @@ contract EigenPodManager is
 
         //if the user does not want to withdraw but rather redelegate to another operator, they must be queueing a withdrawal
         //for all their shares.
-        if(!alsoWithdraw){
+        if (!alsoWithdraw) {
             require(amountWei == podOwnerShares[podOwner], "EigenPodManager.queueWithdrawal: amount must equal podOwnerShares[podOwner]");
         }
 
@@ -385,26 +384,26 @@ contract EigenPodManager is
         return withdrawalRoot;
     }
 
-    function _completeWithdrawal(
+    function _completeQueuedWithdrawal(
         BeaconChainQueuedWithdrawal memory queuedWithdrawal,
         uint256 middlewareTimesIndex
     )
         internal
     {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-        require(withdrawalRootPending[withdrawalRoot], "EigenPodManager.completeWithdrawal: withdrawal root not pending");
+        require(withdrawalRootPending[withdrawalRoot], "EigenPodManager.completeQueuedWithdrawal: withdrawal root not pending");
         require(
             slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
-            "EigenPodManager.completeWithdrawal: shares pending withdrawal are still slashable"
+            "EigenPodManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
         );
 
-        require(msg.sender == queuedWithdrawal.podOwner, "EigenPodManager.completeWithdrawal: msg.sender must be podOwner");
+        require(msg.sender == queuedWithdrawal.podOwner, "EigenPodManager.completeQueuedWithdrawal: msg.sender must be podOwner");
 
         // reset the storage slot in mapping of queued withdrawals
         withdrawalRootPending[withdrawalRoot] = false;
 
         //If the user chooses to completely withdraw their ETH
-        if(queuedWithdrawal.alsoWithdraw){
+        if (queuedWithdrawal.alsoWithdraw) {
             // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
             _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
         } 
