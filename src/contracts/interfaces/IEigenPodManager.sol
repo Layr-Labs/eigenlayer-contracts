@@ -27,7 +27,6 @@ interface IEigenPodManager is IPausable {
         uint96 nonce;
         uint32 withdrawalStartBlock;
         address delegatedAddress;
-        bool alsoWithdraw;
     }
 
     /**
@@ -66,9 +65,8 @@ interface IEigenPodManager is IPausable {
      * @notice queues a withdrawal beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod.
      * @param amountWei is the amount of ETH to withdraw
      * @param undelegateIfPossible is whether or not to undelegate the shares if possible
-     * @param alsoWithdraw is whether or not to also withdraw the ETH from the beacon chain vs. redelegating to a new operator in EL
      */
-    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible, bool alsoWithdraw) external returns(bytes32);
+    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible) external returns(bytes32);
 
     /**
      * @notice forces a withdrawal of the podOwner's beaconChainETHStrategy shares
