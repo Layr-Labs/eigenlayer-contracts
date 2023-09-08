@@ -58,6 +58,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] withdrawalFields;
     bytes32[] validatorFields;
 
+    uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
+    uint64  MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64  RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
 
     // EIGENPODMANAGER EVENTS
     /// @notice Emitted to notify the update of the beaconChainOracle address
@@ -109,12 +112,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _;
     }
 
-
-    uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint256 REQUIRED_BALANCE_WEI = 32 ether;
-    uint64  MAX_VALIDATOR_BALANCE_GWEI = 32e9;
-    uint64  EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
-
     //performs basic deployment before each test
     function setUp() public {
         // deploy proxy admin for ability to upgrade proxy contracts
@@ -151,7 +148,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
                 MAX_VALIDATOR_BALANCE_GWEI,
-                EFFECTIVE_RESTAKED_BALANCE_OFFSET
+                RESTAKED_BALANCE_OFFSET_GWEI
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
@@ -388,7 +385,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         withdrawalFields = getWithdrawalFields();
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
 
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - _getEffectiveRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI())) * uint64(GWEI_TO_WEI);
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - _calculateRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI())) * uint64(GWEI_TO_WEI);
         uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
         cheats.deal(address(newPod), leftOverBalanceWEI);
         emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
@@ -410,7 +407,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             emit FullWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
         }
-        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == _getEffectiveRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI()),
+        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == _calculateRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI()),
             "restakedExecutionLayerGwei has not been incremented correctly");
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
             "pod delayed withdrawal balance hasn't been updated correctly");
@@ -541,7 +538,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
         uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(podOwner, eigenPodManager.beaconChainETHStrategy());
 
-        require(beaconChainETHShares == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "strategyManager shares not updated correctly");
+        require(beaconChainETHShares == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "strategyManager shares not updated correctly");
     }
 
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
@@ -624,7 +621,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     // // 3. Single withdrawal credential
     // // Test: Owner proves an withdrawal credential.
-    // // Expected Behaviour: beaconChainETH shares should increment by REQUIRED_BALANCE_WEI
     // //                     validator status should be marked as ACTIVE
 
     function testProveSingleWithdrawalCredential() public {
@@ -640,14 +636,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
         emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
         emit log_named_uint("beaconChainETHAfter", beaconChainETHAfter);
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == _getEffectiveRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
+        assertTrue(beaconChainETHAfter - beaconChainETHBefore == _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
         assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 
     // // 5. Prove overcommitted balance
     // // Setup: Run (3). 
     // // Test: Watcher proves an overcommitted balance for validator from (3).
-    // // Expected Behaviour: beaconChainETH shares should decrement by REQUIRED_BALANCE_WEI
     // //                     validator status should be marked as OVERCOMMITTED
 
     function testProveOverCommittedBalance() public {
@@ -671,7 +666,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
         uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
  
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
         assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");
     }
@@ -699,7 +694,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
         uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
         
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _getEffectiveRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
         assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
         assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");    
     }
@@ -859,7 +854,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         //cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        emit ValidatorBalanceUpdated(validatorIndex, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
@@ -870,7 +865,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex, _getEffectiveRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        emit ValidatorBalanceUpdated(validatorIndex, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
@@ -1061,7 +1056,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         strategyArray[0] = eigenPodManager.beaconChainETHStrategy();
         uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = _getEffectiveRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
+        shareAmounts[0] = _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
         bool undelegateIfPossible = false;
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
         _testQueueWithdrawal(podOwner, strategyIndexes, strategyArray, shareAmounts, undelegateIfPossible);
@@ -1188,6 +1183,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
+        IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
+        uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
         cheats.warp(timestamp);
@@ -1195,12 +1192,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
-        IStrategy beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
         cheats.stopPrank();
 
-        uint256 beaconChainETHShares = strategyManager.stakerStrategyShares(_podOwner, beaconChainETHStrategy);
-        uint256 effectiveBalance = uint256(_getEffectiveRestakedBalanceGwei(uint64(REQUIRED_BALANCE_WEI/GWEI_TO_WEI))) * GWEI_TO_WEI;
-        require(beaconChainETHShares == effectiveBalance, "strategyManager shares not updated correctly");
+        uint256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
+        uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(stakeAmount/GWEI_TO_WEI))) * GWEI_TO_WEI;
+        require((beaconChainETHSharesAfter - beaconChainETHSharesBefore) == effectiveBalance,
+            "eigenPodManager shares not updated correctly");
         return newPod;
     }
 
@@ -1326,17 +1323,21 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testEffectiveRestakedBalance() public {
         uint64 amountGwei = 29134000000;
-        uint64 effectiveBalance = _getEffectiveRestakedBalanceGwei(amountGwei);
+        uint64 effectiveBalance = _calculateRestakedBalanceGwei(amountGwei);
         emit log_named_uint("effectiveBalance", effectiveBalance);
     }
 
-    function _getEffectiveRestakedBalanceGwei(uint64 amountGwei) internal pure returns (uint64){
-        if(amountGwei < 75e7) {
+    function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64){
+        if (amountGwei <= RESTAKED_BALANCE_OFFSET_GWEI) {
             return 0;
         }
-        //calculates the "floor" of amountGwei - EFFECTIVE_RESTAKED_BALANCE_OFFSET
-        uint64 effectiveBalance = uint64((amountGwei - 75e7) / GWEI_TO_WEI * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(32e9, effectiveBalance));
+        /**
+        * calculates the "floor" of amountGwei - RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division 
+        * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to 
+        * the nearest ETH, effectively calculating the floor of amountGwei.
+        */
+        uint64 effectiveBalanceGwei = uint64((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
+        return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
 
  }
