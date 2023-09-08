@@ -286,7 +286,7 @@ contract EigenPodManager is
         nonReentrant 
     {
         // find the withdrawalRoot
-        bytes32 withdrawalRoot = _calculateWithdrawalRoot(queuedWithdrawal);
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
 
          // verify that the queued withdrawal is pending
         require(
@@ -395,7 +395,7 @@ contract EigenPodManager is
             delegationManager.undelegate(podOwner);
         }
 
-        bytes32 withdrawalRoot = _calculateWithdrawalRoot(queuedWithdrawal);
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
         withdrawalRootPending[withdrawalRoot] = true;
 
         emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);   
@@ -409,7 +409,7 @@ contract EigenPodManager is
     )
         internal
     {
-        bytes32 withdrawalRoot = _calculateWithdrawalRoot(queuedWithdrawal);
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
         require(withdrawalRootPending[withdrawalRoot], "EigenPodManager.completeWithdrawal: withdrawal root not pending");
         require(
             slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
@@ -494,7 +494,7 @@ contract EigenPodManager is
         return stateRoot;
     }
 
-    function _calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) internal pure returns (bytes32) {
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
         return (
             keccak256(
                 abi.encode(
