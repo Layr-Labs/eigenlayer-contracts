@@ -682,7 +682,8 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, operatorToRegisterPubKey, defaultSocket, operatorKickParams, signatureWithSaltAndExpiry);
     }
 
-    function testEjectOperatorFromCoordinator_Valid() public {
+    function testEjectOperatorFromCoordinator_AllQuorums_Valid() public {
+        // register operator with default stake with default quorum number
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
@@ -691,6 +692,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.prank(defaultOperator);
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
 
+        // operator is the only one registered so they are the one with the largest index
         bytes32[] memory operatorIdsToSwap = new bytes32[](1);
         operatorIdsToSwap[0] = defaultOperatorId;
 
@@ -700,9 +702,11 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.expectEmit(true, true, true, true, address(stakeRegistry));
         emit StakeUpdate(defaultOperatorId, uint8(quorumNumbers[0]), 0);
 
+        // eject
         cheats.prank(ejector);
         registryCoordinator.ejectOperatorFromCoordinator(defaultOperator, quorumNumbers, defaultPubKey, operatorIdsToSwap);
-
+        
+        // make sure the operator is deregistered
         assertEq(
             keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
             keccak256(abi.encode(IRegistryCoordinator.Operator({
@@ -710,8 +714,54 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
                 status: IRegistryCoordinator.OperatorStatus.DEREGISTERED
             })))
         );
+        // make sure the operator is not in any quorums
         assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), 0);
     } 
+
+    function testEjectOperatorFromCoordinator_SubsetOfQuorums_Valid() public {
+        // register operator with default stake with 2 quorums
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
+
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, defaultStake);
+        }
+
+        cheats.prank(defaultOperator);
+        registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+
+        // eject from only first quorum
+        bytes memory quorumNumbersToEject = new bytes(1);
+        quorumNumbersToEject[0] = quorumNumbers[0];
+
+        // operator is the only one registered so they are the one with the largest index
+        bytes32[] memory operatorIdsToSwap = new bytes32[](1);
+        operatorIdsToSwap[0] = defaultOperatorId;
+
+        cheats.expectEmit(true, true, true, true, address(blsPubkeyRegistry));
+        emit OperatorRemovedFromQuorums(defaultOperator, quorumNumbersToEject);
+
+        cheats.expectEmit(true, true, true, true, address(stakeRegistry));
+        emit StakeUpdate(defaultOperatorId, uint8(quorumNumbersToEject[0]), 0);
+
+        cheats.prank(ejector);
+        registryCoordinator.ejectOperatorFromCoordinator(defaultOperator, quorumNumbersToEject, defaultPubKey, operatorIdsToSwap);
+        
+        // make sure the operator is registered
+        assertEq(
+            keccak256(abi.encode(registryCoordinator.getOperator(defaultOperator))), 
+            keccak256(abi.encode(IRegistryCoordinator.Operator({
+                operatorId: defaultOperatorId,
+                status: IRegistryCoordinator.OperatorStatus.REGISTERED
+            })))
+        );
+        // make sure the operator is not in any quorums
+        assertEq(
+            registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), 
+            BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers) & ~BitmapUtils.orderedBytesArrayToBitmap(quorumNumbersToEject) // quorumsRegisteredFor & ~quorumsEjectedFrom
+        );
+    }
 
     function testEjectOperatorFromCoordinator_NotEjector_Reverts() public {
         bytes memory quorumNumbers = new bytes(1);
