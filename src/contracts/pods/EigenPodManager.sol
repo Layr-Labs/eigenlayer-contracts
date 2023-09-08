@@ -265,7 +265,7 @@ contract EigenPodManager is
 
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = shareAmount;
-        IStrategy[] public strategies = new IStrategy[](1);
+        IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = beaconChainETHStrategy;
         delegationManager.decreaseDelegatedShares(slashedPodOwner, strategies, shareAmounts);
     }
@@ -369,7 +369,7 @@ contract EigenPodManager is
 
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = amountWei;
-        IStrategy[] public strategies = new IStrategy[](1);
+        IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = beaconChainETHStrategy;
         delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
 
@@ -539,7 +539,7 @@ contract EigenPodManager is
                 _removeShares(podOwner, uint256(-sharesDelta));
                 uint256[] memory shareAmounts = new uint256[](1);
                 shareAmounts[0] = uint256(-sharesDelta);
-                IStrategy[] public strategies = new IStrategy[](1);
+                IStrategy[] memory strategies = new IStrategy[](1);
                 strategies[0] = beaconChainETHStrategy;
                 delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
         }   else {
