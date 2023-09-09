@@ -444,6 +444,8 @@ contract EigenPodManager is
         return withdrawalRoot;
     }
 
+    // TODO: add minimum withdrawal delay -- read this from StrategyManager
+    // TODO: add documentation to this function
     function _completeQueuedWithdrawal(
         BeaconChainQueuedWithdrawal memory queuedWithdrawal,
         uint256 middlewareTimesIndex
