@@ -372,8 +372,11 @@ contract EigenPodManager is
 
         // either withdraw the funds entirely from EigenLayer
         if (withdrawFundsFromEigenLayer) {
+            // remove the shares from the podOwner and reduce the `withdrawableRestakedExecutionLayerGwei` in the pod
             podOwnerShares[msg.sender] = 0;
             _decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, currentPodOwnerShares);
+            // withdraw through the ETH from the EigenPod
+            _withdrawRestakedBeaconChainETH(msg.sender, msg.sender, currentPodOwnerShares);
         // or return the "shares" to the delegation system
         } else {
             delegationManager.increaseDelegatedShares(msg.sender, beaconChainETHStrategy, currentPodOwnerShares);
