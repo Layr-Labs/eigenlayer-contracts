@@ -168,7 +168,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate(address staker) external onlyStrategyManager {
+    function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
         address operator = delegatedTo[staker];
         // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing

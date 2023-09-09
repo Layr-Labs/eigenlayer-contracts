@@ -76,5 +76,14 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
-    
+
+    // @notice Returns 'true' if `staker` can undelegate and false otherwise
+    function stakerCanUndelegate(address /*staker*/) external pure returns (bool) {
+        return true;
+    }
+
+    // @notice Returns 'true' if `staker` has removed all of their shares from delegation, either by queuing a withdrawal for them or by going into "undelegation limbo"
+    function stakerHasNoDelegatedShares(address /*staker*/) external pure returns (bool) {
+        return true;
+    }
 }

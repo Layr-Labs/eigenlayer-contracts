@@ -949,10 +949,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
-    function testCannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
+    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallUndelegateFromNonPermissionedAddress(address caller) public fuzzedAddress(caller) {
         cheats.assume(caller != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(caller != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(caller);
         delegationManager.undelegate(address(this));
     }

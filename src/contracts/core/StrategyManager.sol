@@ -724,10 +724,10 @@ contract StrategyManager is
 
         // If the `staker` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
         /**
-         * Checking that `stakerStrategyList[staker].length == 0` is not strictly necessary here, but prevents reverting very late in logic,
-         * in the case that 'undelegate' is set to true but the `staker` still has active deposits in EigenLayer.
+         * Checking that `stakerCanUndelegate` is not strictly necessary here, but prevents reverting very late in logic,
+         * in the case that `undelegateIfPossible` is set to true but the `staker` still has active deposits in EigenLayer.
          */
-        if (undelegateIfPossible && stakerStrategyList[staker].length == 0) {
+        if (undelegateIfPossible && stakerCanUndelegate(staker)) {
             _undelegate(staker);
         }
 
@@ -736,7 +736,6 @@ contract StrategyManager is
         return withdrawalRoot;
 
     }
-
 
     /**
      * @notice Internal function for completing the given `queuedWithdrawal`.
@@ -813,7 +812,7 @@ contract StrategyManager is
      * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
      */
     function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
-        require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
+        require(stakerCanUndelegate(depositor), "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
     }
 
@@ -887,6 +886,11 @@ contract StrategyManager is
                 )
             )
         );
+    }
+
+    // @notice Returns 'true' if `staker` can undelegate and false otherwise
+    function stakerCanUndelegate(address staker) public view returns (bool) {
+        return (stakerStrategyList[staker].length == 0 && eigenPodManager.stakerHasNoDelegatedShares(staker));
     }
 
     // @notice Internal function for calculating the current domain separator of this contract

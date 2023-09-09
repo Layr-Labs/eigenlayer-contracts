@@ -132,4 +132,13 @@ interface IEigenPodManager is IPausable {
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
+
+    // @notice Returns 'true' if `staker` can undelegate and false otherwise
+    function stakerCanUndelegate(address staker) external view returns (bool);
+
+    /**
+     * @notice Returns 'true' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a withdrawal for them
+     * OR by going into "undelegation limbo", and 'false' otherwise
+     */
+    function stakerHasNoDelegatedShares(address staker) external view returns (bool);
 }
