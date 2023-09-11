@@ -452,19 +452,38 @@ contract EigenPodManager is
     )
         internal
     {
+        // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-        require(withdrawalRootPending[withdrawalRoot], "EigenPodManager.completeQueuedWithdrawal: withdrawal root not pending");
+
+        // verify that the queued withdrawal is pending
         require(
-            slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
-            "EigenPodManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
+            withdrawalRootPending[withdrawalRoot],
+            "EigenPodManager._completeQueuedWithdrawal: withdrawal is not pending"
         );
 
-        require(msg.sender == queuedWithdrawal.podOwner, "EigenPodManager.completeQueuedWithdrawal: msg.sender must be podOwner");
+        // verify that the withdrawal is completable
+        require(
+            slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
+            "EigenPodManager._completeQueuedWithdrawal: shares pending withdrawal are still slashable"
+        );
+
+        /* TODO: decide definitively if minimum lag is enforced here or via use of the DelayedWithdrawalRouter
+        // enforce minimum delay lag
+        require(queuedWithdrawal.withdrawalStartBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
+            "EigenPodManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
+        );
+        */
+
+        // verify that the caller is the pod owner
+        require(
+            msg.sender == queuedWithdrawal.podOwner,
+            "EigenPodManager._completeQueuedWithdrawal: caller must be podOwner"
+        );
 
         // reset the storage slot in mapping of queued withdrawals
         withdrawalRootPending[withdrawalRoot] = false;
 
-        // withdraw through the ETH from the EigenPod
+        // withdraw the ETH from the EigenPod
         _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
     }
 

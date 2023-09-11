@@ -757,7 +757,7 @@ contract StrategyManager is
             "StrategyManager.completeQueuedWithdrawal: withdrawal is not pending"
         );
 
-
+        // verify that the withdrawal is completable
         require(
             slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
             "StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
@@ -768,6 +768,7 @@ contract StrategyManager is
             "StrategyManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
         );
 
+        // verify that the caller is the specified 'withdrawer'
         require(
             msg.sender == queuedWithdrawal.withdrawerAndNonce.withdrawer,
             "StrategyManager.completeQueuedWithdrawal: only specified withdrawer can complete a queued withdrawal"
