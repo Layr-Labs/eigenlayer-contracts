@@ -93,7 +93,6 @@ invariant strategiesNotInArrayHaveZeroShares(address staker, uint256 index)
 definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
     || f.selector == sig:depositIntoStrategyWithSignature(address,address,uint256,address,uint256,bytes).selector
-    || f.selector == sig:depositBeaconChainETH(address,uint256).selector
     || f.selector == sig:completeQueuedWithdrawal(IStrategyManager.QueuedWithdrawal,address[],uint256,bool).selector;
     // || f.selector == sig:slashQueuedWithdrawal(address,bytes,address[],uint256[]).selector
     // || f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector;
@@ -105,8 +104,7 @@ definition methodCanIncreaseShares(method f) returns bool =
 definition methodCanDecreaseShares(method f) returns bool =
     f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address,bool).selector
     || f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector
-    || f.selector == sig:slashSharesSinglet(address,address,address,address,uint256,uint256).selector
-    || f.selector == sig:recordBeaconChainETHBalanceUpdate(address,uint256,int256).selector;
+    || f.selector == sig:slashSharesSinglet(address,address,address,address,uint256,uint256).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
     uint256 sharesBefore = stakerStrategyShares(staker, strategy);
