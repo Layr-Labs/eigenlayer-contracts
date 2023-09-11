@@ -30,6 +30,21 @@ interface IEigenPodManager is IPausable {
     }
 
     /**
+     * @notice Struct used to track a pod owner's "undelegation limbo" status and associated variables.
+     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
+     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
+     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
+     */
+    struct UndelegationLimboStatus {
+        // @notice Whether or not the pod owner is in the "undelegation limbo" mode..
+        bool podOwnerIsInUndelegationLimbo;
+        // @notice The block at which the pod owner entered "undelegation limbo". Should be zero if `podOwnerIsInUndelegationLimbo` is marked as 'false'
+        uint32 undelegationLimboStartBlock;
+        // @notice The address which the pod owner was delegated to at the time that they entered "undelegation limbo".
+        address undelegationLimboDelegatedAddress;
+    }
+
+    /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
      */
