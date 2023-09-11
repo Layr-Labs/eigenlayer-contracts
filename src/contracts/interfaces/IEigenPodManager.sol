@@ -151,6 +151,9 @@ interface IEigenPodManager is IPausable {
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
+
     // @notice Returns 'true' if `staker` can undelegate and false otherwise
     function stakerCanUndelegate(address staker) external view returns (bool);
 
@@ -159,4 +162,11 @@ interface IEigenPodManager is IPausable {
      * OR by going into "undelegation limbo", and 'false' otherwise
      */
     function stakerHasNoDelegatedShares(address staker) external view returns (bool);
+
+
+    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
+    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory);
+
+    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
+    function isInUndelegationLimbo(address podOwner) external view returns (bool);
 }

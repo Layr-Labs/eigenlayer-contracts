@@ -86,4 +86,13 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function stakerHasNoDelegatedShares(address /*staker*/) external pure returns (bool) {
         return true;
     }
+
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+
+    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
+    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
+
+    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
+    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }
