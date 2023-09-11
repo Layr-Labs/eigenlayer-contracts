@@ -1711,7 +1711,7 @@ testQueueWithdrawal_ToSelf_TwoStrategies(depositAmount, withdrawalAmount, undele
         address recipient = address(333);
         uint256 amount = 1e18;
 
-        (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /* IERC20[] memory tokensArray */, bytes32 withdrawalRoot) =
+        (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, /* IERC20[] memory tokensArray */, /* bytes32 withdrawalRoot */) =
             testQueueWithdrawal_ToSelf(amount, amount, true);
 
         // slash the delegatedOperator
