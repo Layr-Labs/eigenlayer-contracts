@@ -1193,10 +1193,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
         emit ForceTotalWithdrawalCalled(staker);
-        (bytes32 returnValue_1, bytes32 returnValue_2) = delegationManager.forceUndelegation(staker);
-        // check that the return values are empty, as specified in the mock contract
-        require(returnValue_1 == bytes32(uint256(0)), "mock contract returned wrong return value");
-        require(returnValue_2 == bytes32(uint256(0)), "mock contract returned wrong return value");
+        (bytes32 returnValue) = delegationManager.forceUndelegation(staker);
+        // check that the return value is empty, as specified in the mock contract
+        require(returnValue == bytes32(uint256(0)), "mock contract returned wrong return value");
         cheats.stopPrank();
     }
 

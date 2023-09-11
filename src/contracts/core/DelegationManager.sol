@@ -188,16 +188,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
      * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
      */
-    function forceUndelegation(address staker) external returns (bytes32, bytes32) {
+    function forceUndelegation(address staker) external returns (bytes32) {
         address operator = delegatedTo[staker];
         require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
         
-        //check if they have beaconChainETH shares
-        bytes32 beaconChainQueuedWithdrawal = eigenPodManager.podOwnerShares(staker) > 0 ? eigenPodManager.forceWithdrawal(staker) : bytes32(0);
+        // force the staker into "undelegation limbo" in the EigenPodManager if necessary
+        eigenPodManager.forceIntoUndelegationLimbo(staker);
         
-        return (strategyManager.forceTotalWithdrawal(staker), beaconChainQueuedWithdrawal);
+        // force a withdrawal of all of the staker's shares from the StrategyManager
+        return (strategyManager.forceTotalWithdrawal(staker));
 
     }
 

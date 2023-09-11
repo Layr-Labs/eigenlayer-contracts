@@ -69,7 +69,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible) external returns(bytes32) {}
 
-    function forceWithdrawal(address podOwner) external returns (bytes32){}
+    function forceIntoUndelegationLimbo(address podOwner) external {}
 
     function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
 

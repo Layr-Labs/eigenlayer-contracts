@@ -22,10 +22,15 @@ interface IEigenPodManager is IPausable {
      * stored hash in order to confirm the integrity of the submitted data.
      */
     struct BeaconChainQueuedWithdrawal {
+        // @notice Number of "beacon chain ETH" virtual shares in the withdrawal.
         uint256 shares;
+        // @notice Owner of the EigenPod who initiated the withdrawal.
         address podOwner;
+        // @notice Nonce of the podOwner when the withdrawal was queued. Used to help ensure uniqueness of the hash of the withdrawal.
         uint96 nonce;
+        // @notice Block number at which the withdrawal was initiated.
         uint32 withdrawalStartBlock;
+        // @notice The operator to which the podOwner was delegated in EigenLayer when the withdrawal was created.
         address delegatedAddress;
     }
 
@@ -36,8 +41,8 @@ interface IEigenPodManager is IPausable {
      * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
      */
     struct UndelegationLimboStatus {
-        // @notice Whether or not the pod owner is in the "undelegation limbo" mode..
-        bool podOwnerIsInUndelegationLimbo;
+        // @notice Whether or not the pod owner is in the "undelegation limbo" mode.
+        bool undelegationLimboActive;
         // @notice The block at which the pod owner entered "undelegation limbo". Should be zero if `podOwnerIsInUndelegationLimbo` is marked as 'false'
         uint32 undelegationLimboStartBlock;
         // @notice The address which the pod owner was delegated to at the time that they entered "undelegation limbo".
@@ -77,18 +82,25 @@ interface IEigenPodManager is IPausable {
 
 
     /**
-     * @notice queues a withdrawal beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod.
-     * @param amountWei is the amount of ETH to withdraw
-     * @param undelegateIfPossible is whether or not to undelegate the shares if possible
+     * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
+     * @param amountWei The amount of ETH to withdraw.
+     * @param undelegateIfPossible If marked as 'true', the podOwner will be undelegated from their operator in EigenLayer, if possible.
      */
     function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible) external returns(bytes32);
 
     /**
-     * @notice forces a withdrawal of the podOwner's beaconChainETHStrategy shares
-     * @param podOwner is the pod owner whose shares are to be removed
+     * @notice Completes an existing queuedWithdrawal either by sending the ETH to podOwner or allowing the podOwner to re-delegate it
+     * @param queuedWithdrawal is the queued withdrawal to be completed
+     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     */
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
+
+    /**
+     * @notice forces the podOwner into the "undelegation limbo" mode
+     * @param podOwner is the staker to be forced into undelegation limbo
      * @dev This function can only be called by the DelegationManager contract
      */
-    function forceWithdrawal(address podOwner) external returns (bytes32);
+    function forceIntoUndelegationLimbo(address podOwner) external;
 
 
     /** 
@@ -105,15 +117,6 @@ interface IEigenPodManager is IPausable {
      * @param shareAmount is the amount of shares to be slashed     
      */
     function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external;
-
-
-    /**
-     * @notice Completes an existing queuedWithdrawal either by sending the ETH to the recipient or allowing the podOwner to re-delegate it
-     * @param queuedWithdrawal is the queued withdrawal to be completed
-     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
     
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root

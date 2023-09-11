@@ -174,7 +174,7 @@ interface IDelegationManager {
      * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
      * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
      */
-    function forceUndelegation(address staker) external returns (bytes32, bytes32);
+    function forceUndelegation(address staker) external returns (bytes32);
 
     /**
      * @notice *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
