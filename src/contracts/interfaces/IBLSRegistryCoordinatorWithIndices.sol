@@ -27,22 +27,22 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
     }
 
     /**
-     * @notice Data structure for the parameters needed to kick an operator from a quorum, used during registration churn.
+     * @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
      * Specifically the `operator` is the address of the operator to kick, `pubkey` is the BLS public key of the operator,
-     * `operatorIdsToSwap` is the list of operatorIds to swap with the operator being kicked in the indexRegistry,
-     * and `globalOperatorListIndex` is the index of the operator in the global operator list in the indexRegistry.
      */
     struct OperatorKickParam {
+        uint8 quorumNumber;
         address operator;
         BN254.G1Point pubkey; 
-        bytes32[] operatorIdsToSwap; // should be a single length array when kicking
     }
 
     // EVENTS
 
     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, OperatorSetParam operatorSetParams);
 
-    event ChurnApproverUpdated(address churnApprover);
+    event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
+
+    event EjectorUpdated(address prevEjector, address newEjector);
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
@@ -52,4 +52,18 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
     function blsPubkeyRegistry() external view returns (IBLSPubkeyRegistry);
     /// @notice the Index Registry contract that will keep track of operators' indexes
     function indexRegistry() external view returns (IIndexRegistry);
+
+    /**
+     * @notice Ejects the provided operator from the provided quorums from the AVS
+     * @param operator is the operator to eject
+     * @param quorumNumbers are the quorum numbers to eject the operator from
+     * @param pubkey is the BLS public key of the operator
+     * @param operatorIdsToSwap is the list of the operator ids tho swap the index of the operator with in each
+     */
+    function ejectOperatorFromCoordinator(
+        address operator, 
+        bytes calldata quorumNumbers, 
+        BN254.G1Point memory pubkey, 
+        bytes32[] memory operatorIdsToSwap
+    ) external;
 }

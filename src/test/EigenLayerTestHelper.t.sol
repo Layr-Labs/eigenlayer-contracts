@@ -362,8 +362,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         uint256[3] memory amountsBefore;
-        amountsBefore[0] = voteWeigher.weightOfOperator(0, operator);
-        amountsBefore[1] = voteWeigher.weightOfOperator(1, operator);
+        amountsBefore[0] = voteWeigher.weightOfOperatorForQuorum(0, operator);
+        amountsBefore[1] = voteWeigher.weightOfOperatorForQuorum(1, operator);
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
@@ -380,8 +380,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
             uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperator(0, operator);
-            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperator(1, operator);
+            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperatorForQuorum(0, operator);
+            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperatorForQuorum(1, operator);
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
