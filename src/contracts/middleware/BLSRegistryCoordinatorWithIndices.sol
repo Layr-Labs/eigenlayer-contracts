@@ -388,15 +388,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     }
     
     function _setChurnApprover(address newChurnApprover) internal {
-        address prevChurnApprover = churnApprover;
+        emit ChurnApproverUpdated(churnApprover, newChurnApprover);
         churnApprover = newChurnApprover;
-        emit ChurnApproverUpdated(prevChurnApprover, newChurnApprover);
     }
 
     function _setEjector(address newEjector) internal {
-        address prevEjector = ejector;
+        emit EjectorUpdated(ejector, newEjector);
         ejector = newEjector;
-        emit EjectorUpdated(prevEjector, newEjector);
     }
 
     /// @return numOperatorsPerQuorum is the list of number of operators per quorum in quorumNumberss

@@ -99,6 +99,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
         emit EjectorUpdated(ejector, newEjector);
         registryCoordinator.setEjector(newEjector);
+        assertEq(registryCoordinator.ejector(), newEjector);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
