@@ -109,7 +109,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
 
     /// @notice Emitted when podOwner enables restaking
-    event restakingActivated(address indexed podOwner);
+    event RestakingActivated(address indexed podOwner);
 
     /// @notice Emitted when ETH is received via the receive fallback
     event nonBeaconChainETHReceived(uint256 amountReceived);
@@ -589,7 +589,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         hasRestaked = true;
         _processWithdrawalBeforeRestaking(podOwner);
 
-        emit restakingActivated(podOwner);
+        emit RestakingActivated(podOwner);
     }
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
