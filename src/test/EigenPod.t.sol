@@ -84,7 +84,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     event ValidatorRestaked(uint40 validatorIndex);
 
     /// @notice Emitted when an ETH validator's balance is updated in EigenLayer
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 newBalanceGwei);
+    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 slotNumber, uint64 newBalanceGwei);
 
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
@@ -857,7 +857,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         //cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
+        emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
@@ -868,7 +869,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         cheats.expectEmit(true, true, true, true, address(newPod));
-        emit ValidatorBalanceUpdated(validatorIndex, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
+        emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
