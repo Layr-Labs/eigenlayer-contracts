@@ -616,6 +616,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // deploy a ERC1271MaliciousMock contract that will return an incorrect value when called
         ERC1271MaliciousMock wallet = new ERC1271MaliciousMock();
 
+        // filter fuzzed input, since otherwise we can get a flaky failure here. if the caller itself is the 'delegationApprover'
+        // then we don't even trigger the signature verification call, so we won't get a revert as expected
+        cheats.assume(staker != address(wallet));
+
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: address(wallet),
