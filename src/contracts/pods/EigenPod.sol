@@ -482,20 +482,20 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner, _validatorPubkeyHashToInfo[validatorPubkeyHash].status, slot);
+                _processFullWithdrawal(validatorIndex, validatorPubkeyHash, slot, podOwner, withdrawalAmountGwei, _validatorPubkeyHashToInfo[validatorPubkeyHash].status);
             } else {
-                _processPartialWithdrawal(slot, withdrawalAmountGwei, validatorIndex, validatorPubkeyHash, podOwner);
+                _processPartialWithdrawal(validatorIndex, validatorPubkeyHash, slot, podOwner, withdrawalAmountGwei);
             }
         }
     }
 
     function _processFullWithdrawal(
-        uint64 withdrawalAmountGwei,
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
+        uint64 withdrawalHappenedSlot,
         address recipient,
-        VALIDATOR_STATUS status,
-        uint64 withdrawalHappenedSlot
+        uint64 withdrawalAmountGwei,
+        VALIDATOR_STATUS status
     ) internal {
         uint256 amountToSend;
         uint256 withdrawalAmountWei;
@@ -549,11 +549,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _processPartialWithdrawal(
-        uint64 withdrawalHappenedSlot,
-        uint64 partialWithdrawalAmountGwei,
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
-        address recipient
+        uint64 withdrawalHappenedSlot,
+        address recipient,
+        uint64 partialWithdrawalAmountGwei
     ) internal {
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
