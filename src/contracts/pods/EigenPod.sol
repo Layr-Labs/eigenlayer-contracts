@@ -63,6 +63,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
 
+    // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
     address public podOwner;
 
@@ -73,7 +74,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     uint64 public mostRecentWithdrawalTimestamp;
 
-    // STORAGE VARIABLES
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from the Beacon Chain but not from EigenLayer), 
     uint64 public withdrawableRestakedExecutionLayerGwei;
 
