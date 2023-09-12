@@ -49,6 +49,8 @@ Note that the contract does not check that the quorums that the operator is bein
 
 An offchain actor can provide a list of operator ids, their corresponding addresses, and a few other witnesses in order to recalculate the stakes of the provided operators for all of the quorums each operator is registered for. This ends block range of the current `OperatorStakeUpdate`s for each of the quorums for each of the provided operators and pushes a new update for each of them.
 
+This has more implications after slashing is enabled... TODO
+
 ## Integrations
 
 The main integration with the StakeRegistry is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide in a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number,

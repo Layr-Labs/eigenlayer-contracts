@@ -29,6 +29,8 @@ struct QuorumBitmapUpdate {
 }
 ```
 
+Operators can be registered for certain quorums and later register for other (non-overlapping) quorums.
+
 ### If quorum full
 
 The following struct is defined for each quorum
@@ -48,7 +50,19 @@ struct OperatorSetParam {
 
 If any of the quorums is full (number of operators in it is `maxOperatorCount`), the operator must provide the public key of an operator which it has more than `kickBIPsOfOperatorStake` than (measured in basis points) and that out has less than `kickBIPsOfTotalStake` than the entire quorum's stake. The provided operators are deregistered from the respective quorums that are full which the registering operator is registering for. Since the operators being kciked may not be the operators with the least stake, the RegistryCoordinator requires that the provided operators are signed off by a permissioned address called a `churnApprover`. Note that the quorum operator caps are due to the cost of BLS signature (dis)aggregation onchain.
 
-Note that the registering operator must also provide the ids of the operators that must swap indexes with the operators being kicked from the quorums it is registering for.
+Operators register with a list of 
+```
+/**
+* @notice Data structure for the parameters needed to kick an operator from a quorum with number `quorumNumber`, used during registration churn.
+* Specifically the `operator` is the address of the operator to kick, `pubkey` is the BLS public key of the operator,
+*/
+struct OperatorKickParam {
+    uint8 quorumNumber;
+    address operator;
+    BN254.G1Point pubkey; 
+}
+```
+For each quorum they need to kick operators from. This list, along with the id of registering operator needs to be signed (along with a salt and expiry) by an actor known as the *churnApprover* run by EigenLabs. Operators will make a request to the churnApprover offchain before registering for their signature, if needed.
 
 ### deregisterOperator
 
@@ -58,3 +72,5 @@ When deregistering, an operator provides
 3. The ids of the operators that must swap indices with the deregistering operator in the IndexRegistry
 
 The RegistryCoordinator then deregisters the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry. It then ends the block range for its stored quorum bitmap for the operator.
+
+Operators can deregsiter from a subset of quorums that they are registered for.
