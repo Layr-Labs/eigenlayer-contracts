@@ -1,7 +1,7 @@
 
 methods {
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
     // envfree functions

@@ -37,15 +37,13 @@ interface IEigenPodManager is IPausable {
     function restakeBeaconChainETH(address podOwner, uint256 amount) external;
 
     /**
-     * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
-     *         balance of a validator is lower than how much stake they have committed to EigenLayer
-     * @param podOwner The owner of the pod whose balance must be removed.
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
-     *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
-     * @param amount The amount of ETH to remove.
+     * @notice Records an update in beacon chain strategy shares in the strategy manager
+     * @param podOwner is the pod owner whose shares are to be updated,
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external;
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external;
     
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
@@ -62,6 +60,12 @@ interface IEigenPodManager is IPausable {
      * @dev Callable only by the owner of this contract (i.e. governance)
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
+
+    /// @notice decrements the proven amount of withdrawable ETH to reflect decrementation of shares
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
+
+    /// @notice increments the proven amount of withdrawable ETH to reflect incrementation of shares when a podOwner completes a withdrawal as shares
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(address podOwner) external view returns(IEigenPod);

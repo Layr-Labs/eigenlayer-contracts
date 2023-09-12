@@ -17,13 +17,13 @@ methods {
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	function _.withdrawBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
+	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	
     // external calls to EigenPod
-	function _.withdrawBeaconChainETH(address,uint256) external => DISPATCHER(true);
+	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    function _.pauser() external => DISPATCHER(true);
+    function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
@@ -41,12 +41,16 @@ methods {
     function _._delegationWithdrawnHook(address,address,address[]memory, uint256[] memory) internal => NONDET;
 
     //envfree functions
-    function isDelegated(address staker) external returns (bool) envfree;
-    function isNotDelegated(address staker) external returns (bool) envfree;
-    function isOperator(address operator) external returns (bool) envfree;
     function delegatedTo(address staker) external returns (address) envfree;
-    function delegationTerms(address operator) external returns (address) envfree;
+    function operatorDetails(address operator) external returns (IDelegationManager.OperatorDetails memory) envfree;
+    function earningsReceiver(address operator) external returns (address) envfree;
+    function delegationApprover(address operator) external returns (address) envfree;
+    function stakerOptOutWindowBlocks(address operator) external returns (uint256) envfree;
     function operatorShares(address operator, address strategy) external returns (uint256) envfree;
+    function isDelegated(address staker) external returns (bool) envfree;
+    function isOperator(address operator) external returns (bool) envfree;
+    function stakerNonce(address staker) external returns (uint256) envfree;
+    function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
 }
@@ -54,7 +58,7 @@ methods {
 /*
 LEGAL STATE TRANSITIONS:
 1)
-FROM not delegated -- defined as delegatedTo(staker) == address(0), likewise returned by isNotDelegated(staker)--
+FROM not delegated -- defined as delegatedTo(staker) == address(0), likewise returned by !isDelegated(staker)--
 AND not registered as an operator -- defined as isOperator(operator) == false, or equivalently, delegationTerms(operator) == 0,
 TO delegated but not an operator
 in this case, the end state is that:
@@ -100,14 +104,12 @@ FORBIDDEN STATES:
 Combining the above, an address can be (classified as an operator) *iff* they are (delegated to themselves).
 The exception is the zero address, since by default an address is 'delegated to the zero address' when they are not delegated at all
 */
-//definition notDelegated -- defined as delegatedTo(staker) == address(0), likewise returned by isNotDelegated(staker)--
+//definition notDelegated -- defined as delegatedTo(staker) == address(0), likewise returned by !isDelegated(staker)--
 
 // verify that anyone who is registered as an operator is also always delegated to themselves
+// the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
 invariant operatorsAlwaysDelegatedToSelf(address operator)
-    isOperator(operator) <=> delegatedTo(operator) == operator
-    { preserved {
-        require operator != 0;
-    } }
+    operator != 0 => (isOperator(operator) <=> delegatedTo(operator) == operator);
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
@@ -156,39 +158,43 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
 rule canOnlyDelegateWithSpecificFunctions(address staker) {
     requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker begins as undelegated
-    require(isNotDelegated(staker));
+    require(!isDelegated(staker));
     // perform arbitrary function call
     method f;
     env e;
-    if (f.selector == sig:delegateTo(address).selector) {
+    if (f.selector == sig:delegateTo(address, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address operator;
-        delegateTo(e, operator);
+        ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
+        bytes32 salt;
+        delegateTo(e, operator, approverSignatureAndExpiry, salt);
         // we check against operator being the zero address here, since we view being delegated to the zero address as *not* being delegated
         if (e.msg.sender == staker && isOperator(operator) && operator != 0) {
             assert (isDelegated(staker) && delegatedTo(staker) == operator, "failure in delegateTo");
         } else {
-            assert (isNotDelegated(staker), "staker delegated to inappropriate address?");
+            assert (!isDelegated(staker), "staker delegated to inappropriate address?");
         }
-    } else if (f.selector == sig:delegateToBySignature(address, address, uint256, bytes).selector) {
+    } else if (f.selector == sig:delegateToBySignature(address, address, ISignatureUtils.SignatureWithExpiry, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address toDelegateFrom;
         address operator;
-        uint256 expiry;
-        bytes signature;
-        delegateToBySignature(e, toDelegateFrom, operator, expiry, signature);
+        ISignatureUtils.SignatureWithExpiry stakerSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
+        bytes32 salt;
+        delegateToBySignature(e, toDelegateFrom, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);
         // TODO: this check could be stricter! need to filter when the block timestamp is appropriate for expiry and signature is valid
-        assert (isNotDelegated(staker) || delegatedTo(staker) == operator, "delegateToBySignature bug?");
-    } else if (f.selector == sig:registerAsOperator(address).selector) {
-        address delegationTerms;
-        registerAsOperator(e, delegationTerms);
-        if (e.msg.sender == staker && delegationTerms != 0) {
+        assert (!isDelegated(staker) || delegatedTo(staker) == operator, "delegateToBySignature bug?");
+    } else if (f.selector == sig:registerAsOperator(IDelegationManager.OperatorDetails, string).selector) {
+        IDelegationManager.OperatorDetails operatorDetails;
+        string metadataURI;
+        registerAsOperator(e, operatorDetails, metadataURI);
+        if (e.msg.sender == staker) {
             assert (isOperator(staker));
         } else {
-            assert(isNotDelegated(staker));
+            assert(!isDelegated(staker));
         }
     } else {
         calldataarg arg;
         f(e,arg);
-        assert (isNotDelegated(staker), "staker became delegated through inappropriate function call");
+        assert (!isDelegated(staker), "staker became delegated through inappropriate function call");
     }
 }
 

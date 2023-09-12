@@ -70,6 +70,12 @@ contract MockAVSDeployer is Test {
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
 
+    uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
+    address churnApprover = cheats.addr(churnApproverPrivateKey);
+    bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
+
+    address ejector = address(uint160(uint256(keccak256("ejector"))));
+
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey =  BN254.G1Point(18260007818883133054078754218619977578772505796600400998181738095793040006897,3432351341799135763167709827653955074218841517684851694584291831827675065899);
@@ -238,6 +244,8 @@ contract MockAVSDeployer is Test {
                 address(registryCoordinatorImplementation),
                 abi.encodeWithSelector(
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
+                    churnApprover,
+                    ejector,
                     operatorSetParams
                 )
             );
@@ -317,7 +325,7 @@ contract MockAVSDeployer is Test {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
-            operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (maxQuorumsToRegisterFor << 1 - 1) | 1;
+            operatorMetadatas[i].quorumBitmap = uint256(keccak256(abi.encodePacked("quorumBitmap", pseudoRandomNumber, i))) & (1 << maxQuorumsToRegisterFor - 1) | 1;
             operatorMetadatas[i].operator = _incrementAddress(defaultOperator, i);
             operatorMetadatas[i].pubkey = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", pseudoRandomNumber, i)));
             operatorMetadatas[i].operatorId = operatorMetadatas[i].pubkey.hashG1Point();
@@ -363,5 +371,20 @@ contract MockAVSDeployer is Test {
 
     function _incrementBytes32(bytes32 start, uint256 inc) internal pure returns(bytes32) {
         return bytes32(uint256(start) + inc);
+    }
+
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, bytes memory quorumNumbers, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
+            registeringOperatorId,
+            operatorKickParams,
+            salt,
+            expiry
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(churnApproverPrivateKey, digestHash);
+        return ISignatureUtils.SignatureWithSaltAndExpiry({
+            signature: abi.encodePacked(r, s, v),
+            expiry: expiry,
+            salt: salt
+        });
     }
 }

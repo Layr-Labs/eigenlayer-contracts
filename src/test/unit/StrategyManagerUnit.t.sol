@@ -237,24 +237,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
     }
 
-    function testRecordOvercommittedBeaconChainETHSuccessfully(uint256 amount_1, uint256 amount_2) public {
-        // zero inputs will revert, and cannot reduce more than full amount
-        cheats.assume(amount_2 <= amount_1 && amount_1 != 0 && amount_2 != 0);
-
-        address overcommittedPodOwner = address(this);
-        uint256 beaconChainETHStrategyIndex = 0;
-        testDepositBeaconChainETHSuccessfully(overcommittedPodOwner, amount_1);
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
-
-        cheats.startPrank(address(eigenPodManagerMock));
-        strategyManager.recordOvercommittedBeaconChainETH(overcommittedPodOwner, beaconChainETHStrategyIndex, amount_2);
-        cheats.stopPrank();
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(overcommittedPodOwner, beaconChainETHStrategy);
-        require(sharesAfter == sharesBefore - amount_2, "sharesAfter != sharesBefore - amount");
-    }
-
     function testRecordOvercommittedBeaconChainETHFailsWhenNotCalledByEigenPodManager(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
         uint256 amount = 1e18;
         address staker = address(this);
@@ -264,12 +246,13 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         cheats.expectRevert(bytes("StrategyManager.onlyEigenPodManager: not the eigenPodManager"));
         cheats.startPrank(address(improperCaller));
-        strategyManager.recordOvercommittedBeaconChainETH(staker, beaconChainETHStrategyIndex, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, 0);
         cheats.stopPrank();
     }
 
-    function testRecordOvercommittedBeaconChainETHFailsWhenReentering() public {
+    function testRecordBeaconChainETHBalanceUpdateFailsWhenReentering() public {
         uint256 amount = 1e18;
+        uint256 amount2 = 2e18;
         address staker = address(this);
         uint256 beaconChainETHStrategyIndex = 0;
 
@@ -279,11 +262,14 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         address targetToUse = address(strategyManager);
         uint256 msgValueToUse = 0;
-        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordOvercommittedBeaconChainETH.selector, staker, beaconChainETHStrategyIndex, amount);
+
+        int256 amountDelta = int256(amount2 - amount);
+        // reference: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
+        bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amountDelta);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.startPrank(address(reenterer));
-        strategyManager.recordOvercommittedBeaconChainETH(staker, beaconChainETHStrategyIndex, amount);
+        strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amountDelta);
         cheats.stopPrank();
     }
 
@@ -399,7 +385,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         // not expecting a revert, so input an empty string
         bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
 
-        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: signature not from staker"));
+        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
         strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
 
     }
@@ -448,7 +434,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
             // mess up the signature by flipping v's parity
@@ -457,7 +443,7 @@ contract StrategyManagerUnitTests is Test, Utils {
             signature = abi.encodePacked(r, s, v);
         }
 
-        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: ERC1271 signature verification failed"));
+        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
     }
 
@@ -513,7 +499,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -560,7 +546,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -602,7 +588,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -633,7 +619,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 
@@ -642,7 +628,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
 
-        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: signature not from staker"));
+        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
         // call with `notStaker` as input instead of `staker` address
         address notStaker = address(3333);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, notStaker, expiry, signature);
@@ -1015,7 +1001,8 @@ contract StrategyManagerUnitTests is Test, Utils {
     // TODO: set up delegation for the following three tests and check afterwords
     function testQueueWithdrawal_WithdrawEverything_DontUndelegate(uint256 amount) external {
         // delegate to self
-        delegationMock.delegateTo(address(this));
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
+        delegationMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
         require(delegationMock.isDelegated(address(this)), "delegation mock setup failed");
         bool undelegateIfPossible = false;
         // deposit and withdraw the same amount, don't undelegate
@@ -2603,6 +2590,18 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         return array;
     }
 
+    function _calculateSharesDelta(uint256 newAmountGwei, uint256 currentAmountGwei) internal view returns(uint256, bool) {
+        uint256 sharesDelta;
+        bool isNegative;
+        if (currentAmountGwei > newAmountGwei){
+            sharesDelta = currentAmountGwei - newAmountGwei;
+            isNegative = true;
+        } else {
+            sharesDelta = newAmountGwei - currentAmountGwei;
+        }
+        return (sharesDelta * GWEI_TO_WEI, isNegative);
+    }
+
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
     function _depositIntoStrategyWithSignature(address staker, uint256 amount, uint256 expiry, string memory expectedRevertMessage) internal returns (bytes memory) {
 
@@ -2616,7 +2615,7 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
 
         {
             bytes32 structHash = keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, dummyToken, amount, nonceBefore, expiry));
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.DOMAIN_SEPARATOR(), structHash));
+            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
 

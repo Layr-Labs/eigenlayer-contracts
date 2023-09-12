@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import "./EigenLayerDeployer.t.sol";
 import "./EigenLayerTestHelper.t.sol";
-import "../contracts/operators/MerkleDelegationTerms.sol";
 
 contract SlasherTests is EigenLayerTestHelper {
     ISlasher instance;
@@ -12,12 +11,10 @@ contract SlasherTests is EigenLayerTestHelper {
     address middleware_2 = address(0x009849);
     address middleware_3 = address(0x001000);
     address middleware_4 = address(0x002000);
-    MerkleDelegationTerms delegationTerms;
 
      //performs basic deployment before each test
     function setUp() public override {
         super.setUp();
-        delegationTerms = new MerkleDelegationTerms();
     }
 
     /**
@@ -40,7 +37,12 @@ contract SlasherTests is EigenLayerTestHelper {
         // have `_operator` make deposits in WETH strategy
         _testDepositWeth(_operator, amountToDeposit);
         // register `_operator` as an operator
-        _testRegisterAsOperator(_operator, IDelegationTerms(_operator));
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: _operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        _testRegisterAsOperator(_operator, operatorDetails);
 
         // make deposit in WETH strategy from each of `accounts`, then delegate them to `_operator`
         for (uint256 i = 0; i < accounts.length; i++) {
@@ -93,7 +95,13 @@ contract SlasherTests is EigenLayerTestHelper {
     function testRecursiveCallRevert() public {
         //Register and opt into slashing with operator
         cheats.startPrank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_2);
         slasher.optIntoSlashing(middleware_3);
@@ -131,7 +139,13 @@ contract SlasherTests is EigenLayerTestHelper {
         
         //Register and opt into slashing with operator
         cheats.startPrank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
@@ -163,7 +177,13 @@ contract SlasherTests is EigenLayerTestHelper {
     function testRecordStakeUpdate() public {
         ///Register and opt into slashing with operator
         cheats.startPrank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
@@ -202,7 +222,13 @@ contract SlasherTests is EigenLayerTestHelper {
     function testOrderingRecordStakeUpdateVuln() public {
         ///Register and opt into slashing with operator
         cheats.startPrank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         slasher.optIntoSlashing(middleware_3);
         cheats.stopPrank();
@@ -230,7 +256,13 @@ contract SlasherTests is EigenLayerTestHelper {
 
     function testOnlyRegisteredForService(address _slasher, uint32 _serveUntilBlock) public fuzzedAddress(_slasher) {
         cheats.prank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         //slasher cannot call stake update unless operator has oped in
         cheats.prank(_slasher);
@@ -255,14 +287,26 @@ contract SlasherTests is EigenLayerTestHelper {
 
         //can opt in after registered as operator
         cheats.startPrank(_operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: _operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(_slasher);
         cheats.stopPrank();
     }
 
     function testFreezeOperator() public {
         cheats.prank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         
         //cannot freeze until operator has oped in
         cheats.prank(middleware);
@@ -284,7 +328,13 @@ contract SlasherTests is EigenLayerTestHelper {
         cheats.assume(_attacker != slasher.owner());
 
         cheats.prank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         cheats.prank(operator);
         slasher.optIntoSlashing(middleware);
@@ -311,7 +361,13 @@ contract SlasherTests is EigenLayerTestHelper {
     function testRecordLastStakeUpdateAndRevokeSlashingAbility() public {
         ///Register and opt into slashing with operator
         cheats.startPrank(operator);
-        delegation.registerAsOperator(delegationTerms);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         slasher.optIntoSlashing(middleware);
         cheats.stopPrank();
 

@@ -104,16 +104,16 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
                 nonSignerOperatorIds
             );
 
-        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 0);
-        assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length);
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, 0, "nonSignerQuorumBitmapIndices should be empty if no nonsigners");
+        assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length, "quorumApkIndices should be the number of quorums queried for");
+        assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length, "totalStakeIndices should be the number of quorums queried for");
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length, "nonSignerStakeIndices should be the number of quorums queried for");
 
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(allInclusiveQuorumNumbers[i]);
-            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1);
-            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1);
+            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "quorumApkIndex should be the number of registered operators for the quorum minus 1");
+            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "totalStakeIndex should be the number of registered operators for the quorum minus 1");
         }
     }
 
@@ -147,25 +147,25 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
                 nonSignerOperatorIds
             );
 
-        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, nonSignerOperatorIds.length);
-        assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length);
-        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length);
+        assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices.length, nonSignerOperatorIds.length, "nonSignerQuorumBitmapIndices should be the number of nonsigners");
+        assertEq(checkSignaturesIndices.quorumApkIndices.length, allInclusiveQuorumNumbers.length, "quorumApkIndices should be the number of quorums queried for");
+        assertEq(checkSignaturesIndices.totalStakeIndices.length, allInclusiveQuorumNumbers.length, "totalStakeIndices should be the number of quorums queried for");
+        assertEq(checkSignaturesIndices.nonSignerStakeIndices.length, allInclusiveQuorumNumbers.length, "nonSignerStakeIndices should be the number of quorums queried for");
 
         // assert the indices are the number of registered operators for the quorum minus 1
         for (uint8 i = 0; i < allInclusiveQuorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(allInclusiveQuorumNumbers[i]);
-            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1);
-            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1);
+            assertEq(checkSignaturesIndices.quorumApkIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "quorumApkIndex should be the number of registered operators for the quorum minus 1");
+            assertEq(checkSignaturesIndices.totalStakeIndices[i], expectedOperatorOverallIndices[quorumNumber].length - 1, "totalStakeIndex should be the number of registered operators for the quorum minus 1");
         }
 
         // assert the quorum bitmap and stake indices are zero because there have been no kicks or stake updates
         for (uint i = 0; i < nonSignerOperatorIds.length; i++) {
-            assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[i], 0);
+            assertEq(checkSignaturesIndices.nonSignerQuorumBitmapIndices[i], 0, "nonSignerQuorumBitmapIndices should be zero because there have been no kicks");
         }
         for (uint i = 0; i < checkSignaturesIndices.nonSignerStakeIndices.length; i++) {
             for (uint j = 0; j < checkSignaturesIndices.nonSignerStakeIndices[i].length; j++) {
-                assertEq(checkSignaturesIndices.nonSignerStakeIndices[i][j], 0);
+                assertEq(checkSignaturesIndices.nonSignerStakeIndices[i][j], 0, "nonSignerStakeIndices should be zero because there have been no stake updates past the first one");
             }
         }
     }

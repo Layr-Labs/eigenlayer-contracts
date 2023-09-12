@@ -59,13 +59,13 @@ interface IStrategyManager {
     function depositBeaconChainETH(address staker, uint256 amount) external;
 
     /**
-     * @notice Records an overcommitment event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
-     * @param overcommittedPodOwner is the pod owner to be slashed
+     * @notice Records an update in beacon chain strategy shares in the strategy manager
+     * @param podOwner is the pod owner whose shares are to be updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
-     * @dev Only callable by EigenPodManager.
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external;
 
     /**
@@ -223,14 +223,20 @@ interface IStrategyManager {
     function slashQueuedWithdrawal(address recipient, QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256[] calldata indicesToSkip)
         external;
 
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32);
+    /**
+     * @notice Called by a staker to undelegate entirely from EigenLayer. The staker must first withdraw all of their existing deposits
+     * (through use of the `queueWithdrawal` function), or else otherwise have never deposited in EigenLayer prior to delegating.
+     */
+    function undelegate() external;
 
+    /**
+     * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
+     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
+     * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
+     * @param staker The staker to force-undelegate.
+     * @return The root of the newly queued withdrawal.
+     */
+    function forceTotalWithdrawal(address staker) external returns (bytes32);
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
@@ -243,6 +249,14 @@ interface IStrategyManager {
     */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
+    function calculateWithdrawalRoot(
+        QueuedWithdrawal memory queuedWithdrawal
+    )
+        external
+        pure
+        returns (bytes32);
+
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
 
@@ -254,4 +268,7 @@ interface IStrategyManager {
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
+    function numWithdrawalsQueued(address staker) external view returns (uint256);
 }
