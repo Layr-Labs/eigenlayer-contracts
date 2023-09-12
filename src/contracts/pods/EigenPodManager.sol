@@ -221,7 +221,7 @@ contract EigenPodManager is
      * @dev Callable only by the podOwner's EigenPod contract.
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner) nonReentrant {
-       _updateSharesToReflectBeaconChainETHBalance(podOwner, sharesDelta);
+       _recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
     }
 
     /**
@@ -258,7 +258,68 @@ contract EigenPodManager is
     {
         _completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
     }
+
+    /**
+     * @notice Called by a staker who owns an EigenPod to enter the "undelegation limbo" mode.
+     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
+     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
+     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
+     */
+    function enterUndelegationLimbo()
+        external
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyNotFrozen(msg.sender)
+        nonReentrant
+    {
+        _enterUndelegationLimbo(msg.sender);
+    }
+
+    /**
+     * @notice Called by a staker who owns an EigenPod to exit the "undelegation limbo" mode.
+     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
+     * This is because undelegation limbo is subject to the same restrictions as completing a withdrawal
+     * @param withdrawFundsFromEigenLayer If marked as 'true', then the caller's beacon chain ETH shares will be withdrawn from EigenLayer, as they are when
+     * completing a withdrawal. If marked as 'false', then the caller's shares are simply returned to EigenLayer's delegation system.
+     */
+    function exitUndelegationLimbo(uint256 middlewareTimesIndex, bool withdrawFundsFromEigenLayer)
+        external
+        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyNotFrozen(msg.sender)
+        nonReentrant
+    {
+        require(isInUndelegationLimbo(msg.sender),
+                    "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
+        require(
+            slasher.canWithdraw(
+                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboDelegatedAddress,
+                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboStartBlock,
+                middlewareTimesIndex
+            ),
+            "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
+        );
+
+        // delete the pod owner's undelegation limbo details
+        delete _podOwnerUndelegationLimboStatus[msg.sender];
+
+        // emit event
+        emit UndelegationLimboEntered(msg.sender);
+
+        // either withdraw the funds entirely from EigenLayer
+        if (withdrawFundsFromEigenLayer) {
+            // store the pod owner's current share amount in memory, for gas efficiency
+            uint256 currentPodOwnerShares = podOwnerShares[msg.sender];
+            // remove the shares from the podOwner and reduce the `withdrawableRestakedExecutionLayerGwei` in the pod
+            podOwnerShares[msg.sender] = 0;
+            _decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, currentPodOwnerShares);
+            // withdraw through the ETH from the EigenPod
+            _withdrawRestakedBeaconChainETH(msg.sender, msg.sender, currentPodOwnerShares);
+        // or else return the "shares" to the delegation system
+        } else {
+            delegationManager.increaseDelegatedShares(msg.sender, beaconChainETHStrategy, podOwnerShares[msg.sender]);
+        }
+    }
     
+    // EXTERNAL FUNCTIONS PERMISSIONED TO SINGLE PARTIES
     function slashShares(
         address slashedPodOwner,
         address slashedFundsRecipient,
@@ -334,66 +395,6 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
-    /**
-     * @notice Called by a staker who owns an EigenPod to enter the "undelegation limbo" mode.
-     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
-     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
-     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
-     */
-    function enterUndelegationLimbo()
-        external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(msg.sender)
-        nonReentrant
-    {
-        _enterUndelegationLimbo(msg.sender);
-    }
-
-    /**
-     * @notice Called by a staker who owns an EigenPod to exit the "undelegation limbo" mode.
-     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
-     * This is because undelegation limbo is subject to the same restrictions as completing a withdrawal
-     * @param withdrawFundsFromEigenLayer If marked as 'true', then the caller's beacon chain ETH shares will be withdrawn from EigenLayer, as they are when
-     * completing a withdrawal. If marked as 'false', then the caller's shares are simply returned to EigenLayer's delegation system.
-     */
-    function exitUndelegationLimbo(uint256 middlewareTimesIndex, bool withdrawFundsFromEigenLayer)
-        external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(msg.sender)
-        nonReentrant
-    {
-        require(isInUndelegationLimbo(msg.sender),
-                    "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
-        require(
-            slasher.canWithdraw(
-                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboDelegatedAddress,
-                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboStartBlock,
-                middlewareTimesIndex
-            ),
-            "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
-        );
-
-        // delete the pod owner's undelegation limbo details
-        delete _podOwnerUndelegationLimboStatus[msg.sender];
-
-        // emit event
-        emit UndelegationLimboEntered(msg.sender);
-
-        // either withdraw the funds entirely from EigenLayer
-        if (withdrawFundsFromEigenLayer) {
-            // store the pod owner's current share amount in memory, for gas efficiency
-            uint256 currentPodOwnerShares = podOwnerShares[msg.sender];
-            // remove the shares from the podOwner and reduce the `withdrawableRestakedExecutionLayerGwei` in the pod
-            podOwnerShares[msg.sender] = 0;
-            _decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, currentPodOwnerShares);
-            // withdraw through the ETH from the EigenPod
-            _withdrawRestakedBeaconChainETH(msg.sender, msg.sender, currentPodOwnerShares);
-        // or else return the "shares" to the delegation system
-        } else {
-            delegationManager.increaseDelegatedShares(msg.sender, beaconChainETHStrategy, podOwnerShares[msg.sender]);
-        }
-    }
-
     // INTERNAL FUNCTIONS
     function _queueWithdrawal(
         address podOwner,
@@ -406,10 +407,10 @@ contract EigenPodManager is
         require(amountWei > 0, "EigenPodManager._queueWithdrawal: amount must be greater than zero");
 
         require(amountWei % GWEI_TO_WEI == 0,
-                    "EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
+            "EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
 
         require(!isInUndelegationLimbo(podOwner),
-                    "EigenPodManager._queueWithdrawal: cannot queue a withdrawal when in undelegation limbo");
+            "EigenPodManager._queueWithdrawal: cannot queue a withdrawal when in undelegation limbo");
 
 
         _removeShares(podOwner, amountWei);  
@@ -572,7 +573,7 @@ contract EigenPodManager is
     }
 
     // @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
-    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, int256 sharesDelta) internal {
+    function _recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) internal {
         if (sharesDelta < 0) {
             // if change in shares is negative, remove the shares
             _removeShares(podOwner, uint256(-sharesDelta));
@@ -587,7 +588,7 @@ contract EigenPodManager is
      * @param amountWei is the amount of ETH in wei to decrement withdrawableRestakedExecutionLayerGwei by
      */
     function _decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
-        internal onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
+        internal
     {
         ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(amountWei);
     }
