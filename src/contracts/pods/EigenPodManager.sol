@@ -383,9 +383,7 @@ contract EigenPodManager is
         onlyNotFrozen(podOwner)
         nonReentrant
     {
-        if (!stakerHasNoDelegatedShares(podOwner)) {
-            _enterUndelegationLimbo(podOwner);
-        }
+        _enterUndelegationLimbo(podOwner);
     }
 
     /**
@@ -625,34 +623,35 @@ contract EigenPodManager is
         delegationManager.undelegate(staker);
     }
 
-    // @notice Internal function to enter `podOwner` into undelegation limbo
+    /**
+     * @notice Internal function to enter `podOwner` into undelegation limbo
+     * @dev Does nothing if the `podOwner` has no delegated shares (i.e. they are already in undelegation limbo or have no shares)
+     * OR if they are not actively delegated to any operator.
+     */
     function _enterUndelegationLimbo(address podOwner) internal {
-        require(!isInUndelegationLimbo(podOwner),
-            "EigenPodManager.enterUndelegationLimbo: already in undelegation limbo");
-        require(delegationManager.isDelegated(podOwner),
-            "EigenPodManager.enterUndelegationLimbo: cannot enter undelegation limbo if not delegated");
+        if (!stakerHasNoDelegatedShares(podOwner) && delegationManager.isDelegated(podOwner)) {
+            // look up the address that the pod owner is currrently delegated to in EigenLayer
+            address delegatedAddress = delegationManager.delegatedTo(podOwner);
 
-        // look up the address that the pod owner is currrently delegated to in EigenLayer
-        address delegatedAddress = delegationManager.delegatedTo(podOwner);
+            // store the undelegation limbo details
+            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboActive = true;
+            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboStartBlock = uint32(block.number);
+            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboDelegatedAddress = delegatedAddress;
 
-        // store the undelegation limbo details
-        _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboActive = true;
-        _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboStartBlock = uint32(block.number);
-        _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboDelegatedAddress = delegatedAddress;
+            // emit event
+            emit UndelegationLimboEntered(podOwner);
 
-        // emit event
-        emit UndelegationLimboEntered(podOwner);
+            // undelegate all shares
+            uint256[] memory shareAmounts = new uint256[](1);
+            shareAmounts[0] = podOwnerShares[podOwner];
+            IStrategy[] memory strategies = new IStrategy[](1);
+            strategies[0] = beaconChainETHStrategy;
+            delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
 
-        // undelegate all shares
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = podOwnerShares[podOwner];
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = beaconChainETHStrategy;
-        delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
-
-        // undelegate the pod owner, if possible
-        if (stakerCanUndelegate(podOwner)) {
-            _undelegate(podOwner);
+            // undelegate the pod owner, if possible
+            if (stakerCanUndelegate(podOwner)) {
+                _undelegate(podOwner);
+            }
         }
     }
 
