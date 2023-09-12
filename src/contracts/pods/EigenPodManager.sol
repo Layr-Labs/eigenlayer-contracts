@@ -330,8 +330,19 @@ contract EigenPodManager is
         onlyFrozen(slashedPodOwner)
         nonReentrant
     {
+        require(
+            // either the pod owner themselves is frozen
+            slasher.isFrozen(slashedPodOwner) ||
+            // or they are in "undelegation limbo" and the operator who they *were* delegated to is frozen
+            (
+                isInUndelegationLimbo(slashedPodOwner) &&
+                slasher.isFrozen(_podOwnerUndelegationLimboStatus[slashedPodOwner].undelegationLimboDelegatedAddress)
+            ),
+            "EigenPodManager.slashShares: cannot slash the specified pod owner"
+        );
         require(shareAmount > 0, "EigenPodManager.slashShares: shares must be greater than zero");
-        require(podOwnerShares[slashedPodOwner] >= shareAmount, "EigenPodManager.slashShares: podOwnerShares[podOwner] must be greater than or equal to shares");
+        require(podOwnerShares[slashedPodOwner] >= shareAmount,
+            "EigenPodManager.slashShares: podOwnerShares[podOwner] must be greater than or equal to shares");
 
         _removeShares(slashedPodOwner, shareAmount);
         _withdrawRestakedBeaconChainETH(slashedPodOwner, slashedFundsRecipient, shareAmount);
