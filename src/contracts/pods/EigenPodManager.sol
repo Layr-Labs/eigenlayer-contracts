@@ -478,12 +478,10 @@ contract EigenPodManager is
             "EigenPodManager._completeQueuedWithdrawal: shares pending withdrawal are still slashable"
         );
 
-        /* TODO: decide definitively if minimum lag is enforced here or via use of the DelayedWithdrawalRouter
         // enforce minimum delay lag
         require(queuedWithdrawal.withdrawalStartBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
             "EigenPodManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
         );
-        */
 
         // verify that the caller is the pod owner
         require(

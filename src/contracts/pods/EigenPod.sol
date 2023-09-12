@@ -542,9 +542,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
 
-        // send ETH to the `recipient`, if applicable
+        // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         if (amountToSend != 0) {
-            _sendETH(recipient, amountToSend);
+            _sendETH_AsDelayedWithdrawal(recipient, amountToSend);
         }
     }
 
@@ -559,8 +559,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
         emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei);
 
-        // send the ETH to the `recipient`
-        _sendETH(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
+        // send the ETH to the `recipient` via the DelayedWithdrawalRouter
+        _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
     }
 
     /**
@@ -576,7 +576,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         onlyEigenPodManager
     {
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
-        // transfer ETH from pod to `recipient`
+        // transfer ETH from pod to `recipient` directly
         _sendETH(recipient, amountWei);
     }
 
@@ -635,10 +635,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _processWithdrawalBeforeRestaking(address _podOwner) internal {
         mostRecentWithdrawalTimestamp = uint32(block.timestamp);
-        _sendETH(_podOwner, address(this).balance);
+        _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
     }
 
     function _sendETH(address recipient, uint256 amountWei) internal {
+        Address.sendValue(payable(recipient), amountWei);
+    }
+
+    function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei) internal {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
     }
 
