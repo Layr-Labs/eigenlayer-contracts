@@ -302,7 +302,7 @@ contract EigenPodManager is
         delete _podOwnerUndelegationLimboStatus[msg.sender];
 
         // emit event
-        emit UndelegationLimboEntered(msg.sender);
+        emit UndelegationLimboExited(msg.sender);
 
         // either withdraw the funds entirely from EigenLayer
         if (withdrawFundsFromEigenLayer) {
