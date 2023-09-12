@@ -74,3 +74,7 @@ When deregistering, an operator provides
 The RegistryCoordinator then deregisters the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry. It then ends the block range for its stored quorum bitmap for the operator.
 
 Operators can deregsiter from a subset of quorums that they are registered for.
+
+## Integrations
+
+Operators register and deregister with the AVS for certain quorums through this contract.
