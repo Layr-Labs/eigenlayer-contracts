@@ -246,4 +246,7 @@ interface IStrategyManager {
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
+    function numWithdrawalsQueued(address staker) external view returns (uint256);
 }

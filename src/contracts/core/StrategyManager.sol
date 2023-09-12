@@ -746,7 +746,7 @@ contract StrategyManager is
      * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
     function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens)
-        onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal
+        internal onlyNotFrozen(queuedWithdrawal.delegatedAddress)
     {
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);

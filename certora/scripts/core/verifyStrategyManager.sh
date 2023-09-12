@@ -12,7 +12,6 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
     --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
     --optimistic_loop \
-    --send_only \
     --prover_args '-optimisticFallback true' \
     --optimistic_hashing \
     $RULE \

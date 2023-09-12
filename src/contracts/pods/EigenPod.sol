@@ -112,8 +112,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event RestakingActivated(address indexed podOwner);
 
     /// @notice Emitted when ETH is received via the receive fallback
-    event nonBeaconChainETHReceived(uint256 amountReceived);
-    
+    event nonBeaconChainETHReceived(uint256 amountReceived);    
 
     modifier onlyEigenPodManager {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -655,6 +654,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to 
         * the nearest ETH, effectively calculating the floor of amountGwei.
         */
+        // slither-disable-next-line divide-before-multiply
         uint64 effectiveBalanceGwei = uint64((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
