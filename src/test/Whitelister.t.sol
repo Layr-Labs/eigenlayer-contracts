@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+// // SPDX-License-Identifier: BUSL-1.1
+// pragma solidity =0.8.12;
 
 // import "../../src/contracts/interfaces/IStrategyManager.sol";
 // import "../../src/contracts/interfaces/IStrategy.sol";
@@ -9,6 +9,8 @@ pragma solidity =0.8.12;
 
 // import "../../src/test/mocks/ServiceManagerMock.sol";
 // import "../../src/test/mocks/PublicKeyCompendiumMock.sol";
+
+
 
 // import "../../script/whitelist/ERC20PresetMinterPauser.sol";
 
@@ -93,7 +95,7 @@ pragma solidity =0.8.12;
 
 
 //         dummyServiceManager  = new ServiceManagerMock(slasher);
-//         blsRegistryImplementation = new BLSRegistry(strategyManager, dummyServiceManager, dummyCompendium);
+//         blsRegistryImplementation = new BLSRegistry(strategyManager, dummyServiceManager, 2, dummyCompendium);
 
 //         uint256[] memory _quorumBips = new uint256[](2);
 //         // split 60% ETH quorum, 40% EIGEN quorum
@@ -134,16 +136,16 @@ pragma solidity =0.8.12;
 //         cheats.stopPrank();
 //     }
 
-    // function testWhitelistingOperator(address operator) public fuzzedAddress(operator) {
-    //     cheats.startPrank(operator);
-    //     IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-    //         earningsReceiver: operator,
-    //         delegationApprover: address(0),
-    //         stakerOptOutWindowBlocks: 0
-    //     });
-    //     string memory emptyStringForMetadataURI;
-    //     delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-    //     cheats.stopPrank();
+//     function testWhitelistingOperator(address operator) public fuzzedAddress(operator) {
+//         cheats.startPrank(operator);
+//         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+//             earningsReceiver: operator,
+//             delegationApprover: address(0),
+//             stakerOptOutWindowBlocks: 0
+//         });
+//         string memory emptyStringForMetadataURI;
+//         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+//         cheats.stopPrank();
 
 //         cheats.startPrank(theMultiSig);
 //         whiteLister.whitelist(operator);
@@ -173,16 +175,16 @@ pragma solidity =0.8.12;
 //         Staker(staker).callAddress(address(strategyManager), data);
 //     }
 
-    // function testNonWhitelistedOperatorRegistration(BN254.G1Point memory pk, string memory socket ) external {
-    //     cheats.startPrank(operator);
-    //     IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-    //         earningsReceiver: operator,
-    //         delegationApprover: address(0),
-    //         stakerOptOutWindowBlocks: 0
-    //     });
-    //     string memory emptyStringForMetadataURI;
-    //     delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-    //     cheats.stopPrank();
+//     function testNonWhitelistedOperatorRegistration(BN254.G1Point memory pk, string memory socket ) external {
+//         cheats.startPrank(operator);
+//         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+//             earningsReceiver: operator,
+//             delegationApprover: address(0),
+//             stakerOptOutWindowBlocks: 0
+//         });
+//         string memory emptyStringForMetadataURI;
+//         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+//         cheats.stopPrank();
 
 //         cheats.expectRevert(bytes("BLSRegistry._registerOperator: not whitelisted"));
 //         blsRegistry.registerOperator(1, pk, socket);
@@ -196,14 +198,15 @@ pragma solidity =0.8.12;
 //             public  fuzzedAddress(operator)
 //         {
 
-        // address staker = whiteLister.getStaker(operator);
-        // cheats.assume(staker != operator);
-        // IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-        //     earningsReceiver: operator,
-        //     delegationApprover: address(0),
-        //     stakerOptOutWindowBlocks: 0
-        // });
-        // _testRegisterAsOperator(operator, operatorDetails);
+//         address staker = whiteLister.getStaker(operator);
+        
+//         cheats.assume(staker != operator);
+//         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+//             earningsReceiver: operator,
+//             delegationApprover: address(0),
+//             stakerOptOutWindowBlocks: 0
+//         });
+//         _testRegisterAsOperator(operator, operatorDetails);
 
 //         {
 //             cheats.startPrank(theMultiSig);
@@ -225,6 +228,7 @@ pragma solidity =0.8.12;
 //             //delegator-specific information
 //             (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) =
 //                 strategyManager.getDeposits(staker);
+//             emit log_named_uint("delegatorShares of staker", delegatorShares[0]);
 //             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
 //             dataForTestWithdrawal.delegatorShares = delegatorShares;
 
@@ -248,14 +252,12 @@ pragma solidity =0.8.12;
 //             strategyIndexes[0] = 0;
 //             tokensArray[0] = dummyToken;
 //         }
-
 //         _testQueueWithdrawal(
 //             staker,
 //             dataForTestWithdrawal.delegatorStrategies,
 //             dataForTestWithdrawal.delegatorShares,
 //             strategyIndexes
 //         );
-
 //         {
 //             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
 
@@ -273,7 +275,6 @@ pragma solidity =0.8.12;
 //             emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
 //             require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
-
 //         }        
 //     }
 

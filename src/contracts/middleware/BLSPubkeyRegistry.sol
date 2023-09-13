@@ -84,7 +84,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
-        emit OperatorAddedToQuorums(operator, quorumNumbers);
+        emit OperatorRemovedFromQuorums(operator, quorumNumbers);
         return pubkeyHash;
     }
 

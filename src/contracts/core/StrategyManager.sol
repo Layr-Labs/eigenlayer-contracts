@@ -90,27 +90,23 @@ contract StrategyManager is
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
-    modifier onlyNotFrozen(address staker) {
+    function _onlyNotFrozen(address staker) internal {
         require(
             !slasher.isFrozen(staker),
             "StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
         );
-        _;
     }
 
-    modifier onlyFrozen(address staker) {
+    function _onlyFrozen(address staker) internal {
         require(slasher.isFrozen(staker), "StrategyManager.onlyFrozen: staker has not been frozen");
-        _;
     }
 
-    modifier onlyEigenPodManager {
+    function _onlyEigenPodManager() internal {
         require(address(eigenPodManager) == msg.sender, "StrategyManager.onlyEigenPodManager: not the eigenPodManager");
-        _;
     }
 
-    modifier onlyStrategyWhitelister {
+    function _onlyStrategyWhitelister() internal {
         require(msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
-        _;
     }
 
     modifier onlyStrategiesWhitelistedForDeposit(IStrategy strategy) {
@@ -165,46 +161,29 @@ contract StrategyManager is
      */
     function depositBeaconChainETH(address staker, uint256 amount)
         external
-        onlyEigenPodManager
         onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(staker)
         nonReentrant
     {
+        _onlyEigenPodManager();
+        _onlyNotFrozen(staker);
         // add shares for the enshrined beacon chain ETH strategy
         _addShares(staker, beaconChainETHStrategy, amount);
     }
 
     /**
-     * @notice Records an overcommitment event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
-     * @param overcommittedPodOwner is the pod owner to be slashed
+     * @notice Records a beacon chain balance update event on behalf of a staker. The staker's beaconChainETH shares are decremented by `amount`.
+     * @param podOwner is the pod owner whose beaconchain ETH balance is being updated,
      * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param amount is the amount to decrement the slashedAddress's beaconChainETHStrategy shares
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Only callable by EigenPodManager.
      */
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external
-        onlyEigenPodManager
         nonReentrant
     {
-        // get `overcommittedPodOwner`'s shares in the enshrined beacon chain ETH strategy
-        uint256 userShares = stakerStrategyShares[overcommittedPodOwner][beaconChainETHStrategy];
-        // if the amount exceeds the user's shares, then record it as an amount to be "paid off" when the user completes a withdrawal
-        if (amount > userShares) {
-            uint256 debt = amount - userShares;
-            beaconChainETHSharesToDecrementOnWithdrawal[overcommittedPodOwner] += debt;
-            amount -= debt;
-        }
-        // removes shares for the enshrined beacon chain ETH strategy
-        if (amount != 0) {
-            _removeShares(overcommittedPodOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, amount);            
-        }
-        // create array wrappers for call to DelegationManager
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = beaconChainETHStrategy;
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = amount;
-        // modify delegated shares accordingly, if applicable
-        delegation.decreaseDelegatedShares(overcommittedPodOwner, strategies, shareAmounts);
+        _onlyEigenPodManager();
+        // remove or add shares for the enshrined beacon chain ETH strategy, and update delegated shares.
+        _updateSharesToReflectBeaconChainETHBalance(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**
@@ -222,10 +201,10 @@ contract StrategyManager is
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(msg.sender)
         nonReentrant
         returns (uint256 shares)
     {
+        _onlyNotFrozen(msg.sender);
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
@@ -260,23 +239,24 @@ contract StrategyManager is
     )
         external
         onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(staker)
         nonReentrant
         returns (uint256 shares)
     {
+        _onlyNotFrozen(staker);
         require(
             expiry >= block.timestamp,
             "StrategyManager.depositIntoStrategyWithSignature: signature expired"
         );
-        // calculate struct hash, then increment `staker`'s nonce
+        // store the `staker`'s nonce in memory, then increment it
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
         unchecked {
             nonces[staker] = nonce + 1;
         }
 
         // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        // bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), 
+            keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry))));
 
         /**
          * check validity of signature:
@@ -308,10 +288,10 @@ contract StrategyManager is
     function forceTotalWithdrawal(address staker) external
         onlyDelegationManager
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(staker)
         nonReentrant
         returns (bytes32)
     {
+        _onlyNotFrozen(staker);
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
         uint256[] memory shares = new uint256[](strategiesLength);
@@ -363,10 +343,10 @@ contract StrategyManager is
     )
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(msg.sender)
         nonReentrant
         returns (bytes32)
     {
+        _onlyNotFrozen(msg.sender);
         return _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer, undelegateIfPossible);
     }
 
@@ -442,9 +422,9 @@ contract StrategyManager is
     )
         external
         onlyOwner
-        onlyFrozen(slashedAddress)
         nonReentrant
     {
+        _onlyFrozen(slashedAddress);
         require(tokens.length == strategies.length, "StrategyManager.slashShares: input length mismatch");
         uint256 strategyIndexIndex;
         uint256 strategiesLength = strategies.length;
@@ -459,7 +439,7 @@ contract StrategyManager is
 
             if (strategies[i] == beaconChainETHStrategy) {
                  //withdraw the beaconChainETH to the recipient
-                _withdrawBeaconChainETH(slashedAddress, recipient, shareAmounts[i]);
+                eigenPodManager.withdrawRestakedBeaconChainETH(slashedAddress, recipient, shareAmounts[i]);
             }
             else {
                 // withdraw the shares and send funds to the recipient
@@ -489,9 +469,9 @@ contract StrategyManager is
     function slashQueuedWithdrawal(address recipient, QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256[] calldata indicesToSkip)
         external
         onlyOwner
-        onlyFrozen(queuedWithdrawal.delegatedAddress)
         nonReentrant
     {
+        _onlyFrozen(queuedWithdrawal.delegatedAddress);
         require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.slashQueuedWithdrawal: input length mismatch");
 
         // find the withdrawalRoot
@@ -519,7 +499,7 @@ contract StrategyManager is
             } else {
                 if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy){
                      //withdraw the beaconChainETH to the recipient
-                    _withdrawBeaconChainETH(queuedWithdrawal.depositor, recipient, queuedWithdrawal.shares[i]);
+                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, recipient, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the recipient
                     queuedWithdrawal.strategies[i].withdraw(recipient, tokens[i], queuedWithdrawal.shares[i]);
@@ -551,7 +531,8 @@ contract StrategyManager is
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
     */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister {
+    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external {
+        _onlyStrategyWhitelister();
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength;) {
             // change storage and emit event only if strategy is not already in whitelist
@@ -569,7 +550,8 @@ contract StrategyManager is
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
     */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister {
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external {
+        _onlyStrategyWhitelister();
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
             // change storage and emit event only if strategy is already in whitelist
@@ -755,8 +737,18 @@ contract StrategyManager is
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal including Beacon Chain ETH and other tokens");
                 require(shares[i] % GWEI_TO_WEI == 0,
                     "StrategyManager.queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei");
-            }   
+                /**
+                * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
+                * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.  
+                * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in 
+                * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator 
+                * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares' 
+                * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
+                */         
+                eigenPodManager.decrementWithdrawableRestakedExecutionLayerGwei(msg.sender, shares[i]);   
 
+            }
+            
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
             if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
@@ -831,8 +823,9 @@ contract StrategyManager is
      * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
     function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens)
-        onlyNotFrozen(queuedWithdrawal.delegatedAddress) internal
+        internal
     {
+        _onlyNotFrozen(queuedWithdrawal.delegatedAddress);
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
 
@@ -841,6 +834,7 @@ contract StrategyManager is
             withdrawalRootPending[withdrawalRoot],
             "StrategyManager.completeQueuedWithdrawal: withdrawal is not pending"
         );
+
 
         require(
             slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
@@ -864,14 +858,15 @@ contract StrategyManager is
         // store length for gas savings
         uint256 strategiesLength = queuedWithdrawal.strategies.length;
         // if the withdrawer has flagged to receive the funds as tokens, withdraw from strategies
+
         if (receiveAsTokens) {
             require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.completeQueuedWithdrawal: input length mismatch");
             // actually withdraw the funds
             for (uint256 i = 0; i < strategiesLength;) {
                 if (queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
 
-                    // if the strategy is the beaconchaineth strat, then withdraw through the EigenPod flow
-                    _withdrawBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
+                    // if the strategy is the beaconchaineth strategy, then withdraw through the ETH from the EigenPod
+                    eigenPodManager.withdrawRestakedBeaconChainETH(queuedWithdrawal.depositor, msg.sender, queuedWithdrawal.shares[i]);
                 } else {
                     // tell the strategy to send the appropriate amount of funds to the depositor
                     queuedWithdrawal.strategies[i].withdraw(
@@ -886,6 +881,10 @@ contract StrategyManager is
             // else increase their shares
             for (uint256 i = 0; i < strategiesLength;) {
                 _addShares(msg.sender, queuedWithdrawal.strategies[i], queuedWithdrawal.shares[i]);
+                if(queuedWithdrawal.strategies[i] == beaconChainETHStrategy) {
+                    //increase the withdrawableRestakedExecutionLayerGwei so that shares and withdrawableRestakedExecutionLayerGwei in the pod are in sync.
+                    eigenPodManager.incrementWithdrawableRestakedExecutionLayerGwei(queuedWithdrawal.depositor, queuedWithdrawal.shares[i]);
+                }
                 unchecked {
                     ++i;
                 }
@@ -899,34 +898,10 @@ contract StrategyManager is
      * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
      * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
      */
-    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
+    function _undelegate(address depositor) internal {
+        _onlyNotFrozen(depositor);
         require(stakerStrategyList[depositor].length == 0, "StrategyManager._undelegate: depositor has active deposits");
         delegation.undelegate(depositor);
-    }
-
-    /*
-     * @notice Withdraws `amount` of virtual 'beaconChainETH' shares from `staker`, with any successfully withdrawn funds going to `recipient`.
-     * @param staker The address whose 'beaconChainETH' shares will be decremented
-     * @param recipient Passed on as the recipient input to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
-     * @param amount The amount of virtual 'beaconChainETH' shares to be 'withdrawn'
-     * @dev First, the amount is drawn-down by any applicable 'beaconChainETHSharesToDecrementOnWithdrawal' that the staker has, 
-     * before passing any remaining amount (if applicable) onto a call to the `eigenPodManager.withdrawRestakedBeaconChainETH` function.
-    */
-    function _withdrawBeaconChainETH(address staker, address recipient, uint256 amount) internal {
-        uint256 amountToDecrement = beaconChainETHSharesToDecrementOnWithdrawal[staker];
-        if (amountToDecrement != 0) {
-            if (amount > amountToDecrement) {
-                beaconChainETHSharesToDecrementOnWithdrawal[staker] = 0;
-                // decrease `amount` appropriately, so less is sent at the end
-                amount -= amountToDecrement;
-            } else {
-                beaconChainETHSharesToDecrementOnWithdrawal[staker] = (amountToDecrement - amount);
-                // rather than setting `amount` to 0, just return early
-                return;
-            }
-        }
-        // withdraw the beaconChainETH to the recipient
-        eigenPodManager.withdrawRestakedBeaconChainETH(staker, recipient, amount);
     }
 
     /**
@@ -946,6 +921,30 @@ contract StrategyManager is
     function _setStrategyWhitelister(address newStrategyWhitelister) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
+    }
+
+
+    /**
+     * @notice internal function for updating strategy manager's accounting of shares for the beacon chain ETH strategy
+        * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
+     */
+    function _updateSharesToReflectBeaconChainETHBalance(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) internal {
+        
+        if (sharesDelta < 0) {
+                IStrategy[] memory strategies = new IStrategy[](1);
+                strategies[0] = beaconChainETHStrategy;
+                uint256[] memory shareAmounts = new uint256[](1);
+                shareAmounts[0] = uint256(-sharesDelta);
+
+                //if change in shares is negative, remove the shares
+                _removeShares(podOwner, beaconChainETHStrategyIndex, beaconChainETHStrategy, shareAmounts[0]);
+                delegation.decreaseDelegatedShares(podOwner, strategies, shareAmounts);
+        }   else {
+                uint256 shareAmount = uint256(sharesDelta);
+                //if change in shares is positive, add the shares
+                _addShares(podOwner, beaconChainETHStrategy, shareAmount);
+                delegation.increaseDelegatedShares(podOwner, beaconChainETHStrategy, shareAmount);
+            }      
     }
 
     // VIEW FUNCTIONS
