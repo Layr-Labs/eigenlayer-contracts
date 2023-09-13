@@ -48,7 +48,11 @@ struct OperatorSetParam {
 }
 ```
 
-If any of the quorums is full (number of operators in it is `maxOperatorCount`), the operator must provide the public key of an operator which it has more than `kickBIPsOfOperatorStake` than (measured in basis points) and that out has less than `kickBIPsOfTotalStake` than the entire quorum's stake. The provided operators are deregistered from the respective quorums that are full which the registering operator is registering for. Since the operators being kicked may not be the operators with the least stake, the RegistryCoordinator requires that the provided operators are signed off by a permissioned address called a `churnApprover`. Note that the quorum operator caps are due to the cost of BLS signature (dis)aggregation onchain.
+If any of the quorums is full (number of operators in it is `maxOperatorCount`), the newly registering operator must provide the public key of another operator to be kicked. The new and kicked operator must satisfy the two conditions:
+1. the new operator has an amount of stake that is at least `kickBIPsOfOperatorStake` multiple of the kicked operator's stake
+2. the kicked operator has less than `kickBIPsOfTotalStake` fraction of the quorum's total stake
+
+The provided operators are deregistered from the respective quorums that are full which the registering operator is registering for. Since the operators being kicked may not be the operators with the least stake, the RegistryCoordinator requires that the provided operators are signed off by a permissioned address called a `churnApprover`. Note that the quorum operator caps are due to the cost of BLS signature (dis)aggregation onchain.
 
 Operators register with a list of 
 ```
