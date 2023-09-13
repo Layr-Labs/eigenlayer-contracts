@@ -12,9 +12,9 @@ When registering the operator must provide
 3. The socket (ip:port) at which AVS offchain actors should make requests
 
 The RegistryCoordinator then
-1. Registers their BLS public key with the [BLSPubkeyRegistry](BLSPubkeyRegistry.md) and notes the hash of their public key as their operator id
-2. Registers them with the StakeRegistry 
-3. Registers them with the IndexRegistry
+1. Registers the operator's BLS public key with the [BLSPubkeyRegistry](BLSPubkeyRegistry.md) and notes the hash of their public key as their operator id
+2. Registers the operator with the StakeRegistry 
+3. Registers the operator with the IndexRegistry
 4. Stores the quorum bitmap of the operator using the following struct:
 ```
 /**
@@ -37,9 +37,9 @@ The following struct is defined for each quorum
 ```
 /**
  * @notice Data structure for storing operator set params for a given quorum. Specifically the 
- * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum,
- * `kickBIPsOfOperatorStake` is the basis points of a new operator needs to have of an operator they are trying to kick from the quorum,
- * and `kickBIPsOfTotalStake` is the basis points of the total stake of the quorum that an operator needs to be below to be kicked.
+ * `maxOperatorCount` is the maximum number of operators that can be registered for the quorum
+ * `kickBIPsOfOperatorStake` is the multiple (in basis points) of stake that a new operator must have, as compared the operator that they are kicking out of the quorum 
+ * `kickBIPsOfTotalStake` is the fraction (in basis points) of the total stake of the quorum that an operator needs to be below to be kicked.
  */ 
 struct OperatorSetParam {
     uint32 maxOperatorCount;
@@ -48,7 +48,7 @@ struct OperatorSetParam {
 }
 ```
 
-If any of the quorums is full (number of operators in it is `maxOperatorCount`), the operator must provide the public key of an operator which it has more than `kickBIPsOfOperatorStake` than (measured in basis points) and that out has less than `kickBIPsOfTotalStake` than the entire quorum's stake. The provided operators are deregistered from the respective quorums that are full which the registering operator is registering for. Since the operators being kciked may not be the operators with the least stake, the RegistryCoordinator requires that the provided operators are signed off by a permissioned address called a `churnApprover`. Note that the quorum operator caps are due to the cost of BLS signature (dis)aggregation onchain.
+If any of the quorums is full (number of operators in it is `maxOperatorCount`), the operator must provide the public key of an operator which it has more than `kickBIPsOfOperatorStake` than (measured in basis points) and that out has less than `kickBIPsOfTotalStake` than the entire quorum's stake. The provided operators are deregistered from the respective quorums that are full which the registering operator is registering for. Since the operators being kicked may not be the operators with the least stake, the RegistryCoordinator requires that the provided operators are signed off by a permissioned address called a `churnApprover`. Note that the quorum operator caps are due to the cost of BLS signature (dis)aggregation onchain.
 
 Operators register with a list of 
 ```
@@ -62,19 +62,21 @@ struct OperatorKickParam {
     BN254.G1Point pubkey; 
 }
 ```
-For each quorum they need to kick operators from. This list, along with the id of registering operator needs to be signed (along with a salt and expiry) by an actor known as the *churnApprover* run by EigenLabs. Operators will make a request to the churnApprover offchain before registering for their signature, if needed.
+For each quorum they need to kick operators from. This list, along with the id of registering operator needs to be signed (along with a salt and expiry) by an actor known as the *churnApprover*. Operators will make a request to the churnApprover offchain before registering for their signature, if needed.
 
 ### deregisterOperator
 
 When deregistering, an operator provides
 1. The quorums they registered for
 2. Their BLS public key
-3. The ids of the operators that must swap indices with the deregistering operator in the IndexRegistry
+3. The ids of the operators that must swap indices with the [deregistering operator in the IndexRegistry](./IndexRegistry.md#deregisteroperator).
 
 The RegistryCoordinator then deregisters the operator with the BLSPubkeyRegistry, StakeRegistry, and IndexRegistry. It then ends the block range for its stored quorum bitmap for the operator.
 
-Operators can deregsiter from a subset of quorums that they are registered for.
+Operators can deregister from a subset of quorums that they are registered for.
 
 ## Integrations
 
 Operators register and deregister with the AVS for certain quorums through this contract.
+
+EigenLabs intends to run the EigenDA churnApprover.

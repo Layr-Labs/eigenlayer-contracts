@@ -1,10 +1,10 @@
 # BLSPublicKeyCompendium
 
-This contract is shared by all AVSs and serves a single place for operators to connect their execution layer address to a bn254 public key. When operators opt into AVSs, the AVS contracts can read from the BLSPublicKeyCompendium in order to get the BLS public key of the operator. This contract also prevents against [rogue key attacks](https://xn--2-umb.com/22/bls-signatures/#rogue-key-attack).
+This contract is shared by all AVSs and serves as a single place for operators to connect their execution layer address to a bn254 public key. When operators opt into AVSs, the AVS contracts can read from the BLSPublicKeyCompendium in order to get the BLS public key of the operator. This contract also prevents [rogue key attacks](https://xn--2-umb.com/22/bls-signatures/#rogue-key-attack).
 
 ## Flows
 
-There is only one flow for this contract, which is a call from an operator to register their execution layer address with thier bn254 public key.
+There is only one flow for this contract, which is a call from an operator to register a bn254 public key as controlled by their execution layer address.
 
 ### Cryptographic Verification
 
@@ -22,4 +22,4 @@ We do this particular verification because aggregation of public keys and hasing
 
 ### Integrations
 
-The contract stores a map from the execution layer address to the hash of the $\mathbb{G}_1$ public key and the other way around. This means that the $\mathbb{G}_1$ public key needs to sent in calldata onchain, hashed, and verified when AVSs want to do operations with individual operator public keys (remember to link here).
+The contract stores a map from the execution layer address to the hash of the $\mathbb{G}_1$ public key and the other way around. This means that the $\mathbb{G}_1$ public key needs to be sent in calldata onchain, hashed, and verified when AVSs want to do operations with individual operator public keys (remember to link here).
