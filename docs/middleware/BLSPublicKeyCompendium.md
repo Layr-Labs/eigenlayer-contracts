@@ -18,6 +18,8 @@ The contract then
 
 This verifies that the operator owns the secret key corresponding to the public keys and that the $pk_1$ and $pk_2$ have the same discrete logarithm according to their respective curve's generators.
 
+We do this particular verification because aggregation of public keys and hasing to the curve is cheap in $\mathbb{G}_1$ on ethereum, and the above scheme allows for both! (aggregation to be done in the [BLSSignatureChecker](./BLSSignatureChecker.md))
+
 ### Integrations
 
 The contract stores a map from the execution layer address to the hash of the $\mathbb{G}_1$ public key and the other way around. This means that the $\mathbb{G}_1$ public key needs to sent in calldata onchain, hashed, and verified when AVSs want to do operations with individual operator public keys (remember to link here).
