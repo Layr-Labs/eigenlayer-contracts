@@ -119,13 +119,16 @@ library BeaconChainProofs {
         bytes slotProof;
         bytes executionPayloadProof;
         bytes timestampProof;
+        bytes historicalSummaryBlockRootProof;
         uint64 blockHeaderRootIndex;
+        uint64 historicalSummaryIndex;
         uint64 withdrawalIndex;
         bytes32 blockHeaderRoot;
         bytes32 blockBodyRoot;
         bytes32 slotRoot;
         bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
+        bool proveHistoricalRoot;
     }
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
@@ -247,7 +250,8 @@ library BeaconChainProofs {
     ) internal view {
         require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, latestBlockHeaderRoot, LATEST_BLOCK_HEADER_ROOT_INDEX), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
+        require(Merkle.verifyInclusionSha256(proof, beaconStateRoot, latestBlockHeaderRoot, LATEST_BLOCK_HEADER_ROOT_INDEX),
+            "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
     }
 
     /**
@@ -278,12 +282,18 @@ library BeaconChainProofs {
         require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
+        // TODO: make historical proofs actually work. this is not compelete and does not function correctly right now
+        // @Sidu28 please delete this note once you've actually implemented this
         if(proofs.proveHistoricalRoot){
+            //calculate the blockHeaderRoot Index for a block that is very old
             uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
-                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
-        }
+                                                uint256(proofs.historicalSummaryIndex) << (1 + (BLOCK_ROOTS_TREE_HEIGHT)) |
+                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | 
+                                                uint256(proofs.blockHeaderRootIndex);
 
-        {
+            require(Merkle.verifyInclusionSha256(proofs.historicalSummaryBlockRootProof, beaconStateRoot, proofs.blockHeaderRoot, historicalBlockHeaderIndex),
+                "BeaconChainProofs.verifyWithdrawalProofs: invalid historical summary proof");
+        } else {
             /**
             * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
             * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree

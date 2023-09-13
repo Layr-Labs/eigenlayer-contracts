@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/ISlasher.sol";
+import "../interfaces/IEigenPodManager.sol";
 
 /**
  * @title Storage variables for the `DelegationManager` contract.
@@ -65,8 +66,12 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) {
+
+    IEigenPodManager public immutable eigenPodManager;
+
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
+        eigenPodManager = _eigenPodManager;
         slasher = _slasher;
     }
 

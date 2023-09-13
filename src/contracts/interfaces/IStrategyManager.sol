@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./ISlasher.sol";
 import "./IDelegationManager.sol";
+import "./IEigenPodManager.sol";
 
 /**
  * @title Interface for the primary entrypoint for funds into EigenLayer.
@@ -48,25 +49,6 @@ interface IStrategyManager {
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         returns (uint256 shares);
-
-
-    /**
-     * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
-     * @param staker is the entity that is restaking in eigenlayer,
-     * @param amount is the amount of beaconchain ETH being restaked,
-     * @dev Only callable by EigenPodManager.
-     */
-    function depositBeaconChainETH(address staker, uint256 amount) external;
-
-    /**
-     * @notice Records an update in beacon chain strategy shares in the strategy manager
-     * @param podOwner is the pod owner whose shares are to be updated,
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
-        external;
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -132,10 +114,6 @@ interface IStrategyManager {
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
      * `stakerStrategyList` to lowest index
-     * @dev Note that if the withdrawal includes shares in the enshrined 'beaconChainETH' strategy, then it must *only* include shares in this strategy, and
-     * `withdrawer` must match the caller's address. The first condition is because slashing of queued withdrawals cannot be guaranteed 
-     * for Beacon Chain ETH (since we cannot trigger a withdrawal from the beacon chain through a smart contract) and the second condition is because shares in
-     * the enshrined 'beaconChainETH' strategy technically represent non-fungible positions (deposits to the Beacon Chain, each pointed at a specific EigenPod).
      */
     function queueWithdrawal(
         uint256[] calldata strategyIndexes,
@@ -263,9 +241,12 @@ interface IStrategyManager {
     /// @notice Returns the single, central Slasher contract of EigenLayer
     function slasher() external view returns (ISlasher);
 
-    /// @notice returns the enshrined, virtual 'beaconChainETH' Strategy
-    function beaconChainETHStrategy() external view returns (IStrategy);
+    /// @notice Returns the EigenPodManager contract of EigenLayer
+    function eigenPodManager() external view returns (IEigenPodManager);
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
+    function numWithdrawalsQueued(address staker) external view returns (uint256);
 }

@@ -53,6 +53,7 @@ methods {
     function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
+    function eigenPodManager() external returns (address) envfree;
 }
 
 /*
@@ -107,11 +108,9 @@ The exception is the zero address, since by default an address is 'delegated to 
 //definition notDelegated -- defined as delegatedTo(staker) == address(0), likewise returned by !isDelegated(staker)--
 
 // verify that anyone who is registered as an operator is also always delegated to themselves
+// the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
 invariant operatorsAlwaysDelegatedToSelf(address operator)
-    isOperator(operator) <=> delegatedTo(operator) == operator
-    { preserved {
-        require operator != 0;
-    } }
+    operator != 0 => (isOperator(operator) <=> delegatedTo(operator) == operator);
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
@@ -140,8 +139,8 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     if (f.selector == sig:undelegate(address).selector) {
         address toUndelegate;
         undelegate(e, toUndelegate);
-        // either the `strategyManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
-        if (e.msg.sender == strategyManager() && toUndelegate == staker) {
+        // either the `strategyManager` or `eigenPodManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
+        if ((e.msg.sender == strategyManager() || e.msg.sender == eigenPodManager()) && toUndelegate == staker) {
             assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
         // or the staker's delegation should have remained the same
         } else {
