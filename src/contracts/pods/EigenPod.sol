@@ -401,8 +401,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
-       BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
-
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
 
         BeaconChainProofs.verifyValidatorFields(
             proofs.beaconStateRoot,
@@ -412,7 +411,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         // set the status to active
-       validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
+        validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
 
         emit ValidatorRestaked(validatorIndex);
 
