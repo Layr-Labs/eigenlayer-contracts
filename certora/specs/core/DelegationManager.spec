@@ -53,6 +53,7 @@ methods {
     function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
+    function eigenPodManager() external returns (address) envfree;
 }
 
 /*
@@ -138,8 +139,8 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     if (f.selector == sig:undelegate(address).selector) {
         address toUndelegate;
         undelegate(e, toUndelegate);
-        // either the `strategyManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
-        if (e.msg.sender == strategyManager() && toUndelegate == staker) {
+        // either the `strategyManager` or `eigenPodManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
+        if ((e.msg.sender == strategyManager() || e.msg.sender == eigenPodManager()) && toUndelegate == staker) {
             assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
         // or the staker's delegation should have remained the same
         } else {
