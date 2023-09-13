@@ -29,7 +29,7 @@ import "../../contracts/interfaces/IBeaconChainOracle.sol";
  * - withdrawing eth when withdrawals are initiated
  */
 contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManager {
-    function getBeaconChainStateRoot(uint64 slot) external view returns(bytes32) {}
+    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {}
 
     function pause(uint256 newPausedStatus) external {}    
 
@@ -230,8 +230,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         return address(getPod(podOwner)).code.length > 0;
     }
 
-    function getBeaconChainStateRoot() external view returns(bytes32) {
-        // return beaconChainOracle.getBeaconChainStateRoot();
+    function getBeaconChainStateRootAtTimestamp() external view returns(bytes32) {
+        // return beaconChainOracle.getBeaconChainStateRootAtTimestamp();
     }
 
     function podOwnerShares(address podOwner) external returns (uint256){

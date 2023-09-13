@@ -260,7 +260,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         {
             // verify ETH validator proof
-            bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
+            bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp);
 
             // verify that the provided state root is verified against the oracle-provided latest block header
             BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
@@ -398,7 +398,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 validatorEffectiveBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
 
         // verify ETH validator proof
-        bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRoot(oracleTimestamp);
+        bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
@@ -460,7 +460,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(
             withdrawalProofs.beaconStateRoot,
-            eigenPodManager.getBeaconChainStateRoot(oracleTimestamp),
+            eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp),
             withdrawalProofs.latestBlockHeaderProof
         );
 
