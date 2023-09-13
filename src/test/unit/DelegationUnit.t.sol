@@ -8,6 +8,7 @@ import "forge-std/Test.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
+import "../mocks/EigenPodManagerMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../Delegation.t.sol";
@@ -20,6 +21,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     DelegationManager delegationManagerImplementation;
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
+    EigenPodManagerMock eigenPodManagerMock;
 
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
     uint256 stakerPrivateKey = uint256(123456789);
@@ -58,14 +60,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         _;
     }
 
+    // @notice mapping used to handle duplicate entries in fuzzed address array input
+    mapping(address => uint256) public totalSharesForStrategyInArray;
+
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
 
         slasherMock = new SlasherMock();
         delegationManager = DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         strategyManagerMock = new StrategyManagerMock();
+        eigenPodManagerMock = new EigenPodManagerMock();
 
-        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock);
+        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
 
         cheats.startPrank(eigenLayerProxyAdmin.owner());
         eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation));
@@ -303,6 +309,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         operatorDetails.earningsReceiver = address(0);
         cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    /**
+     * @notice Verifies that a staker cannot call cannot modify their `OperatorDetails` without first registering as an operator
+     * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
+     * invariant that 'operators' are always delegated to themselves
+     */
+    function testCannotModifyOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
+        cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
@@ -602,6 +618,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // deploy a ERC1271MaliciousMock contract that will return an incorrect value when called
         ERC1271MaliciousMock wallet = new ERC1271MaliciousMock();
+
+        // filter fuzzed input, since otherwise we can get a flaky failure here. if the caller itself is the 'delegationApprover'
+        // then we don't even trigger the signature verification call, so we won't get a revert as expected
+        cheats.assume(staker != address(wallet));
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -946,10 +966,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
-    function testCannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
+    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallUndelegateFromNonPermissionedAddress(address caller) public fuzzedAddress(caller) {
         cheats.assume(caller != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(caller != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(caller);
         delegationManager.undelegate(address(this));
     }
@@ -1005,7 +1026,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint256 shares, bool delegateFromStakerToOperator) public {
+    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint128 shares, bool delegateFromStakerToOperator) public {
         // sanity-filtering on fuzzed input length
         cheats.assume(strategies.length <= 64);
         // register *this contract* as an operator
@@ -1040,6 +1061,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegatedSharesBefore[i] = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]);   
             // also construct an array which we'll use in another loop
             sharesInputArray[i] = shares;
+            totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
         }
         cheats.stopPrank();
 
@@ -1053,7 +1075,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]); 
 
             if (delegationManager.isDelegated(staker)) {
-                require(delegatedSharesAfter == delegatedSharesBefore[i] - sharesInputArray[i], "delegated shares did not decrement correctly");
+                require(delegatedSharesAfter == delegatedSharesBefore[i] - totalSharesForStrategyInArray[address(strategies[i])],
+                    "delegated shares did not decrement correctly");
             } else {
                 require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
                 require(delegatedSharesBefore[i] == 0, "nonzero shares delegated to zero address!");
@@ -1061,22 +1084,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
     }
 
-    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
+    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallIncreaseDelegatedSharesFromNonPermissionedAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(operator != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
 
-    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallDecreaseDelegatedSharesFromNonStrategyManagerAddress(
+    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    function testCannotCallDecreaseDelegatedSharesFromNonPermissionedAddress(
         address operator,  
         IStrategy[] memory strategies,  
         uint256[] memory shareAmounts
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
-        cheats.expectRevert(bytes("onlyStrategyManager"));
+        cheats.assume(operator != address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
@@ -1187,7 +1212,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
         emit ForceTotalWithdrawalCalled(staker);
-        bytes32 returnValue = delegationManager.forceUndelegation(staker);
+        (bytes32 returnValue) = delegationManager.forceUndelegation(staker);
         // check that the return value is empty, as specified in the mock contract
         require(returnValue == bytes32(uint256(0)), "mock contract returned wrong return value");
         cheats.stopPrank();

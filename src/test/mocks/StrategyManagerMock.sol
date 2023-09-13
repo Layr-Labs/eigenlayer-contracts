@@ -27,6 +27,9 @@ contract StrategyManagerMock is
     IEigenPodManager public eigenPodManager;
     ISlasher public slasher;
 
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
+    mapping(address => uint256) public numWithdrawalsQueued;
+
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
        delegation = _delegation;

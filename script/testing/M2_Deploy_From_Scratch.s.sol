@@ -32,8 +32,8 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/M1_Deploy.s.sol:Deployer_M1 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
-contract Deployer_M1 is Script, Test {
+// forge script script/testing/M2_Deploy_From_Scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- M2_deploy_from_scratch.anvil.config.json
+contract Deployer_M2 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // struct used to encode token info in config file
@@ -44,7 +44,7 @@ contract Deployer_M1 is Script, Test {
         string tokenSymbol;
     }
 
-    string public deployConfigPath = string(bytes("script/testing/M2_deploy_from_scratch.config.json"));
+    string public deployConfigPath;
 
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;
@@ -92,12 +92,13 @@ contract Deployer_M1 is Script, Test {
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
 
-    function run() external {
+    function run(string memory configFile) external {
         // read and log the chainID
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
 
         // READ JSON CONFIG DATA
+        deployConfigPath = string(bytes(string.concat("script/testing/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
 
@@ -181,10 +182,10 @@ contract Deployer_M1 is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -294,7 +295,7 @@ contract Deployer_M1 is Script, Test {
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             vm.serializeAddress(deployed_strategies, strategyConfigs[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
-        string memory deployed_strategies_output = vm.serializeAddress(
+        string memory deployed_strategies_output = strategyConfigs.length == 0 ? "" : vm.serializeAddress(
             deployed_strategies, strategyConfigs[strategyConfigs.length - 1].tokenSymbol,
             address(deployedStrategyArray[strategyConfigs.length - 1])
         );
@@ -331,6 +332,8 @@ contract Deployer_M1 is Script, Test {
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         vm.serializeString(parent_object, chain_info, chain_info_output);
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
+        // TODO: should output to different file depending on configFile passed to run()
+        //       so that we don't override mainnet output by deploying to goerli for eg.
         vm.writeJson(finalJson, "script/output/M2_from_scratch_deployment_data.json");
     }
 

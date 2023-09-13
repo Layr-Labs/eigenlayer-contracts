@@ -119,13 +119,16 @@ library BeaconChainProofs {
         bytes slotProof;
         bytes executionPayloadProof;
         bytes timestampProof;
+        bytes historicalSummaryBlockRootProof;
         uint64 blockHeaderRootIndex;
+        uint64 historicalSummaryIndex;
         uint64 withdrawalIndex;
         bytes32 blockHeaderRoot;
         bytes32 blockBodyRoot;
         bytes32 slotRoot;
         bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
+        bool proveHistoricalRoot;
     }
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
