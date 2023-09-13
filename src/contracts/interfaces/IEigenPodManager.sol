@@ -32,6 +32,8 @@ interface IEigenPodManager is IPausable {
         uint32 withdrawalStartBlock;
         // @notice The operator to which the podOwner was delegated in EigenLayer when the withdrawal was created.
         address delegatedAddress;
+        // @notice The address that can complete the withdrawal and receive the withdrawn funds.
+        address withdrawer;
     }
 
     /**
@@ -42,11 +44,11 @@ interface IEigenPodManager is IPausable {
      */
     struct UndelegationLimboStatus {
         // @notice Whether or not the pod owner is in the "undelegation limbo" mode.
-        bool undelegationLimboActive;
+        bool active;
         // @notice The block at which the pod owner entered "undelegation limbo". Should be zero if `podOwnerIsInUndelegationLimbo` is marked as 'false'
-        uint32 undelegationLimboStartBlock;
+        uint32 startBlock;
         // @notice The address which the pod owner was delegated to at the time that they entered "undelegation limbo".
-        address undelegationLimboDelegatedAddress;
+        address delegatedAddress;
     }
 
     /**
@@ -84,9 +86,10 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
      * @param amountWei The amount of ETH to withdraw.
+     * @param withdrawer The address that can complete the withdrawal and receive the withdrawn funds.
      * @param undelegateIfPossible If marked as 'true', the podOwner will be undelegated from their operator in EigenLayer, if possible.
      */
-    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible) external returns(bytes32);
+    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32);
 
     /**
      * @notice Completes an existing queuedWithdrawal either by sending the ETH to podOwner or allowing the podOwner to re-delegate it

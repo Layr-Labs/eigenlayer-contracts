@@ -1209,6 +1209,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(_podOwner);
         bytes32 withdrawalRoot = eigenPodManager.queueWithdrawal(
             amountWei,
+            _podOwner,
             undelegateIfPossible
         );
         cheats.stopPrank();

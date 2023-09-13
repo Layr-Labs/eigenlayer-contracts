@@ -238,7 +238,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         // return podOwner[podOwner];
     }
 
-    function queueWithdrawal(uint256 amountWei, bool undelegateIfPossible) external returns(bytes32){}
+    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32){}
 
     function forceIntoUndelegationLimbo(address podOwner) external {}
 

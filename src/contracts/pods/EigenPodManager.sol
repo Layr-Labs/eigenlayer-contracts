@@ -227,10 +227,12 @@ contract EigenPodManager is
     /**
      * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
      * @param amountWei The amount of ETH to withdraw.
+     * @param withdrawer The address that can complete the withdrawal and receive the withdrawn funds.
      * @param undelegateIfPossible If marked as 'true', the podOwner will be undelegated from their operator in EigenLayer, if possible.
      */
     function queueWithdrawal(
-        uint256 amountWei, 
+        uint256 amountWei,
+        address withdrawer,
         bool undelegateIfPossible
     ) 
         external
@@ -239,7 +241,7 @@ contract EigenPodManager is
         nonReentrant
         returns(bytes32)
     {
-        return _queueWithdrawal(msg.sender, amountWei, undelegateIfPossible);
+        return _queueWithdrawal(msg.sender, amountWei, withdrawer, undelegateIfPossible);
     }
 
     /**
@@ -291,8 +293,8 @@ contract EigenPodManager is
                     "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
         require(
             slasher.canWithdraw(
-                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboDelegatedAddress,
-                _podOwnerUndelegationLimboStatus[msg.sender].undelegationLimboStartBlock,
+                _podOwnerUndelegationLimboStatus[msg.sender].delegatedAddress,
+                _podOwnerUndelegationLimboStatus[msg.sender].startBlock,
                 middlewareTimesIndex
             ),
             "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
@@ -336,7 +338,7 @@ contract EigenPodManager is
             // or they are in "undelegation limbo" and the operator who they *were* delegated to is frozen
             (
                 isInUndelegationLimbo(slashedPodOwner) &&
-                slasher.isFrozen(_podOwnerUndelegationLimboStatus[slashedPodOwner].undelegationLimboDelegatedAddress)
+                slasher.isFrozen(_podOwnerUndelegationLimboStatus[slashedPodOwner].delegatedAddress)
             ),
             "EigenPodManager.slashShares: cannot slash the specified pod owner"
         );
@@ -407,7 +409,8 @@ contract EigenPodManager is
     // INTERNAL FUNCTIONS
     function _queueWithdrawal(
         address podOwner,
-        uint256 amountWei, 
+        uint256 amountWei,
+        address withdrawer,
         bool undelegateIfPossible
     ) 
         internal
@@ -445,7 +448,8 @@ contract EigenPodManager is
             podOwner: podOwner,
             nonce: nonce,
             withdrawalStartBlock: uint32(block.number),
-            delegatedAddress: delegatedAddress
+            delegatedAddress: delegatedAddress,
+            withdrawer: withdrawer
         });
 
         // If the `staker` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
@@ -492,16 +496,16 @@ contract EigenPodManager is
             "EigenPodManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
         );
 
-        // verify that the caller is the pod owner
+        // verify that the caller is the specified 'withdrawer'
         require(
-            msg.sender == queuedWithdrawal.podOwner,
-            "EigenPodManager._completeQueuedWithdrawal: caller must be podOwner"
+            msg.sender == queuedWithdrawal.withdrawer,
+            "EigenPodManager._completeQueuedWithdrawal: caller must be the withdrawer"
         );
 
         // reset the storage slot in mapping of queued withdrawals
         withdrawalRootPending[withdrawalRoot] = false;
 
-        // withdraw the ETH from the EigenPod
+        // withdraw the ETH from the EigenPod to the caller
         _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
     }
 
@@ -634,9 +638,9 @@ contract EigenPodManager is
             address delegatedAddress = delegationManager.delegatedTo(podOwner);
 
             // store the undelegation limbo details
-            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboActive = true;
-            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboStartBlock = uint32(block.number);
-            _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboDelegatedAddress = delegatedAddress;
+            _podOwnerUndelegationLimboStatus[podOwner].active = true;
+            _podOwnerUndelegationLimboStatus[podOwner].startBlock = uint32(block.number);
+            _podOwnerUndelegationLimboStatus[podOwner].delegatedAddress = delegatedAddress;
 
             // emit event
             emit UndelegationLimboEntered(podOwner);
@@ -718,9 +722,9 @@ contract EigenPodManager is
         return _podOwnerUndelegationLimboStatus[podOwner];
     }
 
-    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
+    // @notice Getter function for `_podOwnerUndelegationLimboStatus.active`.
     function isInUndelegationLimbo(address podOwner) public view returns (bool) {
-        return _podOwnerUndelegationLimboStatus[podOwner].undelegationLimboActive;
+        return _podOwnerUndelegationLimboStatus[podOwner].active;
     }
 
     /**
