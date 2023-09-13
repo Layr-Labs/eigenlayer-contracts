@@ -13,8 +13,8 @@ When registering the operator must provide
 
 The RegistryCoordinator then
 1. Registers the operator's BLS public key with the [BLSPubkeyRegistry](BLSPubkeyRegistry.md) and notes the hash of their public key as their operator id
-2. Registers the operator with the StakeRegistry 
-3. Registers the operator with the IndexRegistry
+2. Registers the operator with the [StakeRegistry](./StakeRegistry.md) 
+3. Registers the operator with the [IndexRegistry](./IndexRegistry.md)
 4. Stores the quorum bitmap of the operator using the following struct:
 ```
 /**
