@@ -38,6 +38,12 @@ A registry coordinator has 1 or more registries connected to it and all of them 
 
 ## TODO: Service Manager
 
+## BLS Signature Checker
+
+At the core of many AVSs on EigenLayer (almost all except those that effect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architechture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
+
+The current implementation of this contract is the [BLSSignatureChecker](./BLSSignatureChecker.md).
+
 ## Further reading
 
 More detailed functional docs have been written on the AVS architechture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is 
