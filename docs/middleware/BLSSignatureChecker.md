@@ -35,7 +35,9 @@ Finally, the contract does a similar check to the [BLSPublicKeyCompendium](./BLS
 - Calculates $\gamma = keccak256(apk, apkG2, sigma)$
 - Verifies the paring $e(\sigma + \gamma apk, [1]_2) = e(H(msgHash) + \gamma[1]_1, apkG2)$
 
-If it checks out, the contract returns the stake that signed the message for each quorum and the hash of the reference block number and the list of public key hashes of the nonsigners for future use.
+More detailed notes exist on the signature check [here](https://geometry.xyz/notebook/Optimized-BLS-multisignatures-on-EVM).
+
+If it checks out, the contract returns the stake that signed the message for each quorum and the hash of the reference block number and the list of public key hashes of the nonsigners for future use. 
 
 ## Integrations
 
