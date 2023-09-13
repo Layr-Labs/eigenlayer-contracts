@@ -240,11 +240,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         external
         onlyStrategyManagerOrEigenPodManager
     {
-        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
-            "DelegationManager.increaseDelegatedShares: only strategyManager or eigenPodManager"
-        
-        );
-        //if the staker is delegated to an operator
+        // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
@@ -266,6 +262,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         external
         onlyStrategyManagerOrEigenPodManager
     {
+        // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
