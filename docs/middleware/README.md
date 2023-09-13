@@ -19,6 +19,12 @@ There are two things that matter in terms of operators’ onchain interaction wi
 
 These two points have been addressed through the Registry Coordinator/Registry architecture.
 
+### Quorums
+
+Before we dive in, we need to define what a quorum is. Quorums are the different divisions of the operator set for an AVS. One can think of a quorum simply being defined by the token staked for that quorum, although [it slightly more complicated than that](./StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS. 
+
+One example of the quorum concept is in EigenDA, where we have a single ETH quorum for which LSTs and native beacon chain ETH are accepted as stake and another quorum for each rollup that wants to stake their own token for security.
+
 ### RegistryCoordinator
 The Registry Coordinator is a contract that is deployed by each AVS. It handles
 - Keeping track of what quorums operators are a part of
