@@ -1,6 +1,6 @@
 # BLSSignatureChecker
 
-This contract is deployed per AVS. It verifies signatures of operators in an efficient way given the rest of the registry architechture. A lot of EigenLayer AVSs can be summarized as a quorum signature on a message and slashing if some quality of that message and other state is true.
+This contract is deployed per AVS. It verifies signatures of operators in an efficient way given the rest of the registry architecture. A lot of EigenLayer AVSs can be summarized as a quorum signature on a message and slashing if some quality of that message and other state is true.
 
 ## Flows
 

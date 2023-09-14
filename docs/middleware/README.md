@@ -1,4 +1,4 @@
-# AVS Smart Contract Architechture
+# AVS Smart Contract Srchitecture
 
 ## Introduction
 
@@ -11,13 +11,13 @@ The EigenLabs dev team has been building out a smart contract architecture for A
 
 ## The Registry Coordinator and Registries 
 
-![Registry Architechture](../images/registry_architechture.png)
+![Registry Architecture](../images/registry_architecture.png)
 
 There are two things that matter in terms of operators’ onchain interaction with AVS contracts:
 - What qualities of operators need to be kept track of onchain? (e.g. stake, BLS pubkeys, etc.)
 - Registration/Deregistration conditions
 
-These two points have been addressed through the Registry Coordinator/Registry architecture.
+These two points have been addressed through the Registry Coordinator/Registry Architecture.
 
 ### Quorums
 
@@ -46,13 +46,13 @@ A registry coordinator has 1 or more registries connected to it and all of them 
 
 ## BLS Signature Checker
 
-At the core of many AVSs on EigenLayer (almost all except those that effect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architechture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
+At the core of many AVSs on EigenLayer (almost all except those that effect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architecture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
 
 The current implementation of this contract is the [BLSSignatureChecker](./BLSSignatureChecker.md).
 
 ## Further reading
 
-More detailed functional docs have been written on the AVS architechture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is 
+More detailed functional docs have been written on the AVS architecture implemented in the middleware contracts. The recommended order for reading the other docs in this folder is 
 
 1. [BLSRegistryCoordinatorWithIndices](./BLSRegistryCoordinatorWithIndices.md)
 2. [BLSPublicKeyCompendium](./BLSPublicKeyCompendium.md) and [BLSPublicKeyRegistry](./BLSPubkeyRegistry.md)
