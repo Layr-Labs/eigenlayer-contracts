@@ -201,7 +201,29 @@ contract StakeRegistryTest is Test {
         stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
     }
 
+    function test_RevertsIf_OperatorAlreadyRegistered_RegisterOperator() public {
+        stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
+        stakeRegistry.updateOperatorStake(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER );
+        vm.prank(SERVICE_MANAGER_OWNER);
+        stakeRegistry.setMinimumStakeForQuorum(DEFAULT_QUORUM_NUMBER, 0);
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(DEFAULT_QUORUM_NUMBER);
+        vm.startPrank(address(registryCoordinatorMock));
+        stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
+        vm.expectRevert();
+        stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
+    }
+
     function test_RevertsIf_NotRegistryCoordinator_RegisterOperator() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(DEFAULT_QUORUM_NUMBER);
+        // expect that it reverts when you register
+        vm.expectRevert(ONLY_REGISTRY_COORDINATOR);
+        vm.prank(address(SERVICE_MANAGER_OWNER));
+        stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
+    }
+
+    function test_RevertsIf_MoreQuorumsThanQuorumCounter_RegisterOperator() public {
         bytes memory quorumNumbers = new bytes(MAX_QUORUMS_TO_REGISTER_FOR+1);
         for (uint i = 0; i < quorumNumbers.length; i++) {
             quorumNumbers[i] = bytes1(uint8(i));
