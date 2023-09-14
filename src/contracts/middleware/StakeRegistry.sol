@@ -457,12 +457,34 @@ contract StakeRegistry is StakeRegistryStorage {
         _totalStakeHistory[quorumNumber].push(_totalStake);
     }
 
+    /**
+     * @dev Hook that is called before any operator registration to insert additional logic.
+     * @param operator The address of the operator to register.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
     function _beforeRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual{} 
 
+    /**
+     * @dev Hook that is called after any operator registration to insert additional logic.
+     * @param operator The address of the operator to register.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
     function _afterRegisterOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
     
+    /**
+     * @dev Hook that is called before any operator deregistration to insert additional logic.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
     function _beforeDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
 
+    /**
+     * @dev Hook that is called after any operator deregistration to insert additional logic.
+     * @param operatorId The id of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
     function _afterDeregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {}
 
     /// @notice Validates that the `operatorStake` was accurate at the given `blockNumber`
