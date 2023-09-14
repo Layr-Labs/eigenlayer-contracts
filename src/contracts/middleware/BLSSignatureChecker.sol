@@ -116,9 +116,11 @@ contract BLSSignatureChecker {
 
                 for (uint i = 0; i < nonSignerStakesAndSignature.nonSignerPubkeys.length; i++) {
                     nonSignerPubkeyHashes[i] = nonSignerStakesAndSignature.nonSignerPubkeys[i].hashG1Point();
-                    // if (i != 0) {
-                    //     require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
-                    // }
+                    
+                    if (i != 0) {
+                        require(uint256(nonSignerPubkeyHashes[i]) > uint256(nonSignerPubkeyHashes[i - 1]), "BLSSignatureChecker.checkSignatures: nonSignerPubkeys not sorted");
+                    }
+
                     nonSignerQuorumBitmaps[i] = 
                         registryCoordinator.getQuorumBitmapByOperatorIdAtBlockNumberByIndex(
                             nonSignerPubkeyHashes[i], 
@@ -130,7 +132,7 @@ contract BLSSignatureChecker {
                     apk = apk.plus(
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
-                            .scalar_mul(
+                            .scalar_mul_tiny(
                                 BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of, TODO: 
                             )
                     );
