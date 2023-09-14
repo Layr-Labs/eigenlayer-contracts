@@ -49,7 +49,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
 
     //TODO: change this to constant in prod
-    IETHPOSDeposit internal immutable ethPOS;
+    IETHPOSDeposit public immutable ethPOS;
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
 

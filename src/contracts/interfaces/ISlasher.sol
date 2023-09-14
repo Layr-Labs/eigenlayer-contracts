@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IStrategyManager.sol";
+import "./IDelegationManager.sol";
+
 /**
  * @title Interface for the primary 'slashing' contract for EigenLayer.
  * @author Layr Labs, Inc.
@@ -76,6 +79,12 @@ interface ISlasher {
      * slash `operator` once `serveUntil` is reached
      */
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;
+
+    /// @notice The StrategyManager contract of EigenLayer
+    function strategyManager() external view returns (IStrategyManager);
+
+    /// @notice The DelegationManager contract of EigenLayer
+    function delegation() external view returns (IDelegationManager);
 
     /**
      * @notice Used to determine whether `staker` is actively 'frozen'. If a staker is frozen, then they are potentially subject to
