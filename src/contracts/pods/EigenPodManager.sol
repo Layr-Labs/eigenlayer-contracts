@@ -698,7 +698,8 @@ contract EigenPodManager is
                     queuedWithdrawal.podOwner,
                     queuedWithdrawal.nonce,
                     queuedWithdrawal.withdrawalStartBlock,
-                    queuedWithdrawal.delegatedAddress
+                    queuedWithdrawal.delegatedAddress,
+                    queuedWithdrawal.withdrawer
                 )
             )
         );
