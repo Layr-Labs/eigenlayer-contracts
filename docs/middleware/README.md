@@ -19,9 +19,11 @@ There are two things that matter in terms of operators’ onchain interaction wi
 
 These two points have been addressed through the Registry Coordinator/Registry Architecture.
 
-### Quorums
+### Definititions
 
-Before we dive in, we need to define what a quorum is. Quorums are the different divisions of the operator set for an AVS. One can think of a quorum simply being defined by the token staked for that quorum, although [it slightly more complicated than that](./StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS. 
+#### Quorums
+
+Quorums are the different divisions of the operator set for an AVS. One can think of a quorum simply being defined by the token staked for that quorum, although [it slightly more complicated than that](./StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS. 
 
 One example of the quorum concept is in EigenDA, where we have a single ETH quorum for which LSTs and native beacon chain ETH are accepted as stake and another quorum for each rollup that wants to stake their own token for security.
 
@@ -36,11 +38,31 @@ The current implementation of this contract is the [BLSRegistryCoordinatorWithIn
 ### Registries
 The registries are contracts that keep track of the attributes of individual operators. For example, we have initially built the 
 - [StakeRegistry](./StakeRegistry.md) which keeps track of the stakes of different operators for different quorums at different times
-- [BLSPubkeyRegistry](./BLSPubkeyRegistry.md) which keeps track of the aggregate public key of different quorums at different times
+- [BLSPubkeyRegistry](./BLSPubkeyRegistry.md) which keeps track of the aggregate public key of different quorums at different times. Note that the AVS contracts use [BLS aggregate signatures](#bls-signature-checker) due to their favorable scalability to large operator sets. 
 - [IndexRegistry](./IndexRegistry.md) which keeps track of an ordered list of the operators in each quorum at different times. (note that this behavior is likely only needed for EigenDA)
 Registries are meant to be read from and indexed by offchain AVS actors (operators and AVS coordinators). 
 
 A registry coordinator has 1 or more registries connected to it and all of them are called when an operator registers or deregisters. They are a plug and play system that are meant to be added to the RegistryCoordinator as needed. AVSs should create registries they need for their purpose.
+
+### Note on (active) block ranges
+
+Note that the registry contract implementations use lists structs similar to the following type (with the `Value` type altered):
+```solidity
+struct ValueUpdateA {
+    Value value;
+    uint32 updateBlockNumber; // when the value started being valid
+    uint32 nextUpdateBlockNumber; // then the value stopped being valid or 0, if the value is still valid
+}
+```
+or
+```solidity
+struct ValueUpdateB {
+    Value value;
+    uint32 toBlockNumber; // when the value expired
+}
+```
+
+These structs, consecutively, are a history of the `Value` over certain ranges of blocks. These are (aptly) called block ranges, and *active* block ranges for the `ValueUpdate` that contains the current block number.
 
 ## TODO: Service Manager
 
