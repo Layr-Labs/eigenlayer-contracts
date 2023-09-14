@@ -51,6 +51,6 @@ An offchain actor can provide a list of operator ids, their corresponding addres
 
 This has more implications after slashing is enabled... TODO
 
-## Integrations
+## Upstream Dependencies
 
-The main integration with the StakeRegistry is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide in a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number,
+The main integration with the StakeRegistry is used by the AVSs [BLSSignautureChecker](./BLSSignatureChecker.md). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide in a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number.

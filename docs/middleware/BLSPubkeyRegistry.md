@@ -31,6 +31,6 @@ The aggregate quorum public key stored in the contract is also overwritten with 
 
 Note that the contract does not check that the quorums that the operator's public key is being subtracted from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
 
-## Integrations 
+## Upstream Dependencies
 
-The main integration with the BLSPubkeyCompendium is used by the AVSs signature checker (TODO: Link docs). An offchain actor provides a public key, a quorum id, and an index in the array of aggregate quorum public key hashes, and the AVS's signature checker verifies that a certain quorum's aggregate public key hash at a certain block number was in fact the hash of the provided public key. Look at `getApkHashForQuorumAtBlockNumberFromIndex`.
+The main integration with the BLSPublicKeyRegistry is used by the AVSs [BLSSignatureChecker](./BLSSignatureChecker.md). An offchain actor provides a public key, a quorum id, and an index in the array of aggregate quorum public key hashes, and the AVS's signature checker verifies that a certain quorum's aggregate public key hash at a certain block number was in fact the hash of the provided public key. Look at `getApkHashForQuorumAtBlockNumberFromIndex`.

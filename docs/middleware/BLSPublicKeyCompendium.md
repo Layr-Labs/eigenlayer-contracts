@@ -1,6 +1,6 @@
 # BLSPublicKeyCompendium
 
-This contract is shared by all AVSs and serves as a single place for operators to connect their execution layer address to a bn254 public key. When operators opt into AVSs, the AVS contracts can read from the BLSPublicKeyCompendium in order to get the BLS public key of the operator. This contract also prevents [rogue key attacks](https://xn--2-umb.com/22/bls-signatures/#rogue-key-attack).
+This contract is shared by all AVSs and serves as a single place for operators to connect their execution layer address to a bn254 public key. This contract also prevents [rogue key attacks](https://xn--2-umb.com/22/bls-signatures/#rogue-key-attack).
 
 ## Flows
 
@@ -20,6 +20,8 @@ This verifies that the operator owns the secret key corresponding to the public 
 
 We do this particular verification because aggregation of public keys and hasing to the curve is cheap in $\mathbb{G}_1$ on ethereum, and the above scheme allows for both! (aggregation to be done in the [BLSSignatureChecker](./BLSSignatureChecker.md)) More detailed notes exist [here](https://geometry.xyz/notebook/Optimized-BLS-multisignatures-on-EVM).
 
-### Integrations
+The contract then stores a map from the execution layer address to the hash of the operator's $\mathbb{G}_1$ public key and the other way around.
 
-The contract stores a map from the execution layer address to the hash of the $\mathbb{G}_1$ public key and the other way around. This means that the $\mathbb{G}_1$ public key needs to be sent in calldata onchain, hashed, and verified when AVSs want to do operations with individual operator public keys (remember to link here).
+### Upstream Dependencies
+
+The [BLSPubkeyRegistry](./BLSPubkeyRegistry.md) looks up the public key hashes in this contract when operators register with a certain public key.

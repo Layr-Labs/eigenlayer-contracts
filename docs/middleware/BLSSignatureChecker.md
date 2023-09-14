@@ -39,6 +39,6 @@ More detailed notes exist on the signature check [here](https://geometry.xyz/not
 
 If it checks out, the contract returns the stake that signed the message for each quorum and the hash of the reference block number and the list of public key hashes of the nonsigners for future use. 
 
-## Integrations
+## Upstream Dependencies
 
-AVS contracts are expected to use this contract's method for their specific tasks. For example, EigenDA uses this function in their contracts when confirming batches of blobs on their DA layer onchain.
+AVSs are expected to use this contract's method for their specific tasks. For example, EigenDA uses this function in their contracts when confirming batches of blobs on their DA layer onchain.

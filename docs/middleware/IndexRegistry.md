@@ -34,6 +34,6 @@ Steps 3 and 4 are done via pushing the above struct to a growing array that is k
 
 Note that the contract does not check that the quorums that the operator is being deregistered from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
 
-## Integrations
+## Upstream Dependencies
 
-Offchain node software makes eth_calls to the BLSOperatorStateRetriever that loop through the global ordered list of to retrieve ordered information about the active operator set for the AVS.
+The [BLSOperatorStateRetriever](./BLSOperatorStateRetriever.md) uses the globally ordered list of all operators every registered for the AVS to serve information about the active operator set for the AVS to offchain nodes.

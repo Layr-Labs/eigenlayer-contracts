@@ -79,7 +79,7 @@ The RegistryCoordinator then deregisters the operator with the BLSPubkeyRegistry
 
 Operators can deregister from a subset of quorums that they are registered for.
 
-## Integrations
+## Upstream Dependencies
 
 Operators register and deregister with the AVS for certain quorums through this contract.
 
