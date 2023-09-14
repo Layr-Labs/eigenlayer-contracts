@@ -87,10 +87,10 @@ interface IDelegationManager {
      */
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
-    /// @notice Emitted whenever an operator's shares are increased for a given strategy
+    /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
-    /// @notice Emitted whenever an operator's shares are decreased for a given list of strategies
+    /// @notice Emitted whenever an operator's shares are decreased for a given list of strategies. Note that shares is the delta in the operator's shares.
     event OperatorSharesDecreased(address indexed operator, address staker, IStrategy[] strategies, uint256[] shares);
 
     /// @notice Emitted when @param staker delegates to @param operator.
