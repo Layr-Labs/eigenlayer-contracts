@@ -47,6 +47,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      */
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
+    /// @notice Emitted whenever an operator's shares are increased for a given strategy
+    event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
+
+    /// @notice Emitted whenever an operator's shares are decreased for a given list of strategies
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy[] strategy, uint256[] shares);
+
     // @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
 
@@ -1007,6 +1013,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         uint256 delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
 
+        if(delegationManager.isDelegated(staker)) {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesIncreased(operator, staker, strategy, shares);        
+        }
+
         cheats.startPrank(address(strategyManagerMock));
         delegationManager.increaseDelegatedShares(staker, strategy, shares);
         cheats.stopPrank();
@@ -1066,8 +1077,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         // for each strategy in `strategies`, decrease delegated shares by `shares`
+        {
+            address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
+            if (delegationManager.isDelegated(staker)) {
+                cheats.expectEmit(true, true, true, true, address(delegationManager));
+                emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies, sharesInputArray);
+            }
+        }
+
         cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(delegationManager.delegatedTo(staker), strategies, sharesInputArray);
+        delegationManager.decreaseDelegatedShares(staker, strategies, sharesInputArray);
         cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
