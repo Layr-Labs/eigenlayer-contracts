@@ -325,7 +325,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * @notice Updates the stake for the operator with `operatorId` for the specified `quorumNumbers`. The total stake
      * for each quorum is updated accordingly in addition to the operator's individual stake history.
      */ 
-    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
+    function _registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) internal {
         // check the operator is registering for only valid quorums
         require(uint8(quorumNumbers[quorumNumbers.length - 1]) < quorumCount, "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _newTotalStakeUpdate;
@@ -364,7 +364,7 @@ contract StakeRegistry is StakeRegistryStorage {
      * the total stake of the quorums specified in `quorumNumbers` will be updated and so will the operator's individual
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
-    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal virtual {
+    function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
         // check the operator is deregistering from only valid quorums
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
