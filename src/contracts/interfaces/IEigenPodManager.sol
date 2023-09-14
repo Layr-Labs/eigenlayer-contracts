@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
@@ -117,6 +119,12 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
     function getPod(address podOwner) external view returns(IEigenPod);
+
+    /// @notice The ETH2 Deposit Contract
+    function ethPOS() external view returns(IETHPOSDeposit);
+
+    /// @notice Beacon proxy to which the EigenPods point
+    function eigenPodBeacon() external view returns(IBeacon);
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
     function beaconChainOracle() external view returns(IBeaconChainOracle);    
