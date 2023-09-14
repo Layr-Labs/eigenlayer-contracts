@@ -1,12 +1,12 @@
 # IndexRegistry
 
-This contract assigns each operator an index (0 indexed) within each of its quorums. If a quorum has $n$ operators, each operator will be assigned an index $0$ through $n-1$. This contract is used for AVSs that need a common ordering among all operators in a quorum that is accessible onchain. For example, this will be used in proofs of custody by EigenDA. This contract also keeps a list of all operators that have every joined the AVS for convenience purposes in offchain software that are out of scope for this document.
+This contract assigns each operator an index (0 indexed) within each of its quorums. If a quorum has $n$ operators, each operator will be assigned an index $0$ through $n-1$. This contract is used for AVSs that need a common ordering among all operators in a quorum that is accessible onchain. For example, this will be used in proofs of custody by EigenDA. This contract also keeps a list of all operators that have ever joined the AVS for convenience purposes in offchain software that are out of scope for this document.
 
 ## Flows
 
 ### registerOperator
 
-The RegistryCoordinator for the AVS makes call to the IndexRegistry to register an operator for a certain set of quorums. The IndexRegistry will the assign the next index in each of the quorums the operator is registering for to the operator storing the following struct:
+The RegistryCoordinator for the AVS makes call to the IndexRegistry to register an operator for a certain set of quorums. The IndexRegistry will assign the next index in each of the quorums the operator is registering for to the operator storing the following struct:
 ```solidity
 // struct used to give definitive ordering to operators at each blockNumber. 
 // NOTE: this struct is slightly abused for also storing the total number of operators for each quorum over time

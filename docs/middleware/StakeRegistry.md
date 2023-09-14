@@ -24,7 +24,7 @@ The owner of the StakeRegistry can modify the set of strategies and they multipl
 
 ### registerOperator
 
-The RegistryCoordinator for the AVS makes call to the StakeRegistry to register an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry calculates a linear combination of the operator's delegated shares of each `strategy` in the quorum and their corresponding `multiplier` to get a `stake`. The contract then stores the the stake in the following struct:
+The RegistryCoordinator for the AVS makes a call to the StakeRegistry to register an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry calculates a linear combination of the operator's delegated shares of each `strategy` in the quorum and their corresponding `multiplier` to get a `stake`. The contract then stores the stake in the following struct:
 ```
 /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
 struct OperatorStakeUpdate {
@@ -41,7 +41,7 @@ For each quorum the operator is a part of.
 
 ### deregisterOperator
 
-The RegistryCoordinator for the AVS makes call to the StakeRegistry to deregister an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry ends the block range of the current `OperatorStakeUpdate` for the operator for the quorum.
+The RegistryCoordinator for the AVS calls the StakeRegistry to deregister an operator for a certain set of quorums. For each of the quorums being registered for, the StakeRegistry ends the block range of the current `OperatorStakeUpdate` for the operator for the quorum.
 
 Note that the contract does not check that the quorums that the operator is being deregistered from are a subset of the quorums the operator is registered for, that logic is expected to be done in the RegistryCoordinator.
 
@@ -53,4 +53,4 @@ This has more implications after slashing is enabled... TODO
 
 ## Upstream Dependencies
 
-The main integration with the StakeRegistry is used by the AVSs [BLSSignautureChecker](./BLSSignatureChecker.md). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide in a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number.
+The main integration with the StakeRegistry is used by the AVSs [BLSSignautureChecker](./BLSSignatureChecker.md). An offchain actor provides an operator id, a quorum id, and an index in the array of the operator's stake updates to verify the stake of an operator at a particular block number. They also provide a quorum id and an index in the array of total stake updates to verify the stake of the entire quorum at a particular block number.

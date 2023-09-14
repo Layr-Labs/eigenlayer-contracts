@@ -66,7 +66,7 @@ struct OperatorKickParam {
     BN254.G1Point pubkey; 
 }
 ```
-For each quorum they need to kick operators from. This list, along with the id of registering operator needs to be signed (along with a salt and expiry) by an actor known as the *churnApprover*. Operators will make a request to the churnApprover offchain before registering for their signature, if needed.
+For each quorum they need to kick operators from. This list, along with the id of the registering operator needs to be signed (along with a salt and expiry) by an actor known as the *churnApprover*. Operators will make a request to the churnApprover offchain before registering for their signature, if needed.
 
 ### deregisterOperator
 

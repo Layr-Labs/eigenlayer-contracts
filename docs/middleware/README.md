@@ -1,8 +1,8 @@
-# AVS Smart Contract Srchitecture
+# AVS Smart Contract Architecture
 
 ## Introduction
 
-EigenLayer AVSs are a new type of protocol that make use of EigenLayer’s restaking primitive. AVSs are different from current chains and other smart contract protocols in that they are validated by EigenLayer operators. There are are 3 specific types of conditions that AVSs implement in smart contracts onchain:
+EigenLayer AVSs are a new type of protocol that makes use of EigenLayer’s restaking primitive. AVSs are different from current chains and other smart contract protocols in that they are validated by EigenLayer operators. There are 3 specific types of conditions that AVSs implement in smart contracts onchain:
 - Registration/Deregistration conditions: What requirements do operators need to have in order to register for/deregister from the AVS?
 - Payment conditions: How much does a certain operator deserve to be paid for their validation? In what form are they paid?
 - Slashing conditions: What behavior is not allowed of operators by the AVS? What exact mechanism should be used to determine this behavior onchain?
@@ -19,11 +19,11 @@ There are two things that matter in terms of operators’ onchain interaction wi
 
 These two points have been addressed through the Registry Coordinator/Registry Architecture.
 
-### Definititions
+### Definitions
 
 #### Quorums
 
-Quorums are the different divisions of the operator set for an AVS. One can think of a quorum simply being defined by the token staked for that quorum, although [it slightly more complicated than that](./StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS. 
+Quorums are the different divisions of the operator set for an AVS. One can think of a quorum being defined by the token staked for that quorum, although [it is slightly more complicated than that](./StakeRegistry.md#definitions). One often wants to make trust assumptions on quorums, but wants many quorums for the same AVS. 
 
 One example of the quorum concept is in EigenDA, where we have a single ETH quorum for which LSTs and native beacon chain ETH are accepted as stake and another quorum for each rollup that wants to stake their own token for security.
 
@@ -68,7 +68,7 @@ These structs, consecutively, are a history of the `Value` over certain ranges o
 
 ## BLS Signature Checker
 
-At the core of many AVSs on EigenLayer (almost all except those that effect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architecture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
+At the core of many AVSs on EigenLayer (almost all except those that affect Ethereum block production) is the verification of a quorum signature of an AVS's operator set on a certain message and slashing if some quality of that message and other state is true. The registry architecture is optimized for making this signature as cheap as possible to verify (it is still relatively expensive).
 
 The current implementation of this contract is the [BLSSignatureChecker](./BLSSignatureChecker.md).
 
