@@ -28,6 +28,7 @@ contract StakeRegistryTest is Test {
     bytes constant internal ALREADY_INITIALIZED = "Initializable: contract is already initialized";
     bytes constant internal ONLY_SERVICE_MANAGER = "VoteWeigherBase.onlyServiceManagerOwner: caller is not the owner of the serviceManager";
     bytes constant internal GREATEST_QUORUM_GT_QUORUM_COUNT = "StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount";
+    bytes constant internal GREATEST_QUORUM_GT_QUORUM_COUNT_DEREGISTER = "StakeRegistry._deregisterOperator: greatest quorumNumber must be less than quorumCount";
     bytes constant internal OPERATOR_INSUFFICIENT_STAKE_FOR_QUORUM = "StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum";
     bytes constant internal LENGTH_MISMATCH = "Registry._initialize: minimumStakeForQuorum length mismatch";
     address constant internal REGISTRY_COORDINATOR = address(uint160(uint256(keccak256("registryCoordinator"))));
@@ -256,11 +257,46 @@ contract StakeRegistryTest is Test {
 
     function test_RevertsIf_NoStakeForOperatorAndQuorumAtBlock_GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber() public {}
 
-    function test_DeregisterOperator() public {}
+    // Check that operator stake is 0 after deregistering
+    function test_DeregisterOperator() public {
+        stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
+        stakeRegistry.updateOperatorStake(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER );
+        vm.prank(SERVICE_MANAGER_OWNER);
+        stakeRegistry.setMinimumStakeForQuorum(DEFAULT_QUORUM_NUMBER, 0);
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(DEFAULT_QUORUM_NUMBER);
+        vm.prank(address(registryCoordinatorMock));
+        stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
+        vm.prank(address(registryCoordinatorMock));
+        stakeRegistry.deregisterOperator(DEFAULT_OPERATOR_ID, quorumNumbers);
+        uint256 stake = stakeRegistry.getCurrentOperatorStakeForQuorum(DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER);
+        assertEq(stake, 0);
+    }
     
-    function test_RevertsIf_NotRegistryCoordinator_DeregisterOperator() public {}
+    function test_RevertsIf_NotRegistryCoordinator_DeregisterOperator() public {
+        stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
+        stakeRegistry.updateOperatorStake(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, DEFAULT_QUORUM_NUMBER );
+        vm.prank(SERVICE_MANAGER_OWNER);
+        stakeRegistry.setMinimumStakeForQuorum(DEFAULT_QUORUM_NUMBER, 0);
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(DEFAULT_QUORUM_NUMBER);
+        vm.prank(address(registryCoordinatorMock));
+        stakeRegistry.registerOperator(DEFAULT_OPERATOR, DEFAULT_OPERATOR_ID, quorumNumbers);
+        vm.prank(address(DEFAULT_OPERATOR));
+        vm.expectRevert(ONLY_REGISTRY_COORDINATOR);
+        stakeRegistry.deregisterOperator(DEFAULT_OPERATOR_ID, quorumNumbers);
+    }
 
-    function test_RevertsIf_MoreQuorumsThanQuorumCounter_DeregisterOperator() public {}
+    function test_RevertsIf_MoreQuorumsThanQuorumCounter_DeregisterOperator() public {
+        vm.startPrank(address(registryCoordinatorMock));
+        bytes memory quorumNumbers = new bytes(MAX_QUORUMS_TO_REGISTER_FOR+1);
+        for (uint i = 0; i < quorumNumbers.length; i++) {
+            quorumNumbers[i] = bytes1(uint8(i));
+        }
+        // expect that it reverts with more quorums than are valid
+        vm.expectRevert(GREATEST_QUORUM_GT_QUORUM_COUNT_DEREGISTER);
+        stakeRegistry.deregisterOperator(DEFAULT_OPERATOR_ID, quorumNumbers);
+    }
 
     function test_checkOperatorInactiveAtBlockNumber() public {}
 
