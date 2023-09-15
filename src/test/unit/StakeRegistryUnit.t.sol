@@ -507,7 +507,9 @@ contract StakeRegistryTest is Test {
 
         // deregister the operator from a subset of the quorums
         uint256 deregistrationQuroumBitmap = quorumBitmap & deregistrationQuorumsFlag;
-        _deregisterOperatorValid(operatorIdToDeregister, deregistrationQuroumBitmap);
+        if (deregistrationQuroumBitmap != 0) {
+            _deregisterOperatorValid(operatorIdToDeregister, deregistrationQuroumBitmap);
+        }
 
         // for each bit in each quorumBitmap, increment the number of operators in that quorum
         uint32[] memory numOperatorsInQuorum = new uint32[](MAX_QUORUMS_TO_REGISTER_FOR);
