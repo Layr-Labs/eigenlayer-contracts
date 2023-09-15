@@ -548,8 +548,8 @@ contract EigenPodManager is
 
     // @notice Increases the `podOwner`'s shares by `shareAmount` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
     function _addShares(address podOwner, uint256 shareAmount) internal {
-        require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
-        require(shareAmount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
+        require(podOwner != address(0), "EigenPodManager._addShares: podOwner cannot be zero address");
+        require(shareAmount > 0, "EigenPodManager._addShares: amount must be greater than zero");
 
         podOwnerShares[podOwner] += shareAmount;
 
