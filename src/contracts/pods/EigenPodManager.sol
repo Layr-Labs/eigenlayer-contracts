@@ -322,6 +322,7 @@ contract EigenPodManager is
     }
     
     // EXTERNAL FUNCTIONS PERMISSIONED TO SINGLE PARTIES
+    // TODO: write documentation for this function
     function slashShares(
         address slashedPodOwner,
         address slashedFundsRecipient,
@@ -347,9 +348,14 @@ contract EigenPodManager is
             "EigenPodManager.slashShares: podOwnerShares[podOwner] must be greater than or equal to shares");
 
         _removeShares(slashedPodOwner, shareAmount);
+        // TODO: @Sidu28 -- confirm that decrementing `withdrawableRestakedExecutionLayerGwei` is correct/intended here
+        _decrementWithdrawableRestakedExecutionLayerGwei(slashedPodOwner, shareAmount);
+
+        // send the ETH to the `slashedFundsRecipient`
         _withdrawRestakedBeaconChainETH(slashedPodOwner, slashedFundsRecipient, shareAmount);
     }
 
+    // TODO: write documentation for this function
     function slashQueuedWithdrawal(
         address slashedFundsRecipient,
         BeaconChainQueuedWithdrawal memory queuedWithdrawal
