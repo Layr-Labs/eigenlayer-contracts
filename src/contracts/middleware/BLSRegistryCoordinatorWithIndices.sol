@@ -441,6 +441,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         // serviceManager.recordFirstStakeUpdate(operator, 0);
 
+        emit OperatorRegistered(operator, operatorId);
+
         emit OperatorSocketUpdate(operatorId, socket);
 
         return numOperatorsPerQuorum;
@@ -503,6 +505,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             // serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
             // set the status of the operator to DEREGISTERED
             _operators[operator].status = OperatorStatus.DEREGISTERED;
+
+            emit OperatorDeregistered(operator, operatorId);
         }
     }
 
