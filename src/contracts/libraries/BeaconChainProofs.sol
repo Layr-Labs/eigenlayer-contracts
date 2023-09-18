@@ -281,7 +281,14 @@ library BeaconChainProofs {
         require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
-        {
+        if(proofs.proveHistoricalRoot){
+            uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
+                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
+            require(Merkle.verifyInclusionSha256(proofs.historicalSummaryBlockRootProof, beaconStateRoot, proofs.blockHeaderRoot, historicalBlockHeaderIndex), 
+                "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
+            
+
+        } else {
             /**
             * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
             * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree
