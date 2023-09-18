@@ -19,7 +19,6 @@ import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
-
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
@@ -111,8 +110,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Emitted when podOwner enables restaking
     event RestakingActivated(address indexed podOwner);
 
-    /// @notice Emitted when ETH is received via the receive fallback
+    /// @notice Emitted when ETH is received via the `receive` fallback
     event NonBeaconChainETHReceived(uint256 amountReceived);    
+
+    /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
+    event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);    
 
     modifier onlyEigenPodManager {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -456,6 +458,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
             "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
+
     
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(
@@ -463,6 +466,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp),
             withdrawalProofs.latestBlockHeaderProof
         );
+
 
         // Verifying the withdrawal as well as the slot
         BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalFields, withdrawalProofs);
@@ -615,6 +619,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(amountToWithdraw <= nonBeaconChainETHBalanceWei,
             "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
+        emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
         AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
     }
 
