@@ -29,7 +29,6 @@ library BeaconChainProofs {
     uint256 internal constant NUM_EXECUTION_PAYLOAD_HEADER_FIELDS = 15;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT = 4;
 
-
     uint256 internal constant NUM_EXECUTION_PAYLOAD_FIELDS = 15;
     uint256 internal constant EXECUTION_PAYLOAD_FIELD_TREE_HEIGHT = 4;
 
@@ -288,7 +287,7 @@ library BeaconChainProofs {
             * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree
             */
             uint256 blockHeaderIndex = BLOCK_ROOTS_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)  | uint256(proofs.blockHeaderRootIndex);
-            // Verify the blockHeaderRoot against the beaconStateRoot
+            // Verify the blockHeaderRoot against the beaconStateRoot            
             require(Merkle.verifyInclusionSha256(proofs.blockHeaderProof, beaconStateRoot, proofs.blockHeaderRoot, blockHeaderIndex),
                 "BeaconChainProofs.verifyWithdrawalProofs: Invalid block header merkle proof");
         }
