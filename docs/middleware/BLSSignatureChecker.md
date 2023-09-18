@@ -5,7 +5,7 @@ This contract is deployed per AVS. It verifies rhe signatures of operators in an
 ## Flows
 
 ### checkSignatures
-
+```
 function checkSignatures(
         bytes32 msgHash, 
         bytes calldata quorumNumbers,
@@ -23,7 +23,7 @@ struct NonSignerStakesAndSignature {
         uint32[] totalStakeIndices;  
         uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
     }
-
+```
 This function is called by a AVS aggregator when confirming that a `msgHash` is signed by certain `quorumNumbers`.
 
 The function calculates the sum (`apk`) of the aggregate public keys for all the quorums in question using the provided `quorumApkIndices` which point to hashes of the quorum aggregate public keys at the `referenceBlockNumber` of the signature of which `quorumApks` are the preimages. Since there may be nodes from the quorums that don't sign, the `nonSignerPubkeys` are subtracted from `apk`. There is a detail here that since an operator may serve more than one of the quorums in question, the number of quorums in `quorumNumbers` that the nonsigner served at the `referenceBlockNumber` is calculated using the provided `nonSignerQuorumBitmapIndices` and their public key is multiplied by the number before it is subtracted from `apk`. This gets rid of the duplicate additions of their public key because their public key is in more than one of the added `quorumApks`. Now the contract has `apk` set to the claimed aggregate public key of the signers.
