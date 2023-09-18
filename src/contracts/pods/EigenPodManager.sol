@@ -106,7 +106,10 @@ contract EigenPodManager is
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is queued
-    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 amount, uint96 nonce);
+    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
+    
+    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
+    event BeaconChainETHWithdrawalCompleted(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
 
     // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
     event UndelegationLimboEntered(address indexed podOwner);
@@ -464,7 +467,14 @@ contract EigenPodManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
         withdrawalRootPending[withdrawalRoot] = true;
 
-        emit BeaconChainETHWithdrawalQueued(podOwner, amountWei, nonce);   
+        emit BeaconChainETHWithdrawalQueued(
+            podOwner,
+            amountWei,
+            nonce,
+            delegatedAddress,
+            withdrawer,
+            withdrawalRoot
+        );
 
         return withdrawalRoot;
     }
@@ -507,6 +517,15 @@ contract EigenPodManager is
 
         // withdraw the ETH from the EigenPod to the caller
         _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, msg.sender, queuedWithdrawal.shares);
+
+        emit BeaconChainETHWithdrawalCompleted(
+            queuedWithdrawal.podOwner,
+            queuedWithdrawal.shares,
+            queuedWithdrawal.nonce,
+            queuedWithdrawal.delegatedAddress,
+            queuedWithdrawal.withdrawer,
+            withdrawalRoot
+        );
     }
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
@@ -698,7 +717,8 @@ contract EigenPodManager is
                     queuedWithdrawal.podOwner,
                     queuedWithdrawal.nonce,
                     queuedWithdrawal.withdrawalStartBlock,
-                    queuedWithdrawal.delegatedAddress
+                    queuedWithdrawal.delegatedAddress,
+                    queuedWithdrawal.withdrawer
                 )
             )
         );
