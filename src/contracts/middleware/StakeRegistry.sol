@@ -357,7 +357,8 @@ contract StakeRegistry is StakeRegistryStorage {
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
-        // check the operator is deregistering from only valid quorums
+        // check the operator is degistering for only valid quorums
+        require(uint8(quorumNumbers[quorumNumbers.length - 1]) < quorumCount, "StakeRegistry._deregisterOperator: greatest quorumNumber must be less than quorumCount");
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
