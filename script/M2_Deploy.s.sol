@@ -68,8 +68,7 @@ contract Deployer_M2 is ExistingDeploymentParser {
         string memory deployed_addresses = "addresses";
         string memory chain_info = "chainInfo";
 
-         vm.serializeAddress(deployed_addresses, "beaconChainOracle", address(beaconChainOracle));
-        string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "initialOwner", oracleInitialOwner);
+        string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "beaconChainOracle", address(beaconChainOracle));
 
         vm.serializeUint(chain_info, "deploymentBlock", block.number);
         string memory chain_info_output = vm.serializeUint(chain_info, "chainId", currentChainId);
