@@ -94,17 +94,26 @@ contract GoerliM2Deployment is Script, Test {
         string memory parent_object = "parent object";
 
         string memory deployed_addresses = "addresses";
+        vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
+        vm.serializeAddress(deployed_addresses, "delegation", address(delegation));
+        vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
+        vm.serializeAddress(deployed_addresses, "delayedWithdrawalRouter", address(delayedWithdrawalRouter));
+        vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
+        vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
+        vm.serializeAddress(deployed_addresses, "ethPOS", address(ethPOS));
+
         vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManagerImplementation", address(strategyManagerImplementation));
         vm.serializeAddress(deployed_addresses, "eigenPodManagerImplementation", address(eigenPodManagerImplementation));
-        vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
+        string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
 
         string memory chain_info = "chainInfo";
         vm.serializeUint(chain_info, "deploymentBlock", block.number);
         string memory chain_info_output = vm.serializeUint(chain_info, "chainId", chainId);
 
+        vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         // serialize all the data
-        vm.serializeString(parent_object, chain_info, chain_info_output);
-        vm.writeJson(parent_object, "script/output/M2_deployment_data.json");
+        string memory finalJson = vm.serializeString(parent_object, chain_info, chain_info_output);
+        vm.writeJson(finalJson, "script/output/M2_deployment_data.json");
     }
 }
