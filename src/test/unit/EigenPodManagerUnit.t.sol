@@ -68,7 +68,10 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is queued
-    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 amount, uint96 nonce);
+    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
+    
+    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
+    event BeaconChainETHWithdrawalCompleted(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
 
     // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
     event UndelegationLimboEntered(address indexed podOwner);
@@ -306,6 +309,15 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         // actually complete the withdrawal
         cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+        emit BeaconChainETHWithdrawalCompleted(
+            queuedWithdrawal.podOwner,
+            queuedWithdrawal.shares,
+            queuedWithdrawal.nonce,
+            queuedWithdrawal.delegatedAddress,
+            queuedWithdrawal.withdrawer,
+            withdrawalRoot
+        );
         eigenPodManager.completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
         cheats.stopPrank();
 
@@ -373,8 +385,16 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         // actually create the queued withdrawal, and check for event emission
         cheats.startPrank(staker);
+    
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit BeaconChainETHWithdrawalQueued(staker, amountWei, queuedWithdrawal.nonce);
+        emit BeaconChainETHWithdrawalQueued(
+            queuedWithdrawal.podOwner,
+            queuedWithdrawal.shares,
+            queuedWithdrawal.nonce,
+            queuedWithdrawal.delegatedAddress,
+            queuedWithdrawal.withdrawer,
+            eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
         withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer, undelegateIfPossible);
         cheats.stopPrank();
 
