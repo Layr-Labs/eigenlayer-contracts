@@ -283,11 +283,10 @@ library BeaconChainProofs {
 
         if(proofs.proveHistoricalRoot){
             uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
+                                                uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT) |
                                                 BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
             require(Merkle.verifyInclusionSha256(proofs.historicalSummaryBlockRootProof, beaconStateRoot, proofs.blockHeaderRoot, historicalBlockHeaderIndex), 
                 "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
-            
-
         } else {
             /**
             * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
