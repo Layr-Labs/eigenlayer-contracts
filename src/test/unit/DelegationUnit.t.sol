@@ -1289,6 +1289,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(staker_one != operator);
         cheats.assume(staker_two != operator);
 
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        // filter out the case where `staker` *is* the 'delegationApprover', since in this case the salt won't get used
+        cheats.assume(staker_one != delegationApprover);
+        cheats.assume(staker_two != delegationApprover);
+
         // register this contract as an operator and delegate from `staker_one` to it, using the `salt`
         uint256 expiry = type(uint256).max;
         testDelegateToOperatorWhoRequiresECDSASignature(staker_one, salt, expiry);
