@@ -411,6 +411,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // set the status to active
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
+        validatorInfo.validatorIndex = validatorIndex;
 
         emit ValidatorRestaked(validatorIndex);
 
