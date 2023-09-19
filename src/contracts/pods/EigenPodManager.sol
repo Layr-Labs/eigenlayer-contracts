@@ -396,6 +396,7 @@ contract EigenPodManager is
         onlyNotFrozen(podOwner)
         nonReentrant
     {
+        // put the `podOwner` into undelegation limbo and try to undelegate them.
         _enterUndelegationLimbo(podOwner, true);
     }
 
@@ -418,6 +419,10 @@ contract EigenPodManager is
     }
 
     // INTERNAL FUNCTIONS
+    /**
+     * @notice Queues a withdrawal of `amountWei` of virtual "beacon chain ETH shares" from `podOwner` to `withdrawer`.
+     * @param undelegateIfPossible If this param is marked as 'true', then this function will also inform the DelegationManager of the caller's desire to undelegate
+     */
     function _queueWithdrawal(
         address podOwner,
         uint256 amountWei,
@@ -577,7 +582,10 @@ contract EigenPodManager is
         }
     }
 
-    // @notice Reduces the `podOwner`'s shares by `shareAmount` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
+    /**
+     * @notice Reduces the `podOwner`'s shares by `shareAmount` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
+     * @param undelegateIfPossible If this param is marked as 'true', then this function will also inform the DelegationManager of the caller's desire to undelegate
+     */
     function _removeShares(address podOwner, uint256 shareAmount, bool undelegateIfPossible) internal {
         require(podOwner != address(0), "EigenPodManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "EigenPodManager._removeShares: shareAmount should not be zero!");

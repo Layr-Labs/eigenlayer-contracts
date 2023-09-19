@@ -227,6 +227,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // force a withdrawal of all of the staker's shares from the StrategyManager
         bytes32 queuedWithdrawal = strategyManager.forceTotalWithdrawal(staker);
 
+        // actually undelegate the staker
         _undelegate(staker);
 
         return queuedWithdrawal;
