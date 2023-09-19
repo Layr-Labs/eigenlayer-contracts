@@ -546,10 +546,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }  else {
             revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
         }
+
+        uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(withdrawalHappenedSlot);
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = 0;
+        _validatorPubkeyHashToInfo[validatorPubkeyHash].status = VALIDATOR_STATUS.WITHDRAWN;
+        _validatorPubkeyHashToInfo[validatorPubkeyHash].mostRecentBalanceUpdateTimestamp = withdrawalHappenedTimestamp;
 
-        provenWithdrawal[validatorPubkeyHash][_computeTimestampAtSlot(withdrawalHappenedSlot)] = true;
+        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
 
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI, _computeTimestampAtSlot(withdrawalHappenedSlot));
 
