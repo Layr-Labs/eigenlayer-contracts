@@ -102,7 +102,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated.  Here newValidatorBalanceGwei
     //  is the validator's balance that is credited on EigenLayer.
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 slotNumber, uint64 newValidatorBalanceGwei);
+    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 timestamp, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
     event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint256 withdrawalAmountWei);
@@ -305,14 +305,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //update the most recent balance update slot
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
-        validatorInfo.mostRecentBalanceUpdateTimestamp = _computeTimestampAtSlot(slotNumber);
+        uint64 timestamp = _computeTimestampAtSlot(slotNumber);
+        validatorInfo.mostRecentBalanceUpdateTimestamp = timestamp;
 
         //record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
         
 
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
-            emit ValidatorBalanceUpdated(validatorIndex, slotNumber, newRestakedBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorIndex, timestamp, newRestakedBalanceGwei);
 
             int256 sharesDelta = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
             // update shares in strategy manager
