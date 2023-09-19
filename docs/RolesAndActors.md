@@ -17,7 +17,7 @@ Once they've deposited, Stakers can delegate their stake to an Operator via the 
 * Delegating to an Operator
 * Withdrawing out of EigenLayer
 
-*Unimplemented:*
+*Unimplemented as of M2:*
 * Stakers earn yield by delegating to an Operator as the Operator provides services to an AVS
 * Stakers are at risk of being slashed if the Operator misbehaves
 
@@ -30,6 +30,16 @@ An **Operator** is a user who helps run the software build on top of EigenLayer.
 * Opting in to a service
 * Exiting from a service
 
-*Unimplemented:*
+*Unimplemented as of M2:*
 * Operators earn fees as part of the services they provide
 * Operators may be slashed by the services they register with (if they misbehave)
+
+### Supporting Roles
+
+#### Pausers
+
+TODO
+
+#### Multisigs
+
+TODO

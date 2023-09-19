@@ -12,6 +12,10 @@ Operators interact with the following functions:
 
 #### `registerAsOperator`
 
+```solidity
+function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external
+```
+
 Registers the caller as an Operator in EigenLayer. The new Operator provides the `OperatorDetails`, a struct containing:
 * `address earningsReceiver`: the address that will receive earnings as the Operator provides services to AVSs *(currently unused)*
 * `address delegationApprover`: if set, this address must sign and approve new delegation from Stakers to this Operator *(optional)*
@@ -26,7 +30,7 @@ They cannot "deregister" as an Operator - however, they can exit the system by w
 * Caller MUST NOT already be delegated to an Operator
 * `earningsReceiver != address(0)`
 * `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~15 days)
-* Unpaused if not in pause status: `PAUSED_NEW_DELEGATION`
+* Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
 #### `modifyOperatorDetails`
 
@@ -46,6 +50,22 @@ Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state
 * Caller MUST already be an Operator
 
 #### `forceUndelegation`
+
+Allows an Operator or its `delegationApprover` to force a Staker to undelegate from them. This can be useful in case the Operator wants to use its `delegationApprover` to manually accept Stakers, rather than allowing all delegation by default.
+
+**Effects**: Invokes methods on both the `EigenPodManager` and `StrategyManager`:
+* `EigenPodManager.forceIntoUndelegationLimbo`
+* `StrategyManager.forceTotalWithdrawal`
+
+If the Staker has shares in these contracts, each contract will call back into `DelegationManager.decreaseDelegatedShares`, decreasing the shares allocated to the Operator for the strategy in question. Depending on what shares the Staker has, one of the two calls will also call back into `DelegationManager.undelegate`, which undelegates the Staker from the Operator.
+
+**Requirements**:
+* Caller MUST be either the Staker's Operator, or that Operator's `delegationApprover`
+* Staker being undelegated MUST NOT be an Operator
+* From `EigenPodManager.forceIntoUndelegationLimbo`:
+    * Pause status MUST NOT be set: `PAUSED_WITHDRAWALS`
+* From `StrategyManager.forceTotalWithdrawal`:
+    * Pause status MUST NOT be set: `PAUSED_WITHDRAWALS`
 
 ### Stakers
 
