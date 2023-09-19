@@ -142,7 +142,9 @@ contract StrategyManagerMock is
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
 
     // @notice Returns 'true' if `staker` has "active" shares in EigenLayer, and 'false' otherwise
-    function stakerHasActiveShares(address staker) external view returns (bool) {}
+    function stakerHasActiveShares(address /*staker*/) external pure returns (bool) {
+        return true;
+    }
 
     event ForceTotalWithdrawalCalled(address staker);
 

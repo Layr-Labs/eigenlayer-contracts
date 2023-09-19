@@ -398,7 +398,7 @@ contract StrategyManager is
             }
         }
 
-        // modify delegated shares accordingly, if applicable
+        // modify delegated shares accordingly, if applicable. Do not try to undelegate the `slashedAddress`.
         delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts, false);
     }
     

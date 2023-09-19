@@ -959,7 +959,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
-        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
+        cheats.expectRevert(bytes("DelegationManager.undelegate: staker cannot undelegate"));
         
         cheats.startPrank(operator);
         delegationManager.undelegate();
@@ -1281,6 +1281,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filtering since you can't delegate to yourself after registering as an operator
         cheats.assume(staker_one != operator);
         cheats.assume(staker_two != operator);
+
+        // filtering since you can't delegate twice
+        cheats.assume(staker_one != staker_two);
 
         address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         // filter out the case where `staker` *is* the 'delegationApprover', since in this case the salt won't get used
