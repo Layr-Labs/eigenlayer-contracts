@@ -110,8 +110,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Emitted when podOwner enables restaking
     event RestakingActivated(address indexed podOwner);
 
-    /// @notice Emitted when ETH is received via the receive fallback
+    /// @notice Emitted when ETH is received via the `receive` fallback
     event NonBeaconChainETHReceived(uint256 amountReceived);    
+
+    /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
+    event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);    
 
     modifier onlyEigenPodManager {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -617,6 +620,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(amountToWithdraw <= nonBeaconChainETHBalanceWei,
             "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
+        emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
         AddressUpgradeable.sendValue(payable(recipient), amountToWithdraw);
     }
 
