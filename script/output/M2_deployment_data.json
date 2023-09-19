@@ -1,5 +1,6 @@
 {
   "addresses": {
+    "beaconChainOracle": "0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c",
     "delayedWithdrawalRouter": "0x89581561f1F98584F88b0d57c2180fb89225388f",
     "delegation": "0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8",
     "delegationImplementation": "0x34A1D3fff3958843C43aD80F30b94c510645C316",
@@ -14,6 +15,6 @@
   },
   "chainInfo": {
     "chainId": 5,
-    "deploymentBlock": 9718800
+    "deploymentBlock": 9723758
   }
 }
