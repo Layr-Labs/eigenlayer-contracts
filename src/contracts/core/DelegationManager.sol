@@ -515,7 +515,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
      */
     function stakerHasActiveShares(address staker) public view returns (bool) {
-        return ((strategyManager.stakerStrategyListLength(staker) == 0) && eigenPodManager.podOwnerHasNoDelegatedShares(staker));
+        return ((strategyManager.stakerStrategyListLength(staker) != 0) || !eigenPodManager.podOwnerHasNoDelegatedShares(staker));
     }
 
     /** 
