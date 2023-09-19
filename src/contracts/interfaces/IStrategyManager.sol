@@ -244,7 +244,4 @@ interface IStrategyManager {
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     function numWithdrawalsQueued(address staker) external view returns (uint256);
 
-    // @notice Returns 'true' if `staker` has "active" shares in EigenLayer, and 'false' otherwise
-    function stakerHasActiveShares(address staker) external view returns (bool);
-
 }

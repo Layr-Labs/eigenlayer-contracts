@@ -506,8 +506,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
      */
     function stakerCanUndelegate(address staker) public view returns (bool) {
-        return (!strategyManager.stakerHasActiveShares(staker) && !isOperator(staker));
+        return (!stakerHasActiveShares(staker) && !isOperator(staker));
 
+    }
+
+    /**
+     * @notice Returns 'true' if `staker` has "active" shares in EigenLayer (i.e. the staker has shares which are currently in the StrategyManager
+     * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
+     */
+    function stakerHasActiveShares(address staker) public view returns (bool) {
+        return ((strategyManager.stakerStrategyListLength(staker) == 0) && eigenPodManager.podOwnerHasNoDelegatedShares(staker));
     }
 
     /** 
