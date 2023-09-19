@@ -91,10 +91,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 withdrawalAmountGwei);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 withdrawalAmountGwei, uint64 timestamp);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei);
+    event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei, uint64 timestamp);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -151,7 +151,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
                 MAX_VALIDATOR_BALANCE_GWEI,
-                RESTAKED_BALANCE_OFFSET_GWEI
+                RESTAKED_BALANCE_OFFSET_GWEI,
+                GENESIS_TIME
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
@@ -409,9 +410,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
             withdrawalFieldsArray[0] = withdrawalFields;
 
+            // uint64 timestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot));
 
             //cheats.expectEmit(true, true, true, true, address(newPod));
-            emit FullWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
+            emit FullWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot)));
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
         }
         require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == _calculateRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI()),
@@ -461,7 +463,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
             cheats.expectEmit(true, true, true, true, address(newPod));
-            emit PartialWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
+            emit PartialWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)));
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
             require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
             withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);

@@ -19,6 +19,8 @@ import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
+
+import "forge-std/Test.sol";
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
@@ -33,7 +35,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
 
@@ -43,9 +45,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredental` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
-
-    //this is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
-    uint64 internal constant GENESIS_TIME = 1616508000;
 
     /// @notice The number of seconds in a slot in the beacon chain
     uint256 internal constant SECONDS_PER_SLOT = 12;
@@ -67,6 +66,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     * amount by which to underestimate the validator's effective balance.
     */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
+
+    //this is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
+    uint64 public immutable GENESIS_TIME;
 
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
@@ -105,10 +107,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 timestamp, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint256 withdrawalAmountWei);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint256 withdrawalAmountWei, uint64 timestamp);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei);
+    event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei, uint64 timestamp);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -170,13 +172,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_VALIDATOR_BALANCE_GWEI,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
+        uint64 _GENESIS_TIME
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_VALIDATOR_BALANCE_GWEI = _MAX_VALIDATOR_BALANCE_GWEI;
         RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
+        GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
 
@@ -411,12 +415,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
 
+        emit log_named_uint("gas", gasleft());
+        uint g = gasleft();
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,
             proof: proofs.validatorFieldsProof,
             validatorIndex: validatorIndex
         });
+        emit log_named_uint("gas", g - gasleft());
 
         // set the status to active
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
@@ -551,7 +558,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         provenWithdrawal[validatorPubkeyHash][_computeTimestampAtSlot(withdrawalHappenedSlot)] = true;
 
-        emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
+        emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI, _computeTimestampAtSlot(withdrawalHappenedSlot));
 
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         if (amountToSend != 0) {
@@ -566,9 +573,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint64 partialWithdrawalAmountGwei
     ) internal {
-
-        provenWithdrawal[validatorPubkeyHash][_computeTimestampAtSlot(withdrawalHappenedSlot)] = true;
-        emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei);
+        uint64 timestamp = _computeTimestampAtSlot(withdrawalHappenedSlot);
+        provenWithdrawal[validatorPubkeyHash][timestamp] = true;
+        emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei, timestamp);
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
         _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
@@ -677,7 +684,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
-    function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
+    function _computeTimestampAtSlot(uint64 slot) internal view returns (uint64) {
         return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 

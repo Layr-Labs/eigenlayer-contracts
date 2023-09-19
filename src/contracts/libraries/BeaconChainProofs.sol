@@ -282,6 +282,8 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
         if(proofs.proveHistoricalRoot){
+            require(proofs.historicalSummaryBlockRootProof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT + (HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)),
+            "BeaconChainProofs.verifyWithdrawalProofs: historicalSummaryBlockRootProof has incorrect length");
             /**
             * Note: Here, the "1" in "1 + (BLOCK_ROOTS_TREE_HEIGHT)" signifies that extra step of choosing the "block_root_summary" within the individual 
             * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
