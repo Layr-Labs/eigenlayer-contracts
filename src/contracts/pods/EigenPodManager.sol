@@ -248,7 +248,7 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Completes an existing queuedWithdrawal either by sending the ETH to podOwner or allowing the podOwner to re-delegate it
+     * @notice Completes an existing BeaconChainQueuedWithdrawal by sending the ETH to the 'withdrawer'
      * @param queuedWithdrawal is the queued withdrawal to be completed
      * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
      */
@@ -325,6 +325,7 @@ contract EigenPodManager is
     }
     
     // EXTERNAL FUNCTIONS PERMISSIONED TO SINGLE PARTIES
+    // TODO: write documentation for this function
     function slashShares(
         address slashedPodOwner,
         address slashedFundsRecipient,
@@ -350,9 +351,14 @@ contract EigenPodManager is
             "EigenPodManager.slashShares: podOwnerShares[podOwner] must be greater than or equal to shares");
 
         _removeShares(slashedPodOwner, shareAmount);
+        // TODO: @Sidu28 -- confirm that decrementing `withdrawableRestakedExecutionLayerGwei` is correct/intended here
+        _decrementWithdrawableRestakedExecutionLayerGwei(slashedPodOwner, shareAmount);
+
+        // send the ETH to the `slashedFundsRecipient`
         _withdrawRestakedBeaconChainETH(slashedPodOwner, slashedFundsRecipient, shareAmount);
     }
 
+    // TODO: write documentation for this function
     function slashQueuedWithdrawal(
         address slashedFundsRecipient,
         BeaconChainQueuedWithdrawal memory queuedWithdrawal
@@ -567,8 +573,8 @@ contract EigenPodManager is
 
     // @notice Increases the `podOwner`'s shares by `shareAmount` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
     function _addShares(address podOwner, uint256 shareAmount) internal {
-        require(podOwner != address(0), "EigenPodManager.restakeBeaconChainETH: podOwner cannot be zero address");
-        require(shareAmount > 0, "EigenPodManager.restakeBeaconChainETH: amount must be greater than zero");
+        require(podOwner != address(0), "EigenPodManager._addShares: podOwner cannot be zero address");
+        require(shareAmount > 0, "EigenPodManager._addShares: amount must be greater than zero");
 
         podOwnerShares[podOwner] += shareAmount;
 
