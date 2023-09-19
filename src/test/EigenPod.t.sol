@@ -730,7 +730,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
 
-        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validator's balance has already been updated for this slot"));
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot"));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
