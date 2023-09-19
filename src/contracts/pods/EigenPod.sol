@@ -303,9 +303,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
 
-        //update the most recent balance update slot
-        uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
-        uint64 timestamp = _computeTimestampAtSlot(slotNumber);
+        //update the most recent balance update timestamp from the slot
+        uint64 timestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(proofs.slotRoot));
         validatorInfo.mostRecentBalanceUpdateTimestamp = timestamp;
 
         //record validatorInfo update in storage
