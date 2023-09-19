@@ -3,7 +3,7 @@ methods {
     //// External Calls
 	// external calls to DelegationManager 
     function undelegate(address) external;
-    function decreaseDelegatedShares(address,address[],uint256[]) external;
+    function decreaseDelegatedShares(address,address[],uint256[], bool) external;
 	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
