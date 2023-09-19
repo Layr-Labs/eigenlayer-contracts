@@ -23,7 +23,7 @@ Once they've deposited, Stakers can delegate their stake to an Operator via the 
 
 ### Operators
 
-An **Operator** is a user who helps run the software build on top of EigenLayer. Operators register in EigenLayer and allow Stakers to delegate to them, then opt in to provide various services built on top of EigenLayer.
+An **Operator** is a user who helps run the software build on top of EigenLayer. Operators register in EigenLayer and allow Stakers to delegate to them, then opt in to provide various services built on top of EigenLayer. Operators may themselves be Stakers; these are not mutually exclusive.
 
 *Flows:*
 * Registering as an operator
