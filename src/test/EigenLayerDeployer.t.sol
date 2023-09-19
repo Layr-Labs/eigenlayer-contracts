@@ -21,7 +21,6 @@ import "../contracts/core/Slasher.sol";
 import "../contracts/pods/EigenPod.sol";
 import "../contracts/pods/EigenPodManager.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
-import "../contracts/pods/BeaconChainOracle.sol";
 
 import "../contracts/permissions/PauserRegistry.sol";
 
@@ -50,7 +49,6 @@ contract EigenLayerDeployer is Operators {
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
-    IBeaconChainOracle public beaconChainOracle;
 
     // testing/mock contracts
     IERC20 public eigenToken;
@@ -102,7 +100,7 @@ contract EigenLayerDeployer is Operators {
     address podAddress;
     address delayedWithdrawalRouterAddress;
     address eigenPodBeaconAddress;
-    address beaconChainOracleAddress;
+    address beaconChainOracleAddress = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
     address emptyContractAddress;
     address operationsMultisig;
     address executorMultisig;
@@ -165,7 +163,6 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
 
         address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);
@@ -248,7 +245,6 @@ contract EigenLayerDeployer is Operators {
         );
 
         address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);
@@ -301,7 +297,7 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 type(uint256).max, // maxPods
-                beaconChainOracle,
+                beaconChainOracleAddress,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/
