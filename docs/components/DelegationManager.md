@@ -34,6 +34,10 @@ They cannot "deregister" as an Operator - however, they can exit the system by w
 
 #### `modifyOperatorDetails`
 
+```solidity
+function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) external
+```
+
 Allows an Operator to update their stored `OperatorDetails`.
 
 **Requirements**:
@@ -44,12 +48,20 @@ Allows an Operator to update their stored `OperatorDetails`.
 
 #### `updateOperatorMetadataURI`
 
+```solidity
+function updateOperatorMetadataURI(string calldata metadataURI) external
+```
+
 Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state changes occur.
 
 **Requirements**:
 * Caller MUST already be an Operator
 
 #### `forceUndelegation`
+
+```solidity
+function forceUndelegation(address staker) external returns (bytes32)
+```
 
 Allows an Operator or its `delegationApprover` to force a Staker to undelegate from them. This can be useful in case the Operator wants to use its `delegationApprover` to manually accept Stakers, rather than allowing all delegation by default.
 
@@ -73,6 +85,10 @@ Stakers interact with the following functions:
 
 #### `delegateTo`
 
+```solidity
+function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) external
+```
+
 Allows the caller to delegate their stake to an Operator.
 
 **Effects**: `delegateTo` delegates a Staker's assets to an Operator, increasing the Operator's shares in each strategy the caller has assets in.
@@ -84,6 +100,16 @@ Allows the caller to delegate their stake to an Operator.
 * Unpaused if not in pause status: `PAUSED_NEW_DELEGATION`
 
 #### `delegateToBySignature`
+
+```solidity
+function delegateToBySignature(
+    address staker,
+    address operator,
+    SignatureWithExpiry memory stakerSignatureAndExpiry,
+    SignatureWithExpiry memory approverSignatureAndExpiry,
+    bytes32 approverSalt
+) external
+```
 
 Allows a Staker to delegate to an Operator by way of signature. This function can be called by three different parties:
 * If the Staker calls this method, they need to submit both the `stakerSignatureAndExpiry` AND `approverSignatureAndExpiry`
@@ -103,6 +129,22 @@ The Strategy and EigenPod subsystems may call the following functions:
 
 #### `undelegate`
 
+```solidity
+function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager
+```
+
 #### `increaseDelegatedShares`
 
+```solidity
+function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
+    external
+    onlyStrategyManagerOrEigenPodManager
+```
+
 #### `decreaseDelegatedShares`
+
+```solidity
+function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
+    external
+    onlyStrategyManagerOrEigenPodManager
+```
