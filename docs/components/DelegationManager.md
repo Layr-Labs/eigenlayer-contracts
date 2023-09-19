@@ -125,13 +125,25 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 
 ### Other
 
-The Strategy and EigenPod subsystems may call the following functions:
+These functions are not directly callable. Instead, the Strategy and EigenPod subsystems may call the following functions as part of certain operations:
 
 #### `undelegate`
 
 ```solidity
 function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager
 ```
+
+Called by either the `StrategyManager` or `EigenPodManager` when a Staker undelegates from an Operator.
+
+**Entry Points**: This method may be called as a result of the following top-level function calls:
+* `DelegationManager.forceUndelegation`
+* TODO
+
+**Effects**: If the Staker was delegated to an Operator, this function undelegates them.
+
+**Requirements**:
+* Staker MUST NOT be an Operator
+* Caller MUST be either the `StrategyManager` or `EigenPodManager`
 
 #### `increaseDelegatedShares`
 
@@ -141,6 +153,16 @@ function increaseDelegatedShares(address staker, IStrategy strategy, uint256 sha
     onlyStrategyManagerOrEigenPodManager
 ```
 
+Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shares for one or more strategies decrease. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the decrease.
+
+**Entry Points**: This method may be called as a result of the following top-level function calls:
+* TODO
+
+**Effects**: If the Staker in question is delegated to an Operator, the Operator's shares for the `strategy` are increased.
+
+**Requirements**:
+* Caller MUST be either the `StrategyManager` or `EigenPodManager`
+
 #### `decreaseDelegatedShares`
 
 ```solidity
@@ -148,3 +170,14 @@ function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies
     external
     onlyStrategyManagerOrEigenPodManager
 ```
+
+Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shares for one or more strategies decrease. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the decrease.
+
+**Entry Points**: This method may be called as a result of the following top-level function calls:
+* `DelegationManager.forceUndelegation`
+* TODO
+
+**Effects**: If the Staker in question is delegated to an Operator, the Operator's shares for each of the `strategies` are decreased (by the corresponding amount in the `shares` array).
+
+**Requirements**:
+* Caller MUST be either the `StrategyManager` or `EigenPodManager`
