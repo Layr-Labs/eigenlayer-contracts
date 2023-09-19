@@ -66,7 +66,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
 
-    //this is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
+    /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
     uint64 public immutable GENESIS_TIME;
 
     // STORAGE VARIABLES
@@ -466,12 +466,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(validatorInfo.status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
 
-        {
-            require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
-                "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
+        
+        require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
+            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
-            provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
-        }
+        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
+        
     
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
@@ -501,7 +501,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
                 _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, validatorInfo);
             } else {
-                _processPartialWithdrawal(validatorIndex, slot, podOwner, withdrawalAmountGwei);
+                _processPartialWithdrawal(validatorIndex, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
             }
         }
     }
@@ -570,11 +570,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _processPartialWithdrawal(
         uint40 validatorIndex,
-        uint64 withdrawalHappenedSlot,
+        uint64 withdrawalHappenedTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
     ) internal {
-        emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(withdrawalHappenedSlot), recipient, partialWithdrawalAmountGwei);
+        emit PartialWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, partialWithdrawalAmountGwei);
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
         _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
