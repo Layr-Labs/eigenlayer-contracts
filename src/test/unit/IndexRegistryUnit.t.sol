@@ -24,11 +24,13 @@ contract IndexRegistryUnitTests is Test {
         indexRegistry = new IndexRegistry(registryCoordinatorMock);
     }
 
+    /// CONSTRUCTOR 
     function testConstructor() public {
         // check that the registry coordinator is set correctly
         assertEq(address(indexRegistry.registryCoordinator()), address(registryCoordinatorMock), "IndexRegistry.constructor: registry coordinator not set correctly");
     }
 
+    /// REGISTER OPERATOR
     function testRegisterOperatorInIndexRegistry(bytes32 operatorId) public {
         // register an operator
         bytes memory quorumNumbers = new bytes(1);
@@ -68,6 +70,7 @@ contract IndexRegistryUnitTests is Test {
         cheats.stopPrank();
     }
 
+    /// DEREGISTER OPERATOR
     function testDeregisterOperatorInIndexRegistry(bytes32 operatorId1, bytes32 operatorId2) public {
         cheats.assume(operatorId1 != operatorId2);
         bytes memory quorumNumbers = new bytes(2);
@@ -145,7 +148,24 @@ contract IndexRegistryUnitTests is Test {
         }
     }
 
+    /// Test view functions
+    function test_GetTotalOperatorsForQuorumAtBlockNumberByIndex() public {}
 
+    function test_RevertsWhen_IndexTooFarInPast_GetTotalOperatorsForQuorumAtBlockNumberByIndex() public {}
+
+    function test_RevertsWhen_IndexTooFarInFuture_GetTotalOperatorsForQuorumAtBlockNumberByIndex() public {}
+
+    function test_getTotalOperatorsForQuorumAtBlockNumber() public {}
+
+    function test_When_BeforeQuorumExisted_getTotalOperatorsForQuorumAtBlockNumber() public {}
+    
+    function test_When_NoOperatorsInQuorum_getTotalOperatorsForQuorumAtBlockNumber() public {}
+
+    function test_When_OnlyOneOperatorInQuorum_getTotalOperatorsForQuorumAtBlockNumber() public {}
+
+    function test_getIndexOfOperatorForQuorumAtBlockNumber() public {}
+
+    function test_When_OperatorNotRegisteredForQuorumAtBlock_getIndexOfOperatorForQuorumAtBlockNumber() public {}
 
     function _registerOperator(bytes32 operatorId, bytes memory quorumNumbers) public {
         cheats.startPrank(address(registryCoordinatorMock));
@@ -153,18 +173,4 @@ contract IndexRegistryUnitTests is Test {
         cheats.stopPrank();
     }
     
-    // function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers, uint32[] memory quorumToOperatorListIndexes, uint32 index) public {
-    //     cheats.startPrank(address(registryCoordinatorMock));
-    //     indexRegistry.deregisterOperator(operatorId, quorumNumbers, quorumToOperatorListIndexes, index);
-    //     cheats.stopPrank();
-    // }
-
-    // function _getRandomId(uint256 seed) internal view returns (bytes32) {
-    //     return keccak256(abi.encodePacked(block.timestamp, seed));
-    // }
-
-    // function _generateRandomNumber(uint256 seed, uint256 modulus) internal view returns (uint256) {
-    //     uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, seed)));
-    //     return (randomNumber % modulus); 
-    // }
 }
