@@ -497,7 +497,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(validatorIndex, validatorPubkeyHash, slot, podOwner, withdrawalAmountGwei, validatorInfo);
+                _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, validatorInfo);
             } else {
                 _processPartialWithdrawal(validatorIndex, slot, podOwner, withdrawalAmountGwei);
             }
@@ -507,7 +507,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _processFullWithdrawal(
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
-        uint64 withdrawalHappenedSlot,
+        uint64 withdrawalHappenedTimestamp,
         address recipient,
         uint64 withdrawalAmountGwei,
         ValidatorInfo memory validatorInfo
@@ -551,7 +551,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
         }
 
-        uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(withdrawalHappenedSlot);
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         validatorInfo.restakedBalanceGwei = 0;
         validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
