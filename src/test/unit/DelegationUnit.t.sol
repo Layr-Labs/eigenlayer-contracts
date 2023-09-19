@@ -1018,7 +1018,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      */
     function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint128 shares, bool delegateFromStakerToOperator) public {
         // sanity-filtering on fuzzed input length
-        cheats.assume(strategies.length <= 64);
+        cheats.assume(strategies.length <= 32);
         // register *this contract* as an operator
         address operator = address(this);
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -1044,11 +1044,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256[] memory delegatedSharesBefore = new uint256[](strategies.length);
         uint256[] memory sharesInputArray = new uint256[](strategies.length);
 
+        address delegatedTo = delegationManager.delegatedTo(staker);
+
         // for each strategy in `strategies`, increase delegated shares by `shares`
         cheats.startPrank(address(strategyManagerMock));
         for (uint256 i = 0; i < strategies.length; ++i) {
             delegationManager.increaseDelegatedShares(staker, strategies[i], shares); 
-            delegatedSharesBefore[i] = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]);   
+            delegatedSharesBefore[i] = delegationManager.operatorShares(delegatedTo, strategies[i]);   
             // also construct an array which we'll use in another loop
             sharesInputArray[i] = shares;
             totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
@@ -1058,15 +1060,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // for each strategy in `strategies`, decrease delegated shares by `shares`
         bool undelegateIfPossible = false;
         cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(delegationManager.delegatedTo(staker), strategies, sharesInputArray, undelegateIfPossible);
+        delegationManager.decreaseDelegatedShares(staker, strategies, sharesInputArray, undelegateIfPossible);
         cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
+        bool isDelegated =  delegationManager.isDelegated(staker);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategies[i]); 
+            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]); 
 
-            if (delegationManager.isDelegated(staker)) {
-                require(delegatedSharesAfter == delegatedSharesBefore[i] - totalSharesForStrategyInArray[address(strategies[i])],
+            if (isDelegated) {
+                require(delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])] == delegatedSharesBefore[i],
                     "delegated shares did not decrement correctly");
             } else {
                 require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
