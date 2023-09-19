@@ -926,9 +926,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
+// TODO: revisit test to attune to undelegation changes
     /**
-     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the StrategyManager address.
-     * Reverts if called by any address that is not the StrategyManager
+     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
      * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
      * Does nothing if the staker is already undelegated
      * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
@@ -939,10 +939,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
 
-        cheats.startPrank(address(strategyManagerMock));
+        cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
-        delegationManager.undelegate(staker);
+        delegationManager.undelegate();
         cheats.stopPrank();
 
         require(!delegationManager.isDelegated(staker), "staker not undelegated!");
@@ -961,18 +961,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
         
-        cheats.startPrank(address(strategyManagerMock));
-        delegationManager.undelegate(operator);
+        cheats.startPrank(operator);
+        delegationManager.undelegate();
         cheats.stopPrank();
-    }
-
-    // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager nor EigenPodManager
-    function testCannotCallUndelegateFromNonPermissionedAddress(address caller) public fuzzedAddress(caller) {
-        cheats.assume(caller != address(strategyManagerMock));
-        cheats.assume(caller != address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
-        cheats.startPrank(caller);
-        delegationManager.undelegate(address(this));
     }
 
     /**
@@ -1066,8 +1057,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         // for each strategy in `strategies`, decrease delegated shares by `shares`
+        bool undelegateIfPossible = false;
         cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(delegationManager.delegatedTo(staker), strategies, sharesInputArray);
+        delegationManager.decreaseDelegatedShares(delegationManager.delegatedTo(staker), strategies, sharesInputArray, undelegateIfPossible);
         cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
@@ -1103,7 +1095,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(operator != address(eigenPodManagerMock));
         cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
-        delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
+        bool undelegateIfPossible = false;
+        delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts, undelegateIfPossible);
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer

@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/delegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodMock.sol";
@@ -31,7 +31,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     EigenPodManager public eigenPodManager;
 
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodImplementation;
@@ -87,7 +87,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         slasherMock = new SlasherMock();
-        delegationMock = new DelegationMock();
+        delegationManagerMock = new DelegationManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         ethPOSMock = new ETHPOSDepositMock();
         eigenPodImplementation = new EigenPodMock();
@@ -98,7 +98,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             eigenPodBeacon,
             strategyManagerMock,
             slasherMock,
-            delegationMock
+            delegationManagerMock
         );
         eigenPodManager = EigenPodManager(
             address(
@@ -372,7 +372,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             podOwner: staker,
             nonce: uint96(eigenPodManager.numWithdrawalsQueued(staker)),
             withdrawalStartBlock: uint32(block.number),
-            delegatedAddress: delegationMock.delegatedTo(staker),
+            delegatedAddress: delegationManagerMock.delegatedTo(staker),
             withdrawer: withdrawer
         });
 

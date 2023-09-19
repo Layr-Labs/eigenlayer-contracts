@@ -51,6 +51,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _;
     }
 
+    modifier onlyNotFrozen(address staker) {
+        require(
+            !slasher.isFrozen(staker),
+            "DelegationManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
+        );
+        _;
+    }
+
     /*******************************************************************************
                             INITIALIZING FUNCTIONS
     *******************************************************************************/
@@ -185,22 +193,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @param staker The account undelegating.
+     * @notice Undelegates the caller (`msg.sender`) from the operator who they are delegated to.
      *
-     * @dev Callable only by the StrategyManager.
-     * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
-     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller has any active deposits in EigenLayer.
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager {
-        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
-        address operator = delegatedTo[staker];
-        // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
-        if (operator != address(0)) {
-            emit StakerUndelegated(staker, operator);
-            delegatedTo[staker] = address(0);
-        }
+    function undelegate() external {
+        // check if the staker can undelegate, and undelegate them if allowed.
+        require(stakerCanUndelegate(msg.sender), "DelegationManager.undelegate: staker cannot undelegate");
+        _undelegate(msg.sender);
     }
 
     /**
@@ -223,8 +225,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         eigenPodManager.forceIntoUndelegationLimbo(staker);
         
         // force a withdrawal of all of the staker's shares from the StrategyManager
-        return (strategyManager.forceTotalWithdrawal(staker));
+        bytes32 queuedWithdrawal = strategyManager.forceTotalWithdrawal(staker);
 
+        _undelegate(staker);
+
+        return queuedWithdrawal;
     }
 
     /**
@@ -254,11 +259,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
+     * @param undelegateIfPossible If marked 'true', then this contract will check if the `staker` can undelegate, and undelegate them if possible.
+     * If the check fails, then the `staker` will simply remain delegated.
      * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares, bool undelegateIfPossible)
         external
         onlyStrategyManagerOrEigenPodManager
     {
@@ -273,6 +280,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 unchecked {
                     ++i;
                 }
+            }
+
+            // if the `undelegateIfPossible` flag is set, then check if the staker can undelegate, and undelegate them if allowed.
+            if (undelegateIfPossible && stakerCanUndelegate(staker)) {
+                _undelegate(staker);
             }
         }
     }
@@ -366,6 +378,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
+    }
+
+    function _undelegate(address staker) internal onlyNotFrozen(staker) {
+        address operator = delegatedTo[staker];
+        // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
+        if (isDelegated(staker)) {
+            emit StakerUndelegated(staker, operator);
+            delegatedTo[staker] = address(0);
+        }
     }
 
     /*******************************************************************************
@@ -478,6 +499,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
+    }
+
+    /** 
+     * @notice Returns 'true' if the staker can undelegate or  if the staker is already undelegated, and 'false' otherwise
+     * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
+     */
+    function stakerCanUndelegate(address staker) public view returns (bool) {
+        return (strategyManager.stakerHasActiveShares(staker) && !isOperator(staker));
+
     }
 
     /** 

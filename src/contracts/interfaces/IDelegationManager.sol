@@ -160,15 +160,13 @@ interface IDelegationManager {
     ) external;
 
     /**
-     * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @param staker The account undelegating.
+     * @notice Undelegates the caller (`msg.sender`) from the operator who they are delegated to.
      *
-     * @dev Callable only by the StrategyManager.
-     * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
-     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller has any active deposits in EigenLayer.
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate(address staker) external;
+    function undelegate() external;
 
     /**
      * @notice Forcibly undelegates a staker who is currently delegated to the operator.
@@ -198,11 +196,13 @@ interface IDelegationManager {
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
+     * @param undelegateIfPossible If marked 'true', then this contract will check if the `staker` can undelegate, and undelegate them if possible.
+     * If the check fails, then the `staker` will simply remain delegated.
      * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares) external;
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares, bool undelegateIfPossible) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

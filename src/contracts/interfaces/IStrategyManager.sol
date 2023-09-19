@@ -202,12 +202,6 @@ interface IStrategyManager {
         external;
 
     /**
-     * @notice Called by a staker to undelegate entirely from EigenLayer. The staker must first withdraw all of their existing deposits
-     * (through use of the `queueWithdrawal` function), or else otherwise have never deposited in EigenLayer prior to delegating.
-     */
-    function undelegate() external;
-
-    /**
      * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
@@ -249,4 +243,8 @@ interface IStrategyManager {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     function numWithdrawalsQueued(address staker) external view returns (uint256);
+
+    // @notice Returns 'true' if `staker` has "active" shares in EigenLayer, and 'false' otherwise
+    function stakerHasActiveShares(address staker) external view returns (bool);
+
 }

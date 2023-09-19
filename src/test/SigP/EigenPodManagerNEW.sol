@@ -250,11 +250,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
 
-    // @notice Returns 'true' if `staker` can undelegate and false otherwise
-    function stakerCanUndelegate(address staker) external view returns (bool) {}
-
-    // @notice Returns 'true' if `staker` has removed all of their shares from delegation, either by queuing a withdrawal for them or by going into "undelegation limbo"
-    function stakerHasNoDelegatedShares(address staker) external view returns (bool) {}
+    function podOwnerHasNoDelegatedShares(address staker) external view returns (bool) {}
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
     function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}

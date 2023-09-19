@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/core/StrategyManager.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/delegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/Reenterer.sol";
@@ -31,7 +31,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
@@ -122,9 +122,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         slasherMock = new SlasherMock();
-        delegationMock = new DelegationMock();
+        delegationManagerMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
-        strategyManagerImplementation = new StrategyManager(delegationMock, eigenPodManagerMock, slasherMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -537,20 +537,22 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
-    function testUndelegate() public {
-        strategyManager.undelegate();
-    }
+// TODO: shift test to DelegationManager instead
+    // function testUndelegate() public {
+    //     strategyManager.undelegate();
+    // }
 
-    function testUndelegateRevertsWithActiveDeposits() public {
-        address staker = address(this);
-        uint256 amount = 1e18;
+// TODO: shift test to DelegationManager instead
+    // function testUndelegateRevertsWithActiveDeposits() public {
+    //     address staker = address(this);
+    //     uint256 amount = 1e18;
 
-        testDepositIntoStrategySuccessfully(staker, amount);
-        require(strategyManager.stakerStrategyListLength(staker) != 0, "test broken in some way, length shouldn't be 0");
+    //     testDepositIntoStrategySuccessfully(staker, amount);
+    //     require(strategyManager.stakerStrategyListLength(staker) != 0, "test broken in some way, length shouldn't be 0");
 
-        cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
-        strategyManager.undelegate();
-    }
+    //     cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
+    //     strategyManager.undelegate();
+    // }
 
     function testQueueWithdrawalMismatchedIndexAndStrategyArrayLength() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -773,26 +775,26 @@ contract StrategyManagerUnitTests is Test, Utils {
     function testQueueWithdrawal_WithdrawEverything_DontUndelegate(uint256 amount) external {
         // delegate to self
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegationMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
-        require(delegationMock.isDelegated(address(this)), "delegation mock setup failed");
+        delegationManagerMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
+        require(delegationManagerMock.isDelegated(address(this)), "delegation mock setup failed");
         bool undelegateIfPossible = false;
         // deposit and withdraw the same amount, don't undelegate
         testQueueWithdrawal_ToSelf(amount, amount, undelegateIfPossible);
-        require(delegationMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
+        require(delegationManagerMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
     }
 
     function testQueueWithdrawal_WithdrawEverything_DoUndelegate(uint256 amount) external {
         bool undelegateIfPossible = true;
         // deposit and withdraw the same amount, do undelegate if possible
         testQueueWithdrawal_ToSelf(amount, amount, undelegateIfPossible);
-        require(delegationMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
+        require(delegationManagerMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
     }
 
     function testQueueWithdrawal_DontWithdrawEverything_MarkUndelegateIfPossibleAsTrue(uint128 amount) external {
         bool undelegateIfPossible = true;
         // deposit and withdraw only half, do undelegate if possible
         testQueueWithdrawal_ToSelf(uint256(amount) * 2, amount, undelegateIfPossible);
-        require(!delegationMock.isDelegated(address(this)), "undelegation mock failed");
+        require(!delegationManagerMock.isDelegated(address(this)), "undelegation mock failed");
     }
 
     function testQueueWithdrawalFailsWhenStakerFrozen() public {
@@ -1169,13 +1171,14 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
-    function testUndelegateWithFrozenStaker() public {
-        slasherMock.setOperatorFrozenStatus(address(this), true);
-        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        cheats.startPrank(address(this));
-        strategyManager.undelegate();
-        cheats.stopPrank();
-    }
+// TODO: shift test to DelegationManager instead
+    // function testUndelegateWithFrozenStaker() public {
+    //     slasherMock.setOperatorFrozenStatus(address(this), true);
+    //     cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
+    //     cheats.startPrank(address(this));
+    //     strategyManager.undelegate();
+    //     cheats.stopPrank();
+    // }
 
     function testCompleteQueuedWithdrawalFailsWhenNotCallingFromWithdrawerAddress() external {
         _tempStakerStorage = address(this);

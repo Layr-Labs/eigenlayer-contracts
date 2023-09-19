@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 
 
-contract DelegationMock is IDelegationManager, Test {
+contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
@@ -32,15 +32,15 @@ contract DelegationMock is IDelegationManager, Test {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external {
-        delegatedTo[staker] = address(0);
+    function undelegate() external {
+        delegatedTo[msg.sender] = address(0);
     }
 
     function forceUndelegation(address /*staker*/) external pure returns (bytes32) {}
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
-    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/) external pure {}
+    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/, bool /*undelegateIfPossible*/) external pure {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({

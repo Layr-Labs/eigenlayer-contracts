@@ -15,7 +15,8 @@ contract DelegationManagerHarness is DelegationManager {
         IStrategy strategy1,
         IStrategy strategy2,
         uint256 share1,
-        uint256 share2
+        uint256 share2,
+        bool undelegateIfPossible
         ) external {
             IStrategy[] memory strategies = new IStrategy[](2);
             uint256[] memory shares = new uint256[](2);
@@ -23,7 +24,7 @@ contract DelegationManagerHarness is DelegationManager {
             strategies[1] = strategy2;
             shares[0] = share1;
             shares[1] = share2;
-            super.decreaseDelegatedShares(staker,strategies,shares);
+            super.decreaseDelegatedShares(staker, strategies, shares, undelegateIfPossible);
     }
 
     function get_operatorShares(address operator, IStrategy strategy) public view returns(uint256) {

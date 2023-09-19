@@ -10,7 +10,7 @@ import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 
-import "../mocks/DelegationMock.sol";
+import "../mocks/delegationManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/Reenterer.sol";
@@ -44,7 +44,7 @@ contract SlasherUnitTests is Test, Utils {
     Slasher public slasherImplementation;
     Slasher public slasher;
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationManagerMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     Reenterer public reenterer;
@@ -83,10 +83,10 @@ contract SlasherUnitTests is Test, Utils {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
         
-        delegationMock = new DelegationMock();
+        delegationManagerMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
+        slasherImplementation = new Slasher(strategyManagerMock, delegationManagerMock);
         slasher = Slasher(
             address(
                 new TransparentUpgradeableProxy(
@@ -211,7 +211,7 @@ contract SlasherUnitTests is Test, Utils {
         filterFuzzedAddressInputs(operator)
         filterFuzzedAddressInputs(contractAddress)
     {
-        delegationMock.setIsOperator(operator, true);
+        delegationManagerMock.setIsOperator(operator, true);
 
         cheats.startPrank(operator);
         slasher.optIntoSlashing(contractAddress);
@@ -237,7 +237,7 @@ contract SlasherUnitTests is Test, Utils {
     }
 
     function testOptIntoSlashing_RevertsWhenCallerNotOperator(address notOperator) public filterFuzzedAddressInputs(notOperator) {
-        require(!delegationMock.isOperator(notOperator), "caller is an operator -- this is assumed false");
+        require(!delegationManagerMock.isOperator(notOperator), "caller is an operator -- this is assumed false");
         address contractAddress = address(this);
 
         cheats.startPrank(notOperator);
