@@ -61,6 +61,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
     uint64  MAX_VALIDATOR_BALANCE_GWEI = 32e9;
     uint64  RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
+    uint64 internal constant GENESIS_TIME = 1616508000;
+    uint64 internal constant SECONDS_PER_SLOT = 12;
+
 
     // EIGENPODMANAGER EVENTS
     /// @notice Emitted to notify the update of the beaconChainOracle address
@@ -460,7 +463,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             cheats.expectEmit(true, true, true, true, address(newPod));
             emit PartialWithdrawalRedeemed(validatorIndex, podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
-            require(newPod.provenWithdrawal(validatorFields[0], Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), "provenPartialWithdrawal should be true");
+            require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
             withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
             require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
                 "pod delayed withdrawal balance hasn't been updated correctly");
@@ -1332,6 +1335,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 effectiveBalanceGwei = uint64((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
         return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
     }
+
+    function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
+        return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
+    }
+
 
  }
 

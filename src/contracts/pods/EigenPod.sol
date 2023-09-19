@@ -44,6 +44,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredental` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
+    //this is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
+    uint64 internal constant GENESIS_TIME = 1616508000;
+
+    /// @notice The number of seconds in a slot in the beacon chain
+    uint256 internal constant SECONDS_PER_SLOT = 12;
+
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -79,7 +85,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
 
-    /// @notice This is a mapping of validatorPubkeyHash to slot to whether or not they have proven a withdrawal for that slot
+    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that slot
     mapping(bytes32 => mapping(uint64 => bool)) public provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
@@ -254,7 +260,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         //checking that the balance update being made is strictly after the previous balance update
-        require(validatorInfo.mostRecentBalanceUpdateSlot < Endian.fromLittleEndianUint64(proofs.slotRoot),
+        require(validatorInfo.mostRecentBalanceUpdateTimestamp < _computeTimestampAtSlot(Endian.fromLittleEndianUint64(proofs.slotRoot)),
             "EigenPod.verifyBalanceUpdate: Validator's balance has already been updated for this slot");
         
         // deserialize the balance field from the balanceRoot
@@ -299,7 +305,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //update the most recent balance update slot
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
-        validatorInfo.mostRecentBalanceUpdateSlot = slotNumber;
+        validatorInfo.mostRecentBalanceUpdateTimestamp = _computeTimestampAtSlot(slotNumber);
 
         //record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
@@ -456,7 +462,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
-        require(!provenWithdrawal[validatorPubkeyHash][Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)],
+
+        uint64 timestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot));
+        require(!provenWithdrawal[validatorPubkeyHash][timestamp],
             "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
 
@@ -541,7 +549,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         _validatorPubkeyHashToInfo[validatorPubkeyHash].restakedBalanceGwei = 0;
 
-        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
+        provenWithdrawal[validatorPubkeyHash][_computeTimestampAtSlot(withdrawalHappenedSlot)] = true;
 
         emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
 
@@ -559,7 +567,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 partialWithdrawalAmountGwei
     ) internal {
 
-        provenWithdrawal[validatorPubkeyHash][withdrawalHappenedSlot] = true;
+        provenWithdrawal[validatorPubkeyHash][_computeTimestampAtSlot(withdrawalHappenedSlot)] = true;
         emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei);
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
@@ -666,6 +674,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal pure returns(int256){
         return (int256(newAmountWei) - int256(currentAmountWei));
+    }
+
+    // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
+    function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
+        return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
 
