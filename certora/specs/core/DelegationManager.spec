@@ -54,6 +54,8 @@ methods {
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
+    function stakerCanUndelegate(address staker) external returns (bool) envfree;
+    function stakerHasActiveShares(address staker) external returns (bool) envfree;
 }
 
 /*
@@ -136,11 +138,11 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     method f;
     env e;
     // the only way the staker can become undelegated is if `undelegate` is called
-    if (f.selector == sig:undelegate(address).selector) {
-        address toUndelegate;
-        undelegate(e, toUndelegate);
-        // either the `strategyManager` or `eigenPodManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
-        if ((e.msg.sender == strategyManager() || e.msg.sender == eigenPodManager()) && toUndelegate == staker) {
+    if (f.selector == sig:undelegate().selector) {
+        bool stakerCouldUndelegate = stakerCanUndelegate(staker);
+        undelegate(e);
+        // either the `staker` called 'undelegate' and they should have been allowed to undelegate (in which case they should now be undelegated)
+        if (e.msg.sender == staker && stakerCouldUndelegate) {
             assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
         // or the staker's delegation should have remained the same
         } else {
