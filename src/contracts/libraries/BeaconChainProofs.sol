@@ -282,6 +282,11 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
         if(proofs.proveHistoricalRoot){
+            /**
+            * Note: Here, the "1" in "1 + (BLOCK_ROOTS_TREE_HEIGHT)" signifies that extra step of choosing the "block_root_summary" within the individual 
+            * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
+            * but not here.
+            */
             uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
                                                 uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT) |
                                                 BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
