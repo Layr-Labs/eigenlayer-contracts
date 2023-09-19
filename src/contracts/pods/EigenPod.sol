@@ -266,9 +266,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //checking that the balance update being made is strictly after the previous balance update
         require(validatorInfo.mostRecentBalanceUpdateTimestamp < _computeTimestampAtSlot(Endian.fromLittleEndianUint64(proofs.slotRoot)),
             "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
-        
-        // deserialize the balance field from the balanceRoot
-        uint64 validatorNewBalanceGwei = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot);        
 
         {
             // verify ETH validator proof
@@ -301,8 +298,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
-        // calculate the effective (pessimistic) restaked balance
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorNewBalanceGwei);
+        // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
+        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot));
 
         //update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
@@ -318,7 +315,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
             emit ValidatorBalanceUpdated(validatorIndex, timestamp, newRestakedBalanceGwei);
 
-            int256 sharesDelta = _calculateSharesDelta(newRestakedBalanceGwei * GWEI_TO_WEI, currentRestakedBalanceGwei* GWEI_TO_WEI);
+            int256 sharesDelta = _calculateSharesDelta({newAmountWei: newRestakedBalanceGwei * GWEI_TO_WEI, currentAmountWei: currentRestakedBalanceGwei* GWEI_TO_WEI});
             // update shares in strategy manager
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
         }
@@ -545,7 +542,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             }
             // if the amount being withdrawn is not equal to the current accounted for validator balance, an update must be made
             if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
-                int256 sharesDelta = _calculateSharesDelta(withdrawalAmountWei, currentValidatorRestakedBalanceWei);
+                int256 sharesDelta = _calculateSharesDelta({newAmountWei: withdrawalAmountWei, currentAmountWei: currentValidatorRestakedBalanceWei});
                 //update podOwner's shares in the strategy manager
                 eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
             }
