@@ -2150,21 +2150,6 @@ testQueueWithdrawal_ToSelf_TwoStrategies(depositAmount, withdrawalAmount, undele
     }
 
     // INTERNAL / HELPER FUNCTIONS
-    function _beaconChainReentrancyTestsSetup() internal {
-        // prepare StrategyManager with EigenPodManager and Delegation replaced with a Reenterer contract
-        reenterer = new Reenterer();
-        strategyManagerImplementation = new StrategyManager(IDelegationManager(address(reenterer)), IEigenPodManager(address(reenterer)), slasherMock);
-        strategyManager = StrategyManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyManagerImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(StrategyManager.initialize.selector, initialOwner, initialOwner, pauserRegistry, 0, 0)
-                )
-            )
-        );
-    }
-
     function _setUpQueuedWithdrawalStructSingleStrat(address staker, address withdrawer, IERC20 token, IStrategy strategy, uint256 shareAmount)
         internal view returns (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot)
     {
