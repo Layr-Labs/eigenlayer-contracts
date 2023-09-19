@@ -41,6 +41,7 @@ contract GoerliM2Deployment is Script, Test {
     address executorMultisig;
     address operationsMultisig;
     address pauserMultisig;
+    address beaconChainOracleGoerli = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
 
     IETHPOSDeposit public ethPOS;
 
@@ -104,6 +105,7 @@ contract GoerliM2Deployment is Script, Test {
 
         vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManagerImplementation", address(strategyManagerImplementation));
+        vm.serializeAddress(deployed_addresses, "beaconChainOracle", address(beaconChainOracleGoerli));
         vm.serializeAddress(deployed_addresses, "eigenPodManagerImplementation", address(eigenPodManagerImplementation));
         string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
 
