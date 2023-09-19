@@ -289,22 +289,6 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     function test_RevertsWhen_NotStakedInStrategies_ForceTotalWithdraw() public {}
 
-    /// Complete Queue Withdrawals
-
-    function test_CompleteQueueWithdrawals() public {}
-
-    function test_RevertsWhen_PausedWithdrawals_CompleteQueueWithdrawals() public {}
-
-    function test_RevertsWhen_InputArrayLengthMismatch_CompleteQueueWithdrawals() public {}
-
-    function test_RevertsWhen_WithdrawalNotPending_CompleteQueueWithdrawals() public {}
-
-    function test_RevertsWhen_WithdrawingSlashableShares_CompleteQueueWithdrawals() public {}
-
-    function test_RevertsWhen_NotWithdrawer_CompleteQueueWithdrawals() public {}
-
-    /// ignoring eigen pod related stuff for now 
-
 
     /// Deposit Into Strategy
     function testDepositIntoStrategySuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
@@ -1101,6 +1085,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
+    /// Complete Queue Withdrawals
     function testCompleteQueuedWithdrawal_ReceiveAsTokensMarkedFalse() external {
         address staker = address(this);
         uint256 withdrawalAmount = 1e18;
