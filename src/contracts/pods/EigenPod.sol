@@ -106,10 +106,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 timestamp, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint256 withdrawalAmountWei, uint64 timestamp);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint256 withdrawalAmountWei);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, address indexed recipient, uint64 partialWithdrawalAmountGwei, uint64 timestamp);
+    event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -460,15 +460,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
          * and thus we cannot know that the validator is related to this EigenPod at all!
          */
-        ValidatorInfo validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
         require(validatorInfo.status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
 
-        uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot));
-        require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
-            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
+        {
+            uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot));
+            require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
+                "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
-         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
+            provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
+        }
     
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
@@ -507,7 +509,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalHappenedSlot,
         address recipient,
         uint64 withdrawalAmountGwei,
-        ValidatorInfo validatorInfo
+        ValidatorInfo memory validatorInfo
     ) internal {
         uint256 amountToSend;
         uint256 withdrawalAmountWei;
@@ -556,7 +558,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
-        emit FullWithdrawalRedeemed(validatorIndex, recipient, withdrawalAmountGwei * GWEI_TO_WEI, withdrawalHappenedTimestamp);
+        emit FullWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
 
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         if (amountToSend != 0) {
@@ -571,7 +573,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint64 partialWithdrawalAmountGwei
     ) internal {
-        emit PartialWithdrawalRedeemed(validatorIndex, recipient, partialWithdrawalAmountGwei, _computeTimestampAtSlot(withdrawalHappenedSlot));
+        emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(withdrawalHappenedSlot), recipient, partialWithdrawalAmountGwei);
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
         _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
