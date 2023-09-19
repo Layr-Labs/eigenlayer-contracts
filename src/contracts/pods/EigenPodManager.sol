@@ -266,6 +266,7 @@ contract EigenPodManager is
 
     /**
      * @notice Called by a staker who owns an EigenPod to enter the "undelegation limbo" mode.
+     * @param undelegateIfPossible If this param is marked as 'true', then this function will also inform the DelegationManager of the caller's desire to undelegate
      * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
      * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
      * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
