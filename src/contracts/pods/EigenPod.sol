@@ -452,7 +452,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProofs.timestampRoot))
     {
-        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot));
         
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
@@ -465,7 +465,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
 
         {
-            uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot));
             require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
                 "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
 
@@ -482,12 +481,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // Verifying the withdrawal as well as the slot
         BeaconChainProofs.verifyWithdrawalProofs({beaconStateRoot: withdrawalProofs.beaconStateRoot, withdrawalFields: withdrawalFields, proofs: withdrawalProofs});
-        // Verifying the validator fields, specifically the withdrawable epoch
-        BeaconChainProofs.verifyValidatorFields({beaconStateRoot: withdrawalProofs.beaconStateRoot, validatorFields: validatorFields, proof: validatorFieldsProof, validatorIndex: validatorIndex});
 
         {
-            uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+            uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
 
+             // Verifying the validator fields, specifically the withdrawable epoch
+            BeaconChainProofs.verifyValidatorFields({beaconStateRoot: withdrawalProofs.beaconStateRoot, validatorFields: validatorFields, proof: validatorFieldsProof, validatorIndex: validatorIndex});
+
+            uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
             uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
 
             /**
@@ -498,7 +499,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
                 _processFullWithdrawal(validatorIndex, validatorPubkeyHash, slot, podOwner, withdrawalAmountGwei, validatorInfo);
             } else {
-                _processPartialWithdrawal(validatorIndex, validatorPubkeyHash, slot, podOwner, withdrawalAmountGwei);
+                _processPartialWithdrawal(validatorIndex, slot, podOwner, withdrawalAmountGwei);
             }
         }
     }
@@ -568,7 +569,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _processPartialWithdrawal(
         uint40 validatorIndex,
-        bytes32 validatorPubkeyHash,
         uint64 withdrawalHappenedSlot,
         address recipient,
         uint64 partialWithdrawalAmountGwei
