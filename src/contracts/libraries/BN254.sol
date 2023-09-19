@@ -139,19 +139,40 @@ library BN254 {
      */ 
     function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
         require(s < 2**9, "scalar-too-large");
+
         // the accumulated product to return
         BN254.G1Point memory acc = BN254.G1Point(0, 0);
-        // the 2^n*p to add to the accumulated product in each iteration
-        BN254.G1Point memory p2n = p;
-        // loop through each bit of s
-        for (uint8 i = 0; i < 9; i++) {
-            // if the bit is 1, add the 2^n*p to the accumulated product
-            if (s >> i & 1 == 1) {
-                acc = plus(acc, p2n);
+        // value of most signifigant bit
+        uint16 m = 1;
+
+        //check if s is greater than 1
+        if(s > m){
+            // the 2^n*p to add to the accumulated product in each iteration
+            BN254.G1Point memory p2n = p;
+            // index of most signifigant bit
+            uint8 i = 0;
+
+            //loop until we reach the most signifigant bit
+            while(s > m){
+                unchecked {
+                    // if the  current bit is 1, add the 2^n*p to the accumulated product
+                    if (s >> i & 1 == 1) {
+                        acc = plus(acc, p2n);
+                    }
+                    // double the 2^n*p for the next iteration
+                    p2n = plus(p2n, p2n);
+
+                    // increment the index and double the value of the most signifigant bit
+                    m <<= 1;
+                    ++i;
+                }
             }
-            // double the 2^n*p for the next iteration
-            p2n = plus(p2n, p2n);
+        } else {
+            // if s is 1, return p
+            return p;
         }
+        
+        // return the accumulated product
         return acc;
     }
 
