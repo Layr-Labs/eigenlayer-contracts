@@ -9,7 +9,7 @@ import "src/contracts/interfaces/ISignatureUtils.sol";
 import "../test/EigenLayerTestHelper.t.sol";
 
 import "./mocks/MiddlewareRegistryMock.sol";
-import "./mocks/MiddlewareRegistryMock.sol";
+import "./mocks/MiddlewareVoteWeigherMock.sol";
 import "./mocks/ServiceManagerMock.sol";
 
  contract DelegationTests is EigenLayerTestHelper {
@@ -20,8 +20,8 @@ import "./mocks/ServiceManagerMock.sol";
      uint32 serveUntil = 100;
 
      ServiceManagerMock public serviceManager;
-     MiddlewareRegistryMock public voteWeigher;
-     MiddlewareRegistryMock public voteWeigherImplementation;
+     MiddlewareVoteWeigherMock public voteWeigher;
+     MiddlewareVoteWeigherMock public voteWeigherImplementation;
 
      modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
          cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
@@ -39,12 +39,12 @@ import "./mocks/ServiceManagerMock.sol";
          serviceManager = new ServiceManagerMock(slasher);
 
 
-         voteWeigher = MiddlewareRegistryMock(
+         voteWeigher = MiddlewareVoteWeigherMock(
              address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
          );
 
 
-         voteWeigherImplementation = new MiddlewareRegistryMock(delegation, strategyManager, serviceManager);
+         voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
 
 
          {
@@ -67,7 +67,7 @@ import "./mocks/ServiceManagerMock.sol";
              eigenLayerProxyAdmin.upgradeAndCall(
                  TransparentUpgradeableProxy(payable(address(voteWeigher))),
                  address(voteWeigherImplementation),
-                 abi.encodeWithSelector(MiddlewareRegistryMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
+                 abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
              );
              cheats.stopPrank();
             
