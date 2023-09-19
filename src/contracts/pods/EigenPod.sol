@@ -271,29 +271,29 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp);
 
             // verify that the provided state root is verified against the oracle-provided latest block header
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
         }
         // verify validator fields
-        BeaconChainProofs.verifyValidatorFields(
-            proofs.beaconStateRoot,
-            validatorFields,            
-            proofs.validatorFieldsProof,
-            validatorIndex
-        );
+        BeaconChainProofs.verifyValidatorFields({
+            beaconStateRoot: proofs.beaconStateRoot,
+            validatorFields: validatorFields,            
+            proof: proofs.validatorFieldsProof,
+            validatorIndex: validatorIndex
+        });
  
         // verify ETH validator's current balance, which is stored in the `balances` container of the beacon state
-        BeaconChainProofs.verifyValidatorBalance(
-            proofs.beaconStateRoot,
-            proofs.balanceRoot,
-            proofs.validatorBalanceProof,
-            validatorIndex
-        );
+        BeaconChainProofs.verifyValidatorBalance({
+            beaconStateRoot: proofs.beaconStateRoot,
+            balanceRoot: proofs.balanceRoot,
+            proof: proofs.validatorBalanceProof,
+            validatorIndex: validatorIndex
+        });
         //verify provided slot is valid against beaconStateRoot
-        BeaconChainProofs.verifySlotRoot(
-            proofs.beaconStateRoot,
-            proofs.slotRoot,
-            proofs.slotProof
-        );
+        BeaconChainProofs.verifySlotRoot({
+            beaconStateRoot: proofs.beaconStateRoot,
+            slotRoot: proofs.slotRoot,
+            proof: proofs.slotProof
+        });
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
@@ -410,14 +410,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 latestBlockHeaderRoot = eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(proofs.beaconStateRoot, latestBlockHeaderRoot, proofs.latestBlockHeaderProof);
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
 
-        BeaconChainProofs.verifyValidatorFields(
-            proofs.beaconStateRoot,
-            validatorFields,
-            proofs.validatorFieldsProof,
-            validatorIndex
-        );
+        BeaconChainProofs.verifyValidatorFields({
+            beaconStateRoot: proofs.beaconStateRoot,
+            validatorFields: validatorFields,
+            proof: proofs.validatorFieldsProof,
+            validatorIndex: validatorIndex
+        });
 
         // set the status to active
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
@@ -471,17 +471,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot(
-            withdrawalProofs.beaconStateRoot,
-            eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp),
-            withdrawalProofs.latestBlockHeaderProof
-        );
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+            beaconStateRoot: withdrawalProofs.beaconStateRoot,
+            latestBlockHeaderRoot: eigenPodManager.getBeaconChainStateRootAtTimestamp(oracleTimestamp),
+            proof: withdrawalProofs.latestBlockHeaderProof
+        });
 
 
         // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawalProofs(withdrawalProofs.beaconStateRoot, withdrawalFields, withdrawalProofs);
+        BeaconChainProofs.verifyWithdrawalProofs({beaconStateRoot: withdrawalProofs.beaconStateRoot, withdrawalFields: withdrawalFields, proofs: withdrawalProofs});
         // Verifying the validator fields, specifically the withdrawable epoch
-        BeaconChainProofs.verifyValidatorFields(withdrawalProofs.beaconStateRoot, validatorFields, validatorFieldsProof, validatorIndex);
+        BeaconChainProofs.verifyValidatorFields({beaconStateRoot: withdrawalProofs.beaconStateRoot, validatorFields: validatorFields, proof: validatorFieldsProof, validatorIndex: validatorIndex});
 
         {
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
