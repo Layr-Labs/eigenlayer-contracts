@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/core/StrategyManager.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/delegationManagerMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/Reenterer.sol";

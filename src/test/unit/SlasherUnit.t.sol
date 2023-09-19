@@ -10,7 +10,7 @@ import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 
-import "../mocks/delegationManagerMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/Reenterer.sol";

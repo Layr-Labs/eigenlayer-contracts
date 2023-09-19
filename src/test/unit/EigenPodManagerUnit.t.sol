@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/delegationManagerMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodMock.sol";
