@@ -307,4 +307,16 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    /** 
+     * @notice Returns 'true' if the staker can undelegate or  if the staker is already undelegated, and 'false' otherwise
+     * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
+     */
+    function stakerCanUndelegate(address staker) external view returns (bool);
+
+    /**
+     * @notice Returns 'true' if `staker` has "active" shares in EigenLayer (i.e. the staker has shares which are currently in the StrategyManager
+     * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
+     */
+    function stakerHasActiveShares(address staker) external view returns (bool);
 }

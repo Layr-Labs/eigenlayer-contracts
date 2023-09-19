@@ -101,4 +101,24 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
+
+    /** 
+     * @notice Returns 'true' if the staker can undelegate or  if the staker is already undelegated, and 'false' otherwise
+     * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
+     */
+    mapping(address => bool) public stakerCanUndelegate;
+
+    function setStakerCanUndelegate(address staker, bool valueToSet) external {
+        stakerCanUndelegate[staker] = valueToSet;
+    }
+
+    /**
+     * @notice Returns 'true' if `staker` has "active" shares in EigenLayer (i.e. the staker has shares which are currently in the StrategyManager
+     * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
+     */
+    mapping(address => bool) public stakerHasActiveShares;
+
+    function setStakerHasActiveShares(address staker, bool valueToSet) external {
+        stakerHasActiveShares[staker] = valueToSet;
+    }
 }

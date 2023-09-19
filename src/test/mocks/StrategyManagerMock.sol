@@ -71,8 +71,15 @@ contract StrategyManagerMock is
     /// @notice Returns the array of strategies in which `staker` has nonzero shares
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
+    uint256 public stakerStrategyListLengthReturnValue;
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256) {}
+    function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
+        return stakerStrategyListLengthReturnValue;
+    }
+
+    function setStakerStrategyListLengthReturnValue(uint256 valueToSet) public {
+        stakerStrategyListLengthReturnValue = valueToSet;
+    }
 
 
     function queueWithdrawal(
@@ -140,11 +147,6 @@ contract StrategyManagerMock is
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
-
-    // @notice Returns 'true' if `staker` has "active" shares in EigenLayer, and 'false' otherwise
-    function stakerHasActiveShares(address /*staker*/) external pure returns (bool) {
-        return true;
-    }
 
     event ForceTotalWithdrawalCalled(address staker);
 
