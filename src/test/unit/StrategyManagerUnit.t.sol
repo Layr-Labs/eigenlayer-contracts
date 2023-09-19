@@ -537,23 +537,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
-// TODO: shift test to DelegationManager instead
-    // function testUndelegate() public {
-    //     strategyManager.undelegate();
-    // }
-
-// TODO: shift test to DelegationManager instead
-    // function testUndelegateRevertsWithActiveDeposits() public {
-    //     address staker = address(this);
-    //     uint256 amount = 1e18;
-
-    //     testDepositIntoStrategySuccessfully(staker, amount);
-    //     require(strategyManager.stakerStrategyListLength(staker) != 0, "test broken in some way, length shouldn't be 0");
-
-    //     cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
-    //     strategyManager.undelegate();
-    // }
-
     function testQueueWithdrawalMismatchedIndexAndStrategyArrayLength() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](2);
@@ -1170,15 +1153,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
         require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
-
-// TODO: shift test to DelegationManager instead
-    // function testUndelegateWithFrozenStaker() public {
-    //     slasherMock.setOperatorFrozenStatus(address(this), true);
-    //     cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-    //     cheats.startPrank(address(this));
-    //     strategyManager.undelegate();
-    //     cheats.stopPrank();
-    // }
 
     function testCompleteQueuedWithdrawalFailsWhenNotCallingFromWithdrawerAddress() external {
         _tempStakerStorage = address(this);

@@ -328,7 +328,6 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
     }
 
-// TODO: update tests from here
     function testSlashSharesBeaconChainETH() external {
         uint256 amount = 1e18;
         address staker = address(this);

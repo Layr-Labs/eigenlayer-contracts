@@ -926,7 +926,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-// TODO: revisit test to attune to undelegation changes
     /**
      * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
      * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
@@ -1302,6 +1301,27 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(staker_two);
         cheats.expectRevert(bytes("DelegationManager._delegate: approverSalt already spent"));
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
+        cheats.stopPrank();
+    }
+
+    function testUndelegateRevertsWithActiveDeposits() public {
+        address staker = address(this);
+
+        require(strategyManagerMock.stakerHasActiveShares(staker),
+            "test broken in some way, mock should return that staker has active shares");
+
+        cheats.expectRevert(bytes("DelegationManager.undelegate: staker cannot undelegate"));
+        cheats.startPrank(staker);
+        delegationManager.undelegate();
+        cheats.stopPrank();
+    }
+
+    function testUndelegateRevertsWhenStakerFrozen() public {
+        address staker = address(this);
+        slasherMock.setOperatorFrozenStatus(staker, true);
+        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
+        cheats.startPrank(staker);
+        delegationManager.undelegate();
         cheats.stopPrank();
     }
 

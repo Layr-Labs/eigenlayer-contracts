@@ -80,10 +80,10 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
 
-        // TODO: FIX THIS
-        // assertTrue(
-        //     delegation.delegationTerms(sender) == dt, "_testRegisterAsOperator: delegationTerms not set appropriately"
-        // );
+        assertTrue(
+            keccak256(abi.encode(delegation.operatorDetails(sender))) == keccak256(abi.encode(operatorDetails)),
+            "_testRegisterAsOperator: operatorDetails not set appropriately"
+        );
 
         assertTrue(delegation.isDelegated(sender), "_testRegisterAsOperator: sender not marked as actively delegated");
         cheats.stopPrank();
@@ -537,7 +537,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyArray,
             shareAmounts,
             withdrawer,
-            // TODO: make this an input
             undelegateIfPossible
         );
         cheats.stopPrank();
