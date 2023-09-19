@@ -170,6 +170,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0, 0);
     }
 
+    /// DEPOSIT BEACON CHAIN ETH
     function testDepositBeaconChainETHSuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
         // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
@@ -237,6 +238,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
     }
 
+    /// RECORD BEACON CHAIN ETH BALANCE UPDATE 
+
+    function test_RecordBeaconChainETHBalanceUpdate() public {}
+
     function testRecordOvercommittedBeaconChainETHFailsWhenNotCalledByEigenPodManager(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
         uint256 amount = 1e18;
         address staker = address(this);
@@ -272,7 +277,36 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.recordBeaconChainETHBalanceUpdate(staker, beaconChainETHStrategyIndex, amountDelta);
         cheats.stopPrank();
     }
+    /// ForceTotalWithdrawal
 
+    function test_ForceTotalWithdraw() public {}
+
+    function test_RevertsWhen_NotDelegationManager_ForceTotalWithdraw() public {}
+
+    function test_RevertsWhen_Paused_ForceTotalWithdraw() public {}
+
+    function test_RevertsWhen_StakerFrozen_ForceTotalWithdraw() public {}
+
+    function test_RevertsWhen_NotStakedInStrategies_ForceTotalWithdraw() public {}
+
+    /// Complete Queue Withdrawals
+
+    function test_CompleteQueueWithdrawals() public {}
+
+    function test_RevertsWhen_PausedWithdrawals_CompleteQueueWithdrawals() public {}
+
+    function test_RevertsWhen_InputArrayLengthMismatch_CompleteQueueWithdrawals() public {}
+
+    function test_RevertsWhen_WithdrawalNotPending_CompleteQueueWithdrawals() public {}
+
+    function test_RevertsWhen_WithdrawingSlashableShares_CompleteQueueWithdrawals() public {}
+
+    function test_RevertsWhen_NotWithdrawer_CompleteQueueWithdrawals() public {}
+
+    /// ignoring eigen pod related stuff for now 
+
+
+    /// Deposit Into Strategy
     function testDepositIntoStrategySuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;    
         IStrategy strategy = dummyStrat;
@@ -365,6 +399,11 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         strategyManager.depositIntoStrategy(IStrategy(address(reenterer)), dummyToken, amount);
     }
+
+    function test_RevertsWhen_StrategyNotWhitelisted_DepositIntoStrategy() public {}
+
+
+    /// DepsoitIntoStrategyWithSig
 
     function testDepositIntoStrategyWithSignatureSuccessfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
@@ -654,6 +693,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
         strategyManager.undelegate();
     }
+
+    function test_RevertsWhen_StrategyNotWhitelisted_DepositIntoStrategyWithSig() public {}
+
+    /// QueueWithdrawal  
 
     // fuzzed input amountGwei is sized-down, since it must be in GWEI and gets sized-up to be WEI
     function testQueueWithdrawalBeaconChainETHToSelf(uint128 amountGwei)
@@ -1598,6 +1641,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         // roll block number forward to the block at which the withdrawal should be completeable, and complete it
         cheats.roll(originalBlockNumber + valueToSet);
     }
+    /// Slash Shares 
 
     function testSlashSharesNotBeaconChainETHFuzzed(uint64 withdrawalAmount) external {
         // cannot cause share value to increase too drastically
@@ -1877,6 +1921,8 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.slashShares(slashedAddress, recipient, strategyArray, tokensArray, strategyIndexes, shareAmounts);
         cheats.stopPrank();
     }
+
+    /// Slash Queued Withdrawal
 
     function testSlashQueuedWithdrawalNotBeaconChainETH() external {
         address recipient = address(333);
@@ -2334,6 +2380,10 @@ testQueueWithdrawal_ToSelf_NotBeaconChainETHTwoStrategies(depositAmount, withdra
         require(sharesAfter == sharesBefore - amount, "sharesAfter != sharesBefore - amount");
         require(balanceAfter == balanceBefore + amount, "balanceAfter != balanceBefore + amount");
     }
+
+    function test_When_StakedInMultipleStrategies_removeStrategyFromStakerStrategyList() public {}
+
+    function test_RevertsWhen_StakerNotStakedInStrategy_removeStrategyFromStakerStrategyList() public {}
 
     function testSetWithdrawalDelayBlocks(uint16 valueToSet) external {
         // filter fuzzed inputs to allowed amounts
