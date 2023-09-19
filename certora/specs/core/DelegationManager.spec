@@ -15,10 +15,12 @@ methods {
     function _.slasher() external => DISPATCHER(true);
 	function _.deposit(address,uint256) external => DISPATCHER(true);
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+	function _.stakerStrategyListLength(address) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
 	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
-	
+	function _.podOwnerHasNoDelegatedShares(address) external => DISPATCHER(true);
+
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
@@ -35,10 +37,6 @@ methods {
     function decreaseDelegatedShares(address,address,address,uint256,uint256) external;
     // Harmessed getters
     function get_operatorShares(address,address) external returns (uint256) envfree;
-
-    //// Summarized Functions
-    function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
-    function _._delegationWithdrawnHook(address,address,address[]memory, uint256[] memory) internal => NONDET;
 
     //envfree functions
     function delegatedTo(address staker) external returns (address) envfree;
