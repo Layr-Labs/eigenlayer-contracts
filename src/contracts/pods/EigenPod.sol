@@ -476,7 +476,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // Verifying the withdrawal as well as the slot
         BeaconChainProofs.verifyWithdrawalProofs({beaconStateRoot: withdrawalProofs.beaconStateRoot, withdrawalFields: withdrawalFields, proofs: withdrawalProofs});
-
+        
         {
             uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
 

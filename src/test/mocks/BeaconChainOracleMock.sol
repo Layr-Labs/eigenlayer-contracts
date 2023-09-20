@@ -9,11 +9,11 @@ contract BeaconChainOracleMock is IBeaconChainOracleMock {
 
     bytes32 public mockBeaconChainStateRoot;
 
-    function getBlockRootAtTimestamp() external view returns(bytes32) {
+    function getOracleBlockRootAtTimestamp() external view returns(bytes32) {
         return mockBeaconChainStateRoot;
     }
 
-    function setBeaconChainStateRoot(bytes32 beaconChainStateRoot) external {
+    function setOracleBlockRootAtTimestamp(bytes32 beaconChainStateRoot) external {
         mockBeaconChainStateRoot = beaconChainStateRoot;
     }
 

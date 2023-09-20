@@ -15,6 +15,7 @@ contract ProofParsing is Test{
     bytes32[3] slotProof;
     bytes32[9] withdrawalProof;
     bytes32[46] validatorProof;
+    bytes32[44] historicalSummaryProof;
 
 
 
@@ -47,6 +48,10 @@ contract ProofParsing is Test{
 
     function getBlockHeaderRootIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".blockHeaderRootIndex");
+    }
+
+    function getHistoricalSummaryIndex() public returns(uint256) {
+        return stdJson.readUint(proofConfigJson, ".historicalSummaryIndex");
     }
 
     function getBeaconStateRoot() public returns(bytes32) {
@@ -135,6 +140,14 @@ contract ProofParsing is Test{
             validatorProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
         return validatorProof;
+    }
+
+    function getHistoricalSummaryProof() public returns(bytes32[44] memory) {
+        for (uint i = 0; i < 44; i++) {
+            prefix = string.concat(".HistoricalSummaryProof[", string.concat(vm.toString(i), "]"));
+            historicalSummaryProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return historicalSummaryProof;
     }
     
     function getWithdrawalFields() public returns(bytes32[] memory) {

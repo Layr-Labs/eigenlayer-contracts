@@ -26,7 +26,7 @@ interface IBeaconChainOracleMock {
     function totalOracleSigners() external view returns(uint256);
 
 
-    function setBeaconChainStateRoot(bytes32 beaconChainStateRoot) external;
+    function setOracleBlockRootAtTimestamp(bytes32 beaconChainStateRoot) external;
 
 
     /**
