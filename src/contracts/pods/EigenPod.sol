@@ -224,7 +224,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
 
-        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
+        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length),
+            "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
         
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
@@ -264,14 +265,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         //checking that the balance update being made is strictly after the previous balance update
 
-        require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,"EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
+        require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
+            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
 
         {
             // verify ETH validator proof
             bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
             // verify that the provided state root is verified against the oracle-provided latest block header
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+                beaconStateRoot: proofs.beaconStateRoot,
+                latestBlockHeaderRoot: latestBlockHeaderRoot,
+                proof: proofs.latestBlockHeaderProof
+            });
         }
         // verify validator fields
         BeaconChainProofs.verifyValidatorFields({
@@ -402,7 +408,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+            beaconStateRoot: proofs.beaconStateRoot,
+            latestBlockHeaderRoot: latestBlockHeaderRoot,
+            proof: proofs.latestBlockHeaderProof
+        });
 
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
@@ -481,7 +491,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
 
              // Verifying the validator fields, specifically the withdrawable epoch
-            BeaconChainProofs.verifyValidatorFields({beaconStateRoot: withdrawalProofs.beaconStateRoot, validatorFields: validatorFields, proof: validatorFieldsProof, validatorIndex: validatorIndex});
+            BeaconChainProofs.verifyValidatorFields({
+                beaconStateRoot: withdrawalProofs.beaconStateRoot,
+                validatorFields: validatorFields, proof: validatorFieldsProof,
+                validatorIndex: validatorIndex
+            });
 
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
             uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
