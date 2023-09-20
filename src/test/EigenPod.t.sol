@@ -541,6 +541,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
+        cheats.roll(block.number + 1);
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         _proveOverCommittedStake(newPod);
@@ -698,6 +699,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // prove overcommitted balance
         _proveOverCommittedStake(newPod);
 
+        cheats.roll(block.number + 1);
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 100 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
         _proveUnderCommittedStake(newPod);
@@ -872,7 +874,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //cheats.expectEmit(true, true, true, true, address(newPod));
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
         emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
-        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number) + 1);
     }
 
     function _proveUnderCommittedStake(IEigenPod newPod) internal {
@@ -885,7 +887,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
         emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         //cheats.expectEmit(true, true, true, true, address(newPod));
-        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number) + 1);
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
 

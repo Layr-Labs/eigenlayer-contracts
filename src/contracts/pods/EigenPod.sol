@@ -20,6 +20,8 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
@@ -34,7 +36,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
 
@@ -263,8 +265,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         //checking that the balance update being made is strictly after the previous balance update
-        require(validatorInfo.mostRecentBalanceUpdateTimestamp < _computeTimestampAtSlot(Endian.fromLittleEndianUint64(proofs.slotRoot)),
-            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
+        emit log_named_uint("mostRecentBalanceUpdateTimestamp", validatorInfo.mostRecentBalanceUpdateTimestamp);
+        emit log_named_uint("oracleTimestamp", oracleTimestamp);
+        require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,"EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
 
         {
             // verify ETH validator proof
@@ -288,12 +291,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             proof: proofs.validatorBalanceProof,
             validatorIndex: validatorIndex
         });
-        //verify provided slot is valid against beaconStateRoot
-        BeaconChainProofs.verifySlotRoot({
-            beaconStateRoot: proofs.beaconStateRoot,
-            slotRoot: proofs.slotRoot,
-            proof: proofs.slotProof
-        });
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
@@ -304,15 +301,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
 
         //update the most recent balance update timestamp from the slot
-        uint64 timestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(proofs.slotRoot));
-        validatorInfo.mostRecentBalanceUpdateTimestamp = timestamp;
+        validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
         //record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
         
 
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
-            emit ValidatorBalanceUpdated(validatorIndex, timestamp, newRestakedBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
 
             int256 sharesDelta = _calculateSharesDelta({newAmountWei: newRestakedBalanceGwei * GWEI_TO_WEI, currentAmountWei: currentRestakedBalanceGwei* GWEI_TO_WEI});
             // update shares in strategy manager
