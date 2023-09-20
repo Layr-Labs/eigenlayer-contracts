@@ -294,13 +294,19 @@ contract EigenPodManager is
     {
         require(isInUndelegationLimbo(msg.sender),
                     "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
+
+        uint64 limboStartBlock = _podOwnerUndelegationLimboStatus[msg.sender].startBlock;
         require(
             slasher.canWithdraw(
                 _podOwnerUndelegationLimboStatus[msg.sender].delegatedAddress,
-                _podOwnerUndelegationLimboStatus[msg.sender].startBlock,
+                limboStartBlock,
                 middlewareTimesIndex
             ),
             "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
+        );
+
+        require(limboStartBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
+            "EigenPodManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
         );
 
         // delete the pod owner's undelegation limbo details
