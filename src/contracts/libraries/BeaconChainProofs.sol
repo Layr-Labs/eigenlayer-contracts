@@ -127,7 +127,6 @@ library BeaconChainProofs {
         bytes32 slotRoot;
         bytes32 timestampRoot;
         bytes32 executionPayloadRoot;
-        bool proveHistoricalRoot;
     }
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
@@ -279,29 +278,19 @@ library BeaconChainProofs {
         require(proofs.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawalProofs: timestampProof has incorrect length");
 
-        if(proofs.proveHistoricalRoot){
-            require(proofs.historicalSummaryBlockRootProof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT + (HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)),
-            "BeaconChainProofs.verifyWithdrawalProofs: historicalSummaryBlockRootProof has incorrect length");
-            /**
-            * Note: Here, the "1" in "1 + (BLOCK_ROOTS_TREE_HEIGHT)" signifies that extra step of choosing the "block_root_summary" within the individual 
-            * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
-            * but not here.
-            */
-            uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
-                                                uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT) |
-                                                BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
-            require(Merkle.verifyInclusionSha256({proof: proofs.historicalSummaryBlockRootProof, root: beaconStateRoot, leaf: proofs.blockHeaderRoot, index: historicalBlockHeaderIndex}), 
-                "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
-        } else {
-            /**
-            * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
-            * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree
-            */
-            uint256 blockHeaderIndex = BLOCK_ROOTS_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)  | uint256(proofs.blockHeaderRootIndex);
-            // Verify the blockHeaderRoot against the beaconStateRoot            
-            require(Merkle.verifyInclusionSha256({proof: proofs.blockHeaderProof, root: beaconStateRoot, leaf: proofs.blockHeaderRoot, index: blockHeaderIndex}),
-                "BeaconChainProofs.verifyWithdrawalProofs: Invalid block header merkle proof");
-        }
+
+        require(proofs.historicalSummaryBlockRootProof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT + (HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)),
+        "BeaconChainProofs.verifyWithdrawalProofs: historicalSummaryBlockRootProof has incorrect length");
+        /**
+        * Note: Here, the "1" in "1 + (BLOCK_ROOTS_TREE_HEIGHT)" signifies that extra step of choosing the "block_root_summary" within the individual 
+        * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
+        * but not here.
+        */
+        uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
+                                            uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT) |
+                                            BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(proofs.blockHeaderRootIndex);
+        require(Merkle.verifyInclusionSha256({proof: proofs.historicalSummaryBlockRootProof, root: beaconStateRoot, leaf: proofs.blockHeaderRoot, index: historicalBlockHeaderIndex}), 
+            "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
 
         //Next we verify the slot against the blockHeaderRoot
         require(Merkle.verifyInclusionSha256({proof: proofs.slotProof, root: proofs.blockHeaderRoot, leaf: proofs.slotRoot, index: SLOT_INDEX}), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
