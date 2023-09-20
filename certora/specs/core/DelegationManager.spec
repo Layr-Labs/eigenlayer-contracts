@@ -136,7 +136,7 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     method f;
     env e;
     // the only way the staker can become undelegated is an appropriate function is called
-    if (f.selector == sig:undelegate().selector) {
+    if (f.selector == sig:undelegate(address).selector) {
         bool stakerCouldUndelegate = stakerCanUndelegate(staker);
         undelegate(e);
         // either the `staker` called 'undelegate' and they should have been allowed to undelegate (in which case they should now be undelegated)
@@ -147,8 +147,6 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
             address delegatedToAfter = delegatedTo(staker);
             assert (delegatedToAfter == delegatedToBefore, "delegation changed without undelegating -- problem in undelegate permissions?");
         }
-    } else if (f.selector == sig:forceUndelegation(address).selector) {
-        // TODO: fill this in
         assert(true);
     } else if (f.selector == sig:decreaseDelegatedShares(address,address[],uint256[],bool).selector) {
         // TODO: fill this in

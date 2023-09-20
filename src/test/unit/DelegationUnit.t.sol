@@ -941,7 +941,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
-        delegationManager.undelegate();
+        delegationManager.undelegate(staker);
         cheats.stopPrank();
 
         require(!delegationManager.isDelegated(staker), "staker not undelegated!");
@@ -958,10 +958,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         });
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
-        cheats.expectRevert(bytes("DelegationManager.undelegate: staker cannot undelegate"));
+        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
         
         cheats.startPrank(operator);
-        delegationManager.undelegate();
+        delegationManager.undelegate(operator);
         cheats.stopPrank();
     }
 
@@ -1176,11 +1176,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    // special event purely used in the StrategyManagerMock contract, inside of `testForceUndelegation` to verify that the correct call is made
+    // special event purely used in the StrategyManagerMock contract, inside of `undelegate` function to verify that the correct call is made
     event ForceTotalWithdrawalCalled(address staker);
 
     /**
-     * @notice Verifies that the `forceUndelegation` function properly calls `strategyManager.forceTotalWithdrawal`
+     * @notice Verifies that the `undelegate` function properly calls `strategyManager.forceTotalWithdrawal` when necessary
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
     function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
@@ -1203,21 +1203,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             caller = operator;
         }
 
-        // call the `forceUndelegation` function and check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
+        // call the `undelegate` function
         cheats.startPrank(caller);
-        cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
-        emit ForceTotalWithdrawalCalled(staker);
-        (bytes32 returnValue) = delegationManager.forceUndelegation(staker);
+        // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
+        if (!delegationManager.stakerCanUndelegate(staker)) {
+            cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
+            emit ForceTotalWithdrawalCalled(staker);
+        }
+        (bytes32 returnValue) = delegationManager.undelegate(staker);
         // check that the return value is empty, as specified in the mock contract
-        require(returnValue == bytes32(uint256(0)), "mock contract returned wrong return value");
+        require(returnValue == bytes32(uint256(0)), "contract returned wrong return value");
         cheats.stopPrank();
     }
 
     /**
-     * @notice Verifies that the `forceUndelegation` function has proper access controls (can only be called by the operator who the `staker` has delegated
-     * to or the operator's `delegationApprover`)
+     * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
+     * to or the operator's `delegationApprover`), or the staker themselves
      */
-    function testCannotCallForceUndelegationFromImproperAddress(address staker, address caller) public
+    function testCannotCallUndelegateFromImproperAddress(address staker, address caller) public
         fuzzedAddress(staker)
         fuzzedAddress(caller)
     {
@@ -1230,20 +1233,21 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // filter out addresses that are actually allowed to call the function
         cheats.assume(caller != operator);
         cheats.assume(caller != delegationApprover);
+        cheats.assume(caller != staker);
 
         // register this contract as an operator and delegate from the staker to it
         uint256 expiry = type(uint256).max;
         testDelegateToOperatorWhoRequiresECDSASignature(staker, emptySalt, expiry);
 
-        // try to call the `forceUndelegation` function and check for reversion
+        // try to call the `undelegate` function and check for reversion
         cheats.startPrank(caller);
-        cheats.expectRevert(bytes("DelegationManager.forceUndelegation: caller must be operator or their delegationApprover"));
-        delegationManager.forceUndelegation(staker);
+        cheats.expectRevert(bytes("DelegationManager.undelegate: caller cannot undelegate staker"));
+        delegationManager.undelegate(staker);
         cheats.stopPrank();
     }
 
     /**
-     * @notice verifies that `DelegationManager.forceUndelegation` reverts if trying to undelegate an operator from themselves
+     * @notice verifies that `DelegationManager.undelegate` reverts if trying to undelegate an operator from themselves
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
     function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
@@ -1263,10 +1267,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             caller = operator;
         }
 
-        // try to call the `forceUndelegation` function and check for reversion
+        // try to call the `undelegate` function and check for reversion
         cheats.startPrank(caller);
-        cheats.expectRevert(bytes("DelegationManager.forceUndelegation: operators cannot be force-undelegated"));
-        delegationManager.forceUndelegation(operator);
+        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
+        delegationManager.undelegate(operator);
         cheats.stopPrank();
     }
 
@@ -1304,19 +1308,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(staker_two);
         cheats.expectRevert(bytes("DelegationManager._delegate: approverSalt already spent"));
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
-        cheats.stopPrank();
-    }
-
-    function testUndelegateRevertsWithActiveDeposits() public {
-        address staker = address(this);
-
-        strategyManagerMock.setStakerStrategyListLengthReturnValue(1);
-        require(strategyManagerMock.stakerStrategyListLength(staker) != 0,
-            "test broken in some way, mock should return that staker has active shares");
-
-        cheats.expectRevert(bytes("DelegationManager.undelegate: staker cannot undelegate"));
-        cheats.startPrank(staker);
-        delegationManager.undelegate();
         cheats.stopPrank();
     }
 

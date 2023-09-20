@@ -214,7 +214,7 @@ contract DelegationTests is EigenLayerTestHelper {
         );
 
         cheats.startPrank(staker);
-        delegation.undelegate();
+        delegation.undelegate(staker);
         cheats.stopPrank();
 
         require(delegation.delegatedTo(staker) == address(0), "undelegation unsuccessful");
@@ -537,8 +537,8 @@ contract DelegationTests is EigenLayerTestHelper {
 
         // operators cannot undelegate from themselves
         vm.prank(_operator);
-        cheats.expectRevert(bytes("DelegationManager.undelegate: staker cannot undelegate"));
-        delegation.undelegate();
+        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
+        delegation.undelegate(_operator);
 
         // assert still delegated
         assertTrue(delegation.isDelegated(_staker));
@@ -546,7 +546,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         // _staker *can* undelegate themselves
         vm.prank(_staker);
-        delegation.undelegate();
+        delegation.undelegate(_staker);
 
         // assert undelegated
         assertTrue(!delegation.isDelegated(_staker));

@@ -32,11 +32,9 @@ contract DelegationManagerMock is IDelegationManager, Test {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate() external {
-        delegatedTo[msg.sender] = address(0);
+    function undelegate(address staker) external returns (bytes32 queuedWithdrawal) {
+        delegatedTo[staker] = address(0);
     }
-
-    function forceUndelegation(address /*staker*/) external pure returns (bytes32) {}
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 

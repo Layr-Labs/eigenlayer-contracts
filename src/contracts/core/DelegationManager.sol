@@ -185,39 +185,37 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Undelegates the caller (`msg.sender`) from the operator who they are delegated to.
+     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
+     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+     * @param staker The account to be undelegated.
+     * @return queuedWithdrawal The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
      *
-     * @dev Reverts if the caller is also an operator, since operators are not allowed to undelegate from themselves.
-     * @dev Reverts if the caller has any active deposits in EigenLayer.
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate() external {
-        // check if the staker can undelegate, and undelegate them if allowed.
-        require(stakerCanUndelegate(msg.sender), "DelegationManager.undelegate: staker cannot undelegate");
-        _undelegate(msg.sender);
-    }
-
-    /**
-     * @notice Forcibly undelegates a staker who is currently delegated to the operator.
-     * @param staker The account to be force-undelegated.
-     * @return The root of the newly queued withdrawal.
-     *
-     * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
-     * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
-     * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
-     * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
-     */
-    function forceUndelegation(address staker) external returns (bytes32) {
+    function undelegate(address staker) external returns (bytes32 queuedWithdrawal) {
         address operator = delegatedTo[staker];
-        require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
-        require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
-            "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
+        require(staker != operator, "DelegationManager.undelegate: operators cannot be undelegated");
+        require(
+            msg.sender == staker ||
+            msg.sender == operator ||
+            msg.sender == _operatorDetails[operator].delegationApprover,
+            "DelegationManager.undelegate: caller cannot undelegate staker"
+        );
         
-        // force the staker into "undelegation limbo" in the EigenPodManager if necessary
-        eigenPodManager.forceIntoUndelegationLimbo(staker);
-        
-        // force a withdrawal of all of the staker's shares from the StrategyManager
-        bytes32 queuedWithdrawal = strategyManager.forceTotalWithdrawal(staker);
+        if (!stakerCanUndelegate(staker)) {
+            // force the staker into "undelegation limbo" in the EigenPodManager if necessary
+            eigenPodManager.forceIntoUndelegationLimbo(staker);
+
+            // force a withdrawal of all of the staker's shares from the StrategyManager
+            queuedWithdrawal = strategyManager.forceTotalWithdrawal(staker);
+
+            // emit an event if this action was not initiated by the staker themselves
+            if (msg.sender != staker) {
+                emit StakerForceUndelegated(staker, operator);
+            }
+        }
 
         // actually undelegate the staker
         _undelegate(staker);
@@ -495,7 +493,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /** 
-     * @notice Returns 'true' if the staker can undelegate or  if the staker is already undelegated, and 'false' otherwise
+     * @notice Returns 'true' if the staker can immediately undelegate without queuing a new withdrawal OR if the staker is already undelegated, and 'false' otherwise
      * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
      */
     function stakerCanUndelegate(address staker) public view returns (bool) {

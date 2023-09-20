@@ -93,6 +93,9 @@ interface IDelegationManager {
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
 
+    // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
+    event StakerForceUndelegated(address indexed staker, address indexed operator);
+
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
@@ -160,25 +163,16 @@ interface IDelegationManager {
     ) external;
 
     /**
-     * @notice Undelegates the caller (`msg.sender`) from the operator who they are delegated to.
+     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
+     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+     * @param staker The account to be undelegated.
+     * @return queuedWithdrawal The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
      *
-     * @dev Reverts if the caller is also an operator, since operators are not allowed to undelegate from themselves.
-     * @dev Reverts if the caller has any active deposits in EigenLayer.
+     * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
+     * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate() external;
-
-    /**
-     * @notice Forcibly undelegates a staker who is currently delegated to the operator.
-     * @param staker The account to be force-undelegated.
-     * @return The root of the newly queued withdrawal.
-     *
-     * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
-     * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
-     * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
-     * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
-     */
-    function forceUndelegation(address staker) external returns (bytes32);
+    function undelegate(address staker) external returns (bytes32 queuedWithdrawal);
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
