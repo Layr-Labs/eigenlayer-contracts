@@ -673,6 +673,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         // prove overcommitted balance
+        cheats.roll(block.number + 1);
         _proveOverCommittedStake(newPod);
 
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
@@ -697,11 +698,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
          // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         // prove overcommitted balance
+        cheats.roll(block.number + 1);
         _proveOverCommittedStake(newPod);
 
         cheats.roll(block.number + 1);
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 100 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
+        cheats.roll(block.number + 1);
         _proveUnderCommittedStake(newPod);
 
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
@@ -722,6 +725,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         // prove overcommitted balance
+        cheats.roll(block.number + 1);
         _proveOverCommittedStake(newPod);
 
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
@@ -874,7 +878,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //cheats.expectEmit(true, true, true, true, address(newPod));
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
         emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
-        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number) + 1);
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
     function _proveUnderCommittedStake(IEigenPod newPod) internal {
@@ -887,7 +891,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
         emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         //cheats.expectEmit(true, true, true, true, address(newPod));
-        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number) + 1);
+        newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
 
