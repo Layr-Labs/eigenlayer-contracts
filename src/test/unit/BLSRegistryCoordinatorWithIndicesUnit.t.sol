@@ -55,7 +55,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
 
         // make sure the contract intializers are disabled
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        registryCoordinator.initialize(churnApprover, ejector, operatorSetParams);
+        registryCoordinator.initialize(churnApprover, ejector, operatorSetParams, pauserRegistry, 0/*initialPausedStatus*/);
     }
 
     function testSetOperatorSetParams_NotServiceManagerOwner_Reverts() public {

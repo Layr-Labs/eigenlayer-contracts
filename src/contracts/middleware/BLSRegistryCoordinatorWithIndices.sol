@@ -41,7 +41,6 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice Index for flag that pauses operator registration
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
 
-
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
     /// @notice the Service Manager for the service that this contract is coordinating

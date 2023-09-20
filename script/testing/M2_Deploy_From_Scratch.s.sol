@@ -87,6 +87,7 @@ contract Deployer_M1 is Script, Test {
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
+    uint256 BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
@@ -107,6 +108,7 @@ contract Deployer_M1 is Script, Test {
         EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delayedWithdrawalRouter.init_paused_status");
+        BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".blsPublicKeyCompendium.init_paused_status");
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
@@ -257,7 +259,7 @@ contract Deployer_M1 is Script, Test {
             );
         }
 
-        blsPublicKeyCompendium = new BLSPublicKeyCompendium();
+        blsPublicKeyCompendium = new BLSPublicKeyCompendium(eigenLayerPauserReg, BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS);
 
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);
