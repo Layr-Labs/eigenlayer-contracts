@@ -313,10 +313,4 @@ interface IDelegationManager {
      * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
      */
     function stakerCanUndelegate(address staker) external view returns (bool);
-
-    /**
-     * @notice Returns 'true' if `staker` has "active" shares in EigenLayer (i.e. the staker has shares which are currently in the StrategyManager
-     * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
-     */
-    function stakerHasActiveShares(address staker) external view returns (bool);
 }
