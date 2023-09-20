@@ -365,7 +365,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testFullWithdrawalProof() public {
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
-        BeaconChainProofs.WithdrawalProofs memory proofs = _getWithdrawalProof(false);
+        BeaconChainProofs.WithdrawalProofs memory proofs = _getWithdrawalProof();
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
 
@@ -402,7 +402,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
         {
             BeaconChainProofs.WithdrawalProofs[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProofs[](1);
-            withdrawalProofsArray[0] = _getWithdrawalProof(false);
+            withdrawalProofsArray[0] = _getWithdrawalProof();
             bytes[] memory validatorFieldsProofArray = new bytes[](1);
             validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
             bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
@@ -443,7 +443,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
         withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();
-        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof(false);
+        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
 
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(getLatestBlockHeaderRoot());
@@ -482,7 +482,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testProvingMultiplePartialWithdrawalsForSameSlot(/*uint256 numPartialWithdrawals*/) public {
         IEigenPod newPod = testPartialWithdrawalFlow();
 
-        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof(false);
+        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
@@ -503,7 +503,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice verifies that multiple full withdrawals for a single validator fail
     function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
         newPod = testFullWithdrawalFlow();
-        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof(false);
+        BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
@@ -1256,7 +1256,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
-    function _getWithdrawalProof(bool proveHistoricalRoot) internal returns(BeaconChainProofs.WithdrawalProofs memory) {
+    function _getWithdrawalProof() internal returns(BeaconChainProofs.WithdrawalProofs memory) {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         //make initial deposit
@@ -1278,10 +1278,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
 
-            // TODO: @Sidu28 to get these values correctly
-            bytes memory historicalSummaryBlockRootProof;
-            uint64 historicalSummaryIndex;
-
             return BeaconChainProofs.WithdrawalProofs(
                 beaconStateRoot,
                 abi.encodePacked(getStateRootAgainstLatestBlockHeaderProof()),
@@ -1290,16 +1286,15 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 abi.encodePacked(getSlotProof()),
                 abi.encodePacked(getExecutionPayloadProof()),
                 abi.encodePacked(getTimestampProof()),
-                historicalSummaryBlockRootProof,
+                abi.encodePacked(getHistoricalSummaryProof()),
                 uint64(getBlockHeaderRootIndex()),
-                historicalSummaryIndex,
+                uint64(getHistoricalSummaryIndex()),
                 uint64(getWithdrawalIndex()),
                 blockHeaderRoot,
                 blockBodyRoot,
                 slotRoot,
                 timestampRoot,
-                executionPayloadRoot,
-                proveHistoricalRoot
+                executionPayloadRoot
             );
 
         }
