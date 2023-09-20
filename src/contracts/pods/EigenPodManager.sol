@@ -295,7 +295,7 @@ contract EigenPodManager is
         require(isInUndelegationLimbo(msg.sender),
                     "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
 
-        uint64 limboStartBlock = _podOwnerUndelegationLimboStatus[msg.sender].startBlock;
+        uint32 limboStartBlock = _podOwnerUndelegationLimboStatus[msg.sender].startBlock;
         require(
             slasher.canWithdraw(
                 _podOwnerUndelegationLimboStatus[msg.sender].delegatedAddress,
