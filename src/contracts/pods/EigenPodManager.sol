@@ -295,17 +295,19 @@ contract EigenPodManager is
     {
         require(isInUndelegationLimbo(msg.sender),
                     "EigenPodManager.exitUndelegationLimbo: must be in undelegation limbo");
+
+        uint32 limboStartBlock = _podOwnerUndelegationLimboStatus[msg.sender].startBlock;
         require(
             slasher.canWithdraw(
                 _podOwnerUndelegationLimboStatus[msg.sender].delegatedAddress,
-                _podOwnerUndelegationLimboStatus[msg.sender].startBlock,
+                limboStartBlock,
                 middlewareTimesIndex
             ),
             "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
         );
 
         // enforce minimum delay lag
-        require(_podOwnerUndelegationLimboStatus[msg.sender].startBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
+        require(limboStartBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
             "EigenPodManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
         );
 
@@ -698,10 +700,10 @@ contract EigenPodManager is
         return address(ownerToPod[podOwner]) != address(0);
     }
 
-    /// @notice Returns the Beacon Chain state root at `timestamp`. Reverts if the Beacon Chain state root at `timestamp` has not yet been finalized.
-    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {
+    /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {
         bytes32 stateRoot = beaconChainOracle.beaconStateRootAtBlockNumber(timestamp);
-        require(stateRoot != bytes32(0), "EigenPodManager.getBeaconChainStateRootAtTimestamp: state root at timestamp not yet finalized");
+        require(stateRoot != bytes32(0), "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
         return stateRoot;
     }
 

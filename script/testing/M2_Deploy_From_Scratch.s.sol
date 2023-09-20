@@ -79,6 +79,7 @@ contract Deployer_M2 is Script, Test {
     // IMMUTABLES TO SET
     uint64 MAX_VALIDATOR_BALANCE_GWEI;
     uint64 RESTAKED_BALANCE_OFFSET_GWEI;
+    uint64 GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -176,7 +177,8 @@ contract Deployer_M2 is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_VALIDATOR_BALANCE_GWEI,
-            RESTAKED_BALANCE_OFFSET_GWEI
+            RESTAKED_BALANCE_OFFSET_GWEI,
+            GENESIS_TIME
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
