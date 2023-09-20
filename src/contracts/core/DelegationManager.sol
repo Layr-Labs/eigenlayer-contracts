@@ -51,14 +51,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _;
     }
 
-    modifier onlyNotFrozen(address staker) {
-        require(
-            !slasher.isFrozen(staker),
-            "DelegationManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
-        );
-        _;
-    }
-
     /*******************************************************************************
                             INITIALIZING FUNCTIONS
     *******************************************************************************/
@@ -381,7 +373,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerDelegated(staker, operator);
     }
 
-    function _undelegate(address staker) internal onlyNotFrozen(staker) {
+    function _undelegate(address staker) internal {
         // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];

@@ -1320,15 +1320,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    function testUndelegateRevertsWhenStakerFrozen() public {
-        address staker = address(this);
-        slasherMock.setOperatorFrozenStatus(staker, true);
-        cheats.expectRevert(bytes("DelegationManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        cheats.startPrank(staker);
-        delegationManager.undelegate();
-        cheats.stopPrank();
-    }
-
     /**
      * @notice internal function for calculating a signature from the delegationSigner corresponding to `_delegationSignerPrivateKey`, approving
      * the `staker` to delegate to `operator`, with the specified `salt`, and expiring at `expiry`.
