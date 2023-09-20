@@ -382,9 +382,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _undelegate(address staker) internal onlyNotFrozen(staker) {
-        address operator = delegatedTo[staker];
         // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
         if (isDelegated(staker)) {
+            address operator = delegatedTo[staker];
             emit StakerUndelegated(staker, operator);
             delegatedTo[staker] = address(0);
         }
