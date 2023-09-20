@@ -247,7 +247,7 @@ contract StrategyManager is
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(staker)
         nonReentrant
-        returns (bytes32)
+        returns (address[] memory, uint[] memory, bytes32)
     {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
@@ -263,7 +263,8 @@ contract StrategyManager is
                 ++i;
             }
         }
-        return _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker, true);
+        bytes32 queuedWithdrawal = _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker);
+        return (strategies, shares, queuedWithdrawal);
     }
 
     /**
@@ -279,7 +280,6 @@ contract StrategyManager is
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
      * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
-     * @param undelegateIfPossible If this param is marked as 'true', then this function will also inform the DelegationManager of the caller's desire to undelegate
      * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
@@ -290,8 +290,7 @@ contract StrategyManager is
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
@@ -299,7 +298,9 @@ contract StrategyManager is
         nonReentrant
         returns (bytes32)
     {
-        return _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer, undelegateIfPossible);
+        bytes32 queuedWithdrawal = _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer);
+        delegation.decreaseDelegatedShares(msg.sender, strategies, shares);
+        return queuedWithdrawal;
     }
 
     /**
@@ -399,7 +400,7 @@ contract StrategyManager is
         }
 
         // modify delegated shares accordingly, if applicable. Do not try to undelegate the `slashedAddress`.
-        delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts, false);
+        delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts);
     }
     
     /**
@@ -646,8 +647,7 @@ contract StrategyManager is
         uint256[] memory strategyIndexes,
         IStrategy[] memory strategies,
         uint256[] memory shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         internal
         returns (bytes32)
@@ -711,9 +711,6 @@ contract StrategyManager is
         withdrawalRootPending[withdrawalRoot] = true;
 
         emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
-
-        // modify delegated shares accordingly, if applicable
-        delegation.decreaseDelegatedShares(staker, strategies, shares, undelegateIfPossible);
 
         return withdrawalRoot;
 

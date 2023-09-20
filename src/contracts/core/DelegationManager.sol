@@ -196,7 +196,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function undelegate(address staker) external returns (bytes32 queuedWithdrawal) {
         address operator = delegatedTo[staker];
-        require(staker != operator, "DelegationManager.undelegate: operators cannot be undelegated");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
         require(
             msg.sender == staker ||
             msg.sender == operator ||
@@ -206,19 +207,29 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         
         if (!stakerCanUndelegate(staker)) {
             // force the staker into "undelegation limbo" in the EigenPodManager if necessary
-            eigenPodManager.forceIntoUndelegationLimbo(staker);
+            uint podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
 
             // force a withdrawal of all of the staker's shares from the StrategyManager
-            queuedWithdrawal = strategyManager.forceTotalWithdrawal(staker);
+            (address[] memory strategies, uint[] memory strategyShares, bytes32 queuedWithdrawal)
+                = strategyManager.forceTotalWithdrawal(staker);
 
-            // emit an event if this action was not initiated by the staker themselves
-            if (msg.sender != staker) {
-                emit StakerForceUndelegated(staker, operator);
+            _decreaseOperatorShares(operator, beaconChainETHStrategy, podShares);
+            for (uint i = 0; i < strategies.length; ) {
+                _decreaseOperatorShares(operator, strategies[i], strategyShares[i]);
+
+                unchecked {
+                    ++i;
+                }
             }
         }
 
         // actually undelegate the staker
         _undelegate(staker);
+
+        // emit an event if this action was not initiated by the staker themselves
+        if (msg.sender != staker) {
+            emit StakerForceUndelegated(staker, operator);
+        }
 
         return queuedWithdrawal;
     }
@@ -250,13 +261,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
-     * @param undelegateIfPossible If marked 'true', then this contract will check if the `staker` can undelegate, and undelegate them if possible.
-     * If the check fails, then the `staker` will simply remain delegated.
      * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares, bool undelegateIfPossible)
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
         onlyStrategyManagerOrEigenPodManager
     {
@@ -267,15 +276,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             // subtract strategy shares from delegate's shares
             uint256 stratsLength = strategies.length;
             for (uint256 i = 0; i < stratsLength;) {
-                operatorShares[operator][strategies[i]] -= shares[i];
+                _decreaseOperatorShares(operator, strategies[i], shares[i]);
                 unchecked {
                     ++i;
                 }
-            }
-
-            // if the `undelegateIfPossible` flag is set, then check if the staker can undelegate, and undelegate them if allowed.
-            if (undelegateIfPossible && stakerCanUndelegate(staker)) {
-                _undelegate(staker);
             }
         }
     }
@@ -378,6 +382,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             emit StakerUndelegated(staker, operator);
             delegatedTo[staker] = address(0);
         }
+    }
+
+    function _decreaseDelegatedShares(address operator, address strategy, uint shares) internal {
+        // This will revert on underflow, so no check needed
+        opreatorShares[operator][strategy] -= shares;
     }
 
     /*******************************************************************************
