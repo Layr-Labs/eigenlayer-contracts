@@ -707,10 +707,10 @@ contract EigenPodManager is
         return address(ownerToPod[podOwner]) != address(0);
     }
 
-    /// @notice Returns the Beacon Chain state root at `timestamp`. Reverts if the Beacon Chain state root at `timestamp` has not yet been finalized.
-    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {
+    /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {
         bytes32 stateRoot = beaconChainOracle.beaconStateRootAtBlockNumber(timestamp);
-        require(stateRoot != bytes32(0), "EigenPodManager.getBeaconChainStateRootAtTimestamp: state root at timestamp not yet finalized");
+        require(stateRoot != bytes32(0), "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
         return stateRoot;
     }
 

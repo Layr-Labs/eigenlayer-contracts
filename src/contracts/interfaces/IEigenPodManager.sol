@@ -137,8 +137,8 @@ interface IEigenPodManager is IPausable {
     /// @notice Oracle contract that provides updates to the beacon chain's state
     function beaconChainOracle() external view returns(IBeaconChainOracle);    
 
-    /// @notice Returns the Beacon Chain state root at `timestamp`. Reverts if the Beacon Chain state root at `timestamp` has not yet been finalized.
-    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32);
+    /// @notice Returns the beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns(IStrategyManager);
