@@ -136,9 +136,7 @@ library BeaconChainProofs {
         bytes latestBlockHeaderProof;
         bytes validatorBalanceProof;
         bytes validatorFieldsProof;
-        bytes slotProof;
         bytes32 balanceRoot;
-        bytes32 slotRoot;
     }
 
     // @notice This struct contains the merkle proofs and leaves needed to verify a validator's withdrawal credential

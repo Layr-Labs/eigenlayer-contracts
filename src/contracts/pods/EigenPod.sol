@@ -20,8 +20,6 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
@@ -36,7 +34,7 @@ import "forge-std/Test.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
 
@@ -265,8 +263,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
         //checking that the balance update being made is strictly after the previous balance update
-        emit log_named_uint("mostRecentBalanceUpdateTimestamp", validatorInfo.mostRecentBalanceUpdateTimestamp);
-        emit log_named_uint("oracleTimestamp", oracleTimestamp);
+
         require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,"EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
 
         {

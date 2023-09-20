@@ -876,8 +876,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         //cheats.expectEmit(true, true, true, true, address(newPod));
-        uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
-        emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        emit ValidatorBalanceUpdated(validatorIndex, uint64(block.number), _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
@@ -888,8 +887,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         
-        uint64 slotNumber = Endian.fromLittleEndianUint64(proofs.slotRoot);
-        emit ValidatorBalanceUpdated(validatorIndex, slotNumber, _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
+        emit ValidatorBalanceUpdated(validatorIndex, uint64(block.number), _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
         //cheats.expectEmit(true, true, true, true, address(newPod));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
@@ -1246,15 +1244,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32 beaconStateRoot = getBeaconStateRoot();
 
         bytes32 balanceRoot = getBalanceRoot();
-        bytes32 slotRoot = getSlotRoot();
         BeaconChainProofs.BalanceUpdateProofs memory proofs = BeaconChainProofs.BalanceUpdateProofs(
             beaconStateRoot,
             abi.encodePacked(getStateRootAgainstLatestBlockHeaderProof()),
             abi.encodePacked(getValidatorBalanceProof()),
             abi.encodePacked(getWithdrawalCredentialProof()),  //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
-            abi.encodePacked(getBalanceUpdateSlotProof()),
-            balanceRoot,
-            slotRoot
+            balanceRoot
         );
 
         return proofs;
