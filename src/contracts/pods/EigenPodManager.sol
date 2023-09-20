@@ -266,18 +266,18 @@ contract EigenPodManager is
 
     /**
      * @notice Called by a staker who owns an EigenPod to enter the "undelegation limbo" mode.
-     * @param undelegateIfPossible If this param is marked as 'true', then this function will also inform the DelegationManager of the caller's desire to undelegate
+     * This function will also inform the DelegationManager of the caller's desire to undelegate
      * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
      * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
      * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
      */
-    function enterUndelegationLimbo(bool undelegateIfPossible)
+    function enterUndelegationLimbo()
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(msg.sender)
         nonReentrant
     {
-        _enterUndelegationLimbo(msg.sender, undelegateIfPossible);
+        _enterUndelegationLimbo(msg.sender);
     }
 
     /**
@@ -397,7 +397,7 @@ contract EigenPodManager is
         nonReentrant
     {
         // put the `podOwner` into undelegation limbo and try to undelegate them.
-        _enterUndelegationLimbo(podOwner, true);
+        _enterUndelegationLimbo(podOwner);
     }
 
     /**
@@ -648,7 +648,7 @@ contract EigenPodManager is
      * @dev Does nothing if the `podOwner` has no delegated shares (i.e. they are already in undelegation limbo or have no shares)
      * OR if they are not actively delegated to any operator.
      */
-    function _enterUndelegationLimbo(address podOwner, bool undelegateIfPossible) internal {
+    function _enterUndelegationLimbo(address podOwner) internal {
         if (!podOwnerHasNoDelegatedShares(podOwner) && delegationManager.isDelegated(podOwner)) {
             // look up the address that the pod owner is currrently delegated to in EigenLayer
             address delegatedAddress = delegationManager.delegatedTo(podOwner);
@@ -666,7 +666,7 @@ contract EigenPodManager is
             shareAmounts[0] = podOwnerShares[podOwner];
             IStrategy[] memory strategies = new IStrategy[](1);
             strategies[0] = beaconChainETHStrategy;
-            delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts, undelegateIfPossible);
+            delegationManager.decreaseDelegatedShares(podOwner, strategies, shareAmounts, true/*undelegateIfPossible*/);
         }
     }
 
