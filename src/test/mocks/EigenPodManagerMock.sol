@@ -71,10 +71,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function forceIntoUndelegationLimbo(address podOwner) external {}
 
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
-
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
-
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     // @notice Returns 'true' if `staker` can undelegate and false otherwise
