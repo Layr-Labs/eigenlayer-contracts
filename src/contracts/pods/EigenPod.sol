@@ -42,7 +42,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // @notice Internal constant used in calculations, since the beacon chain stores balances in Gwei rather than wei
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredental` may be proven.
+    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
     /// @notice The number of seconds in a slot in the beacon chain
