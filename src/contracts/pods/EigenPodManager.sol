@@ -304,6 +304,11 @@ contract EigenPodManager is
             "EigenPodManager.exitUndelegationLimbo: shares in limbo are still slashable"
         );
 
+        // enforce minimum delay lag
+        require(_podOwnerUndelegationLimboStatus[msg.sender].startBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
+            "EigenPodManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
+        );
+
         // delete the pod owner's undelegation limbo details
         delete _podOwnerUndelegationLimboStatus[msg.sender];
 
