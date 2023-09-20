@@ -53,7 +53,6 @@ methods {
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
     function stakerCanUndelegate(address staker) external returns (bool) envfree;
-    function stakerHasActiveShares(address staker) external returns (bool) envfree;
 }
 
 /*

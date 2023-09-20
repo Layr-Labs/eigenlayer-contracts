@@ -109,14 +109,4 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function setStakerCanUndelegate(address staker, bool valueToSet) external {
         stakerCanUndelegate[staker] = valueToSet;
     }
-
-    /**
-     * @notice Returns 'true' if `staker` has "active" shares in EigenLayer (i.e. the staker has shares which are currently in the StrategyManager
-     * or in the EigenPodManager + not in "undelegation limbo"), and returns 'false' otherwise.
-     */
-    mapping(address => bool) public stakerHasActiveShares;
-
-    function setStakerHasActiveShares(address staker, bool valueToSet) external {
-        stakerHasActiveShares[staker] = valueToSet;
-    }
 }
