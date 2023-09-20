@@ -40,6 +40,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
     /// @notice Index for flag that pauses operator registration
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
+    /// @notice Index for flag that pauses operator deregistration
+    uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
 
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
@@ -352,7 +354,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
+    function deregisterOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        bytes calldata deregistrationData
+    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // get the operator's deregistration information
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
@@ -369,7 +374,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * those of the operator's with the largest index in each quorum that the operator is deregistering from, in
      * ascending order of quorum number.
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) external {
+    function deregisterOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        BN254.G1Point memory pubkey,
+        bytes32[] memory operatorIdsToSwap
+    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 

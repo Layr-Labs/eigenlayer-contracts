@@ -49,6 +49,16 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
         assertEq(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
     }
 
+    function testRegisterBLSPublicKey_WhenPaused_Reverts() public {
+        vm.prank(pauser);
+        compendium.pause(2 ** BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS);
+
+        signedMessageHash = _signMessage(alice);
+        vm.prank(alice);
+        vm.expectRevert(bytes("Pausable: index is paused"));
+        compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
+    }
+
     function testRegisterBLSPublicKey_NoMatch_Reverts() public {
         signedMessageHash = _signMessage(alice);
         BN254.G1Point memory badPubKeyG1 = BN254.generatorG1().scalar_mul(420); // mismatch public keys

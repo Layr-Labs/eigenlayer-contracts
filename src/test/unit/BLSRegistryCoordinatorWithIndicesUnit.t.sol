@@ -6,6 +6,9 @@ import "../utils/MockAVSDeployer.sol";
 contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     using BN254 for BN254.G1Point;
 
+    uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
+    uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
+
     event OperatorSocketUpdate(bytes32 operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
@@ -100,6 +103,17 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         emit EjectorUpdated(ejector, newEjector);
         registryCoordinator.setEjector(newEjector);
         assertEq(registryCoordinator.ejector(), newEjector);
+    }
+
+    function testRegisterOperatorWithCoordinator_WhenPaused_Reverts() public {
+        bytes memory emptyQuorumNumbers = new bytes(0);
+        // pause registerOperator
+        cheats.prank(pauser);
+        registryCoordinator.pause(2 ** PAUSED_REGISTER_OPERATOR);
+
+        cheats.startPrank(defaultOperator);
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        registryCoordinator.registerOperatorWithCoordinator(emptyQuorumNumbers, defaultPubKey, defaultSocket);
     }
 
     function testRegisterOperatorWithCoordinator_EmptyQuorumNumbers_Reverts() public {
@@ -312,6 +326,22 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         cheats.roll(nextRegistrationBlockNumber);
         cheats.expectRevert("BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: operator already registered for some quorums being registered for");
         registryCoordinator.registerOperatorWithCoordinator(quorumNumbers, defaultPubKey, defaultSocket);
+    }
+
+    function testDeregisterOperatorWithCoordinator_WhenPaused_Reverts() public {
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber);
+        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
+
+        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
+
+        // pause deregisterOperator
+        cheats.prank(pauser);
+        registryCoordinator.pause(2 ** PAUSED_DEREGISTER_OPERATOR);
+
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.prank(defaultOperator);
+        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
     }
 
     function testDeregisterOperatorWithCoordinator_NotRegistered_Reverts() public {

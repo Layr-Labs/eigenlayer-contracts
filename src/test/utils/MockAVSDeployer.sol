@@ -246,7 +246,9 @@ contract MockAVSDeployer is Test {
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
                     churnApprover,
                     ejector,
-                    operatorSetParams
+                    operatorSetParams,
+                    pauserRegistry,
+                    0/*initialPausedStatus*/
                 )
             );
         }
