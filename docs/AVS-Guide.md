@@ -46,8 +46,16 @@ In order for any EigenLayer operator to be able to opt-in to an AVS, EigenLayer 
 1. The operator first opts into slashing by calling  `Slasher.optIntoSlashing(..)`, where it has to specify the address of the AVS's ServiceManager contract in the argument. This step results in the operator giving permission to the AVS's ServiceManager contract to slash the operator via EigenLayer, if the operator is ever proven to have engaged in adversarial behavior while responding to the AVS's task. A successful call to  `Slasher.optIntoSlashing(..)` emits the `OptedIntoSlashing(..)` event.
 2. Next, the operator needs to register with the AVS on chain via an AVS-specific registry contract (see [this][middleware-guide-link] section for examples). To integrate with EigenLayer, the AVS's Registry contract provides a registration endpoint that calls on the AVS's `ServiceManager.recordFirstStakeUpdate(..)` which in turn calls `Slasher.recordFirstStakeUpdate(..)`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the AVS.
 
+Note: A staker does not restake into AVSs. A staker delegates to an operator, and it is the operator that registers for new operators (with the staker having option to opt-out).
+
 The following figure illustrates the above flow: 
 ![Operator opting-in](./images/operator_opting.png)
+
+### *AVS Visibility and Control*
+
+An AVS registration function can blacklist another AVS contract and during registration check that the operator is not registered in that AVS. Or it can check that the operator has not given permission to that AVS's service manager to slash it.
+
+An AVS registry contract should define quorums (eth LST quorum, erc20 quorum, etc.) and allow (or prefer) operators having a minimum amount of restaked assets in each of those quorums to register with the AVS.
 
 ### *Recording Stake Updates*
 EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system. It is therefore imperative for an AVS to be aware of any changes to stake delegated to its operators. In order to facilitate this, EigenLayer offers the `Slasher.recordStakeUpdate(..)`.
