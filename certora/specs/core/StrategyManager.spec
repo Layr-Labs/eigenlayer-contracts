@@ -100,7 +100,7 @@ definition methodCanIncreaseShares(method f) returns bool =
 * `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
 */
 definition methodCanDecreaseShares(method f) returns bool =
-    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address,bool).selector
+    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address).selector
     || f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector
     || f.selector == sig:slashSharesSinglet(address,address,address,address,uint256,uint256).selector;
 
