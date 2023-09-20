@@ -33,7 +33,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return IBeaconChainOracle(address(0));
     }   
 
-    function getBeaconChainStateRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
+    function getBlockRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
         return bytes32(0);
     }
 
