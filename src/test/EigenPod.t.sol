@@ -387,7 +387,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(getLatestBlockHeaderRoot());
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockHeaderRoot());
         uint64 restakedExecutionLayerGweiBefore = newPod.withdrawableRestakedExecutionLayerGwei();
        
         withdrawalFields = getWithdrawalFields();
@@ -446,7 +446,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.WithdrawalProofs memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
 
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(getLatestBlockHeaderRoot());
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockHeaderRoot());
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
         uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
 
@@ -733,7 +733,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot"));
@@ -814,7 +814,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
 
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
@@ -856,7 +856,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();        
 
         // pause the contract
@@ -873,7 +873,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newLatestBlockHeaderRoot = getLatestBlockHeaderRoot();
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         //cheats.expectEmit(true, true, true, true, address(newPod));
         emit ValidatorBalanceUpdated(validatorIndex, uint64(block.number), _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
@@ -884,7 +884,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newLatestBlockHeaderRoot = getLatestBlockHeaderRoot();
-        BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newLatestBlockHeaderRoot);
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockHeaderRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
         
         emit ValidatorBalanceUpdated(validatorIndex, uint64(block.number), _calculateRestakedBalanceGwei(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX])));
@@ -1176,7 +1176,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //     getInitialDepositProof(validatorIndex);
 
         // bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        // BeaconChainOracleMock(address(beaconChainOracle)).setBeaconChainStateRoot(newBeaconStateRoot);
+        // BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
 
         IEigenPod newPod = eigenPodManager.getPod(_podOwner);
 
@@ -1271,7 +1271,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32 beaconStateRoot = getBeaconStateRoot();
             bytes32 latestBlockHeaderRoot = getLatestBlockHeaderRoot();
             //set beaconStateRoot
-            beaconChainOracle.setBeaconChainStateRoot(latestBlockHeaderRoot);
+            beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockHeaderRoot);
             bytes32 blockHeaderRoot = getBlockHeaderRoot();
             bytes32 blockBodyRoot = getBlockBodyRoot();
             bytes32 slotRoot = getSlotRoot();
@@ -1304,7 +1304,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         {
             bytes32 latestBlockHeaderRoot = getLatestBlockHeaderRoot();
             //set beaconStateRoot
-            beaconChainOracle.setBeaconChainStateRoot(latestBlockHeaderRoot);
+            beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockHeaderRoot);
 
             BeaconChainProofs.WithdrawalCredentialProofs memory proofs = BeaconChainProofs.WithdrawalCredentialProofs(
                 getBeaconStateRoot(),
