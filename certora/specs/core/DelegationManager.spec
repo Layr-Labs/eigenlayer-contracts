@@ -3,7 +3,7 @@ methods {
     //// External Calls
 	// external calls to DelegationManager 
     function undelegate(address) external;
-    function decreaseDelegatedShares(address,address[],uint256[], bool) external;
+    function decreaseDelegatedShares(address,address[],uint256[]) external;
 	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
@@ -147,11 +147,11 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
             assert (delegatedToAfter == delegatedToBefore, "delegation changed without undelegating -- problem in undelegate permissions?");
         }
         assert(true);
-    } else if (f.selector == sig:decreaseDelegatedShares(address,address[],uint256[],bool).selector) {
+    } else if (f.selector == sig:decreaseDelegatedShares(address,address[],uint256[]).selector) {
         // TODO: fill this in
         assert(true);
     // harnessed function
-    } else if (f.selector == sig:decreaseDelegatedShares(address,address,address,uint256,uint256,bool).selector) {
+    } else if (f.selector == sig:decreaseDelegatedShares(address,address,address,uint256,uint256).selector) {
         // TODO: fill this in
         assert(true);
     } else {

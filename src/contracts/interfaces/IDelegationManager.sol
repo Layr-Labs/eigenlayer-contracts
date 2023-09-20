@@ -190,13 +190,11 @@ interface IDelegationManager {
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
-     * @param undelegateIfPossible If marked 'true', then this contract will check if the `staker` can undelegate, and undelegate them if possible.
-     * If the check fails, then the `staker` will simply remain delegated.
      * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
-     * @dev Callable only by the StrategyManager.
+     * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares, bool undelegateIfPossible) external;
+    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

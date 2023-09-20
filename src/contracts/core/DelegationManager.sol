@@ -207,10 +207,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         
         if (!stakerCanUndelegate(staker)) {
             // force the staker into "undelegation limbo" in the EigenPodManager if necessary
-            uint podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
+            uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
+
+            IStrategy[] memory strategies;
+            uint256[] memory strategyShares;
 
             // force a withdrawal of all of the staker's shares from the StrategyManager
-            (address[] memory strategies, uint[] memory strategyShares, bytes32 queuedWithdrawal)
+            (strategies, strategyShares, queuedWithdrawal)
                 = strategyManager.forceTotalWithdrawal(staker);
 
             _decreaseOperatorShares(operator, beaconChainETHStrategy, podShares);
@@ -384,9 +387,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    function _decreaseDelegatedShares(address operator, address strategy, uint shares) internal {
+    function _decreaseOperatorShares(address operator, IStrategy strategy, uint shares) internal {
         // This will revert on underflow, so no check needed
-        opreatorShares[operator][strategy] -= shares;
+        operatorShares[operator][strategy] -= shares;
     }
 
     /*******************************************************************************

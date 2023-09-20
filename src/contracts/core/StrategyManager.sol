@@ -240,14 +240,14 @@ contract StrategyManager is
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      * @param staker The staker to force-undelegate.
-     * @return The root of the newly queued withdrawal.
+     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
      */
     function forceTotalWithdrawal(address staker) external
         onlyDelegationManager
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(staker)
         nonReentrant
-        returns (address[] memory, uint[] memory, bytes32)
+        returns (IStrategy[] memory, uint256[] memory, bytes32)
     {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
@@ -399,7 +399,7 @@ contract StrategyManager is
             }
         }
 
-        // modify delegated shares accordingly, if applicable. Do not try to undelegate the `slashedAddress`.
+        // modify delegated shares accordingly, if applicable.
         delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts);
     }
     

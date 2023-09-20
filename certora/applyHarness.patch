@@ -5,11 +5,11 @@ diff -druN ../score/DelegationManager.sol core/DelegationManager.sol
       * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
       * @dev Callable only by the StrategyManager or EigenPodManager.
       */
--    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares, bool undelegateIfPossible)
+-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
 -        external
 +    function decreaseDelegatedShares(
 +        // MUNGED calldata => memory
-+        address staker, IStrategy[] memory strategies, uint256[] memory shares, bool undelegateIfPossible)
++        address staker, IStrategy[] memory strategies, uint256[] memory shares)
 +        // MUNGED external => public
 +        public
          onlyStrategyManagerOrEigenPodManager

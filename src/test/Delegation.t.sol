@@ -209,8 +209,7 @@ contract DelegationTests is EigenLayerTestHelper {
             strategyIndexes,
             strategyArray,
             shareAmounts,
-            staker /*withdrawer*/,
-            false /*undelegateIfPossible*/
+            staker /*withdrawer*/
         );
 
         cheats.startPrank(staker);

@@ -1058,9 +1058,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         // for each strategy in `strategies`, decrease delegated shares by `shares`
-        bool undelegateIfPossible = false;
         cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, strategies, sharesInputArray, undelegateIfPossible);
+        delegationManager.decreaseDelegatedShares(staker, strategies, sharesInputArray);
         cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
@@ -1097,8 +1096,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(operator != address(eigenPodManagerMock));
         cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
-        bool undelegateIfPossible = false;
-        delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts, undelegateIfPossible);
+        delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
