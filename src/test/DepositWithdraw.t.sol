@@ -571,7 +571,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         {
             address[] memory initialOracleSignersArray = new address[](0);
-            beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
         }
 
         ethPOSDeposit = new ETHPOSDepositMock();
@@ -623,7 +622,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 type(uint256).max,
-                beaconChainOracle,
+                beaconChainOracleAddress,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/
