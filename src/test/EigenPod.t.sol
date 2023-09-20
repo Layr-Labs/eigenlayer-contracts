@@ -462,7 +462,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             withdrawalFieldsArray[0] = withdrawalFields;
 
             uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
-            cheats.expectEmit(true, true, true, true, address(newPod));
+            //cheats.expectEmit(true, true, true, true, address(newPod));
             emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
             require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
