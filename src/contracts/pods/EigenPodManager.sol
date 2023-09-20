@@ -646,7 +646,6 @@ contract EigenPodManager is
             // store the undelegation limbo details
             _podOwnerUndelegationLimboStatus[podOwner].active = true;
             _podOwnerUndelegationLimboStatus[podOwner].startBlock = uint32(block.number);
-            // TODO: is this even necessary to keep in state? i think it's literally only used to emit an event later
             _podOwnerUndelegationLimboStatus[podOwner].delegatedAddress = delegatedTo;
 
             // emit event

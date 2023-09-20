@@ -51,8 +51,8 @@ contract StrategyManagerHarness is StrategyManager {
             }
         }
 
-        // modify delegated shares accordingly, if applicable. Do not try to undelegate the `slashedAddress`.
-        delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts, false);
+        // modify delegated shares accordingly, if applicable.
+        delegation.decreaseDelegatedShares(slashedAddress, strategies, shareAmounts);
     }
 
     function strategy_is_in_stakers_array(address staker, IStrategy strategy) public view returns (bool) {
