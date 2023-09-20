@@ -582,7 +582,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testVerifyWithdrawalCredsFromNonPodOwnerAddress(address nonPodOwnerAddress) public {
-        require(nonPodOwnerAddress != podOwner, "nonPodOwnerAddress must be different from podOwner");
+        // nonPodOwnerAddress must be different from podOwner
+        cheats.assume(nonPodOwnerAddress != podOwner);
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
