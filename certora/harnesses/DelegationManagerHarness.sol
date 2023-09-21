@@ -5,7 +5,8 @@ import "../munged/core/DelegationManager.sol";
 
 contract DelegationManagerHarness is DelegationManager {
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) DelegationManager(_strategyManager, _slasher) {}
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
+        DelegationManager(_strategyManager, _slasher, _eigenPodManager) {}
 
 
     /// Harnessed functions

@@ -70,8 +70,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     // slither-disable-next-line incorrect-shift-in-assembly
     uint256[1] internal _deprecatedStorage;
 
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
         delegation = _delegation;
         eigenPodManager = _eigenPodManager;

@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPodManager.sol";
 
 contract EigenPodManagerMock is IEigenPodManager, Test {
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
     function slasher() external view returns(ISlasher) {}
 
     function createPod() external pure {}
@@ -13,7 +15,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function restakeBeaconChainETH(address /*podOwner*/, uint256 /*amount*/) external pure {}
 
-    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, uint256 /*beaconChainETHStrategyIndex*/, int256 /*sharesDelta*/) external pure {}
+    function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
     
     function withdrawRestakedBeaconChainETH(address /*podOwner*/, address /*recipient*/, uint256 /*amount*/) external pure {}
 
@@ -31,19 +33,14 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return IBeaconChainOracle(address(0));
     }   
 
-    function getBeaconChainStateRoot(uint64 /*blockNumber*/) external pure returns(bytes32) {
+    function getBlockRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
         return bytes32(0);
     }
 
     function strategyManager() external pure returns(IStrategyManager) {
         return IStrategyManager(address(0));
     }
-
-    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
-
-    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external {}
-
-
+    
     function hasPod(address /*podOwner*/) external pure returns (bool) {
         return false;
     }
@@ -67,4 +64,31 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     }
 
     function unpause(uint256 /*newPausedStatus*/) external{}
+
+    function podOwnerShares(address podOwner) external returns (uint256){}
+
+    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32) {}
+
+    function forceIntoUndelegationLimbo(address podOwner) external {}
+
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+
+    // @notice Returns 'true' if `staker` can undelegate and false otherwise
+    function stakerCanUndelegate(address /*staker*/) external pure returns (bool) {
+        return true;
+    }
+
+    // @notice Returns 'true' if `staker` has removed all of their shares from delegation, either by queuing a withdrawal for them or by going into "undelegation limbo"
+    function stakerHasNoDelegatedShares(address /*staker*/) external pure returns (bool) {
+        return true;
+    }
+
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+
+    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
+    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
+
+    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
+    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }

@@ -35,11 +35,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
-    /**
-      * @dev Throws if called by an account that is not the StrategyManager.
-      */
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+    /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
     modifier onlyStrategyManager() {
         require(msg.sender == address(strategyManager), "onlyStrategyManager");
+        _;
+    }
+
+    // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
+    modifier onlyStrategyManagerOrEigenPodManager() {
+        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
+            "DelegationManager: onlyStrategyManagerOrEigenPodManager");
         _;
     }
 
@@ -50,8 +58,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @dev Initializes the immutable addresses of the strategy mananger and slasher.
      */
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) 
-        DelegationManagerStorage(_strategyManager, _slasher)
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
+        DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager)
     {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
@@ -185,7 +193,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Does nothing (but should not revert) if the staker is already undelegated.
      */
-    function undelegate(address staker) external onlyStrategyManager {
+    function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager {
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
         address operator = delegatedTo[staker];
         // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
@@ -210,7 +218,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
         require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
-        return strategyManager.forceTotalWithdrawal(staker);
+        
+        // force the staker into "undelegation limbo" in the EigenPodManager if necessary
+        eigenPodManager.forceIntoUndelegationLimbo(staker);
+        
+        // force a withdrawal of all of the staker's shares from the StrategyManager
+        return (strategyManager.forceTotalWithdrawal(staker));
+
     }
 
     /**
@@ -224,9 +238,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
         external
-        onlyStrategyManager
+        onlyStrategyManagerOrEigenPodManager
     {
-        //if the staker is delegated to an operator
+        // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
@@ -246,8 +260,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
-        onlyStrategyManager
+        onlyStrategyManagerOrEigenPodManager
     {
+        // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
@@ -329,13 +344,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             EIP1271SignatureUtils.checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
         }
 
+        // retrieve any beacon chain ETH shares the staker might have
+        uint256 beaconChainETHShares = eigenPodManager.podOwnerShares(staker);
+
+        // increase the operator's shares in the canonical 'beaconChainETHStrategy' *if* the staker is not in "undelegation limbo"
+        if (beaconChainETHShares != 0 && !eigenPodManager.isInUndelegationLimbo(staker)) {
+            operatorShares[operator][beaconChainETHStrategy] += beaconChainETHShares;
+        }
+
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
         (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
 
-        // add strategy shares to delegated `operator`'s shares
-        uint256 stratsLength = strategies.length;
-        for (uint256 i = 0; i < stratsLength;) {
-            // update the share amounts for each of the `operator`'s strategies
+        // update the share amounts for each of the `operator`'s strategies
+        for (uint256 i = 0; i < strategies.length;) {
             operatorShares[operator][strategies[i]] += shares[i];
             unchecked {
                 ++i;

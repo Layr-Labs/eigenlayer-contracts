@@ -32,7 +32,7 @@ After depositing ETH, the depositor waits for the Beacon Chain state root to be 
 ![Depositing ETH Into the Beacon Chain Through the EigenPodManager Part 2](images/EL_depositing_BeaconChainETH_2.png?raw=true "Title")
 
 1. The depositor calls EigenPod.verifyWithdrawalCredentials on the EigenPod deployed for them above
-2. The EigenPod gets the most recent Beacon Chain state root from the EigenPodManager by calling `EigenPodManager.getBeaconChainStateRoot` (the EigenPodManager further passes this query along to the BeaconChainOracle, prior to returning the most recently-posted state root).
+2. The EigenPod gets the most recent Beacon Chain state root from the EigenPodManager by calling `EigenPodManager.getBlockRootAtTimestamp` (the EigenPodManager further passes this query along to the BeaconChainOracle, prior to returning the most recently-posted state root).
 3. The EigenPod calls `EigenPodManager.updateBeaconChainBalance` to update the EigenPodManager's accounting of EigenPod balances
 4. The EigenPodManager fetches the Slasher's address from the StrategyManager
 4. *If the operator has been slashed on the Beacon Chain* (and this is reflected in the latest BeaconChainOracle update), then the EigenPodManager calls `Slasher.freezeOperator` to freeze the staker
