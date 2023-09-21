@@ -4,7 +4,7 @@
 
 M1 enables very basic restaking: users that stake ETH natively or with a liquid staking token can opt-in to the M1 smart contracts, which currently support two basic operations: deposits and withdrawals. 
 
-M2 adds several features, the most important of which is the basic support needed to create an AVS (*link: ["what is an AVS?"](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md)*). The M2 release includes the first AVS, EigenDA (*link: read more about EigenDA*). The other features of M2 support AVSs and pad out existing features of M1. A short list of new features includes:
+M2 adds several features, the most important of which is the basic support needed to create an AVS (*link: ["what is an AVS?"](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md)<!-- TODO -->*). The M2 release includes the first AVS, EigenDA (*link: read more about EigenDA (TODO)*). The other features of M2 support AVSs and pad out existing features of M1. A short list of new features includes:
 * Anyone can register as an operator
 * Operators can begin providing services to an AVS
 * Stakers can delegate their stake to a single operator
@@ -14,7 +14,7 @@ M2 adds several features, the most important of which is the basic support neede
 
 ### System Components
 
-**EigenPods**: 
+**EigenPodManager**: 
 
 | File | Type | Proxy? |
 | -------- | -------- | -------- |
@@ -24,12 +24,12 @@ M2 adds several features, the most important of which is the basic support neede
 | [TODO - BeaconChainOracle](#TODO) | TODO | TODO |
 
 These contracts work together to enable native ETH restaking:
-* Users deploy `EigenPods`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
+* Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
 * The `EigenPodManager` handles `EigenPod` creation, validator withdrawal, and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
 * The `DelayedWithdrawalRouter` imposes a 7-day delay on completing withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds.
 * TODO: BeaconChainOracle intro
 
-**Strategies**:
+**StrategyManager**:
 
 | File | Type | Proxy? |
 | -------- | -------- | -------- |
@@ -46,7 +46,7 @@ These contracts work together to enable restaking for LSTs:
 | -------- | -------- | -------- |
 | [`DelegationManager.sol`](#TODO) | Singleton | Transparent proxy |
 
-The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of stakers to operators. Its primary features are to allow operators to register as operators (`registerAsOperator`), and to keep track of shares being delegated to operators across different strategies.
+The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), and to keep track of shares being delegated to Operators across different strategies.
 
 **Slasher**:
 
