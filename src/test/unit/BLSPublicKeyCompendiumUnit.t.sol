@@ -3,17 +3,11 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "../../contracts/middleware/BLSPublicKeyCompendium.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
 
 contract BLSPublicKeyCompendiumUnitTests is Test {
     using BN254 for BN254.G1Point;
 
-    PauserRegistry public pauserRegistry;
     BLSPublicKeyCompendium compendium;
-    address pauser = address(1);
-    address unpauser = address(2);
-    uint256 BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS = 0;
-
     
     uint256 privKey = 69;
     
@@ -25,11 +19,7 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
     address bob = address(2);
 
     function setUp() public {
-
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
-        compendium = new BLSPublicKeyCompendium(pauserRegistry, BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS);
+        compendium = new BLSPublicKeyCompendium();
 
         pubKeyG1 = BN254.generatorG1().scalar_mul(privKey);
         
@@ -47,16 +37,6 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
 
         assertEq(compendium.operatorToPubkeyHash(alice), BN254.hashG1Point(pubKeyG1), "pubkey hash not stored correctly");
         assertEq(compendium.pubkeyHashToOperator(BN254.hashG1Point(pubKeyG1)), alice, "operator address not stored correctly");
-    }
-
-    function testRegisterBLSPublicKey_WhenPaused_Reverts() public {
-        vm.prank(pauser);
-        compendium.pause(2 ** BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS);
-
-        signedMessageHash = _signMessage(alice);
-        vm.prank(alice);
-        vm.expectRevert(bytes("Pausable: index is paused"));
-        compendium.registerBLSPublicKey(signedMessageHash, pubKeyG1, pubKeyG2);
     }
 
     function testRegisterBLSPublicKey_NoMatch_Reverts() public {

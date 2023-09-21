@@ -125,7 +125,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pausers[0] = pauser;
         pauserReg= new PauserRegistry(pausers, unpauser);
 
-        blsPkCompendium = new BLSPublicKeyCompendium(pauserReg, 0/*initialPausedStatus*/);
+        blsPkCompendium = new BLSPublicKeyCompendium();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are

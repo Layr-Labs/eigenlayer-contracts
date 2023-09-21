@@ -2,19 +2,11 @@
 pragma solidity =0.8.12;
 
 import "../../contracts/middleware/BLSPublicKeyCompendium.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
-
 import "./util/G2Operations.sol";
 
 contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using BN254 for BN254.G1Point;
     using Strings for uint256;
-
-    PauserRegistry eigenLayerPauserReg;
-    address executorMultisig = address(555);
-    address operationsMultisig = address(666);
-    address pauserMultisig = address(777);
-    uint256 BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS = 0;
 
     BLSPublicKeyCompendium compendium;
     uint256 privKey;
@@ -25,12 +17,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     address alice = address(0x69);
 
     function setUp() public {
-        address[] memory pausers = new address[](3);
-        pausers[0] = executorMultisig;
-        pausers[1] = operationsMultisig;
-        pausers[2] = pauserMultisig;
-        eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
-        compendium = new BLSPublicKeyCompendium(eigenLayerPauserReg, BLS_PUBLIC_KEY_COMPENDIUM_INIT_PAUSED_STATUS);
+        compendium = new BLSPublicKeyCompendium();
     }
 
     function testRegisterBLSPublicKey(uint256 _privKey) public {

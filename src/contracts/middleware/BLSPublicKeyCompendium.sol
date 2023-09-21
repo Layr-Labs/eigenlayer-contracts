@@ -2,24 +2,15 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IBLSPublicKeyCompendium.sol";
-import "../interfaces/IPauserRegistry.sol";
-
 import "../libraries/BN254.sol";
-
-import "../permissions/Pausable.sol";
-
 
 /**
  * @title A shared contract for EigenLayer operators to register their BLS public keys.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium, Pausable {
+contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     using BN254 for BN254.G1Point;
-
-    /// @notice Index for flag that pauses BLS public key registration
-    uint8 internal constant PAUSED_REGISTER_BLS_KEY = 0;
-
 
     /// @notice mapping from operator address to pubkey hash
     mapping(address => bytes32) public operatorToPubkeyHash;
@@ -30,22 +21,13 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium, Pausable {
     /// @notice Emitted when `operator` registers with the public key `pk`.
     event NewPubkeyRegistration(address indexed operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
 
-    constructor(IPauserRegistry _pauserRegistry, uint256 _initialPausedStatus) {
-        // initialize pauser registry
-        _initializePauser(_pauserRegistry, _initialPausedStatus);
-    }
-
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
      * @param signedMessageHash is the registration message hash signed by the private key of the operator
      * @param pubkeyG1 is the corresponding G1 public key of the operator 
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(
-        BN254.G1Point memory signedMessageHash,
-        BN254.G1Point memory pubkeyG1,
-        BN254.G2Point memory pubkeyG2
-    ) external onlyWhenNotPaused(PAUSED_REGISTER_BLS_KEY) {
+    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
         // H(m) 
         BN254.G1Point memory messageHash = BN254.hashToG1(keccak256(abi.encodePacked(
             msg.sender, 
