@@ -130,6 +130,7 @@ rule operatorCannotUnregister(address operator) {
 
 // verifies that in order for an address to change who they are delegated to, `undelegate` must be called
 rule cannotChangeDelegationWithoutUndelegating(address staker) {
+    requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker is delegated to begin with
     require(isDelegated(staker));
     address delegatedToBefore = delegatedTo(staker);
