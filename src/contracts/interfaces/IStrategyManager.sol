@@ -215,6 +215,7 @@ interface IStrategyManager {
      * @return The root of the newly queued withdrawal.
      */
     function forceTotalWithdrawal(address staker) external returns (bytes32);
+
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)

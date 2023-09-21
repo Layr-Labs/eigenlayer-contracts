@@ -300,13 +300,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
         uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot));
 
-        //update the balance
+        // update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
 
-        //update the most recent balance update timestamp from the slot
+        // update the most recent balance update timestamp from the slot
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
-        //record validatorInfo update in storage
+        // record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
         
 
