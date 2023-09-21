@@ -86,7 +86,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
 
-    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that slot
+    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that timestamp
     mapping(bytes32 => mapping(uint64 => bool)) public provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
@@ -266,7 +266,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //checking that the balance update being made is strictly after the previous balance update
 
         require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
-            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
+            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp");
 
         {
             // verify ETH validator proof
@@ -303,7 +303,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
 
-        //update the most recent balance update timestamp from the slot
+        //update the most recent balance update timestamp
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
         //record validatorInfo update in storage
@@ -471,7 +471,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         
         require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
-            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
+            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp");
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
         
