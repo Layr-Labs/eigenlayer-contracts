@@ -206,7 +206,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.undelegate: caller cannot undelegate staker"
         );
         
-        if (!stakerCanUndelegate(staker)) {
+        if (!canUndelegate(staker)) {
             // force the staker into "undelegation limbo" in the EigenPodManager if necessary
             uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
 
@@ -499,10 +499,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /** 
-     * @notice Returns 'true' if the staker can immediately undelegate without queuing a new withdrawal OR if the staker is already undelegated, and 'false' otherwise
+     * @notice Returns 'true' if the `staker` can immediately undelegate without queuing a new withdrawal OR if the staker is already undelegated,
+     * and 'false' otherwise
      * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
      */
-    function stakerCanUndelegate(address staker) public view returns (bool) {
+    function canUndelegate(address staker) public view returns (bool) {
         return (!isOperator(staker) &&
             strategyManager.stakerStrategyListLength(staker) == 0 &&
             eigenPodManager.podOwnerHasNoDelegatedShares(staker));

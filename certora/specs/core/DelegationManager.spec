@@ -54,7 +54,7 @@ methods {
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
-    function stakerCanUndelegate(address staker) external returns (bool) envfree;
+    function canUndelegate(address staker) external returns (bool) envfree;
 }
 
 /*

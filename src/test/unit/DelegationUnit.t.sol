@@ -1204,7 +1204,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // call the `undelegate` function
         cheats.startPrank(caller);
         // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
-        if (!delegationManager.stakerCanUndelegate(staker)) {
+        if (!delegationManager.canUndelegate(staker)) {
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
             emit ForceTotalWithdrawalCalled(staker);
         }

@@ -301,8 +301,9 @@ interface IDelegationManager {
     function domainSeparator() external view returns (bytes32);
 
     /** 
-     * @notice Returns 'true' if the staker can undelegate or  if the staker is already undelegated, and 'false' otherwise
+     * @notice Returns 'true' if the `staker` can immediately undelegate without queuing a new withdrawal OR if the staker is already undelegated,
+     * and 'false' otherwise
      * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
      */
-    function stakerCanUndelegate(address staker) external view returns (bool);
+    function canUndelegate(address staker) external view returns (bool);
 }
