@@ -50,8 +50,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /// @notice Emitted whenever an operator's shares are increased for a given strategy
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
-    /// @notice Emitted whenever an operator's shares are decreased for a given list of strategies
-    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy[] strategy, uint256[] shares);
+    /// @notice Emitted whenever an operator's shares are decreased for a given strategy
+    event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
     // @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
@@ -1080,8 +1080,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         {
             address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
             if (delegationManager.isDelegated(staker)) {
-                cheats.expectEmit(true, true, true, true, address(delegationManager));
-                emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies, sharesInputArray);
+                for (uint256 i = 0; i < strategies.length;  ++i) {
+                    cheats.expectEmit(true, true, true, true, address(delegationManager));
+                    emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
+                }
             }
         }
 
