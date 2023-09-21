@@ -658,8 +658,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
-        require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
+    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
+        require(tokenList.length == amountsToWithdraw.length, "EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length");
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }

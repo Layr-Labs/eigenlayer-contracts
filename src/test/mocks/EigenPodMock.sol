@@ -118,5 +118,5 @@ contract EigenPodMock is IEigenPod, Test {
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external {}
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
+    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
 }
