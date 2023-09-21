@@ -49,6 +49,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      *         4) the operator is not already registered
      */
     function registerOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+
+        _beforeRegisterOperator(operator, quorumNumbers);
         //calculate hash of the operator's pubkey
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
@@ -57,6 +59,8 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey);
+
+        _afterRegisterOperator(operator, quorumNumbers);
         // emit event so offchain actors can update their state
         emit OperatorAddedToQuorums(operator, quorumNumbers);
         return pubkeyHash;
@@ -77,12 +81,15 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      *         6) `pubkey` is the same as the parameter used when registering
      */   
     function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+        _beforeDeregisterOperator(operator, quorumNumbers);
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
 
         // update each quorum's aggregate pubkey
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
+
+        _afterDeregisterOperator(operator, quorumNumbers);
         
         emit OperatorRemovedFromQuorums(operator, quorumNumbers);
         return pubkeyHash;
@@ -167,6 +174,34 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
             }
         }
     }
+
+    /**
+     * @dev Hook that is called before any operator registration to insert additional logic.
+     * @param operator The address of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
+    function _beforeRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual{} 
+
+    /**
+     * @dev Hook that is called after any operator registration to insert additional logic.
+     * @param operator The address of the operator to register.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
+    function _afterRegisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
+    
+    /**
+     * @dev Hook that is called before any operator deregistration to insert additional logic.
+     * @param operator The address of the operator to deregister.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
+    function _beforeDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
+
+    /**
+     * @dev Hook that is called after any operator deregistration to insert additional logic.
+     * @param operator The address of the operator to deregister.
+     * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
+     */
+    function _afterDeregisterOperator(address operator, bytes memory quorumNumbers) internal virtual {}
 
     function _validateApkHashForQuorumAtBlockNumber(ApkUpdate memory apkUpdate, uint32 blockNumber) internal pure {
         require(
