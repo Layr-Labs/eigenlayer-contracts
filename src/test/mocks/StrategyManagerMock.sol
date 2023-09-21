@@ -86,8 +86,7 @@ contract StrategyManagerMock is
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         external returns(bytes32) {}
 
@@ -150,9 +149,11 @@ contract StrategyManagerMock is
 
     event ForceTotalWithdrawalCalled(address staker);
 
-    function forceTotalWithdrawal(address staker) external returns (bytes32) {
+    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32) {
+        IStrategy[] memory emptyStrategyArray;
+        uint256[] memory emptyShareArray;
         bytes32 emptyReturnValue;
         emit ForceTotalWithdrawalCalled(staker);
-        return emptyReturnValue;
+        return (emptyStrategyArray, emptyShareArray, emptyReturnValue);
     }
 }

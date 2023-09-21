@@ -87,9 +87,8 @@ interface IEigenPodManager is IPausable {
      * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
      * @param amountWei The amount of ETH to withdraw.
      * @param withdrawer The address that can complete the withdrawal and receive the withdrawn funds.
-     * @param undelegateIfPossible If marked as 'true', the podOwner will be undelegated from their operator in EigenLayer, if possible.
      */
-    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32);
+    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32);
 
     /**
      * @notice Completes an existing BeaconChainQueuedWithdrawal by sending the ETH to the 'withdrawer'
@@ -99,12 +98,13 @@ interface IEigenPodManager is IPausable {
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
 
     /**
-     * @notice forces the podOwner into the "undelegation limbo" mode
+     * @notice forces the podOwner into the "undelegation limbo" mode, and returns the number of virtual 'beacon chain ETH shares'
+     * that the podOwner has, which were entered into undelegation limbo.
      * @param podOwner is the staker to be forced into undelegation limbo
+     * @param delegatedTo is the operator the staker is currently delegated to
      * @dev This function can only be called by the DelegationManager contract
      */
-    function forceIntoUndelegationLimbo(address podOwner) external;
-
+    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256);
 
     /** 
      * @notice slashes a pending queued withdrawal of the podOwner's beaconChainETHStrategy shares
@@ -162,7 +162,6 @@ interface IEigenPodManager is IPausable {
      * withdrawal for them OR by going into "undelegation limbo", and 'false' otherwise
      */
     function podOwnerHasNoDelegatedShares(address staker) external view returns (bool);
-
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
     function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory);

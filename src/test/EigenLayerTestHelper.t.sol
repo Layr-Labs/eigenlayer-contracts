@@ -321,8 +321,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         //queue the withdrawal
-        // TODO: check with 'undelegateIfPossible' = false, rather than just true
-        withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer, true);
+        withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer);
         return (withdrawalRoot, queuedWithdrawal);
     }
 
@@ -524,8 +523,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory strategyIndexes,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         internal
         returns (bytes32)
@@ -536,8 +534,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyIndexes,
             strategyArray,
             shareAmounts,
-            withdrawer,
-            undelegateIfPossible
+            withdrawer
         );
         cheats.stopPrank();
         return withdrawalRoot;

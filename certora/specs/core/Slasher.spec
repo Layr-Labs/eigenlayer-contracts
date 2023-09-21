@@ -5,7 +5,7 @@ methods {
     function _.undelegate(address) external => DISPATCHER(true);
     function _.isDelegated(address) external => DISPATCHER(true);
     function _.delegatedTo(address) external => DISPATCHER(true);
-	function _.decreaseDelegatedShares(address,address[],uint256[],bool) external => DISPATCHER(true);
+	function _.decreaseDelegatedShares(address,address[],uint256[]) external => DISPATCHER(true);
 	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to Slasher

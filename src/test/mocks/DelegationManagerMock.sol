@@ -32,13 +32,14 @@ contract DelegationManagerMock is IDelegationManager, Test {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external returns (bytes32 queuedWithdrawal) {
+    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
         delegatedTo[staker] = address(0);
+        return withdrawalRoot;
     }
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
-    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/, bool /*undelegateIfPossible*/) external pure {}
+    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/) external pure {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({

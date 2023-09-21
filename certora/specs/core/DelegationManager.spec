@@ -3,7 +3,7 @@ methods {
     //// External Calls
 	// external calls to DelegationManager 
     function undelegate(address) external;
-    function decreaseDelegatedShares(address,address[],uint256[], bool) external;
+    function decreaseDelegatedShares(address,address[],uint256[]) external;
 	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
@@ -16,10 +16,12 @@ methods {
 	function _.deposit(address,uint256) external => DISPATCHER(true);
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 	function _.stakerStrategyListLength(address) external => DISPATCHER(true);
+    function _.forceTotalWithdrawal(address staker) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
 	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
 	function _.podOwnerHasNoDelegatedShares(address) external => DISPATCHER(true);
+    function _.forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external => DISPATCHER(true);
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
@@ -128,6 +130,7 @@ rule operatorCannotUnregister(address operator) {
 
 // verifies that in order for an address to change who they are delegated to, `undelegate` must be called
 rule cannotChangeDelegationWithoutUndelegating(address staker) {
+    requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker is delegated to begin with
     require(isDelegated(staker));
     address delegatedToBefore = delegatedTo(staker);
@@ -136,23 +139,19 @@ rule cannotChangeDelegationWithoutUndelegating(address staker) {
     env e;
     // the only way the staker can become undelegated is an appropriate function is called
     if (f.selector == sig:undelegate(address).selector) {
-        bool stakerCouldUndelegate = stakerCanUndelegate(staker);
-        undelegate(e);
-        // either the `staker` called 'undelegate' and they should have been allowed to undelegate (in which case they should now be undelegated)
-        if (e.msg.sender == staker && stakerCouldUndelegate) {
-            assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
+        address toUndelegate;
+        undelegate(e, toUndelegate);
+        // either the `staker` address was an input to `undelegate` AND the caller was allowed to call the function
+        if (
+            (toUndelegate == staker && (delegatedToBefore != staker)) &&
+            (e.msg.sender == staker || e.msg.sender == delegatedToBefore || e.msg.sender == delegationApprover(delegatedToBefore))
+        ){
+        assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
         // or the staker's delegation should have remained the same
         } else {
             address delegatedToAfter = delegatedTo(staker);
             assert (delegatedToAfter == delegatedToBefore, "delegation changed without undelegating -- problem in undelegate permissions?");
         }
-        assert(true);
-    } else if (f.selector == sig:decreaseDelegatedShares(address,address[],uint256[],bool).selector) {
-        // TODO: fill this in
-        assert(true);
-    // harnessed function
-    } else if (f.selector == sig:decreaseDelegatedShares(address,address,address,uint256,uint256,bool).selector) {
-        // TODO: fill this in
         assert(true);
     } else {
         calldataarg arg;

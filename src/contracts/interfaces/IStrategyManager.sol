@@ -107,8 +107,6 @@ interface IStrategyManager {
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
      * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
-     * @param undelegateIfPossible If this param is marked as 'true' *and the withdrawal will result in `msg.sender` having no shares in any Strategy,*
-     * then this function will also make an internal call to `undelegate(msg.sender)` to undelegate the `msg.sender`.
      * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
@@ -119,8 +117,7 @@ interface IStrategyManager {
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         external returns(bytes32);
         
@@ -206,9 +203,10 @@ interface IStrategyManager {
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      * @param staker The staker to force-undelegate.
-     * @return The root of the newly queued withdrawal.
+     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
      */
-    function forceTotalWithdrawal(address staker) external returns (bytes32);
+    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32);
+
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
