@@ -92,7 +92,7 @@ interface IEigenPodManager is IPausable {
     function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32);
 
     /**
-     * @notice Completes an existing queuedWithdrawal either by sending the ETH to podOwner or allowing the podOwner to re-delegate it
+     * @notice Completes an existing BeaconChainQueuedWithdrawal by sending the ETH to the 'withdrawer'
      * @param queuedWithdrawal is the queued withdrawal to be completed
      * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
      */
@@ -105,22 +105,6 @@ interface IEigenPodManager is IPausable {
      */
     function forceIntoUndelegationLimbo(address podOwner) external;
 
-
-    /** 
-     * @notice slashes a pending queued withdrawal of the podOwner's beaconChainETHStrategy shares
-     * @param slashedFundsRecipient is the address to receive the slashed funds
-     * @param queuedWithdrawal is the queued withdrawal to be slashed
-     */
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external;
-
-    /**
-     * @notice slashes shares of the podOwner and sends them to the slashedFundsRecipient
-     * @param slashedPodOwner is the address of the pod owner whose shares are to be slashed
-     * @param slashedFundsRecipient is the address to receive the slashed funds
-     * @param shareAmount is the amount of shares to be slashed     
-     */
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external;
-    
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
@@ -137,8 +121,8 @@ interface IEigenPodManager is IPausable {
     /// @notice Oracle contract that provides updates to the beacon chain's state
     function beaconChainOracle() external view returns(IBeaconChainOracle);    
 
-    /// @notice Returns the Beacon Chain state root at `timestamp`. Reverts if the Beacon Chain state root at `timestamp` has not yet been finalized.
-    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32);
+    /// @notice Returns the beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns(IStrategyManager);

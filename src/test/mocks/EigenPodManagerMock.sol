@@ -33,7 +33,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return IBeaconChainOracle(address(0));
     }   
 
-    function getBeaconChainStateRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
+    function getBlockRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
         return bytes32(0);
     }
 
@@ -70,10 +70,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32) {}
 
     function forceIntoUndelegationLimbo(address podOwner) external {}
-
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
-
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 

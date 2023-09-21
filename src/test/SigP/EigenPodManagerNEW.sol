@@ -29,7 +29,7 @@ import "../../contracts/interfaces/IBeaconChainOracle.sol";
  * - withdrawing eth when withdrawals are initiated
  */
 contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManager {
-    function getBeaconChainStateRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {}
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {}
 
     function pause(uint256 newPausedStatus) external {}    
 
@@ -230,8 +230,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         return address(getPod(podOwner)).code.length > 0;
     }
 
-    function getBeaconChainStateRootAtTimestamp() external view returns(bytes32) {
-        // return beaconChainOracle.getBeaconChainStateRootAtTimestamp();
+    function getBlockRootAtTimestamp() external view returns(bytes32) {
+        // return beaconChainOracle.getBlockRootAtTimestamp();
     }
 
     function podOwnerShares(address podOwner) external returns (uint256){
@@ -241,10 +241,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32){}
 
     function forceIntoUndelegationLimbo(address podOwner) external {}
-
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
-
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
 
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 

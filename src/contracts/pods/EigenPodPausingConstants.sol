@@ -9,18 +9,16 @@ pragma solidity =0.8.12;
 abstract contract EigenPodPausingConstants {
     /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
     uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
-    /// @notice Index for flag that pauses the `withdrawRestakedBeaconChainETH` function *of the EigenPodManager* when set. See EigenPodManager code for details.
+    /**
+    * @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality ` 
+    * function *of the EigenPodManager* when set. See EigenPodManager code for details.
+    */
     uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
 
-    /// @notice Index for flag that pauses the `verifyCorrectWithdrawalCredentials` function *of the EigenPods* when set. see EigenPod code for details.
+    /// @notice Index for flag that pauses the deposit related functions *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
     /// @notice Index for flag that pauses the `verifyBalanceUpdate` function *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
     /// @notice Index for flag that pauses the `verifyBeaconChainFullWithdrawal` function *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
-
-    /// @notice Index for flag that pauses deposits to EigenPodManager when set.
-    uint8 internal constant PAUSED_DEPOSITS = 5;
-    /// @notice Index for flag that pauses withdrawals from EigenPodManager when set.
-    uint8 internal constant PAUSED_WITHDRAWALS = 6;
 }

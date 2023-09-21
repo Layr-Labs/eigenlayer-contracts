@@ -18,76 +18,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         return _testDepositWeth(getOperatorAddress(0), amountToDeposit);
     }
 
-    function testPreventSlashing() public {
-        //use preexisting helper function to set up a withdrawal
-        address middleware = address(0xdeadbeef);
-        address staker = getOperatorAddress(0);
-        uint256 depositAmount = 1 ether;
-        IStrategy strategy = wethStrat;
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = strategy;
-
-        //invalid token
-        IERC20[] memory tokensArray = new IERC20[](1);
-        tokensArray[0] = IERC20(address(0));
-        
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = depositAmount - 1 gwei; //leave some shares behind so we don't get undelegation issues
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        address withdrawer = staker;
-
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
-
-        ( ,queuedWithdrawal) = _createQueuedWithdrawal(staker, 
-                                true,
-                                depositAmount,
-                                strategyArray,
-                                shareAmounts,
-                                strategyIndexes,
-                                withdrawer
-                                );
-
-        cheats.startPrank(staker);
-        //opt in staker to restake for the two middlewares we are using
-        slasher.optIntoSlashing(middleware);
-        cheats.stopPrank();
-
-        //move ahead a block after queuing the withdrawal
-        cheats.roll(2);
-
-        cheats.startPrank(middleware);
-        // stake update with updateBlock = 2, serveUntilBlock = 5
-        uint32 serveUntilBlock = 5;
-        slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
-        cheats.stopPrank();
-
-        cheats.roll(6);
-
-        // freeze the staker
-        cheats.startPrank(middleware);
-        slasher.freezeOperator(staker);
-        cheats.stopPrank();
-
-        // attempt to slash - reverts
-        cheats.startPrank(strategyManager.owner());
-        cheats.expectRevert("StrategyBase.withdraw: Can only withdraw the strategy token");
-        strategyManager.slashQueuedWithdrawal(address(slasher), queuedWithdrawal, tokensArray, emptyUintArray);
-        cheats.stopPrank();
-
-        //staker is unfrozen at a future date
-        address[] memory addressArray = new address[](1);
-        addressArray[0] = staker;
-        cheats.startPrank(slasher.owner());
-        slasher.resetFrozenStatus(addressArray);
-        cheats.stopPrank();
-
-        // staker can still withdraw shares
-        cheats.startPrank(staker);
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, 0, false);
-        cheats.stopPrank();
-    }
-
     function testWithdrawalSequences() public {
         //use preexisting helper function to set up a withdrawal
         address middleware = address(0xdeadbeef);
@@ -575,7 +505,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         }
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
