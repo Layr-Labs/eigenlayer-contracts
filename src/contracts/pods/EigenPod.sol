@@ -276,14 +276,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
                 beaconStateRoot: proofs.beaconStateRoot,
                 latestBlockHeaderRoot: latestBlockHeaderRoot,
-                proof: proofs.latestBlockHeaderProof
+                latestBlockHeaderProof: proofs.latestBlockHeaderProof
             });
         }
         // verify validator fields
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,            
-            proof: proofs.validatorFieldsProof,
+            validatorFieldsProof: proofs.validatorFieldsProof,
             validatorIndex: validatorIndex
         });
  
@@ -291,7 +291,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyValidatorBalance({
             beaconStateRoot: proofs.beaconStateRoot,
             balanceRoot: proofs.balanceRoot,
-            proof: proofs.validatorBalanceProof,
+            validatorBalanceProof: proofs.validatorBalanceProof,
             validatorIndex: validatorIndex
         });
 
@@ -411,13 +411,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
             beaconStateRoot: proofs.beaconStateRoot,
             latestBlockHeaderRoot: latestBlockHeaderRoot,
-            proof: proofs.latestBlockHeaderProof
+            latestBlockHeaderProof: proofs.latestBlockHeaderProof
         });
 
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,
-            proof: proofs.validatorFieldsProof,
+            validatorFieldsProof: proofs.validatorFieldsProof,
             validatorIndex: validatorIndex
         });
 
@@ -480,12 +480,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
             beaconStateRoot: withdrawalProofs.beaconStateRoot,
             latestBlockHeaderRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
-            proof: withdrawalProofs.latestBlockHeaderProof
+            latestBlockHeaderProof: withdrawalProofs.latestBlockHeaderProof
         });
 
 
         // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawalProofs({beaconStateRoot: withdrawalProofs.beaconStateRoot, withdrawalFields: withdrawalFields, proofs: withdrawalProofs});
+        BeaconChainProofs.verifyWithdrawalProofs({
+            beaconStateRoot: withdrawalProofs.beaconStateRoot,
+            withdrawalFields: withdrawalFields,
+            withdrawalProofs: withdrawalProofs
+        });
         
         {
             uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
@@ -493,7 +497,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
              // Verifying the validator fields, specifically the withdrawable epoch
             BeaconChainProofs.verifyValidatorFields({
                 beaconStateRoot: withdrawalProofs.beaconStateRoot,
-                validatorFields: validatorFields, proof: validatorFieldsProof,
+                validatorFields: validatorFields,
+                validatorFieldsProof: validatorFieldsProof,
                 validatorIndex: validatorIndex
             });
 
