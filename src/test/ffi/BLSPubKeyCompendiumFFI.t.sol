@@ -9,6 +9,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     using Strings for uint256;
 
     BLSPublicKeyCompendium compendium;
+
     uint256 privKey;
     BN254.G1Point pubKeyG1;
     BN254.G2Point pubKeyG2;
