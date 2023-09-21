@@ -162,7 +162,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         // pause deposits
         cheats.startPrank(pauser);
-        eigenPodManager.pause(2 ** PAUSED_DEPOSITS);
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
         cheats.stopPrank();
 
         cheats.startPrank(address(eigenPod));

@@ -208,7 +208,7 @@ contract EigenPodManager is
     function restakeBeaconChainETH(address podOwner, uint256 amountWei) 
         external 
         onlyEigenPod(podOwner) 
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
+        onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
         onlyNotFrozen(podOwner)
         nonReentrant
     {
@@ -239,7 +239,7 @@ contract EigenPodManager is
         bool undelegateIfPossible
     ) 
         external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         onlyNotFrozen(msg.sender)
         nonReentrant
         returns(bytes32)
@@ -259,7 +259,7 @@ contract EigenPodManager is
         external
         onlyNotFrozen(queuedWithdrawal.delegatedAddress)
         nonReentrant
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
     {
         _completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
     }
@@ -272,7 +272,7 @@ contract EigenPodManager is
      */
     function enterUndelegationLimbo()
         external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         onlyNotFrozen(msg.sender)
         nonReentrant
     {
@@ -288,7 +288,7 @@ contract EigenPodManager is
      */
     function exitUndelegationLimbo(uint256 middlewareTimesIndex, bool withdrawFundsFromEigenLayer)
         external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         onlyNotFrozen(msg.sender)
         nonReentrant
     {
@@ -340,6 +340,7 @@ contract EigenPodManager is
         external
         onlyOwner
         onlyFrozen(slashedPodOwner)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         nonReentrant
     {
         require(
@@ -372,6 +373,7 @@ contract EigenPodManager is
         external 
         onlyOwner 
         onlyFrozen(queuedWithdrawal.delegatedAddress) 
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         nonReentrant 
     {
         // find the withdrawalRoot
@@ -396,7 +398,7 @@ contract EigenPodManager is
      */
     function forceIntoUndelegationLimbo(address podOwner) external 
         onlyDelegationManager 
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+        onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
         onlyNotFrozen(podOwner)
         nonReentrant
     {
@@ -643,7 +645,7 @@ contract EigenPodManager is
      * @dev Callable only by the StrategyManager contract.
      */
     function _withdrawRestakedBeaconChainETH(address podOwner, address recipient, uint256 amount)
-        internal onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
+        internal
     {
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(recipient, amount);
     }
