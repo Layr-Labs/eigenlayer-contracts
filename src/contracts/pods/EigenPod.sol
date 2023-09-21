@@ -262,9 +262,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
+        // verify that the validator has been proven to have its withdrawal credentials pointed to this EigenPod, and has not yet been proven to be exited
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
-        //checking that the balance update being made is strictly after the previous balance update
 
+        // check that the balance update is being made strictly after the previous balance update
         require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
             "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp");
 
@@ -272,14 +273,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             // verify ETH validator proof
             bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
-            // verify that the provided state root is verified against the oracle-provided latest block header
+            // verify the provided state root against the oracle-provided latest block header
             BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
                 beaconStateRoot: proofs.beaconStateRoot,
                 latestBlockHeaderRoot: latestBlockHeaderRoot,
                 latestBlockHeaderProof: proofs.latestBlockHeaderProof
             });
         }
-        // verify validator fields
+
+        // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,            
@@ -295,6 +297,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             validatorIndex: validatorIndex
         });
 
+        // store the current restaked balance in memory, to be checked against later
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
         // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
@@ -313,7 +316,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
             emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
 
-            int256 sharesDelta = _calculateSharesDelta({newAmountWei: newRestakedBalanceGwei * GWEI_TO_WEI, currentAmountWei: currentRestakedBalanceGwei* GWEI_TO_WEI});
+            int256 sharesDelta = _calculateSharesDelta({
+                newAmountWei: (newRestakedBalanceGwei * GWEI_TO_WEI),
+                currentAmountWei: (currentRestakedBalanceGwei * GWEI_TO_WEI)
+            });
             // update shares in strategy manager
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
         }
@@ -414,6 +420,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             latestBlockHeaderProof: proofs.latestBlockHeaderProof
         });
 
+        // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,
@@ -426,13 +433,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
-        //record validator's new restaked balance
+        // record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
 
-        //record validatorInfo update in storage
+        // record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         return validatorInfo.restakedBalanceGwei * GWEI_TO_WEI;
