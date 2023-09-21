@@ -245,7 +245,7 @@ library BeaconChainProofs {
         bytes calldata proof
     ) internal view {
         require(proof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Proof has incorrect length");
-        //Next we verify the slot against the blockHeaderRoot
+        // we verify the state root against the blockHeaderRoot
         require(Merkle.verifyInclusionSha256({proof: proof, root: latestBlockHeaderRoot, leaf: beaconStateRoot, index: STATE_ROOT_INDEX}),
             "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
     }

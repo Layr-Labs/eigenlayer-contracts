@@ -496,7 +496,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
         withdrawalFieldsArray[0] = withdrawalFields;
 
-        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot"));
+        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
         newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
     }
 
@@ -521,7 +521,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
         withdrawalFieldsArray[0] = withdrawalFields;
 
-        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot"));
+        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
         newPod.verifyAndProcessWithdrawals(withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray, 0);
         
         return newPod;
@@ -736,7 +736,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
         BeaconChainProofs.BalanceUpdateProofs memory proofs = _getBalanceUpdateProofs();
 
-        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot"));
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
         newPod.verifyBalanceUpdate(validatorIndex, proofs, validatorFields, uint64(block.number));
     }
 
