@@ -181,13 +181,15 @@ library BeaconChainProofs {
          * Note: the length of the validator merkle proof is BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1.
          * There is an additional layer added by hashing the root with the length of the validator list
          */
-        require(proof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyValidatorFields: Proof has incorrect length");
+        require(proof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyValidatorFields: Proof has incorrect length");
         uint256 index = (VALIDATOR_TREE_ROOT_INDEX << (VALIDATOR_TREE_HEIGHT + 1)) | uint256(validatorIndex);
         // merkleize the validatorFields to get the leaf to prove
         bytes32 validatorRoot = Merkle.merkleizeSha256(validatorFields);
 
         // verify the proof of the validatorRoot against the beaconStateRoot
-        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: validatorRoot, index: index}), "BeaconChainProofs.verifyValidatorFields: Invalid merkle proof");
+        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: validatorRoot, index: index}),
+            "BeaconChainProofs.verifyValidatorFields: Invalid merkle proof");
     }
 
     /**
@@ -203,7 +205,8 @@ library BeaconChainProofs {
         bytes calldata proof,
         uint40 validatorIndex
     ) internal view {
-        require(proof.length == 32 * ((BALANCE_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length");
+        require(proof.length == 32 * ((BALANCE_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT),
+            "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length");
 
         /**
         * the beacon state's balance list is a list of uint64 values, and these are grouped together in 4s when merkleized.  
@@ -212,7 +215,8 @@ library BeaconChainProofs {
         uint256 balanceIndex = uint256(validatorIndex/4);
         balanceIndex = (BALANCE_INDEX << (BALANCE_TREE_HEIGHT + 1)) | balanceIndex;
 
-        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: balanceRoot, index: balanceIndex}), "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
+        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: balanceRoot, index: balanceIndex}),
+            "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof");
     }
 
     /**
@@ -229,7 +233,8 @@ library BeaconChainProofs {
     ) internal view {
         require(proof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT), "BeaconChainProofs.verifySlotRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: slotRoot, index: BEACON_STATE_SLOT_INDEX}), "BeaconChainProofs.verifySlotRoot: Invalid slot merkle proof");
+        require(Merkle.verifyInclusionSha256({proof: proof, root: beaconStateRoot, leaf: slotRoot, index: BEACON_STATE_SLOT_INDEX}),
+            "BeaconChainProofs.verifySlotRoot: Invalid slot merkle proof");
     }
 
     /**
@@ -293,7 +298,8 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
 
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256({proof: proofs.slotProof, root: proofs.blockHeaderRoot, leaf: proofs.slotRoot, index: SLOT_INDEX}), "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
+        require(Merkle.verifyInclusionSha256({proof: proofs.slotProof, root: proofs.blockHeaderRoot, leaf: proofs.slotRoot, index: SLOT_INDEX}),
+            "BeaconChainProofs.verifyWithdrawalProofs: Invalid slot merkle proof");
         
         {
             // Next we verify the executionPayloadRoot against the blockHeaderRoot
