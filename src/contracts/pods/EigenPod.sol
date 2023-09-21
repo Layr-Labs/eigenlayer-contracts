@@ -106,7 +106,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 timestamp, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint256 withdrawalAmountWei);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint64 withdrawalAmountGwei);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
     event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
@@ -155,7 +155,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp");
         _;
     }
-    
+
 
     /**
      * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
@@ -580,7 +580,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
-        emit FullWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei * GWEI_TO_WEI);
+        emit FullWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei);
 
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         if (amountToSend != 0) {
