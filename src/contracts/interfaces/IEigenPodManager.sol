@@ -104,7 +104,7 @@ interface IEigenPodManager is IPausable {
      * @param delegatedTo is the operator the staker is currently delegated to
      * @dev This function can only be called by the DelegationManager contract
      */
-    function forceIntoUndelegationLimbo(address podOwner) external;
+    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256 sharesRemovedFromDelegation);
 
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
