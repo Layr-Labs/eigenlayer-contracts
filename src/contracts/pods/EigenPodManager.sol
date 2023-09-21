@@ -641,7 +641,7 @@ contract EigenPodManager is
      * This method assumes the podOwner is delegated, as it's being called by the
      * DelegationManager (and supplied with `delegatedTo`)
      */
-    function _enterUndelegationLimbo(address podOwner, address delegatedTo) internal returns (uint) {
+    function _enterUndelegationLimbo(address podOwner, address delegatedTo) internal returns (uint256) {
         if (podOwnerShares[podOwner] != 0 && !isInUndelegationLimbo(podOwner)) {
             // store the undelegation limbo details
             _podOwnerUndelegationLimboStatus[podOwner].active = true;
