@@ -274,15 +274,16 @@ library BeaconChainProofs {
         * "historical_summary". Everywhere else it signifies merkelize_with_mixin, where the length of an array is hashed with the root of the array,
         * but not here.
         */
-        uint256 historicalBlockHeaderIndex = HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT)) | 
-                                            uint256(withdrawalProofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT) |
-                                            BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint256(withdrawalProofs.blockHeaderRootIndex);
+        uint256 historicalBlockHeaderIndex = (HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT))) | 
+                                             (uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT)) |
+                                             (BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)) | uint256(proofs.blockHeaderRootIndex);
+
         require(
             Merkle.verifyInclusionSha256({
                 proof: withdrawalProofs.historicalSummaryBlockRootProof, root: beaconStateRoot,
                 leaf: withdrawalProofs.blockHeaderRoot,
                 index: historicalBlockHeaderIndex
-            }), 
+            }),
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid historicalsummary merkle proof");
 
         //Next we verify the slot against the blockHeaderRoot
