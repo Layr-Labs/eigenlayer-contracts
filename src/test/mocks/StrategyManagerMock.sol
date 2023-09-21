@@ -107,29 +107,6 @@ contract StrategyManagerMock is
     )
         external{}
 
-
-    function slashShares(
-        address slashedAddress,
-        address recipient,
-        IStrategy[] calldata strategies,
-        IERC20[] calldata tokens,
-        uint256[] calldata strategyIndexes,
-        uint256[] calldata shareAmounts
-    )
-        external{}
-
-    /**
-     * @notice Slashes an existing queued withdrawal that was created by a 'frozen' operator (or a staker delegated to one)
-     * @param recipient The funds in the slashed withdrawal are withdrawn as tokens to this address.
-     */
-    function slashQueuedWithdrawal(
-        address recipient,
-        QueuedWithdrawal calldata queuedWithdrawal,
-        IERC20[] calldata tokens,
-        uint256[] calldata indicesToSkip
-    )
-        external{}
-
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
     function calculateWithdrawalRoot(
         QueuedWithdrawal memory queuedWithdrawal

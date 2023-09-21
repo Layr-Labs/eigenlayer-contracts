@@ -42,7 +42,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // @notice Internal constant used in calculations, since the beacon chain stores balances in Gwei rather than wei
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredental` may be proven.
+    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
     /// @notice The number of seconds in a slot in the beacon chain
@@ -86,7 +86,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     bool public hasRestaked;
 
-    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that slot
+    /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that timestamp
     mapping(bytes32 => mapping(uint64 => bool)) public provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
@@ -224,7 +224,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
 
-        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length), "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
+        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length),
+            "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
         
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
@@ -261,23 +262,30 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
+        // verify that the validator has been proven to have its withdrawal credentials pointed to this EigenPod, and has not yet been proven to be exited
         require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, "EigenPod.verifyBalanceUpdate: Validator not active");
-        //checking that the balance update being made is strictly after the previous balance update
 
-        require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,"EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this slot");
+        // check that the balance update is being made strictly after the previous balance update
+        require(validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
+            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp");
 
         {
             // verify ETH validator proof
             bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
-            // verify that the provided state root is verified against the oracle-provided latest block header
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
+            // verify the provided state root against the oracle-provided latest block header
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+                beaconStateRoot: proofs.beaconStateRoot,
+                latestBlockHeaderRoot: latestBlockHeaderRoot,
+                latestBlockHeaderProof: proofs.latestBlockHeaderProof
+            });
         }
-        // verify validator fields
+
+        // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,            
-            proof: proofs.validatorFieldsProof,
+            validatorFieldsProof: proofs.validatorFieldsProof,
             validatorIndex: validatorIndex
         });
  
@@ -285,29 +293,33 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyValidatorBalance({
             beaconStateRoot: proofs.beaconStateRoot,
             balanceRoot: proofs.balanceRoot,
-            proof: proofs.validatorBalanceProof,
+            validatorBalanceProof: proofs.validatorBalanceProof,
             validatorIndex: validatorIndex
         });
 
+        // store the current restaked balance in memory, to be checked against later
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
         // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
         uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, proofs.balanceRoot));
 
-        //update the balance
+        // update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
 
-        //update the most recent balance update timestamp from the slot
+        //update the most recent balance update timestamp
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
-        //record validatorInfo update in storage
+        // record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
         
 
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
             emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
 
-            int256 sharesDelta = _calculateSharesDelta({newAmountWei: newRestakedBalanceGwei * GWEI_TO_WEI, currentAmountWei: currentRestakedBalanceGwei* GWEI_TO_WEI});
+            int256 sharesDelta = _calculateSharesDelta({
+                newAmountWei: (newRestakedBalanceGwei * GWEI_TO_WEI),
+                currentAmountWei: (currentRestakedBalanceGwei * GWEI_TO_WEI)
+            });
             // update shares in strategy manager
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
         }
@@ -402,12 +414,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({beaconStateRoot: proofs.beaconStateRoot, latestBlockHeaderRoot: latestBlockHeaderRoot, proof: proofs.latestBlockHeaderProof});
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+            beaconStateRoot: proofs.beaconStateRoot,
+            latestBlockHeaderRoot: latestBlockHeaderRoot,
+            latestBlockHeaderProof: proofs.latestBlockHeaderProof
+        });
 
+        // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: proofs.beaconStateRoot,
             validatorFields: validatorFields,
-            proof: proofs.validatorFieldsProof,
+            validatorFieldsProof: proofs.validatorFieldsProof,
             validatorIndex: validatorIndex
         });
 
@@ -416,13 +433,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
 
-        //record validator's new restaked balance
+        // record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
 
-        //record validatorInfo update in storage
+        // record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         return validatorInfo.restakedBalanceGwei * GWEI_TO_WEI;
@@ -461,7 +478,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         
         require(!provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp],
-            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this slot");
+            "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp");
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
         
@@ -470,18 +487,27 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
             beaconStateRoot: withdrawalProofs.beaconStateRoot,
             latestBlockHeaderRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
-            proof: withdrawalProofs.latestBlockHeaderProof
+            latestBlockHeaderProof: withdrawalProofs.latestBlockHeaderProof
         });
 
 
         // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawalProofs({beaconStateRoot: withdrawalProofs.beaconStateRoot, withdrawalFields: withdrawalFields, proofs: withdrawalProofs});
+        BeaconChainProofs.verifyWithdrawalProofs({
+            beaconStateRoot: withdrawalProofs.beaconStateRoot,
+            withdrawalFields: withdrawalFields,
+            withdrawalProofs: withdrawalProofs
+        });
         
         {
             uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
 
              // Verifying the validator fields, specifically the withdrawable epoch
-            BeaconChainProofs.verifyValidatorFields({beaconStateRoot: withdrawalProofs.beaconStateRoot, validatorFields: validatorFields, proof: validatorFieldsProof, validatorIndex: validatorIndex});
+            BeaconChainProofs.verifyValidatorFields({
+                beaconStateRoot: withdrawalProofs.beaconStateRoot,
+                validatorFields: validatorFields,
+                validatorFieldsProof: validatorFieldsProof,
+                validatorIndex: validatorIndex
+            });
 
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
             uint64 slot = Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot);
@@ -632,8 +658,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function withdrawTokenSweep(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
-        require(tokenList.length == amountsToWithdraw.length, "EigenPod.withdrawTokenSweep: tokenList and amountsToWithdraw must be same length");
+    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external onlyEigenPodOwner {
+        require(tokenList.length == amountsToWithdraw.length, "EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length");
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }

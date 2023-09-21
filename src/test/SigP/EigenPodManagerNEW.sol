@@ -241,10 +241,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
 
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external{}
-
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external{}
-
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}

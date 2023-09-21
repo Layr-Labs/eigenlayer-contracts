@@ -92,17 +92,13 @@ definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
     || f.selector == sig:depositIntoStrategyWithSignature(address,address,uint256,address,uint256,bytes).selector
     || f.selector == sig:completeQueuedWithdrawal(IStrategyManager.QueuedWithdrawal,address[],uint256,bool).selector;
-    // || f.selector == sig:slashQueuedWithdrawal(address,bytes,address[],uint256[]).selector
-    // || f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector;
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerStrategyShares[staker][strategy]`) should only decrease when
 * `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
 */
 definition methodCanDecreaseShares(method f) returns bool =
-    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address).selector
-    || f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector
-    || f.selector == sig:slashSharesSinglet(address,address,address,address,uint256,uint256).selector;
+    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address,bool).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
     uint256 sharesBefore = stakerStrategyShares(staker, strategy);
@@ -149,23 +145,7 @@ rule safeApprovalUse(address user) {
     method f;
     env e;
     calldataarg args;
-    // need special case for `slashShares` function since otherwise this rule fails by making the user address one of the slashed strategy(s)
-    if (
-        f.selector == sig:slashShares(address,address,address[],address[],uint256[],uint256[]).selector
-        || f.selector == sig:slashSharesSinglet(address,address,address,address,uint256,uint256).selector
-    ) {
-        address slashedAddress;
-        address recipient;
-        address strategy;
-        address desiredToken;
-        uint256 strategyIndex;
-        uint256 shareAmount;
-        // need this filtering here
-        require(strategy != user);
-        slashSharesSinglet(e, slashedAddress, recipient, strategy, desiredToken, strategyIndex, shareAmount);
-    } else {
-        f(e,args);
-    }
+    f(e,args);
     uint256 tokenBalanceAfter = token.balanceOf(user);
     if (tokenBalanceAfter < tokenBalanceBefore) {
         assert(e.msg.sender == user, "unsafeApprovalUse?");

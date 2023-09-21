@@ -162,7 +162,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         // pause deposits
         cheats.startPrank(pauser);
-        eigenPodManager.pause(2 ** PAUSED_DEPOSITS);
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
         cheats.stopPrank();
 
         cheats.startPrank(address(eigenPod));
@@ -320,25 +320,6 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         // verify that the withdrawal root does bit exist after queuing
         require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-    }
-
-    function testSlashSharesBeaconChainETH() external {
-        uint256 amount = 1e18;
-        address staker = address(this);
-
-        testRestakeBeaconChainETHSuccessfully(staker, amount);
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        address slashedAddress = staker;
-        address recipient = address(333);
-
-        cheats.startPrank(eigenPodManager.owner());
-        eigenPodManager.slashShares(slashedAddress, recipient, amount);
-        cheats.stopPrank();
-
-        // TODO: add before/after checks!
     }
 
     // INTERNAL / HELPER FUNCTIONS
