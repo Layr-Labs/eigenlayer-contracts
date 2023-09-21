@@ -9,6 +9,7 @@ import "../libraries/BN254.sol";
 /**
  * @title A Registry-type contract using aggregate BLS signatures.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is used for
  * - registering new operators
  * - committing to and finalizing de-registration as an operator

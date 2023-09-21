@@ -6,6 +6,7 @@ import "../RegistryBase.sol";
 /**
  * @title A Registry-type contract identifying operators by their Ethereum address, with only 1 quorum.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is used for
  * - registering new operators
  * - committing to and finalizing de-registration as an operator
@@ -49,6 +50,7 @@ contract ECDSARegistry is RegistryBase {
             _serviceManager,
             1 // set the number of quorums to 1
         )
+    // solhint-disable-next-line no-empty-blocks
     {}
 
     /// @notice Initialize whitelister and the quorum strategies + multipliers.

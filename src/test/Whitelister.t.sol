@@ -139,8 +139,13 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
     function testWhitelistingOperator(address operator) public fuzzedAddress(operator) {
         cheats.startPrank(operator);
-        IDelegationTerms dt = IDelegationTerms(address(89));
-        delegation.registerAsOperator(dt);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.startPrank(theMultiSig);
@@ -173,8 +178,13 @@ contract WhitelisterTests is EigenLayerTestHelper {
 
     function testNonWhitelistedOperatorRegistration(BN254.G1Point memory pk, string memory socket ) external {
         cheats.startPrank(operator);
-        IDelegationTerms dt = IDelegationTerms(address(89));
-        delegation.registerAsOperator(dt);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("BLSRegistry._registerOperator: not whitelisted"));
@@ -190,8 +200,14 @@ contract WhitelisterTests is EigenLayerTestHelper {
         {
 
         address staker = whiteLister.getStaker(operator);
-        cheats.assume(staker!=operator);
-        _testRegisterAsOperator(operator, IDelegationTerms(operator));
+        
+        cheats.assume(staker != operator);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        _testRegisterAsOperator(operator, operatorDetails);
 
         {
             cheats.startPrank(theMultiSig);
@@ -213,6 +229,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
             //delegator-specific information
             (IStrategy[] memory delegatorStrategies, uint256[] memory delegatorShares) =
                 strategyManager.getDeposits(staker);
+            emit log_named_uint("delegatorShares of staker", delegatorShares[0]);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
 
@@ -236,14 +253,12 @@ contract WhitelisterTests is EigenLayerTestHelper {
             strategyIndexes[0] = 0;
             tokensArray[0] = dummyToken;
         }
-
         _testQueueWithdrawal(
             staker,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
             strategyIndexes
         );
-
         {
             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
 
@@ -261,7 +276,6 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("Balance After Withdrawal", dummyToken.balanceOf(staker));
         
             require(dummyToken.balanceOf(staker) == balanceBeforeWithdrawal + expectedTokensOut, "balance not incremented as expected");
-
         }        
     }
 

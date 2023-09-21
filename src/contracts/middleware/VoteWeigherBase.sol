@@ -8,6 +8,7 @@ import "./VoteWeigherBaseStorage.sol";
 /**
  * @title A simple implementation of the `IVoteWeigher` interface.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is used for
  * - computing the total weight of an operator for any of the quorums that are considered
  * by the middleware

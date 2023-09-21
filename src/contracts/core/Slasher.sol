@@ -12,6 +12,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 /**
  * @title The primary 'slashing' contract for EigenLayer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract specifies details on slashing. The functionalities are:
  * - adding contracts who have permission to perform slashing,
  * - revoking permission for slashing from specified contracts,
@@ -315,7 +316,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     /// @notice Getter function for fetching `_operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexBlock(address operator, uint32 index) external view returns (uint32) {
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns (uint32) {
         return _operatorToMiddlewareTimes[operator][index].stalestUpdateBlock;
     }
 

@@ -1,52 +1,55 @@
 {
      "multisig_addresses": {
-          "communityMultisig": "0x37bAFb55BC02056c5fD891DFa503ee84a97d89bF",
-          "teamMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6",
-          "executorMultisig": "0x3d9C2c2B40d890ad53E27947402e977155CD2808",
-          "timelock": "0xA7e72a0564ebf25Fa082Fc27020225edeAF1796E"
+          "communityMultisig": "",
+          "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
+          "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
+          "executorMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
+          "timelock": ""
      },
      "strategies": [
                     {
-                         "token_address": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
-                         "token_name": "Wrapped Ether",
-                         "token_symbol": "WETH",
-                         "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-                         "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
+                         "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                         "token_name": "Coinbase Wrapped Staked ETH",
+                         "token_symbol": "cbETH",
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
                     },
                     {
-                         "token_address": "0x6320cd32aa674d2898a68ec82e869385fc5f7e2f",
-                         "token_name": "Wrapped liquid staked Ether 2.0",
-                         "token_symbol": "wstETH",
-                         "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-                         "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
+                         "token_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+                         "token_name": "Liquid staked Ether 2.0",
+                         "token_symbol": "stETH",
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
                     },
                     {
-                         "token_address": "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
+                         "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
                          "token_name": "Rocket Pool ETH",
                          "token_symbol": "rETH",
-                         "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-                         "max_deposits": 115792089237316195423570985008687907853269984665640564039457584007913129639935
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
                     }
                ],
      "strategyManager":
           {
                "init_paused_status": 0,
-               "init_withdrawal_delay_blocks": 10
+               "init_withdrawal_delay_blocks": 50400
           },
      "eigenPod":
           {
                "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-               "REQUIRED_BALANCE_WEI": "31000000000000000000"
+               "REQUIRED_BALANCE_WEI": "31000000000000000000",
+               "MAX_VALIDATOR_BALANCE_GWEI": "32000000000",
+               "EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI": "750000000"
           },
-     "eigenPodManager":
-          {    
-               "max_pods": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-               "init_paused_status": 30
-          },
+          "eigenPodManager":
+               {    
+                    "max_pods": 0,
+                    "init_paused_status": 30
+               },
      "delayedWithdrawalRouter":
           {
                "init_paused_status": 0,
-               "init_withdrawal_delay_blocks": 10
+               "init_withdrawal_delay_blocks": 50400
           },
      "slasher":
           {
@@ -56,5 +59,5 @@
           {
                "init_paused_status": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
           },
-     "ethPOSDepositAddress": "0xff50ed3d0ec03ac01d4c79aad74928bff48a7b2b"
+     "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
  }

@@ -66,7 +66,8 @@ contract Deployer_M1 is Script, Test {
     EmptyContract public emptyContract;
 
     address executorMultisig;
-    address teamMultisig;
+    address operationsMultisig;
+    address pauserMultisig;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
@@ -76,6 +77,8 @@ contract Deployer_M1 is Script, Test {
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
+    uint256 MAX_VALIDATOR_BALANCE_GWEI;
+    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -109,18 +112,21 @@ contract Deployer_M1 is Script, Test {
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
+        MAX_VALIDATOR_BALANCE_GWEI = stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI");
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI = stdJson.readUint(config_data, ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI");
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
 
         executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
-        teamMultisig = stdJson.readAddress(config_data, ".multisig_addresses.teamMultisig");
+        operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
+        pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
 
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
-        require(teamMultisig != address(0), "teamMultisig address not configured correctly!");
+        require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
@@ -129,7 +135,13 @@ contract Deployer_M1 is Script, Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(teamMultisig, executorMultisig);
+        {
+            address[] memory pausers = new address[](3);
+            pausers[0] = executorMultisig;
+            pausers[1] = operationsMultisig;
+            pausers[2] = pauserMultisig;
+            eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
+        }
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -163,7 +175,8 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI
+            uint64(MAX_VALIDATOR_BALANCE_GWEI),
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
@@ -192,7 +205,7 @@ contract Deployer_M1 is Script, Test {
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
                 executorMultisig,
-                teamMultisig,
+                operationsMultisig,
                 eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS,
                 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS
@@ -306,7 +319,7 @@ contract Deployer_M1 is Script, Test {
 
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
-        string memory parameters_output = vm.serializeAddress(parameters, "teamMultisig", teamMultisig);
+        string memory parameters_output = vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";
         vm.serializeUint(chain_info, "deploymentBlock", block.number);
@@ -390,7 +403,9 @@ contract Deployer_M1 is Script, Test {
         require(eigenPodManager.pauserRegistry() == eigenLayerPauserReg, "eigenPodManager: pauser registry not set correctly");        
         require(delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg, "delayedWithdrawalRouter: pauser registry not set correctly");        
 
-        require(eigenLayerPauserReg.pauser() == teamMultisig, "pauserRegistry: pauser not set correctly");
+        require(eigenLayerPauserReg.isPauser(operationsMultisig), "pauserRegistry: operationsMultisig is not pauser");
+        require(eigenLayerPauserReg.isPauser(executorMultisig), "pauserRegistry: executorMultisig is not pauser");
+        require(eigenLayerPauserReg.isPauser(pauserMultisig), "pauserRegistry: pauserMultisig is not pauser");
         require(eigenLayerPauserReg.unpauser() == executorMultisig, "pauserRegistry: unpauser not set correctly");
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
@@ -424,10 +439,8 @@ contract Deployer_M1 is Script, Test {
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 REQUIRED_BALANCE_WEI = 31 ether;
-        require(eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
-            "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly");
 
-        require(strategyManager.strategyWhitelister() == teamMultisig,
+        require(strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly");
 
         require(eigenPodManager.beaconChainOracle() == IBeaconChainOracle(address(0)),

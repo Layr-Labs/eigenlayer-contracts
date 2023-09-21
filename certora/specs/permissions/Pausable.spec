@@ -1,47 +1,46 @@
 
 methods {
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
-	unpauser() returns (address) => DISPATCHER(true)
+    function _.isPauser(address) external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // envfree functions
-    paused() returns (uint256) envfree
-    paused(uint8 index) returns (bool) envfree
-    pauserRegistry() returns (address) envfree
+    function paused() external returns (uint256) envfree;
+    function paused(uint8 index) external returns (bool) envfree;
+    function pauserRegistry() external returns (address) envfree;
 
     // harnessed functions
-    pauser() returns (address) envfree
-    unpauser() returns (address) envfree
-    bitwise_not(uint256) returns (uint256) envfree
-    bitwise_and(uint256, uint256) returns (uint256) envfree
+    function isPauser(address) external returns (bool) envfree;
+    function unpauser() external returns (address) envfree;
+    function bitwise_not(uint256) external returns (uint256) envfree;
+    function bitwise_and(uint256, uint256) external returns (uint256) envfree;
 }
 
 rule onlyPauserCanPauseAndOnlyUnpauserCanUnpause() {
     method f;
     env e;
     uint256 pausedStatusBefore = paused();
-    address pauser = pauser();
     address unpauser = unpauser();
-    if (f.selector == pause(uint256).selector) {
+    if (f.selector == sig:pause(uint256).selector) {
         uint256 newPausedStatus;
         pause(e, newPausedStatus);
         uint256 pausedStatusAfter = paused();
-        if (e.msg.sender == pauser && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
+        if (isPauser(e.msg.sender) && bitwise_and(pausedStatusBefore, newPausedStatus) == pausedStatusBefore) {
             assert(pausedStatusAfter == newPausedStatus, "pausedStatusAfter != newPausedStatus");
         } else {
             assert(pausedStatusAfter == pausedStatusBefore, "pausedStatusAfter != pausedStatusBefore");
         }
-    } else if (f.selector == pauseAll().selector) {
+    } else if (f.selector == sig:pauseAll().selector) {
         pauseAll(e);
         uint256 pausedStatusAfter = paused();
-       if (e.msg.sender == pauser) {
+       if (isPauser(e.msg.sender)) {
             // assert(pausedStatusAfter == type(uint256).max, "pausedStatusAfter != newPausedStatus");
             assert(pausedStatusAfter == 115792089237316195423570985008687907853269984665640564039457584007913129639935,
                 "pausedStatusAfter != newPausedStatus");
         } else {
             assert(pausedStatusAfter == pausedStatusBefore, "pausedStatusAfter != pausedStatusBefore");
         }
-    } else if (f.selector == unpause(uint256).selector) {
+    } else if (f.selector == sig:unpause(uint256).selector) {
         uint256 newPausedStatus;
         unpause(e, newPausedStatus);
         uint256 pausedStatusAfter = paused();

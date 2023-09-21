@@ -111,7 +111,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         {   
             assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
-            _testRegisterAsOperator(staker, IDelegationTerms(staker));
+            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                earningsReceiver: staker,
+                delegationApprover: address(0),
+                stakerOptOutWindowBlocks: 0
+            });
+            _testRegisterAsOperator(staker, operatorDetails);
             assertTrue(
                 delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
             );
@@ -138,7 +143,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
             
 
@@ -147,10 +152,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             slasher.recordFirstStakeUpdate(staker, serveUntilBlock+1);
             cheats.stopPrank();
             //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 1) == 6, "middleware serveUntil update incorrect");
             //check old entry has not changed
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
+            require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
             require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
 
             //move ahead a block before queuing the withdrawal
@@ -173,36 +178,36 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.roll(3);
 
         cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntilBlock = 7
-        uint32 serveUntilBlock = 7;
+        // stake update with updateBlock = 3, newServeUntilBlock = 7
+        uint32 newServeUntilBlock = 7;
         uint32 updateBlock = 3;
         uint256 insertAfter = 1;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, newServeUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 2) == 7, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware_2);
-        // stake update with updateBlock = 3, serveUntilBlock = 10
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock+3, insertAfter);
+        // stake update with updateBlock = 3, newServeUntilBlock = 10
+        slasher.recordStakeUpdate(staker, updateBlock, newServeUntilBlock+3, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 3) == 10, "middleware serveUntil update incorrect");
 
         cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntilBlock = 7
-        serveUntilBlock = 7;
+        // stake update with updateBlock = 3, newServeUntilBlock = 7
+        newServeUntilBlock = 7;
         updateBlock = 3;
         insertAfter = 2;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
+        slasher.recordStakeUpdate(staker, updateBlock, newServeUntilBlock, insertAfter);
         cheats.stopPrank();
         //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
+        require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
         require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");
 
-        //move timestamp to 6, one middleware is past serveUntilBlock but the second middleware is still using the restaked funds.
+        //move timestamp to 6, one middleware is past newServeUntilBlock but the second middleware is still using the restaked funds.
         cheats.warp(8);
         //Also move the current block ahead one
         cheats.roll(4);
@@ -210,7 +215,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.startPrank(staker);
         //when called with the correct middlewareTimesIndex the call reverts
 
-        slasher.getMiddlewareTimesIndexBlock(staker, 3);
+        slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 3);
         
         
         {
@@ -540,7 +545,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
@@ -568,7 +575,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         }
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 

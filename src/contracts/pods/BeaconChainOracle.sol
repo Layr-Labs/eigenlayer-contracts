@@ -7,6 +7,7 @@ import "../interfaces/IBeaconChainOracle.sol";
 /**
  * @title Oracle contract used for bringing state roots of the Beacon Chain to the Execution Layer.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The owner of this contract can edit a set of 'oracle signers', as well as changing the threshold number of oracle signers that must vote for a
  *  particular state root at a specified blockNumber before the state root is considered 'confirmed'.
  */

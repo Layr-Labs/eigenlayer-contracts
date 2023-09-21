@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IServiceManager.sol";
@@ -7,6 +7,7 @@ import "./IServiceManager.sol";
 /**
  * @title Interface for a `PaymentManager` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IPaymentManager {
     enum DissectionType {

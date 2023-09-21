@@ -7,6 +7,7 @@ import "../interfaces/IPausable.sol";
 /**
  * @title Adds pausability to a contract, with pausing & unpausing controlled by the `pauser` and `unpauser` of a PauserRegistry contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Contracts that inherit from this contract may define their own `pause` and `unpause` (and/or related) functions.
  * These functions should be permissioned as "onlyPauser" which defers to a `PauserRegistry` for determining access control.
  * @dev Pausability is implemented using a uint256, which allows up to 256 different single bit-flags; each bit can potentially pause different functionality.
@@ -29,6 +30,9 @@ contract Pausable is IPausable {
     uint256 constant internal UNPAUSE_ALL = 0;
     uint256 constant internal PAUSE_ALL = type(uint256).max;
 
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
+
     /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
     event Paused(address indexed account, uint256 newPausedStatus);
 
@@ -37,7 +41,7 @@ contract Pausable is IPausable {
 
     /// @notice
     modifier onlyPauser() {
-        require(msg.sender == pauserRegistry.pauser(), "msg.sender is not permissioned as pauser");
+        require(pauserRegistry.isPauser(msg.sender), "msg.sender is not permissioned as pauser");
         _;
     }
 
@@ -66,7 +70,7 @@ contract Pausable is IPausable {
         );
         _paused = initPausedStatus;
         emit Paused(msg.sender, initPausedStatus);
-        pauserRegistry = _pauserRegistry;
+        _setPauserRegistry(_pauserRegistry);
     }
 
     /**
@@ -112,6 +116,18 @@ contract Pausable is IPausable {
     function paused(uint8 index) public view virtual returns (bool) {
         uint256 mask = 1 << index;
         return ((_paused & mask) == mask);
+    }
+
+    /// @notice Allows the unpauser to set a new pauser registry
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external onlyUnpauser {
+        _setPauserRegistry(newPauserRegistry);
+    }
+
+    /// internal function for setting pauser registry
+    function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
+        require(address(newPauserRegistry) != address(0), "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address");
+        emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
+        pauserRegistry = newPauserRegistry;
     }
 
     /**

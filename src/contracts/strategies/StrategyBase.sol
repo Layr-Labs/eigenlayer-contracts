@@ -10,6 +10,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 /**
  * @title Base implementation of `IStrategy` interface, designed to be inherited from by more complex strategies.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Simple, basic, "do-nothing" Strategy that holds a single underlying token and returns it on withdrawals.
  * Implements minimal versions of the IStrategy functions, this contract is designed to be inherited by
  * more complex strategies, which can then override its functions as necessary.
@@ -173,6 +174,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */
+    // solhint-disable-next-line no-empty-blocks
     function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
 
     /**
@@ -181,6 +183,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param token The token being withdrawn
      * @param amountShares The amount of shares being withdrawn
      */
+    // solhint-disable-next-line no-empty-blocks
     function _beforeWithdrawal(address depositor, IERC20 token, uint256 amountShares) internal virtual {}
 
     /**

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Minimal interface for an `Strategy` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
 interface IStrategy {
@@ -52,6 +53,12 @@ interface IStrategy {
      * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
      */
     function userUnderlying(address user) external returns (uint256);
+
+    /**
+     * @notice convenience function for fetching the current total shares of `user` in this strategy, by
+     * querying the `strategyManager` contract
+     */
+    function shares(address user) external view returns (uint256);
 
      /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.

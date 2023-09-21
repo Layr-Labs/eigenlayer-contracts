@@ -1,7 +1,8 @@
 {
      "multisig_addresses": {
+          "pauserMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6",
           "communityMultisig": "0x37bAFb55BC02056c5fD891DFa503ee84a97d89bF",
-          "teamMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6",
+          "operationsMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6",
           "executorMultisig": "0x3d9C2c2B40d890ad53E27947402e977155CD2808",
           "timelock": "0xA7e72a0564ebf25Fa082Fc27020225edeAF1796E"
      },

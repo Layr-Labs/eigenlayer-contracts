@@ -27,6 +27,9 @@ contract StrategyManagerMock is
     IEigenPodManager public eigenPodManager;
     ISlasher public slasher;
 
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
+    mapping(address => uint256) public numWithdrawalsQueued;
+
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
        delegation = _delegation;
@@ -42,7 +45,7 @@ contract StrategyManagerMock is
     function depositBeaconChainETH(address staker, uint256 amount) external{}
 
 
-    function recordOvercommittedBeaconChainETH(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, uint256 amount)
+    function recordBeaconChainETHBalanceUpdate(address overcommittedPodOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
         external{}
 
     function depositIntoStrategyWithSignature(
@@ -136,5 +139,15 @@ contract StrategyManagerMock is
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}    
+    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
+
+    function undelegate() external pure {}
+
+    event ForceTotalWithdrawalCalled(address staker);
+
+    function forceTotalWithdrawal(address staker) external returns (bytes32) {
+        bytes32 emptyReturnValue;
+        emit ForceTotalWithdrawalCalled(staker);
+        return emptyReturnValue;
+    }
 }

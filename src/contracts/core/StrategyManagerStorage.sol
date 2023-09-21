@@ -10,6 +10,7 @@ import "../interfaces/ISlasher.sol";
 /**
  * @title Storage variables for the `StrategyManager` contract.
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract StrategyManagerStorage is IStrategyManager {
@@ -19,8 +20,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
-    /// @notice EIP-712 Domain separator
-    bytes32 public DOMAIN_SEPARATOR;
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
     // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
     mapping(address => uint256) public nonces;
 
@@ -55,17 +60,15 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(address => uint256) public numWithdrawalsQueued;
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
-    /*
-     * @notice Mapping: staker => virtual 'beaconChainETH' shares that the staker 'owes' due to overcommitments of beacon chain ETH.
-     * When overcommitment is proven, `StrategyManager.recordOvercommittedBeaconChainETH` is called. However, it is possible that the
-     * staker already queued a withdrawal for more beaconChainETH shares than the `amount` input to this function. In this edge case,
-     * the amount that cannot be decremented is added to the staker's `beaconChainETHSharesToDecrementOnWithdrawal` -- then when the staker completes a
-     * withdrawal of beaconChainETH, the amount they are withdrawing is first decreased by their `beaconChainETHSharesToDecrementOnWithdrawal` amount.
-     * In other words, a staker's `beaconChainETHSharesToDecrementOnWithdrawal` must be 'paid down' before they can "actually withdraw" beaconChainETH.
-     * @dev In practice, this means not passing a call to `eigenPodManager.withdrawRestakedBeaconChainETH` until the staker's 
-     * `beaconChainETHSharesToDecrementOnWithdrawal` has first been reduced to zero.
-    */
-    mapping(address => uint256) public beaconChainETHSharesToDecrementOnWithdrawal;
+
+    /* 
+     * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
+     * This mapping tracked beaconChainETH "debt" in case updates were made to shares retroactively.  However, this design was
+     * replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which
+     * makes this tracking unnecessary.
+     */
+    // slither-disable-next-line incorrect-shift-in-assembly
+    uint256[1] internal _deprecatedStorage;
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 

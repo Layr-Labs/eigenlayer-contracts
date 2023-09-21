@@ -22,6 +22,7 @@ import "./EigenPodPausingConstants.sol";
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
  * - creating EigenPods
  * - staking for new validators on EigenPods
@@ -103,7 +104,7 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
-
+    
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -144,14 +145,13 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
-     * @param podOwner The owner of the pod whose balance must be removed.
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
-     *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
-     * @param amount The amount of beacon chain ETH to decrement from the podOwner's shares in the strategyManager.
+     * @param podOwner is the pod owner whose balance is being updated.
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, amount);
+    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**
@@ -170,11 +170,32 @@ contract EigenPodManager is Initializable, OwnableUpgradeable, Pausable, IEigenP
     /**
      * Sets the maximum number of pods that can be deployed
      * @param newMaxPods The new maximum number of pods that can be deployed
-     * @dev Callable by the pauser of this contract
+     * @dev Callable by the unpauser of this contract
      */
-    function setMaxPods(uint256 newMaxPods) external onlyPauser {
+    function setMaxPods(uint256 newMaxPods) external onlyUnpauser {
         _setMaxPods(newMaxPods);
     }
+
+    /**
+     * @notice This function is called to decrement withdrawableRestakedExecutionLayerGwei when a validator queues a withdrawal.
+     * @param amountWei is the amount of ETH in wei to decrement withdrawableRestakedExecutionLayerGwei by
+     */
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
+        external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
+    {
+        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(amountWei);
+    }
+
+    /**
+     * @notice This function is called to increment withdrawableRestakedExecutionLayerGwei when a validator's withdrawal is completed.
+     * @param amountWei is the amount of ETH in wei to increment withdrawableRestakedExecutionLayerGwei by
+     */
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) 
+        external onlyStrategyManager onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
+    {
+        ownerToPod[podOwner].incrementWithdrawableRestakedExecutionLayerGwei(amountWei);
+    }
+
 
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root

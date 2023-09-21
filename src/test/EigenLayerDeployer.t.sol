@@ -80,6 +80,8 @@ contract EigenLayerDeployer is Operators {
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 31 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
+    uint64 MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64 EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
 
     address pauser;
     address unpauser;
@@ -101,7 +103,7 @@ contract EigenLayerDeployer is Operators {
     address eigenPodBeaconAddress;
     address beaconChainOracleAddress;
     address emptyContractAddress;
-    address teamMultisig;
+    address operationsMultisig;
     address executorMultisig;
 
 
@@ -144,7 +146,7 @@ contract EigenLayerDeployer is Operators {
 
     function _deployEigenLayerContractsGoerli() internal {
         _setAddresses(goerliDeploymentConfig);
-        pauser = teamMultisig;
+        pauser = operationsMultisig;
         unpauser = executorMultisig;
         // deploy proxy admin for ability to upgrade proxy contracts
         eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
@@ -164,7 +166,7 @@ contract EigenLayerDeployer is Operators {
         beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -218,7 +220,9 @@ contract EigenLayerDeployer is Operators {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
-        eigenLayerPauserReg = new PauserRegistry(pauser, unpauser);
+        address[] memory pausers = new address[](1);
+        pausers[0] = pauser;
+        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
@@ -245,7 +249,7 @@ contract EigenLayerDeployer is Operators {
         beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -363,7 +367,7 @@ contract EigenLayerDeployer is Operators {
         eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager"); 
         delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
-        teamMultisig = stdJson.readAddress(config, ".parameters.teamMultisig");
+        operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");
         executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
     }
     

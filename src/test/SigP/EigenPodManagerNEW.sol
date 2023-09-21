@@ -21,6 +21,7 @@ import "../../contracts/interfaces/IBeaconChainOracle.sol";
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
  * - creating EigenPods
  * - staking for new validators on EigenPods
@@ -37,6 +38,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function paused() external view returns (uint256) {}
 
     function paused(uint8 index) external view returns (bool) {}
+
+    function setPauserRegistry(IPauserRegistry newPauserRegistry) external {}
 
     function pauserRegistry() external view returns (IPauserRegistry) {}
 
@@ -141,11 +144,11 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
-     * @param amount The amount of beacon chain ETH to decrement from the podOwner's shares in the strategyManager.
+     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.recordOvercommittedBeaconChainETH(podOwner, beaconChainETHStrategyIndex, amount);
+     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
+        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
     }
 
     /**
@@ -235,4 +238,9 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function getBeaconChainStateRoot() external view returns(bytes32) {
         // return beaconChainOracle.getBeaconChainStateRoot();
     }
+
+    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+
+    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+
 }
