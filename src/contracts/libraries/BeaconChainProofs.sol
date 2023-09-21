@@ -275,8 +275,8 @@ library BeaconChainProofs {
         * but not here.
         */
         uint256 historicalBlockHeaderIndex = (HISTORICAL_SUMMARIES_INDEX << ((HISTORICAL_SUMMARIES_TREE_HEIGHT + 1) + 1 + (BLOCK_ROOTS_TREE_HEIGHT))) | 
-                                             (uint256(proofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT)) |
-                                             (BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)) | uint256(proofs.blockHeaderRootIndex);
+                                             (uint256(withdrawalProofs.historicalSummaryIndex) << 1 + (BLOCK_ROOTS_TREE_HEIGHT)) |
+                                             (BLOCK_SUMMARY_ROOT_INDEX << (BLOCK_ROOTS_TREE_HEIGHT)) | uint256(withdrawalProofs.blockHeaderRootIndex);
 
         require(
             Merkle.verifyInclusionSha256({
