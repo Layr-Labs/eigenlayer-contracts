@@ -192,9 +192,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
-     * @dev Does nothing (but should not revert) if the staker is already undelegated.
+     * @dev Reverts if the `staker` is already undelegated.
      */
     function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -216,6 +217,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             (strategies, strategyShares, withdrawalRoot)
                 = strategyManager.forceTotalWithdrawal(staker);
 
+            // remove delegated shares from the operator
             _decreaseOperatorShares(operator, beaconChainETHStrategy, podShares);
             for (uint i = 0; i < strategies.length; ) {
                 _decreaseOperatorShares(operator, strategies[i], strategyShares[i]);
@@ -226,16 +228,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
         }
 
-        // actually undelegate the staker -- only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
-        if (isDelegated(staker)) {
-            emit StakerUndelegated(staker, operator);
-            delegatedTo[staker] = address(0);
-
-            // emit an event if this action was not initiated by the staker themselves
-            if (msg.sender != staker) {
-                emit StakerForceUndelegated(staker, operator);
-            }
+        // emit an event if this action was not initiated by the staker themselves
+        if (msg.sender != staker) {
+            emit StakerForceUndelegated(staker, operator);
         }
+
+        // actually undelegate the staker
+        emit StakerUndelegated(staker, operator);
+        delegatedTo[staker] = address(0);
 
         return withdrawalRoot;
     }
