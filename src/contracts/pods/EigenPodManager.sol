@@ -329,65 +329,6 @@ contract EigenPodManager is
             delegationManager.increaseDelegatedShares(msg.sender, beaconChainETHStrategy, podOwnerShares[msg.sender]);
         }
     }
-    
-    // EXTERNAL FUNCTIONS PERMISSIONED TO SINGLE PARTIES
-    // TODO: write documentation for this function
-    function slashShares(
-        address slashedPodOwner,
-        address slashedFundsRecipient,
-        uint256 shareAmount
-    )
-        external
-        onlyOwner
-        onlyFrozen(slashedPodOwner)
-        nonReentrant
-    {
-        require(
-            // either the pod owner themselves is frozen
-            slasher.isFrozen(slashedPodOwner) ||
-            // or they are in "undelegation limbo" and the operator who they *were* delegated to is frozen
-            (
-                isInUndelegationLimbo(slashedPodOwner) &&
-                slasher.isFrozen(_podOwnerUndelegationLimboStatus[slashedPodOwner].delegatedAddress)
-            ),
-            "EigenPodManager.slashShares: cannot slash the specified pod owner"
-        );
-        require(shareAmount > 0, "EigenPodManager.slashShares: shares must be greater than zero");
-        require(podOwnerShares[slashedPodOwner] >= shareAmount,
-            "EigenPodManager.slashShares: podOwnerShares[podOwner] must be greater than or equal to shares");
-
-        _removeShares(slashedPodOwner, shareAmount);
-        // TODO: @Sidu28 -- confirm that decrementing `withdrawableRestakedExecutionLayerGwei` is correct/intended here
-        _decrementWithdrawableRestakedExecutionLayerGwei(slashedPodOwner, shareAmount);
-
-        // send the ETH to the `slashedFundsRecipient`
-        _withdrawRestakedBeaconChainETH(slashedPodOwner, slashedFundsRecipient, shareAmount);
-    }
-
-    // TODO: write documentation for this function
-    function slashQueuedWithdrawal(
-        address slashedFundsRecipient,
-        BeaconChainQueuedWithdrawal memory queuedWithdrawal
-    )
-        external 
-        onlyOwner 
-        onlyFrozen(queuedWithdrawal.delegatedAddress) 
-        nonReentrant 
-    {
-        // find the withdrawalRoot
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-
-         // verify that the queued withdrawal is pending
-        require(
-            withdrawalRootPending[withdrawalRoot],
-            "EigenPodManager.slashQueuedWithdrawal: withdrawal is not pending"
-        );
-
-        // reset the storage slot in mapping of queued withdrawals
-        withdrawalRootPending[withdrawalRoot] = false;
-
-        _withdrawRestakedBeaconChainETH(queuedWithdrawal.podOwner, slashedFundsRecipient, queuedWithdrawal.shares);
-    }
 
     /**
      * @notice forces the podOwner into the "undelegation limbo" mode

@@ -105,22 +105,6 @@ interface IEigenPodManager is IPausable {
      */
     function forceIntoUndelegationLimbo(address podOwner) external;
 
-
-    /** 
-     * @notice slashes a pending queued withdrawal of the podOwner's beaconChainETHStrategy shares
-     * @param slashedFundsRecipient is the address to receive the slashed funds
-     * @param queuedWithdrawal is the queued withdrawal to be slashed
-     */
-    function slashQueuedWithdrawal(address slashedFundsRecipient, BeaconChainQueuedWithdrawal memory queuedWithdrawal) external;
-
-    /**
-     * @notice slashes shares of the podOwner and sends them to the slashedFundsRecipient
-     * @param slashedPodOwner is the address of the pod owner whose shares are to be slashed
-     * @param slashedFundsRecipient is the address to receive the slashed funds
-     * @param shareAmount is the amount of shares to be slashed     
-     */
-    function slashShares(address slashedPodOwner, address slashedFundsRecipient, uint256 shareAmount) external;
-    
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
