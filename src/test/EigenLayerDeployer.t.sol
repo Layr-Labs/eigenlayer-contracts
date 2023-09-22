@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../contracts/interfaces/IDelegationManager.sol";
 import "../contracts/core/DelegationManager.sol";
+import "../contracts/middleware/StakeRegistry.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 import "../contracts/interfaces/IBeaconChainOracle.sol";

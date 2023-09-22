@@ -35,4 +35,8 @@ contract StakeRegistryHarness is StakeRegistry {
     function setOperatorWeight(uint8 quorumNumber, address operator, uint96 weight) external {
         _weightOfOperatorForQuorum[quorumNumber][operator] = weight;
     }
+
+    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual override {
+        _registerOperator(operator, operatorId, quorumNumbers);
+    }
 }
