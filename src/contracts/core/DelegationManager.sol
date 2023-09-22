@@ -218,9 +218,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 = strategyManager.forceTotalWithdrawal(staker);
 
             // remove delegated shares from the operator
-            _decreaseOperatorShares(operator, staker, beaconChainETHStrategy, podShares);
+            _decreaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: podShares});
             for (uint i = 0; i < strategies.length; ) {
-                _decreaseOperatorShares(operator, staker, strategies[i], strategyShares[i]);
+                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: strategyShares[i]});
 
                 unchecked {
                     ++i;
@@ -284,7 +284,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             // subtract strategy shares from delegate's shares
             uint256 stratsLength = strategies.length;
             for (uint256 i = 0; i < stratsLength;) {
-                _decreaseOperatorShares(operator, strategies[i], shares[i]);
+                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
                 unchecked {
                     ++i;
                 }
