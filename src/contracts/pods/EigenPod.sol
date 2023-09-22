@@ -467,7 +467,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     {
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
-        require(validatorPubkeyHash == _hashPubkey(validatorPubkey),
+        require(validatorPubkeyHash == BeaconChainProofs.hashValidatorBLSPubkey(validatorPubkey),
             "EigenPod._verifyWithdrawalCredentials: validatorPubkeyHash does not match validatorPubkey");
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
@@ -717,31 +717,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _computeTimestampAtSlot(uint64 slot) internal view returns (uint64) {
         return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
-
-    /**
-     * @notice This function replicates the ssz hashing of a validator's pubkey, outlined below:
-     *  hh := ssz.NewHasher()
-     *  hh.PutBytes(validatorPubkey[:])
-     *  validatorPubkeyHash := hh.Hash()
-     *  hh.Reset()
-     */
-    function _hashPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
-        require(validatorPubkey.length == 48, "Input should be 32 bytes in length");
-        bytes memory padding = new bytes(16);
-        bytes memory result = new bytes(64);
-
-        for (uint i = 0; i < validatorPubkey.length; i++) {
-            result[i] = validatorPubkey[i];
-        }
-        for (uint i = 0; i < padding.length; i++) {
-            result[i + validatorPubkey.length] = padding[i];
-        }
-        
-        return sha256(abi.encodePacked(result));
-    }
-
-
-
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

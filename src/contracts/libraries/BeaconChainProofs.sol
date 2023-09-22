@@ -349,4 +349,26 @@ library BeaconChainProofs {
         }
     }
 
+    /**
+     * @notice This function replicates the ssz hashing of a validator's pubkey, outlined below:
+     *  hh := ssz.NewHasher()
+     *  hh.PutBytes(validatorPubkey[:])
+     *  validatorPubkeyHash := hh.Hash()
+     *  hh.Reset()
+     */
+    function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
+        require(validatorPubkey.length == 48, "Input should be 32 bytes in length");
+        bytes memory padding = new bytes(16);
+        bytes memory result = new bytes(64);
+
+        for (uint i = 0; i < validatorPubkey.length; i++) {
+            result[i] = validatorPubkey[i];
+        }
+        for (uint i = 0; i < padding.length; i++) {
+            result[i + validatorPubkey.length] = padding[i];
+        }
+        
+        return sha256(abi.encodePacked(result));
+    }
+
 }
