@@ -16,17 +16,15 @@ import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/BitmapUtils.sol";
 import "../libraries/MiddlewareUtils.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title A `RegistryCoordinator` that has three registries:
- *      1) a `StakeRegistry` that keeps track of operators' stakes (this is actually the contract itself, via inheritance)
+ *      1) a `StakeRegistry` that keeps track of operators' stakes
  *      2) a `BLSPubkeyRegistry` that keeps track of operators' BLS public keys and aggregate BLS public keys for each quorum
  *      3) an `IndexRegistry` that keeps track of an ordered list of operators for each quorum
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater, Test {
+contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater {
     using BN254 for BN254.G1Point;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
@@ -90,7 +88,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _setChurnApprover(_churnApprover);
         // set the ejector
         _setEjector(_ejector);
-        // the stake registry is this contract itself
+        // add registry contracts to the registries array
         registries.push(address(stakeRegistry));
         registries.push(address(blsPubkeyRegistry));
         registries.push(address(indexRegistry));
@@ -117,6 +115,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32) {
         return _operators[operator].operatorId;
+    }
+
+    /// @notice Returns the status for the given `operator`
+    function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus) {
+        return _operators[operator].status;
     }
 
     /// @notice Returns the indices of the quorumBitmaps for the provided `operatorIds` at the given `blockNumber`
