@@ -8,7 +8,6 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
     using BN254 for BN254.G1Point;
 
     BLSPublicKeyCompendium compendium;
-
     uint256 privKey = 69;
     
     BN254.G1Point pubKeyG1;
