@@ -383,7 +383,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        // ./solidityProofGen "WithdrawalFieldsProof" 302913 1048 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/block_header_6399000.json" "data/withdrawal_proof_goerli/block_6399000.json" "fullWithdrawalProof_Latest.json"
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_HistoricalSummaryFixed.json"
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
@@ -439,7 +439,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         
 
         //generate partialWithdrawalProofs.json with: 
-        // ./solidityProofGen "WithdrawalFieldsProof" 302913 1048 true true  "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/block_header_6399000.json" "data/withdrawal_proof_goerli/block_6399000.json" "partialWithdrawalProof_latest.json"
+        // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "PartialWithdrawalProof_HistoricalSummaryFixed.json"
         setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
         withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();

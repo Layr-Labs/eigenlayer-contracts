@@ -99,7 +99,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     event EigenPodStaked(bytes pubkey);
 
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
-    event ValidatorRestaked(uint40 validatorIndex);
+    event ValidatorRestaked(uint40 validatorIndex, bytes32 validatorPubkeyHash, bytes validatorPubkey);
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated.  Here newValidatorBalanceGwei
     //  is the validator's balance that is credited on EigenLayer.
@@ -211,6 +211,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
+        bytes[] calldata validatorPubkeys,
         BeaconChainProofs.WithdrawalCredentialProofs[] calldata proofs,
         bytes32[][] calldata validatorFields
     ) external 
@@ -225,12 +226,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
 
-        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length),
+        require((validatorIndices.length == proofs.length) && (proofs.length == validatorFields.length) && (validatorFields.length == validatorPubkeys.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length");
         
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
-            totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(oracleTimestamp, validatorIndices[i], proofs[i], validatorFields[i]);
+            totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(oracleTimestamp, validatorIndices[i], validatorPubkeys[i], proofs[i], validatorFields[i]);
         }
 
          // virtually deposit for new ETH validator(s)
@@ -385,6 +386,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
         uint40 validatorIndex,
+        bytes memory validatorPubkey,
         BeaconChainProofs.WithdrawalCredentialProofs calldata proofs,
         bytes32[] calldata validatorFields
     )
@@ -392,6 +394,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         returns (uint256)
     {
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
+
+        require(validatorPubkeyHash == keccak256(validatorPubkey),
+            "EigenPod._verifyWithdrawalCredentials: validatorPubkeyHash does not match validatorPubkey");
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
@@ -437,7 +442,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
 
-        emit ValidatorRestaked(validatorIndex);
+        emit ValidatorRestaked(validatorIndex, validatorPubkeyHash, validatorPubkey);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
 
         // record validatorInfo update in storage
