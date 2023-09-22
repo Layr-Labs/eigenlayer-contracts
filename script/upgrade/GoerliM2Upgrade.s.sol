@@ -82,13 +82,13 @@ contract GoerliM2Deployment is Script, Test {
             slasher,
             delegation
         );
-        eigenPodImplementation = new EigenPod(
-            ethPOS,
-            delayedWithdrawalRouter,
-            eigenPodManager,
-            31 gwei,
-            0.5 gwei
-        );
+        eigenPodImplementation = new EigenPod({
+            _ethPOS: ethPOS,
+            _delayedWithdrawalRouter: delayedWithdrawalRouter,
+            _eigenPodManager: eigenPodManager,
+            _MAX_VALIDATOR_BALANCE_GWEI: 31 gwei, 
+            _RESTAKED_BALANCE_OFFSET_GWEI: 0.5 gwei 
+        });
 
         // write the output to a contract
         // WRITE JSON DATA
