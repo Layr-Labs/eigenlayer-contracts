@@ -30,6 +30,7 @@ import "./utils/Operators.sol";
 import "./mocks/LiquidStakingToken.sol";
 import "./mocks/EmptyContract.sol";
 import "./mocks/ETHDepositMock.sol";
+import "./mocks/BeaconChainOracleMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -99,7 +100,7 @@ contract EigenLayerDeployer is Operators {
     address podAddress;
     address delayedWithdrawalRouterAddress;
     address eigenPodBeaconAddress;
-    address beaconChainOracleAddress = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
+    address beaconChainOracleAddress;
     address emptyContractAddress;
     address operationsMultisig;
     address executorMultisig;
@@ -162,6 +163,7 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
 
         address[] memory initialOracleSignersArray = new address[](0);
+        beaconChainOracleAddress = address(new BeaconChainOracleMock());
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
