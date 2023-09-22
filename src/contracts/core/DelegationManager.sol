@@ -206,14 +206,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.undelegate: caller cannot undelegate staker"
         );
         
-        if (!canUndelegate(staker)) {
+        // remove any shares from the delegation system that the staker currently has delegated, if necessary
+        if (!hasNoActivelyDelegatedShares(staker)) {
             // force the staker into "undelegation limbo" in the EigenPodManager if necessary
             uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
 
             IStrategy[] memory strategies;
             uint256[] memory strategyShares;
 
-            // force a withdrawal of all of the staker's shares from the StrategyManager
+            // force-queue a withdrawal of all of the staker's shares from the StrategyManager
             (strategies, strategyShares, withdrawalRoot)
                 = strategyManager.forceTotalWithdrawal(staker);
 
@@ -502,14 +503,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /** 
-     * @notice Returns 'true' if the `staker` can immediately undelegate without queuing a new withdrawal OR if the staker is already undelegated,
-     * and 'false' otherwise
-     * @dev A staker can only undelegate if they have no "active" shares in EigenLayer and are not themselves an operator
+     * @notice Returns 'true' if the `staker` has no shares in EigenLayer (in either the StrategyManager or the EigenPodManager) which are
+     * currently delegated to an operator, and 'false' otherwise.
      */
-    function canUndelegate(address staker) public view returns (bool) {
-        return (!isOperator(staker) &&
-            strategyManager.stakerStrategyListLength(staker) == 0 &&
-            eigenPodManager.podOwnerHasNoDelegatedShares(staker));
+    function hasNoActivelyDelegatedShares(address staker) public view returns (bool) {
+        return (
+            (strategyManager.stakerStrategyListLength(staker) == 0 &&
+            eigenPodManager.podOwnerHasNoDelegatedShares(staker)) ||
+            !isDelegated(staker)
+        );
     }
 
     /** 
