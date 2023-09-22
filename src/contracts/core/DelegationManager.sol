@@ -218,9 +218,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 = strategyManager.forceTotalWithdrawal(staker);
 
             // remove delegated shares from the operator
-            _decreaseOperatorShares(operator, beaconChainETHStrategy, podShares);
+            _decreaseOperatorShares(operator, staker, beaconChainETHStrategy, podShares);
             for (uint i = 0; i < strategies.length; ) {
-                _decreaseOperatorShares(operator, strategies[i], strategyShares[i]);
+                _decreaseOperatorShares(operator, staker, strategies[i], strategyShares[i]);
 
                 unchecked {
                     ++i;
@@ -259,6 +259,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // add strategy shares to delegate's shares
             operatorShares[operator][strategy] += shares;
+
+            emit OperatorSharesIncreased(operator, staker, strategy, shares);
         }
     }
 
@@ -381,9 +383,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerDelegated(staker, operator);
     }
 
-    function _decreaseOperatorShares(address operator, IStrategy strategy, uint shares) internal {
+    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
         // This will revert on underflow, so no check needed
         operatorShares[operator][strategy] -= shares;
+        emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
 
     /*******************************************************************************
