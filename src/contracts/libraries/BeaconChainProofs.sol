@@ -361,10 +361,10 @@ library BeaconChainProofs {
         bytes memory padding = new bytes(16);
         bytes memory result = new bytes(64);
 
-        for (uint i = 0; i < validatorPubkey.length; i++) {
+        for (uint256 i = 0; i < validatorPubkey.length; i++) {
             result[i] = validatorPubkey[i];
         }
-        for (uint i = 0; i < padding.length; i++) {
+        for (uint256 i = 0; i < padding.length; i++) {
             result[i + validatorPubkey.length] = padding[i];
         }
         
