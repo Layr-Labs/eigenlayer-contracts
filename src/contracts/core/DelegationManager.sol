@@ -246,6 +246,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // add strategy shares to delegate's shares
             operatorShares[operator][strategy] += shares;
+
+            emit OperatorSharesIncreased(operator, staker, strategy, shares);
         }
     }
 
@@ -270,6 +272,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             uint256 stratsLength = strategies.length;
             for (uint256 i = 0; i < stratsLength;) {
                 operatorShares[operator][strategies[i]] -= shares[i];
+                emit OperatorSharesDecreased(operator, staker, strategies[i], shares[i]);
                 unchecked {
                     ++i;
                 }
