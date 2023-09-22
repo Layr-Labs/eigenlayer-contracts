@@ -143,7 +143,7 @@ contract DelegationTests is EigenLayerTestHelper {
         quorumNumbers[0] = bytes1(uint8(1));
         stakeRegistry.setOperatorWeight(0, operator, ethAmount);
         stakeRegistry.setOperatorWeight(1, operator, eigenAmount);
-        stakeRegistry.registerOperator(operator, defaultOperatorId, quorumNumbers);
+        stakeRegistry.registerOperatorNonCoordinator(operator, defaultOperatorId, quorumNumbers);
         _testDelegation(operator, staker, ethAmount, eigenAmount, quorumNumbers, stakeRegistry);
     }
 
@@ -603,8 +603,6 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //whitelist the serviceManager to slash the operator
         slasher.optIntoSlashing(address(serviceManager));
-        // bytes memory defaultQuorumNumber = abi.encodePacked(uint8(0));
-        // stakeRegistry.registerOperator(sender, bytes32(index), defaultQuorumNumber);
 
         cheats.stopPrank();
     }

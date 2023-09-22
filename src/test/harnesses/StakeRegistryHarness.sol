@@ -36,7 +36,8 @@ contract StakeRegistryHarness is StakeRegistry {
         _weightOfOperatorForQuorum[quorumNumber][operator] = weight;
     }
 
-    function registerOperator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external virtual override {
+    // mocked function to register an operator without having to mock other elements
+    function registerOperatorNonCoordinator(address operator, bytes32 operatorId, bytes calldata quorumNumbers) external {
         _registerOperator(operator, operatorId, quorumNumbers);
     }
 }
