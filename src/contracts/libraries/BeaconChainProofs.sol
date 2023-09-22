@@ -357,7 +357,7 @@ library BeaconChainProofs {
      *  hh.Reset()
      */
     function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
-        require(validatorPubkey.length == 48, "Input should be 32 bytes in length");
+        require(validatorPubkey.length == 48, "Input should be 48 bytes in length");
         bytes memory padding = new bytes(16);
         bytes memory result = new bytes(64);
 
