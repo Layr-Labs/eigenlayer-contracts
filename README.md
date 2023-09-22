@@ -26,7 +26,11 @@ Flow Docs
 
 ### Installation
 
-`foundryup`
+```
+foundryup
+
+forge install
+```
 
 This repository uses Foundry as a smart contract development toolchain.
 
