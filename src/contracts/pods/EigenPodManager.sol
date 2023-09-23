@@ -579,11 +579,18 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Returns 'true' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
-     * withdrawal for them OR by going into "undelegation limbo", and 'false' otherwise
+     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
+     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
      */
-    function podOwnerHasNoDelegatedShares(address staker) public view returns (bool) {
-        return (podOwnerShares[staker] == 0 || isInUndelegationLimbo(staker));
+    function podOwnerHasActiveShares(address staker) public view returns (bool) {
+        if (
+            (podOwnerShares[staker] == 0) ||
+            (isInUndelegationLimbo(staker))
+        ) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.

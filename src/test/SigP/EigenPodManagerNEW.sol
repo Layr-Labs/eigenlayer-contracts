@@ -245,7 +245,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
 
-    function podOwnerHasNoDelegatedShares(address staker) external view returns (bool) {}
+    function podOwnerHasActiveShares(address staker) external view returns (bool) {}
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
     function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}

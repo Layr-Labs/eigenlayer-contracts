@@ -73,9 +73,12 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
-    // @notice Returns 'true' if `staker` has removed all of their shares from delegation, either by queuing a withdrawal for them or by going into "undelegation limbo"
-    function podOwnerHasNoDelegatedShares(address /*staker*/) external pure returns (bool) {
-        return true;
+    /**
+     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
+     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
+     */
+    function podOwnerHasActiveShares(address /*staker*/) external pure returns (bool) {
+        return false;
     }
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    

@@ -100,10 +100,4 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
-
-    mapping(address => bool) public hasNoActivelyDelegatedShares;
-
-    function setHasNoActivelyDelegatedShares(address staker, bool valueToSet) external {
-        hasNoActivelyDelegatedShares[staker] = valueToSet;
-    }
 }

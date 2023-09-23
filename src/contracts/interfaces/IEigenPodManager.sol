@@ -143,10 +143,10 @@ interface IEigenPodManager is IPausable {
     function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 
     /**
-     * @notice Returns 'true' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
-     * withdrawal for them OR by going into "undelegation limbo", and 'false' otherwise
+     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
+     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
      */
-    function podOwnerHasNoDelegatedShares(address staker) external view returns (bool);
+    function podOwnerHasActiveShares(address staker) external view returns (bool);
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
     function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory);

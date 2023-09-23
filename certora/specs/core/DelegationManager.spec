@@ -20,7 +20,7 @@ methods {
 
 	// external calls to EigenPodManager
 	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
-	function _.podOwnerHasNoDelegatedShares(address) external => DISPATCHER(true);
+	function _.podOwnerHasActiveShares(address) external => DISPATCHER(true);
     function _.forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external => DISPATCHER(true);
 
     // external calls to EigenPod
@@ -54,7 +54,6 @@ methods {
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
-    function hasNoActivelyDelegatedShares(address staker) external returns (bool) envfree;
 }
 
 /*

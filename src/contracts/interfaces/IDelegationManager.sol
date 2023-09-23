@@ -305,10 +305,4 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
-
-    /** 
-     * @notice Returns 'true' if the `staker` has no shares in EigenLayer (in either the StrategyManager or the EigenPodManager) which are
-     * currently delegated to an operator, and 'false' otherwise.
-     */
-    function hasNoActivelyDelegatedShares(address staker) external view returns (bool);
 }

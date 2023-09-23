@@ -207,20 +207,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         );
         
         // remove any shares from the delegation system that the staker currently has delegated, if necessary
-        if (!hasNoActivelyDelegatedShares(staker)) {
-            // force the staker into "undelegation limbo" in the EigenPodManager if necessary
+        // force the staker into "undelegation limbo" in the EigenPodManager if necessary
+        if (eigenPodManager.podOwnerHasActiveShares(staker)) {
             uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
-
+            // remove delegated shares from the operator
+            _decreaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: podShares});
+        }
+        // force-queue a withdrawal of all of the staker's shares from the StrategyManager, if necessary
+        if (strategyManager.stakerStrategyListLength(staker) != 0) {
             IStrategy[] memory strategies;
             uint256[] memory strategyShares;
-
-            // force-queue a withdrawal of all of the staker's shares from the StrategyManager
             (strategies, strategyShares, withdrawalRoot)
                 = strategyManager.forceTotalWithdrawal(staker);
 
-            // remove delegated shares from the operator
-            _decreaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: podShares});
-            for (uint i = 0; i < strategies.length; ) {
+            for (uint256 i = 0; i < strategies.length; ) {
                 _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: strategyShares[i]});
 
                 unchecked {
@@ -500,18 +500,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
-    }
-
-    /** 
-     * @notice Returns 'true' if the `staker` has no shares in EigenLayer (in either the StrategyManager or the EigenPodManager) which are
-     * currently delegated to an operator, and 'false' otherwise.
-     */
-    function hasNoActivelyDelegatedShares(address staker) public view returns (bool) {
-        return (
-            (strategyManager.stakerStrategyListLength(staker) == 0 &&
-            eigenPodManager.podOwnerHasNoDelegatedShares(staker)) ||
-            !isDelegated(staker)
-        );
     }
 
     /** 
