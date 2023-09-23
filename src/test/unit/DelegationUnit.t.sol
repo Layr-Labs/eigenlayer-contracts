@@ -354,8 +354,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // verify that the salt hasn't been used before
         require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too early?");
 
+        IStrategy[] memory strategiesToReturn = new IStrategy[](1);
+        strategiesToReturn[0] = strategyMock;
+        uint256[] memory sharesToReturn = new uint256[](1);
+        sharesToReturn[0] = 1;
+        strategyManagerMock.setDeposits(strategiesToReturn, sharesToReturn);
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);        

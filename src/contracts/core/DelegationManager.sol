@@ -259,9 +259,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             address operator = delegatedTo[staker];
 
             // add strategy shares to delegate's shares
-            operatorShares[operator][strategy] += shares;
-
-            emit OperatorSharesIncreased(operator, staker, strategy, shares);
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
         }
     }
 
@@ -365,7 +363,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // increase the operator's shares in the canonical 'beaconChainETHStrategy' *if* the staker is not in "undelegation limbo"
         if (beaconChainETHShares != 0 && !eigenPodManager.isInUndelegationLimbo(staker)) {
-            operatorShares[operator][beaconChainETHStrategy] += beaconChainETHShares;
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: beaconChainETHShares});
         }
 
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
@@ -373,7 +371,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // update the share amounts for each of the `operator`'s strategies
         for (uint256 i = 0; i < strategies.length;) {
-            operatorShares[operator][strategies[i]] += shares[i];
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
             unchecked {
                 ++i;
             }
@@ -382,6 +380,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
+    }
+
+    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
+        operatorShares[operator][strategy] += shares;
+        emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
 
     function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
