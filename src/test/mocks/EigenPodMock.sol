@@ -54,7 +54,7 @@ contract EigenPodMock is IEigenPod, Test {
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
-     * @param proofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -62,7 +62,7 @@ contract EigenPodMock is IEigenPod, Test {
         uint64 oracleBlockNumber,
         uint40[] calldata validatorIndices,
         bytes[] calldata validatorPubkeys,
-        BeaconChainProofs.WithdrawalCredentialProofs[] calldata proofs,
+        BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     ) external {}
 
@@ -74,14 +74,14 @@ contract EigenPodMock is IEigenPod, Test {
      * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param proofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
+     * @param balanceUpdateProofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
         uint64 oracleBlockNumber,
         uint40 validatorIndex,
-        BeaconChainProofs.BalanceUpdateProofs calldata proofs,
+        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProofs,
         bytes32[] calldata validatorFields
     ) external {}
 
@@ -95,7 +95,7 @@ contract EigenPodMock is IEigenPod, Test {
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
-        BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
+        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs, 
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields
