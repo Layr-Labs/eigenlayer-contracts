@@ -1299,7 +1299,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             return BeaconChainProofs.WithdrawalProofs(
                 beaconStateRoot,
                 abi.encodePacked(getStateRootProof()),
-                abi.encodePacked(getBlockHeaderProof()),
                 abi.encodePacked(getWithdrawalProof()),
                 abi.encodePacked(getSlotProof()),
                 abi.encodePacked(getExecutionPayloadProof()),
