@@ -143,7 +143,6 @@ contract EigenPodManager is
     function restakeBeaconChainETH(address podOwner, uint256 amountWei) 
         external 
         onlyEigenPod(podOwner) 
-        onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
         onlyNotFrozen(podOwner)
         nonReentrant
     {
