@@ -216,10 +216,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
+        uint64 oracleTimestamp,
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProofs calldata proofs,
-        bytes32[] calldata validatorFields,
-        uint64 oracleTimestamp
+        bytes32[] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
        // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's balance *recently* changed.
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
@@ -294,18 +294,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /**
      * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
+     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
      * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
      * @param withdrawalFields are the fields of the withdrawals being proven
      * @param validatorFields are the fields of the validators being proven
-     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
+        uint64 oracleTimestamp,
         BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields,
-        uint64 oracleTimestamp
+        bytes32[][] calldata withdrawalFields
     )
         external
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL)
@@ -318,7 +318,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
-            _verifyAndProcessWithdrawal(withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i], oracleTimestamp);
+            _verifyAndProcessWithdrawal(oracleTimestamp, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
         }
     }
 
@@ -525,11 +525,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
 
     function _verifyAndProcessWithdrawal(
+        uint64 oracleTimestamp,
         BeaconChainProofs.WithdrawalProofs calldata withdrawalProofs, 
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
-        bytes32[] calldata withdrawalFields,
-        uint64 oracleTimestamp
+        bytes32[] calldata withdrawalFields
     )
         internal
         /** 

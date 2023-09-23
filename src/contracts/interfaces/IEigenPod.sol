@@ -130,26 +130,26 @@ interface IEigenPod {
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
+        uint64 oracleBlockNumber,
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProofs calldata proofs,
-        bytes32[] calldata validatorFields,
-        uint64 oracleBlockNumber
+        bytes32[] calldata validatorFields
     ) external;
 
     /**
      * @notice This function records a full withdrawal on behalf of one of the Ethereum validators for this EigenPod
+     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against 
      * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
      * @param validatorFieldsProofs is the proof of the validator's fields in the validator tree
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
-     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
+        uint64 oracleTimestamp,
         BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields,
-        uint64 oracleTimestamp
+        bytes32[][] calldata withdrawalFields
     ) external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
