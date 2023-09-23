@@ -358,17 +358,7 @@ library BeaconChainProofs {
      */
     function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
         require(validatorPubkey.length == 48, "Input should be 48 bytes in length");
-        bytes memory padding = new bytes(16);
-        bytes memory result = new bytes(64);
-
-        for (uint256 i = 0; i < validatorPubkey.length; i++) {
-            result[i] = validatorPubkey[i];
-        }
-        for (uint256 i = 0; i < padding.length; i++) {
-            result[i + validatorPubkey.length] = padding[i];
-        }
-        
-        return sha256(abi.encodePacked(result));
+        return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
 }
