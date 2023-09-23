@@ -27,6 +27,9 @@ contract StrategyManagerMock is
     IEigenPodManager public eigenPodManager;
     ISlasher public slasher;
 
+    IStrategy[] public strategiesToReturn;
+    uint256[] public sharesToReturn;
+
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public numWithdrawalsQueued;
 
@@ -63,10 +66,23 @@ contract StrategyManagerMock is
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares) {}
 
     /**
+     * @notice mocks the return value of getDeposits
+     * @param _strategiesToReturn strategies to return in getDeposits
+     * @param _sharesToReturn shares to return in getDeposits
+     */
+    function setDeposits(IStrategy[] calldata _strategiesToReturn, uint256[] calldata _sharesToReturn) external {
+        require(_strategiesToReturn.length == _sharesToReturn.length, "StrategyManagerMock: length mismatch");
+        strategiesToReturn = _strategiesToReturn;
+        sharesToReturn = _sharesToReturn;
+    }
+
+    /**
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @return (depositor's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {}
+    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
+        return (strategiesToReturn, sharesToReturn);
+    }
 
     /// @notice Returns the array of strategies in which `staker` has nonzero shares
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
@@ -133,4 +149,5 @@ contract StrategyManagerMock is
         emit ForceTotalWithdrawalCalled(staker);
         return (emptyStrategyArray, emptyShareArray, emptyReturnValue);
     }
+
 }
