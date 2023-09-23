@@ -112,7 +112,7 @@ library BeaconChainProofs {
     /// @notice This struct contains the merkle proofs and leaves needed to verify a partial/full withdrawal
     struct WithdrawalProofs {
         bytes32 beaconStateRoot;
-        bytes latestBlockHeaderProof;
+        bytes stateRootProof;
         bytes blockHeaderProof;
         bytes withdrawalProof;
         bytes slotProof;
@@ -132,7 +132,7 @@ library BeaconChainProofs {
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
     struct BalanceUpdateProofs {
         bytes32 beaconStateRoot;
-        bytes latestBlockHeaderProof;
+        bytes stateRootProof;
         bytes validatorBalanceProof;
         bytes validatorFieldsProof;
         bytes32 balanceRoot;
@@ -141,7 +141,7 @@ library BeaconChainProofs {
     // @notice This struct contains the merkle proofs and leaves needed to verify a validator's withdrawal credential
     struct WithdrawalCredentialProofs {
         bytes32 beaconStateRoot;
-        bytes latestBlockHeaderProof;
+        bytes stateRootProof;
         bytes validatorFieldsProof;
     }
 
@@ -227,18 +227,18 @@ library BeaconChainProofs {
      * @notice This function verifies the latestBlockHeader against the state root. the latestBlockHeader is 
      * a tracked in the beacon state.
      * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param latestBlockHeaderProof is the provided merkle proof
+     * @param stateRootProof is the provided merkle proof
      * @param latestBlockHeaderRoot is hashtree root of the latest block header in the beacon state
      */
     function verifyStateRootAgainstLatestBlockHeaderRoot(
         bytes32 beaconStateRoot,
         bytes32 latestBlockHeaderRoot,
-        bytes calldata latestBlockHeaderProof
+        bytes calldata stateRootProof
     ) internal view {
-        require(latestBlockHeaderProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
+        require(stateRootProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Proof has incorrect length");
         //Next we verify the slot against the blockHeaderRoot
-        require(Merkle.verifyInclusionSha256({proof: latestBlockHeaderProof, root: latestBlockHeaderRoot, leaf: beaconStateRoot, index: STATE_ROOT_INDEX}),
+        require(Merkle.verifyInclusionSha256({proof: stateRootProof, root: latestBlockHeaderRoot, leaf: beaconStateRoot, index: STATE_ROOT_INDEX}),
             "BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot: Invalid latest block header root merkle proof");
     }
 

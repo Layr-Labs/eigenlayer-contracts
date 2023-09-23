@@ -244,7 +244,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
                 beaconStateRoot: proofs.beaconStateRoot,
                 latestBlockHeaderRoot: latestBlockHeaderRoot,
-                latestBlockHeaderProof: proofs.latestBlockHeaderProof
+                stateRootProof: proofs.stateRootProof
             });
         }
 
@@ -495,7 +495,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
             beaconStateRoot: proofs.beaconStateRoot,
             latestBlockHeaderRoot: latestBlockHeaderRoot,
-            latestBlockHeaderProof: proofs.latestBlockHeaderProof
+            stateRootProof: proofs.stateRootProof
         });
 
         // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
@@ -566,7 +566,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
             beaconStateRoot: withdrawalProofs.beaconStateRoot,
             latestBlockHeaderRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
-            latestBlockHeaderProof: withdrawalProofs.latestBlockHeaderProof
+            stateRootProof: withdrawalProofs.stateRootProof
         });
 
 

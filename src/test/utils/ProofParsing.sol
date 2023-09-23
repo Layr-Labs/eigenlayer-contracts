@@ -117,13 +117,13 @@ contract ProofParsing is Test{
         return slotProof;
     }
 
-    function getStateRootAgainstLatestBlockHeaderProof() public returns(bytes32[] memory) {
-        bytes32[] memory latestBlockHeaderProof = new bytes32[](3);
+    function getStateRootProof() public returns(bytes32[] memory) {
+        bytes32[] memory stateRootProof = new bytes32[](3);
         for (uint i = 0; i < 3; i++) {
             prefix = string.concat(".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
-            latestBlockHeaderProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return latestBlockHeaderProof;
+        return stateRootProof;
     }
 
     function getWithdrawalProof() public returns(bytes32[9] memory) {

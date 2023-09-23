@@ -1264,7 +1264,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32 balanceRoot = getBalanceRoot();
         BeaconChainProofs.BalanceUpdateProofs memory proofs = BeaconChainProofs.BalanceUpdateProofs(
             beaconStateRoot,
-            abi.encodePacked(getStateRootAgainstLatestBlockHeaderProof()),
+            abi.encodePacked(getStateRootProof()),
             abi.encodePacked(getValidatorBalanceProof()),
             abi.encodePacked(getWithdrawalCredentialProof()),  //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
             balanceRoot
@@ -1298,7 +1298,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             return BeaconChainProofs.WithdrawalProofs(
                 beaconStateRoot,
-                abi.encodePacked(getStateRootAgainstLatestBlockHeaderProof()),
+                abi.encodePacked(getStateRootProof()),
                 abi.encodePacked(getBlockHeaderProof()),
                 abi.encodePacked(getWithdrawalProof()),
                 abi.encodePacked(getSlotProof()),
@@ -1326,7 +1326,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.WithdrawalCredentialProofs memory proofs = BeaconChainProofs.WithdrawalCredentialProofs(
                 getBeaconStateRoot(),
-                abi.encodePacked(getStateRootAgainstLatestBlockHeaderProof()),
+                abi.encodePacked(getStateRootProof()),
                 abi.encodePacked(getWithdrawalCredentialProof())
             );
             return proofs;
