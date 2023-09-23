@@ -6,6 +6,8 @@ import "../../contracts/interfaces/IEigenPodManager.sol";
 
 contract EigenPodManagerMock is IEigenPodManager, Test {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    IBeacon public eigenPodBeacon;
+    IETHPOSDeposit public ethPOS;
 
     function slasher() external view returns(ISlasher) {}
 

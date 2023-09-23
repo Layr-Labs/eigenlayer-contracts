@@ -155,22 +155,6 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testRestakeBeaconChainETHFailsWhenDepositsPaused() public {
-        uint256 amount = 1e18;
-        address staker = address(this);
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-
-        // pause deposits
-        cheats.startPrank(pauser);
-        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
-        cheats.stopPrank();
-
-        cheats.startPrank(address(eigenPod));
-        cheats.expectRevert(bytes("Pausable: index is paused"));
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-    }
-
     function testRestakeBeaconChainETHFailsWhenStakerFrozen() public {
         uint256 amount = 1e18;
         address staker = address(this);

@@ -64,6 +64,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint64 internal constant GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
+    bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+
 
     // EIGENPODMANAGER EVENTS
     /// @notice Emitted to notify the update of the beaconChainOracle address
@@ -87,14 +89,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     event ValidatorRestaked(uint40 validatorIndex);
 
     /// @notice Emitted when an ETH validator's balance is updated in EigenLayer
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 slotNumber, uint64 newBalanceGwei);
+    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newBalanceGwei);
 
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint64 withdrawalAmountGwei);
+    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 timestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
+    event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -290,12 +292,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
 
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -316,11 +320,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
 
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -383,7 +389,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        // ./solidityProofGen "WithdrawalFieldsProof" 302913 1048 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/block_header_6399000.json" "data/withdrawal_proof_goerli/block_6399000.json" "fullWithdrawalProof_Latest.json"
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_HistoricalSummaryFixed.json"
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
@@ -439,7 +445,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         
 
         //generate partialWithdrawalProofs.json with: 
-        // ./solidityProofGen "WithdrawalFieldsProof" 302913 1048 true true  "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/block_header_6399000.json" "data/withdrawal_proof_goerli/block_6399000.json" "partialWithdrawalProof_latest.json"
+        // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "PartialWithdrawalProof_HistoricalSummaryFixed.json"
         setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
         withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();
@@ -576,6 +582,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(validatorIndex0);
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
 
 
         cheats.startPrank(podOwner);
@@ -583,7 +591,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.activateRestaking();
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -606,10 +614,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(validatorIndex0);
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -627,10 +637,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -841,9 +853,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
+
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -1198,6 +1213,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
+        bytes[] memory validatorPubkeys = new bytes[](1);
+        validatorPubkeys[0] = validatorPubkey;
+
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
@@ -1205,7 +1223,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.activateRestaking();
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
 
         uint256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);

@@ -48,7 +48,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function ownerToPod(address podOwner) external view returns(IEigenPod) {}
 
 
-    IETHPOSDeposit internal immutable ethPOS;
+    IETHPOSDeposit public immutable ethPOS;
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
 
