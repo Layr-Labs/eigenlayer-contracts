@@ -46,7 +46,7 @@ contract ProofParsing is Test{
         return stdJson.readUint(proofConfigJson, ".withdrawalIndex");
     }
 
-    function getBlockHeaderRootIndex() public returns(uint256) {
+    function getBlockRootIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".blockHeaderRootIndex");
     }
 
@@ -58,7 +58,7 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".beaconStateRoot");
     }
 
-    function getBlockHeaderRoot() public returns(bytes32) {
+    function getBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
     }
 
@@ -82,7 +82,7 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".executionPayloadRoot");
     }
 
-    function getLatestBlockHeaderRoot() public returns(bytes32) {
+    function getLatestBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".latestBlockHeaderRoot");
     }
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {

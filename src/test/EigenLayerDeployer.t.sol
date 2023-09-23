@@ -163,7 +163,6 @@ contract EigenLayerDeployer is Operators {
         eigenPodManager = EigenPodManager(eigenPodManagerAddress);
         delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
 
-        address[] memory initialOracleSignersArray = new address[](0);
         beaconChainOracleAddress = address(new BeaconChainOracleMock());
 
         ethPOSDeposit = new ETHPOSDepositMock();
@@ -245,8 +244,6 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-        address[] memory initialOracleSignersArray = new address[](0);
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);

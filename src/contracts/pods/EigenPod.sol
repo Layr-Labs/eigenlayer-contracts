@@ -238,12 +238,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         {
             // verify ETH validator proof
-            bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
+            bytes32 latestBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
             // verify the provided state root against the oracle-provided latest block header
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+            BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
                 beaconStateRoot: proofs.beaconStateRoot,
-                latestBlockHeaderRoot: latestBlockHeaderRoot,
+                latestBlockRoot: latestBlockRoot,
                 stateRootProof: proofs.stateRootProof
             });
         }
@@ -489,12 +489,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 validatorEffectiveBalanceGwei = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX]);
 
         // verify ETH validator proof
-        bytes32 latestBlockHeaderRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
+        bytes32 latestBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
 
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             beaconStateRoot: proofs.beaconStateRoot,
-            latestBlockHeaderRoot: latestBlockHeaderRoot,
+            latestBlockRoot: latestBlockRoot,
             stateRootProof: proofs.stateRootProof
         });
 
@@ -563,9 +563,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         
     
         // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockHeaderRoot({
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             beaconStateRoot: withdrawalProofs.beaconStateRoot,
-            latestBlockHeaderRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
+            latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
             stateRootProof: withdrawalProofs.stateRootProof
         });
 
