@@ -383,7 +383,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
-        // This will revert on overflow, so no check needed
         operatorShares[operator][strategy] += shares;
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
