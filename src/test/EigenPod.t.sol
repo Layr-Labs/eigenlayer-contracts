@@ -18,6 +18,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
+    bytes pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     uint40 validatorIndex0 = 0;
     uint40 validatorIndex1 = 1;
     //hash tree root of list of validators
@@ -63,7 +64,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint64 internal constant GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
-    bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+    // bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
 
 
     // EIGENPODMANAGER EVENTS
