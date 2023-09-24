@@ -103,13 +103,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated.  Here newValidatorBalanceGwei
     //  is the validator's balance that is credited on EigenLayer.
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
+    event ValidatorBalanceUpdated(bytes32 validatorPubkeyHash, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
     
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei);
+    event FullWithdrawalRedeemed(bytes32 validatorPubkeyHash, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei);
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
+    event PartialWithdrawalRedeemed(bytes32 validatorPubkeyHash, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -281,7 +281,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         
 
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei){
-            emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorPubkeyHash, oracleTimestamp, newRestakedBalanceGwei);
 
             int256 sharesDelta = _calculateSharesDelta({
                 newAmountWei: (newRestakedBalanceGwei * GWEI_TO_WEI),
@@ -515,7 +515,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
 
         emit ValidatorRestaked(validatorIndex, validatorPubkeyHash, validatorPubkey);
-        emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
+        emit ValidatorBalanceUpdated(validatorPubkeyHash, oracleTimestamp, validatorInfo.restakedBalanceGwei);
 
         // record validatorInfo update in storage
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
@@ -597,15 +597,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
             if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, validatorInfo);
+                _processFullWithdrawal(validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, validatorInfo);
             } else {
-                _processPartialWithdrawal(validatorIndex, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
+                _processPartialWithdrawal(validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
             }
         }
     }
 
     function _processFullWithdrawal(
-        uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
         uint64 withdrawalHappenedTimestamp,
         address recipient,
@@ -658,7 +657,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
-        emit FullWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei);
+        emit FullWithdrawalRedeemed(validatorPubkeyHash, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei);
 
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         if (amountToSend != 0) {
@@ -667,12 +666,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _processPartialWithdrawal(
-        uint40 validatorIndex,
+        bytes32 validatorPubkeyHash,
         uint64 withdrawalHappenedTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
     ) internal {
-        emit PartialWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, partialWithdrawalAmountGwei);
+        emit PartialWithdrawalRedeemed(validatorPubkeyHash, withdrawalHappenedTimestamp, recipient, partialWithdrawalAmountGwei);
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
         _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
