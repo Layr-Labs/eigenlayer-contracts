@@ -16,12 +16,12 @@ M2 adds several features, the most important of which is the basic support neede
 
 **EigenPodManager**: 
 
-| File | Type | Proxy? |
-| -------- | -------- | -------- |
-| [`EigenPodManager.sol`](#TODO) | Singleton | Transparent proxy |
-| [`EigenPod.sol`](#TODO) | Instanced, deployed per-user | Beacon proxy |
-| [`DelayedWithdrawalRouter.sol`](#TODO) | Singleton | Transparent proxy |
-| [TODO - BeaconChainOracle](#TODO) | TODO | TODO |
+| File | Type | Proxy? | Goerli |
+| -------- | -------- | -------- | -------- |
+| [`EigenPodManager.sol`](#TODO) | Singleton | Transparent proxy | TODO |
+| [`EigenPod.sol`](#TODO) | Instanced, deployed per-user | Beacon proxy | TODO |
+| [`DelayedWithdrawalRouter.sol`](#TODO) | Singleton | Transparent proxy | TODO |
+| [`EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS proxy | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
 
 These contracts work together to enable native ETH restaking:
 * Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
@@ -31,10 +31,10 @@ These contracts work together to enable native ETH restaking:
 
 **StrategyManager**:
 
-| File | Type | Proxy? |
-| -------- | -------- | -------- |
-| [`StrategyManager.sol`](#TODO) | Singleton | Transparent proxy |
-| [`StrategyBaseTVLLimits.sol`](#TODO) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy |
+| File | Type | Proxy? | Goerli |
+| -------- | -------- | -------- | -------- |
+| [`StrategyManager.sol`](#TODO) | Singleton | Transparent proxy | TODO |
+| [`StrategyBaseTVLLimits.sol`](#TODO) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy | TODO |
 
 These contracts work together to enable restaking for LSTs:
 * The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits and withdrawals from each of the 3 LST-specific strategies, and manages interactions between users with restaked LSTs and the `DelegationManager`.
@@ -42,17 +42,17 @@ These contracts work together to enable restaking for LSTs:
 
 **DelegationManager**:
 
-| File | Type | Proxy? |
-| -------- | -------- | -------- |
-| [`DelegationManager.sol`](#TODO) | Singleton | Transparent proxy |
+| File | Type | Proxy? | Goerli |
+| -------- | -------- | -------- | -------- |
+| [`DelegationManager.sol`](#TODO) | Singleton | Transparent proxy | TODO |
 
 The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), and to keep track of shares being delegated to Operators across different strategies.
 
 **Slasher**:
 
-| File | Type | Proxy? |
-| -------- | -------- | -------- |
-| [`Slasher.sol`](#TODO) | Singleton | Transparent proxy |
+| File | Type | Proxy? | Goerli |
+| -------- | -------- | -------- | -------- |
+| [`Slasher.sol`](#TODO) | Singleton | Transparent proxy | TODO |
 
 The `Slasher` is deployed, but will remain completely paused during M2. Though some contracts make calls to the `Slasher`, they are all currently no-ops.
 
