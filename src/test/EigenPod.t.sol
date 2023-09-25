@@ -64,7 +64,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint64 internal constant GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
-    bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+    // bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
 
 
     // EIGENPODMANAGER EVENTS
@@ -292,14 +292,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
-
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -320,13 +317,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
-
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -581,16 +575,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(validatorIndex0);
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
-
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp);
         newPod.activateRestaking();
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -613,12 +604,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(validatorIndex0);
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -636,12 +625,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         proofsArray[0] = _getWithdrawalCredentialProof();
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -852,12 +839,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
-
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -1212,9 +1196,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
-        bytes[] memory validatorPubkeys = new bytes[](1);
-        validatorPubkeys[0] = validatorPubkey;
-
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
@@ -1222,7 +1203,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.activateRestaking();
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, validatorPubkeys, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
 
         uint256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
