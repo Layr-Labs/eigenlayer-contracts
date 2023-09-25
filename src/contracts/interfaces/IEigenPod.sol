@@ -125,14 +125,14 @@ interface IEigenPod {
      * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param balanceUpdateProofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
+     * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
         uint64 oracleBlockNumber,
         uint40 validatorIndex,
-        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProofs,
+        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
     ) external;
 
