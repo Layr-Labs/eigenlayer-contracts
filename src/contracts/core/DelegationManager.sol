@@ -25,6 +25,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
+    // @dev Index for flag that pauses undelegations when set
+    uint8 internal constant PAUSED_UNDELEGATION = 1;
+
     /**
      * @dev Chain ID at the time of contract deployment
      */
@@ -185,46 +188,60 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Undelegates `staker` from the operator who they are delegated to.
-     * @param staker The account undelegating.
+     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
+     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+     * @param staker The account to be undelegated.
+     * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
      *
-     * @dev Callable only by the StrategyManager.
-     * @dev Should only ever be called in the event that the `staker` has no active deposits in EigenLayer.
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
-     * @dev Does nothing (but should not revert) if the staker is already undelegated.
+     * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
+     * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external onlyStrategyManagerOrEigenPodManager {
-        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot undelegate from themselves");
+    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_UNDELEGATION) returns (bytes32 withdrawalRoot) {
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         address operator = delegatedTo[staker];
-        // only make storage changes + emit an event if the staker is actively delegated, otherwise do nothing
-        if (operator != address(0)) {
-            emit StakerUndelegated(staker, operator);
-            delegatedTo[staker] = address(0);
-        }
-    }
-
-    /**
-     * @notice Forcibly undelegates a staker who is currently delegated to the operator.
-     * @param staker The account to be force-undelegated.
-     * @return The root of the newly queued withdrawal.
-     *
-     * @dev This function will revert if the `msg.sender` is not the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
-     * @dev This function will also revert if the `staker` is themeselves an operator; operators are considered *permanently* delegated to themselves.
-     * @dev Note that it is assumed that a staker places some trust in an operator, in paricular for the operator to not get slashed; a malicious operator can use this function
-     * to inconvenience a staker who is delegated to them, but the expectation is that the inconvenience is minor compared to the operator getting purposefully slashed.
-     */
-    function forceUndelegation(address staker) external returns (bytes32) {
-        address operator = delegatedTo[staker];
-        require(staker != operator, "DelegationManager.forceUndelegation: operators cannot be force-undelegated");
-        require(msg.sender == operator || msg.sender == _operatorDetails[operator].delegationApprover,
-            "DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
+        require(
+            msg.sender == staker ||
+            msg.sender == operator ||
+            msg.sender == _operatorDetails[operator].delegationApprover,
+            "DelegationManager.undelegate: caller cannot undelegate staker"
+        );
         
+        // remove any shares from the delegation system that the staker currently has delegated, if necessary
         // force the staker into "undelegation limbo" in the EigenPodManager if necessary
-        eigenPodManager.forceIntoUndelegationLimbo(staker);
-        
-        // force a withdrawal of all of the staker's shares from the StrategyManager
-        return (strategyManager.forceTotalWithdrawal(staker));
+        if (eigenPodManager.podOwnerHasActiveShares(staker)) {
+            uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
+            // remove delegated shares from the operator
+            _decreaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: podShares});
+        }
+        // force-queue a withdrawal of all of the staker's shares from the StrategyManager, if necessary
+        if (strategyManager.stakerStrategyListLength(staker) != 0) {
+            IStrategy[] memory strategies;
+            uint256[] memory strategyShares;
+            (strategies, strategyShares, withdrawalRoot)
+                = strategyManager.forceTotalWithdrawal(staker);
 
+            for (uint256 i = 0; i < strategies.length; ) {
+                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: strategyShares[i]});
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+
+        // emit an event if this action was not initiated by the staker themselves
+        if (msg.sender != staker) {
+            emit StakerForceUndelegated(staker, operator);
+        }
+
+        // actually undelegate the staker
+        emit StakerUndelegated(staker, operator);
+        delegatedTo[staker] = address(0);
+
+        return withdrawalRoot;
     }
 
     /**
@@ -245,9 +262,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             address operator = delegatedTo[staker];
 
             // add strategy shares to delegate's shares
-            operatorShares[operator][strategy] += shares;
-
-            emit OperatorSharesIncreased(operator, staker, strategy, shares);
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
         }
     }
 
@@ -258,7 +273,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param shares An array of the number of shares to decrease for a operator and strategy.
      * 
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
-     * @dev Callable only by the StrategyManager.
+     * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
         external
@@ -271,8 +286,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             // subtract strategy shares from delegate's shares
             uint256 stratsLength = strategies.length;
             for (uint256 i = 0; i < stratsLength;) {
-                operatorShares[operator][strategies[i]] -= shares[i];
-                emit OperatorSharesDecreased(operator, staker, strategies[i], shares[i]);
+                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
                 unchecked {
                     ++i;
                 }
@@ -352,7 +366,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // increase the operator's shares in the canonical 'beaconChainETHStrategy' *if* the staker is not in "undelegation limbo"
         if (beaconChainETHShares != 0 && !eigenPodManager.isInUndelegationLimbo(staker)) {
-            operatorShares[operator][beaconChainETHStrategy] += beaconChainETHShares;
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: beaconChainETHShares});
         }
 
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
@@ -360,7 +374,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // update the share amounts for each of the `operator`'s strategies
         for (uint256 i = 0; i < strategies.length;) {
-            operatorShares[operator][strategies[i]] += shares[i];
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
             unchecked {
                 ++i;
             }
@@ -369,6 +383,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
+    }
+
+    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
+        operatorShares[operator][strategy] += shares;
+        emit OperatorSharesIncreased(operator, staker, strategy, shares);
+    }
+
+    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
+        // This will revert on underflow, so no check needed
+        operatorShares[operator][strategy] -= shares;
+        emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
 
     /*******************************************************************************

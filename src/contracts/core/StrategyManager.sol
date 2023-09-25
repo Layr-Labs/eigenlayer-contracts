@@ -236,26 +236,18 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Called by a staker to undelegate entirely from EigenLayer. The staker must first withdraw all of their existing deposits
-     * (through use of the `queueWithdrawal` function), or else otherwise have never deposited in EigenLayer prior to delegating.
-     */
-    function undelegate() external {
-        _undelegate(msg.sender);
-    }
-
-    /**
      * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      * @param staker The staker to force-undelegate.
-     * @return The root of the newly queued withdrawal.
+     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
      */
     function forceTotalWithdrawal(address staker) external
         onlyDelegationManager
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(staker)
         nonReentrant
-        returns (bytes32)
+        returns (IStrategy[] memory, uint256[] memory, bytes32)
     {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         IStrategy[] memory strategies = new IStrategy[](strategiesLength);
@@ -271,7 +263,8 @@ contract StrategyManager is
                 ++i;
             }
         }
-        return _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker, true);
+        bytes32 queuedWithdrawal = _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker);
+        return (strategies, shares, queuedWithdrawal);
     }
 
     /**
@@ -287,8 +280,6 @@ contract StrategyManager is
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
      * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
-     * @param undelegateIfPossible If this param is marked as 'true' *and the withdrawal will result in `msg.sender` having no shares in any Strategy,*
-     * then this function will also make an internal call to `undelegate(msg.sender)` to undelegate the `msg.sender`.
      * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
@@ -299,8 +290,7 @@ contract StrategyManager is
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
@@ -308,7 +298,9 @@ contract StrategyManager is
         nonReentrant
         returns (bytes32)
     {
-        return _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer, undelegateIfPossible);
+        bytes32 queuedWithdrawal = _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer);
+        delegation.decreaseDelegatedShares(msg.sender, strategies, shares);
+        return queuedWithdrawal;
     }
 
     /**
@@ -551,8 +543,7 @@ contract StrategyManager is
         uint256[] memory strategyIndexes,
         IStrategy[] memory strategies,
         uint256[] memory shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         internal
         returns (bytes32)
@@ -560,9 +551,6 @@ contract StrategyManager is
         require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
     
-        // modify delegated shares accordingly, if applicable
-        delegation.decreaseDelegatedShares(staker, strategies, shares);
-
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
         
         // keeps track of the current index in the `strategyIndexes` array
@@ -617,15 +605,6 @@ contract StrategyManager is
 
         // mark withdrawal as pending
         withdrawalRootPending[withdrawalRoot] = true;
-
-        // If the `staker` has withdrawn all of their funds from EigenLayer in this transaction, then they can choose to also undelegate
-        /**
-         * Checking that `stakerCanUndelegate` is not strictly necessary here, but prevents reverting very late in logic,
-         * in the case that `undelegateIfPossible` is set to true but the `staker` still has active deposits in EigenLayer.
-         */
-        if (undelegateIfPossible && stakerCanUndelegate(staker)) {
-            _undelegate(staker);
-        }
 
         emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
 
@@ -704,16 +683,6 @@ contract StrategyManager is
     }
 
     /**
-     * @notice If the `depositor` has no existing shares, then they can `undelegate` themselves.
-     * This allows people a "hard reset" in their relationship with EigenLayer after withdrawing all of their stake.
-     * @param depositor The address to undelegate. Passed on as an input to the `delegation.undelegate` function.
-     */
-    function _undelegate(address depositor) internal onlyNotFrozen(depositor) {
-        require(stakerCanUndelegate(depositor), "StrategyManager._undelegate: depositor has active deposits");
-        delegation.undelegate(depositor);
-    }
-
-    /**
      * @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
      * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
      */
@@ -783,11 +752,6 @@ contract StrategyManager is
                 )
             )
         );
-    }
-
-    // @notice Returns 'true' if `staker` can undelegate and false otherwise
-    function stakerCanUndelegate(address staker) public view returns (bool) {
-        return (stakerStrategyList[staker].length == 0 && eigenPodManager.stakerHasNoDelegatedShares(staker));
     }
 
     // @notice Internal function for calculating the current domain separator of this contract

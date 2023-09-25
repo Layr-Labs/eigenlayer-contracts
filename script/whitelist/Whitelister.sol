@@ -114,16 +114,14 @@ contract Whitelister is IWhitelister, Ownable {
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
                 IStrategyManager.queueWithdrawal.selector,
                 strategyIndexes,
                 strategies,
                 shares,
-                withdrawer,
-                undelegateIfPossible
+                withdrawer
             );
         return Staker(staker).callAddress(address(strategyManager), data);
     }

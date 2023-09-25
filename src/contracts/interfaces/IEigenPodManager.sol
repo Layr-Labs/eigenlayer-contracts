@@ -89,9 +89,8 @@ interface IEigenPodManager is IPausable {
      * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
      * @param amountWei The amount of ETH to withdraw.
      * @param withdrawer The address that can complete the withdrawal and receive the withdrawn funds.
-     * @param undelegateIfPossible If marked as 'true', the podOwner will be undelegated from their operator in EigenLayer, if possible.
      */
-    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32);
+    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32);
 
     /**
      * @notice Completes an existing BeaconChainQueuedWithdrawal by sending the ETH to the 'withdrawer'
@@ -101,11 +100,13 @@ interface IEigenPodManager is IPausable {
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
 
     /**
-     * @notice forces the podOwner into the "undelegation limbo" mode
+     * @notice forces the podOwner into the "undelegation limbo" mode, and returns the number of virtual 'beacon chain ETH shares'
+     * that the podOwner has, which were entered into undelegation limbo.
      * @param podOwner is the staker to be forced into undelegation limbo
+     * @param delegatedTo is the operator the staker is currently delegated to
      * @dev This function can only be called by the DelegationManager contract
      */
-    function forceIntoUndelegationLimbo(address podOwner) external;
+    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256 sharesRemovedFromDelegation);
 
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
@@ -149,15 +150,11 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
     function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 
-    // @notice Returns 'true' if `staker` can undelegate and false otherwise
-    function stakerCanUndelegate(address staker) external view returns (bool);
-
     /**
-     * @notice Returns 'true' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a withdrawal for them
-     * OR by going into "undelegation limbo", and 'false' otherwise
+     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
+     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
      */
-    function stakerHasNoDelegatedShares(address staker) external view returns (bool);
-
+    function podOwnerHasActiveShares(address staker) external view returns (bool);
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
     function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory);

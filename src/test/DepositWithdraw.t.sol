@@ -296,7 +296,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         //queue the withdrawal
         cheats.startPrank(staker);
-        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer, true);
+        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer);
         cheats.stopPrank();
         return (withdrawalRoot, queuedWithdrawal);
      }
@@ -498,10 +498,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-        {
-            address[] memory initialOracleSignersArray = new address[](0);
-        }
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);

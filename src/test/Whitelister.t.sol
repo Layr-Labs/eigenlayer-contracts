@@ -293,8 +293,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
             strategyIndexes,
             strategyArray,
             shareAmounts,
-            staker,
-            true
+            staker
         );
         cheats.stopPrank();
     }
