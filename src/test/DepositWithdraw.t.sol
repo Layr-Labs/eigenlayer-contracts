@@ -464,8 +464,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint64 amountToDeposit = 1e12;
 
         // shadow-fork mainnet
-        uint256 forkId = cheats.createFork("mainnet");
-        cheats.selectFork(forkId);
+        try cheats.createFork("mainnet") returns (uint256 forkId) {
+            cheats.selectFork(forkId);
+        // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
+        } catch  {
+            cheats.createSelectFork("https://eth.llamarpc.com");
+        }
 
         // cast mainnet stETH address to IERC20 interface
         // IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
