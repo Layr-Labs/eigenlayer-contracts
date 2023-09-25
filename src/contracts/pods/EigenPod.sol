@@ -347,6 +347,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         proofIsForValidTimestamp(oracleTimestamp)
         hasEnabledRestaking
     {
+        if(address(this).balance != 0){
+            _processWithdrawalBeforeRestaking(podOwner);
+        }
         // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's effective balance *recently* changed.
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past");
@@ -357,10 +360,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(oracleTimestamp, validatorIndices[i], withdrawalCredentialProofs[i], validatorFields[i]);
-        }
-
-        if(!hasRestaked) {
-            hasRestaked = true;
         }
 
          // virtually deposit for new ETH validator(s)
@@ -382,11 +381,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
-    }
-
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
-        _processWithdrawalBeforeRestaking(podOwner);
     }
 
     /*******************************************************************************
