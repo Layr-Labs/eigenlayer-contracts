@@ -383,6 +383,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
     }
 
+    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
+    function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
+        _processWithdrawalBeforeRestaking(podOwner);
+        restaked = true;
+    }
+
     /*******************************************************************************
                     EXTERNAL FUNCTIONS CALLABLE BY EIGENPODMANAGER
     *******************************************************************************/
