@@ -46,7 +46,7 @@ contract ProofParsing is Test{
         return stdJson.readUint(proofConfigJson, ".withdrawalIndex");
     }
 
-    function getBlockHeaderRootIndex() public returns(uint256) {
+    function getBlockRootIndex() public returns(uint256) {
         return stdJson.readUint(proofConfigJson, ".blockHeaderRootIndex");
     }
 
@@ -58,12 +58,8 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".beaconStateRoot");
     }
 
-    function getBlockHeaderRoot() public returns(bytes32) {
+    function getBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
-    }
-
-    function getBlockBodyRoot() public returns(bytes32) {
-        return stdJson.readBytes32(proofConfigJson, ".blockBodyRoot");
     }
 
     function getSlotRoot() public returns(bytes32) {
@@ -82,7 +78,7 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".executionPayloadRoot");
     }
 
-    function getLatestBlockHeaderRoot() public returns(bytes32) {
+    function getLatestBlockRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".latestBlockHeaderRoot");
     }
     function getExecutionPayloadProof () public returns(bytes32[7] memory) {
@@ -117,13 +113,13 @@ contract ProofParsing is Test{
         return slotProof;
     }
 
-    function getStateRootAgainstLatestBlockHeaderProof() public returns(bytes32[] memory) {
-        bytes32[] memory latestBlockHeaderProof = new bytes32[](3);
+    function getStateRootProof() public returns(bytes32[] memory) {
+        bytes32[] memory stateRootProof = new bytes32[](3);
         for (uint i = 0; i < 3; i++) {
             prefix = string.concat(".StateRootAgainstLatestBlockHeaderProof[", string.concat(vm.toString(i), "]"));
-            latestBlockHeaderProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            stateRootProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return latestBlockHeaderProof;
+        return stateRootProof;
     }
 
     function getWithdrawalProof() public returns(bytes32[9] memory) {

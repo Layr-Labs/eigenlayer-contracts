@@ -105,7 +105,7 @@ interface IEigenPod {
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
-     * @param proofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -113,7 +113,7 @@ interface IEigenPod {
         uint64 oracleBlockNumber,
         uint40[] calldata validatorIndices,
         bytes[] calldata validatorPubkeys,
-        BeaconChainProofs.WithdrawalCredentialProofs[] calldata proofs,
+        BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     ) external;
 
@@ -125,31 +125,31 @@ interface IEigenPod {
      * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param proofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
+     * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
+        uint64 oracleBlockNumber,
         uint40 validatorIndex,
-        BeaconChainProofs.BalanceUpdateProofs calldata proofs,
-        bytes32[] calldata validatorFields,
-        uint64 oracleBlockNumber
+        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
+        bytes32[] calldata validatorFields
     ) external;
 
     /**
      * @notice This function records a full withdrawal on behalf of one of the Ethereum validators for this EigenPod
+     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against 
      * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
      * @param validatorFieldsProofs is the proof of the validator's fields in the validator tree
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
-     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
      */
     function verifyAndProcessWithdrawals(
-        BeaconChainProofs.WithdrawalProofs[] calldata withdrawalProofs, 
+        uint64 oracleTimestamp,
+        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs, 
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields,
-        uint64 oracleTimestamp
+        bytes32[][] calldata withdrawalFields
     ) external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
