@@ -697,7 +697,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
     }
-    
+
     /* test deprecated since this is checked on the EigenPodManager level, rather than the EigenPod level
     TODO: @Sidu28 - check whether we have adequate coverage of the correct function
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
@@ -1090,7 +1090,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, _signature, _depositDataRoot);
         cheats.stopPrank();
 
-        uint64 timestamp = 0;
+        uint64 timestamp = 1;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
 
@@ -1106,7 +1106,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
-        cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
 
