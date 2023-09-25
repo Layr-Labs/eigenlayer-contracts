@@ -9,8 +9,6 @@ methods {
     function _.delegatedTo(address) external => DISPATCHER(true);
 	function _.decreaseDelegatedShares(address,address[],uint256[]) external => DISPATCHER(true);
 	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
-	function _._delegationReceivedHook(address,address,address[] memory,uint256[] memory) internal => NONDET;
-    function _._delegationWithdrawnHook(address,address,address[] memory,uint256[] memory) internal => NONDET;
 
 	// external calls to Slasher
     function _.isFrozen(address) external => DISPATCHER(true);
@@ -100,7 +98,7 @@ definition methodCanIncreaseShares(method f) returns bool =
 * `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
 */
 definition methodCanDecreaseShares(method f) returns bool =
-    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address,bool).selector;
+    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
     uint256 sharesBefore = stakerStrategyShares(staker, strategy);

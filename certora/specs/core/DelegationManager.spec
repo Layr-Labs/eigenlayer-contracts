@@ -15,10 +15,14 @@ methods {
     function _.slasher() external => DISPATCHER(true);
 	function _.deposit(address,uint256) external => DISPATCHER(true);
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+	function _.stakerStrategyListLength(address) external => DISPATCHER(true);
+    function _.forceTotalWithdrawal(address staker) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
 	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
-	
+	function _.podOwnerHasActiveShares(address) external => DISPATCHER(true);
+    function _.forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external => DISPATCHER(true);
+
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
@@ -35,10 +39,6 @@ methods {
     function decreaseDelegatedShares(address,address,address,uint256,uint256) external;
     // Harmessed getters
     function get_operatorShares(address,address) external returns (uint256) envfree;
-
-    //// Summarized Functions
-    function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
-    function _._delegationWithdrawnHook(address,address,address[]memory, uint256[] memory) internal => NONDET;
 
     //envfree functions
     function delegatedTo(address staker) external returns (address) envfree;
@@ -129,24 +129,29 @@ rule operatorCannotUnregister(address operator) {
 
 // verifies that in order for an address to change who they are delegated to, `undelegate` must be called
 rule cannotChangeDelegationWithoutUndelegating(address staker) {
+    requireInvariant operatorsAlwaysDelegatedToSelf(staker);
     // assume the staker is delegated to begin with
     require(isDelegated(staker));
     address delegatedToBefore = delegatedTo(staker);
     // perform arbitrary function call
     method f;
     env e;
-    // the only way the staker can become undelegated is if `undelegate` is called
+    // the only way the staker can become undelegated is an appropriate function is called
     if (f.selector == sig:undelegate(address).selector) {
         address toUndelegate;
         undelegate(e, toUndelegate);
-        // either the `strategyManager` or `eigenPodManager` called `undelegate` with the argument `staker` (in which can the staker is now undelegated)
-        if ((e.msg.sender == strategyManager() || e.msg.sender == eigenPodManager()) && toUndelegate == staker) {
-            assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
+        // either the `staker` address was an input to `undelegate` AND the caller was allowed to call the function
+        if (
+            (toUndelegate == staker && (delegatedToBefore != staker)) &&
+            (e.msg.sender == staker || e.msg.sender == delegatedToBefore || e.msg.sender == delegationApprover(delegatedToBefore))
+        ){
+        assert (delegatedTo(staker) == 0, "undelegation did not result in delegation to zero address");
         // or the staker's delegation should have remained the same
         } else {
             address delegatedToAfter = delegatedTo(staker);
             assert (delegatedToAfter == delegatedToBefore, "delegation changed without undelegating -- problem in undelegate permissions?");
         }
+        assert(true);
     } else {
         calldataarg arg;
         f(e,arg);

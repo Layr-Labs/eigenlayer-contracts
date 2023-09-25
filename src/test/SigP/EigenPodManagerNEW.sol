@@ -48,7 +48,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function ownerToPod(address podOwner) external view returns(IEigenPod) {}
 
 
-    //TODO: change this to constant in prod
     IETHPOSDeposit public immutable ethPOS;
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
@@ -238,19 +237,15 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         // return podOwner[podOwner];
     }
 
-    function queueWithdrawal(uint256 amountWei, address withdrawer, bool undelegateIfPossible) external returns(bytes32){}
+    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
 
-    function forceIntoUndelegationLimbo(address podOwner) external {}
+    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
 
     function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
 
-    // @notice Returns 'true' if `staker` can undelegate and false otherwise
-    function stakerCanUndelegate(address staker) external view returns (bool) {}
-
-    // @notice Returns 'true' if `staker` has removed all of their shares from delegation, either by queuing a withdrawal for them or by going into "undelegation limbo"
-    function stakerHasNoDelegatedShares(address staker) external view returns (bool) {}
+    function podOwnerHasActiveShares(address staker) external view returns (bool) {}
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
     function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}

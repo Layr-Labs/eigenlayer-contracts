@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/core/StrategyManager.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/Reenterer.sol";
@@ -31,7 +31,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
@@ -122,9 +122,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         slasherMock = new SlasherMock();
-        delegationMock = new DelegationMock();
+        delegationManagerMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
-        strategyManagerImplementation = new StrategyManager(delegationMock, eigenPodManagerMock, slasherMock);
+        strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -537,26 +537,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
-    function testUndelegate() public {
-        strategyManager.undelegate();
-    }
-
-    function testUndelegateRevertsWithActiveDeposits() public {
-        address staker = address(this);
-        uint256 amount = 1e18;
-
-        testDepositIntoStrategySuccessfully(staker, amount);
-        require(strategyManager.stakerStrategyListLength(staker) != 0, "test broken in some way, length shouldn't be 0");
-
-        cheats.expectRevert(bytes("StrategyManager._undelegate: depositor has active deposits"));
-        strategyManager.undelegate();
-    }
-
     function testQueueWithdrawalMismatchedIndexAndStrategyArrayLength() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](2);
         uint256[] memory strategyIndexes = new uint256[](1);
-        bool undelegateIfPossible = false;
 
         {
             strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
@@ -566,35 +550,33 @@ contract StrategyManagerUnitTests is Test, Utils {
         }
 
         cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: input length mismatch"));
-        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this), undelegateIfPossible);
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(this));
     }
 
     function testQueueWithdrawalWithZeroAddress() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](1);
         uint256[] memory strategyIndexes = new uint256[](1);
-        bool undelegateIfPossible = false;
 
         cheats.expectRevert(bytes("StrategyManager.queueWithdrawal: cannot withdraw to zero address"));
-        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0));
     }
 
     function testQueueWithdrawalWithFrozenAddress(address frozenAddress) external filterFuzzedAddressInputs(frozenAddress) {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](1);
         uint256[] memory strategyIndexes = new uint256[](1);
-        bool undelegateIfPossible = false;
 
         slasherMock.freezeOperator(frozenAddress);
 
         cheats.startPrank(frozenAddress);
         cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0), undelegateIfPossible);
+        strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, address(0));
         cheats.stopPrank();
 
     }
 
-    function testQueueWithdrawal_ToSelf(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) public
+    function testQueueWithdrawal_ToSelf(uint256 depositAmount, uint256 withdrawalAmount) public
         returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     {
         // filtering of fuzzed inputs
@@ -639,8 +621,7 @@ contract StrategyManagerUnitTests is Test, Utils {
                 strategyIndexes,
                 queuedWithdrawal.strategies,
                 queuedWithdrawal.shares,
-                /*withdrawer*/ address(this),
-                undelegateIfPossible
+                /*withdrawer*/ address(this)
             );
         }
 
@@ -654,7 +635,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 
-    function testQueueWithdrawal_ToSelf_TwoStrategies(uint256 depositAmount, uint256 withdrawalAmount, bool undelegateIfPossible) public
+    function testQueueWithdrawal_ToSelf_TwoStrategies(uint256 depositAmount, uint256 withdrawalAmount) public
         returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     {
         // filtering of fuzzed inputs
@@ -710,8 +691,7 @@ contract StrategyManagerUnitTests is Test, Utils {
                 strategyIndexes,
                 queuedWithdrawal.strategies,
                 queuedWithdrawal.shares,
-                /*withdrawer*/ address(this),
-                undelegateIfPossible
+                /*withdrawer*/ address(this)
             );
         }
 
@@ -734,7 +714,6 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
-        bool undelegateIfPossible = false;
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
 
@@ -758,7 +737,7 @@ contract StrategyManagerUnitTests is Test, Utils {
             );
         }
 
-        strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, withdrawer, undelegateIfPossible);
+        strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, withdrawer);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
         uint256 nonceAfter = strategyManager.numWithdrawalsQueued(staker);
@@ -770,29 +749,19 @@ contract StrategyManagerUnitTests is Test, Utils {
 
 
     // TODO: set up delegation for the following three tests and check afterwords
-    function testQueueWithdrawal_WithdrawEverything_DontUndelegate(uint256 amount) external {
+    function testQueueWithdrawal_WithdrawEverything(uint256 amount) external {
         // delegate to self
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegationMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
-        require(delegationMock.isDelegated(address(this)), "delegation mock setup failed");
-        bool undelegateIfPossible = false;
-        // deposit and withdraw the same amount, don't undelegate
-        testQueueWithdrawal_ToSelf(amount, amount, undelegateIfPossible);
-        require(delegationMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
+        delegationManagerMock.delegateTo(address(this), signatureWithExpiry, bytes32(0));
+        require(delegationManagerMock.isDelegated(address(this)), "delegation mock setup failed");
+        // deposit and withdraw the same amount
+        testQueueWithdrawal_ToSelf(amount, amount);
+        require(delegationManagerMock.isDelegated(address(this)), "somehow became undelegated?");
     }
 
-    function testQueueWithdrawal_WithdrawEverything_DoUndelegate(uint256 amount) external {
-        bool undelegateIfPossible = true;
-        // deposit and withdraw the same amount, do undelegate if possible
-        testQueueWithdrawal_ToSelf(amount, amount, undelegateIfPossible);
-        require(delegationMock.isDelegated(address(this)) == !undelegateIfPossible, "undelegation mock failed");
-    }
-
-    function testQueueWithdrawal_DontWithdrawEverything_MarkUndelegateIfPossibleAsTrue(uint128 amount) external {
-        bool undelegateIfPossible = true;
-        // deposit and withdraw only half, do undelegate if possible
-        testQueueWithdrawal_ToSelf(uint256(amount) * 2, amount, undelegateIfPossible);
-        require(!delegationMock.isDelegated(address(this)), "undelegation mock failed");
+    function testQueueWithdrawal_DontWithdrawEverything(uint128 amount) external {
+        testQueueWithdrawal_ToSelf(uint256(amount) * 2, amount);
+        require(!delegationManagerMock.isDelegated(address(this)), "undelegation mock failed");
     }
 
     function testQueueWithdrawalFailsWhenStakerFrozen() public {
@@ -815,11 +784,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         // freeze the staker
         slasherMock.freezeOperator(staker);
 
-        // bool undelegateIfPossible = false;
         uint256[] memory strategyIndexes = new uint256[](1);
         strategyIndexes[0] = 0;
         cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, /*withdrawer*/ staker, /*undelegateIfPossible*/ false);
+        strategyManager.queueWithdrawal(strategyIndexes, queuedWithdrawal.strategies, queuedWithdrawal.shares, /*withdrawer*/ staker);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
         uint256 nonceAfter = strategyManager.numWithdrawalsQueued(address(this));
@@ -836,8 +804,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
         {
             uint256 depositAmount = 1e18;
-            bool undelegateIfPossible = false;
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
         }
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
@@ -898,10 +865,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         address staker = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
         _tempStrategyStorage = dummyStrat;
 
-        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -959,10 +925,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -991,10 +956,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -1036,12 +1000,11 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
         IStrategy strategy = dummyStrat;
 
         reenterer.prepareReturnData(abi.encode(depositAmount));
 
-        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
@@ -1143,10 +1106,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -1169,22 +1131,13 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
-    function testUndelegateWithFrozenStaker() public {
-        slasherMock.setOperatorFrozenStatus(address(this), true);
-        cheats.expectRevert(bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        cheats.startPrank(address(this));
-        strategyManager.undelegate();
-        cheats.stopPrank();
-    }
-
     function testCompleteQueuedWithdrawalFailsWhenNotCallingFromWithdrawerAddress() external {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -1210,10 +1163,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         IStrategy strategy = queuedWithdrawal.strategies[0];
 
@@ -1247,10 +1199,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
@@ -1276,10 +1227,9 @@ contract StrategyManagerUnitTests is Test, Utils {
         _tempStakerStorage = address(this);
         uint256 depositAmount = 1e18;
         uint256 withdrawalAmount = 1e18;
-        bool undelegateIfPossible = false;
 
         (IStrategyManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
-            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount, undelegateIfPossible);
+            testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;

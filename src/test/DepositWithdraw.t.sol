@@ -296,7 +296,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         //queue the withdrawal
         cheats.startPrank(staker);
-        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer, true);
+        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer);
         cheats.stopPrank();
         return (withdrawalRoot, queuedWithdrawal);
      }

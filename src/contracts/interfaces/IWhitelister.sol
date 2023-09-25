@@ -30,8 +30,7 @@ interface IWhitelister {
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     ) external returns (bytes memory);
 
     function completeQueuedWithdrawal(

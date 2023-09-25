@@ -429,7 +429,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
 
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
-        uint podOwnerBalanceBefore = address(podOwner).balance;
+        uint256 podOwnerBalanceBefore = address(podOwner).balance;
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
         require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
         return newPod;
@@ -478,7 +478,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         }
 
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
-        uint podOwnerBalanceBefore = address(podOwner).balance;
+        uint256 podOwnerBalanceBefore = address(podOwner).balance;
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
         require(address(podOwner).balance - podOwnerBalanceBefore == withdrawalAmountGwei, "Pod owner balance hasn't been updated correctly");
         return newPod;
@@ -596,7 +596,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testVerifyWithdrawalCredsFromNonPodOwnerAddress(address nonPodOwnerAddress) public {
-        require(nonPodOwnerAddress != podOwner, "nonPodOwnerAddress must be different from podOwner");
+        // nonPodOwnerAddress must be different from podOwner
+        cheats.assume(nonPodOwnerAddress != podOwner);
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
@@ -1073,9 +1074,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         uint256 shareAmount = 31e18;
-        bool undelegateIfPossible = false;
         cheats.expectRevert("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
-        _testQueueWithdrawal(podOwner, shareAmount, undelegateIfPossible);
+        _testQueueWithdrawal(podOwner, shareAmount);
     }
 
     function testQueueBeaconChainETHWithdrawal() external {
@@ -1086,9 +1086,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
         
         uint256 shareAmount = _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI()) * GWEI_TO_WEI;
-        bool undelegateIfPossible = false;
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
-        _testQueueWithdrawal(podOwner, shareAmount, undelegateIfPossible);
+        _testQueueWithdrawal(podOwner, shareAmount);
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
         require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmount/GWEI_TO_WEI,
@@ -1236,8 +1235,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function _testQueueWithdrawal(
         address _podOwner,
-        uint256 amountWei,
-        bool undelegateIfPossible
+        uint256 amountWei
     )
         internal
         returns (bytes32)
@@ -1246,8 +1244,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(_podOwner);
         bytes32 withdrawalRoot = eigenPodManager.queueWithdrawal(
             amountWei,
-            _podOwner,
-            undelegateIfPossible
+            _podOwner
         );
         cheats.stopPrank();
         return withdrawalRoot;
