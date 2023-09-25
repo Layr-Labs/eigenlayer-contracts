@@ -348,7 +348,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         hasEnabledRestaking
     {
         if(address(this).balance != 0){
-            _processWithdrawalBeforeRestaking(podOwner);
+            _sendETH_AsDelayedWithdrawal(podOwner, address(this).balance);
         }
         // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's effective balance *recently* changed.
         require(oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
@@ -653,10 +653,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // send the ETH to the `recipient` via the DelayedWithdrawalRouter
         _sendETH_AsDelayedWithdrawal(recipient, uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI));
-    }
-
-    function _processWithdrawalBeforeRestaking(address _podOwner) internal {
-        _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
     }
 
     function _sendETH(address recipient, uint256 amountWei) internal {
