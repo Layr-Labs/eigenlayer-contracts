@@ -62,10 +62,6 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".blockHeaderRoot");
     }
 
-    function getBlockBodyRoot() public returns(bytes32) {
-        return stdJson.readBytes32(proofConfigJson, ".blockBodyRoot");
-    }
-
     function getSlotRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".slotRoot");
     }

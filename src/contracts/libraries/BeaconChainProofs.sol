@@ -122,7 +122,6 @@ library BeaconChainProofs {
         uint64 historicalSummaryIndex;
         uint64 withdrawalIndex;
         bytes32 blockRoot;
-        bytes32 blockBodyRoot;
         bytes32 slotRoot;
         bytes32 timestampRoot;
         bytes32 executionPayloadRoot;

@@ -1287,7 +1287,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             //set beaconStateRoot
             beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockRoot);
             bytes32 blockRoot = getBlockRoot();
-            bytes32 blockBodyRoot = getBlockBodyRoot();
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
@@ -1304,7 +1303,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 uint64(getHistoricalSummaryIndex()),
                 uint64(getWithdrawalIndex()),
                 blockRoot,
-                blockBodyRoot,
                 slotRoot,
                 timestampRoot,
                 executionPayloadRoot
