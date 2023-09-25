@@ -259,47 +259,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testWithdrawBeforeRestaking() public {
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        require(pod.hasRestaked() == false, "Pod should not be restaked");
-
-        // simulate a withdrawal
-        cheats.deal(address(pod), stakeAmount);
-        cheats.startPrank(podOwner);
-        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, delayedWithdrawalRouter.userWithdrawalsLength(podOwner));
-        pod.withdrawBeforeRestaking();
-        require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
-        require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
-    }
-
-    function testDeployEigenPodWithoutActivateRestaking() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
-
-        cheats.startPrank(podOwner);
-        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
-
-        uint64 timestamp = 0;
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        validatorFieldsArray[0] = getValidatorFields();
-        BeaconChainProofs.WithdrawalCredentialProof[] memory proofsArray = new BeaconChainProofs.WithdrawalCredentialProof[](1);
-        proofsArray[0] = _getWithdrawalCredentialProof();
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
-
-        cheats.startPrank(podOwner);
-        cheats.warp(timestamp += 1);
-        cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
-        cheats.stopPrank();
-    }
-
     function testDeployEigenPodTooSoon() public {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
@@ -321,45 +280,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
-        cheats.stopPrank();
-    }
-
-    function testWithdrawBeforeRestakingAfterRestaking() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-
-        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
-        cheats.startPrank(podOwner);
-        pod.withdrawBeforeRestaking();
-        cheats.stopPrank();
-    }
-
-    function testWithdrawFromPod() public {
-        cheats.startPrank(podOwner);
-        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
-
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        cheats.deal(address(pod), stakeAmount);
-
-        cheats.startPrank(podOwner);
-        uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
-        // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        cheats.expectEmit(true, true, true, true);
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
-        pod.withdrawBeforeRestaking();
-        cheats.stopPrank();
-        require(address(pod).balance == 0, "Pod balance should be 0");
-    }
-
-    function testAttemptedWithdrawalAfterVerifyingWithdrawalCredentials() public {
-        testDeployAndVerifyNewEigenPod();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
-        IEigenPod(pod).withdrawBeforeRestaking();
         cheats.stopPrank();
     }
 
@@ -578,7 +498,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp);
-        newPod.activateRestaking();
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
@@ -777,18 +696,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodManager: not eigenPodManager"));
         newPod.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-    }
-
-    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner) {
-        cheats.assume(nonPodOwner != podOwner);
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        require(pod.hasRestaked() == false, "Pod should not be restaked");
-
-        //simulate a withdrawal
-        cheats.startPrank(nonPodOwner);
-        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        pod.withdrawBeforeRestaking();
     }
     
     /* test deprecated since this is checked on the EigenPodManager level, rather than the EigenPod level
@@ -1199,9 +1106,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
-        cheats.warp(timestamp);
-        newPod.activateRestaking();
-        emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
