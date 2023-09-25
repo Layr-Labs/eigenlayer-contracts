@@ -230,8 +230,8 @@ library BeaconChainProofs {
      * @param latestBlockRoot is hashtree root of the latest block header in the beacon state
      */
     function verifyStateRootAgainstLatestBlockRoot(
-        bytes32 beaconStateRoot,
         bytes32 latestBlockRoot,
+        bytes32 beaconStateRoot,
         bytes calldata stateRootProof
     ) internal view {
         require(stateRootProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),

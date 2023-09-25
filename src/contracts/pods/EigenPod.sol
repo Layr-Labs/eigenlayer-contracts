@@ -242,8 +242,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
             // verify the provided state root against the oracle-provided latest block header
             BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-                beaconStateRoot: balanceUpdateProof.beaconStateRoot,
                 latestBlockRoot: latestBlockRoot,
+                beaconStateRoot: balanceUpdateProof.beaconStateRoot,
                 stateRootProof: balanceUpdateProof.stateRootProof
             });
         }
@@ -493,8 +493,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            beaconStateRoot: withdrawalCredentialProof.beaconStateRoot,
             latestBlockRoot: latestBlockRoot,
+            beaconStateRoot: withdrawalCredentialProof.beaconStateRoot,
             stateRootProof: withdrawalCredentialProof.stateRootProof
         });
 
@@ -564,8 +564,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            beaconStateRoot: withdrawalProof.beaconStateRoot,
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
+            beaconStateRoot: withdrawalProof.beaconStateRoot,
             stateRootProof: withdrawalProof.stateRootProof
         });
 
