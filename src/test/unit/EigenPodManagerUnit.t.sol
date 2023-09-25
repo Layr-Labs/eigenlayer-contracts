@@ -10,7 +10,7 @@ import "forge-std/Test.sol";
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodMock.sol";
@@ -31,7 +31,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     EigenPodManager public eigenPodManager;
 
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodImplementation;
@@ -87,7 +87,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         slasherMock = new SlasherMock();
-        delegationMock = new DelegationMock();
+        delegationManagerMock = new DelegationManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         ethPOSMock = new ETHPOSDepositMock();
         eigenPodImplementation = new EigenPodMock();
@@ -98,7 +98,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             eigenPodBeacon,
             strategyManagerMock,
             slasherMock,
-            delegationMock
+            delegationManagerMock
         );
         eigenPodManager = EigenPodManager(
             address(
@@ -237,10 +237,8 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         testRestakeBeaconChainETHSuccessfully(staker, amount);
 
-        // TODO: fuzz this param and check behavior
-        bool undelegateIfPossible = false;
         (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-            _createQueuedWithdrawal(staker, amount, withdrawer, undelegateIfPossible);
+            _createQueuedWithdrawal(staker, amount, withdrawer);
 
         return (queuedWithdrawal, withdrawalRoot);
     }
@@ -256,10 +254,8 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
         testRestakeBeaconChainETHSuccessfully(staker, amount);
 
-        // TODO: fuzz this param and check behavior
-        bool undelegateIfPossible = false;
         (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-            _createQueuedWithdrawal(staker, amount, withdrawer, undelegateIfPossible);
+            _createQueuedWithdrawal(staker, amount, withdrawer);
 
         return (queuedWithdrawal, withdrawalRoot);
     }
@@ -267,15 +263,13 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
         // this also filters out the zero case, which will revert separately
         cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
-        bool undelegateIfPossible = false;
         cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
-        eigenPodManager.queueWithdrawal(nonWholeAmount, address(this), undelegateIfPossible);
+        eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
     }
 
     function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
-        bool undelegateIfPossible = false;
         cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
-        eigenPodManager.queueWithdrawal(0, address(this), undelegateIfPossible);
+        eigenPodManager.queueWithdrawal(0, address(this));
     }
 
     function testCompleteQueuedWithdrawal() external {
@@ -325,8 +319,8 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     }
 
 
-    // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`, passing param `undelegateIfPossible`
-    function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer, bool undelegateIfPossible)
+    // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`
+    function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer)
         internal
         returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
     {
@@ -336,7 +330,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             podOwner: staker,
             nonce: uint96(eigenPodManager.numWithdrawalsQueued(staker)),
             withdrawalStartBlock: uint32(block.number),
-            delegatedAddress: delegationMock.delegatedTo(staker),
+            delegatedAddress: delegationManagerMock.delegatedTo(staker),
             withdrawer: withdrawer
         });
 
@@ -359,7 +353,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             queuedWithdrawal.withdrawer,
             eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
         );
-        withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer, undelegateIfPossible);
+        withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer);
         cheats.stopPrank();
 
         // verify that the withdrawal root does exist after queuing

@@ -131,8 +131,7 @@ contract WithdrawalTests is DelegationTests {
             strategyIndexes,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
-            withdrawer,
-            true
+            withdrawer
         );
         uint32 queuedWithdrawalBlock = uint32(block.number);
         
@@ -246,8 +245,7 @@ contract WithdrawalTests is DelegationTests {
             strategyIndexes,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
-            dataForTestWithdrawal.withdrawerAndNonce.withdrawer,
-            true
+            dataForTestWithdrawal.withdrawerAndNonce.withdrawer
         );
         uint32 queuedWithdrawalBlock = uint32(block.number);
         
@@ -317,6 +315,9 @@ contract WithdrawalTests is DelegationTests {
         //this function performs delegation and subsequent withdrawal
         testWithdrawalWrapper(operator, depositor, withdrawer, ethAmount, eigenAmount, withdrawAsShares, true);
 
+        cheats.prank(depositor);
+        delegation.undelegate(depositor);
+
         //warps past fraudproof time interval
         cheats.warp(block.timestamp + 7 days + 1);
         testDelegation(operator, depositor, ethAmount, eigenAmount);
@@ -361,6 +362,6 @@ contract WithdrawalTests is DelegationTests {
         cheats.expectRevert(
             bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
         );
-        _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker, true);
+        _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
     }
 }

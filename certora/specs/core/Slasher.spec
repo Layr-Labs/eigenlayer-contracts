@@ -7,8 +7,6 @@ methods {
     function _.delegatedTo(address) external => DISPATCHER(true);
 	function _.decreaseDelegatedShares(address,address[],uint256[]) external => DISPATCHER(true);
 	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
-	function _._delegationReceivedHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
-    function _._delegationWithdrawnHook(address,address,address[] memory, uint256[] memory) internal => NONDET;
 
 	// external calls to Slasher
     function isFrozen(address) external returns (bool) envfree;
