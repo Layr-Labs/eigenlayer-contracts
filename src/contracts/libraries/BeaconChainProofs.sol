@@ -113,7 +113,6 @@ library BeaconChainProofs {
     struct WithdrawalProofs {
         bytes32 beaconStateRoot;
         bytes latestBlockHeaderProof;
-        bytes blockHeaderProof;
         bytes withdrawalProof;
         bytes slotProof;
         bytes executionPayloadProof;
@@ -259,8 +258,6 @@ library BeaconChainProofs {
         require(withdrawalProofs.withdrawalIndex < 2**WITHDRAWALS_TREE_HEIGHT, "BeaconChainProofs.verifyWithdrawalProofs: withdrawalIndex is too large");
        
         // verify the block header proof length
-        require(withdrawalProofs.blockHeaderProof.length == 32 * (BEACON_STATE_FIELD_TREE_HEIGHT + BLOCK_ROOTS_TREE_HEIGHT),
-            "BeaconChainProofs.verifyWithdrawalProofs: blockHeaderProof has incorrect length");
         require(withdrawalProofs.withdrawalProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT + WITHDRAWALS_TREE_HEIGHT + 1),
             "BeaconChainProofs.verifyWithdrawalProofs: withdrawalProof has incorrect length");
         require(withdrawalProofs.executionPayloadProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
