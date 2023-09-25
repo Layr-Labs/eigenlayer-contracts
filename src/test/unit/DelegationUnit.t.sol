@@ -35,6 +35,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // reused in various tests. in storage to help handle stack-too-deep errors
     address _operator = address(this);
 
+    /**
+     * @dev Index for flag that pauses new delegations when set
+     */
+    uint8 internal constant PAUSED_NEW_DELEGATION = 0;
+
+    // @dev Index for flag that pauses undelegations when set
+    uint8 internal constant PAUSED_UNDELEGATION = 1;
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
 
@@ -1191,14 +1199,32 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Verifies that delegating is not possible when the "new delegations paused" switch is flipped
     function testCannotDelegateWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+        // set the pausing flag
         cheats.startPrank(pauser);
-        delegationManager.pause(1);
+        delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
         cheats.stopPrank();
 
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("Pausable: index is paused"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
+        cheats.stopPrank();
+    }
+
+    // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
+    function testCannotUndelegateWhenPausedUndelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+        // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
+
+        // set the pausing flag
+        cheats.startPrank(pauser);
+        delegationManager.pause(2 ** PAUSED_UNDELEGATION);
+        cheats.stopPrank();
+
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        delegationManager.undelegate(staker);
         cheats.stopPrank();
     }
 
