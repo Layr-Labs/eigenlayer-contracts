@@ -114,9 +114,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
 
-    /// @notice Emitted when podOwner enables restaking
-    event RestakingActivated(address indexed podOwner);
-
     /// @notice Emitted when ETH is received via the `receive` fallback
     event NonBeaconChainETHReceived(uint256 amountReceived);    
 
@@ -143,7 +140,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    /// @notice checks that hasRestaked is set to true by calling activateRestaking()
+    /// @notice checks that hasRestaked is set to true
     modifier hasEnabledRestaking {
         require(hasRestaked, "EigenPod.hasEnabledRestaking: restaking is not enabled");
         _;
@@ -188,6 +185,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
+        hasRestaked = true;
     }
 
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns(ValidatorInfo memory) {
@@ -347,7 +345,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
         // check that the provided `oracleTimestamp` is after the `mostRecentWithdrawalTimestamp`
         proofIsForValidTimestamp(oracleTimestamp)
-        // ensure that caller has previously enabled restaking by calling `activateRestaking()`
         hasEnabledRestaking
     {
         // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's effective balance *recently* changed.
@@ -360,6 +357,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(oracleTimestamp, validatorIndices[i], withdrawalCredentialProofs[i], validatorFields[i]);
+        }
+
+        if(!hasRestaked) {
+            hasRestaked = true;
         }
 
          // virtually deposit for new ETH validator(s)
@@ -381,18 +382,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
-    }
-
-    /**
-     * @notice Called by the pod owner to activate restaking by withdrawing 
-     * all existing ETH from the pod and preventing further withdrawals via 
-     * "withdrawBeforeRestaking()"
-    */ 
-    function activateRestaking() external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS) onlyEigenPodOwner hasNeverRestaked {
-        hasRestaked = true;
-        _processWithdrawalBeforeRestaking(podOwner);
-
-        emit RestakingActivated(podOwner);
     }
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
