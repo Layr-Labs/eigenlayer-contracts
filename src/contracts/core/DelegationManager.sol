@@ -25,6 +25,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
+    // @dev Index for flag that pauses undelegations when set
+    uint8 internal constant PAUSED_UNDELEGATION = 1;
+
     /**
      * @dev Chain ID at the time of contract deployment
      */
@@ -194,7 +197,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
+    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_UNDELEGATION) returns (bytes32 withdrawalRoot) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
