@@ -313,7 +313,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         int256 totalSharesDelta;
         bytes32 oracleBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
-            VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(oracleBlockRoot, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
+            VerifiedWithdrawal memory verifiedWithdrawal =
+                _verifyAndProcessWithdrawal(oracleBlockRoot, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
             totalAmountToSend += verifiedWithdrawal.amountToSend;
             totalSharesDelta += verifiedWithdrawal.sharesDelta;
         }
@@ -338,7 +339,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
-     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials
+     * against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -599,7 +601,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) 
                 <= (Endian.fromLittleEndianUint64(withdrawalProof.slotRoot))/BeaconChainProofs.SLOTS_PER_EPOCH
             ) {
-                return _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, _validatorPubkeyHashToInfo[validatorPubkeyHash]);
+                return _processFullWithdrawal(
+                    validatorIndex,
+                    validatorPubkeyHash,
+                    withdrawalHappenedTimestamp,
+                    podOwner,
+                    withdrawalAmountGwei,
+                    _validatorPubkeyHashToInfo[validatorPubkeyHash]
+                );
             } else {
                 return  _processPartialWithdrawal(validatorIndex, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
             }
@@ -636,7 +645,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 
             } else {
 
-                // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer (i.e. none is instantly withdrawable)
+                // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer
+                // (i.e. none is instantly withdrawable)
                 withdrawalAmountGwei = _calculateRestakedBalanceGwei(withdrawalAmountGwei);
                 withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
                 withdrawalAmountWei = withdrawalAmountGwei * GWEI_TO_WEI;
