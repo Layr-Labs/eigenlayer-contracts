@@ -135,8 +135,7 @@ interface IPaymentManager {
      * @param amount1 The amount that the caller asserts the operator is entitled to, for the first half *of the challenged half* of the previous bisection.
      * @param amount2 The amount that the caller asserts the operator is entitled to, for the second half *of the challenged half* of the previous bisection.
      */
-    function performChallengeBisectionStep(address operator, bool secondHalf, uint96 amount1, uint96 amount2)
-        external;
+    function performChallengeBisectionStep(address operator, bool secondHalf, uint96 amount1, uint96 amount2) external;
 
     /// @notice resolve an existing PaymentChallenge for an operator
     function resolveChallenge(address operator) external;

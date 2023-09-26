@@ -29,5 +29,10 @@ interface IBLSPublicKeyCompendium {
      * @param pubkeyG1 is the the G1 pubkey of the operator
      * @param pubkeyG2 is the G2 with the same private key as the pubkeyG1
      */
-    function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
+    function registerBLSPublicKey(
+        uint256 s,
+        BN254.G1Point memory rPoint,
+        BN254.G1Point memory pubkeyG1,
+        BN254.G2Point memory pubkeyG2
+    ) external;
 }

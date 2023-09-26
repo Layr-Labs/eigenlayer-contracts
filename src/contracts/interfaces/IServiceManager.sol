@@ -20,7 +20,12 @@ interface IServiceManager {
     function recordFirstStakeUpdate(address operator, uint32 serveUntilBlock) external;
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a stake update
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external;
+    function recordStakeUpdate(
+        address operator,
+        uint32 updateBlock,
+        uint32 serveUntilBlock,
+        uint256 prevElement
+    ) external;
 
     /// @notice Permissioned function to have the ServiceManager forward a call to the slasher, recording a final stake update (on operator deregistration)
     function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external;

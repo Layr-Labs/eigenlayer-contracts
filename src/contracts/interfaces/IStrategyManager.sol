@@ -42,18 +42,16 @@ interface IStrategyManager {
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
-     * 
+     *
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
-        external
-        returns (uint256 shares);
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 shares);
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
      * who must sign off on the action.
-     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed 
+     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
@@ -67,7 +65,7 @@ interface IStrategyManager {
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
-     * 
+     *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
      */
@@ -78,9 +76,7 @@ interface IStrategyManager {
         address staker,
         uint256 expiry,
         bytes memory signature
-    )
-        external
-        returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
@@ -118,9 +114,8 @@ interface IStrategyManager {
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer
-    )
-        external returns(bytes32);
-        
+    ) external returns (bytes32);
+
     /**
      * @notice Used to complete the specified `queuedWithdrawal`. The function caller must match `queuedWithdrawal.withdrawer`
      * @param queuedWithdrawal The QueuedWithdrawal to complete.
@@ -137,9 +132,8 @@ interface IStrategyManager {
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
-    )
-        external;
-    
+    ) external;
+
     /**
      * @notice Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
      * @param queuedWithdrawals The QueuedWithdrawals to complete.
@@ -156,8 +150,7 @@ interface IStrategyManager {
         IERC20[][] calldata tokens,
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
-    )
-        external;
+    ) external;
 
     /**
      * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
@@ -171,22 +164,17 @@ interface IStrategyManager {
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-    */
+     */
     function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external;
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-    */
+     */
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external;
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32);
+    function calculateWithdrawalRoot(QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
@@ -202,5 +190,4 @@ interface IStrategyManager {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     function numWithdrawalsQueued(address staker) external view returns (uint256);
-
 }

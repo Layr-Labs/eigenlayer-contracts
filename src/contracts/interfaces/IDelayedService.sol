@@ -13,5 +13,5 @@ pragma solidity >=0.5.0;
  */
 interface IDelayedService {
     /// @notice The maximum amount of blocks in the past that the service will consider stake amounts to still be 'valid'.
-    function BLOCK_STALE_MEASURE() external view returns(uint32);    
+    function BLOCK_STALE_MEASURE() external view returns (uint32);
 }

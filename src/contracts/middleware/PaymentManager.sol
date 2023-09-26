@@ -22,8 +22,8 @@ import "../permissions/Pausable.sol";
 abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
     using SafeERC20 for IERC20;
 
-    uint8 constant internal PAUSED_NEW_PAYMENT_COMMIT = 0;
-    uint8 constant internal PAUSED_REDEEM_PAYMENT = 1;
+    uint8 internal constant PAUSED_NEW_PAYMENT_COMMIT = 0;
+    uint8 internal constant PAUSED_REDEEM_PAYMENT = 1;
 
     // DATA STRUCTURES
 
@@ -85,7 +85,11 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
 
     /// @notice Emitted when a bisection step is performed in a challenge, through a call to the `performChallengeBisectionStep` function
     event PaymentBreakdown(
-        address indexed operator, uint32 fromTaskNumber, uint32 toTaskNumber, uint96 amount1, uint96 amount2
+        address indexed operator,
+        uint32 fromTaskNumber,
+        uint32 toTaskNumber,
+        uint96 amount1,
+        uint96 amount2
     );
 
     /// @notice Emitted upon successful resolution of a payment challenge, within a call to `resolveChallenge`
@@ -264,8 +268,8 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
      */
     function initPaymentChallenge(address operator, uint96 amount1, uint96 amount2) external {
         require(
-            block.timestamp < operatorToPayment[operator].confirmAt
-                && operatorToPayment[operator].status == PaymentStatus.COMMITTED,
+            block.timestamp < operatorToPayment[operator].confirmAt &&
+                operatorToPayment[operator].status == PaymentStatus.COMMITTED,
             "PaymentManager.initPaymentChallenge: Fraudproof interval has passed for payment"
         );
 
@@ -301,17 +305,15 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
      * @param amount1 The amount that the caller asserts the operator is entitled to, for the first half *of the challenged half* of the previous bisection.
      * @param amount2 The amount that the caller asserts the operator is entitled to, for the second half *of the challenged half* of the previous bisection.
      */
-    function performChallengeBisectionStep(address operator, bool secondHalf, uint96 amount1, uint96 amount2)
-        external
-    {
+    function performChallengeBisectionStep(address operator, bool secondHalf, uint96 amount1, uint96 amount2) external {
         // copy challenge struct to memory
         PaymentChallenge memory challenge = operatorToPaymentChallenge[operator];
 
         ChallengeStatus status = challenge.status;
 
         require(
-            (status == ChallengeStatus.CHALLENGER_TURN && challenge.challenger == msg.sender)
-                || (status == ChallengeStatus.OPERATOR_TURN && challenge.operator == msg.sender),
+            (status == ChallengeStatus.CHALLENGER_TURN && challenge.challenger == msg.sender) ||
+                (status == ChallengeStatus.OPERATOR_TURN && challenge.operator == msg.sender),
             "PaymentManager.performChallengeBisectionStep: Must be challenger and their turn or operator and their turn"
         );
 
@@ -349,8 +351,12 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
         operatorToPaymentChallenge[operator] = challenge;
 
         emit PaymentBreakdown(
-            operator, challenge.fromTaskNumber, challenge.toTaskNumber, challenge.amount1, challenge.amount2
-            );
+            operator,
+            challenge.fromTaskNumber,
+            challenge.toTaskNumber,
+            challenge.amount1,
+            challenge.amount2
+        );
     }
 
     /**
@@ -366,25 +372,28 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
         // payment challenge for one task
         if (diff == 1) {
             //set to one step turn of either challenger or operator
-            operatorToPaymentChallenge[operator].status =
-                msg.sender == operator
+            operatorToPaymentChallenge[operator].status = msg.sender == operator
                 ? ChallengeStatus.CHALLENGER_TURN_ONE_STEP
                 : ChallengeStatus.OPERATOR_TURN_ONE_STEP;
             return false;
 
-        // payment challenge across more than one task
+            // payment challenge across more than one task
         } else {
             // set to dissection turn of either challenger or operator
-            operatorToPaymentChallenge[operator].status =
-                msg.sender == operator ? ChallengeStatus.CHALLENGER_TURN : ChallengeStatus.OPERATOR_TURN;
+            operatorToPaymentChallenge[operator].status = msg.sender == operator
+                ? ChallengeStatus.CHALLENGER_TURN
+                : ChallengeStatus.OPERATOR_TURN;
             return true;
         }
     }
 
     /// @notice Used to update challenge amounts when the operator (or challenger) breaks down the challenged amount (single bisection step)
-    function _updateChallengeAmounts(address operator, DissectionType dissectionType, uint96 amount1, uint96 amount2)
-        internal
-    {
+    function _updateChallengeAmounts(
+        address operator,
+        DissectionType dissectionType,
+        uint96 amount1,
+        uint96 amount2
+    ) internal {
         if (dissectionType == DissectionType.FIRST_HALF) {
             // if first half is challenged, break the first half of the payment into two halves
             require(
@@ -440,9 +449,9 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
             operatorToPayment[operator].status = PaymentStatus.COMMITTED;
             operatorToPayment[operator].confirmAt = uint32(block.timestamp + paymentFraudproofInterval);
             /*
-            * Since the operator hasn't been proved right (only challenger has been proved wrong)
-            * transfer them only challengers challengeAmount, not their own challengeAmount (which is still
-            * locked up in this contract)
+             * Since the operator hasn't been proved right (only challenger has been proved wrong)
+             * transfer them only challengers challengeAmount, not their own challengeAmount (which is still
+             * locked up in this contract)
              */
             paymentChallengeToken.safeTransfer(operator, operatorToPayment[operator].challengeAmount);
             emit PaymentChallengeResolution(operator, true);

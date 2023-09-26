@@ -29,39 +29,48 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
      * @param pubkeyG1 is the the G1 pubkey of the operator
      * @param pubkeyG2 is the G2 with the same private key as the pubkeyG1
      */
-    function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external {
+    function registerBLSPublicKey(
+        uint256 s,
+        BN254.G1Point memory rPoint,
+        BN254.G1Point memory pubkeyG1,
+        BN254.G2Point memory pubkeyG2
+    ) external {
         // calculate -g1
         BN254.G1Point memory negGeneratorG1 = BN254.negate(BN254.G1Point({X: 1, Y: 2}));
         // verify a Schnorr signature (s, R) of pubkeyG1
         // calculate s*-g1 + (R + H(msg.sender, P, R)*P) = 0
         // which is the Schnorr signature verification equation
-        BN254.G1Point memory shouldBeZero = 
+        BN254.G1Point memory shouldBeZero = BN254.plus(
+            BN254.scalar_mul(negGeneratorG1, s),
             BN254.plus(
-                BN254.scalar_mul(negGeneratorG1, s),
-                BN254.plus(
-                    rPoint,
-                    BN254.scalar_mul(
-                        pubkeyG1,
-                        uint256(keccak256(abi.encodePacked(msg.sender, pubkeyG1.X, pubkeyG1.Y, rPoint.X, rPoint.Y))) % BN254.FR_MODULUS
-                    )
+                rPoint,
+                BN254.scalar_mul(
+                    pubkeyG1,
+                    uint256(keccak256(abi.encodePacked(msg.sender, pubkeyG1.X, pubkeyG1.Y, rPoint.X, rPoint.Y))) %
+                        BN254.FR_MODULUS
                 )
-            );
+            )
+        );
 
-        require(shouldBeZero.X == 0 && shouldBeZero.Y == 0, "BLSPublicKeyCompendium.registerBLSPublicKey: incorrect schnorr singature");
+        require(
+            shouldBeZero.X == 0 && shouldBeZero.Y == 0,
+            "BLSPublicKeyCompendium.registerBLSPublicKey: incorrect schnorr singature"
+        );
 
         // verify that the G2 pubkey has the same discrete log as the G1 pubkey
         // e(P, [1]_2) = e([-1]_1, P')
-        require(BN254.pairing(
-            pubkeyG1,
-            BN254.generatorG2(),
-            negGeneratorG1,
-            pubkeyG2
-        ), "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match");
+        require(
+            BN254.pairing(pubkeyG1, BN254.generatorG2(), negGeneratorG1, pubkeyG2),
+            "BLSPublicKeyCompendium.registerBLSPublicKey: G1 and G2 private key do not match"
+        );
 
         // getting pubkey hash
         bytes32 pubkeyHash = BN254.hashG1Point(pubkeyG1);
 
-        require(pubkeyHash != ZERO_PK_HASH, "BLSPublicKeyCompendium.registerBLSPublicKey: operator attempting to register the zero public key");
+        require(
+            pubkeyHash != ZERO_PK_HASH,
+            "BLSPublicKeyCompendium.registerBLSPublicKey: operator attempting to register the zero public key"
+        );
 
         require(
             operatorToPubkeyHash[msg.sender] == bytes32(0),
