@@ -317,15 +317,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             (withdrawalProofs.length == withdrawalFields.length), "EigenPod.verifyAndProcessWithdrawals: inputs must be same length"
         );
 
-        uint256 totalWithdrawalAmount;
+        uint256 totalAmountToSend;
         int256 totalSharesDelta;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             WithdrawalInfo memory withdrawalInfo = _verifyAndProcessWithdrawal(oracleTimestamp, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
-            totalWithdrawalAmount += withdrawalInfo.amountToSend;
+            totalAmountToSend += withdrawalInfo.amountToSend;
             totalSharesDelta += withdrawalInfo.sharesDelta;
         }
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
-        _sendETH_AsDelayedWithdrawal(podOwner, totalWithdrawalAmount);
+        _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSend);
         //update podOwner's shares in the strategy manager
         if (totalSharesDelta != 0){
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalSharesDelta);
