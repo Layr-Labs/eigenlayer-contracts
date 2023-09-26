@@ -29,13 +29,13 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 
 `registerAsOperator` cements the Operator's `OperatorDetails`, and self-delegates the Operator to themselves - permanently marking the caller as an Operator. They cannot "deregister" as an Operator - however, they can exit the system by withdrawing their funds via the `EigenPodManager` or `StrategyManager`.
 
-**Effects**:
+*Effects*:
 * Sets `OperatorDetails` for the Operator in question
 * Delegates the Operator to itself
 * If the Operator has deposited into the `EigenPodManager` and is not in undelegation limbo, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
 * For each of the three strategies in the `StrategyManager`, if the Operator holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
 
-**Requirements**:
+*Requirements*:
 * Caller MUST NOT already be an Operator
 * Caller MUST NOT already be delegated to an Operator
 * `earningsReceiver != address(0)`
@@ -53,7 +53,7 @@ function modifyOperatorDetails(OperatorDetails calldata newOperatorDetails) exte
 
 Allows an Operator to update their stored `OperatorDetails`.
 
-**Requirements**:
+*Requirements*:
 * Caller MUST already be an Operator
 * `new earningsReceiver != address(0)`
 * `new stakerOptOutWindowBlocks >= old stakerOptOutWindowBlocks`
@@ -67,7 +67,7 @@ function updateOperatorMetadataURI(string calldata metadataURI) external
 
 Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state changes occur.
 
-**Requirements**:
+*Requirements*:
 * Caller MUST already be an Operator
 
 ### Stakers
@@ -82,12 +82,12 @@ function delegateTo(address operator, SignatureWithExpiry memory approverSignatu
 
 Allows the caller (a Staker) to delegate ALL their shares to an Operator (delegation is all-or-nothing). For each strategy the Staker has shares in, the `DelegationManager` will update the Operator's corresponding delegated share amounts.
 
-**Effects**:
+*Effects*:
 * Records the Staker as being delegated to the Operator
 * If the Staker has deposited into the `EigenPodManager` and is not in undelegation limbo, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
 * For each of the three strategies in the `StrategyManager`, if the Staker holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
 
-**Requirements**:
+*Requirements*:
 * The caller MUST NOT already be delegated to an Operator
 * The `operator` MUST already be an Operator
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
@@ -113,9 +113,9 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 * If the Operator calls this method, they need to submit only the `stakerSignatureAndExpiry`
 * If the Operator's `delegationApprover` calls this method, they need to submit only the `stakerSignatureAndExpiry`
 
-**Effects**: See `delegateTo` above.
+*Effects*: See `delegateTo` above.
 
-**Requirements**: See `delegateTo` above. Additionally:
+*Requirements*: See `delegateTo` above. Additionally:
 * If caller is either the Operator's `delegationApprover` or the Operator, the `approverSignatureAndExpiry` and `approverSalt` can be empty
 * `stakerSignatureAndExpiry` MUST be a valid, unexpired signature over the correct hash and nonce
 
@@ -136,12 +136,12 @@ If the Staker has active shares in the `EigenPodManager`, the Staker is placed i
 
 If the Staker has active shares in any strategy in the `StrategyManager`, this initiates a withdrawal of the Staker's shares.
 
-**Effects**: 
+*Effects*: 
 * `eigenPodManager.forceIntoUndelegationLimbo`: If the Staker has shares in the `EigenPodManager`, they are placed into undelegation limbo and the shares are decremented from the Operator's beacon chain ETH shares.
 * `strategyManager.forceTotalWithdrawal`: If the Staker has shares in any strategy, this method initiates a withdrawal of all shares via the `StrategyManager` withdrawal queue. Each strategy's shares are also decremented from the Operator's shares.
 * If the Staker was delegated to an Operator, this function undelegates them.
 
-**Requirements**:
+*Requirements*:
 * Staker MUST exist and be delegated to someone
 * Staker MUST NOT be an Operator
 * Caller must be either the Staker, their Operator, or their Operator's `delegationApprover`
@@ -159,7 +159,7 @@ function increaseDelegatedShares(address staker, IStrategy strategy, uint256 sha
 
 Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shares for one or more strategies increase. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the increase.
 
-**Entry Points**: This method may be called as a result of the following top-level function calls:
+*Entry Points*: This method may be called as a result of the following top-level function calls:
 * `StrategyManager.depositIntoStrategy`
 * `StrategyManager.depositIntoStrategyWithSignature`
 * `EigenPodManager.exitUndelegationLimbo`
@@ -167,10 +167,10 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 * `EigenPod.verifyBalanceUpdate`
 * `EigenPod.verifyAndProcessWithdrawals`
 
-**Effects**: If the Staker in question is delegated to an Operator, the Operator's shares for the `strategy` are increased.
+*Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for the `strategy` are increased.
 * This method is a no-op if the Staker is not delegated to an Operator.
 
-**Requirements**:
+*Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager`
 
 #### `decreaseDelegatedShares`
@@ -183,13 +183,13 @@ function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies
 
 Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shares for one or more strategies decrease. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the decrease.
 
-**Entry Points**: This method may be called as a result of the following top-level function calls:
+*Entry Points*: This method may be called as a result of the following top-level function calls:
 * `EigenPodManager.queueWithdrawal`
 * `EigenPod.verifyBalanceUpdate`
 * `EigenPod.verifyAndProcessWithdrawals`
 
-**Effects**: If the Staker in question is delegated to an Operator, the Operator's shares for each of the `strategies` are decreased (by the corresponding amount in the `shares` array).
+*Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for each of the `strategies` are decreased (by the corresponding amount in the `shares` array).
 * This method is a no-op if the Staker is not delegated an an Operator.
 
-**Requirements**:
+*Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager`
