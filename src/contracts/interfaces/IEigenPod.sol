@@ -50,6 +50,17 @@ interface IEigenPod {
         VALIDATOR_STATUS status;
     }
 
+    /** 
+     * @notice struct used to store amounts related to proven withdrawals in memory. Used to help
+     * manage stack depth and optimize the number of external calls, when batching withdrawal operations.
+     */
+    struct VerifiedWithdrawal {
+        // amount to send to a podOwner from a proven withdrawal
+        uint256 amountToSend;
+        // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
+        int256 sharesDelta;
+    }
+
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,

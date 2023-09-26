@@ -153,8 +153,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
                 MAX_VALIDATOR_BALANCE_GWEI,
-                RESTAKED_BALANCE_OFFSET_GWEI,
-                GENESIS_TIME
+                RESTAKED_BALANCE_OFFSET_GWEI
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
@@ -413,6 +412,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.deal(address(newPod), leftOverBalanceWEI);
         emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
         emit log_named_uint("address(newPod)", address(newPod).balance);
+        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
         
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
         {
