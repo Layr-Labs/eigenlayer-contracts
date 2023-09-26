@@ -556,7 +556,7 @@ contract EigenPodManager is
 
     /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
     function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {
-        bytes32 stateRoot = beaconChainOracle.beaconStateRootAtBlockNumber(timestamp);
+        bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
         require(stateRoot != bytes32(0), "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
         return stateRoot;
     }
