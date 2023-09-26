@@ -50,6 +50,13 @@ interface IEigenPod {
         VALIDATOR_STATUS status;
     }
 
+    struct WithdrawalInfo {
+        //amount to send to a podOwner from a proven withdrawal
+        uint256 amountToSend;
+        //difference in shares to be recorded in the eigenPodManager
+        int256 sharesDelta;
+    }
+
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,

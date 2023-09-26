@@ -397,6 +397,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.deal(address(newPod), leftOverBalanceWEI);
         emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
         emit log_named_uint("address(newPod)", address(newPod).balance);
+        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
         
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
         {

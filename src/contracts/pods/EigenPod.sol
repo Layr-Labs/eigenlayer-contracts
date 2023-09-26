@@ -318,11 +318,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         uint256 totalWithdrawalAmount;
+        int256 totalSharesDelta;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
-            totalWithdrawalAmount += _verifyAndProcessWithdrawal(oracleTimestamp, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
+            WithdrawalInfo memory withdrawalInfo = _verifyAndProcessWithdrawal(oracleTimestamp, withdrawalProofs[i], validatorFieldsProofs[i], validatorFields[i], withdrawalFields[i]);
+            totalWithdrawalAmount += withdrawalInfo.amountToSend;
+            totalSharesDelta += withdrawalInfo.sharesDelta;
         }
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
         _sendETH_AsDelayedWithdrawal(podOwner, totalWithdrawalAmount);
+        //update podOwner's shares in the strategy manager
+        if (totalSharesDelta != 0){
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalSharesDelta);
+        }
     }
 
 
@@ -540,7 +547,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * *prior* to the proof provided in the `verifyWithdrawalCredentials` function.
          */
         proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot))
-        returns (uint256)
+        returns (WithdrawalInfo memory)
     {
         uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProof.slotRoot));
         
@@ -550,8 +557,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
          * and thus we cannot know that the validator is related to this EigenPod at all!
          */
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
-        require(validatorInfo.status != VALIDATOR_STATUS.INACTIVE,
+        require(_validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
 
         
@@ -587,17 +593,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             });
 
             uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-            uint64 slot = Endian.fromLittleEndianUint64(withdrawalProof.slotRoot);
 
             /**
             * if the validator's withdrawable epoch is less than or equal to the slot's epoch, then the validator has fully withdrawn because
             * a full withdrawal is only processable after the withdrawable epoch has passed.
             */
             // reference: uint64 withdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
-            if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= slot/BeaconChainProofs.SLOTS_PER_EPOCH) {
-                return _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, validatorInfo);
+            if (Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <= (Endian.fromLittleEndianUint64(withdrawalProof.slotRoot))/BeaconChainProofs.SLOTS_PER_EPOCH) {
+                return _processFullWithdrawal(validatorIndex, validatorPubkeyHash, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei, _validatorPubkeyHashToInfo[validatorPubkeyHash]);
             } else {
-                return _processPartialWithdrawal(validatorIndex, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
+                return  _processPartialWithdrawal(validatorIndex, withdrawalHappenedTimestamp, podOwner, withdrawalAmountGwei);
             }
         }
     }
@@ -609,8 +614,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint64 withdrawalAmountGwei,
         ValidatorInfo memory validatorInfo
-    ) internal returns(uint256) {
-        uint256 amountToSend;
+    ) internal returns(WithdrawalInfo memory) {
+        WithdrawalInfo memory withdrawalInfo;
         uint256 withdrawalAmountWei;
 
         uint256 currentValidatorRestakedBalanceWei = validatorInfo.restakedBalanceGwei * GWEI_TO_WEI;
@@ -625,7 +630,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             uint64 maxRestakedBalanceGwei = _calculateRestakedBalanceGwei(MAX_VALIDATOR_BALANCE_GWEI);
             if (withdrawalAmountGwei > maxRestakedBalanceGwei) {
                 // then the excess is immediately withdrawable
-                amountToSend = uint256(withdrawalAmountGwei - maxRestakedBalanceGwei) * uint256(GWEI_TO_WEI);
+                withdrawalInfo.amountToSend = uint256(withdrawalAmountGwei - maxRestakedBalanceGwei) * uint256(GWEI_TO_WEI);
                 // and the extra execution layer ETH in the contract is MAX_VALIDATOR_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
                 withdrawableRestakedExecutionLayerGwei += maxRestakedBalanceGwei;
                 withdrawalAmountWei = maxRestakedBalanceGwei * GWEI_TO_WEI;
@@ -640,9 +645,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             }
             // if the amount being withdrawn is not equal to the current accounted for validator balance, an update must be made
             if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
-                int256 sharesDelta = _calculateSharesDelta({newAmountWei: withdrawalAmountWei, currentAmountWei: currentValidatorRestakedBalanceWei});
-                //update podOwner's shares in the strategy manager
-                eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
+                withdrawalInfo.sharesDelta = _calculateSharesDelta({newAmountWei: withdrawalAmountWei, currentAmountWei: currentValidatorRestakedBalanceWei});
             }
 
         }  else {
@@ -658,7 +661,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, withdrawalAmountGwei);
 
-        return amountToSend;
+        return withdrawalInfo;
     }
 
     function _processPartialWithdrawal(
@@ -666,10 +669,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalHappenedTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
-    ) internal returns (uint256) {
+    ) internal returns (WithdrawalInfo memory) {
         emit PartialWithdrawalRedeemed(validatorIndex, withdrawalHappenedTimestamp, recipient, partialWithdrawalAmountGwei);
 
-        return  uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI);
+        return WithdrawalInfo({
+            amountToSend:  uint256(partialWithdrawalAmountGwei) * uint256(GWEI_TO_WEI),
+            sharesDelta: 0
+        });
     }
 
     function _processWithdrawalBeforeRestaking(address _podOwner) internal {
