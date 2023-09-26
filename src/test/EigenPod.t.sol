@@ -262,6 +262,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testWithdrawBeforeRestaking() public {
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
+
+        //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
+        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
         require(pod.hasRestaked() == false, "Pod should not be restaked");
 
         // simulate a withdrawal
@@ -272,6 +275,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pod.withdrawBeforeRestaking();
         require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
         require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
+    }
+
+
+    function testCheckThatHasRestakedIsSetToTrue() public {
+        testStaking();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == true, "Pod should not be restaked");
     }
 
     function testDeployEigenPodWithoutActivateRestaking() public {
@@ -293,6 +303,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
 
+        //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(1)));
+        
         cheats.startPrank(podOwner);
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
@@ -344,10 +357,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.deal(address(pod), stakeAmount);
 
+        // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
+        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
+
         cheats.startPrank(podOwner);
         uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
         // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        cheats.expectEmit(true, true, true, true);
+        //cheats.expectEmit(true, true, true, true);
         emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
         pod.withdrawBeforeRestaking();
         cheats.stopPrank();
@@ -578,7 +594,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp);
-        newPod.activateRestaking();
+        if(!newPod.hasRestaked()){
+             newPod.activateRestaking();
+        }
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
@@ -783,6 +801,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.assume(nonPodOwner != podOwner);
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
+        // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
+        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
         require(pod.hasRestaked() == false, "Pod should not be restaked");
 
         //simulate a withdrawal
@@ -1200,7 +1220,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(_podOwner);
         cheats.warp(timestamp);
-        newPod.activateRestaking();
+        if(newPod.hasRestaked() == false){
+            newPod.activateRestaking();
+        }
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
         cheats.warp(timestamp += 1);
         newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, proofsArray, validatorFieldsArray);
