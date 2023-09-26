@@ -39,7 +39,7 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * Caller MUST NOT already be an Operator
 * Caller MUST NOT already be delegated to an Operator
 * `earningsReceiver != address(0)`
-* `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~15 days)
+* `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~180 days)
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
 *Unimplemented as of M2*:
@@ -109,9 +109,9 @@ function delegateToBySignature(
 ```
 
 Allows a Staker to delegate to an Operator by way of signature. This function can be called by three different parties:
-* If the Staker calls this method, they need to submit both the `stakerSignatureAndExpiry` AND `approverSignatureAndExpiry`
 * If the Operator calls this method, they need to submit only the `stakerSignatureAndExpiry`
 * If the Operator's `delegationApprover` calls this method, they need to submit only the `stakerSignatureAndExpiry`
+* If the anyone else calls this method, they need to submit both the `stakerSignatureAndExpiry` AND `approverSignatureAndExpiry`
 
 *Effects*: See `delegateTo` above.
 
