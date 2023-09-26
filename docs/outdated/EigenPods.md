@@ -73,7 +73,7 @@ Essentially this states that the podOwner's shares in the strategyManager's beac
 ### verifyValidatorFields
 This function is used to verify any of the fields, such as withdrawal credentials or slashed status, in the `Validator` container of the Beacon State.  The user provides the validatorFields and the index of the validator they're proving for, and the function verifies this against the Beacon State Root.  
 
-### verifyWithdrawalProofs
+### verifyWithdrawal
 This function verifies several proofs related to a withdrawal:
 1. It verifies the slot of the withdrawal
 2. It verifies the block number of the withdrawal

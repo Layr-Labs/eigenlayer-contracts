@@ -130,11 +130,15 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        if(vm.envUint("CHAIN_ID") == 31337) {
+        try vm.envUint("CHAIN_ID") returns (uint256 chainId) {
+            if (chainId == 31337) {
+                _deployEigenLayerContractsLocal();
+            } else if (chainId == 5) {
+                _deployEigenLayerContractsGoerli();
+            }
+        // If CHAIN_ID ENV is not set, assume local deployment on 31337
+        } catch {
             _deployEigenLayerContractsLocal();
-
-        }else if(vm.envUint("CHAIN_ID") == 5) {
-            _deployEigenLayerContractsGoerli();
         }
 
         fuzzedAddressMapping[address(0)] = true;
@@ -163,7 +167,6 @@ contract EigenLayerDeployer is Operators {
         eigenPodManager = EigenPodManager(eigenPodManagerAddress);
         delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
 
-        address[] memory initialOracleSignersArray = new address[](0);
         beaconChainOracleAddress = address(new BeaconChainOracleMock());
 
         ethPOSDeposit = new ETHPOSDepositMock();
@@ -245,8 +248,6 @@ contract EigenLayerDeployer is Operators {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-        address[] memory initialOracleSignersArray = new address[](0);
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);

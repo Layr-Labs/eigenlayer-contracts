@@ -464,8 +464,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint64 amountToDeposit = 1e12;
 
         // shadow-fork mainnet
-        uint256 forkId = cheats.createFork("mainnet");
-        cheats.selectFork(forkId);
+        try cheats.createFork("mainnet") returns (uint256 forkId) {
+            cheats.selectFork(forkId);
+        // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
+        } catch  {
+            cheats.createSelectFork("https://eth.llamarpc.com");
+        }
 
         // cast mainnet stETH address to IERC20 interface
         // IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
@@ -498,10 +502,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-        {
-            address[] memory initialOracleSignersArray = new address[](0);
-        }
 
         ethPOSDeposit = new ETHPOSDepositMock();
         pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GENESIS_TIME);
