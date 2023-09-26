@@ -42,7 +42,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
-    IBeaconChainOracleMock public beaconChainOracle;
+    BeaconChainOracleMock public beaconChainOracle;
     MiddlewareRegistryMock public generalReg1;
     ServiceManagerMock public generalServiceManager1;
     address[] public slashingContracts;
