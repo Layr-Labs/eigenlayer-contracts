@@ -457,6 +457,6 @@ contract StakeRegistry is StakeRegistryStorage {
         );
     }
 
-    // storage gap
+    // storage gap for upgradeability
     uint256[50] private __GAP;
 }

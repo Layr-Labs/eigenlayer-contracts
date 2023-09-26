@@ -20,9 +20,12 @@ contract BLSOperatorStateRetrieverUnitTests is MockAVSDeployer {
         for (uint i = 0; i < operatorMetadatas.length; i++) {
             uint32 blockNumber = uint32(registrationBlockNumber + blocksBetweenRegistrations * i);
 
+            uint256 gasBefore = gasleft();
             // retrieve the ordered list of operators for each quorum along with their id and stake
             (uint256 quorumBitmap, BLSOperatorStateRetriever.Operator[][] memory operators) = 
                 operatorStateRetriever.getOperatorState(registryCoordinator, operatorMetadatas[i].operatorId, blockNumber);
+            uint256 gasAfter = gasleft();
+            emit log_named_uint("gasUsed", gasBefore - gasAfter);
 
             assertEq(operatorMetadatas[i].quorumBitmap, quorumBitmap);
             bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);

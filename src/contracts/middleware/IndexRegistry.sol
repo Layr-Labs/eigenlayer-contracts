@@ -87,6 +87,11 @@ contract IndexRegistry is IIndexRegistry {
         }
     }
 
+    /// @notice Returns the length of the globalOperatorList
+    function getGlobalOperatorListLength() external view returns (uint256) {
+        return globalOperatorList.length;
+    }
+
     /// @notice Returns the _operatorIdToIndexHistory entry for the specified `operatorId` and `quorumNumber` at the specified `index`
     function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory){
         return _operatorIdToIndexHistory[operatorId][quorumNumber][index];
