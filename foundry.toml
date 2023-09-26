@@ -19,4 +19,7 @@ solc_version = '0.8.12'
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"
 
+[fmt]
+multiline_func_header = "params_first"
+
 # See more config options https://github.com/gakonst/foundry/tree/master/config
