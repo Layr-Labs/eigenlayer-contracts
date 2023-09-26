@@ -156,7 +156,9 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
-        return _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index;
+        uint256 length = _totalOperatorsHistory[quorumNumber].length;
+        require(length > 0, "IndexRegistry.totalOperatorsForQuorum: No history");
+        return _totalOperatorsHistory[quorumNumber][length - 1].index;
     }
 
     /**
