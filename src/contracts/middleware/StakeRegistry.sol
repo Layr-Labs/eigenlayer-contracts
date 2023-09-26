@@ -455,7 +455,4 @@ contract StakeRegistry is StakeRegistryStorage {
             "StakeRegistry._validateOperatorStakeAtBlockNumber: there is a newer operatorStakeUpdate available before blockNumber"
         );
     }
-
-    // storage gap for upgradeability
-    uint256[50] private __GAP;
 }
