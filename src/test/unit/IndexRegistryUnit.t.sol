@@ -1,78 +1,77 @@
 //SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "../../contracts/interfaces/IIndexRegistry.sol";
-import "../../contracts/middleware/IndexRegistry.sol";
-import "../mocks/RegistryCoordinatorMock.sol";
+import {IIndexRegistry} from "src/contracts/interfaces/IIndexRegistry.sol";
+import {IndexRegistry} from "src/contracts/middleware/IndexRegistry.sol";
+import {RegistryCoordinatorMock} from "src/test/mocks/RegistryCoordinatorMock.sol";
 
-import "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 
 contract IndexRegistryUnitTests is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    IndexRegistry internal indexRegistry;
+    RegistryCoordinatorMock internal registryCoordinatorMock;
+    bytes internal NOT_REGISTRY_COORDINATOR_ERROR = bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        bytes internal OPERATOR_NOT_LAST_OPERATOR_IN_QUORUM_ERROR = bytes("IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
+        bytes internal QUORUM_NUMBERS_AND_SWAP_IDS_LENGTH_MISMATCH_ERROR = bytes("IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
 
-    IndexRegistry indexRegistry;
-    RegistryCoordinatorMock registryCoordinatorMock;
-
-    uint8 defaultQuorumNumber = 1;
-    bytes32 defaultOperator = bytes32(uint256(34));
-
+    uint8 internal defaultQuorumNumber = 1;
+    bytes32 internal defaultOperator = bytes32(uint256(34));
 
     function setUp() public {
-        // deploy the contract
         registryCoordinatorMock = new RegistryCoordinatorMock();
         indexRegistry = new IndexRegistry(registryCoordinatorMock);
     }
 
     /// CONSTRUCTOR 
-    function testConstructor() public {
+    function test_Constructor() public {
         // check that the registry coordinator is set correctly
         assertEq(address(indexRegistry.registryCoordinator()), address(registryCoordinatorMock), "IndexRegistry.constructor: registry coordinator not set correctly");
     }
 
     /// REGISTER OPERATOR
-    function testRegisterOperatorInIndexRegistry(bytes32 operatorId) public {
+    function testFuzz_When_OperatorInIndexRegistry_RegisterOperator(bytes32 operatorId) public {
         // register an operator
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
 
-        cheats.startPrank(address(registryCoordinatorMock));
+        vm.startPrank(address(registryCoordinatorMock));
        indexRegistry.registerOperator(operatorId, quorumNumbers);
-        cheats.stopPrank();
+        vm.stopPrank();
 
-       require(indexRegistry.globalOperatorList(0) == operatorId, "IndexRegistry.registerOperator: operator not registered correctly");
-       require(indexRegistry.totalOperatorsForQuorum(1) == 1, "IndexRegistry.registerOperator: total operators for quorum not updated correctly");
+       assertTrue(indexRegistry.globalOperatorList(0) == operatorId, "operator not registered correctly");
+       assertTrue(indexRegistry.totalOperatorsForQuorum(1) == 1, "total operators for quorum not updated correctly");
        IIndexRegistry.OperatorIndexUpdate memory indexUpdate = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId, 1, 0);
-       require(indexUpdate.index == 0, "IndexRegistry.registerOperator: index not 0");
-       require(indexUpdate.fromBlockNumber == block.number, "block number should not be set");
+       assertTrue(indexUpdate.index == 0, "index not 0");
+       assertTrue(indexUpdate.fromBlockNumber == block.number, "block number should not be set");
     }
 
-    function testRegisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
-        cheats.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
+    function testFuzz_RevertsWhen_NotRegistryCoordinator_RegisterOperator(address nonRegistryCoordinator) public {
+        vm.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
         // register an operator
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
-        cheats.startPrank(nonRegistryCoordinator);
-        cheats.expectRevert(bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
+        vm.startPrank(nonRegistryCoordinator);
+        vm.expectRevert(NOT_REGISTRY_COORDINATOR_ERROR);
         indexRegistry.registerOperator(bytes32(0), quorumNumbers);
-        cheats.stopPrank();
+        vm.stopPrank();
     }
 
-    function testDeregisterOperatorFromNonRegisterCoordinator(address nonRegistryCoordinator) public {
-        cheats.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
+    function testFuzz_RevertsWhen_NotRegistryCoordinator_DeregistorOperator(address nonRegistryCoordinator) public {
+        vm.assume(address(registryCoordinatorMock) != nonRegistryCoordinator);
         // register an operator
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
         bytes32[] memory operatorIdsToSwap = new bytes32[](1);
 
-        cheats.startPrank(nonRegistryCoordinator);
-        cheats.expectRevert(bytes("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"));
+        vm.startPrank(nonRegistryCoordinator);
+        vm.expectRevert(NOT_REGISTRY_COORDINATOR_ERROR);
         indexRegistry.deregisterOperator(bytes32(0), quorumNumbers, operatorIdsToSwap);
-        cheats.stopPrank();
+        vm.stopPrank();
     }
 
     /// DEREGISTER OPERATOR
-    function testDeregisterOperatorInIndexRegistry(bytes32 operatorId1, bytes32 operatorId2) public {
-        cheats.assume(operatorId1 != operatorId2);
+    function testFuzz_When_OperatorInIndexRegistry_DeregisterOperator(bytes32 operatorId1, bytes32 operatorId2) public {
+        vm.assume(operatorId1 != operatorId2);
         bytes memory quorumNumbers = new bytes(2);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
@@ -80,31 +79,31 @@ contract IndexRegistryUnitTests is Test {
         _registerOperator(operatorId1, quorumNumbers);
         _registerOperator(operatorId2, quorumNumbers);
 
-        require(indexRegistry.totalOperatorsForQuorum(1) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
-        require(indexRegistry.totalOperatorsForQuorum(2) == 2, "IndexRegistry.registerOperator: operator not registered correctly");
+        assertTrue(indexRegistry.totalOperatorsForQuorum(1) == 2, "operator not registered correctly");
+        assertTrue(indexRegistry.totalOperatorsForQuorum(2) == 2, "operator not registered correctly");
 
         bytes32[] memory operatorIdsToSwap = new bytes32[](2);
         operatorIdsToSwap[0] = operatorId2;
         operatorIdsToSwap[1] = operatorId2;
 
-        cheats.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         //deregister the operatorId1, removing it from both quorum 1 and 2.
-        cheats.startPrank(address(registryCoordinatorMock));
+        vm.startPrank(address(registryCoordinatorMock));
         indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap);
-        cheats.stopPrank();
+        vm.stopPrank();
 
-        require(indexRegistry.totalOperatorsForQuorum(1) == 1, "operator not deregistered correctly");
-        require(indexRegistry.totalOperatorsForQuorum(2) == 1, "operator not deregistered correctly");
+        assertTrue(indexRegistry.totalOperatorsForQuorum(1) == 1, "operator not deregistered correctly");
+        assertTrue(indexRegistry.totalOperatorsForQuorum(2) == 1, "operator not deregistered correctly");
 
         IIndexRegistry.OperatorIndexUpdate memory indexUpdate = indexRegistry.getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(operatorId2, defaultQuorumNumber, 1);
-        require(indexUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
-        require(indexUpdate.index == 0, "incorrect index");
+        assertTrue(indexUpdate.fromBlockNumber == block.number, "fromBlockNumber not set correctly");
+        assertTrue(indexUpdate.index == 0, "incorrect index");
 
     }
 
-    function testDeregisterOperatorWithIncorrectOperatorToSwap(bytes32 operatorId1, bytes32 operatorId2, bytes32 operatorId3) public {
-        cheats.assume(operatorId1 != operatorId2 && operatorId3 != operatorId2 && operatorId3 != operatorId1);
+    function testFuzz_RevertsWhen_OperatorToSwapIncorrect_DeregisterOperator(bytes32 operatorId1, bytes32 operatorId2, bytes32 operatorId3) public {
+        vm.assume(operatorId1 != operatorId2 && operatorId3 != operatorId2 && operatorId3 != operatorId1);
 
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -116,34 +115,34 @@ contract IndexRegistryUnitTests is Test {
         bytes32[] memory operatorIdsToSwap = new bytes32[](1);
         operatorIdsToSwap[0] = operatorId2;
 
-        cheats.roll(block.number + 1);
+        vm.roll(block.number + 1);
 
         //deregister the operatorId1, removing it from both quorum 1 and 2.
-        cheats.startPrank(address(registryCoordinatorMock));
-        cheats.expectRevert(bytes("IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum"));
+        vm.startPrank(address(registryCoordinatorMock));
+        vm.expectRevert(OPERATOR_NOT_LAST_OPERATOR_IN_QUORUM_ERROR);
         indexRegistry.deregisterOperator(operatorId1, quorumNumbers, operatorIdsToSwap);
-        cheats.stopPrank();
+        vm.stopPrank();
     }
 
-    function testDeregisterOperatorWithMismatchInputLengths() public {
+    function test_RevertsWhen_LenghtMismatchForOperatorIdsAndQuorums_DeregisterOperator() public {
         bytes memory quorumNumbers = new bytes(1);
         bytes32[] memory operatorIdsToSwap = new bytes32[](2);
 
         //deregister the operatorId1, removing it from both quorum 1 and 2.
-        cheats.startPrank(address(registryCoordinatorMock));
-        cheats.expectRevert(bytes("IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"));
+        vm.startPrank(address(registryCoordinatorMock));
+        vm.expectRevert(QUORUM_NUMBERS_AND_SWAP_IDS_LENGTH_MISMATCH_ERROR);
         indexRegistry.deregisterOperator(defaultOperator, quorumNumbers, operatorIdsToSwap);
-        cheats.stopPrank();
+        vm.stopPrank();
     }
 
-    function testTotalOperatorUpdatesForOneQuorum(uint8 numOperators) public {
+    function testFuzz_WhenUpdatesForOneQuorum_TotalOperatorsForQuorum(uint8 numOperators) public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
         
         uint256 lengthBefore = 0;
         for (uint256 i = 0; i < numOperators; i++) {
             _registerOperator(bytes32(i), quorumNumbers);
-            require(indexRegistry.totalOperatorsForQuorum(1) - lengthBefore == 1, "incorrect update");
+            assertTrue(indexRegistry.totalOperatorsForQuorum(1) - lengthBefore == 1, "incorrect update");
             lengthBefore++;
         }
     }
@@ -168,9 +167,9 @@ contract IndexRegistryUnitTests is Test {
     function test_When_OperatorNotRegisteredForQuorumAtBlock_getIndexOfOperatorForQuorumAtBlockNumber() public {}
 
     function _registerOperator(bytes32 operatorId, bytes memory quorumNumbers) public {
-        cheats.startPrank(address(registryCoordinatorMock));
+        vm.startPrank(address(registryCoordinatorMock));
        indexRegistry.registerOperator(operatorId, quorumNumbers);
-        cheats.stopPrank();
+        vm.stopPrank();
     }
     
 }
