@@ -1,0 +1,12 @@
+name: Slither Analysis
+on:
+  push:
+  pull_request:
+    branches: [master, draft/formatter-linting-ci]
+    types: [opened, reopened]
+jobs:
+  analyze:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: crytic/slither-action@v0.3.0
