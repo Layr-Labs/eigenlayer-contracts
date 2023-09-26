@@ -89,8 +89,7 @@ contract GoerliM2Deployment is Script, Test {
             _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
             _MAX_VALIDATOR_BALANCE_GWEI: 31 gwei, 
-            _RESTAKED_BALANCE_OFFSET_GWEI: 0.5 gwei,
-            _GENESIS_TIME: 1616508000 // https://goerli.beaconcha.in/slot/0 Mar-23-2021 07:00:00 UTC-7
+            _RESTAKED_BALANCE_OFFSET_GWEI: 0.5 gwei
         });
 
         // write the output to a contract

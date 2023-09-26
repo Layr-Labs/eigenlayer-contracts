@@ -177,8 +177,7 @@ contract Deployer_M1 is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             uint64(MAX_VALIDATOR_BALANCE_GWEI),
-            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI),
-            GENESIS_TIME
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));

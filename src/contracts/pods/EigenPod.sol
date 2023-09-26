@@ -45,9 +45,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
-    /// @notice The number of seconds in a slot in the beacon chain
-    uint256 internal constant SECONDS_PER_SLOT = 12;
-
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -65,9 +62,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     * amount by which to underestimate the validator's effective balance.
     */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
-
-    /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
-    uint64 public immutable GENESIS_TIME;
 
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
@@ -172,15 +166,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_VALIDATOR_BALANCE_GWEI,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
-        uint64 _GENESIS_TIME
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_VALIDATOR_BALANCE_GWEI = _MAX_VALIDATOR_BALANCE_GWEI;
         RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
-        GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
 
@@ -552,7 +544,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         proofIsForValidTimestamp(Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot))
         returns (VerifiedWithdrawal memory)
     {
-        uint64 withdrawalHappenedTimestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProof.slotRoot));
+        uint64 withdrawalHappenedTimestamp = Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot);
         
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
@@ -718,11 +710,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal pure returns(int256){
         return (int256(newAmountWei) - int256(currentAmountWei));
-    }
-
-    // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
-    function _computeTimestampAtSlot(uint64 slot) internal view returns (uint64) {
-        return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
     /**

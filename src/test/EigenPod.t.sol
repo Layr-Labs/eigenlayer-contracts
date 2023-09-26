@@ -153,8 +153,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
                 MAX_VALIDATOR_BALANCE_GWEI,
-                RESTAKED_BALANCE_OFFSET_GWEI,
-                GENESIS_TIME
+                RESTAKED_BALANCE_OFFSET_GWEI
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
