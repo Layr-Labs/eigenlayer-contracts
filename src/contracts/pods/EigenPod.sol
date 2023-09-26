@@ -188,6 +188,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
+        /**
+        * From the M2 deployment onwards, we are requiring that pods deployed are by default enabled with restaking
+        * In prior deployments without proofs, EigenPods could be deployed with restaking disabled so as to allow
+        * simple (proof-free) withdrawals.  However, this is no longer the case.  Thus going forward, all pods are
+        * initialized with hasRestaked set to true.
+        */
         hasRestaked = true;
     }
 
