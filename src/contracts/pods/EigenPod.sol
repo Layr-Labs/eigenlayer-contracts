@@ -325,7 +325,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             totalSharesDelta += withdrawalInfo.sharesDelta;
         }
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
-        _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSend);
+        if (totalAmountToSend != 0) {
+            _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSend);
+        }
         //update podOwner's shares in the strategy manager
         if (totalSharesDelta != 0){
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalSharesDelta);
