@@ -43,8 +43,6 @@ contract GoerliM2Deployment is Script, Test {
     address pauserMultisig;
     address beaconChainOracleGoerli = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
 
-
-
     IETHPOSDeposit public ethPOS;
 
     ISlasher public slasher;
