@@ -54,7 +54,6 @@ methods {
     function numRegistries() external returns (uint256) envfree;
     function calculateOperatorChurnApprovalDigestHash(
         bytes32 registeringOperatorId,
-        bytes quorumNumbers,
         IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] operatorKickParams,
         bytes32 salt,
         uint256 expiry
