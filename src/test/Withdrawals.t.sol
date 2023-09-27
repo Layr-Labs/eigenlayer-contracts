@@ -126,15 +126,15 @@ pragma solidity =0.8.12;
 //         cheats.warp(uint32(block.timestamp) + 1 days);
 //         cheats.roll(uint32(block.timestamp) + 1 days);
 
-//         _testQueueWithdrawal(
-//             depositor,
-//             strategyIndexes,
-//             dataForTestWithdrawal.delegatorStrategies,
-//             dataForTestWithdrawal.delegatorShares,
-//             withdrawer,
-//             true
-//         );
-//         uint32 queuedWithdrawalBlock = uint32(block.number);
+
+//        _testQueueWithdrawal(
+//            depositor,
+//            strategyIndexes,
+//            dataForTestWithdrawal.delegatorStrategies,
+//            dataForTestWithdrawal.delegatorShares,
+//            withdrawer
+//        );
+//        uint32 queuedWithdrawalBlock = uint32(block.number);
         
 //         //now withdrawal block time is before deregistration
 //         cheats.warp(uint32(block.timestamp) + 2 days);
@@ -241,15 +241,14 @@ pragma solidity =0.8.12;
 //         cheats.warp(uint32(block.timestamp) + 1 days);
 //         cheats.roll(uint32(block.number) + 1);
 
-//         _testQueueWithdrawal(
-//             depositor,
-//             strategyIndexes,
-//             dataForTestWithdrawal.delegatorStrategies,
-//             dataForTestWithdrawal.delegatorShares,
-//             dataForTestWithdrawal.withdrawerAndNonce.withdrawer,
-//             true
-//         );
-//         uint32 queuedWithdrawalBlock = uint32(block.number);
+//        _testQueueWithdrawal(
+//            depositor,
+//            strategyIndexes,
+//            dataForTestWithdrawal.delegatorStrategies,
+//            dataForTestWithdrawal.delegatorShares,
+//            dataForTestWithdrawal.withdrawerAndNonce.withdrawer
+//        );
+//        uint32 queuedWithdrawalBlock = uint32(block.number);
         
 //         //now withdrawal block time is before deregistration
 //         cheats.warp(uint32(block.timestamp) + 2 days);
@@ -317,10 +316,13 @@ pragma solidity =0.8.12;
 //         //this function performs delegation and subsequent withdrawal
 //         testWithdrawalWrapper(operator, depositor, withdrawer, ethAmount, eigenAmount, withdrawAsShares, true);
 
-//         //warps past fraudproof time interval
-//         cheats.warp(block.timestamp + 7 days + 1);
-//         testDelegation(operator, depositor, ethAmount, eigenAmount);
-//     }
+//        cheats.prank(depositor);
+//        delegation.undelegate(depositor);
+
+//        //warps past fraudproof time interval
+//        cheats.warp(block.timestamp + 7 days + 1);
+//        testDelegation(operator, depositor, ethAmount, eigenAmount);
+//    }
 
 //     /// @notice test to see if an operator who is slashed/frozen
 //     ///         cannot be undelegated from by their stakers.
@@ -357,10 +359,10 @@ pragma solidity =0.8.12;
 //         tokensArray[0] = weth;
 //         tokensArray[0] = eigenToken;
 
-//         //initiating queued withdrawal
-//         cheats.expectRevert(
-//             bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
-//         );
-//         _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker, true);
-//     }
-// }
+//        //initiating queued withdrawal
+//        cheats.expectRevert(
+//            bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
+//        );
+//        _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
+//    }
+//}

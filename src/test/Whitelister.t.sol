@@ -278,25 +278,26 @@ pragma solidity =0.8.12;
 //         }        
 //     }
 
-//     function _testQueueWithdrawal(
-//         address staker,
-//         IStrategy[] memory strategyArray,
-//         uint256[] memory shareAmounts,
-//         uint256[] memory strategyIndexes
-//     )
-//         internal
-//     {
-//         cheats.startPrank(theMultiSig);
-//         whiteLister.queueWithdrawal(
-//             staker,
-//             strategyIndexes,
-//             strategyArray,
-//             shareAmounts,
-//             staker,
-//             true
-//         );
-//         cheats.stopPrank();
-//     }
+
+//    function _testQueueWithdrawal(
+//        address staker,
+//        IStrategy[] memory strategyArray,
+//        uint256[] memory shareAmounts,
+//        uint256[] memory strategyIndexes
+//    )
+//        internal
+//    {
+//        cheats.startPrank(theMultiSig);
+//        whiteLister.queueWithdrawal(
+//            staker,
+//            strategyIndexes,
+//            strategyArray,
+//            shareAmounts,
+//            staker
+//        );
+//        cheats.stopPrank();
+//    }
+
 
 //      function _testCompleteQueuedWithdrawal(
 //         address staker,

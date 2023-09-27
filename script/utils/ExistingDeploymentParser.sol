@@ -79,7 +79,7 @@ contract ExistingDeploymentParser is Script, Test {
         delayedWithdrawalRouterImplementation = 
             DelayedWithdrawalRouter(stdJson.readAddress(existingDeploymentData, ".addresses.delayedWithdrawalRouterImplementation"));
         eigenPodBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodBeacon"));
-        eigenPodImplementation = EigenPod(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation"));
+        eigenPodImplementation = EigenPod(payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation")));
         baseStrategyImplementation = StrategyBase(stdJson.readAddress(existingDeploymentData, ".addresses.baseStrategyImplementation"));
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
 

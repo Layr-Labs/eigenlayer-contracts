@@ -233,7 +233,20 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 1);
         _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
-        cheats.startPrank(address(strategyManager));
+
+        (IStrategy[] memory strategyArray, uint256[] memory shareAmounts) = strategyManager.getDeposits(staker);
+        uint256[] memory strategyIndexes = new uint256[](strategyArray.length);
+
+        // withdraw shares
+        _testQueueWithdrawal(
+            staker,
+            strategyIndexes,
+            strategyArray,
+            shareAmounts,
+            staker /*withdrawer*/
+        );
+
+        cheats.startPrank(staker);
         delegation.undelegate(staker);
         cheats.stopPrank();
 
@@ -541,7 +554,7 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.assume(_operator != address(eigenLayerProxyAdmin));
         vm.assume(_staker != address(eigenLayerProxyAdmin));
 
-        //setup delegation
+        // setup delegation
         vm.prank(_operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver:_dt,
@@ -554,32 +567,22 @@ contract DelegationTests is EigenLayerTestHelper {
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
-        //operators cannot undelegate from themselves
-        vm.prank(address(strategyManager));
-        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
-        delegation.undelegate(_operator);
-
-        //_staker cannot undelegate themselves
-        vm.prank(_staker);
-        cheats.expectRevert();
-        delegation.undelegate(_operator);
-        
-        //_operator cannot undelegate themselves
+        // operators cannot undelegate from themselves
         vm.prank(_operator);
-        cheats.expectRevert();
+        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
         delegation.undelegate(_operator);
 
-        //assert still delegated
+        // assert still delegated
         assertTrue(delegation.isDelegated(_staker));
-        assertFalse(!delegation.isDelegated(_staker));
         assertTrue(delegation.isOperator(_operator));
 
-        //strategyManager can undelegate _staker
-        vm.prank(address(strategyManager));
+        // _staker *can* undelegate themselves
+        vm.prank(_staker);
         delegation.undelegate(_staker);
-        assertFalse(delegation.isDelegated(_staker));
-        assertTrue(!delegation.isDelegated(_staker));
 
+        // assert undelegated
+        assertTrue(!delegation.isDelegated(_staker));
+        assertTrue(delegation.isOperator(_operator));
     }
 
     function _testRegisterAdditionalOperator(uint256 index) internal {

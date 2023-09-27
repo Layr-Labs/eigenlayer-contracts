@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "./IBeaconChainOracleMock.sol";
+import "../../contracts/interfaces/IBeaconChainOracle.sol";
 
 
 
-contract BeaconChainOracleMock is IBeaconChainOracleMock {
+contract BeaconChainOracleMock is IBeaconChainOracle {
 
     bytes32 public mockBeaconChainStateRoot;
 
-    function getBeaconChainStateRoot() external view returns(bytes32) {
+    function getOracleBlockRootAtTimestamp() external view returns(bytes32) {
         return mockBeaconChainStateRoot;
     }
 
-    function setBeaconChainStateRoot(bytes32 beaconChainStateRoot) external {
+    function setOracleBlockRootAtTimestamp(bytes32 beaconChainStateRoot) external {
         mockBeaconChainStateRoot = beaconChainStateRoot;
     }
 
-    function beaconStateRootAtBlockNumber(uint64 /*blockNumber*/) external view returns(bytes32) {
+    function timestampToBlockRoot(uint256 /*blockNumber*/) external view returns(bytes32) {
         return mockBeaconChainStateRoot;
     }
 

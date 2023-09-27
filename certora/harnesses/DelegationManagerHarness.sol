@@ -5,7 +5,8 @@ import "../munged/core/DelegationManager.sol";
 
 contract DelegationManagerHarness is DelegationManager {
 
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher) DelegationManager(_strategyManager, _slasher) {}
+    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
+        DelegationManager(_strategyManager, _slasher, _eigenPodManager) {}
 
 
     /// Harnessed functions
@@ -22,7 +23,7 @@ contract DelegationManagerHarness is DelegationManager {
             strategies[1] = strategy2;
             shares[0] = share1;
             shares[1] = share2;
-            super.decreaseDelegatedShares(staker,strategies,shares);
+            super.decreaseDelegatedShares(staker, strategies, shares);
     }
 
     function get_operatorShares(address operator, IStrategy strategy) public view returns(uint256) {

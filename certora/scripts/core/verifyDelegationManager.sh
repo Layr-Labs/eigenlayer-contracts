@@ -12,6 +12,7 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
     --optimistic_loop \
     --prover_args '-optimisticFallback true' \
+    --optimistic_hashing \
     $RULE \
     --loop_iter 3 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \

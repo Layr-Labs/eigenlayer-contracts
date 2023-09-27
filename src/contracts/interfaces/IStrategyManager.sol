@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./ISlasher.sol";
 import "./IDelegationManager.sol";
+import "./IEigenPodManager.sol";
 
 /**
  * @title Interface for the primary entrypoint for funds into EigenLayer.
@@ -48,25 +49,6 @@ interface IStrategyManager {
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
         external
         returns (uint256 shares);
-
-
-    /**
-     * @notice Deposits `amount` of beaconchain ETH into this contract on behalf of `staker`
-     * @param staker is the entity that is restaking in eigenlayer,
-     * @param amount is the amount of beaconchain ETH being restaked,
-     * @dev Only callable by EigenPodManager.
-     */
-    function depositBeaconChainETH(address staker, uint256 amount) external;
-
-    /**
-     * @notice Records an update in beacon chain strategy shares in the strategy manager
-     * @param podOwner is the pod owner whose shares are to be updated,
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy in case it must be removed,
-     * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta)
-        external;
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
@@ -125,24 +107,17 @@ interface IStrategyManager {
      * @param strategies The Strategies to withdraw from
      * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
      * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
-     * @param undelegateIfPossible If this param is marked as 'true' *and the withdrawal will result in `msg.sender` having no shares in any Strategy,*
-     * then this function will also make an internal call to `undelegate(msg.sender)` to undelegate the `msg.sender`.
      * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
      * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
      * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
      * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
      * `stakerStrategyList` to lowest index
-     * @dev Note that if the withdrawal includes shares in the enshrined 'beaconChainETH' strategy, then it must *only* include shares in this strategy, and
-     * `withdrawer` must match the caller's address. The first condition is because slashing of queued withdrawals cannot be guaranteed 
-     * for Beacon Chain ETH (since we cannot trigger a withdrawal from the beacon chain through a smart contract) and the second condition is because shares in
-     * the enshrined 'beaconChainETH' strategy technically represent non-fungible positions (deposits to the Beacon Chain, each pointed at a specific EigenPod).
      */
     function queueWithdrawal(
         uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         external returns(bytes32);
         
@@ -185,58 +160,14 @@ interface IStrategyManager {
         external;
 
     /**
-     * @notice Slashes the shares of a 'frozen' operator (or a staker delegated to one)
-     * @param slashedAddress is the frozen address that is having its shares slashed
-     * @param recipient is the address that will receive the slashed funds, which could e.g. be a harmed party themself,
-     * or a MerkleDistributor-type contract that further sub-divides the slashed funds.
-     * @param strategies Strategies to slash
-     * @param shareAmounts The amount of shares to slash in each of the provided `strategies`
-     * @param tokens The tokens to use as input to the `withdraw` function of each of the provided `strategies`
-     * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
-     * for which `msg.sender` is withdrawing 100% of their shares
-     * @param recipient The slashed funds are withdrawn as tokens to this address.
-     * @dev strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
-     * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
-     * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
-     * `stakerStrategyList` to lowest index
-     */
-    function slashShares(
-        address slashedAddress,
-        address recipient,
-        IStrategy[] calldata strategies,
-        IERC20[] calldata tokens,
-        uint256[] calldata strategyIndexes,
-        uint256[] calldata shareAmounts
-    )
-        external;
-
-    /**
-     * @notice Slashes an existing queued withdrawal that was created by a 'frozen' operator (or a staker delegated to one)
-     * @param recipient The funds in the slashed withdrawal are withdrawn as tokens to this address.
-     * @param queuedWithdrawal The previously queued withdrawal to be slashed
-     * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `strategies`
-     * array of the `queuedWithdrawal`.
-     * @param indicesToSkip Optional input parameter -- indices in the `strategies` array to skip (i.e. not call the 'withdraw' function on). This input exists
-     * so that, e.g., if the slashed QueuedWithdrawal contains a malicious strategy in the `strategies` array which always reverts on calls to its 'withdraw' function,
-     * then the malicious strategy can be skipped (with the shares in effect "burned"), while the non-malicious strategies are still called as normal.
-     */
-    function slashQueuedWithdrawal(address recipient, QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256[] calldata indicesToSkip)
-        external;
-
-    /**
-     * @notice Called by a staker to undelegate entirely from EigenLayer. The staker must first withdraw all of their existing deposits
-     * (through use of the `queueWithdrawal` function), or else otherwise have never deposited in EigenLayer prior to delegating.
-     */
-    function undelegate() external;
-
-    /**
      * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
      * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
      * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
      * @param staker The staker to force-undelegate.
-     * @return The root of the newly queued withdrawal.
+     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
      */
-    function forceTotalWithdrawal(address staker) external returns (bytes32);
+    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32);
+
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
@@ -263,12 +194,13 @@ interface IStrategyManager {
     /// @notice Returns the single, central Slasher contract of EigenLayer
     function slasher() external view returns (ISlasher);
 
-    /// @notice returns the enshrined, virtual 'beaconChainETH' Strategy
-    function beaconChainETHStrategy() external view returns (IStrategy);
+    /// @notice Returns the EigenPodManager contract of EigenLayer
+    function eigenPodManager() external view returns (IEigenPodManager);
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     function numWithdrawalsQueued(address staker) external view returns (uint256);
+
 }

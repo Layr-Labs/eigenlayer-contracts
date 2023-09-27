@@ -29,7 +29,7 @@ import "../../contracts/interfaces/IBeaconChainOracle.sol";
  * - withdrawing eth when withdrawals are initiated
  */
 contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManager {
-    function getBeaconChainStateRoot(uint64 slot) external view returns(bytes32) {}
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32) {}
 
     function pause(uint256 newPausedStatus) external {}    
 
@@ -48,8 +48,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function ownerToPod(address podOwner) external view returns(IEigenPod) {}
 
 
-    //TODO: change this to constant in prod
-    IETHPOSDeposit internal immutable ethPOS;
+    IETHPOSDeposit public immutable ethPOS;
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
 
@@ -135,10 +134,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {
-        strategyManager.depositBeaconChainETH(podOwner, amount);
-        emit BeaconChainETHDeposited(podOwner, amount);
-    }
+    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {}
 
     /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
@@ -147,9 +143,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-     function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, int256 sharesDelta) external onlyEigenPod(podOwner) {
-        strategyManager.recordBeaconChainETHBalanceUpdate(podOwner, beaconChainETHStrategyIndex, sharesDelta);
-    }
+    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner){}
 
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
@@ -235,12 +229,30 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         return address(getPod(podOwner)).code.length > 0;
     }
 
-    function getBeaconChainStateRoot() external view returns(bytes32) {
-        // return beaconChainOracle.getBeaconChainStateRoot();
+    function getBlockRootAtTimestamp() external view returns(bytes32) {
+        // return beaconChainOracle.getBlockRootAtTimestamp();
     }
 
-    function decrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+    function podOwnerShares(address podOwner) external returns (uint256){
+        // return podOwner[podOwner];
+    }
 
-    function incrementWithdrawableRestakedExecutionLayerGwei(address podOwner, uint256 amountWei) external{}
+    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
 
+    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
+
+    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+
+    function beaconChainETHStrategy() external view returns (IStrategy){}
+
+    function podOwnerHasActiveShares(address staker) external view returns (bool) {}
+
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
+    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+
+    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
+    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
+
+    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
+    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }
