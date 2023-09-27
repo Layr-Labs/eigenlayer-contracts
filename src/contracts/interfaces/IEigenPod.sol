@@ -49,7 +49,7 @@ interface IEigenPod {
         VALIDATOR_STATUS status;
     }
 
-    /** 
+    /**
      * @notice struct used to store amounts related to proven withdrawals in memory. Used to help
      * manage stack depth and optimize the number of external calls, when batching withdrawal operations.
      */
