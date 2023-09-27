@@ -5,21 +5,15 @@
 | [`StrategyManager.sol`](../../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy |
 | [`StrategyBaseTVLLimits.sol`](../../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy |
 
-<!-- Technical details on the LST subsystem as it functions during M2. Includes:
-* StrategyManager
-* Strategies (cbETH, rETH, stETH)
-* LST restaking
-* Stake / withdrawal flows -->
-
 The primary function of the `StrategyManager` is to handle accounting for individual Stakers as they deposit and withdraw LSTs from their corresponding strategies. It is responsible for (i) allowing Stakers to deposit/withdraw LSTs into the corresponding strategy, (ii) managing a queue of Staker withdrawals with an associated withdrawal delay, and (iii) keeping the `DelegationManager` updated as Stakers' shares change during these two operations.
 
-As of M2, three LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`: cbETH, rETH, and stETH. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers.
+As of M2, three LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`: cbETH, rETH, and stETH. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see below).
 
 *Important state variables*:
 * `mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares`: Tracks the current balance a Staker holds in a given strategy. Updated on deposit/withdraw.
 * `mapping(address => IStrategy[]) public stakerStrategyList`: Maintains a list of the strategies a Staker holds a nonzero number of shares in.
     * Updated as needed when Stakers deposit and withdraw: if a Staker has a zero balance in a Strategy, it is removed from the list. Likewise, if a Staker deposits into a Strategy and did not previously have a balance, it is added to the list.
-* `mapping(bytes32 => bool) public withdrawalRootPending`: TODO
+* `mapping(bytes32 => bool) public withdrawalRootPending`: `QueuedWithdrawals` are hashed and set to `true` in this mapping when a withdrawal is initiated. The hash is set to false again when the withdrawal is completed. A per-staker nonce ensures that the same withdrawal cannot go through the queue twice.
 * `mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit`: The `strategyWhitelister` is (as of M2) a permissioned role that can be changed by the contract owner. The `strategyWhitelister` has currently whitelisted 3 `StrategyBaseTVLLimits` contracts in this mapping, one for each supported LST.
 
 *Helpful definitions*:
@@ -32,6 +26,8 @@ As of M2, three LSTs are supported and each has its own instance of `StrategyBas
 
 ### Stakers
 
+The following methods are called by Stakers as they (i) deposit LSTs into strategies to receive shares, (ii) initiate withdrawals of shares, and (iii) finalize withdrawals to receive either shares or tokens.
+
 #### `depositIntoStrategy`
 
 ```solidity
@@ -43,25 +39,23 @@ function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
     returns (uint256 shares)
 ```
 
-Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the three whitelisted `StrategyBaseTVLLimits` instances, and the `token` being deposited must correspond to that `strategy's` underlying token (cbETH, rETH, or stETH). 
+Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the three whitelisted `StrategyBaseTVLLimits` instances, and the `token` being deposited must correspond to that `strategy's` underlying token (cbETH, rETH, or stETH).
+
+The number of shares received is calculated by the `strategy` using an internal exchange rate that depends on the previous number of tokens deposited.
 
 If the Staker is delegated to an Operator, the Operator's delegated shares are increased in the `DelegationManager`.
 
 *Effects*:
 * `token.safeTransferFrom`: Transfers `amount` of `token` to `strategy` on behalf of the caller.
-* See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit): (TODO) `StrategyBaseTVLLimits` calculates an exchange rate based on its current token holdings and total share amount. The total share number is then increased, and the number of shares created is returned to the `StrategyManager`. Individual strategies do not track shares on a per-account basis; this is handled in `StrategyManager`.
+* See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 * `StrategyManager` awards the Staker with the newly-created shares 
 * See [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *Requirements*:
 * Pause status MUST NOT be set (`StrategyManager`): `PAUSED_DEPOSITS`
-* Caller MUST allow at least `amount` of `token` to be transferred by `StrategyManager`
+* Caller MUST allow at least `amount` of `token` to be transferred by `StrategyManager` to the strategy
 * `strategy` in question MUST be whitelisted for deposits. 
-* See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit): TODO
-    * Pause status MUST NOT be set (`StrategyBaseTVLLimits`): `PAUSED_DEPOSITS`
-    * `token` must be the correct `underlyingToken` used by `strategy` (i.e. cannot transfer rETH into the cbETH strategy)
-    * `amount` of `token` transferred must not put `strategy` above its configured deposit caps
-    * `shares` awarded on deposit must be nonzero
+* See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 
 *Unimplemented as of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
@@ -109,7 +103,7 @@ function queueWithdrawal(
     returns (bytes32)
 ```
 
-Allows a Staker to initiate a withdrawal of their held shares across any strategy. Multiple strategies can be included in this single withdrawal with specific share amounts for each strategy. The Staker may specify a `withdrawer` to receive the funds once the withdrawal is completed. Withdrawals are able to be completed after `withdrawalDelayBlocks` by calling `completeQueuedWithdrawal`.
+Allows a Staker to initiate a withdrawal of their held shares across any strategy. Multiple strategies can be included in this single withdrawal with specific share amounts for each strategy. The Staker must specify a `withdrawer` to receive the funds once the withdrawal is completed (although this can be the Staker itself). Withdrawals are able to be completed by calling `completeQueuedWithdrawal` after sufficient time passes (`withdrawalDelayBlocks`).
 
 Before queueing the withdrawal, this method removes the specified shares from the Staker's `StrategyManager` balances and updates the `DelegationManager` via `decreaseDelegatedShares`. If the Staker is delegated to an Operator, this will remove the shares from the Operator's delegated share balances.
 
@@ -129,7 +123,6 @@ Note that at no point during `queueWithdrawal` are the corresponding `StrategyBa
 * `strategyIndexes.length` MUST be at least equal to `strategies.length`
 * The Staker MUST have sufficient share balances in the specified strategies
 * The `withdrawer` MUST NOT be 0
-* 
 
 *Unimplemented as of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
@@ -189,6 +182,8 @@ This method is a looped version of `completeQueuedWithdrawal` that allows a `wit
 
 ### DelegationManager
 
+These methods are callable ONLY by the `DelegationManager`:
+
 #### `forceTotalWithdrawal`
 
 ```solidity
@@ -218,14 +213,6 @@ The strategies and shares removed from the Staker are returned to the `Delegatio
 *Unimplemented as of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
-### StrategyBaseTVLLimits
-
-`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file.
-
-#### `StrategyBaseTVLLimits.deposit`
-
-#### `StrategyBaseTVLLimits.withdraw`
-
 ### Operator
 
 #### `setWithdrawalDelayBlocks`
@@ -234,9 +221,14 @@ The strategies and shares removed from the Staker are returned to the `Delegatio
 function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner
 ```
 
+Allows the `owner` to update the number of blocks that must pass before a withdrawal can be completed.
+
 *Effects*:
+* Updates `StrategyManager.withdrawalDelayBlocks`
 
 *Requirements*:
+* Caller MUST be the `owner`
+* `_withdrawalDelayBlocks` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS` (50400)
 
 #### `setStrategyWhitelister`
 
@@ -244,9 +236,13 @@ function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyO
 function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner
 ```
 
+Allows the `owner` to update the Strategy Whitelister address.
+
 *Effects*:
+* Updates `StrategyManager.strategyWhitelister`
 
 *Requirements*:
+* Caller MUST be the `owner`
 
 ### Strategy Whitelister
 
@@ -256,9 +252,13 @@ function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwn
 function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister
 ```
 
+Allows the Strategy Whitelister address to add any number of strategies to the `StrategyManager` whitelist. Strategies on the whitelist are eligible for deposit via `depositIntoStrategy`.
+
 *Effects*:
+* Adds entries to `StrategyManager.strategyIsWhitelistedForDeposit`
 
 *Requirements*:
+* Caller MUST be the `strategyWhitelister`
 
 #### `removeStrategiesFromDepositWhitelist`
 
@@ -266,6 +266,73 @@ function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitel
 function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister
 ```
 
+Allows the Strategy Whitelister address to remove any number of strategies from the `StrategyManager` whitelist. The removed strategies will no longer be eligible for deposit via `depositIntoStrategy`. However, withdrawals for previously-whitelisted strategies may still be initiated and completed, as long as the Staker has shares to withdraw.
+
 *Effects*:
+* Removes entries from `StrategyManager.strategyIsWhitelistedForDeposit`
 
 *Requirements*:
+* Caller MUST be the `strategyWhitelister`
+
+---
+
+### StrategyBaseTVLLimits
+
+`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file.
+
+#### `StrategyBaseTVLLimits.deposit`
+
+```solidity
+function deposit(IERC20 token, uint256 amount)
+    external
+    onlyWhenNotPaused(PAUSED_DEPOSITS)
+    onlyStrategyManager
+    returns (uint256 newShares)
+```
+
+The `StrategyManager` calls this method when Stakers deposit LSTs into a strategy. At the time this method is called, the tokens have already been transferred to the strategy. The role of this method is to (i) calculate the number of shares the deposited tokens represent according to the exchange rate, and (ii) add the new shares to the strategy's recorded total shares.
+
+The new shares created are returned to the `StrategyManager` to be added to the Staker's strategy share balance.
+
+*Entry Points*:
+* `StrategyManager.depositIntoStrategy`
+* `StrategyManager.depositIntoStrategyWithSignature`
+
+*Effects*:
+* `StrategyBaseTVLLimits.totalShares` is increased to account for the new shares created by the deposit
+
+*Requirements*:
+* Caller MUST be the `StrategyManager`
+* Pause status MUST NOT be set: `PAUSED_DEPOSITS`
+* The passed-in `token` MUST match the strategy's `underlyingToken`
+* The token amount being deposited MUST NOT exceed the per-deposit cap
+* After deposit, the strategy's current token balance MUST NOT exceed the total-deposit cap
+* When converted to shares via the strategy's exchange rate, the `amount` of `token` deposited MUST represent at least 1 new share for the depositor
+
+#### `StrategyBaseTVLLimits.withdraw`
+
+```solidity
+function withdraw(address depositor, IERC20 token, uint256 amountShares)
+    external
+    onlyWhenNotPaused(PAUSED_WITHDRAWALS)
+    onlyStrategyManager
+```
+
+The `StrategyManager` calls this method when a queued withdrawal from a strategy is completed, assuming the withdrawer specifies they would like to receive the withdrawal as tokens (see `completeQueuedWithdrawal`). 
+
+This method converts the withdrawal shares back into tokens using the strategy's exchange rate. The strategy's total shares are decreased to reflect the withdrawal before transferring the tokens to the withdrawer.
+
+*Entry Points*:
+* `StrategyManager.completeQueuedWithdrawal`
+* `StrategyManager.completeQueuedWithdrawals`
+
+*Effects*:
+* `StrategyBaseTVLLimits.totalShares` is decreased to account for the shares being withdrawn
+* `underlyingToken.safeTransfer` is called to transfer the tokens to the withdrawer
+
+*Requirements*:
+* Caller MUST be the `StrategyManager`
+* Pause status MUST NOT be set: `PAUSED_WITHDRAWALS`
+* The passed-in `token` MUST match the strategy's `underlyingToken`
+* The `amountShares` being withdrawn MUST NOT exceed the `totalShares` in the strategy
+* The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
