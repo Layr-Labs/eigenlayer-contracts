@@ -26,9 +26,12 @@ contract StrategyBaseTVLLimits is StrategyBase {
     // solhint-disable-next-line no-empty-blocks
     constructor(IStrategyManager _strategyManager) StrategyBase(_strategyManager) {}
 
-    function initialize(uint256 _maxPerDeposit, uint256 _maxTotalDeposits, IERC20 _underlyingToken, IPauserRegistry _pauserRegistry)
-        public virtual initializer
-    {
+    function initialize(
+        uint256 _maxPerDeposit,
+        uint256 _maxTotalDeposits,
+        IERC20 _underlyingToken,
+        IPauserRegistry _pauserRegistry
+    ) public virtual initializer {
         _setTVLLimits(_maxPerDeposit, _maxTotalDeposits);
         _initializeStrategyBase(_underlyingToken, _pauserRegistry);
     }
@@ -53,7 +56,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
     function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
         emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
-        require(newMaxPerDeposit <= newMaxTotalDeposits, "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits");
+        require(
+            newMaxPerDeposit <= newMaxTotalDeposits,
+            "StrategyBaseTVLLimits._setTVLLimits: maxPerDeposit exceeds maxTotalDeposits"
+        );
         maxPerDeposit = newMaxPerDeposit;
         maxTotalDeposits = newMaxTotalDeposits;
     }

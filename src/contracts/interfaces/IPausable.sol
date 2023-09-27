@@ -22,7 +22,7 @@ import "../interfaces/IPauserRegistry.sol";
 
 interface IPausable {
     /// @notice Address of the `PauserRegistry` contract that this contract defers to for determining access control (for pausing).
-    function pauserRegistry() external view returns (IPauserRegistry); 
+    function pauserRegistry() external view returns (IPauserRegistry);
 
     /**
      * @notice This function is used to pause an EigenLayer contract's functionality.

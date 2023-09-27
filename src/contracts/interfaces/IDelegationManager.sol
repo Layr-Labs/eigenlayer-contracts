@@ -106,17 +106,20 @@ interface IDelegationManager {
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
-     * 
+     *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
-    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external;
+    function registerAsOperator(
+        OperatorDetails calldata registeringOperatorDetails,
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Updates an operator's stored `OperatorDetails`.
      * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-     * 
+     *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
@@ -136,12 +139,16 @@ interface IDelegationManager {
      * @dev The approverSignatureAndExpiry is used in the event that:
      *          1) the operator's `delegationApprover` address is set to a non-zero value.
      *                  AND
-     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator 
+     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator
      *             or their delegationApprover is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
      */
-    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) external;
+    function delegateTo(
+        address operator,
+        SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt
+    ) external;
 
     /**
      * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
@@ -185,7 +192,7 @@ interface IDelegationManager {
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param shares The number of shares to increase.
-     * 
+     *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
@@ -196,11 +203,15 @@ interface IDelegationManager {
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
-     * 
+     *
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares) external;
+    function decreaseDelegatedShares(
+        address staker,
+        IStrategy[] calldata strategies,
+        uint256[] calldata shares
+    ) external;
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
@@ -214,19 +225,19 @@ interface IDelegationManager {
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory);
 
-    /* 
+    /*
      * @notice Returns the earnings receiver address for an operator
      */
     function earningsReceiver(address operator) external view returns (address);
 
-    /** 
-      * @notice Returns the delegationApprover account for an operator
-      */
+    /**
+     * @notice Returns the delegationApprover account for an operator
+     */
     function delegationApprover(address operator) external view returns (address);
 
     /**
-      * @notice Returns the stakerOptOutWindowBlocks for an operator
-      */
+     * @notice Returns the stakerOptOutWindowBlocks for an operator
+     */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
 
     /**
@@ -236,13 +247,13 @@ interface IDelegationManager {
     function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
 
     /**
-      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
-      */
+     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     */
     function isDelegated(address staker) external view returns (bool);
 
     /**
-      * @notice Returns true is an operator has previously registered for delegation.
-      */
+     * @notice Returns true is an operator has previously registered for delegation.
+     */
     function isOperator(address operator) external view returns (bool);
 
     /// @notice Mapping: staker => number of signed delegation nonces (used in `delegateToBySignature`) from the staker that the contract has already checked
@@ -261,7 +272,11 @@ interface IDelegationManager {
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32);
+    function calculateCurrentStakerDelegationDigestHash(
+        address staker,
+        address operator,
+        uint256 expiry
+    ) external view returns (bytes32);
 
     /**
      * @notice Calculates the digest hash to be signed and used in the `delegateToBySignature` function
@@ -270,7 +285,12 @@ interface IDelegationManager {
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) external view returns (bytes32);
+    function calculateStakerDelegationDigestHash(
+        address staker,
+        uint256 _stakerNonce,
+        address operator,
+        uint256 expiry
+    ) external view returns (bytes32);
 
     /**
      * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.

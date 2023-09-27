@@ -16,7 +16,6 @@ import "../libraries/BN254.sol";
  * - updating the stakes of the operator
  */
 contract BLSRegistry is RegistryBase, IBLSRegistry {
-
     // Hash of the zero public key
     bytes32 internal constant ZERO_PK_HASH = hex"012893657d8eb2efad4de0a91bcd0e39ad9837745dec3ea923737ea803fc8e3d";
 
@@ -37,7 +36,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
 
     /// @notice the address that can whitelist people
     address public operatorWhitelister;
-    /// @notice toggle of whether the operator whitelist is on or off 
+    /// @notice toggle of whether the operator whitelist is on or off
     bool public operatorWhitelistEnabled;
     /// @notice operator => are they whitelisted (can they register with the middleware)
     mapping(address => bool) public whitelisted;
@@ -64,7 +63,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     event OperatorWhitelisterTransferred(address previousAddress, address newAddress);
 
     /// @notice Modifier that restricts a function to only be callable by the `whitelister` role.
-    modifier onlyOperatorWhitelister{
+    modifier onlyOperatorWhitelister() {
         require(operatorWhitelister == msg.sender, "BLSRegistry.onlyOperatorWhitelister: not operatorWhitelister");
         _;
     }
@@ -74,13 +73,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         IServiceManager _serviceManager,
         uint8 _NUMBER_OF_QUORUMS,
         IBLSPublicKeyCompendium _pubkeyCompendium
-    )
-        RegistryBase(
-            _strategyManager,
-            _serviceManager,
-            _NUMBER_OF_QUORUMS
-        )
-    {
+    ) RegistryBase(_strategyManager, _serviceManager, _NUMBER_OF_QUORUMS) {
         //set compendium
         pubkeyCompendium = _pubkeyCompendium;
     }
@@ -105,7 +98,7 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     }
 
     /**
-     * @notice Called by the service manager owner to transfer the whitelister role to another address 
+     * @notice Called by the service manager owner to transfer the whitelister role to another address
      */
     function setOperatorWhitelister(address _operatorWhitelister) external onlyServiceManagerOwner {
         _setOperatorWhitelister(_operatorWhitelister);
@@ -155,10 +148,13 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
      * @param pk is the operator's G1 public key
      * @param socket is the socket address of the operator
      */
-    function _registerOperator(address operator, uint8 operatorType, BN254.G1Point memory pk, string calldata socket)
-        internal
-    {
-        if(operatorWhitelistEnabled) {
+    function _registerOperator(
+        address operator,
+        uint8 operatorType,
+        BN254.G1Point memory pk,
+        string calldata socket
+    ) internal {
+        if (operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
 
@@ -169,7 +165,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         bytes32 pubkeyHash = BN254.hashG1Point(pk);
 
         require(pubkeyHash != ZERO_PK_HASH, "BLSRegistry._registerOperator: Cannot register with 0x0 public key");
-
 
         require(
             pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,
@@ -208,7 +203,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         // verify that the `operator` is an active operator and that they've provided the correct `index`
         _deregistrationCheck(operator, index);
 
-
         /// @dev Fetch operator's stored pubkeyHash
         bytes32 pubkeyHash = registry[operator].pubkeyHash;
         /// @dev Verify that the stored pubkeyHash matches the 'pubkeyToRemoveAff' input
@@ -240,9 +234,12 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         bytes32 pubkeyHash;
         uint256 operatorsLength = operators.length;
         // make sure lengths are consistent
-        require(operatorsLength == prevElements.length, "BLSRegistry.updateStakes: prevElement is not the same length as operators");
+        require(
+            operatorsLength == prevElements.length,
+            "BLSRegistry.updateStakes: prevElement is not the same length as operators"
+        );
         // iterating over all the tuples that are to be updated
-        for (uint256 i = 0; i < operatorsLength;) {
+        for (uint256 i = 0; i < operatorsLength; ) {
             // get operator's pubkeyHash
             pubkeyHash = registry[operators[i]].pubkeyHash;
             // fetch operator's existing stakes
@@ -337,16 +334,16 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         bytes32 newApkHash = BN254.hashG1Point(newApk);
 
         // store the apk hash and the current block number in which the aggregated pubkey is being updated
-        _apkUpdates.push(ApkUpdate({
-            apkHash: newApkHash,
-            blockNumber: uint32(block.number)
-        }));
+        _apkUpdates.push(ApkUpdate({apkHash: newApkHash, blockNumber: uint32(block.number)}));
 
         return newApkHash;
     }
 
     function _setOperatorWhitelister(address _operatorWhitelister) internal {
-        require(_operatorWhitelister != address(0), "BLSRegistry.initialize: cannot set operatorWhitelister to zero address");
+        require(
+            _operatorWhitelister != address(0),
+            "BLSRegistry.initialize: cannot set operatorWhitelister to zero address"
+        );
         emit OperatorWhitelisterTransferred(operatorWhitelister, _operatorWhitelister);
         operatorWhitelister = _operatorWhitelister;
     }
@@ -362,7 +359,10 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
         // if not last update
         if (index != _apkUpdates.length - 1) {
             // check that there was not *another APK update* that occurred at or before `blockNumber`
-            require(blockNumber < _apkUpdates[index + 1].blockNumber, "BLSRegistry.getCorrectApkHash: Not latest valid apk update");
+            require(
+                blockNumber < _apkUpdates[index + 1].blockNumber,
+                "BLSRegistry.getCorrectApkHash: Not latest valid apk update"
+            );
         }
 
         return _apkUpdates[index].apkHash;

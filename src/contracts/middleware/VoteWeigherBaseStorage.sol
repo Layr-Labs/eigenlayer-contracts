@@ -34,7 +34,7 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
-    
+
     /// @notice The address of the StrategyManager contract for EigenLayer.
     IStrategyManager public immutable strategyManager;
 
@@ -59,11 +59,7 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
      */
     mapping(uint256 => uint256) public quorumBips;
 
-    constructor(
-        IStrategyManager _strategyManager,
-        IServiceManager _serviceManager,
-        uint8 _NUMBER_OF_QUORUMS
-    ) {
+    constructor(IStrategyManager _strategyManager, IServiceManager _serviceManager, uint8 _NUMBER_OF_QUORUMS) {
         // sanity check that the VoteWeigher is being initialized with at least 1 quorum
         require(_NUMBER_OF_QUORUMS != 0, "VoteWeigherBaseStorage.constructor: _NUMBER_OF_QUORUMS == 0");
         strategyManager = _strategyManager;

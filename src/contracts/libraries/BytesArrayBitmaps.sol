@@ -23,8 +23,10 @@ library BytesArrayBitmaps {
      */
     function bytesArrayToBitmap(bytes calldata bytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long");
+        require(
+            bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
+            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long"
+        );
 
         // return empty bitmap early if length of array is 0
         if (bytesArray.length == 0) {
@@ -62,8 +64,10 @@ library BytesArrayBitmaps {
      */
     function orderedBytesArrayToBitmap(bytes calldata orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+        require(
+            orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
+            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long"
+        );
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -101,8 +105,10 @@ library BytesArrayBitmaps {
      */
     function orderedBytesArrayToBitmap_Yul(bytes calldata orderedBytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+        require(
+            orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
+            "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is too long"
+        );
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -111,38 +117,29 @@ library BytesArrayBitmaps {
 
         assembly {
             // get first entry in bitmap (single byte => single-bit mask)
-            let bitmap :=
-                shl(
+            let bitmap := shl(
+                // extract single byte to get the correct value for the left shift
+                shr(248, calldataload(orderedBytesArray.offset)),
+                1
+            )
+            // loop through other entries (byte by byte)
+            for {
+                let i := 1
+            } lt(i, orderedBytesArray.length) {
+                i := add(i, 1)
+            } {
+                // first construct the single-bit mask by left-shifting a '1'
+                let bitMask := shl(
                     // extract single byte to get the correct value for the left shift
-                    shr(
-                        248,
-                        calldataload(
-                            orderedBytesArray.offset
-                        )
-                    ),
+                    shr(248, calldataload(add(orderedBytesArray.offset, i))),
                     1
                 )
-            // loop through other entries (byte by byte)
-            for { let i := 1 } lt(i, orderedBytesArray.length) { i := add(i, 1) } {
-                // first construct the single-bit mask by left-shifting a '1'
-                let bitMask := 
-                    shl(
-                        // extract single byte to get the correct value for the left shift
-                        shr(
-                            248,
-                            calldataload(
-                                add(
-                                    orderedBytesArray.offset,
-                                    i
-                                )
-                            )
-                        ),
-                        1
-                    )
                 // check strictly ascending ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
                 // TODO: revert with a good message instead of using `revert(0, 0)`
                 // REFERENCE: require(bitMask > bitmap, "BytesArrayBitmaps.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
-                if iszero(gt(bitMask, bitmap)) { revert(0, 0) }
+                if iszero(gt(bitMask, bitmap)) {
+                    revert(0, 0)
+                }
                 // update the bitmap by adding the single bit in the mask
                 bitmap := or(bitmap, bitMask)
             }
@@ -162,8 +159,10 @@ library BytesArrayBitmaps {
      */
     function bytesArrayToBitmap_Yul(bytes calldata bytesArray) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long");
+        require(
+            bytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
+            "BytesArrayBitmaps.bytesArrayToBitmap: bytesArray is too long"
+        );
 
         // return empty bitmap early if length of array is 0
         if (bytesArray.length == 0) {
@@ -172,38 +171,29 @@ library BytesArrayBitmaps {
 
         assembly {
             // get first entry in bitmap (single byte => single-bit mask)
-            let bitmap :=
-                shl(
+            let bitmap := shl(
+                // extract single byte to get the correct value for the left shift
+                shr(248, calldataload(bytesArray.offset)),
+                1
+            )
+            // loop through other entries (byte by byte)
+            for {
+                let i := 1
+            } lt(i, bytesArray.length) {
+                i := add(i, 1)
+            } {
+                // first construct the single-bit mask by left-shifting a '1'
+                let bitMask := shl(
                     // extract single byte to get the correct value for the left shift
-                    shr(
-                        248,
-                        calldataload(
-                            bytesArray.offset
-                        )
-                    ),
+                    shr(248, calldataload(add(bytesArray.offset, i))),
                     1
                 )
-            // loop through other entries (byte by byte)
-            for { let i := 1 } lt(i, bytesArray.length) { i := add(i, 1) } {
-                // first construct the single-bit mask by left-shifting a '1'
-                let bitMask := 
-                    shl(
-                        // extract single byte to get the correct value for the left shift
-                        shr(
-                            248,
-                            calldataload(
-                                add(
-                                    bytesArray.offset,
-                                    i
-                                )
-                            )
-                        ),
-                        1
-                    )
                 // check against duplicates by comparing the bitmask and bitmap (revert if the bitmap already contains the entry, i.e. bitmap & bitMask != 0)
                 // TODO: revert with a good message instead of using `revert(0, 0)`
                 // REFERENCE: require(bitmap & bitMask == 0, "BytesArrayBitmaps.bytesArrayToBitmap: repeat entry in bytesArray");
-                if gt(and(bitmap, bitMask), 0) { revert(0, 0) }
+                if gt(and(bitmap, bitMask), 0) {
+                    revert(0, 0)
+                }
                 // update the bitmap by adding the single bit in the mask
                 bitmap := or(bitmap, bitMask)
             }

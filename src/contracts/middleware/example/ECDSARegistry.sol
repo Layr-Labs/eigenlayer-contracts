@@ -13,10 +13,9 @@ import "../RegistryBase.sol";
  * - updating the stakes of the operator
  */
 contract ECDSARegistry is RegistryBase {
-
     /// @notice the address that can whitelist people
     address public operatorWhitelister;
-    /// @notice toggle of whether the operator whitelist is on or off 
+    /// @notice toggle of whether the operator whitelist is on or off
     bool public operatorWhitelistEnabled;
     /// @notice operator => are they whitelisted (can they register with the middleware)
     mapping(address => bool) public whitelisted;
@@ -27,16 +26,13 @@ contract ECDSARegistry is RegistryBase {
      * @param operator Address of the new operator
      * @param socket The ip:port of the operator
      */
-    event Registration(
-        address indexed operator,
-        string socket
-    );
+    event Registration(address indexed operator, string socket);
 
     /// @notice Emitted when the `operatorWhitelister` role is transferred.
     event OperatorWhitelisterTransferred(address previousAddress, address newAddress);
 
     /// @notice Modifier that restricts a function to only be callable by the `whitelister` role.
-    modifier onlyOperatorWhitelister {
+    modifier onlyOperatorWhitelister() {
         require(operatorWhitelister == msg.sender, "BLSRegistry.onlyOperatorWhitelister: not operatorWhitelister");
         _;
     }
@@ -51,7 +47,9 @@ contract ECDSARegistry is RegistryBase {
             1 // set the number of quorums to 1
         )
     // solhint-disable-next-line no-empty-blocks
-    {}
+    {
+
+    }
 
     /// @notice Initialize whitelister and the quorum strategies + multipliers.
     function initialize(
@@ -71,7 +69,7 @@ contract ECDSARegistry is RegistryBase {
     }
 
     /**
-     * @notice Called by the service manager owner to transfer the whitelister role to another address 
+     * @notice Called by the service manager owner to transfer the whitelister role to another address
      */
     function setOperatorWhitelister(address _operatorWhitelister) external onlyServiceManagerOwner {
         _setOperatorWhitelister(_operatorWhitelister);
@@ -104,6 +102,7 @@ contract ECDSARegistry is RegistryBase {
             whitelisted[operators[i]] = false;
         }
     }
+
     /**
      * @notice called for registering as an operator
      * @param socket is the socket address of the operator
@@ -116,10 +115,8 @@ contract ECDSARegistry is RegistryBase {
      * @param operator is the node who is registering to be a operator
      * @param socket is the socket address of the operator
      */
-    function _registerOperator(address operator, string calldata socket)
-        internal
-    {
-        if(operatorWhitelistEnabled) {
+    function _registerOperator(address operator, string calldata socket) internal {
+        if (operatorWhitelistEnabled) {
             require(whitelisted[operator], "BLSRegistry._registerOperator: not whitelisted");
         }
 
@@ -168,9 +165,12 @@ contract ECDSARegistry is RegistryBase {
         bytes32 pubkeyHash;
         uint256 operatorsLength = operators.length;
         // make sure lengths are consistent
-        require(operatorsLength == prevElements.length, "BLSRegistry.updateStakes: prevElement is not the same length as operators");
+        require(
+            operatorsLength == prevElements.length,
+            "BLSRegistry.updateStakes: prevElement is not the same length as operators"
+        );
         // iterating over all the tuples that are to be updated
-        for (uint256 i = 0; i < operatorsLength;) {
+        for (uint256 i = 0; i < operatorsLength; ) {
             // get operator's pubkeyHash
             pubkeyHash = bytes32(uint256(uint160(operators[i])));
             // fetch operator's existing stakes
@@ -196,7 +196,10 @@ contract ECDSARegistry is RegistryBase {
     }
 
     function _setOperatorWhitelister(address _operatorWhitelister) internal {
-        require(_operatorWhitelister != address(0), "BLSRegistry.initialize: cannot set operatorWhitelister to zero address");
+        require(
+            _operatorWhitelister != address(0),
+            "BLSRegistry.initialize: cannot set operatorWhitelister to zero address"
+        );
         emit OperatorWhitelisterTransferred(operatorWhitelister, _operatorWhitelister);
         operatorWhitelister = _operatorWhitelister;
     }
