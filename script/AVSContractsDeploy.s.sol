@@ -238,7 +238,8 @@ contract EigenLayerDeploy is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(
             strategyManager,
-            slasher
+            slasher,
+            eigenPodManager
         );
         strategyManagerImplementation = new StrategyManager(
             delegation,
@@ -250,7 +251,8 @@ contract EigenLayerDeploy is Script, Test {
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher
+            slasher,
+            delegation
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(
             eigenPodManager

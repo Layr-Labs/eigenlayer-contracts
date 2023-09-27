@@ -25,7 +25,7 @@ import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../mocks/OwnableMock.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/BLSPublicKeyCompendiumMock.sol";
 import "../mocks/EmptyContract.sol";
@@ -62,7 +62,7 @@ contract MockAVSDeployer is Test {
 
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
@@ -119,7 +119,7 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        delegationMock = new DelegationMock();
+        delegationMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
