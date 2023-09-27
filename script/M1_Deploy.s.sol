@@ -77,6 +77,9 @@ contract Deployer_M1 is Script, Test {
 
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
+    uint256 MAX_VALIDATOR_BALANCE_GWEI;
+    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
+    uint64 GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -110,6 +113,8 @@ contract Deployer_M1 is Script, Test {
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
         REQUIRED_BALANCE_WEI = stdJson.readUint(config_data, ".eigenPod.REQUIRED_BALANCE_WEI");
+        MAX_VALIDATOR_BALANCE_GWEI = stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI");
+        EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI = stdJson.readUint(config_data, ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI");
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -171,16 +176,17 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            REQUIRED_BALANCE_WEI
+            uint64(MAX_VALIDATOR_BALANCE_GWEI),
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationImplementation = new DelegationManager(strategyManager, slasher);
+        delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -434,8 +440,6 @@ contract Deployer_M1 is Script, Test {
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 REQUIRED_BALANCE_WEI = 31 ether;
-        require(eigenPodImplementation.REQUIRED_BALANCE_WEI() == 31 ether,
-            "eigenPod: REQUIRED_BALANCE_WEI initialized incorrectly");
 
         require(strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly");

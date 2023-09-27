@@ -41,13 +41,25 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
 ## Integration with EigenLayer Contracts:
 In this section, we will explain various API interfaces that EigenLayer provides which are essential for AVSs to integrate with EigenLayer. 
 
-### *Opting into AVS*
+### *Operators Opting into AVS*
 In order for any EigenLayer operator to be able to opt-in to an AVS, EigenLayer provides two interfaces: `optIntoSlashing(..)` and `recordFirstStakeUpdate(..)`. The sequential flow for opting into an AVS using these functions is as follows:
 1. The operator first opts into slashing by calling  `Slasher.optIntoSlashing(..)`, where it has to specify the address of the AVS's ServiceManager contract in the argument. This step results in the operator giving permission to the AVS's ServiceManager contract to slash the operator via EigenLayer, if the operator is ever proven to have engaged in adversarial behavior while responding to the AVS's task. A successful call to  `Slasher.optIntoSlashing(..)` emits the `OptedIntoSlashing(..)` event.
 2. Next, the operator needs to register with the AVS on chain via an AVS-specific registry contract (see [this][middleware-guide-link] section for examples). To integrate with EigenLayer, the AVS's Registry contract provides a registration endpoint that calls on the AVS's `ServiceManager.recordFirstStakeUpdate(..)` which in turn calls `Slasher.recordFirstStakeUpdate(..)`. On successful execution of this function call, the event `MiddlewareTimesAdded(..)` is emitted and the operator has to start serving the tasks from the AVS.
 
 The following figure illustrates the above flow: 
 ![Operator opting-in](./images/operator_opting.png)
+
+### *Staker Delegation to an Operator: Which Opts-In to AVSs*
+
+A staker does not restake into AVSs. A staker delegates to an operator and it is the operator that registers for new AVSs (with the staker having option to opt-out).
+
+By delegating to a specific operator, stakers are implicitly agreeing to the AVSs they support. If desired, operators can pursue off-chain consensus with stakers prior to modifying their AVSs. Moreover, stakers will have a grace period to withdraw their delegation should an operator introduce an AVS that doesn't align with their objectives. This grace period is configurable on an operator level.
+
+### *AVS Visibility and Control*
+
+An AVS registration function can blacklist another AVS contract and during registration check that the operator is not registered in that AVS. Or it can check that the operator has not given permission to that AVS's service manager to slash it.
+
+An AVS registry contract should define quorums (eth LST quorum, erc20 quorum, etc.) and allow (or prefer) operators having a minimum amount of restaked assets in each of those quorums to register with the AVS.
 
 ### *Recording Stake Updates*
 EigenLayer is a dynamic system where stakers and operators are constantly adjusting amounts of stake delegated via the system. It is therefore imperative for an AVS to be aware of any changes to stake delegated to its operators. In order to facilitate this, EigenLayer offers the `Slasher.recordStakeUpdate(..)`.

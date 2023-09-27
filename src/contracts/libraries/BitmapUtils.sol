@@ -12,7 +12,7 @@ library BitmapUtils {
      * If the array length exceeds 256, then it's impossible for all entries to be unique.
      * This constant captures the max allowed array length (inclusive, i.e. 256 is allowed).
      */
-    uint256 constant MAX_BYTE_ARRAY_LENGTH = 256;
+    uint256 internal constant MAX_BYTE_ARRAY_LENGTH = 256;
 
     /**
      * @notice Converts an array of bytes into a bitmap.
@@ -36,7 +36,7 @@ library BitmapUtils {
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
 
-        // perform the 0-th loop iteration with the ordering check *omitted* (since it is unnecessary / will always pass)
+        // perform the 0-th loop iteration with the duplicate check *omitted* (since it is unnecessary / will always pass)
         // construct a single-bit mask from the numerical value of the 0th byte of the array, and immediately add it to the bitmap
         bitmap = uint256(1 << uint8(bytesArray[0]));
 

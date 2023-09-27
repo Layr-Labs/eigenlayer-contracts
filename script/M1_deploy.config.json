@@ -37,13 +37,15 @@
      "eigenPod":
           {
                "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-               "REQUIRED_BALANCE_WEI": "31000000000000000000"
+               "REQUIRED_BALANCE_WEI": "31000000000000000000",
+               "MAX_VALIDATOR_BALANCE_GWEI": "32000000000",
+               "EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI": "750000000"
           },
-     "eigenPodManager":
-          {    
-               "max_pods": 0,
-               "init_paused_status": 30
-          },
+          "eigenPodManager":
+               {    
+                    "max_pods": 0,
+                    "init_paused_status": 30
+               },
      "delayedWithdrawalRouter":
           {
                "init_paused_status": 0,

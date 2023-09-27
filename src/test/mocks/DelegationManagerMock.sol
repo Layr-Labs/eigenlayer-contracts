@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 
 
-contract DelegationMock is IDelegationManager, Test {
+contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
@@ -24,7 +24,7 @@ contract DelegationMock is IDelegationManager, Test {
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
-    function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/) external {
+    function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
         delegatedTo[msg.sender] = operator;
     }
 
@@ -34,14 +34,14 @@ contract DelegationMock is IDelegationManager, Test {
         address /*staker*/,
         address /*operator*/,
         SignatureWithExpiry memory /*stakerSignatureAndExpiry*/,
-        SignatureWithExpiry memory /*approverSignatureAndExpiry*/
+        SignatureWithExpiry memory /*approverSignatureAndExpiry*/,
+        bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external {
+    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
         delegatedTo[staker] = address(0);
+        return withdrawalRoot;
     }
-
-    function forceUndelegation(address /*staker*/) external pure returns (bytes32) {}
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
@@ -78,19 +78,17 @@ contract DelegationMock is IDelegationManager, Test {
 
     function stakerNonce(address /*staker*/) external pure returns (uint256) {}
 
-    function delegationApproverNonce(address /*operator*/) external pure returns (uint256) {}
+    function delegationApproverSaltIsSpent(address /*delegationApprover*/, bytes32 /*salt*/) external pure returns (bool) {}
 
     function calculateCurrentStakerDelegationDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external view returns (bytes32) {}
 
     function calculateStakerDelegationDigestHash(address /*staker*/, uint256 /*stakerNonce*/, address /*operator*/, uint256 /*expiry*/) external view returns (bytes32) {}
 
-    function calculateCurrentDelegationApprovalDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external view returns (bytes32) {}
-
     function calculateDelegationApprovalDigestHash(
         address /*staker*/,
         address /*operator*/,
         address /*_delegationApprover*/,
-        uint256 /*approverNonce*/,
+        bytes32 /*approverSalt*/,
         uint256 /*expiry*/
     ) external view returns (bytes32) {}
 

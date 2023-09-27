@@ -26,6 +26,4 @@ contract BLSRegistryCoordinatorWithIndicesHarness is BLSRegistryCoordinatorWithI
             quorumBitmap: quorumBitmap
         }));
     }
-
-    
 }

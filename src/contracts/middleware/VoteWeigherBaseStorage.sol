@@ -63,5 +63,6 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
         _disableInitializers();
     }
 
-    uint256[50] private __GAP;
+    // storage gap for upgradeability
+    uint256[47] private __GAP;
 }

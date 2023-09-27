@@ -49,6 +49,13 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         uint256[] memory nonSignerPrivateKeys = new uint256[](numNonSigners);
         for (uint i = 0; i < numNonSigners; i++) {
             nonSignerPrivateKeys[i] = uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
+            uint256 j = 0;
+            if(i != 0) {
+                while(BN254.generatorG1().scalar_mul(nonSignerPrivateKeys[i]).hashG1Point() <= BN254.generatorG1().scalar_mul(nonSignerPrivateKeys[i-1]).hashG1Point()){
+                    nonSignerPrivateKeys[i] = uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, j))) % BN254.FR_MODULUS;
+                    j++;
+                }
+            }
         }
 
         return (signerPrivateKeys, nonSignerPrivateKeys);

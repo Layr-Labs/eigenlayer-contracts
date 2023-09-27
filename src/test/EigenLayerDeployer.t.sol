@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../contracts/interfaces/IDelegationManager.sol";
 import "../contracts/core/DelegationManager.sol";
+import "../contracts/middleware/StakeRegistry.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 import "../contracts/interfaces/IBeaconChainOracle.sol";
@@ -21,7 +22,6 @@ import "../contracts/core/Slasher.sol";
 import "../contracts/pods/EigenPod.sol";
 import "../contracts/pods/EigenPodManager.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
-import "../contracts/pods/BeaconChainOracle.sol";
 
 import "../contracts/permissions/PauserRegistry.sol";
 
@@ -31,6 +31,7 @@ import "./utils/Operators.sol";
 import "./mocks/LiquidStakingToken.sol";
 import "./mocks/EmptyContract.sol";
 import "./mocks/ETHDepositMock.sol";
+import "./mocks/BeaconChainOracleMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -50,7 +51,6 @@ contract EigenLayerDeployer is Operators {
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
-    IBeaconChainOracle public beaconChainOracle;
 
     // testing/mock contracts
     IERC20 public eigenToken;
@@ -80,6 +80,9 @@ contract EigenLayerDeployer is Operators {
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 31 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
+    uint64 MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64 EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
+    uint64 GENESIS_TIME = 1616508000;
 
     address pauser;
     address unpauser;
@@ -128,11 +131,15 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        if(vm.envUint("CHAIN_ID") == 31337) {
+        try vm.envUint("CHAIN_ID") returns (uint256 chainId) {
+            if (chainId == 31337) {
+                _deployEigenLayerContractsLocal();
+            } else if (chainId == 5) {
+                _deployEigenLayerContractsGoerli();
+            }
+        // If CHAIN_ID ENV is not set, assume local deployment on 31337
+        } catch {
             _deployEigenLayerContractsLocal();
-
-        }else if(vm.envUint("CHAIN_ID") == 5) {
-            _deployEigenLayerContractsGoerli();
         }
 
         fuzzedAddressMapping[address(0)] = true;
@@ -161,11 +168,10 @@ contract EigenLayerDeployer is Operators {
         eigenPodManager = EigenPodManager(eigenPodManagerAddress);
         delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
 
-        address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
+        beaconChainOracleAddress = address(new BeaconChainOracleMock());
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
@@ -244,19 +250,16 @@ contract EigenLayerDeployer is Operators {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        address[] memory initialOracleSignersArray = new address[](0);
-        beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
-
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_VALIDATOR_BALANCE_GWEI, EFFECTIVE_RESTAKED_BALANCE_OFFSET);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher);
+        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -298,7 +301,7 @@ contract EigenLayerDeployer is Operators {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 type(uint256).max, // maxPods
-                beaconChainOracle,
+                beaconChainOracleAddress,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/

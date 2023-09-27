@@ -41,11 +41,6 @@ contract ServiceManagerMock is IServiceManager, DSTest {
         return IERC20(address(0));
     }
 
-    /// @notice The Delegation contract of EigenLayer.
-    function delegationManager() external pure returns (IDelegationManager) {
-        return IDelegationManager(address(0));
-    }
-
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
     function latestServeUntilBlock() external pure returns (uint32) {
         return type(uint32).max;

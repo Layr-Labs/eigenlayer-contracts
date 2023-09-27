@@ -25,7 +25,7 @@ import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../mocks/OwnableMock.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/BLSPublicKeyCompendiumMock.sol";
 import "../mocks/EmptyContract.sol";
@@ -62,7 +62,7 @@ contract MockAVSDeployer is Test {
 
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
@@ -73,6 +73,8 @@ contract MockAVSDeployer is Test {
     uint256 churnApproverPrivateKey = uint256(keccak256("churnApproverPrivateKey"));
     address churnApprover = cheats.addr(churnApproverPrivateKey);
     bytes32 defaultSalt = bytes32(uint256(keccak256("defaultSalt")));
+
+    address ejector = address(uint160(uint256(keccak256("ejector"))));
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
@@ -117,7 +119,7 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        delegationMock = new DelegationMock();
+        delegationMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
@@ -243,7 +245,10 @@ contract MockAVSDeployer is Test {
                 abi.encodeWithSelector(
                     BLSRegistryCoordinatorWithIndices.initialize.selector,
                     churnApprover,
-                    operatorSetParams
+                    ejector,
+                    operatorSetParams,
+                    pauserRegistry,
+                    0/*initialPausedStatus*/
                 )
             );
         }
@@ -367,7 +372,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperatorId,
             operatorKickParams,

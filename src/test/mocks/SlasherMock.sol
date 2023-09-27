@@ -9,6 +9,8 @@ contract SlasherMock is ISlasher, Test {
 
     mapping(address => bool) public isFrozen;
     bool public _canWithdraw = true;
+    IStrategyManager public strategyManager;
+    IDelegationManager public delegation;
 
     function setCanWithdrawResponse(bool response) external {
         _canWithdraw = response;
