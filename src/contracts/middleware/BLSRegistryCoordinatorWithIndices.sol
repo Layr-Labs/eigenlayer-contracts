@@ -532,7 +532,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             }));
         } else {
             // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
-            uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
+            // uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
 
             // record a stake update unbonding the operator after `latestServeUntilBlock`
             // serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);

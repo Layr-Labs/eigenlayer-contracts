@@ -718,7 +718,7 @@ contract EigenLayerDeploy is Script, Test {
         );
     }
 
-    function _verifyInitializationParams() internal {
+    function _verifyInitializationParams() internal view {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;

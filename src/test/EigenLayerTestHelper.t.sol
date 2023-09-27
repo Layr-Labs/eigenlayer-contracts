@@ -350,14 +350,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     /// @param staker is the staker delegating stake to the operator.
     /// @param ethAmount is the amount of ETH to deposit into the operator's strategy.
     /// @param eigenAmount is the amount of EIGEN to deposit into the operator's strategy.
-    /// @param quorumNumbers is the array of quorum numbers to register the operator for.
     /// @param stakeRegistry is the stakeRegistry-type contract to consult for registering to an AVS
     function _testDelegation(
         address operator,
         address staker,
         uint256 ethAmount,
         uint256 eigenAmount,
-        bytes memory quorumNumbers,
         StakeRegistry stakeRegistry
     ) internal {
         if (!delegation.isOperator(operator)) {

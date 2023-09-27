@@ -144,7 +144,7 @@ contract DelegationTests is EigenLayerTestHelper {
         stakeRegistry.setOperatorWeight(0, operator, ethAmount);
         stakeRegistry.setOperatorWeight(1, operator, eigenAmount);
         stakeRegistry.registerOperatorNonCoordinator(operator, defaultOperatorId, quorumNumbers);
-        _testDelegation(operator, staker, ethAmount, eigenAmount, quorumNumbers, stakeRegistry);
+        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
     }
 
     /// @notice tests that a when an operator is delegated to, that delegation is properly accounted for.
@@ -232,10 +232,7 @@ contract DelegationTests is EigenLayerTestHelper {
         // base strategy will revert if these amounts are too small on first deposit
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 1);
-        bytes memory quorumNumbers = new bytes(2);
-        quorumNumbers[0] = bytes1(uint8(0));
-        quorumNumbers[0] = bytes1(uint8(1));
-        _testDelegation(operator, staker, ethAmount, eigenAmount, quorumNumbers, stakeRegistry);
+        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
         cheats.startPrank(address(strategyManager));
         delegation.undelegate(staker);
         cheats.stopPrank();
