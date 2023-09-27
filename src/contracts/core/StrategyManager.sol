@@ -213,15 +213,16 @@ contract StrategyManager is
             expiry >= block.timestamp,
             "StrategyManager.depositIntoStrategyWithSignature: signature expired"
         );
-        // calculate struct hash, then increment `staker`'s nonce
+        // store the `staker`'s nonce in memory, then increment it
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
         unchecked {
             nonces[staker] = nonce + 1;
         }
 
         // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        // bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
+        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), 
+            keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry))));
 
         /**
          * check validity of signature:
