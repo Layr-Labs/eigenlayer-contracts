@@ -74,3 +74,7 @@ Withdrawing any future ETH sent via beacon chain withdrawal to the `EigenPod` re
 *Requirements*:
 * Caller MUST be the Pod Owner
 * Pod MUST NOT have already activated restaking
+
+### Other
+
+#### `EigenPodManager.forceIntoUndelegationLimbo`
