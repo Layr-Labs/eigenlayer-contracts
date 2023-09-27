@@ -280,8 +280,8 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) = 
             testQueueWithdrawalBeaconChainETHToSelf(uint128(withdrawalAmount / 1e9));
 
-        IEigenPod eigenPod = eigenPodManager.getPod(staker);
-        uint256 eigenPodBalanceBefore = address(eigenPod).balance;
+        // IEigenPod eigenPod = eigenPodManager.getPod(staker);
+        // uint256 eigenPodBalanceBefore = address(eigenPod).balance;
 
         uint256 middlewareTimesIndex = 0;
 
@@ -300,7 +300,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         cheats.stopPrank();
 
         // TODO: make EigenPodMock do something so we can verify that it gets called appropriately?
-        uint256 eigenPodBalanceAfter = address(eigenPod).balance;
+        // uint256 eigenPodBalanceAfter = address(eigenPod).balance;
 
         // verify that the withdrawal root does bit exist after queuing
         require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
