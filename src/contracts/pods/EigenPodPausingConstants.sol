@@ -10,9 +10,9 @@ abstract contract EigenPodPausingConstants {
     /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
     uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
     /**
-    * @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality ` 
-    * function *of the EigenPodManager* when set. See EigenPodManager code for details.
-    */
+     * @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality `
+     * function *of the EigenPodManager* when set. See EigenPodManager code for details.
+     */
     uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
 
     /// @notice Index for flag that pauses the deposit related functions *of the EigenPods* when set. see EigenPod code for details.

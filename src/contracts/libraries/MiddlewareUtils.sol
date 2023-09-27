@@ -15,8 +15,14 @@ library MiddlewareUtils {
         uint256 signedStakeFirstQuorum,
         uint256 signedStakeSecondQuorum
     ) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(globalDataStoreId, nonSignerPubkeyHashes, signedStakeFirstQuorum, signedStakeSecondQuorum)
-        );
+        return
+            keccak256(
+                abi.encodePacked(
+                    globalDataStoreId,
+                    nonSignerPubkeyHashes,
+                    signedStakeFirstQuorum,
+                    signedStakeSecondQuorum
+                )
+            );
     }
 }

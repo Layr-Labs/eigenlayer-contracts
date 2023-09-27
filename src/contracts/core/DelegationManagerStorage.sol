@@ -66,7 +66,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
-
     IEigenPodManager public immutable eigenPodManager;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {

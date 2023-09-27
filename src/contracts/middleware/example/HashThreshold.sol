@@ -18,7 +18,6 @@ contract HashThreshold is Ownable, IServiceManager {
     ISlasher public immutable slasher;
     ECDSARegistry public immutable registry;
 
-
     struct CertifiedMessageMetadata {
         bytes32 signaturesHash;
         uint32 validAfterBlock;
@@ -30,15 +29,12 @@ contract HashThreshold is Ownable, IServiceManager {
 
     event MessageCertified(bytes32);
 
-    modifier onlyRegistry {
+    modifier onlyRegistry() {
         require(msg.sender == address(registry), "Only registry can call this function");
         _;
     }
 
-    constructor(
-        ISlasher _slasher,
-        ECDSARegistry _registry
-    ) {
+    constructor(ISlasher _slasher, ECDSARegistry _registry) {
         slasher = _slasher;
         registry = _registry;
     }
@@ -57,7 +53,7 @@ contract HashThreshold is Ownable, IServiceManager {
 
     /**
      * This function is called by anyone to certify a message. Signers are certifying that the decahashed message starts with at least `numZeros` 0s.
-     * 
+     *
      * @param message The message to certify
      * @param signatures The signatures of the message, certifying it
      */
@@ -66,18 +62,18 @@ contract HashThreshold is Ownable, IServiceManager {
         require(certifiedMessageMetadatas[message].validAfterBlock == 0, "Message already certified");
         // this makes it so that the signatures are viewable in calldata
         // solhint-disable-next-line avoid-tx-origin
-       require(msg.sender == tx.origin, "EOA must call this function");
+        require(msg.sender == tx.origin, "EOA must call this function");
         uint128 stakeSigned = 0;
-        for(uint256 i = 0; i < signatures.length; i += 65) {
+        for (uint256 i = 0; i < signatures.length; i += 65) {
             // we fetch all the signers and check their signatures and their stake
-            address signer = ECDSA.recover(message, signatures[i:i+65]);
+            address signer = ECDSA.recover(message, signatures[i:i + 65]);
             require(registry.isActiveOperator(signer), "Signer is not an active operator");
             stakeSigned += registry.firstQuorumStakedByOperator(signer);
         }
         // We require that 2/3 of the stake signed the message
         // We only take the first quorum stake because this is a single quorum middleware
-        (uint96 totalStake,) = registry.totalStake();
-        require(stakeSigned >= 666667 * uint256(totalStake) / 1000000, "Need more than 2/3 of stake to sign");
+        (uint96 totalStake, ) = registry.totalStake();
+        require(stakeSigned >= (666667 * uint256(totalStake)) / 1000000, "Need more than 2/3 of stake to sign");
 
         uint32 newLatestServeUntilBlock = uint32(block.number + disputePeriodBlocks);
 
@@ -94,10 +90,9 @@ contract HashThreshold is Ownable, IServiceManager {
         emit MessageCertified(message);
     }
 
-
     /**
      * This function is called by anyone to slash the signers of an invalid message that has been certified.
-     * 
+     *
      * @param message The message to slash the signers of
      * @param signatures The signatures that certified the message
      */
@@ -113,7 +108,7 @@ contract HashThreshold is Ownable, IServiceManager {
         for (uint i = 0; i < signatures.length; i += 65) {
             // this is eigenlayer's means of escalating an operators stake for review for slashing
             // this immediately prevents all withdrawals for the operator and stakers delegated to them
-            slasher.freezeOperator(ECDSA.recover(message, signatures[i:i+65]));
+            slasher.freezeOperator(ECDSA.recover(message, signatures[i:i + 65]));
         }
         // we invalidate the message
         certifiedMessageMetadatas[message].validAfterBlock = type(uint32).max;
@@ -130,12 +125,20 @@ contract HashThreshold is Ownable, IServiceManager {
     }
 
     /// @inheritdoc IServiceManager
-    function recordLastStakeUpdateAndRevokeSlashingAbility(address operator, uint32 serveUntilBlock) external onlyRegistry {
+    function recordLastStakeUpdateAndRevokeSlashingAbility(
+        address operator,
+        uint32 serveUntilBlock
+    ) external onlyRegistry {
         slasher.recordLastStakeUpdateAndRevokeSlashingAbility(operator, serveUntilBlock);
     }
 
     /// @inheritdoc IServiceManager
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 prevElement) external onlyRegistry {
+    function recordStakeUpdate(
+        address operator,
+        uint32 updateBlock,
+        uint32 serveUntilBlock,
+        uint256 prevElement
+    ) external onlyRegistry {
         slasher.recordStakeUpdate(operator, updateBlock, serveUntilBlock, prevElement);
     }
 }

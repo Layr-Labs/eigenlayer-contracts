@@ -29,9 +29,7 @@ abstract contract UpgradeableSignatureCheckingUtils is Initializable {
         ORIGINAL_CHAIN_ID = block.chainid;
     }
 
-    function _initializeSignatureCheckingUtils() internal
-        onlyInitializing
-    {
+    function _initializeSignatureCheckingUtils() internal onlyInitializing {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
     }
 
@@ -43,8 +41,7 @@ abstract contract UpgradeableSignatureCheckingUtils is Initializable {
     function domainSeparator() public view returns (bytes32) {
         if (block.chainid == ORIGINAL_CHAIN_ID) {
             return _DOMAIN_SEPARATOR;
-        }
-        else {
+        } else {
             return _calculateDomainSeparator();
         }
     }

@@ -61,7 +61,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
 
-    /* 
+    /*
      * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
      * This mapping tracked beaconChainETH "debt" in case updates were made to shares retroactively.  However, this design was
      * replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which

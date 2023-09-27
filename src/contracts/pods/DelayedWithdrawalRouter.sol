@@ -8,7 +8,13 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../permissions/Pausable.sol";
 
-contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, Pausable, IDelayedWithdrawalRouter {
+contract DelayedWithdrawalRouter is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    Pausable,
+    IDelayedWithdrawalRouter
+{
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
@@ -37,27 +43,44 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
 
     /// @notice Modifier used to permission a function to only be called by the EigenPod of the specified `podOwner`
     modifier onlyEigenPod(address podOwner) {
-        require(address(eigenPodManager.getPod(podOwner)) == msg.sender, "DelayedWithdrawalRouter.onlyEigenPod: not podOwner's EigenPod");
+        require(
+            address(eigenPodManager.getPod(podOwner)) == msg.sender,
+            "DelayedWithdrawalRouter.onlyEigenPod: not podOwner's EigenPod"
+        );
         _;
     }
 
     constructor(IEigenPodManager _eigenPodManager) {
-        require(address(_eigenPodManager) != address(0), "DelayedWithdrawalRouter.constructor: _eigenPodManager cannot be zero address");
+        require(
+            address(_eigenPodManager) != address(0),
+            "DelayedWithdrawalRouter.constructor: _eigenPodManager cannot be zero address"
+        );
         eigenPodManager = _eigenPodManager;
     }
 
-    function initialize(address initOwner, IPauserRegistry _pauserRegistry, uint256 initPausedStatus, uint256 _withdrawalDelayBlocks) external initializer {
+    function initialize(
+        address initOwner,
+        IPauserRegistry _pauserRegistry,
+        uint256 initPausedStatus,
+        uint256 _withdrawalDelayBlocks
+    ) external initializer {
         _transferOwnership(initOwner);
         _initializePauser(_pauserRegistry, initPausedStatus);
         _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
-    /** 
+    /**
      * @notice Creates a delayed withdrawal for `msg.value` to the `recipient`.
      * @dev Only callable by the `podOwner`'s EigenPod contract.
      */
-    function createDelayedWithdrawal(address podOwner, address recipient) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
-        require(recipient != address(0), "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address");
+    function createDelayedWithdrawal(
+        address podOwner,
+        address recipient
+    ) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
+        require(
+            recipient != address(0),
+            "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"
+        );
         uint224 withdrawalAmount = uint224(msg.value);
         if (withdrawalAmount != 0) {
             DelayedWithdrawal memory delayedWithdrawal = DelayedWithdrawal({
@@ -65,7 +88,12 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
                 blockCreated: uint32(block.number)
             });
             _userWithdrawals[recipient].delayedWithdrawals.push(delayedWithdrawal);
-            emit DelayedWithdrawalCreated(podOwner, recipient, withdrawalAmount, _userWithdrawals[recipient].delayedWithdrawals.length - 1);
+            emit DelayedWithdrawalCreated(
+                podOwner,
+                recipient,
+                withdrawalAmount,
+                _userWithdrawals[recipient].delayedWithdrawals.length - 1
+            );
         }
     }
 
@@ -73,15 +101,14 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
      * @notice Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.
      * @param recipient The address to claim delayedWithdrawals for.
      * @param maxNumberOfDelayedWithdrawalsToClaim Used to limit the maximum number of delayedWithdrawals to loop through claiming.
-     * @dev 
-     *      WARNING: Note that the caller of this function cannot control where the funds are sent, but they can control when the 
+     * @dev
+     *      WARNING: Note that the caller of this function cannot control where the funds are sent, but they can control when the
      *              funds are sent once the withdrawal becomes claimable.
      */
-    function claimDelayedWithdrawals(address recipient, uint256 maxNumberOfDelayedWithdrawalsToClaim)
-        external
-        nonReentrant
-        onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
-    {
+    function claimDelayedWithdrawals(
+        address recipient,
+        uint256 maxNumberOfDelayedWithdrawalsToClaim
+    ) external nonReentrant onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
         _claimDelayedWithdrawals(recipient, maxNumberOfDelayedWithdrawalsToClaim);
     }
 
@@ -89,11 +116,9 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
      * @notice Called in order to withdraw delayed withdrawals made to the caller that have passed the `withdrawalDelayBlocks` period.
      * @param maxNumberOfDelayedWithdrawalsToClaim Used to limit the maximum number of delayedWithdrawals to loop through claiming.
      */
-    function claimDelayedWithdrawals(uint256 maxNumberOfDelayedWithdrawalsToClaim)
-        external
-        nonReentrant
-        onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
-    {
+    function claimDelayedWithdrawals(
+        uint256 maxNumberOfDelayedWithdrawalsToClaim
+    ) external nonReentrant onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
         _claimDelayedWithdrawals(msg.sender, maxNumberOfDelayedWithdrawalsToClaim);
     }
 
@@ -128,7 +153,9 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 firstNonClaimableWithdrawalIndex = userDelayedWithdrawalsLength;
 
         for (uint256 i = 0; i < userDelayedWithdrawalsLength; i++) {
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[user].delayedWithdrawals[
+                delayedWithdrawalsCompleted + i
+            ];
             // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
             if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 firstNonClaimableWithdrawalIndex = i;
@@ -137,17 +164,22 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         }
         uint256 numberOfClaimableWithdrawals = firstNonClaimableWithdrawalIndex;
         DelayedWithdrawal[] memory claimableDelayedWithdrawals = new DelayedWithdrawal[](numberOfClaimableWithdrawals);
-        
-        if(numberOfClaimableWithdrawals != 0) {
+
+        if (numberOfClaimableWithdrawals != 0) {
             for (uint256 i = 0; i < numberOfClaimableWithdrawals; i++) {
-                claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[delayedWithdrawalsCompleted + i];
+                claimableDelayedWithdrawals[i] = _userWithdrawals[user].delayedWithdrawals[
+                    delayedWithdrawalsCompleted + i
+                ];
             }
         }
         return claimableDelayedWithdrawals;
     }
 
     /// @notice Getter function for fetching the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array
-    function userDelayedWithdrawalByIndex(address user, uint256 index) external view returns (DelayedWithdrawal memory) {
+    function userDelayedWithdrawalByIndex(
+        address user,
+        uint256 index
+    ) external view returns (DelayedWithdrawal memory) {
         return _userWithdrawals[user].delayedWithdrawals[index];
     }
 
@@ -158,7 +190,8 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
 
     /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool) {
-        return ((index >= _userWithdrawals[user].delayedWithdrawalsCompleted) && (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks));
+        return ((index >= _userWithdrawals[user].delayedWithdrawalsCompleted) &&
+            (block.number >= _userWithdrawals[user].delayedWithdrawals[index].blockCreated + withdrawalDelayBlocks));
     }
 
     /// @notice internal function used in both of the overloaded `claimDelayedWithdrawals` functions
@@ -167,9 +200,13 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
         uint256 delayedWithdrawalsCompletedBefore = _userWithdrawals[recipient].delayedWithdrawalsCompleted;
         uint256 _userWithdrawalsLength = _userWithdrawals[recipient].delayedWithdrawals.length;
         uint256 i = 0;
-        while (i < maxNumberOfDelayedWithdrawalsToClaim && (delayedWithdrawalsCompletedBefore + i) < _userWithdrawalsLength) {
+        while (
+            i < maxNumberOfDelayedWithdrawalsToClaim && (delayedWithdrawalsCompletedBefore + i) < _userWithdrawalsLength
+        ) {
             // copy delayedWithdrawal from storage to memory
-            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[recipient].delayedWithdrawals[delayedWithdrawalsCompletedBefore + i];
+            DelayedWithdrawal memory delayedWithdrawal = _userWithdrawals[recipient].delayedWithdrawals[
+                delayedWithdrawalsCompletedBefore + i
+            ];
             // check if delayedWithdrawal can be claimed. break the loop as soon as a delayedWithdrawal cannot be claimed
             if (block.number < delayedWithdrawal.blockCreated + withdrawalDelayBlocks) {
                 break;
@@ -192,7 +229,10 @@ contract DelayedWithdrawalRouter is Initializable, OwnableUpgradeable, Reentranc
 
     /// @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
     function _setWithdrawalDelayBlocks(uint256 newValue) internal {
-        require(newValue <= MAX_WITHDRAWAL_DELAY_BLOCKS, "DelayedWithdrawalRouter._setWithdrawalDelayBlocks: newValue too large");
+        require(
+            newValue <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelayedWithdrawalRouter._setWithdrawalDelayBlocks: newValue too large"
+        );
         emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, newValue);
         withdrawalDelayBlocks = newValue;
     }

@@ -48,9 +48,7 @@ contract StrategyManager is
      * @param token Is the token that `depositor` deposited.
      * @param shares Is the number of new shares `depositor` has been granted in `strategy`.
      */
-    event Deposit(
-        address depositor, IERC20 token, IStrategy strategy, uint256 shares
-    );
+    event Deposit(address depositor, IERC20 token, IStrategy strategy, uint256 shares);
 
     /**
      * @notice Emitted when a new withdrawal occurs on behalf of `depositor`.
@@ -59,9 +57,7 @@ contract StrategyManager is
      * @param strategy Is the strategy that `depositor` has queued to withdraw from.
      * @param shares Is the number of shares `depositor` has queued to withdraw.
      */
-    event ShareWithdrawalQueued(
-        address depositor, uint96 nonce, IStrategy strategy, uint256 shares
-    );
+    event ShareWithdrawalQueued(address depositor, uint96 nonce, IStrategy strategy, uint256 shares);
 
     /**
      * @notice Emitted when a new withdrawal is queued by `depositor`.
@@ -72,11 +68,20 @@ contract StrategyManager is
      * @param withdrawalRoot Is a hash of the input data for the withdrawal.
      */
     event WithdrawalQueued(
-        address depositor, uint96 nonce, address withdrawer, address delegatedAddress, bytes32 withdrawalRoot
+        address depositor,
+        uint96 nonce,
+        address withdrawer,
+        address delegatedAddress,
+        bytes32 withdrawalRoot
     );
 
     /// @notice Emitted when a queued withdrawal is completed
-    event WithdrawalCompleted(address indexed depositor, uint96 nonce, address indexed withdrawer, bytes32 withdrawalRoot);
+    event WithdrawalCompleted(
+        address indexed depositor,
+        uint96 nonce,
+        address indexed withdrawer,
+        bytes32 withdrawalRoot
+    );
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
@@ -103,17 +108,23 @@ contract StrategyManager is
         _;
     }
 
-    modifier onlyStrategyWhitelister {
-        require(msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
+    modifier onlyStrategyWhitelister() {
+        require(
+            msg.sender == strategyWhitelister,
+            "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"
+        );
         _;
     }
 
     modifier onlyStrategiesWhitelistedForDeposit(IStrategy strategy) {
-        require(strategyIsWhitelistedForDeposit[strategy], "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted");
+        require(
+            strategyIsWhitelistedForDeposit[strategy],
+            "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted"
+        );
         _;
     }
 
-    modifier onlyDelegationManager {
+    modifier onlyDelegationManager() {
         require(msg.sender == address(delegation), "StrategyManager.onlyDelegationManager: not the DelegationManager");
         _;
     }
@@ -123,9 +134,11 @@ contract StrategyManager is
      * @param _slasher The primary slashing contract of EigenLayer.
      * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher)
-        StrategyManagerStorage(_delegation, _eigenPodManager, _slasher)
-    {
+    constructor(
+        IDelegationManager _delegation,
+        IEigenPodManager _eigenPodManager,
+        ISlasher _slasher
+    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -141,10 +154,13 @@ contract StrategyManager is
      * @param  initialPausedStatus The initial value of `_paused` to set.
      * @param _withdrawalDelayBlocks The initial value of `withdrawalDelayBlocks` to set.
      */
-    function initialize(address initialOwner, address initialStrategyWhitelister, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus, uint256 _withdrawalDelayBlocks)
-        external
-        initializer
-    {
+    function initialize(
+        address initialOwner,
+        address initialStrategyWhitelister,
+        IPauserRegistry _pauserRegistry,
+        uint256 initialPausedStatus,
+        uint256 _withdrawalDelayBlocks
+    ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
@@ -160,24 +176,22 @@ contract StrategyManager is
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
-     * 
+     *
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount)
-        external
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(msg.sender)
-        nonReentrant
-        returns (uint256 shares)
-    {
+    function depositIntoStrategy(
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) onlyNotFrozen(msg.sender) nonReentrant returns (uint256 shares) {
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
     /**
      * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
      * who must sign off on the action.
-     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed 
+     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
@@ -191,7 +205,7 @@ contract StrategyManager is
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
      * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
-     * 
+     *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
      */
@@ -202,17 +216,8 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    )
-        external
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyNotFrozen(staker)
-        nonReentrant
-        returns (uint256 shares)
-    {
-        require(
-            expiry >= block.timestamp,
-            "StrategyManager.depositIntoStrategyWithSignature: signature expired"
-        );
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) onlyNotFrozen(staker) nonReentrant returns (uint256 shares) {
+        require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
         bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
@@ -242,7 +247,10 @@ contract StrategyManager is
      * @param staker The staker to force-undelegate.
      * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
      */
-    function forceTotalWithdrawal(address staker) external
+    function forceTotalWithdrawal(
+        address staker
+    )
+        external
         onlyDelegationManager
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         onlyNotFrozen(staker)
@@ -254,7 +262,7 @@ contract StrategyManager is
         uint256[] memory shares = new uint256[](strategiesLength);
         uint256[] memory strategyIndexes = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength;) {
+        for (uint256 i = 0; i < strategiesLength; ) {
             uint256 index = (strategiesLength - 1) - i;
             strategies[i] = stakerStrategyList[staker][index];
             shares[i] = stakerStrategyShares[staker][strategies[i]];
@@ -291,13 +299,7 @@ contract StrategyManager is
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer
-    )
-        external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(msg.sender)
-        nonReentrant
-        returns (bytes32)
-    {
+    ) external onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyNotFrozen(msg.sender) nonReentrant returns (bytes32) {
         bytes32 queuedWithdrawal = _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer);
         delegation.decreaseDelegatedShares(msg.sender, strategies, shares);
         return queuedWithdrawal;
@@ -314,7 +316,12 @@ contract StrategyManager is
      * will simply be transferred to the caller directly.
      * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
      */
-    function completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens)
+    function completeQueuedWithdrawal(
+        QueuedWithdrawal calldata queuedWithdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    )
         external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         // check that the address that the staker *was delegated to* – at the time that they queued the withdrawal – is not frozen
@@ -339,12 +346,13 @@ contract StrategyManager is
         IERC20[][] calldata tokens,
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
-    ) external
+    )
+        external
         onlyWhenNotPaused(PAUSED_WITHDRAWALS)
         // check that the address that the staker *was delegated to* – at the time that they queued the withdrawal – is not frozen
         nonReentrant
     {
-        for(uint256 i = 0; i < queuedWithdrawals.length; i++) {
+        for (uint256 i = 0; i < queuedWithdrawals.length; i++) {
             _completeQueuedWithdrawal(queuedWithdrawals[i], tokens[i], middlewareTimesIndexes[i], receiveAsTokens[i]);
         }
     }
@@ -352,7 +360,7 @@ contract StrategyManager is
     /**
      * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
      * @param _withdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
-    */
+     */
     function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner {
         _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
@@ -360,7 +368,7 @@ contract StrategyManager is
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
-    */
+     */
     function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
@@ -368,10 +376,12 @@ contract StrategyManager is
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-    */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister {
+     */
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist
+    ) external onlyStrategyWhitelister {
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
-        for (uint256 i = 0; i < strategiesToWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToWhitelistLength; ) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
@@ -381,15 +391,17 @@ contract StrategyManager is
                 ++i;
             }
         }
-    } 
+    }
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-    */
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister {
+     */
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
-        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ) {
             // change storage and emit event only if strategy is already in whitelist
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
@@ -399,7 +411,7 @@ contract StrategyManager is
                 ++i;
             }
         }
-    } 
+    }
 
     // INTERNAL FUNCTIONS
 
@@ -442,11 +454,12 @@ contract StrategyManager is
      * @param amount The amount of `token` to deposit.
      * @return shares The amount of *new* shares in `strategy` that have been credited to the `depositor`.
      */
-    function _depositIntoStrategy(address depositor, IStrategy strategy, IERC20 token, uint256 amount)
-        internal
-        onlyStrategiesWhitelistedForDeposit(strategy)
-        returns (uint256 shares)
-    {
+    function _depositIntoStrategy(
+        address depositor,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount
+    ) internal onlyStrategiesWhitelistedForDeposit(strategy) returns (uint256 shares) {
         // transfer tokens from the sender to the strategy
         token.safeTransferFrom(msg.sender, address(strategy), amount);
 
@@ -470,17 +483,19 @@ contract StrategyManager is
      * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(address depositor, uint256 strategyIndex, IStrategy strategy, uint256 shareAmount)
-        internal
-        returns (bool)
-    {
+    function _removeShares(
+        address depositor,
+        uint256 strategyIndex,
+        IStrategy strategy,
+        uint256 shareAmount
+    ) internal returns (bool) {
         // sanity checks on inputs
         require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
         uint256 userShares = stakerStrategyShares[depositor][strategy];
-        
+
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
         unchecked {
@@ -510,20 +525,27 @@ contract StrategyManager is
      * @dev the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
      * index is incorrect, then we revert to a brute-force search.
      */
-    function _removeStrategyFromStakerStrategyList(address depositor, uint256 strategyIndex, IStrategy strategy) internal {
+    function _removeStrategyFromStakerStrategyList(
+        address depositor,
+        uint256 strategyIndex,
+        IStrategy strategy
+    ) internal {
         // if the strategy matches with the strategy index provided
         if (stakerStrategyList[depositor][strategyIndex] == strategy) {
             // replace the strategy with the last strategy in the list
-            stakerStrategyList[depositor][strategyIndex] =
-                stakerStrategyList[depositor][stakerStrategyList[depositor].length - 1];
+            stakerStrategyList[depositor][strategyIndex] = stakerStrategyList[depositor][
+                stakerStrategyList[depositor].length - 1
+            ];
         } else {
             //loop through all of the strategies, find the right one, then replace
             uint256 stratsLength = stakerStrategyList[depositor].length;
             uint256 j = 0;
-            for (; j < stratsLength;) {
+            for (; j < stratsLength; ) {
                 if (stakerStrategyList[depositor][j] == strategy) {
                     //replace the strategy with the last strategy in the list
-                    stakerStrategyList[depositor][j] = stakerStrategyList[depositor][stakerStrategyList[depositor].length - 1];
+                    stakerStrategyList[depositor][j] = stakerStrategyList[depositor][
+                        stakerStrategyList[depositor].length - 1
+                    ];
                     break;
                 }
                 unchecked {
@@ -544,19 +566,16 @@ contract StrategyManager is
         IStrategy[] memory strategies,
         uint256[] memory shares,
         address withdrawer
-    )
-        internal
-        returns (bytes32)
-    {
+    ) internal returns (bytes32) {
         require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
-    
+
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
-        
+
         // keeps track of the current index in the `strategyIndexes` array
         uint256 strategyIndexIndex;
 
-        for (uint256 i = 0; i < strategies.length;) {
+        for (uint256 i = 0; i < strategies.length; ) {
             // the internal function will return 'true' in the event the strategy was
             // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
             if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
@@ -579,10 +598,7 @@ contract StrategyManager is
         QueuedWithdrawal memory queuedWithdrawal;
 
         {
-            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({
-                withdrawer: withdrawer,
-                nonce: nonce
-            });
+            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({withdrawer: withdrawer, nonce: nonce});
             // increment the numWithdrawalsQueued of the sender
             unchecked {
                 numWithdrawalsQueued[staker] = nonce + 1;
@@ -597,7 +613,6 @@ contract StrategyManager is
                 withdrawalStartBlock: uint32(block.number),
                 delegatedAddress: delegatedAddress
             });
-
         }
 
         // calculate the withdrawal root
@@ -609,7 +624,6 @@ contract StrategyManager is
         emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
 
         return withdrawalRoot;
-
     }
 
     /**
@@ -620,9 +634,12 @@ contract StrategyManager is
      * @param receiveAsTokens If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy.
      * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
      */
-    function _completeQueuedWithdrawal(QueuedWithdrawal calldata queuedWithdrawal, IERC20[] calldata tokens, uint256 middlewareTimesIndex, bool receiveAsTokens)
-        internal onlyNotFrozen(queuedWithdrawal.delegatedAddress)
-    {
+    function _completeQueuedWithdrawal(
+        QueuedWithdrawal calldata queuedWithdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) internal onlyNotFrozen(queuedWithdrawal.delegatedAddress) {
         // find the withdrawalRoot
         bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
 
@@ -634,12 +651,17 @@ contract StrategyManager is
 
         // verify that the withdrawal is completable
         require(
-            slasher.canWithdraw(queuedWithdrawal.delegatedAddress, queuedWithdrawal.withdrawalStartBlock, middlewareTimesIndex),
+            slasher.canWithdraw(
+                queuedWithdrawal.delegatedAddress,
+                queuedWithdrawal.withdrawalStartBlock,
+                middlewareTimesIndex
+            ),
             "StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
         );
 
         // enforce minimum delay lag
-        require(queuedWithdrawal.withdrawalStartBlock + withdrawalDelayBlocks <= block.number,
+        require(
+            queuedWithdrawal.withdrawalStartBlock + withdrawalDelayBlocks <= block.number,
             "StrategyManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
         );
 
@@ -657,29 +679,34 @@ contract StrategyManager is
         // if the withdrawer has flagged to receive the funds as tokens, withdraw from strategies
 
         if (receiveAsTokens) {
-            require(tokens.length == queuedWithdrawal.strategies.length, "StrategyManager.completeQueuedWithdrawal: input length mismatch");
+            require(
+                tokens.length == queuedWithdrawal.strategies.length,
+                "StrategyManager.completeQueuedWithdrawal: input length mismatch"
+            );
             // actually withdraw the funds
-            for (uint256 i = 0; i < strategiesLength;) {
-
+            for (uint256 i = 0; i < strategiesLength; ) {
                 // tell the strategy to send the appropriate amount of funds to the depositor
-                queuedWithdrawal.strategies[i].withdraw(
-                    msg.sender, tokens[i], queuedWithdrawal.shares[i]
-                );
-                
+                queuedWithdrawal.strategies[i].withdraw(msg.sender, tokens[i], queuedWithdrawal.shares[i]);
+
                 unchecked {
                     ++i;
                 }
             }
         } else {
             // else increase their shares
-            for (uint256 i = 0; i < strategiesLength;) {
+            for (uint256 i = 0; i < strategiesLength; ) {
                 _addShares(msg.sender, queuedWithdrawal.strategies[i], queuedWithdrawal.shares[i]);
                 unchecked {
                     ++i;
                 }
             }
         }
-        emit WithdrawalCompleted(queuedWithdrawal.depositor, queuedWithdrawal.withdrawerAndNonce.nonce, msg.sender, withdrawalRoot);
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            msg.sender,
+            withdrawalRoot
+        );
     }
 
     /**
@@ -687,7 +714,10 @@ contract StrategyManager is
      * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
      */
     function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
-        require(_withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS, "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high");
+        require(
+            _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high"
+        );
         emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
         withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
@@ -711,7 +741,7 @@ contract StrategyManager is
         uint256 strategiesLength = stakerStrategyList[depositor].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength;) {
+        for (uint256 i = 0; i < strategiesLength; ) {
             shares[i] = stakerStrategyShares[depositor][stakerStrategyList[depositor][i]];
             unchecked {
                 ++i;
@@ -732,8 +762,7 @@ contract StrategyManager is
     function domainSeparator() public view returns (bytes32) {
         if (block.chainid == ORIGINAL_CHAIN_ID) {
             return _DOMAIN_SEPARATOR;
-        }
-        else {
+        } else {
             return _calculateDomainSeparator();
         }
     }
