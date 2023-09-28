@@ -342,9 +342,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
         bytes32 beaconStateRoot,
         bytes calldata stateRootProof,
+        uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     )

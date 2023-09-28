@@ -60,9 +60,9 @@ contract EigenPodMock is IEigenPod, Test {
      */
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
         bytes32 beaconStateRoot,
         bytes calldata stateRootProof,
+        uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     ) external {}

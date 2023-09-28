@@ -310,7 +310,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(podOwner);
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -336,7 +336,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -624,7 +624,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -652,7 +652,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -676,7 +676,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        pod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -893,7 +893,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
     }
 
@@ -1264,7 +1264,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
 
         cheats.warp(timestamp += 1);
-        newPod.verifyWithdrawalCredentials(timestamp, validatorIndices, beaconStateRoot, stateRootProof, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(timestamp, beaconStateRoot, stateRootProof, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
 
         uint256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
