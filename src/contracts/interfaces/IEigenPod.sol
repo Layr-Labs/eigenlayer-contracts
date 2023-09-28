@@ -154,7 +154,9 @@ interface IEigenPod {
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
-        BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
+        bytes32 beaconStateRoot,
+        bytes calldata stateRootProof,
+        bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     )
         external;

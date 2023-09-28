@@ -1211,10 +1211,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorFieldsArray[0] = getValidatorFields();
 
         BeaconChainProofs.WithdrawalCredentialProof[] memory proofsArray = new BeaconChainProofs.WithdrawalCredentialProof[](1);
-        proofsArray[0] = _getWithdrawalCredentialProof();
+        proofsArray[0] = getWithdrawalCredentialProof();
 
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
+
+        bytes32 beaconStateRoot = getBeaconStateRoot();
+        bytes[] memory stateRootProof = getStateRootProof();
 
         uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
