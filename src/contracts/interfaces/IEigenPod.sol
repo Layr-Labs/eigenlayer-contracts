@@ -27,17 +27,6 @@ interface IEigenPod {
         WITHDRAWN // withdrawn from the Beacon Chain
     }
 
-    // this struct keeps track of PartialWithdrawalClaims
-    struct PartialWithdrawalClaim {
-        PARTIAL_WITHDRAWAL_CLAIM_STATUS status;
-        // block at which the PartialWithdrawalClaim was created
-        uint32 creationBlockNumber;
-        // last block (inclusive) in which the PartialWithdrawalClaim can be fraudproofed
-        uint32 fraudproofPeriodEndBlockNumber;
-        // amount of ETH -- in Gwei -- to be withdrawn until completion of this claim
-        uint64 partialWithdrawalAmountGwei;
-    }
-
     struct ValidatorInfo {
         // index of the validator in the beacon chain
         uint64 validatorIndex;
@@ -58,12 +47,6 @@ interface IEigenPod {
         uint256 amountToSend;
         // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
         int256 sharesDelta;
-    }
-
-    enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
-        REDEEMED,
-        PENDING,
-        FAILED
     }
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
