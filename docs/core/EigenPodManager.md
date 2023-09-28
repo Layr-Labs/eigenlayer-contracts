@@ -12,7 +12,7 @@
 | [`EigenPodManager.sol`](../../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy |
 | [`EigenPod.sol`](../../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy |
 | [`DelayedWithdrawalRouter.sol`](../../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy |
-| [TODO - BeaconChainOracle](#TODO) | TODO | TODO |
+| [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS Proxy |
 
 The `EigenPodManager` and `EigenPod` contracts allow Stakers to restake beacon chain ETH which can then be delegated to Operators via the `DelegationManager`.
 
@@ -21,7 +21,12 @@ The `EigenPodManager` and `EigenPod` contracts allow Stakers to restake beacon c
 *Important state variables*:
 * `mapping(address => IEigenPod) public ownerToPod`
 * `mapping(address => uint256) public podOwnerShares`
-* TODO
+* `EigenPod`:
+    * `_validatorPubkeyHashToInfo[bytes32] -> (ValidatorInfo)`: individual validators are identified within an `EigenPod` according the their public key hash. This mapping keeps track of the following for each validator:
+        * `validatorStatus`: (`INACTIVE`, `ACTIVE`, `WITHDRAWN`)
+        * `validatorIndex`: A `uint40` that is unique for each validator making a successful deposit via the deposit contract
+        * `mostRecentBalanceUpdateTimestamp`: A timestamp that represents the most recent successful proof of the validator's effective balance
+        * `restakedBalanceGwei`: Calculated against the validator's proven effective balance using `_calculateRestakedBalanceGwei`
 
 *Helpful definitions*:
 * `EigenPodManager`:
@@ -29,10 +34,9 @@ The `EigenPodManager` and `EigenPod` contracts allow Stakers to restake beacon c
 * `EigenPod`:
     * `_podWithdrawalCredentials() -> (bytes memory)`:
         * TODO
-    * `_validatorPubkeyHashToInfo`
-        * TODO (validator status is here)
+    * `_calculateRestakedBalanceGwei`
 
-### Stakers (Before Restaking)
+### Stakers (Before Activating Validator)
 
 Before a Staker "enters" the EigenLayer system, they need to:
 1. Deploy an `EigenPod`
@@ -45,6 +49,7 @@ The following top-level callable methods concern these steps:
 * [`EigenPodManager.stake`](#eigenpodmanagerstake)
 * [`EigenPod.activateRestaking`](#eigenpodactivaterestaking)
 * [`EigenPod.withdrawBeforeRestaking`](#eigenpodwithdrawbeforerestaking)
+* [`EigenPod.verifyWithdrawalCredentials`](#eigenpodverifywithdrawalcredentials)
 
 #### `EigenPodManager.createPod`
 
@@ -172,11 +177,44 @@ function verifyWithdrawalCredentials(
     hasEnabledRestaking
 ```
 
+Once a Pod Owner has deposited ETH into the beacon chain deposit contract, they can call this method to "restake" one or more validators - meaning the ETH in those validators:
+* is awarded to the Staker/Pod Owner in `EigenPodManager.podOwnerShares`
+* is delegatable to an Operator (via the `DelegationManager`)
+
+For each validator the Pod Owner wants to restake, they must supply:
+* `validatorIndices`: their validator's `ValidatorIndex` (see [consensus specs](https://eth2book.info/capella/part3/config/types/#validatorindex))
+* `validatorFields`: the fields of the `Validator` container associated with the validator (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator))
+* `withdrawalCredentialProofs`: a proof that the `Validator` container belongs to the associated `ValidatorIndex`, according to the beacon chain state
+* `oracleTimestamp`: a timestamp used to fetch a beacon block root from `EigenPodManager.beaconChainOracle`
+
+For each successfully proven validator, that validator's status becomes `VALIDATOR_STATUS.ACTIVE`, and the sum of restakable ether across all proven validators is provided to `EigenPodManager.restakeBeaconChainETH`, where it is added to the Pod Owner's shares. If the Pod Owner is delegated to an Operator via the `DelegationManager`, this sum is also added to the Operator's delegated shares for the beacon chain ETH strategy.
+
 *Effects*:
-* TODO
+* For each validator (`_validatorPubkeyHashToInfo[pubkeyHash]`) the validator's info is set for the first time:
+    * `VALIDATOR_STATUS` moves from `INACTIVE` to `ACTIVE`
+    * `validatorIndex` is recorded
+    * `mostRecentBalanceUpdateTimestamp` is set to the `oracleTimestamp` used to fetch the beacon block root
+    * `restakedBalanceGwei` is set to `_calculateRestakedBalanceGwei(effectiveBalance)`
+* See [`EigenPodManager.restakeBeaconChainETH`](#eigenpodmanagerrestakebeaconchaineth)
 
 *Requirements*:
-* TODO
+* Caller MUST be the Pod Owner
+* Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_CREDENTIALS`
+* Pod MUST have enabled restaking
+* All input array lengths MUST be equal
+* `oracleTimestamp`:
+    * MUST be greater than the `mostRecentWithdrawalTimestamp`
+    * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
+    * MUST be queryable via `EigenPodManager.getBlockRootAtTimestamp` (fails if `stateRoot == 0`)
+* For each validator:
+    * The validator's status MUST initially be `VALIDATOR_STATUS.INACTIVE`
+    * `BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot` MUST verify the provided `beaconStateRoot` against the oracle-provided `latestBlockRoot`
+    * `BeaconChainProofs.verifyValidatorFields` MUST verify the provided `validatorFields` against the `beaconStateRoot`
+    * The aforementioned proofs MUST show that the validator's withdrawal credentials are set to the `EigenPod`
+* See [`EigenPodManager.restakeBeaconChainETH`](#eigenpodmanagerrestakebeaconchaineth)
+
+*As of M2*:
+* Restaking is enabled by default for pods deployed after M2. See `activateRestaking` for more info.
 
 ##### `EigenPodManager.restakeBeaconChainETH`
 
@@ -191,15 +229,27 @@ function restakeBeaconChainETH(
     nonReentrant
 ```
 
-TODO only callable by above method
+This method is only called by `EigenPod.verifyWithdrawalCredentials`, during which the `EigenPod` verifies a validator's effective balance and withdrawal credentials using a beacon chain state proof. 
+
+After verifying the balance of one or more validators, the `EigenPod` will sum the "restakable" balance of each validator and pass it to this method, which adds this balance to the Pod Owner's shares.
+
+If the Pod Owner is not in undelegation limbo, the added shares are also sent to `DelegationManager.increaseDelegatedShares`, where they will be awarded to the Staker/Pod Owner's delegated Operator.
 
 *Effects*:
-* TODO
+* Adds `amountWei` shares to the Pod Owner's `EigenPodManager` shares
+* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *Requirements*:
-* TODO
+* Caller MUST be the `EigenPod` associated with the passed-in Pod Owner
+* `amountWei` MUST NOT be zero
+* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
-### Stakers (Active Restaking)
+*As of M2*:
+* The `onlyNotFrozen` modifier is a no-op
+
+---
+
+### Stakers (After Activating Validator)
 
 TODO intro
 
