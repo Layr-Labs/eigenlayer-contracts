@@ -13,16 +13,23 @@ import "./DelegationFaucet.sol";
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
+/**
+ * @notice Deploys the following contracts:
+ * - ERC20 Dummy token for testing
+ * - StrategyBase to be added to the StrategyManager whitelist
+ * - DelegationFaucet contract
+ */
 contract DeployDelegationFaucet is Script, DSTest {
     // EigenLayer contracts
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
-
     IDelegationManager public delegation;
     IStrategyManager public strategyManager;
 
+    DelegationFaucet public delegationFaucet;
+
     // M2 testing/mock contracts
-    IERC20 public stakeToken;
+    ERC20PresetMinterPauser public stakeToken;
     StrategyBase public stakeTokenStrat;
     StrategyBase public baseStrategyImplementation;
 
@@ -33,11 +40,13 @@ contract DeployDelegationFaucet is Script, DSTest {
     address operationsMultisig;
     address executorMultisig;
 
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     function run() external {
         string memory goerliDeploymentConfig = vm.readFile("script/output/M1_deployment_goerli_2023_3_23.json");
         _setAddresses(goerliDeploymentConfig);
 
-        vm.startBroadcast(msg.sender);
+        vm.startBroadcast();
         // Deploy ERC20 stakeToken
         stakeToken = new ERC20PresetMinterPauser("StakeToken", "STK");
 
@@ -53,8 +62,14 @@ contract DeployDelegationFaucet is Script, DSTest {
             )
         );
 
-        // Deploy DelegationFaucet, grant it admin/mint/pauser roles, etc.
+        // Needs to be strategyManager.strategyWhitelister() to add STK strategy
+        IStrategy[] memory _strategy = new IStrategy[](1);
+        _strategy[0] = stakeTokenStrat;
+        strategyManager.addStrategiesToDepositWhitelist(_strategy);
 
+        // Deploy DelegationFaucet, grant it admin/mint/pauser roles, etc.
+        delegationFaucet = new DelegationFaucet(strategyManager, delegation, stakeToken, stakeTokenStrat);
+        stakeToken.grantRole(MINTER_ROLE, address(delegationFaucet));
         vm.stopBroadcast();
     }
 
