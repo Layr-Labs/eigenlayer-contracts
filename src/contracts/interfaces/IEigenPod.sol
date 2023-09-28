@@ -27,17 +27,6 @@ interface IEigenPod {
         WITHDRAWN // withdrawn from the Beacon Chain
     }
 
-    // this struct keeps track of PartialWithdrawalClaims
-    struct PartialWithdrawalClaim {
-        PARTIAL_WITHDRAWAL_CLAIM_STATUS status;
-        // block at which the PartialWithdrawalClaim was created
-        uint32 creationBlockNumber;
-        // last block (inclusive) in which the PartialWithdrawalClaim can be fraudproofed
-        uint32 fraudproofPeriodEndBlockNumber;
-        // amount of ETH -- in Gwei -- to be withdrawn until completion of this claim
-        uint64 partialWithdrawalAmountGwei;
-    }
-
     struct ValidatorInfo {
         // index of the validator in the beacon chain
         uint64 validatorIndex;
@@ -59,6 +48,7 @@ interface IEigenPod {
         // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
         int256 sharesDelta;
     }
+
 
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
@@ -104,6 +94,7 @@ interface IEigenPod {
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
+
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_VALIDATOR_BALANCE_GWEI() external view returns (uint64);
 
@@ -133,7 +124,11 @@ interface IEigenPod {
     /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
     function hasRestaked() external view returns (bool);
 
-    /// @notice block timestamp of the most recent withdrawal
+    /**
+     * @notice The latest timestamp at which the pod owner withdrew the balance of the pod, via calling `withdrawBeforeRestaking`.
+     * @dev This variable is only updated when the `withdrawBeforeRestaking` function is called, which can only occur before `hasRestaked` is set to true for this pod.
+     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to timestamps after the stored `mostRecentWithdrawalTimestamp`.
+     */
     function mostRecentWithdrawalTimestamp() external view returns (uint64);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
@@ -149,44 +144,46 @@ interface IEigenPod {
      * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
      * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
-     * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
+     * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
-     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
+     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials
+     * against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyWithdrawalCredentials(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
-    ) external;
+    )
+        external;
 
     /**
-     * @notice This function records an overcommitment of stake to EigenLayer on behalf of a certain ETH validator.
-     *         If successful, the overcommitted balance is penalized (available for withdrawal whenever the pod's balance allows).
-     *         The ETH validator's shares in the enshrined beaconChainETH strategy are also removed from the StrategyManager and undelegated.
-     * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
-     *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs
+     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.  
+               It also verifies a merkle proof of the validator's current beacon chain balance.  
+     * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
+     *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
+     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
      * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
+     *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
     ) external;
 
     /**
-     * @notice This function records a full withdrawal on behalf of one of the Ethereum validators for this EigenPod
+     * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
      * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
-     * @param withdrawalProofs is the information needed to check the veracity of the block number and withdrawal being proven
-     * @param validatorFieldsProofs is the proof of the validator's fields in the validator tree
-     * @param withdrawalFields are the fields of the withdrawal being proven
-     * @param validatorFields are the fields of the validator being proven
+     * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
+     * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
+     * @param withdrawalFields are the fields of the withdrawals being proven
+     * @param validatorFields are the fields of the validators being proven
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
@@ -196,7 +193,11 @@ interface IEigenPod {
         bytes32[][] calldata withdrawalFields
     ) external;
 
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
+    /**
+     * @notice Called by the pod owner to activate restaking by withdrawing
+     * all existing ETH from the pod and preventing further withdrawals via
+     * "withdrawBeforeRestaking()"
+     */
     function activateRestaking() external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false

@@ -40,12 +40,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
-    modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), "onlyStrategyManager");
-        _;
-    }
-
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
         require(
