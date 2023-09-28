@@ -19,7 +19,7 @@ contract IndexRegistryUnitTests is Test {
 
     uint8 internal defaultQuorumNumber = 1;
     bytes32 internal defaultOperator = bytes32(uint256(34));
-    bytes32 defaultOperatorId = keccak256("defaultOperatorId");
+    bytes32 internal defaultOperatorId = keccak256("defaultOperatorId");
 
     function setUp() public {
         registryCoordinatorMock = new RegistryCoordinatorMock();
