@@ -57,33 +57,6 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      */
     mapping(address => MiddlewareTimes[]) internal _operatorToMiddlewareTimes;
 
-    /// @notice Emitted when a middleware times is added to `operator`'s array.
-    event MiddlewareTimesAdded(
-        address operator,
-        uint256 index,
-        uint32 stalestUpdateBlock,
-        uint32 latestServeUntilBlock
-    );
-
-    /// @notice Emitted when `operator` begins to allow `contractAddress` to slash them.
-    event OptedIntoSlashing(address indexed operator, address indexed contractAddress);
-
-    /// @notice Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the `contractCanSlashOperatorUntilBlock`.
-    event SlashingAbilityRevoked(
-        address indexed operator,
-        address indexed contractAddress,
-        uint32 contractCanSlashOperatorUntilBlock
-    );
-
-    /**
-     * @notice Emitted when `slashingContract` 'freezes' the `slashedOperator`.
-     * @dev The `slashingContract` must have permission to slash the `slashedOperator`, i.e. `canSlash(slasherOperator, slashingContract)` must return 'true'.
-     */
-    event OperatorFrozen(address indexed slashedOperator, address indexed slashingContract);
-
-    /// @notice Emitted when `previouslySlashedAddress` is 'unfrozen', allowing them to again move deposited funds within EigenLayer.
-    event FrozenStatusReset(address indexed previouslySlashedAddress);
-
     constructor(IStrategyManager _strategyManager, IDelegationManager _delegation) {
         strategyManager = _strategyManager;
         delegation = _delegation;

@@ -21,6 +21,15 @@ import "../interfaces/IPauserRegistry.sol";
  */
 
 interface IPausable {
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
+
+    /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
+    event Paused(address indexed account, uint256 newPausedStatus);
+
+    /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
+    event Unpaused(address indexed account, uint256 newPausedStatus);
+    
     /// @notice Address of the `PauserRegistry` contract that this contract defers to for determining access control (for pausing).
     function pauserRegistry() external view returns (IPauserRegistry);
 

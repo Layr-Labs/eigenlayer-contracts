@@ -64,15 +64,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     /// @notice Pod owner to the amount of penalties they have paid that are still in this contract
     mapping(address => uint256) public podOwnerToUnwithdrawnPaidPenalties;
 
-    /// @notice Emitted to notify the update of the beaconChainOracle address
-    event BeaconOracleUpdated(address indexed newOracleAddress);
-
-    /// @notice Emitted to notify the deployment of an EigenPod
-    event PodDeployed(address indexed eigenPod, address indexed podOwner);
-
-    /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the  manager
-    event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
-
     /// @notice Emitted when an EigenPod pays penalties, on behalf of its owner
     event PenaltiesPaid(address indexed podOwner, uint256 amountPaid);
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "../interfaces/IStrategy.sol";
+
 /**
  * @title Interface for a `VoteWeigher`-type contract.
  * @author Layr Labs, Inc.
@@ -8,6 +10,11 @@ pragma solidity >=0.5.0;
  * @notice Note that `NUMBER_OF_QUORUMS` is expected to remain constant, as suggested by its uppercase formatting.
  */
 interface IVoteWeigher {
+    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyAddedToQuorum(uint256 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyRemovedFromQuorum(uint256 indexed quorumNumber, IStrategy strategy);
+
     /**
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev returns zero in the case that `quorumNumber` is greater than or equal to `NUMBER_OF_QUORUMS`
