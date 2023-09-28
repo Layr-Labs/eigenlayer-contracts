@@ -68,9 +68,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     address public podOwner;
 
     /**
-     * @notice The latest block number at which the pod owner withdrew the balance of the pod.
-     * @dev This variable is only updated when the `withdraw` function is called, which can only occur before `hasRestaked` is set to true for this pod.
-     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to blocks after the stored `mostRecentWithdrawalTimestamp`.
+     * @notice The latest timestamp at which the pod owner withdrew the balance of the pod, via calling `withdrawBeforeRestaking`.
+     * @dev This variable is only updated when the `withdrawBeforeRestaking` function is called, which can only occur before `hasRestaked` is set to true for this pod.
+     * Proofs for this pod are only valid against Beacon Chain state roots corresponding to timestamps after the stored `mostRecentWithdrawalTimestamp`.
      */
     uint64 public mostRecentWithdrawalTimestamp;
 
@@ -598,7 +598,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     )
         internal
         /**
-         * Check that the provided block number being proven against is after the `mostRecentWithdrawalTimestamp`.
+         * Check that the provided timestamp being proven against is after the `mostRecentWithdrawalTimestamp`.
          * Without this check, there is an edge case where a user proves a past withdrawal for a validator whose funds they already withdrew,
          * as a way to "withdraw the same funds twice" without providing adequate proof.
          * Note that this check is not made using the oracleTimestamp as in the `verifyWithdrawalCredentials` proof; instead this proof
