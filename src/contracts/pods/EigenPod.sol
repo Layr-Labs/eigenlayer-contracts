@@ -303,25 +303,25 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             stateRootProof: stateRootProof
         });
 
-        uint256 totalAmountToSend;
-        int256 totalSharesDelta;
+        VerifiedWithdrawal memory totalAmountToSendAndSharesDelta;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(
+                beaconStateRoot,
                 withdrawalProofs[i],
                 validatorFieldsProofs[i],
                 validatorFields[i],
                 withdrawalFields[i]
             );
-            totalAmountToSend += verifiedWithdrawal.amountToSend;
-            totalSharesDelta += verifiedWithdrawal.sharesDelta;
+            totalAmountToSendAndSharesDelta.amountToSend += verifiedWithdrawal.amountToSend;
+            totalAmountToSendAndSharesDelta.sharesDelta += verifiedWithdrawal.sharesDelta;
         }
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
-        if (totalAmountToSend != 0) {
-            _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSend);
+        if (totalAmountToSendAndSharesDelta.amountToSend != 0) {
+            _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSendAndSharesDelta.amountToSend);
         }
         //update podOwner's shares in the strategy manager
-        if (totalSharesDelta != 0) {
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalSharesDelta);
+        if (totalAmountToSendAndSharesDelta.sharesDelta != 0) {
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalAmountToSendAndSharesDelta.sharesDelta);
         }
     }
 
@@ -560,6 +560,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _verifyAndProcessWithdrawal(
+        bytes32 beaconStateRoot,
         BeaconChainProofs.WithdrawalProof calldata withdrawalProof,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
@@ -599,7 +600,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
 
         // Verifying the withdrawal as well as the slot
-        BeaconChainProofs.verifyWithdrawal({withdrawalFields: withdrawalFields, withdrawalProof: withdrawalProof});
+        BeaconChainProofs.verifyWithdrawal({beaconStateRoot: beaconStateRoot, withdrawalFields: withdrawalFields, withdrawalProof: withdrawalProof});
 
         {
             uint40 validatorIndex = uint40(
@@ -608,7 +609,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
             // Verifying the validator fields, specifically the withdrawable epoch
             BeaconChainProofs.verifyValidatorFields({
-                beaconStateRoot: withdrawalProof.beaconStateRoot,
+                beaconStateRoot: beaconStateRoot,
                 validatorFields: validatorFields,
                 validatorFieldsProof: validatorFieldsProof,
                 validatorIndex: validatorIndex

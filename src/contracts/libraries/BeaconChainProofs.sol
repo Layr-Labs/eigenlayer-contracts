@@ -108,8 +108,6 @@ library BeaconChainProofs {
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a partial/full withdrawal
     struct WithdrawalProof {
-        bytes32 beaconStateRoot;
-        bytes stateRootProof;
         bytes withdrawalProof;
         bytes slotProof;
         bytes executionPayloadProof;
@@ -265,6 +263,7 @@ library BeaconChainProofs {
      * @param withdrawalFields is the serialized withdrawal container to be proven
      */
     function verifyWithdrawal(
+        bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
         WithdrawalProof calldata withdrawalProof
     ) internal view {
@@ -324,7 +323,7 @@ library BeaconChainProofs {
         require(
             Merkle.verifyInclusionSha256({
                 proof: withdrawalProof.historicalSummaryBlockRootProof,
-                root: withdrawalProof.beaconStateRoot,
+                root: beaconStateRoot,
                 leaf: withdrawalProof.blockRoot,
                 index: historicalBlockHeaderIndex
             }),

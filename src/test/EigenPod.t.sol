@@ -385,12 +385,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testFullWithdrawalProof() public {
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         BeaconChainProofs.WithdrawalProof memory proofs = _getWithdrawalProof();
+        bytes32 beaconStateRoot = getBeaconStateRoot();
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
 
         Relayer relay = new Relayer();
 
-        relay.verifyWithdrawal(withdrawalFields, proofs);
+        relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
@@ -429,11 +430,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
             withdrawalFieldsArray[0] = withdrawalFields;
 
-            // uint64 timestamp = _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot));
+            bytes32 beaconStateRoot = getBeaconStateRoot();
+            bytes memory stateRootProof = abi.encodePacked(getStateRootProof());
+
 
             //cheats.expectEmit(true, true, true, true, address(newPod));
             emit FullWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot)), podOwner, withdrawalAmountGwei);
-            newPod.verifyAndProcessWithdrawals(0, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            newPod.verifyAndProcessWithdrawals(0, beaconStateRoot, stateRootProof, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
         }
         require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == _calculateRestakedBalanceGwei(newPod.MAX_VALIDATOR_BALANCE_GWEI()),
             "restakedExecutionLayerGwei has not been incremented correctly");
@@ -481,9 +484,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             withdrawalFieldsArray[0] = withdrawalFields;
 
             uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
+
+            bytes32 beaconStateRoot = getBeaconStateRoot();
+            bytes memory stateRootProof = abi.encodePacked(getStateRootProof());
+
             //cheats.expectEmit(true, true, true, true, address(newPod));
             emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei);
-            newPod.verifyAndProcessWithdrawals(0, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            newPod.verifyAndProcessWithdrawals(0, beaconStateRoot, stateRootProof, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
             require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
             withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
             require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
@@ -515,8 +522,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
         withdrawalFieldsArray[0] = withdrawalFields;
 
+        bytes32 beaconStateRoot = getBeaconStateRoot();
+        bytes memory stateRootProof = abi.encodePacked(getStateRootProof());
+
+
         cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
-        newPod.verifyAndProcessWithdrawals(0, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        newPod.verifyAndProcessWithdrawals(0, beaconStateRoot, stateRootProof, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
 
     /// @notice verifies that multiple full withdrawals for a single validator fail
@@ -540,8 +551,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
         withdrawalFieldsArray[0] = withdrawalFields;
 
+        bytes32 beaconStateRoot = getBeaconStateRoot();
+        bytes memory stateRootProof = abi.encodePacked(getStateRootProof());
+
+
+
         cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
-        newPod.verifyAndProcessWithdrawals(0, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        newPod.verifyAndProcessWithdrawals(0, beaconStateRoot, stateRootProof, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
         
         return newPod;
     }
@@ -1309,17 +1325,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         
         {
             bytes32 beaconStateRoot = getBeaconStateRoot();
-            bytes32 latestBlockRoot = getLatestBlockRoot();
-            //set beaconStateRoot
-            beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockRoot);
             bytes32 blockRoot = getBlockRoot();
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
 
             return BeaconChainProofs.WithdrawalProof(
-                beaconStateRoot,
-                abi.encodePacked(getStateRootProof()),
                 abi.encodePacked(getWithdrawalProof()),
                 abi.encodePacked(getSlotProof()),
                 abi.encodePacked(getExecutionPayloadProof()),
@@ -1372,9 +1383,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
  contract Relayer is Test {
     function verifyWithdrawal(
+        bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
-        BeaconChainProofs.verifyWithdrawal(withdrawalFields, proofs);
+        BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
  }
