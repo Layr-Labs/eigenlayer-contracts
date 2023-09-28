@@ -15,9 +15,6 @@ contract DelayedWithdrawalRouter is
     Pausable,
     IDelayedWithdrawalRouter
 {
-    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
-
     // index for flag that pauses withdrawals (i.e. 'delayedWithdrawal claims') when set
     uint8 internal constant PAUSED_DELAYED_WITHDRAWAL_CLAIMS = 0;
 
@@ -34,12 +31,6 @@ contract DelayedWithdrawalRouter is
 
     /// @notice Mapping: user => struct storing all delayedWithdrawal info. Marked as internal with an external getter function named `userWithdrawals`
     mapping(address => UserDelayedWithdrawals) internal _userWithdrawals;
-
-    /// @notice event for delayedWithdrawal creation
-    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
-
-    /// @notice event for the claiming of delayedWithdrawals
-    event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
 
     /// @notice Modifier used to permission a function to only be called by the EigenPod of the specified `podOwner`
     modifier onlyEigenPod(address podOwner) {
