@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../ERC20PresetMinterPauser.sol";
+
 /**
  * @title DelegationFaucet for M2
  * @author Layr Labs, Inc.
@@ -29,10 +30,6 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
 
     uint256 public constant DEFAULT_AMOUNT = 100e18;
 
-    //TODO: Deploy ERC20PresetMinterPauser and a corresponding StrategyBase for it
-    //TODO: Transfer ownership of Whitelister to multisig after deployment
-    //TODO: Give mint/admin/pauser permssions of whitelistToken to Whitelister and multisig after deployment
-    //TODO: Give up mint/admin/pauser permssions of whitelistToken for deployer
     constructor(
         IStrategyManager _strategyManager,
         IDelegationManager _delegation,
@@ -49,9 +46,11 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      * Deploys a Staker contract if not already deployed for operator. Staker gets minted _depositAmount or
      * DEFAULT_AMOUNT if _depositAmount is 0. Then Staker contract deposits into the strategy and delegates to operator.
      * @param _operator The operator to delegate to
-     * @param _depositAmount The amount of stakeToken to mint to the staker and deposit into the strategy
+     * @param _depositAmount The amount to deposit into the strategy
      */
     function mintDepositAndDelegate(address _operator, uint256 _depositAmount) public onlyOwner {
+        // Operator must be registered
+        require(delegation.isOperator(_operator), "DelegationFaucet: Operator not registered");
         address staker = getStaker(_operator);
         // Set deposit amount
         if (_depositAmount == 0) {
@@ -69,11 +68,14 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         }
 
         // deposit into stakeToken strategy
-        depositIntoStrategy(staker, stakeStrategy, stakeToken, _depositAmount);
-
-        // delegate to operator
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegateTo(_operator, signatureWithExpiry, bytes32(0));
+        uint256 shares = abi.decode(depositIntoStrategy(staker, stakeStrategy, stakeToken, _depositAmount), (uint256));
+        // increaseDelegatedShares if staker contract already delegated, o/w delegateTo operator
+        if (delegation.isDelegated(staker)) {
+            delegation.increaseDelegatedShares(staker, stakeStrategy, shares);
+        } else {
+            IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+            delegateTo(_operator, signatureWithExpiry, bytes32(0));
+        }
     }
 
     function getStaker(address operator) public view returns (address) {
@@ -100,6 +102,20 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         );
 
         return Staker(staker).callAddress(address(strategyManager), data);
+    }
+
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) public onlyOwner returns (bytes memory) {
+        bytes memory data = abi.encodeWithSelector(
+            IDelegationManager.increaseDelegatedShares.selector,
+            strategy,
+            shares
+        );
+
+        return Staker(staker).callAddress(address(delegation), data);
     }
 
     function delegateTo(

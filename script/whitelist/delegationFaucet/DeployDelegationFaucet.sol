@@ -39,8 +39,19 @@ contract DeployDelegationFaucet is Script, DSTest {
 
         vm.startBroadcast(msg.sender);
         // Deploy ERC20 stakeToken
+        stakeToken = new ERC20PresetMinterPauser("StakeToken", "STK");
 
         // Deploy StrategyBase for stakeToken & whitelist it
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+        stakeTokenStrat = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    eigenLayerProxyAdminAddress,
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, stakeToken, eigenLayerPauserRegAddress)
+                )
+            )
+        );
 
         // Deploy DelegationFaucet, grant it admin/mint/pauser roles, etc.
 
