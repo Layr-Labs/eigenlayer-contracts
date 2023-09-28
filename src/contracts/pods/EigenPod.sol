@@ -362,9 +362,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         // verify that the provided state root is verified against the oracle-provided latest block header for all the validators being proven
-        bytes32 latestBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: latestBlockRoot,
+            latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
             beaconStateRoot: beaconStateRoot,
             stateRootProof: stateRootProof
         });
