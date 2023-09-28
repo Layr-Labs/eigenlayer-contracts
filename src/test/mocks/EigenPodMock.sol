@@ -96,7 +96,9 @@ contract EigenPodMock is IEigenPod, Test {
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs, 
+        bytes32 beaconStateRoot,
+        bytes calldata stateRootProof,
+        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields

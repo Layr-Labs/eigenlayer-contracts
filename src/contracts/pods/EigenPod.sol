@@ -282,6 +282,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
+        bytes32 beaconStateRoot,
+        bytes calldata stateRootProof,
         BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
@@ -294,12 +296,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyAndProcessWithdrawals: inputs must be same length"
         );
 
+        // verify that the provided state root is verified against the oracle-provided latest block header
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
+            latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
+            beaconStateRoot: beaconStateRoot,
+            stateRootProof: stateRootProof
+        });
+
         uint256 totalAmountToSend;
         int256 totalSharesDelta;
-        bytes32 oracleBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(
-                oracleBlockRoot,
                 withdrawalProofs[i],
                 validatorFieldsProofs[i],
                 validatorFields[i],
@@ -553,7 +560,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function _verifyAndProcessWithdrawal(
-        bytes32 oracleBlockRoot,
         BeaconChainProofs.WithdrawalProof calldata withdrawalProof,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
@@ -591,13 +597,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         provenWithdrawal[validatorPubkeyHash][withdrawalHappenedTimestamp] = true;
-
-        // verify that the provided state root is verified against the oracle-provided latest block header
-        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-            latestBlockRoot: oracleBlockRoot,
-            beaconStateRoot: withdrawalProof.beaconStateRoot,
-            stateRootProof: withdrawalProof.stateRootProof
-        });
 
         // Verifying the withdrawal as well as the slot
         BeaconChainProofs.verifyWithdrawal({withdrawalFields: withdrawalFields, withdrawalProof: withdrawalProof});
