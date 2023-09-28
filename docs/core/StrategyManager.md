@@ -52,7 +52,7 @@ If the Staker is delegated to an Operator, the Operator's delegated shares are i
 * See [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *Requirements*:
-* Pause status MUST NOT be set (`StrategyManager`): `PAUSED_DEPOSITS`
+* Pause status MUST NOT be set: `PAUSED_DEPOSITS`
 * Caller MUST allow at least `amount` of `token` to be transferred by `StrategyManager` to the strategy
 * `strategy` in question MUST be whitelisted for deposits. 
 * See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
