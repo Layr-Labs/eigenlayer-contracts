@@ -106,11 +106,12 @@ interface IEigenPod {
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyWithdrawalCredentials(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
-    ) external;
+    )
+        external;
 
     /**
      * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.  
@@ -124,7 +125,7 @@ interface IEigenPod {
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40 validatorIndex,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
