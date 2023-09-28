@@ -133,13 +133,6 @@ library BeaconChainProofs {
         bytes32 balanceRoot;
     }
 
-    // @notice This struct contains the merkle proofs and leaves needed to verify a validator's withdrawal credential
-    struct WithdrawalCredentialProof {
-        bytes32 beaconStateRoot;
-        bytes stateRootProof;
-        bytes validatorFieldsProof;
-    }
-
     /**
      *
      * @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the

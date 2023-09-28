@@ -1337,21 +1337,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         }
     }
 
-    function _getWithdrawalCredentialProof() internal returns(BeaconChainProofs.WithdrawalCredentialProof memory) {        
-        {
-            bytes32 latestBlockRoot = getLatestBlockRoot();
-            //set beaconStateRoot
-            beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockRoot);
-
-            BeaconChainProofs.WithdrawalCredentialProof memory proof = BeaconChainProofs.WithdrawalCredentialProof(
-                getBeaconStateRoot(),
-                abi.encodePacked(getStateRootProof()),
-                abi.encodePacked(getWithdrawalCredentialProof())
-            );
-            return proof;
-        }
-    }
-
     function _setOracleBlockRoot() internal {
         bytes32 latestBlockRoot = getLatestBlockRoot();
         //set beaconStateRoot
