@@ -53,6 +53,44 @@ interface IEigenPodManager is IPausable {
         address delegatedAddress;
     }
 
+    /// @notice Emitted to notify the update of the beaconChainOracle address
+    event BeaconOracleUpdated(address indexed newOracleAddress);
+
+    /// @notice Emitted to notify the deployment of an EigenPod
+    event PodDeployed(address indexed eigenPod, address indexed podOwner);
+
+    /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
+    event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
+
+    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
+    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when a withdrawal of beacon chain ETH is queued
+    event BeaconChainETHWithdrawalQueued(
+        address indexed podOwner,
+        uint256 shares,
+        uint96 nonce,
+        address delegatedAddress,
+        address withdrawer,
+        bytes32 withdrawalRoot
+    );
+
+    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
+    event BeaconChainETHWithdrawalCompleted(
+        address indexed podOwner,
+        uint256 shares,
+        uint96 nonce,
+        address delegatedAddress,
+        address withdrawer,
+        bytes32 withdrawalRoot
+    );
+
+    // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
+    event UndelegationLimboEntered(address indexed podOwner);
+
+    // @notice Emitted when `podOwner` exits the "undelegation limbo" mode
+    event UndelegationLimboExited(address indexed podOwner);
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
