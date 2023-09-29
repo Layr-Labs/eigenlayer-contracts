@@ -26,6 +26,19 @@ bytes internal constant STAKER_OPT_OUT_WINDOW_GT_MAX_ERROR = bytes("DelegationMa
 bytes internal constant EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR = bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
 bytes internal constant OPERATOR_ALREADY_REGISTER_ERROR = bytes("DelegationManager.registerAsOperator: operator has already registered");
 bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager._delegate: staker is already actively delegated");
+bytes internal constant OPT_OUT_WINDOW_INCREASE_ERROR = bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased");
+bytes internal constant NOT_OPERATOR_ERROR = bytes("DelegationManager.updateOperatorMetadataURI: caller must be an operator");
+bytes internal constant OPERATOR_NOT_REGISTERED_ERROR = bytes("DelegationManager._delegate: operator is not registered in EigenLayer");
+bytes internal constant INVALID_SIGNATURE_ERROR = bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+bytes internal constant APPROVER_SIGNATURE_EXPIRED_ERROR = bytes("DelegationManager._delegate: approver signature expired");
+bytes internal constant OPERATOR_UNDELEGATE_SELF_ERROR =bytes("DelegationManager.undelegate: operators cannot undelegate from themselves");
+bytes internal constant STAKER_SIGNATURE_EXPIRED_ERROR =bytes("DelegationManager.delegateToBySignature: staker signature expired");
+bytes internal constant NOT_STRATEGY_MANAGER_ERROR = bytes("onlyStrategyManager");
+bytes internal constant OPERATOR_FROZEN_ERROR = bytes("DelegationManager._delegate: cannot delegate to a frozen operator");
+bytes internal constant PAUSED_INDEX_ERROR = bytes("Pausable: index is paused");
+bytes internal constant NOT_OPERATOR_OR_APPOVER_ERROR = bytes("DelegationManager.forceUndelegation: caller must be operator or their delegationApprover");
+bytes internal constant FORCE_UNDELEGATE_OPERATOR_ERROR = bytes("DelegationManager.forceUndelegation: operators cannot be force-undelegated");
+bytes internal constant APPROVER_SALT_SPENT_ERROR = bytes("DelegationManager._delegate: approverSalt already spent");
     // mapping for filtering out weird fuzzed inputs, like making calls from the ProxyAdmin or the zero address
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
 
@@ -340,7 +353,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
             assertTrue(delegationManager.delegatedTo(_operator) == _operator, "operator not delegated to self");
         // or else the transition is disallowed
         } else {
-            vm.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased"));
+            vm.expectRevert(OPT_OUT_WINDOW_INCREASE_ERROR );
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
         }
 
@@ -370,7 +383,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
         assertTrue(!delegationManager.isOperator(_operator), "bad test setup");
 
         vm.startPrank(_operator);
-        vm.expectRevert(bytes("DelegationManager.updateOperatorMetadataURI: caller must be an operator"));
+        vm.expectRevert(NOT_OPERATOR_ERROR );
         delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
         vm.stopPrank();
     }
@@ -473,7 +486,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try to delegate and check that the call reverts
         vm.startPrank(staker);
-        vm.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+        vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR );
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
         vm.stopPrank();
@@ -570,7 +583,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try to delegate from the `staker` to the operator, and check reversion
         vm.startPrank(staker);
-        vm.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
+        vm.expectRevert(INVALID_SIGNATURE_ERROR );
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
         vm.stopPrank();
     }
@@ -605,7 +618,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // delegate from the `staker` to the operator
         vm.startPrank(staker);
-        vm.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        vm.expectRevert(APPROVER_SIGNATURE_EXPIRED_ERROR );
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
         vm.stopPrank();
     }
@@ -909,7 +922,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
     function testDelegateBySignatureRevertsWhenStakerSignatureExpired(address staker, address operator, uint256 expiry, bytes memory signature) public{
         vm.assume(expiry < block.timestamp);
-        vm.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
+        vm.expectRevert(STAKER_SIGNATURE_EXPIRED_ERROR );
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
@@ -952,7 +965,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
         vm.startPrank(caller);
-        vm.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        vm.expectRevert(APPROVER_SIGNATURE_EXPIRED_ERROR );
         delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt);        
         vm.stopPrank();
     }
@@ -988,7 +1001,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // delegate from the `staker` to the operator
         vm.startPrank(staker);
-        vm.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
+        vm.expectRevert(APPROVER_SIGNATURE_EXPIRED_ERROR );
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
         vm.stopPrank();
     }
@@ -1026,7 +1039,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
         });
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.stopPrank();
-        vm.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
+        vm.expectRevert(OPERATOR_UNDELEGATE_SELF_ERROR );
         
         vm.startPrank(address(strategyManagerMock));
         delegationManager.undelegate(operator);
@@ -1036,7 +1049,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
     // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
     function testCannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
         vm.assume(caller != address(strategyManagerMock));
-        vm.expectRevert(bytes("onlyStrategyManager"));
+        vm.expectRevert(NOT_STRATEGY_MANAGER_ERROR );
         vm.startPrank(caller);
         delegationManager.undelegate(address(this));
     }
@@ -1151,7 +1164,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
     // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
     function testCannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
         vm.assume(operator != address(strategyManagerMock));
-        vm.expectRevert(bytes("onlyStrategyManager"));
+        vm.expectRevert(NOT_STRATEGY_MANAGER_ERROR );
         vm.startPrank(operator);
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
@@ -1163,7 +1176,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
         uint256[] memory shareAmounts
     ) public fuzzedAddress(operator) {
         vm.assume(operator != address(strategyManagerMock));
-        vm.expectRevert(bytes("onlyStrategyManager"));
+        vm.expectRevert(NOT_STRATEGY_MANAGER_ERROR );
         vm.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
     }
@@ -1182,7 +1195,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
         vm.stopPrank();
 
         slasherMock.setOperatorFrozenStatus(operator, true);
-        vm.expectRevert(bytes("DelegationManager._delegate: cannot delegate to a frozen operator"));
+        vm.expectRevert(OPERATOR_FROZEN_ERROR );
         vm.startPrank(staker);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
@@ -1225,7 +1238,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
     // @notice Verifies that it is not possible to delegate to an unregistered operator
     function testCannotDelegateToUnregisteredOperator(address operator) public {
-        vm.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+        vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR );
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
     }
@@ -1237,7 +1250,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
         vm.stopPrank();
 
         vm.startPrank(staker);
-        vm.expectRevert(bytes("Pausable: index is paused"));
+        vm.expectRevert(PAUSED_INDEX_ERROR );
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
         vm.stopPrank();
@@ -1304,7 +1317,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try to call the `forceUndelegation` function and check for reversion
         vm.startPrank(caller);
-        vm.expectRevert(bytes("DelegationManager.forceUndelegation: caller must be operator or their delegationApprover"));
+        vm.expectRevert(NOT_OPERATOR_OR_APPOVER_ERROR );
         delegationManager.forceUndelegation(staker);
         vm.stopPrank();
     }
@@ -1332,7 +1345,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try to call the `forceUndelegation` function and check for reversion
         vm.startPrank(caller);
-        vm.expectRevert(bytes("DelegationManager.forceUndelegation: operators cannot be force-undelegated"));
+        vm.expectRevert(FORCE_UNDELEGATE_OPERATOR_ERROR );
         delegationManager.forceUndelegation(operator);
         vm.stopPrank();
     }
@@ -1361,7 +1374,7 @@ bytes internal constant STAKER_ALREADY_DELEGATED_ERROR =bytes("DelegationManager
 
         // try to delegate to the operator from `staker_two`, and verify that the call reverts for the proper reason (trying to reuse a salt)
         vm.startPrank(staker_two);
-        vm.expectRevert(bytes("DelegationManager._delegate: approverSalt already spent"));
+        vm.expectRevert(APPROVER_SALT_SPENT_ERROR );
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         vm.stopPrank();
     }
