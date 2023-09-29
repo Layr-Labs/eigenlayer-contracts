@@ -131,6 +131,12 @@ library BeaconChainProofs {
         bytes32 balanceRoot;
     }
 
+    /// @notice This struct contains the root and proof for verifying the state root against the oracle block root
+    struct StateRootProof {
+        bytes32 beaconStateRoot;
+        bytes proof;
+    }
+
     /**
      *
      * @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the

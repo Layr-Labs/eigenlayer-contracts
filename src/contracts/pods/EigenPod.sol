@@ -282,8 +282,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
-        bytes32 beaconStateRoot,
-        bytes calldata stateRootProof,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
@@ -299,14 +298,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify that the provided state root is verified against the oracle-provided latest block header
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
-            beaconStateRoot: beaconStateRoot,
-            stateRootProof: stateRootProof
+            beaconStateRoot: stateRootProof.beaconStateRoot,
+            stateRootProof: stateRootProof.proof
         });
 
         VerifiedWithdrawal memory totalAmountToSendAndSharesDelta;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(
-                beaconStateRoot,
+                stateRootProof.beaconStateRoot,
                 withdrawalProofs[i],
                 validatorFieldsProofs[i],
                 validatorFields[i],
@@ -342,8 +341,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
-        bytes32 beaconStateRoot,
-        bytes calldata stateRootProof,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
@@ -371,15 +369,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // verify that the provided state root is verified against the oracle-provided latest block header for all the validators being proven
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
-            beaconStateRoot: beaconStateRoot,
-            stateRootProof: stateRootProof
+            beaconStateRoot: stateRootProof.beaconStateRoot,
+            stateRootProof: stateRootProof.proof
         });
 
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
                 oracleTimestamp,
-                beaconStateRoot,
+                stateRootProof.beaconStateRoot,
                 validatorIndices[i],
                 withdrawalCredentialProofs[i],
                 validatorFields[i]

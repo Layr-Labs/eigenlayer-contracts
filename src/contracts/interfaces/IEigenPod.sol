@@ -153,8 +153,7 @@ interface IEigenPod {
      */
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
-        bytes32 beaconStateRoot,
-        bytes calldata stateRootProof,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
@@ -189,8 +188,7 @@ interface IEigenPod {
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
-        bytes32 beaconStateRoot,
-        bytes calldata stateRootProof,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
