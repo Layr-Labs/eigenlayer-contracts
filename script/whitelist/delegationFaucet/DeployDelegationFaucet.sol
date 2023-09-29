@@ -63,9 +63,9 @@ contract DeployDelegationFaucet is Script, DSTest {
         );
 
         // Needs to be strategyManager.strategyWhitelister() to add STK strategy
-        IStrategy[] memory _strategy = new IStrategy[](1);
-        _strategy[0] = stakeTokenStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        // IStrategy[] memory _strategy = new IStrategy[](1);
+        // _strategy[0] = stakeTokenStrat;
+        // strategyManager.addStrategiesToDepositWhitelist(_strategy);
 
         // Deploy DelegationFaucet, grant it admin/mint/pauser roles, etc.
         delegationFaucet = new DelegationFaucet(strategyManager, delegation, stakeToken, stakeTokenStrat);
