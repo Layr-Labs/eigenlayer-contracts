@@ -52,16 +52,17 @@ contract EigenPodMock is IEigenPod, Test {
      * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
      * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
-     * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
+     * @param oracleTimestamp is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
      * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyWithdrawalCredentials(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         uint40[] calldata validatorIndices,
-        BeaconChainProofs.WithdrawalCredentialProof[] calldata withdrawalCredentialProofs,
+        bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
     ) external {}
 
@@ -70,7 +71,7 @@ contract EigenPodMock is IEigenPod, Test {
      * @notice This function records an overcommitment of stake to EigenLayer on behalf of a certain ETH validator.
      *         If successful, the overcommitted balance is penalized (available for withdrawal whenever the pod's balance allows).
      *         The ETH validator's shares in the enshrined beaconChainETH strategy are also removed from the StrategyManager and undelegated.
-     * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
+     * @param oracleTimestamp The oracleBlockNumber whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
      * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
@@ -78,8 +79,9 @@ contract EigenPodMock is IEigenPod, Test {
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyBalanceUpdate(
-        uint64 oracleBlockNumber,
+        uint64 oracleTimestamp,
         uint40 validatorIndex,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
     ) external {}
@@ -94,7 +96,8 @@ contract EigenPodMock is IEigenPod, Test {
      */
     function verifyAndProcessWithdrawals(
         uint64 oracleTimestamp,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs, 
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields
