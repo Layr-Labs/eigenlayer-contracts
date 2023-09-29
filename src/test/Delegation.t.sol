@@ -20,6 +20,11 @@ contract DelegationTests is EigenLayerTestHelper {
     MiddlewareVoteWeigherMock internal voteWeigher;
     MiddlewareVoteWeigherMock internal voteWeigherImplementation;
 
+    bytes internal constant OPERATOR_NOT_REGISTERED_ERROR = bytes("DelegationManager._delegate: operator is not registered in EigenLayer");
+    bytes internal constant SIGNATURE_EXPIRED_ERROR = bytes("DelegationManager.delegateToBySignature: staker signature expired");
+    bytes internal constant SIGNATURE_INVALID_ERROR = bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
+    bytes internal constant OPERATOR_ALREADY_REGISTERED_ERROR = bytes("DelegationManager.registerAsOperator: operator has already registered");
+
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         vm.assume(ethAmount >= 0 && ethAmount <= 1e18);
         vm.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
@@ -217,7 +222,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
         
         if (expiry < block.timestamp) {
-            vm.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
+            vm.expectRevert(SIGNATURE_EXPIRED_ERROR );
         }
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
@@ -295,7 +300,7 @@ contract DelegationTests is EigenLayerTestHelper {
             signature = abi.encodePacked(r, s, v);
         }
         
-        vm.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
+        vm.expectRevert(SIGNATURE_INVALID_ERROR);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -322,7 +327,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        vm.expectRevert();
+        vm.expectRevert(); //SIGNATURE_INVALID_ERROR
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -349,7 +354,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         bytes memory signature = abi.encodePacked(r, s, v);
         
-        vm.expectRevert();
+        vm.expectRevert(); //SIGNATURE_INVALID_ERROR
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
@@ -419,7 +424,7 @@ contract DelegationTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         _testRegisterAsOperator(operator, operatorDetails);
-        vm.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
+        vm.expectRevert(OPERATOR_ALREADY_REGISTERED_ERROR );
         _testRegisterAsOperator(operator, operatorDetails);
     }
 
@@ -430,7 +435,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDepositStrategies(getOperatorAddress(1), 1e18, 1);
         _testDepositEigen(getOperatorAddress(1), 1e18);
 
-        vm.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+        vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
         vm.startPrank(getOperatorAddress(1));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
@@ -471,18 +476,18 @@ contract DelegationTests is EigenLayerTestHelper {
         });
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        vm.expectRevert("DelegationManager.registerAsOperator: operator has already registered");
+        vm.expectRevert(OPERATOR_ALREADY_REGISTERED_ERROR);
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.stopPrank();
     }
 
     /// @notice This function checks that you can only delegate to an address that is already registered.
     function testFuzz_DelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
-        vm.startPrank(_staker);
-        vm.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        vm.startPrank(_staker);
+        vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
         delegation.delegateTo(_unregisteredOperator, signatureWithExpiry, bytes32(0));
-        vm.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
+        vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
         delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
         vm.stopPrank();
         
