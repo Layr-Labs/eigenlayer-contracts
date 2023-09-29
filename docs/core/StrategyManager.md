@@ -57,7 +57,7 @@ If the Staker is delegated to an Operator, the Operator's delegated shares are i
 * `strategy` in question MUST be whitelisted for deposits. 
 * See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 
-*Unimplemented as of M2*:
+*As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
 #### `depositIntoStrategyWithSignature`
@@ -84,7 +84,7 @@ function depositIntoStrategyWithSignature(
 *Requirements*: See `depositIntoStrategy` above. Additionally:
 * Caller MUST provide a valid, unexpired signature over the correct fields
 
-*Unimplemented as of M2*:
+*As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
 #### `queueWithdrawal`
@@ -124,7 +124,7 @@ Note that at no point during `queueWithdrawal` are the corresponding `StrategyBa
 * The Staker MUST have sufficient share balances in the specified strategies
 * The `withdrawer` MUST NOT be 0
 
-*Unimplemented as of M2*:
+*As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
 #### `completeQueuedWithdrawal`
@@ -160,7 +160,7 @@ For each strategy/share pair in the `QueuedWithdrawal`:
     * If `receiveAsTokens`, the caller MUST pass in the underlying `IERC20[] tokens` being withdrawn in the order they are listed in the `QueuedWithdrawal`.
 * See [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
-*Unimplemented as of M2*:
+*As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 * The `middlewareTimesIndex` parameter has to do with the Slasher, which currently does nothing. As of M2, this parameter has no bearing on anything and can be ignored. It is passed into a call to the Slasher, but the call is a no-op.
 
@@ -210,7 +210,7 @@ The strategies and shares removed from the Staker are returned to the `Delegatio
 * Caller MUST be the `DelegationManager`
 * Pause status MUST NOT be set: `PAUSED_WITHDRAWALS`
 
-*Unimplemented as of M2*:
+*As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
 ### Operator

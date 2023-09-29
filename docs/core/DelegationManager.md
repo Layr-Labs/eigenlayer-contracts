@@ -52,7 +52,7 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~180 days)
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
-*Unimplemented as of M2*:
+*As of M2*:
 * `require(!slasher.isFrozen(operator))` is currently a no-op
 
 #### `modifyOperatorDetails`
@@ -103,7 +103,7 @@ Allows the caller (a Staker) to delegate ALL their shares to an Operator (delega
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
-*Unimplemented as of M2*:
+*As of M2*:
 * `require(!slasher.isFrozen(operator))` is currently a no-op
 
 #### `delegateToBySignature`
@@ -129,7 +129,7 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 * If caller is either the Operator's `delegationApprover` or the Operator, the `approverSignatureAndExpiry` and `approverSalt` can be empty
 * `stakerSignatureAndExpiry` MUST be a valid, unexpired signature over the correct hash and nonce
 
-*Unimplemented as of M2*:
+*As of M2*:
 * `require(!slasher.isFrozen(operator))` is currently a no-op
 
 ### Other
