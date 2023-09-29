@@ -20,13 +20,19 @@ contract DelegationTests is EigenLayerTestHelper {
     MiddlewareVoteWeigherMock internal voteWeigher;
     MiddlewareVoteWeigherMock internal voteWeigherImplementation;
 
-    bytes internal constant OPERATOR_NOT_REGISTERED_ERROR = bytes("DelegationManager._delegate: operator is not registered in EigenLayer");
-    bytes internal constant SIGNATURE_EXPIRED_ERROR = bytes("DelegationManager.delegateToBySignature: staker signature expired");
-    bytes internal constant SIGNATURE_INVALID_ERROR = bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
-    bytes internal constant OPERATOR_ALREADY_REGISTERED_ERROR = bytes("DelegationManager.registerAsOperator: operator has already registered");
-    bytes internal constant ALREADY_INITIALIZED_ERROR =bytes("Initializable: contract is already initialized");
-    bytes internal constant  EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR = bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
-    bytes internal constant OPERATOR_UNDELEGATION_ERROR = bytes("DelegationManager.undelegate: operators cannot undelegate from themselves");
+    bytes internal constant OPERATOR_NOT_REGISTERED_ERROR =
+        bytes("DelegationManager._delegate: operator is not registered in EigenLayer");
+    bytes internal constant SIGNATURE_EXPIRED_ERROR =
+        bytes("DelegationManager.delegateToBySignature: staker signature expired");
+    bytes internal constant SIGNATURE_INVALID_ERROR =
+        bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
+    bytes internal constant OPERATOR_ALREADY_REGISTERED_ERROR =
+        bytes("DelegationManager.registerAsOperator: operator has already registered");
+    bytes internal constant ALREADY_INITIALIZED_ERROR = bytes("Initializable: contract is already initialized");
+    bytes internal constant EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR =
+        bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
+    bytes internal constant OPERATOR_UNDELEGATION_ERROR =
+        bytes("DelegationManager.undelegate: operators cannot undelegate from themselves");
 
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         vm.assume(ethAmount >= 0 && ethAmount <= 1e18);
@@ -55,7 +61,7 @@ contract DelegationTests is EigenLayerTestHelper {
             _quorumBips[1] = 4000;
             VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
                 new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
-            ethStratsAndMultipliers[0].strategy = wethStrat; 
+            ethStratsAndMultipliers[0].strategy = wethStrat;
             ethStratsAndMultipliers[0].multiplier = multiplier;
             VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
                 new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
@@ -66,7 +72,12 @@ contract DelegationTests is EigenLayerTestHelper {
             eigenLayerProxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(voteWeigher))),
                 address(voteWeigherImplementation),
-                abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
+                abi.encodeWithSelector(
+                    MiddlewareVoteWeigherMock.initialize.selector,
+                    _quorumBips,
+                    ethStratsAndMultipliers,
+                    eigenStratsAndMultipliers
+                )
             );
             vm.stopPrank();
         }
@@ -109,7 +120,7 @@ contract DelegationTests is EigenLayerTestHelper {
         // base strategy will revert if these amounts are too small on first deposit
         vm.assume(ethAmount >= 1);
         vm.assume(eigenAmount >= 1);
-        
+
         _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
     }
 
@@ -126,7 +137,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         // use storage to solve stack-too-deep
         operator = _operator;
-        
+
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: address(0),
@@ -148,8 +159,7 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker), "staker is not delegate");
 
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
+        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
 
         {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
@@ -180,8 +190,10 @@ contract DelegationTests is EigenLayerTestHelper {
             vm.startPrank(address(strategyManager));
 
             IDelegationManager.OperatorDetails memory expectedOperatorDetails = delegation.operatorDetails(operator);
-            assertTrue(keccak256(abi.encode(expectedOperatorDetails)) == keccak256(abi.encode(operatorDetails)),
-            "failed to set correct operator details");
+            assertTrue(
+                keccak256(abi.encode(expectedOperatorDetails)) == keccak256(abi.encode(operatorDetails)),
+                "failed to set correct operator details"
+            );
         }
     }
 
@@ -205,17 +217,18 @@ contract DelegationTests is EigenLayerTestHelper {
         require(delegation.delegatedTo(staker) == address(0), "undelegation unsuccessful");
     }
 
-    /// @notice tests delegation from a staker to operator via ECDSA signature.  
+    /// @notice tests delegation from a staker to operator via ECDSA signature.
     function testFuzz_DelegateToBySignature(address operator, uint96 ethAmount, uint96 eigenAmount, uint256 expiry)
         public
         fuzzedAddress(operator)
     {
         address staker = vm.addr(PRIVATE_KEY);
-        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
+        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
 
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
-        bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry));
+        bytes32 structHash =
+            keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry));
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
         bytes memory signature;
@@ -223,27 +236,26 @@ contract DelegationTests is EigenLayerTestHelper {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digestHash);
             signature = abi.encodePacked(r, s, v);
         }
-        
+
         if (expiry < block.timestamp) {
-            vm.expectRevert(SIGNATURE_EXPIRED_ERROR );
+            vm.expectRevert(SIGNATURE_EXPIRED_ERROR);
         }
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: expiry
-        });
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry =
+            IDelegationManager.SignatureWithExpiry({signature: signature, expiry: expiry});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         if (expiry >= block.timestamp) {
             assertTrue(delegation.isDelegated(staker), "staker is not delegate");
             assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
-            assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");            
+            assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
         }
     }
 
     /// @notice tries delegating using a signature and an EIP 1271 compliant wallet
-    function testFuzz_DelegateToBySignature_WithContractWallet_Successfully(address operator, uint96 ethAmount, uint96 eigenAmount)
-        public
-        fuzzedAddress(operator)
-    {
+    function testFuzz_DelegateToBySignature_WithContractWallet_Successfully(
+        address operator,
+        uint96 ethAmount,
+        uint96 eigenAmount
+    ) public fuzzedAddress(operator) {
         address staker = vm.addr(PRIVATE_KEY);
 
         // deploy ERC1271WalletMock for staker to use
@@ -252,11 +264,13 @@ contract DelegationTests is EigenLayerTestHelper {
 
         staker = address(wallet);
 
-        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
-        
+        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
+
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
-        bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
+        bytes32 structHash = keccak256(
+            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max)
+        );
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
         bytes memory signature;
@@ -264,11 +278,9 @@ contract DelegationTests is EigenLayerTestHelper {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digestHash);
             signature = abi.encodePacked(r, s, v);
         }
-                
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry =
+            IDelegationManager.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         assertTrue(delegation.isDelegated(staker), "staker is not delegate");
         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
@@ -276,10 +288,11 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     ///  @notice tries delegating using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
-    function testFuzz_DelegateToBySignature_WithContractWallet_BadSignature(address operator, uint96 ethAmount, uint96 eigenAmount)
-        public
-        fuzzedAddress(operator)
-    {
+    function testFuzz_DelegateToBySignature_WithContractWallet_BadSignature(
+        address operator,
+        uint96 ethAmount,
+        uint96 eigenAmount
+    ) public fuzzedAddress(operator) {
         address staker = vm.addr(PRIVATE_KEY);
 
         // deploy ERC1271WalletMock for staker to use
@@ -288,11 +301,13 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.stopPrank();
         staker = address(wallet);
 
-        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
-        
+        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
+
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
-        bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
+        bytes32 structHash = keccak256(
+            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max)
+        );
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
         bytes memory signature;
@@ -302,20 +317,22 @@ contract DelegationTests is EigenLayerTestHelper {
             v = (v == 27 ? 28 : 27);
             signature = abi.encodePacked(r, s, v);
         }
-        
+
         vm.expectRevert(SIGNATURE_INVALID_ERROR);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry =
+            IDelegationManager.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
     /// @notice  tries delegating using a wallet that does not comply with EIP 1271
-    function testFuzz_DelegateToBySignature_WithContractWallet_NonconformingWallet(address operator, uint96 ethAmount, uint96 eigenAmount, uint8 v, bytes32 r, bytes32 s)
-        public
-        fuzzedAddress(operator)
-    {
+    function testFuzz_DelegateToBySignature_WithContractWallet_NonconformingWallet(
+        address operator,
+        uint96 ethAmount,
+        uint96 eigenAmount,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public fuzzedAddress(operator) {
         address staker = vm.addr(PRIVATE_KEY);
 
         // deploy non ERC1271-compliant wallet for staker to use
@@ -324,44 +341,36 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.stopPrank();
         staker = address(wallet);
 
-        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
+        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
 
         vm.assume(staker != operator);
 
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.expectRevert(); //SIGNATURE_INVALID_ERROR
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry =
+            IDelegationManager.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
     /// @notice tests delegation to EigenLayer via an ECDSA signatures with invalid signature
     /// @param operator is the operator being delegated to.
     function testFuzz_DelegateToByInvalidSignature(
-        address operator, 
-        uint96 ethAmount, 
-        uint96 eigenAmount, 
+        address operator,
+        uint96 ethAmount,
+        uint96 eigenAmount,
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-        public
-        fuzzedAddress(operator)
-        fuzzedAmounts(ethAmount, eigenAmount)
-    {
+    ) public fuzzedAddress(operator) fuzzedAmounts(ethAmount, eigenAmount) {
         address staker = vm.addr(PRIVATE_KEY);
-        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
+        _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount);
 
         bytes memory signature = abi.encodePacked(r, s, v);
-        
+
         vm.expectRevert(); //SIGNATURE_INVALID_ERROR
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
-            signature: signature,
-            expiry: type(uint256).max
-        });
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry =
+            IDelegationManager.SignatureWithExpiry({signature: signature, expiry: type(uint256).max});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
     }
 
@@ -391,7 +400,7 @@ contract DelegationTests is EigenLayerTestHelper {
         uint96 multiplier = 1e18;
         for (uint16 i = 0; i < numStratsToAdd; ++i) {
             VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
-            new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
+                new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
             ethStratsAndMultipliers[0].strategy = strategies[i];
             ethStratsAndMultipliers[0].multiplier = multiplier;
             vm.startPrank(voteWeigher.serviceManager().owner());
@@ -403,12 +412,8 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegateToOperator(staker, operator);
         uint96 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
         uint96 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
-        assertTrue(
-            operatorEthWeightAfter > operatorEthWeightBefore, "operatorEthWeight did not increase!"
-        );
-        assertTrue(
-            operatorEigenWeightAfter > operatorEigenWeightBefore, "operatorEthWeight did not increase!"
-        );
+        assertTrue(operatorEthWeightAfter > operatorEthWeightBefore, "operatorEthWeight did not increase!");
+        assertTrue(operatorEigenWeightAfter > operatorEigenWeightBefore, "operatorEthWeight did not increase!");
     }
 
     /// @notice This function tests to ensure that a delegation contract
@@ -427,7 +432,7 @@ contract DelegationTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         _testRegisterAsOperator(operator, operatorDetails);
-        vm.expectRevert(OPERATOR_ALREADY_REGISTERED_ERROR );
+        vm.expectRevert(OPERATOR_ALREADY_REGISTERED_ERROR);
         _testRegisterAsOperator(operator, operatorDetails);
     }
 
@@ -445,20 +450,19 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.stopPrank();
     }
 
-
     /// @notice This function tests to ensure that a delegation contract
     ///         cannot be intitialized multiple times, test with different caller addresses
     function testFuzz_CannotInitMultipleTimesDelegation(address _attacker) public {
         vm.assume(_attacker != address(eigenLayerProxyAdmin));
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
-        vm.expectRevert(ALREADY_INITIALIZED_ERROR );
+        vm.expectRevert(ALREADY_INITIALIZED_ERROR);
         delegation.initialize(_attacker, eigenLayerPauserReg, 0);
     }
 
     /// @notice This function tests that the earningsReceiver cannot be set to address(0)
-    function test_CannotSetEarningsReceiverToZeroAddress() public{
-        vm.expectRevert(EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR );
+    function test_CannotSetEarningsReceiverToZeroAddress() public {
+        vm.expectRevert(EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: address(0),
             delegationApprover: address(0),
@@ -469,7 +473,11 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     /// @notice This function tests to ensure that an address can only call registerAsOperator() once
-    function testFuzz_CannotRegisterAsOperatorTwice(address _operator, address _dt) public fuzzedAddress(_operator) fuzzedAddress(_dt) {
+    function testFuzz_CannotRegisterAsOperatorTwice(address _operator, address _dt)
+        public
+        fuzzedAddress(_operator)
+        fuzzedAddress(_dt)
+    {
         vm.assume(_dt != address(0));
         vm.startPrank(_operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
@@ -485,7 +493,10 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     /// @notice This function checks that you can only delegate to an address that is already registered.
-    function testFuzz_DelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
+    function testFuzz_DelegateToInvalidOperator(address _staker, address _unregisteredOperator)
+        public
+        fuzzedAddress(_staker)
+    {
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         vm.startPrank(_staker);
         vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
@@ -493,11 +504,9 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
         delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
         vm.stopPrank();
-        
     }
 
-    function testFuzz_Undelegate_SigP_Version(address _operator,address _staker,address _dt) public {
-
+    function testFuzz_Undelegate_SigP_Version(address _operator, address _staker, address _dt) public {
         vm.assume(_operator != address(0));
         vm.assume(_staker != address(0));
         vm.assume(_operator != _staker);
@@ -508,7 +517,7 @@ contract DelegationTests is EigenLayerTestHelper {
         //setup delegation
         vm.prank(_operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver:_dt,
+            earningsReceiver: _dt,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -520,14 +529,14 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //operators cannot undelegate from themselves
         vm.prank(address(strategyManager));
-        vm.expectRevert(OPERATOR_UNDELEGATION_ERROR );
+        vm.expectRevert(OPERATOR_UNDELEGATION_ERROR);
         delegation.undelegate(_operator);
 
         //_staker cannot undelegate themselves
         vm.prank(_staker);
         vm.expectRevert();
         delegation.undelegate(_operator);
-        
+
         //_operator cannot undelegate themselves
         vm.prank(_operator);
         vm.expectRevert();
@@ -541,7 +550,6 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.prank(address(strategyManager));
         delegation.undelegate(_staker);
         assertFalse(delegation.isDelegated(_staker));
-
     }
 
     function _registerAdditionalOperator(uint256 index, uint32 _serveUntil) internal {
@@ -568,9 +576,13 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.stopPrank();
     }
 
-
     // registers the operator if they are not already registered, and deposits "WETH" + "EIGEN" on behalf of the staker.
-    function _registerOperatorAndDepositFromStaker(address operator, address staker, uint96 ethAmount, uint96 eigenAmount) internal {
+    function _registerOperatorAndDepositFromStaker(
+        address operator,
+        address staker,
+        uint96 ethAmount,
+        uint96 eigenAmount
+    ) internal {
         vm.assume(staker != operator);
 
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
