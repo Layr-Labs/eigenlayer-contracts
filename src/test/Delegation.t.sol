@@ -24,6 +24,9 @@ contract DelegationTests is EigenLayerTestHelper {
     bytes internal constant SIGNATURE_EXPIRED_ERROR = bytes("DelegationManager.delegateToBySignature: staker signature expired");
     bytes internal constant SIGNATURE_INVALID_ERROR = bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed");
     bytes internal constant OPERATOR_ALREADY_REGISTERED_ERROR = bytes("DelegationManager.registerAsOperator: operator has already registered");
+    bytes internal constant ALREADY_INITIALIZED_ERROR =bytes("Initializable: contract is already initialized");
+    bytes internal constant  EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR = bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
+    bytes internal constant OPERATOR_UNDELEGATION_ERROR = bytes("DelegationManager.undelegate: operators cannot undelegate from themselves");
 
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         vm.assume(ethAmount >= 0 && ethAmount <= 1e18);
@@ -139,11 +142,11 @@ contract DelegationTests is EigenLayerTestHelper {
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the  strategies
-        assertTrue(!delegation.isDelegated(staker), "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker), "staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);
-        assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
+        assertTrue(delegation.isDelegated(staker), "staker is not delegate");
 
         (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
             strategyManager.getDeposits(staker);
@@ -157,7 +160,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
-                "testDelegation: operatorEthWeight did not increment by the right amount"
+                "operatorEthWeight did not increment by the right amount"
             );
             assertTrue(
                 operatorEigenWeightAfter - amountsBefore[1] == stakerEigenWeight,
@@ -230,7 +233,7 @@ contract DelegationTests is EigenLayerTestHelper {
         });
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         if (expiry >= block.timestamp) {
-            assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
+            assertTrue(delegation.isDelegated(staker), "staker is not delegate");
             assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
             assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");            
         }
@@ -267,7 +270,7 @@ contract DelegationTests is EigenLayerTestHelper {
             expiry: type(uint256).max
         });
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
-        assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
+        assertTrue(delegation.isDelegated(staker), "staker is not delegate");
         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
         assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
     }
@@ -401,10 +404,10 @@ contract DelegationTests is EigenLayerTestHelper {
         uint96 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
         uint96 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
         assertTrue(
-            operatorEthWeightAfter > operatorEthWeightBefore, "testDelegation: operatorEthWeight did not increase!"
+            operatorEthWeightAfter > operatorEthWeightBefore, "operatorEthWeight did not increase!"
         );
         assertTrue(
-            operatorEigenWeightAfter > operatorEigenWeightBefore, "testDelegation: operatorEthWeight did not increase!"
+            operatorEigenWeightAfter > operatorEigenWeightBefore, "operatorEthWeight did not increase!"
         );
     }
 
@@ -449,13 +452,13 @@ contract DelegationTests is EigenLayerTestHelper {
         vm.assume(_attacker != address(eigenLayerProxyAdmin));
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
-        vm.expectRevert(bytes("Initializable: contract is already initialized"));
+        vm.expectRevert(ALREADY_INITIALIZED_ERROR );
         delegation.initialize(_attacker, eigenLayerPauserReg, 0);
     }
 
     /// @notice This function tests that the earningsReceiver cannot be set to address(0)
     function test_CannotSetEarningsReceiverToZeroAddress() public{
-        vm.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        vm.expectRevert(EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR );
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: address(0),
             delegationApprover: address(0),
@@ -517,7 +520,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //operators cannot undelegate from themselves
         vm.prank(address(strategyManager));
-        vm.expectRevert(bytes("DelegationManager.undelegate: operators cannot undelegate from themselves"));
+        vm.expectRevert(OPERATOR_UNDELEGATION_ERROR );
         delegation.undelegate(_operator);
 
         //_staker cannot undelegate themselves
@@ -584,7 +587,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         //making additional deposits to the strategies
-        assertTrue(!delegation.isDelegated(staker), "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker), "staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
     }
