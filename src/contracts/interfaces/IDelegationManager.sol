@@ -77,9 +77,9 @@ interface IDelegationManager {
 
     /**
      * @notice Struct used to track a staker's "undelegation limbo" status and associated variables.
-     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
-     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
-     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
+     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their staked tokens and virtual "beacon chain ETH shares"
+     * from EigenLayer's delegation system but do not withdraw the associated tokens/ETH from EigenLayer itself. In particular this mode allows stakers who have
+     * restaked native ETH in an EigenPod a route via which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
      */
     struct UndelegationLimboStatus {
         // @notice Whether or not the staker is in the "undelegation limbo" mode.

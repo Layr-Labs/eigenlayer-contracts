@@ -209,18 +209,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
-     * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
+     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into "undelegation limbo", if necessary.
      * @param staker The account to be undelegated.
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
+     * @dev Note that if a staker enters undelegation limbo as a result of this function, then they will be unable to redelegate until after
+     * successfully calling `exitUndelegationLimbo`.
      */
     function undelegate(
         address staker
     ) external onlyWhenNotPaused(PAUSED_UNDELEGATION) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
+        require(!isInUndelegationLimbo(staker), "DelegationManager.undelegate: staker is already in undelegation limbo");
         address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -231,16 +233,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.undelegate: caller cannot undelegate staker"
         );
 
-        // enter the staker into undelegation limbo, if necessary
+        // query staker info from other system contracts
         uint256 podShares = eigenPodManager.podOwnerShares(staker);
         bool stakerHasSharesInStrategyManager = (strategyManager.stakerStrategyListLength(staker) != 0);
+
+        // enter the staker into undelegation limbo, if necessary
         if (stakerHasSharesInStrategyManager || (podShares != 0)) {
-            // store the undelegation limbo details
+            // store the undelegation limbo details and emit an event
             _stakerUndelegationLimboStatus[staker].active = true;
             _stakerUndelegationLimboStatus[staker].startBlock = uint32(block.number);
             _stakerUndelegationLimboStatus[staker].delegatedAddress = operator;
-
-            // emit event
             emit UndelegationLimboEntered(staker);
 
             // remove shares delegated to the operator, as necessary
@@ -262,7 +264,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         strategy: strategies[i],
                         shares: strategyShares[i]
                     });
-
                     unchecked {
                         ++i;
                     }
@@ -285,6 +286,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
      * This is because undelegation limbo is subject to the same restrictions as completing a withdrawal, to ensure that a staker cannot use undelegation
      * limbo to avoid potentially being subject to slashing.
+     * @dev Note that this checks against the frozen status of the operator *that the caller was delegated to when they entered undelegation limbo*, to provide
+     * the same kind of slashing eligibility as withdrawals via the StrategyManager or DelegationManager.
      */
     function exitUndelegationLimbo(
         uint256 middlewareTimesIndex
@@ -310,10 +313,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
         );
 
-        // delete the pod owner's undelegation limbo details
+        // delete the pod owner's undelegation limbo details and emit an event
         delete _stakerUndelegationLimboStatus[msg.sender];
-
-        // emit event
         emit UndelegationLimboExited(msg.sender);
 
         // return any shares that the staker has to the delegation system
