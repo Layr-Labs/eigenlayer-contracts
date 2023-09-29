@@ -124,8 +124,6 @@ library BeaconChainProofs {
 
     /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
     struct BalanceUpdateProof {
-        bytes32 beaconStateRoot;
-        bytes stateRootProof;
         bytes validatorBalanceProof;
         bytes validatorFieldsProof;
         bytes32 balanceRoot;

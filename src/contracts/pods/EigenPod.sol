@@ -193,6 +193,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function verifyBalanceUpdate(
         uint64 oracleTimestamp,
         uint40 validatorIndex,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
@@ -222,14 +223,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             // verify the provided state root against the oracle-provided latest block header
             BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
                 latestBlockRoot: latestBlockRoot,
-                beaconStateRoot: balanceUpdateProof.beaconStateRoot,
-                stateRootProof: balanceUpdateProof.stateRootProof
+                beaconStateRoot: stateRootProof.beaconStateRoot,
+                stateRootProof: stateRootProof.proof
             });
         }
 
         // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
         BeaconChainProofs.verifyValidatorFields({
-            beaconStateRoot: balanceUpdateProof.beaconStateRoot,
+            beaconStateRoot: stateRootProof.beaconStateRoot,
             validatorFields: validatorFields,
             validatorFieldsProof: balanceUpdateProof.validatorFieldsProof,
             validatorIndex: validatorIndex
@@ -237,7 +238,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // verify ETH validators current balance, which is stored in the `balances` container of the beacon state
         BeaconChainProofs.verifyValidatorBalance({
-            beaconStateRoot: balanceUpdateProof.beaconStateRoot,
+            beaconStateRoot: stateRootProof.beaconStateRoot,
             balanceRoot: balanceUpdateProof.balanceRoot,
             validatorBalanceProof: balanceUpdateProof.validatorBalanceProof,
             validatorIndex: validatorIndex

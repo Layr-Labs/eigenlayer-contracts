@@ -174,6 +174,7 @@ interface IEigenPod {
     function verifyBalanceUpdate(
         uint64 oracleTimestamp,
         uint40 validatorIndex,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
     ) external;
