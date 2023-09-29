@@ -302,7 +302,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             stateRootProof: stateRootProof.proof
         });
 
-        VerifiedWithdrawal memory totalAmountToSendAndSharesDelta;
+        VerifiedWithdrawal memory withdrawalSummary;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(
                 stateRootProof.beaconStateRoot,
@@ -311,16 +311,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 validatorFields[i],
                 withdrawalFields[i]
             );
-            totalAmountToSendAndSharesDelta.amountToSend += verifiedWithdrawal.amountToSend;
-            totalAmountToSendAndSharesDelta.sharesDelta += verifiedWithdrawal.sharesDelta;
+            withdrawalSummary.amountToSend += verifiedWithdrawal.amountToSend;
+            withdrawalSummary.sharesDelta += verifiedWithdrawal.sharesDelta;
         }
         // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
-        if (totalAmountToSendAndSharesDelta.amountToSend != 0) {
-            _sendETH_AsDelayedWithdrawal(podOwner, totalAmountToSendAndSharesDelta.amountToSend);
+        if (withdrawalSummary.amountToSend != 0) {
+            _sendETH_AsDelayedWithdrawal(podOwner, withdrawalSummary.amountToSend);
         }
         //update podOwner's shares in the strategy manager
-        if (totalAmountToSendAndSharesDelta.sharesDelta != 0) {
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalAmountToSendAndSharesDelta.sharesDelta);
+        if (withdrawalSummary.sharesDelta != 0) {
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, withdrawalSummary.sharesDelta);
         }
     }
 
