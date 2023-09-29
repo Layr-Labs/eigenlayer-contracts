@@ -82,7 +82,7 @@ contract WithdrawalTests is DelegationTests {
             internal 
         {
 
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        testFuzz_Delegation(operator, depositor, ethAmount, eigenAmount);
 
         cheats.startPrank(operator);
         slasher.optIntoSlashing(address(generalServiceManager1));
@@ -186,7 +186,7 @@ contract WithdrawalTests is DelegationTests {
         ) 
             public 
         {
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        testFuzz_Delegation(operator, depositor, ethAmount, eigenAmount);
 
         cheats.startPrank(operator);
         slasher.optIntoSlashing(address(generalServiceManager1));
@@ -319,7 +319,7 @@ contract WithdrawalTests is DelegationTests {
 
         //warps past fraudproof time interval
         cheats.warp(block.timestamp + 7 days + 1);
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        testFuzz_Delegation(operator, depositor, ethAmount, eigenAmount);
     }
 
     /// @notice test to see if an operator who is slashed/frozen
@@ -332,7 +332,7 @@ contract WithdrawalTests is DelegationTests {
         fuzzedAddress(staker)
     {
         cheats.assume(staker != operator);
-        testDelegation(operator, staker, ethAmount, eigenAmount);
+        testFuzz_Delegation(operator, staker, ethAmount, eigenAmount);
 
         {
             address slashingContract = slasher.owner(); 
