@@ -527,14 +527,12 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //assert still delegated
         assertTrue(delegation.isDelegated(_staker));
-        assertFalse(!delegation.isDelegated(_staker));
         assertTrue(delegation.isOperator(_operator));
 
         //strategyManager can undelegate _staker
         vm.prank(address(strategyManager));
         delegation.undelegate(_staker);
         assertFalse(delegation.isDelegated(_staker));
-        assertTrue(!delegation.isDelegated(_staker));
 
     }
 
