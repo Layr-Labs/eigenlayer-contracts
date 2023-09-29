@@ -1229,45 +1229,43 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    // special event purely used in the StrategyManagerMock contract, inside of `undelegate` function to verify that the correct call is made
-    event ForceTotalWithdrawalCalled(address staker);
+// TODO: delete or revise this test
+    // /**
+    //  * @notice Verifies that the `undelegate` function properly calls `strategyManager.forceTotalWithdrawal` when necessary
+    //  * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
+    //  */
+    // function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
+    //     fuzzedAddress(staker)
+    // {
+    //     address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+    //     address operator = address(this);
 
-    /**
-     * @notice Verifies that the `undelegate` function properly calls `strategyManager.forceTotalWithdrawal` when necessary
-     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
-     */
-    function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
-        fuzzedAddress(staker)
-    {
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-        address operator = address(this);
+    //     // filtering since you can't delegate to yourself after registering as an operator
+    //     cheats.assume(staker != operator);
 
-        // filtering since you can't delegate to yourself after registering as an operator
-        cheats.assume(staker != operator);
+    //     // register this contract as an operator and delegate from the staker to it
+    //     uint256 expiry = type(uint256).max;
+    //     testDelegateToOperatorWhoRequiresECDSASignature(staker, salt, expiry);
 
-        // register this contract as an operator and delegate from the staker to it
-        uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoRequiresECDSASignature(staker, salt, expiry);
+    //     address caller;
+    //     if (callFromOperatorOrApprover) {
+    //         caller = delegationApprover;
+    //     } else {
+    //         caller = operator;
+    //     }
 
-        address caller;
-        if (callFromOperatorOrApprover) {
-            caller = delegationApprover;
-        } else {
-            caller = operator;
-        }
-
-        // call the `undelegate` function
-        cheats.startPrank(caller);
-        // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
-        if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
-            cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
-            emit ForceTotalWithdrawalCalled(staker);
-        }
-        (bytes32 returnValue) = delegationManager.undelegate(staker);
-        // check that the return value is empty, as specified in the mock contract
-        require(returnValue == bytes32(uint256(0)), "contract returned wrong return value");
-        cheats.stopPrank();
-    }
+    //     // call the `undelegate` function
+    //     cheats.startPrank(caller);
+    //     // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
+    //     if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
+    //         cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
+    //         emit ForceTotalWithdrawalCalled(staker);
+    //     }
+    //     (bytes32 returnValue) = delegationManager.undelegate(staker);
+    //     // check that the return value is empty, as specified in the mock contract
+    //     require(returnValue == bytes32(uint256(0)), "contract returned wrong return value");
+    //     cheats.stopPrank();
+    // }
 
     /**
      * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated

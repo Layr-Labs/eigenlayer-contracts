@@ -32,9 +32,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
+    function undelegate(address staker) external {
         delegatedTo[staker] = address(0);
-        return withdrawalRoot;
     }
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
@@ -100,4 +99,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
+
+    function isInUndelegationLimbo(address /*staker*/) external view returns (bool) {}
+
+    function stakerUndelegationLimboStatus(address /*staker*/) external view returns (UndelegationLimboStatus memory) {}
 }

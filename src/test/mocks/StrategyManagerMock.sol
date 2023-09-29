@@ -80,7 +80,7 @@ contract StrategyManagerMock is
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @return (depositor's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(address /*depositor*/) external view returns (IStrategy[] memory, uint256[] memory) {
         return (strategiesToReturn, sharesToReturn);
     }
 
@@ -139,15 +139,4 @@ contract StrategyManagerMock is
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
-
-    event ForceTotalWithdrawalCalled(address staker);
-
-    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32) {
-        IStrategy[] memory emptyStrategyArray;
-        uint256[] memory emptyShareArray;
-        bytes32 emptyReturnValue;
-        emit ForceTotalWithdrawalCalled(staker);
-        return (emptyStrategyArray, emptyShareArray, emptyReturnValue);
-    }
-
 }

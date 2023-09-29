@@ -75,6 +75,21 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
+    /**
+     * @notice Struct used to track a staker's "undelegation limbo" status and associated variables.
+     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
+     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
+     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
+     */
+    struct UndelegationLimboStatus {
+        // @notice Whether or not the staker is in the "undelegation limbo" mode.
+        bool active;
+        // @notice The block at which the staker entered "undelegation limbo". Should be zero if `stakerIsInUndelegationLimbo` is marked as 'false'
+        uint32 startBlock;
+        // @notice The address which the staker was delegated to at the time that they entered "undelegation limbo".
+        address delegatedAddress;
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -101,6 +116,12 @@ interface IDelegationManager {
 
     // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
     event StakerForceUndelegated(address indexed staker, address indexed operator);
+
+    // @notice Emitted when `staker` enters the "undelegation limbo" mode
+    event UndelegationLimboEntered(address indexed staker);
+
+    // @notice Emitted when `staker` exits the "undelegation limbo" mode
+    event UndelegationLimboExited(address indexed staker);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -179,13 +200,12 @@ interface IDelegationManager {
      * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
      * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
      * @param staker The account to be undelegated.
-     * @return withdrawalRoot The root of the newly queued withdrawal, if a withdrawal was queued. Otherwise just bytes32(0).
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot);
+    function undelegate(address staker) external;
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
@@ -325,4 +345,10 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    // @notice Getter function for the internal `_stakerUndelegationLimboStatus` mapping.
+    function stakerUndelegationLimboStatus(address staker) external view returns (UndelegationLimboStatus memory);
+
+    // @notice Getter function for `_stakerUndelegationLimboStatus.undelegationLimboActive`.
+    function isInUndelegationLimbo(address staker) external view returns (bool);
 }

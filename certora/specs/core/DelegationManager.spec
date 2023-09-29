@@ -16,7 +16,6 @@ methods {
 	function _.deposit(address,uint256) external => DISPATCHER(true);
 	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
 	function _.stakerStrategyListLength(address) external => DISPATCHER(true);
-    function _.forceTotalWithdrawal(address staker) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
 	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);

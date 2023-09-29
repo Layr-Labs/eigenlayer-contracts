@@ -187,41 +187,6 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
-     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
-     * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
-     * @param staker The staker to force-undelegate.
-     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
-     */
-    function forceTotalWithdrawal(
-        address staker
-    )
-        external
-        onlyDelegationManager
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(staker)
-        nonReentrant
-        returns (IStrategy[] memory, uint256[] memory, bytes32)
-    {
-        uint256 strategiesLength = stakerStrategyList[staker].length;
-        IStrategy[] memory strategies = new IStrategy[](strategiesLength);
-        uint256[] memory shares = new uint256[](strategiesLength);
-        uint256[] memory strategyIndexes = new uint256[](strategiesLength);
-
-        for (uint256 i = 0; i < strategiesLength; ) {
-            uint256 index = (strategiesLength - 1) - i;
-            strategies[i] = stakerStrategyList[staker][index];
-            shares[i] = stakerStrategyShares[staker][strategies[i]];
-            strategyIndexes[i] = index;
-            unchecked {
-                ++i;
-            }
-        }
-        bytes32 queuedWithdrawal = _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker);
-        return (strategies, shares, queuedWithdrawal);
-    }
-
-    /**
      * @notice Called by a staker to queue a withdrawal of the given amount of `shares` from each of the respective given `strategies`.
      * @dev Stakers will complete their withdrawal by calling the 'completeQueuedWithdrawal' function.
      * User shares are decreased in this function, but the total number of shares in each strategy remains the same.
@@ -515,6 +480,10 @@ contract StrategyManager is
     ) internal returns (bytes32) {
         require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
+        require(
+            !delegation.isInUndelegationLimbo(staker),
+            "StrategyManager._queueWithdrawal: cannot queue a withdrawal when in undelegation limbo"
+        );
 
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
 

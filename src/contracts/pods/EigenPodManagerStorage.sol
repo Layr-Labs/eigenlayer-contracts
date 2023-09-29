@@ -63,9 +63,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;
 
-    // @notice Mapping: pod owner => UndelegationLimboStatus struct. Mapping is internal so we can have a getter that returns a memory struct.
-    mapping(address => IEigenPodManager.UndelegationLimboStatus) internal _podOwnerUndelegationLimboStatus;
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -85,5 +82,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[43] private __gap;
 }

@@ -207,15 +207,6 @@ interface IStrategyManager {
     ) external;
 
     /**
-     * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
-     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
-     * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
-     * @param staker The staker to force-undelegate.
-     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
-     */
-    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32);
-
-    /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
      */

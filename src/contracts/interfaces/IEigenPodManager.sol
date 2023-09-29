@@ -38,21 +38,6 @@ interface IEigenPodManager is IPausable {
         address withdrawer;
     }
 
-    /**
-     * @notice Struct used to track a pod owner's "undelegation limbo" status and associated variables.
-     * @dev Undelegation limbo is a mode which a staker can enter into, in which they remove their virtual "beacon chain ETH shares" from EigenLayer's delegation
-     * system but do not necessarily withdraw the associated ETH from EigenLayer itself. This mode allows users who have restaked native ETH a route via
-     * which they can undelegate from an operator without needing to exit any of their validators from the Consensus Layer.
-     */
-    struct UndelegationLimboStatus {
-        // @notice Whether or not the pod owner is in the "undelegation limbo" mode.
-        bool active;
-        // @notice The block at which the pod owner entered "undelegation limbo". Should be zero if `podOwnerIsInUndelegationLimbo` is marked as 'false'
-        uint32 startBlock;
-        // @notice The address which the pod owner was delegated to at the time that they entered "undelegation limbo".
-        address delegatedAddress;
-    }
-
     /// @notice Emitted to notify the update of the beaconChainOracle address
     event BeaconOracleUpdated(address indexed newOracleAddress);
 
@@ -84,12 +69,6 @@ interface IEigenPodManager is IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
-
-    // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
-    event UndelegationLimboEntered(address indexed podOwner);
-
-    // @notice Emitted when `podOwner` exits the "undelegation limbo" mode
-    event UndelegationLimboExited(address indexed podOwner);
 
     /**
      * @notice Creates an EigenPod for the sender.
@@ -140,18 +119,6 @@ interface IEigenPodManager is IPausable {
     ) external;
 
     /**
-     * @notice forces the podOwner into the "undelegation limbo" mode, and returns the number of virtual 'beacon chain ETH shares'
-     * that the podOwner has, which were entered into undelegation limbo.
-     * @param podOwner is the staker to be forced into undelegation limbo
-     * @param delegatedTo is the operator the staker is currently delegated to
-     * @dev This function can only be called by the DelegationManager contract
-     */
-    function forceIntoUndelegationLimbo(
-        address podOwner,
-        address delegatedTo
-    ) external returns (uint256 sharesRemovedFromDelegation);
-
-    /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
@@ -194,16 +161,4 @@ interface IEigenPodManager is IPausable {
     function calculateWithdrawalRoot(
         BeaconChainQueuedWithdrawal memory queuedWithdrawal
     ) external pure returns (bytes32);
-
-    /**
-     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
-     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
-     */
-    function podOwnerHasActiveShares(address staker) external view returns (bool);
-
-    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory);
-
-    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
-    function isInUndelegationLimbo(address podOwner) external view returns (bool);
 }
