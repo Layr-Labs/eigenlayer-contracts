@@ -143,7 +143,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
-    function testCannotReinitializeDelegationManager() public {
+    function test_RevertsWhen_AlreadyInitialized_Initialize() public {
         vm.expectRevert(ALREADY_INITIALIZED_ERROR);
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
     }
@@ -236,7 +236,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
      * @param operator and @param operatorDetails are fuzzed inputs
      */
-    function testRegisterAsOperator(
+    function testFuzz_RegisterAsOperator(
         address operator,
         IDelegationManager.OperatorDetails memory operatorDetails,
         string memory metadataURI
@@ -280,7 +280,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that an operator cannot register with `stakerOptOutWindowBlocks` set larger than `MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`
      * @param operatorDetails is a fuzzed input
      */
-    function testCannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(
+    function testFuzz_CannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(
         IDelegationManager.OperatorDetails memory operatorDetails
     ) public {
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
@@ -298,7 +298,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that an operator cannot register with `earningsReceiver` set to the zero address
      * @dev This is an important check since we check `earningsReceiver != address(0)` to check if an address is an operator!
      */
-    function testCannotRegisterAsOperatorWithZeroAddressAsEarningsReceiver() public {
+    function test_CannotRegisterAsOperatorWithZeroAddressAsEarningsReceiver() public {
         vm.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails;
         vm.expectRevert(EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR);
@@ -307,11 +307,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
-    function testCannotRegisterAsOperatorMultipleTimes(
+    function testFuzz_CannotRegisterAsOperatorMultipleTimes(
         address operator,
         IDelegationManager.OperatorDetails memory operatorDetails
     ) public filterFuzzedAddressInputs(operator) {
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
         vm.startPrank(operator);
         vm.expectRevert(OPERATOR_ALREADY_REGISTER_ERROR);
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -319,7 +319,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
-    function testCannotRegisterAsOperatorWhileDelegated(
+    function testFuzz_CannotRegisterAsOperatorWhileDelegated(
         address staker,
         IDelegationManager.OperatorDetails memory operatorDetails
     ) public filterFuzzedAddressInputs(staker) {
@@ -334,7 +334,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, _operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator
         vm.startPrank(staker);
@@ -356,11 +356,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if operator tries to decrease their `stakerOptOutWindowBlocks` parameter
      * @param initialOperatorDetails and @param modifiedOperatorDetails are fuzzed inputs
      */
-    function testModifyOperatorParameters(
+    function testFuzz_ModifyOperatorParameters(
         IDelegationManager.OperatorDetails memory initialOperatorDetails,
         IDelegationManager.OperatorDetails memory modifiedOperatorDetails
     ) public {
-        testRegisterAsOperator(_operator, initialOperatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, initialOperatorDetails, emptyStringForMetadataURI);
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         vm.assume(modifiedOperatorDetails.earningsReceiver != address(0));
 
@@ -401,14 +401,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Tests that an operator who calls `updateOperatorMetadataURI` will correctly see an `OperatorMetadataURIUpdated` event emitted with their input
-    function testUpdateOperatorMetadataURI(string memory metadataURI) public {
+    function testFuzz_UpdateOperatorMetadataURI(string memory metadataURI) public {
         // register *this contract* as an operator
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: _operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // call `updateOperatorMetadataURI` and check for event
         vm.startPrank(_operator);
@@ -419,27 +419,26 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Tests that an address which is not an operator cannot successfully call `updateOperatorMetadataURI`.
-    function testCannotUpdateOperatorMetadataURIWithoutRegisteringFirst() public {
+    function test_CannotUpdateOperatorMetadataURIWithoutRegisteringFirst() public {
         assertTrue(!delegationManager.isOperator(_operator), "bad test setup");
 
-        vm.startPrank(_operator);
+        vm.prank(_operator);
         vm.expectRevert(NOT_OPERATOR_ERROR);
         delegationManager.updateOperatorMetadataURI(emptyStringForMetadataURI);
-        vm.stopPrank();
     }
 
     /**
      * @notice Verifies that an operator cannot modify their `earningsReceiver` address to set it to the zero address
      * @dev This is an important check since we check `earningsReceiver != address(0)` to check if an address is an operator!
      */
-    function testCannotModifyEarningsReceiverAddressToZeroAddress() public {
+    function test_CannotModifyEarningsReceiverAddressToZeroAddress() public {
         // register *this contract* as an operator
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: _operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         operatorDetails.earningsReceiver = address(0);
         vm.expectRevert(EARNINGS_RECEIVER_ADDRESS_ZERO_ERROR);
@@ -455,7 +454,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoAcceptsAllStakers(
+    function testFuzz_DelegateToOperatorWhoAcceptsAllStakers(
         address staker,
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 salt
@@ -469,7 +468,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -498,7 +497,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Delegates from `staker` to an operator, then verifies that the `staker` cannot delegate to another `operator` (at least without first undelegating)
      */
-    function testCannotDelegateWhileDelegated(
+    function testFuzz_CannotDelegateWhileDelegated(
         address staker,
         address operator,
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
@@ -508,7 +507,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         vm.assume(staker != operator);
 
         // delegate from the staker to an operator
-        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, salt);
+        testFuzz_DelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, salt);
 
         // register another operator
         // filter out this contract, since we already register it as an operator in the above step
@@ -518,7 +517,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         // try to delegate again and check that the call reverts
         vm.startPrank(staker);
@@ -528,7 +527,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `staker` cannot delegate to an unregistered `operator`
-    function testCannotDelegateToUnregisteredOperator(address staker, address operator)
+    function testFuzz_CannotDelegateToUnregisteredOperator(address staker, address operator)
         public
         filterFuzzedAddressInputs(staker)
         filterFuzzedAddressInputs(operator)
@@ -552,7 +551,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoassertTruesECDSASignature(address staker, bytes32 salt, uint256 expiry)
+    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature(address staker, bytes32 salt, uint256 expiry)
         public
         filterFuzzedAddressInputs(staker)
     {
@@ -571,7 +570,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -609,9 +608,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * @notice Like `testDelegateToOperatorWhoassertTruesECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
+     * @notice Like `testFuzz_DelegateToOperatorWhoassertTruesECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoassertTruesECDSASignature_RevertsWithBadSignature(address staker, uint256 expiry)
+    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature_RevertsWithBadSignature(address staker, uint256 expiry)
         public
         filterFuzzedAddressInputs(staker)
     {
@@ -630,7 +629,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -653,9 +652,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * @notice Like `testDelegateToOperatorWhoassertTruesECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
+     * @notice Like `testFuzz_DelegateToOperatorWhoassertTruesECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoassertTruesECDSASignature_RevertsWithExpiredDelegationApproverSignature(
+    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature_RevertsWithExpiredDelegationApproverSignature(
         address staker,
         bytes32 salt,
         uint256 expiry
@@ -677,7 +676,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry =
@@ -700,7 +699,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoassertTruesEIP1271Signature(address staker, bytes32 salt, uint256 expiry)
+    function testFuzz_DelegateToOperatorWhoassertTruesEIP1271Signature(address staker, bytes32 salt, uint256 expiry)
         public
         filterFuzzedAddressInputs(staker)
     {
@@ -725,7 +724,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -764,10 +763,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * @notice Like `testDelegateToOperatorWhoassertTruesEIP1271Signature` but using a contract that
+     * @notice Like `testFuzz_DelegateToOperatorWhoassertTruesEIP1271Signature` but using a contract that
      * returns a value other than the EIP1271 "magic bytes" and checking that reversion occurs appropriately
      */
-    function testDelegateToOperatorWhoassertTruesEIP1271Signature_RevertsOnBadReturnValue(
+    function testFuzz_DelegateToOperatorWhoassertTruesEIP1271Signature_RevertsOnBadReturnValue(
         address staker,
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
@@ -787,7 +786,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // create the signature struct
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -812,7 +811,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoAcceptsAllStakers(address caller, bytes32 salt, uint256 expiry)
+    function testFuzz_DelegateBySignatureToOperatorWhoAcceptsAllStakers(address caller, bytes32 salt, uint256 expiry)
         public
         filterFuzzedAddressInputs(caller)
     {
@@ -831,7 +830,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -879,7 +878,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoassertTruesECDSASignature(address caller, bytes32 salt, uint256 expiry)
+    function testFuzz_DelegateBySignatureToOperatorWhoassertTruesECDSASignature(address caller, bytes32 salt, uint256 expiry)
         public
         filterFuzzedAddressInputs(caller)
     {
@@ -899,7 +898,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -959,7 +958,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoassertTruesEIP1271Signature(
+    function testFuzz_DelegateBySignatureToOperatorWhoassertTruesEIP1271Signature(
         address caller,
         bytes32 salt,
         uint256 expiry
@@ -985,7 +984,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         assertTrue(
@@ -1035,7 +1034,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
-    function testDelegateBySignatureRevertsWhenStakerSignatureExpired(
+    function testFuzz_DelegateBySignatureRevertsWhenStakerSignatureExpired(
         address staker,
         address operator,
         uint256 expiry,
@@ -1049,7 +1048,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the delegationApprover's signature has expired and their signature is checked
-    function testDelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(
+    function testFuzz_DelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(
         address caller,
         uint256 stakerExpiry,
         uint256 delegationApproverExpiry
@@ -1074,7 +1073,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry =
@@ -1094,9 +1093,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * @notice Like `testDelegateToOperatorWhoassertTruesECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
+     * @notice Like `testFuzz_DelegateToOperatorWhoassertTruesECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoassertTruesECDSASignature_RevertsWithExpiredSignature(
+    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature_RevertsWithExpiredSignature(
         address staker,
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
@@ -1117,7 +1116,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry =
@@ -1138,10 +1137,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
      * Emits a `StakerUndelegated` event
      */
-    function testUndelegateFromOperator(address staker) public {
+    function testFuzz_UndelegateFromOperator(address staker) public {
         // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
-        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
+        testFuzz_DelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
 
         vm.startPrank(address(strategyManagerMock));
         vm.expectEmit(true, true, true, true, address(delegationManager));
@@ -1157,7 +1156,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
-    function testOperatorCannotUndelegateFromThemself(address operator) public fuzzedAddress(operator) {
+    function testFuzz_OperatorCannotUndelegateFromThemself(address operator) public fuzzedAddress(operator) {
         vm.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -1174,7 +1173,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `DelegationManager.undelegate` reverts if not called by the StrategyManager
-    function testCannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
+    function testFuzz_CannotCallUndelegateFromNonStrategyManagerAddress(address caller) public fuzzedAddress(caller) {
         vm.assume(caller != address(strategyManagerMock));
         vm.expectRevert(NOT_STRATEGY_MANAGER_ERROR);
         vm.startPrank(caller);
@@ -1186,7 +1185,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategy
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testIncreaseDelegatedShares(address staker, uint256 shares, bool delegateFromStakerToOperator) public {
+    function testFuzz_IncreaseDelegatedShares(address staker, uint256 shares, bool delegateFromStakerToOperator) public {
         IStrategy strategy = strategyMock;
 
         // register *this contract* as an operator
@@ -1200,7 +1199,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -1235,7 +1234,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testDecreaseDelegatedShares(
+    function testFuzz_DecreaseDelegatedShares(
         address staker,
         IStrategy[] memory strategies,
         uint256 shares,
@@ -1254,7 +1253,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -1302,7 +1301,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares)
+    function testFuzz_CannotCallIncreaseDelegatedSharesFromNonStrategyManagerAddress(address operator, uint256 shares)
         public
         fuzzedAddress(operator)
     {
@@ -1313,7 +1312,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager
-    function testCannotCallDecreaseDelegatedSharesFromNonStrategyManagerAddress(
+    function testFuzz_CannotCallDecreaseDelegatedSharesFromNonStrategyManagerAddress(
         address operator,
         IStrategy[] memory strategies,
         uint256[] memory shareAmounts
@@ -1325,7 +1324,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testCannotDelegateWhenOperatorIsFrozen(address operator, address staker)
+    function testFuzz_CannotDelegateWhenOperatorIsFrozen(address operator, address staker)
         public
         fuzzedAddress(operator)
         fuzzedAddress(staker)
@@ -1350,7 +1349,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
-    function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2)
+    function testFuzz_CannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2)
         public
         fuzzedAddress(staker)
         fuzzedAddress(operator)
@@ -1385,14 +1384,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible to delegate to an unregistered operator
-    function testCannotDelegateToUnregisteredOperator(address operator) public {
+    function testFuzz_CannotDelegateToUnregisteredOperator(address operator) public {
         vm.expectRevert(OPERATOR_NOT_REGISTERED_ERROR);
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
     }
 
     // @notice Verifies that delegating is not possible when the "new delegations paused" switch is flipped
-    function testCannotDelegateWhenPausedNewDelegationIsSet(address operator, address staker)
+    function testFuzz_CannotDelegateWhenPausedNewDelegationIsSet(address operator, address staker)
         public
         fuzzedAddress(operator)
         fuzzedAddress(staker)
@@ -1415,7 +1414,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that the `forceUndelegation` function properly calls `strategyManager.forceTotalWithdrawal`
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
-    function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover)
+    function testFuzz_ForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover)
         public
         fuzzedAddress(staker)
     {
@@ -1427,7 +1426,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // register this contract as an operator and delegate from the staker to it
         uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoassertTruesECDSASignature(staker, salt, expiry);
+        testFuzz_DelegateToOperatorWhoassertTruesECDSASignature(staker, salt, expiry);
 
         address caller;
         if (callFromOperatorOrApprover) {
@@ -1450,7 +1449,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that the `forceUndelegation` function has proper access controls (can only be called by the operator who the `staker` has delegated
      * to or the operator's `delegationApprover`)
      */
-    function testCannotCallForceUndelegationFromImproperAddress(address staker, address caller)
+    function testFuzz_CannotCallForceUndelegationFromImproperAddress(address staker, address caller)
         public
         fuzzedAddress(staker)
         fuzzedAddress(caller)
@@ -1467,7 +1466,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // register this contract as an operator and delegate from the staker to it
         uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoassertTruesECDSASignature(staker, emptySalt, expiry);
+        testFuzz_DelegateToOperatorWhoassertTruesECDSASignature(staker, emptySalt, expiry);
 
         // try to call the `forceUndelegation` function and check for reversion
         vm.startPrank(caller);
@@ -1480,7 +1479,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice verifies that `DelegationManager.forceUndelegation` reverts if trying to undelegate an operator from themselves
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
-    function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover)
+    function testFuzz_OperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover)
         public
     {
         // register *this contract* as an operator
@@ -1490,7 +1489,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         address caller;
         if (callFromOperatorOrApprover) {
@@ -1509,7 +1508,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Verifies that the reversion occurs when trying to reuse an 'approverSalt'
      */
-    function test_Revert_WhenTryingToReuseSalt(address staker_one, address staker_two, bytes32 salt)
+    function testFuzz_Revert_WhenTryingToReuseSalt(address staker_one, address staker_two, bytes32 salt)
         public
         fuzzedAddress(staker_one)
         fuzzedAddress(staker_two)
@@ -1523,7 +1522,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // register this contract as an operator and delegate from `staker_one` to it, using the `salt`
         uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoassertTruesECDSASignature(staker_one, salt, expiry);
+        testFuzz_DelegateToOperatorWhoassertTruesECDSASignature(staker_one, salt, expiry);
 
         // calculate the delegationSigner's signature
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry =
