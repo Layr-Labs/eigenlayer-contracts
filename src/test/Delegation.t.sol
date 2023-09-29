@@ -1,23 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ERC1271WalletMock} from "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+import {ERC1271WalletMock, ERC1271MaliciousMock} from "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {EigenLayerTestHelper, EigenLayerDeployer} from "src/test/EigenLayerTestHelper.t.sol";
 import {IDelegationManager} from "src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategy} from "src/contracts/interfaces/IStrategy.sol";
 
-import {MiddlewareRegistryMock} from "./mocks/MiddlewareRegistryMock.sol";
-
-import {ERC1271MaliciousMock} from "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
-import {MiddlewareVoteWeigherMock, VoteWeigherBaseStorage} from "./mocks/MiddlewareVoteWeigherMock.sol";
-import {ServiceManagerMock} from "./mocks/ServiceManagerMock.sol";
+import {EigenLayerTestHelper, EigenLayerDeployer} from "src/test/EigenLayerTestHelper.t.sol";
+import {MiddlewareRegistryMock} from "src/test/mocks/MiddlewareRegistryMock.sol";
+import {MiddlewareVoteWeigherMock, VoteWeigherBaseStorage} from "src/test/mocks/MiddlewareVoteWeigherMock.sol";
+import {ServiceManagerMock} from "src/test/mocks/ServiceManagerMock.sol";
 
 contract DelegationTests is EigenLayerTestHelper {
-    using Math for uint256;
 
     uint256 internal PRIVATE_KEY = 420;
     uint32 internal serveUntil = 100;
