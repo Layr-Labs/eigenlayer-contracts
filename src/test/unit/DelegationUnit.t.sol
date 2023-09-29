@@ -610,10 +610,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Like `testFuzz_DelegateToOperatorWhoassertTruesECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
      */
-    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature_RevertsWithBadSignature(address staker, uint256 expiry)
-        public
-        filterFuzzedAddressInputs(staker)
-    {
+    function testFuzz_DelegateToOperatorWhoassertTruesECDSASignature_RevertsWithBadSignature(
+        address staker,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         vm.assume(expiry >= block.timestamp);
 
@@ -878,10 +878,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testFuzz_DelegateBySignatureToOperatorWhoassertTruesECDSASignature(address caller, bytes32 salt, uint256 expiry)
-        public
-        filterFuzzedAddressInputs(caller)
-    {
+    function testFuzz_DelegateBySignatureToOperatorWhoassertTruesECDSASignature(
+        address caller,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(caller) {
         // filter to only valid `expiry` values
         vm.assume(expiry >= block.timestamp);
 
@@ -1185,7 +1186,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategy
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testFuzz_IncreaseDelegatedShares(address staker, uint256 shares, bool delegateFromStakerToOperator) public {
+    function testFuzz_IncreaseDelegatedShares(address staker, uint256 shares, bool delegateFromStakerToOperator)
+        public
+    {
         IStrategy strategy = strategyMock;
 
         // register *this contract* as an operator
