@@ -335,7 +335,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
-     * @param withdrawalCredentialProofs is an array of proofs, where each proof proves each ETH validator's balance and withdrawal credentials
+     * @param validatorFieldsProofs is an array of proofs, where each proof proves each ETH validator's fields, including balance and withdrawal credentials
      * against a beacon chain state root
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -344,7 +344,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 oracleTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
         uint40[] calldata validatorIndices,
-        bytes[] calldata withdrawalCredentialProofs,
+        bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
     )
         external
@@ -362,8 +362,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         require(
-            (validatorIndices.length == withdrawalCredentialProofs.length) &&
-                (withdrawalCredentialProofs.length == validatorFields.length),
+            (validatorIndices.length == validatorFieldsProofs.length) &&
+                (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
 
@@ -380,7 +380,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 oracleTimestamp,
                 stateRootProof.beaconStateRoot,
                 validatorIndices[i],
-                withdrawalCredentialProofs[i],
+                validatorFieldsProofs[i],
                 validatorFields[i]
             );
         }
