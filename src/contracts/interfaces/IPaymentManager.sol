@@ -87,6 +87,31 @@ interface IPaymentManager {
         uint256 signedStakeSecondQuorum;
     }
 
+    // EVENTS
+    /// @notice Emitted when the `paymentChallengeAmount` variable is modified
+    event PaymentChallengeAmountSet(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when an operator commits to a payment by calling the `commitPayment` function
+    event PaymentCommit(address operator, uint32 fromTaskNumber, uint32 toTaskNumber, uint256 fee);
+
+    /// @notice Emitted when a new challenge is created through a call to the `initPaymentChallenge` function
+    event PaymentChallengeInit(address indexed operator, address challenger);
+
+    /// @notice Emitted when an operator redeems a payment by calling the `redeemPayment` function
+    event PaymentRedemption(address indexed operator, uint256 fee);
+
+    /// @notice Emitted when a bisection step is performed in a challenge, through a call to the `performChallengeBisectionStep` function
+    event PaymentBreakdown(
+        address indexed operator,
+        uint32 fromTaskNumber,
+        uint32 toTaskNumber,
+        uint96 amount1,
+        uint96 amount2
+    );
+
+    /// @notice Emitted upon successful resolution of a payment challenge, within a call to `resolveChallenge`
+    event PaymentChallengeResolution(address indexed operator, bool operatorWon);
+
     /**
      * @notice deposit one-time fees by the `msg.sender` with this contract to pay for future tasks of this middleware
      * @param depositFor could be the `msg.sender` themselves, or a different address for whom `msg.sender` is depositing these future fees

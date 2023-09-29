@@ -70,31 +70,6 @@ abstract contract PaymentManager is Initializable, IPaymentManager, Pausable {
     /// @notice depositors => addresses approved to spend deposits => allowance
     mapping(address => mapping(address => uint256)) public allowances;
 
-    // EVENTS
-    /// @notice Emitted when the `paymentChallengeAmount` variable is modified
-    event PaymentChallengeAmountSet(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when an operator commits to a payment by calling the `commitPayment` function
-    event PaymentCommit(address operator, uint32 fromTaskNumber, uint32 toTaskNumber, uint256 fee);
-
-    /// @notice Emitted when a new challenge is created through a call to the `initPaymentChallenge` function
-    event PaymentChallengeInit(address indexed operator, address challenger);
-
-    /// @notice Emitted when an operator redeems a payment by calling the `redeemPayment` function
-    event PaymentRedemption(address indexed operator, uint256 fee);
-
-    /// @notice Emitted when a bisection step is performed in a challenge, through a call to the `performChallengeBisectionStep` function
-    event PaymentBreakdown(
-        address indexed operator,
-        uint32 fromTaskNumber,
-        uint32 toTaskNumber,
-        uint96 amount1,
-        uint96 amount2
-    );
-
-    /// @notice Emitted upon successful resolution of a payment challenge, within a call to `resolveChallenge`
-    event PaymentChallengeResolution(address indexed operator, bool operatorWon);
-
     /// @notice when applied to a function, ensures that the function is only callable by the `serviceManager`
     modifier onlyServiceManager() {
         require(msg.sender == address(serviceManager), "onlyServiceManager");

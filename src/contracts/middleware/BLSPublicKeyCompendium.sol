@@ -18,10 +18,6 @@ contract BLSPublicKeyCompendium is IBLSPublicKeyCompendium {
     /// @notice mapping from pubkey hash to operator address
     mapping(bytes32 => address) public pubkeyHashToOperator;
 
-    // EVENTS
-    /// @notice Emitted when `operator` registers with the public key `pk`.
-    event NewPubkeyRegistration(address operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
-
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
      * @param s is the field element of the operator's Schnorr signature

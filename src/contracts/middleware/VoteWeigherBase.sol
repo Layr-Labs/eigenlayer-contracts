@@ -17,11 +17,6 @@ import "./VoteWeigherBaseStorage.sol";
  * @dev
  */
 abstract contract VoteWeigherBase is VoteWeigherBaseStorage {
-    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]`
-    event StrategyAddedToQuorum(uint256 indexed quorumNumber, IStrategy strategy);
-    /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
-    event StrategyRemovedFromQuorum(uint256 indexed quorumNumber, IStrategy strategy);
-
     /// @notice when applied to a function, ensures that the function is only callable by the current `owner` of the `serviceManager`
     modifier onlyServiceManagerOwner() {
         require(msg.sender == serviceManager.owner(), "onlyServiceManagerOwner");

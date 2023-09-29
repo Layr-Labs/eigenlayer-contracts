@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 import "./RegistryBase.sol";
 import "../interfaces/IBLSPublicKeyCompendium.sol";
 import "../interfaces/IBLSRegistry.sol";
-import "../libraries/BN254.sol";
 
 /**
  * @title A Registry-type contract using aggregate BLS signatures.
@@ -40,27 +39,6 @@ contract BLSRegistry is RegistryBase, IBLSRegistry {
     bool public operatorWhitelistEnabled;
     /// @notice operator => are they whitelisted (can they register with the middleware)
     mapping(address => bool) public whitelisted;
-
-    // EVENTS
-    /**
-     * @notice Emitted upon the registration of a new operator for the middleware
-     * @param operator Address of the new operator
-     * @param pkHash The keccak256 hash of the operator's public key
-     * @param pk The operator's public key itself
-     * @param apkHashIndex The index of the latest (i.e. the new) APK update
-     * @param apkHash The keccak256 hash of the new Aggregate Public Key
-     */
-    event Registration(
-        address indexed operator,
-        bytes32 pkHash,
-        BN254.G1Point pk,
-        uint32 apkHashIndex,
-        bytes32 apkHash,
-        string socket
-    );
-
-    /// @notice Emitted when the `operatorWhitelister` role is transferred.
-    event OperatorWhitelisterTransferred(address previousAddress, address newAddress);
 
     /// @notice Modifier that restricts a function to only be callable by the `whitelister` role.
     modifier onlyOperatorWhitelister() {
