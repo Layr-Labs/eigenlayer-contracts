@@ -13,7 +13,6 @@ import {MiddlewareVoteWeigherMock, VoteWeigherBaseStorage} from "src/test/mocks/
 import {ServiceManagerMock} from "src/test/mocks/ServiceManagerMock.sol";
 
 contract DelegationTests is EigenLayerTestHelper {
-
     uint256 internal PRIVATE_KEY = 420;
     uint32 internal serveUntil = 100;
 
@@ -35,16 +34,10 @@ contract DelegationTests is EigenLayerTestHelper {
 
     function initializeMiddlewares() public {
         serviceManager = new ServiceManagerMock(slasher);
-
-
         voteWeigher = MiddlewareVoteWeigherMock(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-
         voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
-
-
         {
             uint96 multiplier = 1e18;
             uint8 _NUMBER_OF_QUORUMS = 2;
@@ -68,7 +61,6 @@ contract DelegationTests is EigenLayerTestHelper {
                 abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
             );
             vm.stopPrank();
-            
         }
     }
 
@@ -142,11 +134,11 @@ contract DelegationTests is EigenLayerTestHelper {
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the  strategies
-        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker), "testDelegation: staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);
-        assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
 
         (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
             strategyManager.getDeposits(staker);
@@ -233,7 +225,7 @@ contract DelegationTests is EigenLayerTestHelper {
         });
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
         if (expiry >= block.timestamp) {
-            assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+            assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
             assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
             assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");            
         }
@@ -270,7 +262,7 @@ contract DelegationTests is EigenLayerTestHelper {
             expiry: type(uint256).max
         });
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, bytes32(0));
-        assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(delegation.isDelegated(staker), "testDelegation: staker is not delegate");
         assertTrue(nonceBefore + 1 == delegation.stakerNonce(staker), "nonce not incremented correctly");
         assertTrue(delegation.delegatedTo(staker) == operator, "staker delegated to wrong operator");
     }
@@ -589,7 +581,7 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         //making additional deposits to the strategies
-        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker), "testDelegation: staker is not delegate");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
     }
