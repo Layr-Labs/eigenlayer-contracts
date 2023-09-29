@@ -46,6 +46,8 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      * Deploys a Staker contract if not already deployed for operator. Staker gets minted _depositAmount or
      * DEFAULT_AMOUNT if _depositAmount is 0. Then Staker contract deposits into the strategy and delegates to operator.
      * @param _operator The operator to delegate to
+     * @param _approverSignatureAndExpiry Verifies the operator approves of this delegation
+     * @param _approverSalt A unique single use value tied to an individual signature.
      * @param _depositAmount The amount to deposit into the strategy
      */
     function mintDepositAndDelegate(
@@ -122,6 +124,9 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         return Staker(getStaker(_operator)).callAddress(address(delegation), data);
     }
 
+    /**
+     * Call queueWithdrawal through staker contract
+     */
     function queueWithdrawal(
         address staker,
         uint256[] calldata strategyIndexes,
@@ -139,6 +144,9 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         return Staker(staker).callAddress(address(strategyManager), data);
     }
 
+    /**
+     * Call completeQueuedWithdrawal through staker contract
+     */
     function completeQueuedWithdrawal(
         address staker,
         IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,

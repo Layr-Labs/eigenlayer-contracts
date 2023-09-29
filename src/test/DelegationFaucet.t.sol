@@ -18,6 +18,14 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     uint256 public constant DEFAULT_AMOUNT = 100e18;
     address owner = cheats.addr(1000);
 
+    /// @notice Emitted when a queued withdrawal is completed
+    event WithdrawalCompleted(
+        address indexed depositor,
+        uint96 nonce,
+        address indexed withdrawer,
+        bytes32 withdrawalRoot
+    );
+
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
 
@@ -148,7 +156,6 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     /// forge-config: default.invariant.runs = 5
     /// forge-config: default.invariant.depth = 20
     function invariant_test_mintDepositAndDelegate_StrategyAndOperatorShares() public {
-        // cheats.assume(_operatorIndex < 15 && _depositAmount < DEFAULT_AMOUNT);
         // Setup Operator
         address operator = getOperatorAddress(0);
         address stakerContract = delegationFaucet.getStaker(operator);
@@ -185,7 +192,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     /**
      * @param _operatorIndex is the index of the operator to use from the test-data/operators.json file
      */
-    function test_mintDepositAndDelegate_RevertsIf_UnregisteredOperater(uint8 _operatorIndex) public {
+    function test_mintDepositAndDelegate_RevertsIf_UnregisteredOperator(uint8 _operatorIndex) public {
         cheats.assume(_operatorIndex < 15);
         address operator = getOperatorAddress(_operatorIndex);
         // Unregistered operator should revert
@@ -250,6 +257,201 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         );
     }
 
+    function test_queueWithdrawal_StakeTokenWithdraw(uint8 _operatorIndex, uint256 _withdrawAmount) public {
+        cheats.assume(_operatorIndex < 15 && 0 < _withdrawAmount && _withdrawAmount < DEFAULT_AMOUNT);
+        // Setup Operator
+        address operator = getOperatorAddress(_operatorIndex);
+        address stakerContract = delegationFaucet.getStaker(operator);
+        _registerOperator(operator);
+
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        delegationFaucet.mintDepositAndDelegate(operator, signatureWithExpiry, bytes32(0), DEFAULT_AMOUNT);
+
+        uint256 operatorSharesBefore = delegation.operatorShares(operator, stakeTokenStrat);
+        uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+
+        // Queue withdrawal
+        (
+            IStrategyManager.QueuedWithdrawal memory queuedWithdrawal,
+            , /*tokensArray is unused in this test*/
+             /*withdrawalRoot is unused in this test*/
+        ) = _setUpQueuedWithdrawalStructSingleStrat(
+                /*staker*/ stakerContract,
+                /*withdrawer*/ stakerContract,
+                stakeToken,
+                stakeTokenStrat,
+                _withdrawAmount
+            );
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+        delegationFaucet.queueWithdrawal(
+            stakerContract,
+            strategyIndexes,
+            queuedWithdrawal.strategies,
+            queuedWithdrawal.shares,
+            stakerContract
+        );
+        uint256 operatorSharesAfter = delegation.operatorShares(operator, stakeTokenStrat);
+        uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+
+        assertEq(
+            operatorSharesBefore,
+            operatorSharesAfter + _withdrawAmount,
+            "test_queueWithdrawal_WithdrawStakeToken: operator shares not updated correctly"
+        );
+        // Withdrawal queued, but not withdrawn as of yet
+        assertEq(
+            stakerSharesBefore,
+            stakerSharesAfter + _withdrawAmount,
+            "test_queueWithdrawal_WithdrawStakeToken: staker shares not updated correctly"
+        );
+        assertEq(
+            nonceBefore,
+            nonceAfter - 1,
+            "test_queueWithdrawal_WithdrawStakeToken: staker withdrawal nonce not updated"
+        );
+    }
+
+    function test_completeQueuedWithdrawal_ReceiveAsTokensMarkedFalse(
+        uint8 _operatorIndex,
+        uint256 _withdrawAmount
+    ) public {
+        test_queueWithdrawal_StakeTokenWithdraw(_operatorIndex, _withdrawAmount);
+        address operator = getOperatorAddress(_operatorIndex);
+        address stakerContract = delegationFaucet.getStaker(operator);
+        // assertion before values
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 balanceBefore = stakeToken.balanceOf(address(stakerContract));
+
+        // Set completeQueuedWithdrawal params
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IERC20[] memory tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        {
+            strategyArray[0] = stakeTokenStrat;
+            shareAmounts[0] = _withdrawAmount;
+            tokensArray[0] = stakeToken;
+        }
+
+        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
+        {
+            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+
+            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
+                withdrawer: stakerContract,
+                nonce: (uint96(nonce) - 1)
+            });
+            queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+                strategies: strategyArray,
+                shares: shareAmounts,
+                depositor: stakerContract,
+                withdrawerAndNonce: withdrawerAndNonce,
+                withdrawalStartBlock: uint32(block.number),
+                delegatedAddress: strategyManager.delegation().delegatedTo(stakerContract)
+            });
+        }
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
+        uint256 middlewareTimesIndex = 0;
+        bool receiveAsTokens = false;
+        delegationFaucet.completeQueuedWithdrawal(
+            stakerContract,
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+        // assertion after values
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 balanceAfter = stakeToken.balanceOf(address(stakerContract));
+        assertEq(
+            sharesBefore + _withdrawAmount,
+            sharesAfter,
+            "test_completeQueuedWithdrawal_ReceiveAsTokensMarkedFalse: staker shares not updated correctly"
+        );
+        assertEq(
+            balanceBefore,
+            balanceAfter,
+            "test_completeQueuedWithdrawal_ReceiveAsTokensMarkedFalse: stakerContract balance not updated correctly"
+        );
+    }
+
+    function test_completeQueuedWithdrawal_ReceiveAsTokensMarkedTrue(
+        uint8 _operatorIndex,
+        uint256 _withdrawAmount
+    ) public {
+        test_queueWithdrawal_StakeTokenWithdraw(_operatorIndex, _withdrawAmount);
+        address operator = getOperatorAddress(_operatorIndex);
+        address stakerContract = delegationFaucet.getStaker(operator);
+        // assertion before values
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 balanceBefore = stakeToken.balanceOf(address(stakerContract));
+
+        // Set completeQueuedWithdrawal params
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IERC20[] memory tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        {
+            strategyArray[0] = stakeTokenStrat;
+            shareAmounts[0] = _withdrawAmount;
+            tokensArray[0] = stakeToken;
+        }
+
+        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
+        {
+            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+
+            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
+                withdrawer: stakerContract,
+                nonce: (uint96(nonce) - 1)
+            });
+            queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+                strategies: strategyArray,
+                shares: shareAmounts,
+                depositor: stakerContract,
+                withdrawerAndNonce: withdrawerAndNonce,
+                withdrawalStartBlock: uint32(block.number),
+                delegatedAddress: strategyManager.delegation().delegatedTo(stakerContract)
+            });
+        }
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
+        uint256 middlewareTimesIndex = 0;
+        bool receiveAsTokens = true;
+        delegationFaucet.completeQueuedWithdrawal(
+            stakerContract,
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+        // assertion after values
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
+        uint256 balanceAfter = stakeToken.balanceOf(address(stakerContract));
+        assertEq(
+            sharesBefore,
+            sharesAfter,
+            "test_completeQueuedWithdrawal_ReceiveAsTokensMarkedTrue: staker shares not updated correctly"
+        );
+        assertEq(
+            balanceBefore + _withdrawAmount,
+            balanceAfter,
+            "test_completeQueuedWithdrawal_ReceiveAsTokensMarkedTrue: stakerContract balance not updated correctly"
+        );
+    }
+
     function test_transfer_TransfersERC20(uint8 _operatorIndex, address _to, uint256 _transferAmount) public {
         cheats.assume(_operatorIndex < 15);
         // Setup Operator
@@ -260,7 +462,6 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         // Mint token to Staker, deposit minted amount into strategy, and delegate to operator
         IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
         delegationFaucet.mintDepositAndDelegate(operator, signatureWithExpiry, bytes32(0), DEFAULT_AMOUNT);
-
 
         ERC20PresetMinterPauser mockToken = new ERC20PresetMinterPauser("MockToken", "MTK");
         mockToken.mint(stakerContract, _transferAmount);
@@ -282,8 +483,6 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         );
     }
 
-    
-
     function _registerOperator(address _operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: _operator,
@@ -291,5 +490,43 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 0
         });
         _testRegisterAsOperator(_operator, operatorDetails);
+    }
+
+    function _setUpQueuedWithdrawalStructSingleStrat(
+        address staker,
+        address withdrawer,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shareAmount
+    )
+        internal
+        view
+        returns (
+            IStrategyManager.QueuedWithdrawal memory queuedWithdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        )
+    {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        strategyArray[0] = strategy;
+        tokensArray[0] = token;
+        shareAmounts[0] = shareAmount;
+        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
+            withdrawer: withdrawer,
+            nonce: uint96(strategyManager.numWithdrawalsQueued(staker))
+        });
+        queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            depositor: staker,
+            withdrawerAndNonce: withdrawerAndNonce,
+            withdrawalStartBlock: uint32(block.number),
+            delegatedAddress: strategyManager.delegation().delegatedTo(staker)
+        });
+        // calculate the withdrawal root
+        withdrawalRoot = strategyManager.calculateWithdrawalRoot(queuedWithdrawal);
+        return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 }
