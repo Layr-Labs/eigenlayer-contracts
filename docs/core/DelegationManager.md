@@ -43,7 +43,7 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * Sets `OperatorDetails` for the Operator in question
 * Delegates the Operator to itself
 * If the Operator has deposited into the `EigenPodManager` and is not in undelegation limbo, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
-* For each of the three strategies in the `StrategyManager`, if the Operator holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
+* For each of the three strategies in the `StrategyManager`, if the staker is not in undelegation limbo and holds shares in that strategy, then they are added to the Operator's shares under the corresponding strategy.
 
 *Requirements*:
 * Caller MUST NOT already be an Operator
@@ -102,6 +102,7 @@ Allows the caller (a Staker) to delegate ALL their shares to an Operator (delega
 * The `operator` MUST already be an Operator
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
+* The caller MUST NOT be in undelegation limbo
 
 *Unimplemented as of M2*:
 * `require(!slasher.isFrozen(operator))` is currently a no-op
@@ -142,12 +143,9 @@ function undelegate(address staker) external returns (bytes32 withdrawalRoot)
 
 This method undelegates a Staker from an Operator, decreasing the Operator's shares in the strategies held by the Staker. This can be called by a Staker to undelegate themselves, or by a Staker's delegated Operator (or that Operator's `delegationApprover`).
 
-If the Staker has active shares in the `EigenPodManager`, the Staker is placed into "undelegation limbo."
-
-If the Staker has active shares in any strategy in the `StrategyManager`, this initiates a withdrawal of the Staker's shares.
+If the Staker has active shares in the `EigenPodManager` or in any strategy in the `StrategyManager`, the Staker is placed into "undelegation limbo."
 
 *Effects*: 
-* See [`EigenPodManager.forceIntoUndelegationLimbo`](./EigenPodManager.md#eigenpodmanagerforceintoundelegationlimbo)
 * See [`StrategyManager.forceTotalWithdrawal`](./StrategyManager.md#forcetotalwithdrawal)
 * Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.
 * If the Staker was delegated to an Operator, this function undelegates them.
@@ -157,8 +155,6 @@ If the Staker has active shares in any strategy in the `StrategyManager`, this i
 * Staker MUST NOT be an Operator
 * Caller must be either the Staker, their Operator, or their Operator's `delegationApprover`
 * Pause status MUST NOT be set: `PAUSED_UNDELEGATION`
-* See [`EigenPodManager.forceIntoUndelegationLimbo`](./EigenPodManager.md#eigenpodmanagerforceintoundelegationlimbo)
-* See [`StrategyManager.forceTotalWithdrawal`](./StrategyManager.md#forcetotalwithdrawal)
 
 #### `increaseDelegatedShares`
 
@@ -174,7 +170,6 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 * `StrategyManager.depositIntoStrategy`
 * `StrategyManager.depositIntoStrategyWithSignature`
 * `StrategyManager.completeQueuedWithdrawal`
-* `EigenPodManager.exitUndelegationLimbo`
 * `EigenPod.verifyWithdrawalCredentials`
 * `EigenPod.verifyBalanceUpdate`
 * `EigenPod.verifyAndProcessWithdrawals`

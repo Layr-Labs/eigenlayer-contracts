@@ -233,16 +233,15 @@ This method is only called by `EigenPod.verifyWithdrawalCredentials`, during whi
 
 After verifying the balance of one or more validators, the `EigenPod` will sum the "restakable" balance of each validator and pass it to this method, which adds this balance to the Pod Owner's shares.
 
-If the Pod Owner is not in undelegation limbo, the added shares are also sent to `DelegationManager.increaseDelegatedShares`, where they will be awarded to the Staker/Pod Owner's delegated Operator.
+ITe added shares are also sent to `DelegationManager.increaseDelegatedShares`, where they will be awarded to the Staker/Pod Owner's delegated Operator if the staker is not in undelegation limbo.
 
 *Effects*:
 * Adds `amountWei` shares to the Pod Owner's `EigenPodManager` shares
-* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
+* see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *Requirements*:
 * Caller MUST be the `EigenPod` associated with the passed-in Pod Owner
 * `amountWei` MUST NOT be zero
-* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *As of M2*:
 * The `onlyNotFrozen` modifier is a no-op
@@ -325,54 +324,6 @@ function completeQueuedWithdrawal(
     onlyNotFrozen(queuedWithdrawal.delegatedAddress)
     nonReentrant
     onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
-```
-
-*Effects*:
-* TODO
-
-*Requirements*:
-* TODO
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is a no-op
-
-### Other
-
-#### `EigenPodManager.forceIntoUndelegationLimbo`
-
-```solidity
-function forceIntoUndelegationLimbo(
-    address podOwner,
-    address delegatedTo
-)
-    external
-    onlyDelegationManager
-    onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
-    onlyNotFrozen(podOwner)
-    nonReentrant
-    returns (uint256 sharesRemovedFromDelegation)
-```
-
-*Effects*:
-* TODO
-
-*Requirements*:
-* TODO
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is a no-op
-
-#### `EigenPodManager.exitUndelegationLimbo`
-
-```solidity
-function exitUndelegationLimbo(
-    uint256 middlewareTimesIndex,
-    bool withdrawFundsFromEigenLayer
-) 
-    external 
-    onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
-    onlyNotFrozen(msg.sender) 
-    nonReentrant
 ```
 
 *Effects*:
