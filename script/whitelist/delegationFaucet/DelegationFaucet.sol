@@ -48,7 +48,12 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      * @param _operator The operator to delegate to
      * @param _depositAmount The amount to deposit into the strategy
      */
-    function mintDepositAndDelegate(address _operator, uint256 _depositAmount) public onlyOwner {
+    function mintDepositAndDelegate(
+        address _operator,
+        IDelegationManager.SignatureWithExpiry memory _approverSignatureAndExpiry,
+        bytes32 _approverSalt,
+        uint256 _depositAmount
+    ) public onlyOwner {
         // Operator must be registered
         require(delegation.isOperator(_operator), "DelegationFaucet: Operator not registered");
         address staker = getStaker(_operator);
@@ -56,7 +61,6 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         if (_depositAmount == 0) {
             _depositAmount = DEFAULT_AMOUNT;
         }
-        stakeToken.mint(staker, _depositAmount);
 
         // Deploy staker address if not already deployed, staker constructor will approve the StrategyManager to spend the stakeToken
         if (!Address.isContract(staker)) {
@@ -67,70 +71,55 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
             );
         }
 
-        // deposit into stakeToken strategy
-        uint256 shares = abi.decode(depositIntoStrategy(staker, stakeStrategy, stakeToken, _depositAmount), (uint256));
-        // increaseDelegatedShares if staker contract already delegated, o/w delegateTo operator
-        if (delegation.isDelegated(staker)) {
-            delegation.increaseDelegatedShares(staker, stakeStrategy, shares);
-        } else {
-            IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-            delegateTo(_operator, signatureWithExpiry, bytes32(0));
+        // mint stakeToken to staker
+        stakeToken.mint(staker, _depositAmount);
+        // deposit into stakeToken strategy, which will increase delegated shares to operator if already delegated
+        _depositIntoStrategy(staker, stakeStrategy, stakeToken, _depositAmount);
+        // delegateTo operator if not delegated
+        if (!delegation.isDelegated(staker)) {
+            delegateTo(_operator, _approverSignatureAndExpiry, _approverSalt);
         }
     }
 
-    function getStaker(address operator) public view returns (address) {
-        return
-            Create2.computeAddress(
-                bytes32(uint256(uint160(operator))), //salt
-                keccak256(
-                    abi.encodePacked(type(DelegationFaucetStaker).creationCode, abi.encode(strategyManager, stakeToken))
-                )
-            );
-    }
-
+    /**
+     * Calls staker contract to deposit into designated strategy, mints staked token if stakeToken and stakeStrategy
+     * are specified.
+     * @param _staker address of staker contract for operator
+     * @param _strategy StakeToken strategy contract
+     * @param _token StakeToken
+     * @param _amount amount to get minted and to deposit
+     */
     function depositIntoStrategy(
-        address staker,
-        IStrategy strategy,
-        IERC20 token,
-        uint256 amount
+        address _staker,
+        IStrategy _strategy,
+        IERC20 _token,
+        uint256 _amount
     ) public onlyOwner returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-            IStrategyManager.depositIntoStrategy.selector,
-            strategy,
-            token,
-            amount
-        );
-
-        return Staker(staker).callAddress(address(strategyManager), data);
+        // mint stakeToken to staker
+        if (_token == stakeToken && _strategy == stakeStrategy) {
+            stakeToken.mint(_staker, _amount);
+        }
+        return _depositIntoStrategy(_staker, _strategy, _token, _amount);
     }
 
-    function increaseDelegatedShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) public onlyOwner returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-            IDelegationManager.increaseDelegatedShares.selector,
-            strategy,
-            shares
-        );
-
-        return Staker(staker).callAddress(address(delegation), data);
-    }
-
+    /**
+     * Call staker to delegate to operator
+     * @param _operator operator to get staker address from and delegate to
+     * @param _approverSignatureAndExpiry Verifies the operator approves of this delegation
+     * @param _approverSalt A unique single use value tied to an individual signature.
+     */
     function delegateTo(
-        address operator,
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
-        bytes32 approverSalt
+        address _operator,
+        IDelegationManager.SignatureWithExpiry memory _approverSignatureAndExpiry,
+        bytes32 _approverSalt
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
             IDelegationManager.delegateTo.selector,
-            operator,
-            approverSignatureAndExpiry,
-            approverSalt
+            _operator,
+            _approverSignatureAndExpiry,
+            _approverSalt
         );
-
-        return Staker(getStaker(operator)).callAddress(address(delegation), data);
+        return Staker(getStaker(_operator)).callAddress(address(delegation), data);
     }
 
     function queueWithdrawal(
@@ -164,10 +153,16 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
             middlewareTimesIndex,
             receiveAsTokens
         );
-
         return Staker(staker).callAddress(address(strategyManager), data);
     }
 
+    /**
+     * Transfers tokens from staker contract to designated address
+     * @param staker staker contract to transfer from
+     * @param token ERC20 token
+     * @param to the to address
+     * @param amount transfer amount
+     */
     function transfer(
         address staker,
         address token,
@@ -175,7 +170,6 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         uint256 amount
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, to, amount);
-
         return Staker(staker).callAddress(token, data);
     }
 
@@ -185,5 +179,37 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
             revert(string(res));
         }
         return res;
+    }
+
+    /**
+     * @notice Returns the deterministic staker contract address for the operator
+     * @param _operator The operator to get the staker contract address for
+     */
+    function getStaker(address _operator) public view returns (address) {
+        return
+            Create2.computeAddress(
+                bytes32(uint256(uint160(_operator))), //salt
+                keccak256(
+                    abi.encodePacked(type(DelegationFaucetStaker).creationCode, abi.encode(strategyManager, stakeToken))
+                )
+            );
+    }
+
+    /**
+     * @notice Internal function to deposit into a strategy, has same function signature as StrategyManager.depositIntoStrategy
+     */
+    function _depositIntoStrategy(
+        address _staker,
+        IStrategy _strategy,
+        IERC20 _token,
+        uint256 _amount
+    ) internal returns (bytes memory) {
+        bytes memory data = abi.encodeWithSelector(
+            IStrategyManager.depositIntoStrategy.selector,
+            _strategy,
+            _token,
+            _amount
+        );
+        return Staker(_staker).callAddress(address(strategyManager), data);
     }
 }

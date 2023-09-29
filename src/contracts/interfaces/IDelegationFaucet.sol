@@ -11,7 +11,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 
 interface IDelegationFaucet {
-    function mintDepositAndDelegate(address operator, uint256 depositAmount) external;
+    function mintDepositAndDelegate(
+        address _operator,
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt,
+        uint256 _depositAmount
+    ) external;
 
     function getStaker(address operator) external returns (address);
 
