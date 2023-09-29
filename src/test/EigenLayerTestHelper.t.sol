@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../test/EigenLayerDeployer.t.sol";
-
+import "../contracts/interfaces/ISignatureUtils.sol";
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
 

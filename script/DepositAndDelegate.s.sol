@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "./EigenLayerParser.sol";
+import "../src/contracts/interfaces/ISignatureUtils.sol";
 
 contract DepositAndDelegate is Script, DSTest, EigenLayerParser {
 

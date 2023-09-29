@@ -53,6 +53,44 @@ interface IEigenPodManager is IPausable {
         address delegatedAddress;
     }
 
+    /// @notice Emitted to notify the update of the beaconChainOracle address
+    event BeaconOracleUpdated(address indexed newOracleAddress);
+
+    /// @notice Emitted to notify the deployment of an EigenPod
+    event PodDeployed(address indexed eigenPod, address indexed podOwner);
+
+    /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
+    event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
+
+    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
+    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when a withdrawal of beacon chain ETH is queued
+    event BeaconChainETHWithdrawalQueued(
+        address indexed podOwner,
+        uint256 shares,
+        uint96 nonce,
+        address delegatedAddress,
+        address withdrawer,
+        bytes32 withdrawalRoot
+    );
+
+    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
+    event BeaconChainETHWithdrawalCompleted(
+        address indexed podOwner,
+        uint256 shares,
+        uint96 nonce,
+        address delegatedAddress,
+        address withdrawer,
+        bytes32 withdrawalRoot
+    );
+
+    // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
+    event UndelegationLimboEntered(address indexed podOwner);
+
+    // @notice Emitted when `podOwner` exits the "undelegation limbo" mode
+    event UndelegationLimboExited(address indexed podOwner);
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -60,7 +98,7 @@ interface IEigenPodManager is IPausable {
     function createPod() external;
 
     /**
-     * @notice Stakes for a new beacon chain validator on the sender's EigenPod. 
+     * @notice Stakes for a new beacon chain validator on the sender's EigenPod.
      * Also creates an EigenPod for the sender if they don't have one already.
      * @param pubkey The 48 bytes public key of the beacon chain validator.
      * @param signature The validator's signature of the deposit data.
@@ -84,20 +122,22 @@ interface IEigenPodManager is IPausable {
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
-
     /**
      * @notice Called by a podOwner to queue a withdrawal of some (or all) of their virtual beacon chain ETH shares.
      * @param amountWei The amount of ETH to withdraw.
      * @param withdrawer The address that can complete the withdrawal and receive the withdrawn funds.
      */
-    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32);
+    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns (bytes32);
 
     /**
      * @notice Completes an existing BeaconChainQueuedWithdrawal by sending the ETH to the 'withdrawer'
      * @param queuedWithdrawal is the queued withdrawal to be completed
      * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
      */
-    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external;
+    function completeQueuedWithdrawal(
+        BeaconChainQueuedWithdrawal memory queuedWithdrawal,
+        uint256 middlewareTimesIndex
+    ) external;
 
     /**
      * @notice forces the podOwner into the "undelegation limbo" mode, and returns the number of virtual 'beacon chain ETH shares'
@@ -106,7 +146,10 @@ interface IEigenPodManager is IPausable {
      * @param delegatedTo is the operator the staker is currently delegated to
      * @dev This function can only be called by the DelegationManager contract
      */
-    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256 sharesRemovedFromDelegation);
+    function forceIntoUndelegationLimbo(
+        address podOwner,
+        address delegatedTo
+    ) external returns (uint256 sharesRemovedFromDelegation);
 
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
@@ -116,28 +159,28 @@ interface IEigenPodManager is IPausable {
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns(IEigenPod);
+    function ownerToPod(address podOwner) external view returns (IEigenPod);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns(IEigenPod);
+    function getPod(address podOwner) external view returns (IEigenPod);
 
     /// @notice The ETH2 Deposit Contract
-    function ethPOS() external view returns(IETHPOSDeposit);
+    function ethPOS() external view returns (IETHPOSDeposit);
 
     /// @notice Beacon proxy to which the EigenPods point
-    function eigenPodBeacon() external view returns(IBeacon);
+    function eigenPodBeacon() external view returns (IBeacon);
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns(IBeaconChainOracle);    
+    function beaconChainOracle() external view returns (IBeaconChainOracle);
 
     /// @notice Returns the beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns(bytes32);
+    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
-    function strategyManager() external view returns(IStrategyManager);
+    function strategyManager() external view returns (IStrategyManager);
 
     /// @notice EigenLayer's Slasher contract
-    function slasher() external view returns(ISlasher);
+    function slasher() external view returns (ISlasher);
 
     function hasPod(address podOwner) external view returns (bool);
 
@@ -147,8 +190,10 @@ interface IEigenPodManager is IPausable {
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
-    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
+    function calculateWithdrawalRoot(
+        BeaconChainQueuedWithdrawal memory queuedWithdrawal
+    ) external pure returns (bytes32);
 
     /**
      * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a

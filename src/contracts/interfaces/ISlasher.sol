@@ -29,6 +29,33 @@ interface ISlasher {
         uint32 latestUpdateBlock;
     }
 
+    /// @notice Emitted when a middleware times is added to `operator`'s array.
+    event MiddlewareTimesAdded(
+        address operator,
+        uint256 index,
+        uint32 stalestUpdateBlock,
+        uint32 latestServeUntilBlock
+    );
+
+    /// @notice Emitted when `operator` begins to allow `contractAddress` to slash them.
+    event OptedIntoSlashing(address indexed operator, address indexed contractAddress);
+
+    /// @notice Emitted when `contractAddress` signals that it will no longer be able to slash `operator` after the `contractCanSlashOperatorUntilBlock`.
+    event SlashingAbilityRevoked(
+        address indexed operator,
+        address indexed contractAddress,
+        uint32 contractCanSlashOperatorUntilBlock
+    );
+
+    /**
+     * @notice Emitted when `slashingContract` 'freezes' the `slashedOperator`.
+     * @dev The `slashingContract` must have permission to slash the `slashedOperator`, i.e. `canSlash(slasherOperator, slashingContract)` must return 'true'.
+     */
+    event OperatorFrozen(address indexed slashedOperator, address indexed slashingContract);
+
+    /// @notice Emitted when `previouslySlashedAddress` is 'unfrozen', allowing them to again move deposited funds within EigenLayer.
+    event FrozenStatusReset(address indexed previouslySlashedAddress);
+
     /**
      * @notice Gives the `contractAddress` permission to slash the funds of the caller.
      * @dev Typically, this function must be called prior to registering for a middleware.
@@ -42,7 +69,7 @@ interface ISlasher {
      * @dev The operator must have previously given the caller (which should be a contract) the ability to slash them, through a call to `optIntoSlashing`.
      */
     function freezeOperator(address toBeFrozen) external;
-    
+
     /**
      * @notice Removes the 'frozen' status from each of the `frozenAddresses`
      * @dev Callable only by the contract owner (i.e. governance).
@@ -50,7 +77,7 @@ interface ISlasher {
     function resetFrozenStatus(address[] calldata frozenAddresses) external;
 
     /**
-     * @notice this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration 
+     * @notice this function is a called by middlewares during an operator's registration to make sure the operator's stake at registration
      *         is slashable until serveUntil
      * @param operator the operator whose stake update is being recorded
      * @param serveUntilBlock the block until which the operator's stake at the current block is slashable
@@ -65,13 +92,18 @@ interface ISlasher {
      * @param updateBlock the block for which the stake update is being recorded
      * @param serveUntilBlock the block until which the operator's stake at updateBlock is slashable
      * @param insertAfter the element of the operators linked list that the currently updating middleware should be inserted after
-     * @dev insertAfter should be calculated offchain before making the transaction that calls this. this is subject to race conditions, 
+     * @dev insertAfter should be calculated offchain before making the transaction that calls this. this is subject to race conditions,
      *      but it is anticipated to be rare and not detrimental.
      */
-    function recordStakeUpdate(address operator, uint32 updateBlock, uint32 serveUntilBlock, uint256 insertAfter) external;
+    function recordStakeUpdate(
+        address operator,
+        uint32 updateBlock,
+        uint32 serveUntilBlock,
+        uint256 insertAfter
+    ) external;
 
     /**
-     * @notice this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration 
+     * @notice this function is a called by middlewares during an operator's deregistration to make sure the operator's stake at deregistration
      *         is slashable until serveUntil
      * @param operator the operator whose stake update is being recorded
      * @param serveUntilBlock the block until which the operator's stake at the current block is slashable
@@ -100,7 +132,10 @@ interface ISlasher {
     function canSlash(address toBeSlashed, address slashingContract) external view returns (bool);
 
     /// @notice Returns the block until which `serviceContract` is allowed to slash the `operator`.
-    function contractCanSlashOperatorUntilBlock(address operator, address serviceContract) external view returns (uint32);
+    function contractCanSlashOperatorUntilBlock(
+        address operator,
+        address serviceContract
+    ) external view returns (uint32);
 
     /// @notice Returns the block at which the `serviceContract` last updated its view of the `operator`'s stake
     function latestUpdateBlock(address operator, address serviceContract) external view returns (uint32);
@@ -120,31 +155,41 @@ interface ISlasher {
      * @param middlewareTimesIndex Indicates an index in `operatorToMiddlewareTimes[operator]` to consult as proof of the `operator`'s ability to withdraw
      * @dev The correct `middlewareTimesIndex` input should be computable off-chain.
      */
-    function canWithdraw(address operator, uint32 withdrawalStartBlock, uint256 middlewareTimesIndex) external returns(bool);
+    function canWithdraw(
+        address operator,
+        uint32 withdrawalStartBlock,
+        uint256 middlewareTimesIndex
+    ) external returns (bool);
 
     /**
-     * operator => 
+     * operator =>
      *  [
      *      (
-     *          the least recent update block of all of the middlewares it's serving/served, 
+     *          the least recent update block of all of the middlewares it's serving/served,
      *          latest time that the stake bonded at that update needed to serve until
      *      )
      *  ]
      */
-    function operatorToMiddlewareTimes(address operator, uint256 arrayIndex) external view returns (MiddlewareTimes memory);
+    function operatorToMiddlewareTimes(
+        address operator,
+        uint256 arrayIndex
+    ) external view returns (MiddlewareTimes memory);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator].length`
     function middlewareTimesLength(address operator) external view returns (uint256);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].stalestUpdateBlock`.
-    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexStalestUpdateBlock(address operator, uint32 index) external view returns (uint32);
 
     /// @notice Getter function for fetching `operatorToMiddlewareTimes[operator][index].latestServeUntil`.
-    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns(uint32);
+    function getMiddlewareTimesIndexServeUntilBlock(address operator, uint32 index) external view returns (uint32);
 
     /// @notice Getter function for fetching `_operatorToWhitelistedContractsByUpdate[operator].size`.
     function operatorWhitelistedContractsLinkedListSize(address operator) external view returns (uint256);
 
     /// @notice Getter function for fetching a single node in the operator's linked list (`_operatorToWhitelistedContractsByUpdate[operator]`).
-    function operatorWhitelistedContractsLinkedListEntry(address operator, address node) external view returns (bool, uint256, uint256);
+    function operatorWhitelistedContractsLinkedListEntry(
+        address operator,
+        address node
+    ) external view returns (bool, uint256, uint256);
 }

@@ -19,7 +19,6 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
-
     /**
      * @dev Index for flag that pauses new delegations when set
      */
@@ -41,16 +40,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /// @notice Simple permission for functions that are only callable by the StrategyManager contract.
-    modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), "onlyStrategyManager");
-        _;
-    }
-
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
-        require(msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
-            "DelegationManager: onlyStrategyManagerOrEigenPodManager");
+        require(
+            msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager),
+            "DelegationManager: onlyStrategyManagerOrEigenPodManager"
+        );
         _;
     }
 
@@ -61,9 +56,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @dev Initializes the immutable addresses of the strategy mananger and slasher.
      */
-    constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager)
-        DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager)
-    {
+    constructor(
+        IStrategyManager _strategyManager,
+        ISlasher _slasher,
+        IEigenPodManager _eigenPodManager
+    ) DelegationManagerStorage(_strategyManager, _slasher, _eigenPodManager) {
         _disableInitializers();
         ORIGINAL_CHAIN_ID = block.chainid;
     }
@@ -71,10 +68,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
      */
-    function initialize(address initialOwner, IPauserRegistry _pauserRegistry, uint256 initialPausedStatus)
-        external
-        initializer
-    {
+    function initialize(
+        address initialOwner,
+        IPauserRegistry _pauserRegistry,
+        uint256 initialPausedStatus
+    ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
@@ -88,12 +86,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
-     * 
+     *
      * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
-    function registerAsOperator(OperatorDetails calldata registeringOperatorDetails, string calldata metadataURI) external {
+    function registerAsOperator(
+        OperatorDetails calldata registeringOperatorDetails,
+        string calldata metadataURI
+    ) external {
         require(
             _operatorDetails[msg.sender].earningsReceiver == address(0),
             "DelegationManager.registerAsOperator: operator has already registered"
@@ -110,7 +111,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Updates an operator's stored `OperatorDetails`.
      * @param newOperatorDetails is the updated `OperatorDetails` for the operator, to replace their current OperatorDetails`.
-     * 
+     *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      */
@@ -136,12 +137,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev The approverSignatureAndExpiry is used in the event that:
      *          1) the operator's `delegationApprover` address is set to a non-zero value.
      *                  AND
-     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator 
+     *          2) neither the operator nor their `delegationApprover` is the `msg.sender`, since in the event that the operator
      *             or their delegationApprover is the `msg.sender`, then approval is assumed.
      * @dev In the event that `approverSignatureAndExpiry` is not checked, its content is ignored entirely; it's recommended to use an empty input
      * in this case to save on complexity + gas costs
      */
-    function delegateTo(address operator, SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) external {
+    function delegateTo(
+        address operator,
+        SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 approverSalt
+    ) external {
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(msg.sender, operator, approverSignatureAndExpiry, approverSalt);
     }
@@ -171,11 +176,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 approverSalt
     ) external {
         // check the signature expiry
-        require(stakerSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager.delegateToBySignature: staker signature expired");
+        require(
+            stakerSignatureAndExpiry.expiry >= block.timestamp,
+            "DelegationManager.delegateToBySignature: staker signature expired"
+        );
 
         // calculate the digest hash, then increment `staker`'s nonce
         uint256 currentStakerNonce = stakerNonce[staker];
-        bytes32 stakerDigestHash = calculateStakerDelegationDigestHash(staker, currentStakerNonce, operator, stakerSignatureAndExpiry.expiry);
+        bytes32 stakerDigestHash = calculateStakerDelegationDigestHash(
+            staker,
+            currentStakerNonce,
+            operator,
+            stakerSignatureAndExpiry.expiry
+        );
         unchecked {
             stakerNonce[staker] = currentStakerNonce + 1;
         }
@@ -197,34 +210,45 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_UNDELEGATION) returns (bytes32 withdrawalRoot) {
+    function undelegate(
+        address staker
+    ) external onlyWhenNotPaused(PAUSED_UNDELEGATION) returns (bytes32 withdrawalRoot) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
         require(
             msg.sender == staker ||
-            msg.sender == operator ||
-            msg.sender == _operatorDetails[operator].delegationApprover,
+                msg.sender == operator ||
+                msg.sender == _operatorDetails[operator].delegationApprover,
             "DelegationManager.undelegate: caller cannot undelegate staker"
         );
-        
+
         // remove any shares from the delegation system that the staker currently has delegated, if necessary
         // force the staker into "undelegation limbo" in the EigenPodManager if necessary
         if (eigenPodManager.podOwnerHasActiveShares(staker)) {
             uint256 podShares = eigenPodManager.forceIntoUndelegationLimbo(staker, operator);
             // remove delegated shares from the operator
-            _decreaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: podShares});
+            _decreaseOperatorShares({
+                operator: operator,
+                staker: staker,
+                strategy: beaconChainETHStrategy,
+                shares: podShares
+            });
         }
         // force-queue a withdrawal of all of the staker's shares from the StrategyManager, if necessary
         if (strategyManager.stakerStrategyListLength(staker) != 0) {
             IStrategy[] memory strategies;
             uint256[] memory strategyShares;
-            (strategies, strategyShares, withdrawalRoot)
-                = strategyManager.forceTotalWithdrawal(staker);
+            (strategies, strategyShares, withdrawalRoot) = strategyManager.forceTotalWithdrawal(staker);
 
             for (uint256 i = 0; i < strategies.length; ) {
-                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: strategyShares[i]});
+                _decreaseOperatorShares({
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    shares: strategyShares[i]
+                });
 
                 unchecked {
                     ++i;
@@ -249,14 +273,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param shares The number of shares to increase.
-     * 
+     *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager.
      */
-    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
-        external
-        onlyStrategyManagerOrEigenPodManager
-    {
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
@@ -271,22 +296,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
-     * 
+     *
      * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
-        external
-        onlyStrategyManagerOrEigenPodManager
-    {
+    function decreaseDelegatedShares(
+        address staker,
+        IStrategy[] calldata strategies,
+        uint256[] calldata shares
+    ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
             // subtract strategy shares from delegate's shares
             uint256 stratsLength = strategies.length;
-            for (uint256 i = 0; i < stratsLength;) {
-                _decreaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
+            for (uint256 i = 0; i < stratsLength; ) {
+                _decreaseOperatorShares({
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    shares: shares[i]
+                });
                 unchecked {
                     ++i;
                 }
@@ -302,17 +333,22 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @notice Sets operator parameters in the `_operatorDetails` mapping.
      * @param operator The account registered as an operator updating their operatorDetails
      * @param newOperatorDetails The new parameters for the operator
-     * 
+     *
      * @dev This function will revert if the operator attempts to set their `earningsReceiver` to address(0).
      */
     function _setOperatorDetails(address operator, OperatorDetails calldata newOperatorDetails) internal {
         require(
             newOperatorDetails.earningsReceiver != address(0),
-            "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address");
-        require(newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
-            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS");
-        require(newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
-            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased");
+            "DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"
+        );
+        require(
+            newOperatorDetails.stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS,
+            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"
+        );
+        require(
+            newOperatorDetails.stakerOptOutWindowBlocks >= _operatorDetails[operator].stakerOptOutWindowBlocks,
+            "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased"
+        );
         _operatorDetails[operator] = newOperatorDetails;
         emit OperatorDetailsModified(msg.sender, newOperatorDetails);
     }
@@ -328,7 +364,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      *          2) the `operator` has indeed registered as an operator in EigenLayer
      *          3) the `operator` is not actively frozen
      *          4) if applicable, that the approver signature is valid and non-expired
-     */ 
+     */
     function _delegate(
         address staker,
         address operator,
@@ -348,17 +384,32 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
          */
         if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
             // check the signature expiry
-            require(approverSignatureAndExpiry.expiry >= block.timestamp, "DelegationManager._delegate: approver signature expired");
+            require(
+                approverSignatureAndExpiry.expiry >= block.timestamp,
+                "DelegationManager._delegate: approver signature expired"
+            );
             // check that the salt hasn't been used previously, then mark the salt as spent
-            require(!delegationApproverSaltIsSpent[_delegationApprover][approverSalt], "DelegationManager._delegate: approverSalt already spent");
+            require(
+                !delegationApproverSaltIsSpent[_delegationApprover][approverSalt],
+                "DelegationManager._delegate: approverSalt already spent"
+            );
             delegationApproverSaltIsSpent[_delegationApprover][approverSalt] = true;
 
             // calculate the digest hash
-            bytes32 approverDigestHash =
-                calculateDelegationApprovalDigestHash(staker, operator, _delegationApprover, approverSalt, approverSignatureAndExpiry.expiry);
+            bytes32 approverDigestHash = calculateDelegationApprovalDigestHash(
+                staker,
+                operator,
+                _delegationApprover,
+                approverSalt,
+                approverSignatureAndExpiry.expiry
+            );
 
             // actually check that the signature is valid
-            EIP1271SignatureUtils.checkSignature_EIP1271(_delegationApprover, approverDigestHash, approverSignatureAndExpiry.signature);
+            EIP1271SignatureUtils.checkSignature_EIP1271(
+                _delegationApprover,
+                approverDigestHash,
+                approverSignatureAndExpiry.signature
+            );
         }
 
         // retrieve any beacon chain ETH shares the staker might have
@@ -366,14 +417,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // increase the operator's shares in the canonical 'beaconChainETHStrategy' *if* the staker is not in "undelegation limbo"
         if (beaconChainETHShares != 0 && !eigenPodManager.isInUndelegationLimbo(staker)) {
-            _increaseOperatorShares({operator: operator, staker: staker, strategy: beaconChainETHStrategy, shares: beaconChainETHShares});
+            _increaseOperatorShares({
+                operator: operator,
+                staker: staker,
+                strategy: beaconChainETHStrategy,
+                shares: beaconChainETHShares
+            });
         }
 
         // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
         (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
 
         // update the share amounts for each of the `operator`'s strategies
-        for (uint256 i = 0; i < strategies.length;) {
+        for (uint256 i = 0; i < strategies.length; ) {
             _increaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
             unchecked {
                 ++i;
@@ -410,22 +466,21 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function domainSeparator() public view returns (bytes32) {
         if (block.chainid == ORIGINAL_CHAIN_ID) {
             return _DOMAIN_SEPARATOR;
-        }
-        else {
+        } else {
             return _calculateDomainSeparator();
         }
     }
 
     /**
-      * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
-      */
+     * @notice Returns 'true' if `staker` *is* actively delegated, and 'false' otherwise.
+     */
     function isDelegated(address staker) public view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
 
     /**
-      * @notice Returns true is an operator has previously registered for delegation.
-      */
+     * @notice Returns true is an operator has previously registered for delegation.
+     */
     function isOperator(address operator) public view returns (bool) {
         return (_operatorDetails[operator].earningsReceiver != address(0));
     }
@@ -437,23 +492,23 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return _operatorDetails[operator];
     }
 
-    /* 
+    /*
      * @notice Returns the earnings receiver address for an operator
      */
     function earningsReceiver(address operator) external view returns (address) {
         return _operatorDetails[operator].earningsReceiver;
     }
 
-    /** 
-      * @notice Returns the delegationApprover account for an operator
-      */
+    /**
+     * @notice Returns the delegationApprover account for an operator
+     */
     function delegationApprover(address operator) external view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
     /**
-      * @notice Returns the stakerOptOutWindowBlocks for an operator
-      */
+     * @notice Returns the stakerOptOutWindowBlocks for an operator
+     */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
@@ -464,7 +519,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) external view returns (bytes32) {
+    function calculateCurrentStakerDelegationDigestHash(
+        address staker,
+        address operator,
+        uint256 expiry
+    ) external view returns (bytes32) {
         // fetch the staker's current nonce
         uint256 currentStakerNonce = stakerNonce[staker];
         // calculate the digest hash
@@ -478,13 +537,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param operator The operator who is being delegated to
      * @param expiry The desired expiry time of the staker's signature
      */
-    function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) public view returns (bytes32) {
+    function calculateStakerDelegationDigestHash(
+        address staker,
+        uint256 _stakerNonce,
+        address operator,
+        uint256 expiry
+    ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 stakerStructHash = keccak256(abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, _stakerNonce, expiry));
+        bytes32 stakerStructHash = keccak256(
+            abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, _stakerNonce, expiry)
+        );
         // calculate the digest hash
         bytes32 stakerDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), stakerStructHash));
         return stakerDigestHash;
-    }        
+    }
 
     /**
      * @notice Calculates the digest hash to be signed by the operator's delegationApprove and used in the `delegateTo` and `delegateToBySignature` functions.
@@ -502,15 +568,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the struct hash
-        bytes32 approverStructHash = keccak256(abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverSalt, expiry));
+        bytes32 approverStructHash = keccak256(
+            abi.encode(DELEGATION_APPROVAL_TYPEHASH, _delegationApprover, staker, operator, approverSalt, expiry)
+        );
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
     }
 
-    /** 
-      * @dev Recalculates the domain separator when the chainid changes due to a fork.
-      */
+    /**
+     * @dev Recalculates the domain separator when the chainid changes due to a fork.
+     */
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
