@@ -222,7 +222,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         address staker
     ) external onlyWhenNotPaused(PAUSED_UNDELEGATION) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
-        require(!isInUndelegationLimbo(staker), "DelegationManager.undelegate: staker is already in undelegation limbo");
         address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");

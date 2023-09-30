@@ -52,6 +52,8 @@ methods {
     function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
+    function stakerUndelegationLimboStatus(address) external returns (IDelegationManager.UndelegationLimboStatus memory) envfree;
+    function isInUndelegationLimbo(address) external returns (bool) envfree;
 }
 
 /*
@@ -109,6 +111,14 @@ The exception is the zero address, since by default an address is 'delegated to 
 // the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
 invariant operatorsAlwaysDelegatedToSelf(address operator)
     operator != 0 => (isOperator(operator) <=> delegatedTo(operator) == operator);
+
+// verify that a staker cannot be simultaneously in undelegation limbo and delegated to an operator
+invariant undelegationLimboImpliesUndelegated(address staker)
+    isInUndelegationLimbo(staker) => !isDelegated(staker);
+
+// verify that an operator cannot enter undelegation limbo
+invariant operatorsCannotEnterUndelegationLimbo(address staker)
+    isInUndelegationLimbo(staker) => !isOperator(staker);
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
