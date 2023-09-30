@@ -9,6 +9,7 @@ import "forge-std/Test.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
+import "../mocks/StakeRegistryMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../Delegation.t.sol";
@@ -22,6 +23,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyImplementation;
     StrategyBase strategyMock;
     EigenPodManagerMock eigenPodManagerMock;
+    StakeRegistryMock stakeRegistryMock;
 
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
     uint256 stakerPrivateKey = uint256(123456789);
@@ -42,6 +44,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @dev Index for flag that pauses undelegations when set
     uint8 internal constant PAUSED_UNDELEGATION = 1;
+
+    /// @notice Emitted when the StakeRegistry is set
+    event StakeRegistrySet(IStakeRegistry stakeRegistry);
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
@@ -66,6 +71,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
+
+
+    // STAKE REGISTRY EVENT
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(
+        bytes32 indexed operatorId,
+        uint8 quorumNumber,
+        uint96 stake
+    );
 
     // @notice reuseable modifier + associated mapping for filtering out weird fuzzed inputs, like making calls from the ProxyAdmin or the zero address
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
@@ -94,6 +108,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address initalOwner = address(this);
         uint256 initialPausedStatus = 0;
         delegationManager.initialize(initalOwner, eigenLayerPauserReg, initialPausedStatus);
+
+        stakeRegistryMock = new StakeRegistryMock();
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakeRegistrySet(stakeRegistryMock);
+
+        delegationManager.setStakeRegistry(stakeRegistryMock);
 
         strategyImplementation = new StrategyBase(strategyManagerMock);
 
@@ -127,10 +147,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "constructor / initializer incorrect, paused status set wrong");
     }
 
-    // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
     function testCannotReinitializeDelegationManager() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
+    }
+
+    /// @notice Verifies that the stakeRegistry cannot be set after it has already been set
+    function testCannotSetStakeRegistryTwice() public {
+        cheats.expectRevert(bytes("DelegationManager.setStakeRegistry: stakeRegistry already set"));
+        delegationManager.setStakeRegistry(stakeRegistryMock);
     }
 
     /**
@@ -155,6 +181,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(operator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorDetailsModified(operator, operatorDetails);
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(operator, operator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -371,6 +400,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);        
@@ -960,6 +992,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
 
         cheats.startPrank(staker);
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
         delegationManager.undelegate(staker);
@@ -1020,7 +1055,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         if(delegationManager.isDelegated(staker)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
-            emit OperatorSharesIncreased(operator, staker, strategy, shares);        
+            emit OperatorSharesIncreased(operator, staker, strategy, shares);
+            // don't check any parameters other than event type
+            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+            emit StakeUpdate(bytes32(0), 0, 0);     
         }
 
         cheats.startPrank(address(strategyManagerMock));
@@ -1091,6 +1129,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
                     emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
                 }
+                // don't check any parameters other than event type
+                cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+                emit StakeUpdate(bytes32(0), 0, 0);
             }
         }
 
@@ -1259,6 +1300,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(caller);
         // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
         if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
+            // don't check any parameters other than event type
+            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+            emit StakeUpdate(bytes32(0), 0, 0);
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
             emit ForceTotalWithdrawalCalled(staker);
         }
