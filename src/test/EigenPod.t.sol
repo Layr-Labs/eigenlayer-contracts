@@ -400,7 +400,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_HistoricalSummaryFixed.json"
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_HistoricalSummaryFixed.json" false
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
@@ -448,6 +448,62 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return newPod;
     }
 
+    /**
+    * @notice this test is to ensure that a full withdrawal can be made once a validator has processed their first full withrawal
+    * This is specifically for the case where a validator has redeposited into their exited validator and needs to prove another withdrawal
+    * to get their funds out
+    */
+    function testWithdrawAfterFullWithdrawal() external {
+        IEigenPod pod = testFullWithdrawalFlow();
+
+        // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest_AdvancedOneSlot.json" true
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest_1SlotAdvanced.json");
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
+        
+        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        withdrawalFields = getWithdrawalFields();
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())) * uint64(GWEI_TO_WEI);
+        cheats.deal(address(pod), leftOverBalanceWEI);
+         {
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+            withdrawalProofsArray[0] = _getWithdrawalProof();
+            bytes[] memory validatorFieldsProofArray = new bytes[](1);
+            validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
+            bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+            validatorFieldsArray[0] = getValidatorFields();
+            bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+            withdrawalFieldsArray[0] = withdrawalFields;
+
+            BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+
+            pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        }
+    }
+
+    function testProvingFullWithdrawalForTheSameSlotFails() external {
+        IEigenPod pod = testFullWithdrawalFlow();
+        
+        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+         {
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+            withdrawalProofsArray[0] = _getWithdrawalProof();
+            bytes[] memory validatorFieldsProofArray = new bytes[](1);
+            validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
+            bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+            validatorFieldsArray[0] = getValidatorFields();
+            bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+            withdrawalFieldsArray[0] = withdrawalFields;
+
+            BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+            cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
+            pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        }
+
+    }
+
     /// @notice This test is to ensure that the partial withdrawal flow works correctly
     function testPartialWithdrawalFlow() public returns(IEigenPod) {
         //this call is to ensure that validator 61068 has proven their withdrawalcreds
@@ -458,7 +514,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         
 
         //generate partialWithdrawalProofs.json with: 
-        // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "PartialWithdrawalProof_HistoricalSummaryFixed.json"
+        // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "PartialWithdrawalProof_HistoricalSummaryFixed.json" false
         setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
         withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();

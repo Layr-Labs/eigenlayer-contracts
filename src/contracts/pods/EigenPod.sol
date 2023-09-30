@@ -667,34 +667,31 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * in the beacon chain as a full withdrawal.  Thus such a validator can prove another full withdrawal, and
          * withdraw that ETH via the queuedWithdrawal flow in the strategy manager.
          */
-        if (validatorInfo.status == VALIDATOR_STATUS.ACTIVE) {
             // if the withdrawal amount is greater than the MAX_VALIDATOR_BALANCE_GWEI (i.e. the max amount restaked on EigenLayer, per ETH validator)
-            uint64 maxRestakedBalanceGwei = _calculateRestakedBalanceGwei(MAX_VALIDATOR_BALANCE_GWEI);
-            if (withdrawalAmountGwei > maxRestakedBalanceGwei) {
-                // then the excess is immediately withdrawable
-                verifiedWithdrawal.amountToSend =
-                    uint256(withdrawalAmountGwei - maxRestakedBalanceGwei) *
-                    uint256(GWEI_TO_WEI);
-                // and the extra execution layer ETH in the contract is MAX_VALIDATOR_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
-                withdrawableRestakedExecutionLayerGwei += maxRestakedBalanceGwei;
-                withdrawalAmountWei = maxRestakedBalanceGwei * GWEI_TO_WEI;
-            } else {
-                // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer
-                // (i.e. none is instantly withdrawable)
-                withdrawalAmountGwei = _calculateRestakedBalanceGwei(withdrawalAmountGwei);
-                withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
-                withdrawalAmountWei = withdrawalAmountGwei * GWEI_TO_WEI;
-            }
-            // if the amount being withdrawn is not equal to the current accounted for validator balance, an update must be made
-            if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
-                verifiedWithdrawal.sharesDelta = _calculateSharesDelta({
-                    newAmountWei: withdrawalAmountWei,
-                    currentAmountWei: currentValidatorRestakedBalanceWei
-                });
-            }
+        uint64 maxRestakedBalanceGwei = _calculateRestakedBalanceGwei(MAX_VALIDATOR_BALANCE_GWEI);
+        if (withdrawalAmountGwei > maxRestakedBalanceGwei) {
+            // then the excess is immediately withdrawable
+            verifiedWithdrawal.amountToSend =
+                uint256(withdrawalAmountGwei - maxRestakedBalanceGwei) *
+                uint256(GWEI_TO_WEI);
+            // and the extra execution layer ETH in the contract is MAX_VALIDATOR_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
+            withdrawableRestakedExecutionLayerGwei += maxRestakedBalanceGwei;
+            withdrawalAmountWei = maxRestakedBalanceGwei * GWEI_TO_WEI;
         } else {
-            revert("EigenPod.verifyBeaconChainFullWithdrawal: VALIDATOR_STATUS is invalid VALIDATOR_STATUS");
+            // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer
+            // (i.e. none is instantly withdrawable)
+            withdrawalAmountGwei = _calculateRestakedBalanceGwei(withdrawalAmountGwei);
+            withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
+            withdrawalAmountWei = withdrawalAmountGwei * GWEI_TO_WEI;
         }
+        // if the amount being withdrawn is not equal to the current accounted for validator balance, an update must be made
+        if (currentValidatorRestakedBalanceWei != withdrawalAmountWei) {
+            verifiedWithdrawal.sharesDelta = _calculateSharesDelta({
+                newAmountWei: withdrawalAmountWei,
+                currentAmountWei: currentValidatorRestakedBalanceWei
+            });
+        }
+
 
         // now that the validator has been proven to be withdrawn, we can set their restaked balance to 0
         validatorInfo.restakedBalanceGwei = 0;
