@@ -10,7 +10,7 @@
 ```
 Verifies the proof of a provided [validator container](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator) against the beacon state root.  This proof can be used to verify any field in the validator container.  Below is a diagram that illustrates exactly how the proof is structured relative to the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate).  
 
-![Verify Validator Fields Proof Structure](../images/Withdrawal Credential Proof.png)
+![Verify Validator Fields Proof Structure](../images/Withdrawal_Credential_Proof.png)
 
 
 #### `BeaconChainProofs.verifyValidatorBalance`
@@ -25,7 +25,7 @@ function verifyValidatorBalance(
 ```
 Verifies the proof of a [validator's](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator) balance against the beacon state root.  Validator's balances are stored separately in "balances" field of the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate), with each entry corresponding to the appropriate validator, based on index.  Below is a diagram that illustrates exactly how the proof is structured relative to the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate).  
 
-![Verify Validator Fields Proof Structure](../images/Balance Proof.png)
+![Verify Validator Fields Proof Structure](../images/Balance_Proof.png)
 
 #### `BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot`
 
@@ -54,7 +54,7 @@ Verifies a withdrawal, either [full or partial](https://eth2book.info/capella/pa
 
 One important note is that we use [`historical_summaries`](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#withdrawal) to prove the blocks that contain withdrawals.  Each new [historical summary](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#historicalsummary) is added every 8192 slots, i.e., if `slot % 8192 = 0`, then `slot.state_roots` and `slot.block_roots` are merkleized and are used to create the latest `historical_summaries` entry.  
 
-![Verify Withdrawal Proof Structure](../images/Withdrawal Proof.png)
+![Verify Withdrawal Proof Structure](../images/Withdrawal_Proof.png)
 
 
 
