@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import "../libraries/MiddlewareUtils.sol";
-import "../libraries/BN254.sol";
-import "../libraries/BitmapUtils.sol";
+import "../interfaces/IBLSSignatureChecker.sol";
 
 /**
  * @title Used for checking BLS aggregate signatures from the operators of a `BLSRegistry`.
@@ -12,33 +9,8 @@ import "../libraries/BitmapUtils.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This is the contract for checking the validity of aggregate operator signatures.
  */
-contract BLSSignatureChecker {
-    using BN254 for BN254.G1Point;    
-
-    // DATA STRUCTURES
-
-    struct NonSignerStakesAndSignature {
-        uint32[] nonSignerQuorumBitmapIndices;
-        BN254.G1Point[] nonSignerPubkeys;
-        BN254.G1Point[] quorumApks;
-        BN254.G2Point apkG2;
-        BN254.G1Point sigma;
-        uint32[] quorumApkIndices;
-        uint32[] totalStakeIndices;  
-        uint32[][] nonSignerStakeIndices; // nonSignerStakeIndices[quorumNumberIndex][nonSignerIndex]
-    }
-
-    /**
-     * @notice this data structure is used for recording the details on the total stake of the registered
-     * operators and those operators who are part of the quorum for a particular taskNumber
-     */
-
-    struct QuorumStakeTotals {
-        // total stake of the operators in each quorum
-        uint96[] signedStakeForQuorum;
-        // total amount staked by all operators in each quorum
-        uint96[] totalStakeForQuorum;
-    }
+contract BLSSignatureChecker is IBLSSignatureChecker {
+    using BN254 for BN254.G1Point;
     
     // CONSTANTS & IMMUTABLES
 
