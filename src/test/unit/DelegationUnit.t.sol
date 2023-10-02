@@ -35,6 +35,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // reused in various tests. in storage to help handle stack-too-deep errors
     address _operator = address(this);
 
+    // used for storing the staker's simulated deposits
+    IStrategy[] _strategiesToReturn;
+    uint256[] _sharesToReturn;
+
     /**
      * @dev Index for flag that pauses new delegations when set
      */
@@ -66,6 +70,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
+
+    // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
+    event StakerForceUndelegated(address indexed staker, address indexed operator);
+
+    // @notice Emitted when `staker` enters the "undelegation limbo" mode
+    event UndelegationLimboEntered(address indexed staker);
+
+    // @notice Emitted when `staker` exits the "undelegation limbo" mode
+    event UndelegationLimboExited(address indexed staker);
 
     // @notice reuseable modifier + associated mapping for filtering out weird fuzzed inputs, like making calls from the ProxyAdmin or the zero address
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
@@ -363,15 +376,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // verify that the salt hasn't been used before
         require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too early?");
 
-        IStrategy[] memory strategiesToReturn = new IStrategy[](1);
-        strategiesToReturn[0] = strategyMock;
-        uint256[] memory sharesToReturn = new uint256[](1);
-        sharesToReturn[0] = 1;
+        // emulate staker deposits
+        IStrategy[] memory strategiesToReturn = new IStrategy[](2);
+        uint256[] memory sharesToReturn = new uint256[](2);
+        strategiesToReturn[0] = IStrategy(address(1));
+        strategiesToReturn[1] = IStrategy(address(2));
+        sharesToReturn[0] = 1e18;
+        sharesToReturn[1] = 2e18;
         strategyManagerMock.setDeposits(strategiesToReturn, sharesToReturn);
+        // copy emulated deposits to storage
+        _strategiesToReturn = strategiesToReturn;
+        _sharesToReturn = sharesToReturn;
+    
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
+        for (uint256 i = 0; i < _strategiesToReturn.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesIncreased(_operator, staker, _strategiesToReturn[i], _sharesToReturn[i]);
+        }
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);        
@@ -949,9 +971,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     /**
-     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
+     * Staker is undelegated from an operator, via a call to `undelegate`, originating from the staker's address.
      * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
-     * Does nothing if the staker is already undelegated
      * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
      * Emits a `StakerUndelegated` event
      */
@@ -968,6 +989,100 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         require(!delegationManager.isDelegated(staker), "staker not undelegated!");
         require(delegationManager.delegatedTo(staker) == address(0), "undelegated staker should be delegated to zero address");
+    }
+
+    /**
+     * @notice Like `testUndelegateFromOperator`, but making sure the 'staker' is reported as having active shares
+     * by the EigenPodManager and StrategyManager contracts.
+     * @dev Verifies that the staker enters 'undelegation limbo' appropriately, that an event is emitted and that
+     * the operator's shares correctly decrease as a result.
+     */
+    function testUndelegate_EnterUndelegationLimboWithActiveShares(address staker) public {
+        // verify that staker is not in undelegation limbo
+        require(!delegationManager.isInUndelegationLimbo(staker), "staker should not be in undelegation limbo");
+
+        // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
+        // also already simulates the staker having deposits
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
+
+        // store the operator's delegated shares before the call to `undelegate`
+        address operator = delegationManager.delegatedTo(staker);
+        uint256[] memory operatorSharesBefore = new uint256[](_strategiesToReturn.length);
+        for (uint256 i = 0; i < _strategiesToReturn.length; ++i) {
+            operatorSharesBefore[i] = delegationManager.operatorShares(operator, _strategiesToReturn[i]);
+        }
+
+        // have the staker undelegate themselves, and check for events
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit UndelegationLimboEntered(staker);
+        for (uint256 i = 0; i < _strategiesToReturn.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesDecreased(operator, staker, _strategiesToReturn[i], _sharesToReturn[i]);
+        }
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(staker, operator);
+        delegationManager.undelegate(staker);
+        cheats.stopPrank();
+
+        require(!delegationManager.isDelegated(staker), "staker not undelegated!");
+        require(delegationManager.delegatedTo(staker) == address(0), "undelegated staker should be delegated to zero address");
+
+        // verify that the staker is properly in undelegation limbo
+        IDelegationManager.UndelegationLimboStatus memory stakerUndelegationLimboStatus =
+            delegationManager.stakerUndelegationLimboStatus(staker);
+        require(stakerUndelegationLimboStatus.active, "staker is not in undelegation limbo but should be");
+        require(stakerUndelegationLimboStatus.startBlock == block.number, "wrong undelegation limbo start block");
+        require(stakerUndelegationLimboStatus.delegatedAddress == operator, "wrong delegatedAddress in undelegation limbo status");
+
+        // check that the operator's shares decreased appropriately
+        for (uint256 i = 0; i < _strategiesToReturn.length; ++i) {
+            uint256 operatorSharesAfter = delegationManager.operatorShares(operator, _strategiesToReturn[i]);
+            require(operatorSharesAfter + _sharesToReturn[i] == operatorSharesBefore[i],
+                "operator shares did not decrease correctly");
+        }
+    }
+
+    // @notice verifies that the system will revert if a staker who is in "undelegation limbo" tries to delegate to an operator
+    function test_Revert_StakerInUndelegationLimboTriesToDelegate() public {
+        address staker = address(1000);
+        testUndelegate_EnterUndelegationLimboWithActiveShares(staker);
+
+        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        cheats.startPrank(staker);
+        cheats.expectRevert(bytes("DelegationManager._delegate: staker is in undelegation limbo"));
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, emptySalt);
+        cheats.stopPrank();
+    }
+
+    // @notice verifies that `DelegationManager.exitUndelegationLimbo` correctly emits an event and resets the caller's delegation limbo status
+    function testExitUndelegationLimbo() public {
+        address staker = address(1000);
+        testUndelegate_EnterUndelegationLimboWithActiveShares(staker);
+
+        uint256 middlewareTimesIndex = 0;
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit UndelegationLimboExited(staker);
+        delegationManager.exitUndelegationLimbo(middlewareTimesIndex);
+        cheats.stopPrank();
+
+        // verify that the staker's undelegation limbo status is totally reset/deleted
+        IDelegationManager.UndelegationLimboStatus memory stakerUndelegationLimboStatus =
+            delegationManager.stakerUndelegationLimboStatus(staker);
+        IDelegationManager.UndelegationLimboStatus memory emptyStakerUndelegationLimboStatus;
+        require(keccak256(abi.encode(stakerUndelegationLimboStatus)) == keccak256(abi.encode(emptyStakerUndelegationLimboStatus)),
+            "staker undelegation limbo status not reset!");
+    }
+
+    // @notice verifies that `DelegationManager.exitUndelegationLimbo` correctly reverts if the caller is not in undelegation limbo
+    function test_Revert_StakerNotInUndelegationLimboTriesToExitUndelegationLimbo() public {
+        require(!delegationManager.isInUndelegationLimbo(address(this)), "bad test setup? somehow in undelegation limbo without entering");
+
+        uint256 middlewareTimesIndex = 0;
+        cheats.expectRevert(bytes("DelegationManager.exitUndelegationLimbo: must be in undelegation limbo"));
+        delegationManager.exitUndelegationLimbo(middlewareTimesIndex);
     }
 
     // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
@@ -1254,8 +1369,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             caller = operator;
         }
 
-        // call the `undelegate` function
+        // call the `undelegate` function, checking for emitted events
         cheats.startPrank(caller);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerForceUndelegated(staker, delegationManager.delegatedTo(staker));
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
         delegationManager.undelegate(staker);
         cheats.stopPrank();
     }
@@ -1294,7 +1413,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice verifies that `DelegationManager.undelegate` reverts if trying to undelegate an operator from themselves
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
-    function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
+    function testOperatorCannotUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
         // register *this contract* as an operator
         address operator = address(this);
         IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
@@ -1316,6 +1435,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
         delegationManager.undelegate(operator);
         cheats.stopPrank();
+    }
+
+    // @notice verify that `DelegationManager.undelegate` reverts if the staker is already undelegated
+    function test_Revert_StakerWhoIsNotDelegatedTriesToUndelegate() public {
+        cheats.expectRevert(bytes("DelegationManager.undelegate: staker must be delegated to undelegate"));
+        delegationManager.undelegate(address(this));
     }
 
     /**

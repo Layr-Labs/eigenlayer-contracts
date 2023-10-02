@@ -87,14 +87,9 @@ contract StrategyManagerMock is
     /// @notice Returns the array of strategies in which `staker` has nonzero shares
     function stakerStrats(address staker) external view returns (IStrategy[] memory) {}
 
-    uint256 public stakerStrategyListLengthReturnValue;
-    /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
+    /// @notice Simple getter function that returns `strategiesToReturn.length`.
     function stakerStrategyListLength(address /*staker*/) external view returns (uint256) {
-        return stakerStrategyListLengthReturnValue;
-    }
-
-    function setStakerStrategyListLengthReturnValue(uint256 valueToSet) public {
-        stakerStrategyListLengthReturnValue = valueToSet;
+        return strategiesToReturn.length;
     }
 
 
