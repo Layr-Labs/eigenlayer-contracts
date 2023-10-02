@@ -88,8 +88,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         _;
     }
 
-    // @notice mapping used to handle duplicate entries in fuzzed address array input
+    // @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
+    mapping(IStrategy => uint256) public delegatedSharesBefore;
 
     function setUp() override virtual public{
         EigenLayerDeployer.setUp();
@@ -1051,7 +1052,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.stopPrank();            
         }
 
-        uint256 delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+        uint256 _delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
 
         if(delegationManager.isDelegated(staker)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -1068,10 +1069,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
 
         if (delegationManager.isDelegated(staker)) {
-            require(delegatedSharesAfter == delegatedSharesBefore + shares, "delegated shares did not increment correctly");
+            require(delegatedSharesAfter == _delegatedSharesBefore + shares, "delegated shares did not increment correctly");
         } else {
-            require(delegatedSharesAfter == delegatedSharesBefore, "delegated shares incremented incorrectly");
-            require(delegatedSharesBefore == 0, "nonzero shares delegated to zero address!");
+            require(delegatedSharesAfter == _delegatedSharesBefore, "delegated shares incremented incorrectly");
+            require(_delegatedSharesBefore == 0, "nonzero shares delegated to zero address!");
         }
     }
 
@@ -1105,7 +1106,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.stopPrank();            
         }
 
-        uint256[] memory delegatedSharesBefore = new uint256[](strategies.length);
         uint256[] memory sharesInputArray = new uint256[](strategies.length);
 
         address delegatedTo = delegationManager.delegatedTo(staker);
@@ -1114,7 +1114,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(address(strategyManagerMock));
         for (uint256 i = 0; i < strategies.length; ++i) {
             delegationManager.increaseDelegatedShares(staker, strategies[i], shares); 
-            delegatedSharesBefore[i] = delegationManager.operatorShares(delegatedTo, strategies[i]);   
+            // store delegated shares in a mapping
+            delegatedSharesBefore[strategies[i]] = delegationManager.operatorShares(delegatedTo, strategies[i]);
             // also construct an array which we'll use in another loop
             sharesInputArray[i] = shares;
             totalSharesForStrategyInArray[address(strategies[i])] += sharesInputArray[i];
@@ -1145,11 +1146,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]); 
 
             if (isDelegated) {
-                require(delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])] == delegatedSharesBefore[i],
+                require(delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])] == delegatedSharesBefore[strategies[i]],
                     "delegated shares did not decrement correctly");
             } else {
-                require(delegatedSharesAfter == delegatedSharesBefore[i], "delegated shares decremented incorrectly");
-                require(delegatedSharesBefore[i] == 0, "nonzero shares delegated to zero address!");
+                require(delegatedSharesAfter == delegatedSharesBefore[strategies[i]], "delegated shares decremented incorrectly");
+                require(delegatedSharesBefore[strategies[i]] == 0, "nonzero shares delegated to zero address!");
             }
         }
     }

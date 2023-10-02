@@ -19,4 +19,13 @@ solc_version = '0.8.12'
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"
 
+[fmt]
+bracket_spacing = false
+int_types = "long"
+line_length = 120
+multiline_func_header = "params_first"
+number_underscore = "thousands"
+quote_style = "double"
+tab_width = 4
+
 # See more config options https://github.com/gakonst/foundry/tree/master/config
