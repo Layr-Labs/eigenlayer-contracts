@@ -12,8 +12,7 @@ import "./IRegistry.sol";
  */
 interface IQuorumRegistry is IRegistry {
     // DATA STRUCTURES
-    enum Status
-    {
+    enum Status {
         // default is inactive
         INACTIVE,
         ACTIVE
@@ -76,10 +75,10 @@ interface IQuorumRegistry is IRegistry {
      * @param index Array index for lookup, within the dynamic array `pubkeyHashToStakeHistory[pubkeyHash]`.
      * @dev Function will revert if `index` is out-of-bounds.
      */
-    function getStakeFromPubkeyHashAndIndex(bytes32 pubkeyHash, uint256 index)
-        external
-        view
-        returns (OperatorStake memory);
+    function getStakeFromPubkeyHashAndIndex(
+        bytes32 pubkeyHash,
+        uint256 index
+    ) external view returns (OperatorStake memory);
 
     /**
      * @notice Checks that the `operator` was active at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
@@ -101,7 +100,7 @@ interface IQuorumRegistry is IRegistry {
         address operator,
         uint256 blockNumber,
         uint256 stakeHistoryIndex
-        ) external view returns (bool);
+    ) external view returns (bool);
 
     /**
      * @notice Checks that the `operator` was inactive at the `blockNumber`, using the specified `stakeHistoryIndex` as proof.
@@ -123,23 +122,23 @@ interface IQuorumRegistry is IRegistry {
         address operator,
         uint256 blockNumber,
         uint256 stakeHistoryIndex
-        ) external view returns (bool);
+    ) external view returns (bool);
 
     /**
      * @notice Looks up the `operator`'s index in the dynamic array `operatorList` at the specified `blockNumber`.
-     * @param index Used to specify the entry within the dynamic array `pubkeyHashToIndexHistory[pubkeyHash]` to 
+     * @param index Used to specify the entry within the dynamic array `pubkeyHashToIndexHistory[pubkeyHash]` to
      * read data from, where `pubkeyHash` is looked up from `operator`'s registration info
      * @param blockNumber Is the desired block number at which we wish to query the operator's position in the `operatorList` array
      * @dev Function will revert in the event that the specified `index` input does not identify the appropriate entry in the
      * array `pubkeyHashToIndexHistory[pubkeyHash]` to pull the info from.
-    */
+     */
     function getOperatorIndex(address operator, uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /**
      * @notice Looks up the number of total operators at the specified `blockNumber`.
      * @param index Input used to specify the entry within the dynamic array `totalOperatorsHistory` to read data from.
      * @dev This function will revert if the provided `index` is out of bounds.
-    */
+     */
     function getTotalOperators(uint32 blockNumber, uint32 index) external view returns (uint32);
 
     /// @notice Returns the current number of operators of this service.

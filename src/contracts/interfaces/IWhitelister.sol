@@ -11,9 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 
-
 interface IWhitelister {
-
     function whitelist(address operator) external;
 
     function getStaker(address operator) external returns (address);
@@ -41,15 +39,7 @@ interface IWhitelister {
         bool receiveAsTokens
     ) external returns (bytes memory);
 
-    function transfer(
-        address staker,
-        address token,
-        address to,
-        uint256 amount
-    ) external returns (bytes memory) ; 
-    
-    function callAddress(
-        address to,
-        bytes memory data
-    ) external payable returns (bytes memory);
+    function transfer(address staker, address token, address to, uint256 amount) external returns (bytes memory);
+
+    function callAddress(address to, bytes memory data) external payable returns (bytes memory);
 }

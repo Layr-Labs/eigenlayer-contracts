@@ -8,5 +8,5 @@ pragma solidity >=0.5.0;
  */
 interface IBeaconChainOracle {
     /// @notice The block number to state root mapping.
-    function timestampToBlockRoot(uint256 timestamp) external view returns(bytes32);
+    function timestampToBlockRoot(uint256 timestamp) external view returns (bytes32);
 }

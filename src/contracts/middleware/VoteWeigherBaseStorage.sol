@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IVoteWeigher.sol";
 import "../interfaces/IServiceManager.sol";
@@ -25,7 +24,7 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
-    
+
     /// @notice The address of the StrategyManager contract for EigenLayer.
     IStrategyManager public immutable strategyManager;
 
