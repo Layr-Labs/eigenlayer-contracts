@@ -332,7 +332,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
      * invariant that 'operators' are always delegated to themselves
      */
-    function testCannotModifyOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testCannotSetOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
         cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
@@ -1397,4 +1397,96 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
         return stakerSignatureAndExpiry;
     }
+
+   function test_RegisterAsOperator() public {}
+
+    function test_RevertsWhen_AlreadyOperator_RegisterAsOperator() public {}
+
+    function test_RevertsWhen_OperatorIsActivelyDelegated_RegisterAsOperator() public {}
+
+    function test_RevertsWhen_StakerOptOutWindowBlocksGtMax_RegisterAsOperator() public {}
+
+    function test_RevertsWhen_EarningsReceiverAddress0_RegisterAsOperator() public {}
+
+    function test_SetOperatorDetails() public {}
+
+    function test_RevertsWhen_EarningsReceiverAddress0_SetOperatorDetails() public {}
+
+    function test_RevertsWhen_StakerOptOutWindowBlocksGreaterThanMaxOptOutWindowBlocks_SetOperatorDetails() public {}
+
+    function test_RevertsWhen_StakerOptOutWindowBlocksDecreased_SetOperatorDetails() public {}
+
+    function test_UpdateOperatorMetdataURI() public {}
+
+    function test_RevertsWhen_NotOperator_UpdateOperatorMetdataURI() public {}
+
+    function test_When_NoApprover_DelegateTo() public {}
+
+    function test_When_WithApproverSig_DelegateTo() public {}
+
+    function test_RevertsWhen_DelegateApproverSignatureExpired_DelegateTo() public {}
+
+    function test_When_CallerIsAnOperator_DelegateTo() public {}
+
+    function test_RevertsWhen_OperatorIsFrozen_DelegateTo() public {}
+
+    function test_RevertsWhen_DelegationIsPaused_DelegateTo() public {}
+
+    function test_RevertsWhen_InvalidApproverSignature_DelegateTo() public {}
+
+    function test_RevertsWhen_OperatorNotRegistered_DelegateTo() public {}
+
+    function test_RevertsWhen_AlreadyDelegated_DelegateTo() public {}
+
+    function test_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_SignatureExpired_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_SignatureInvalidWrongSigner_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_StakerAlreadyDelegated_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_OperatorNotRegistered_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_OperatorIsFrozen_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_SignatureInvalidWrongNonce_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_DelegateApproverSignatureExpired_DelegateToBySignature() public {}
+
+    function test_RevertsWhen_SignatureSaltPreviouslyUsed_DelegateToBySignature() public {}
+
+    function test_Undelegate() public {}
+
+    function test_RevertsWhen_OperatorUndelegatesFromSelf_Undelegate() public {}
+
+    function test_RevertsWhen_NotStrategyManager_Undelegate() public {}
+
+    function test_IncreaseDelegatedShares() public {}
+
+    function test_RevertsWhen_NotStrategyManager_IncreaseDelegatedShares() public {}
+
+    function test_StrategyMangerCallsSucceedsWithoutIncreasingShares_IncreaseDelegatedShares() public {}
+
+    function test_DereaseDelegatedShares() public {}
+
+    function test_RevertsWhen_NotStrategyManager_DecreaseDelegatedShares() public {}
+
+    function test_StrategyMangerCallsSucceedsWithoutDecreasingShares_DecreaseDelegatedShares() public {}
+
+    function test_DomainSeperator() public {}
+
+    function test_IsDelegated() public {}
+
+    function test_IsNotDelegated() public {}
+
+    function test_IsOperator() public {}
+
+    function test_IsNotOperator() public {}
+
+    function test_DelegateTo() public {}
+
+    function test_CalculateCurrentStakerDelegationDigestHash() public {}
+
+    function test_CalculateDelegationApprovalDigestHash() public {}
 }
