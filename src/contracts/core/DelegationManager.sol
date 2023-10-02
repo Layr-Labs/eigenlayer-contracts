@@ -312,38 +312,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
         );
 
+        // a staker cannot be simultaneously in delegation limbo and delegated to an operator, so we do not need to return any shares to the delegation system here
+
         // delete the pod owner's undelegation limbo details and emit an event
         delete _stakerUndelegationLimboStatus[msg.sender];
         emit UndelegationLimboExited(msg.sender);
-
-        // return any shares that the staker has to the delegation system
-        address operator = delegatedTo[msg.sender];
-        uint256 podShares = eigenPodManager.podOwnerShares(msg.sender);
-        if (podShares != 0) {
-            _increaseOperatorShares({
-                operator: operator,
-                staker: msg.sender,
-                strategy: beaconChainETHStrategy,
-                shares: podShares
-            });
-        }
-        bool stakerHasSharesInStrategyManager = (strategyManager.stakerStrategyListLength(msg.sender) != 0);
-        if (stakerHasSharesInStrategyManager) {
-            (IStrategy[] memory strategies, uint256[] memory strategyShares) = strategyManager.getDeposits(msg.sender);
-
-            for (uint256 i = 0; i < strategies.length; ) {
-                _increaseOperatorShares({
-                    operator: operator,
-                    staker: msg.sender,
-                    strategy: strategies[i],
-                    shares: strategyShares[i]
-                });
-
-                unchecked {
-                    ++i;
-                }
-            }
-        }
     }
 
     /**
