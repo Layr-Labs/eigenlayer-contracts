@@ -3,7 +3,7 @@ then
     RULE="--rule $2"
 fi
 
-solc-select use 0.8.12  
+solc-select use 0.8.12
 
 certoraRun certora/harnesses/StrategyManagerHarness.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
