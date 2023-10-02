@@ -11,7 +11,7 @@ Taking an example, lets say I had one merkle tree A who's Nth leaf was the root 
 
 ![Sample Merkle Tree](../../images/samplemerkle.png)
 
-
+Below are the explanations of each individual proof function that we use to prove various attributes about the state of the beacon chain and validators who are restaking via the EigenPods subprotocol.
 #### `BeaconChainProofs.verifyValidatorFields`
 
 ```solidity
