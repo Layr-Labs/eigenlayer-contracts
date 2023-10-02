@@ -1,3 +1,15 @@
+### Important Details About Proofs
+#### How Indices Are Calculated
+To prove a leaf in a merkle tree, you need several things - A proof, the leaf, the index of that leaf in a list of leaves and the root you are proving against.  The beacon state can be represented as several merkle trees stacked on top of each other, i.e., each leaf in the topmost tree is a root of another tree and so on.  This means that theoretically, proving most things about the beacon state involves making multiple proofs about each of the merkle trees that are stacked on top of each other.  
+
+However there is a way we can combine these proofs into a single proof.  This is by concatenating each of the individual proofs into one large proof and proving that against the topmost root.  However, how do we calculate the "index" for this mega-proof?
+
+The idea is simple, in a Merkle tree, every node has two children: left (or 0) and right (or 1). Starting from the root and moving down to a specific leaf, you can interpret each bit in the binary representation of the leaf's index as an instruction to traverse left (for 0) or right (for 1).  The length of a binary representation of an index is just `log(num_leaves) = height_of_the tree`.  
+
+Taking an example, lets say I had one merkle tree A who's Nth leaf was the root of merkle tree B.  So to calculate the index for for the Mth in B against the root of A, the index would be:
+`index_B_against_A = N << height_of_merkle_tree_B | M`.  
+
+
 #### `BeaconChainProofs.verifyValidatorFields`
 
 ```solidity
