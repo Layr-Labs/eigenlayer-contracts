@@ -289,7 +289,6 @@ library BN254 {
         uint256 beta = 0;
         uint256 y = 0;
 
-        // XXX: Gen Order (n) or Field Order (p) ?
         uint256 x = uint256(_x) % FP_MODULUS;
 
         while (true) {
