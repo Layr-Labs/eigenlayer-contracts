@@ -8,9 +8,19 @@ The primary functions of the `DelegationManager` are (i) to allow Stakers to del
 
 Whereas the `EigenPodManager` and `StrategyManager` perform accounting for individual Stakers according to their native ETH or LST holdings respectively, the `DelegationManager` sits between these two contracts and tracks these accounting changes according to the Operators each Staker has delegated to. This means that each time a Staker's balance changes in either the `EigenPodManager` or `StrategyManager`, the `DelegationManager` is called to record this update to the Staker's delegated Operator (if they have one).
 
-*Does not include*:
-* Pausability ("Pausers" section) or Upgradability
-* High-level flows (what high-level flows this contract has entry points for)
+*Important state variables*:
+* `mapping(address => address) public delegatedTo`: Staker => Operator.
+    * If a Staker is not delegated to anyone, `delegatedTo` is unset.
+    * Operators are delegated to themselves - `delegatedTo[operator] == operator`
+* `mapping(address => mapping(IStrategy => uint256)) public operatorShares`: Tracks the current balance of shares an Operator is delegated according to each strategy. Updated by both the `StrategyManager` and `EigenPodManager` when a Staker's delegatable balance changes.
+    * Because Operators are delegated to themselves, an Operator's own restaked assets are reflected in these balances.
+    * A similar mapping exists in the `StrategyManager`, but the `DelegationManager` additionally tracks beacon chain ETH delegated via the `EigenPodManager`. The "beacon chain ETH" strategy gets its own special address for this mapping: `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0`.
+
+*Helpful definitions*:
+* `isDelegated(address staker) -> (bool)`
+    * True if `delegatedTo[staker] != address(0)`
+* `isOperator(address operator) -> (bool)` 
+    * True if `_operatorDetails[operator].earningsReceiver != address(0)`
 
 ### Operators
 
@@ -137,8 +147,9 @@ If the Staker has active shares in the `EigenPodManager`, the Staker is placed i
 If the Staker has active shares in any strategy in the `StrategyManager`, this initiates a withdrawal of the Staker's shares.
 
 *Effects*: 
-* `eigenPodManager.forceIntoUndelegationLimbo`: If the Staker has shares in the `EigenPodManager`, they are placed into undelegation limbo and the shares are decremented from the Operator's beacon chain ETH shares.
-* `strategyManager.forceTotalWithdrawal`: If the Staker has shares in any strategy, this method initiates a withdrawal of all shares via the `StrategyManager` withdrawal queue. Each strategy's shares are also decremented from the Operator's shares.
+* See [`EigenPodManager.forceIntoUndelegationLimbo`](./EigenPodManager.md#eigenpodmanagerforceintoundelegationlimbo)
+* See [`StrategyManager.forceTotalWithdrawal`](./StrategyManager.md#forcetotalwithdrawal)
+* Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.
 * If the Staker was delegated to an Operator, this function undelegates them.
 
 *Requirements*:
@@ -146,8 +157,8 @@ If the Staker has active shares in any strategy in the `StrategyManager`, this i
 * Staker MUST NOT be an Operator
 * Caller must be either the Staker, their Operator, or their Operator's `delegationApprover`
 * Pause status MUST NOT be set: `PAUSED_UNDELEGATION`
-* `EigenPodManager`: see `forceIntoUndelegationLimbo`
-* `StrategyManager`: see `forceTotalWithdrawal`
+* See [`EigenPodManager.forceIntoUndelegationLimbo`](./EigenPodManager.md#eigenpodmanagerforceintoundelegationlimbo)
+* See [`StrategyManager.forceTotalWithdrawal`](./StrategyManager.md#forcetotalwithdrawal)
 
 #### `increaseDelegatedShares`
 
@@ -162,6 +173,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 *Entry Points*: This method may be called as a result of the following top-level function calls:
 * `StrategyManager.depositIntoStrategy`
 * `StrategyManager.depositIntoStrategyWithSignature`
+* `StrategyManager.completeQueuedWithdrawal`
 * `EigenPodManager.exitUndelegationLimbo`
 * `EigenPod.verifyWithdrawalCredentials`
 * `EigenPod.verifyBalanceUpdate`
@@ -187,6 +199,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 * `EigenPodManager.queueWithdrawal`
 * `EigenPod.verifyBalanceUpdate`
 * `EigenPod.verifyAndProcessWithdrawals`
+* `StrategyManager.queueWithdrawal`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for each of the `strategies` are decreased (by the corresponding amount in the `shares` array).
 * This method is a no-op if the Staker is not delegated an an Operator.
