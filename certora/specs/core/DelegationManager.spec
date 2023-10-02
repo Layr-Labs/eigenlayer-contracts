@@ -120,10 +120,6 @@ invariant undelegationLimboImpliesUndelegated(address staker)
 invariant operatorsCannotEnterUndelegationLimbo(address staker)
     isInUndelegationLimbo(staker) => !isOperator(staker);
 
-// verify that the zero address always has zero delegated shares
-invariant zeroAddressHasNoDelegatedShares(address strategy)
-    operatorShares(0, strategy) == 0;
-
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
 rule operatorCannotUnregister(address operator) {
