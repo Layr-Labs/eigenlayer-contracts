@@ -160,10 +160,6 @@ contract StakeRegistry is StakeRegistryStorage {
         }
     }
 
-    function getStakeHistoryLengthForQuorumNumber(bytes32 operatorId, uint8 quorumNumber) external view returns (uint256) {
-        return operatorIdToStakeHistory[operatorId][quorumNumber].length;
-    }
-
     /**
      * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
      * @dev Function returns weight of **0** in the event that the operator has no stake history
