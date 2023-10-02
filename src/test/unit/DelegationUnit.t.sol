@@ -14,7 +14,6 @@ import "../mocks/ERC20Mock.sol";
 import "../Delegation.t.sol";
 
 contract DelegationUnitTests is EigenLayerTestHelper {
-
     StrategyManagerMock strategyManagerMock;
     SlasherMock slasherMock;
     DelegationManager delegationManager;
@@ -24,7 +23,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     EigenPodManagerMock eigenPodManagerMock;
 
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
-    uint256 stakerPrivateKey = uint256(123456789);
+    uint256 stakerPrivateKey = uint256(123_456_789);
 
     // empty string reused across many tests
     string emptyStringForMetadataURI;
@@ -69,6 +68,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice reuseable modifier + associated mapping for filtering out weird fuzzed inputs, like making calls from the ProxyAdmin or the zero address
     mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
+
     modifier filterFuzzedAddressInputs(address fuzzedAddress) {
         cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
         _;
@@ -78,20 +78,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     mapping(address => uint256) public totalSharesForStrategyInArray;
     mapping(IStrategy => uint256) public delegatedSharesBefore;
 
-    function setUp() override virtual public{
+    function setUp() public virtual override {
         EigenLayerDeployer.setUp();
 
         slasherMock = new SlasherMock();
-        delegationManager = DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        delegationManager = DelegationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         strategyManagerMock = new StrategyManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
 
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
 
         cheats.startPrank(eigenLayerProxyAdmin.owner());
-        eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation));
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
+        );
         cheats.stopPrank();
-        
+
         address initalOwner = address(this);
         uint256 initialPausedStatus = 0;
         delegationManager.initialize(initalOwner, eigenLayerPauserReg, initialPausedStatus);
@@ -116,16 +120,20 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         addressIsExcludedFromFuzzedInputs[address(slasherMock)] = true;
 
         // check setup (constructor + initializer)
-        require(delegationManager.strategyManager() == strategyManagerMock,
-            "constructor / initializer incorrect, strategyManager set wrong");
-        require(delegationManager.slasher() == slasherMock,
-            "constructor / initializer incorrect, slasher set wrong");
-        require(delegationManager.pauserRegistry() == eigenLayerPauserReg,
-            "constructor / initializer incorrect, pauserRegistry set wrong");
-        require(delegationManager.owner() == initalOwner,
-            "constructor / initializer incorrect, owner set wrong");
-        require(delegationManager.paused() == initialPausedStatus,
-            "constructor / initializer incorrect, paused status set wrong");
+        require(
+            delegationManager.strategyManager() == strategyManagerMock,
+            "constructor / initializer incorrect, strategyManager set wrong"
+        );
+        require(delegationManager.slasher() == slasherMock, "constructor / initializer incorrect, slasher set wrong");
+        require(
+            delegationManager.pauserRegistry() == eigenLayerPauserReg,
+            "constructor / initializer incorrect, pauserRegistry set wrong"
+        );
+        require(delegationManager.owner() == initalOwner, "constructor / initializer incorrect, owner set wrong");
+        require(
+            delegationManager.paused() == initialPausedStatus,
+            "constructor / initializer incorrect, paused status set wrong"
+        );
     }
 
     // @notice Verifies that the DelegationManager cannot be iniitalized multiple times
@@ -143,9 +151,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
      * @param operator and @param operatorDetails are fuzzed inputs
      */
-    function testRegisterAsOperator(address operator, IDelegationManager.OperatorDetails memory operatorDetails, string memory metadataURI) public 
-        filterFuzzedAddressInputs(operator)
-    {
+    function testRegisterAsOperator(
+        address operator,
+        IDelegationManager.OperatorDetails memory operatorDetails,
+        string memory metadataURI
+    ) public filterFuzzedAddressInputs(operator) {
         // filter out zero address since people can't delegate to the zero address and operators are delegated to themselves
         cheats.assume(operator != address(0));
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
@@ -165,9 +175,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         delegationManager.registerAsOperator(operatorDetails, metadataURI);
 
-        require(operatorDetails.earningsReceiver == delegationManager.earningsReceiver(operator), "earningsReceiver not set correctly");
-        require(operatorDetails.delegationApprover == delegationManager.delegationApprover(operator), "delegationApprover not set correctly");
-        require(operatorDetails.stakerOptOutWindowBlocks == delegationManager.stakerOptOutWindowBlocks(operator), "stakerOptOutWindowBlocks not set correctly");
+        require(
+            operatorDetails.earningsReceiver == delegationManager.earningsReceiver(operator),
+            "earningsReceiver not set correctly"
+        );
+        require(
+            operatorDetails.delegationApprover == delegationManager.delegationApprover(operator),
+            "delegationApprover not set correctly"
+        );
+        require(
+            operatorDetails.stakerOptOutWindowBlocks == delegationManager.stakerOptOutWindowBlocks(operator),
+            "stakerOptOutWindowBlocks not set correctly"
+        );
         require(delegationManager.delegatedTo(operator) == operator, "operator not delegated to self");
         cheats.stopPrank();
     }
@@ -176,18 +195,24 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that an operator cannot register with `stakerOptOutWindowBlocks` set larger than `MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`
      * @param operatorDetails is a fuzzed input
      */
-    function testCannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testCannotRegisterAsOperatorWithDisallowedStakerOptOutWindowBlocks(
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) public {
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         cheats.assume(operatorDetails.earningsReceiver != address(0));
         // filter out *allowed* stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
 
         cheats.startPrank(operator);
-        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"));
+        cheats.expectRevert(
+            bytes(
+                "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"
+            )
+        );
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
-    
+
     /**
      * @notice Verifies that an operator cannot register with `earningsReceiver` set to the zero address
      * @dev This is an important check since we check `earningsReceiver != address(0)` to check if an address is an operator!
@@ -195,15 +220,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testCannotRegisterAsOperatorWithZeroAddressAsEarningsReceiver() public {
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails;
-        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        cheats.expectRevert(
+            bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address")
+        );
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
     }
 
     // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
-    function testCannotRegisterAsOperatorMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public 
-        filterFuzzedAddressInputs(operator)
-    {
+    function testCannotRegisterAsOperatorMultipleTimes(
+        address operator,
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) public filterFuzzedAddressInputs(operator) {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
         cheats.startPrank(operator);
         cheats.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
@@ -212,9 +240,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that a staker who is actively delegated to an operator cannot register as an operator (without first undelegating, at least)
-    function testCannotRegisterAsOperatorWhileDelegated(address staker, IDelegationManager.OperatorDetails memory operatorDetails) public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testCannotRegisterAsOperatorWhileDelegated(
+        address staker,
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) public filterFuzzedAddressInputs(staker) {
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
@@ -231,7 +260,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        delegationManager.delegateTo(_operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(_operator, approverSignatureAndExpiry, emptySalt);
 
         cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -260,21 +289,38 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // either it fails for trying to set the stakerOptOutWindowBlocks
         if (modifiedOperatorDetails.stakerOptOutWindowBlocks > delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS()) {
-            cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"));
+            cheats.expectRevert(
+                bytes(
+                    "DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS"
+                )
+            );
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
-        // or the transition is allowed,
-        } else if (modifiedOperatorDetails.stakerOptOutWindowBlocks >= initialOperatorDetails.stakerOptOutWindowBlocks) {
+            // or the transition is allowed,
+        } else if (modifiedOperatorDetails.stakerOptOutWindowBlocks >= initialOperatorDetails.stakerOptOutWindowBlocks)
+        {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorDetailsModified(_operator, modifiedOperatorDetails);
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
 
-            require(modifiedOperatorDetails.earningsReceiver == delegationManager.earningsReceiver(_operator), "earningsReceiver not set correctly");
-            require(modifiedOperatorDetails.delegationApprover == delegationManager.delegationApprover(_operator), "delegationApprover not set correctly");
-            require(modifiedOperatorDetails.stakerOptOutWindowBlocks == delegationManager.stakerOptOutWindowBlocks(_operator), "stakerOptOutWindowBlocks not set correctly");
+            require(
+                modifiedOperatorDetails.earningsReceiver == delegationManager.earningsReceiver(_operator),
+                "earningsReceiver not set correctly"
+            );
+            require(
+                modifiedOperatorDetails.delegationApprover == delegationManager.delegationApprover(_operator),
+                "delegationApprover not set correctly"
+            );
+            require(
+                modifiedOperatorDetails.stakerOptOutWindowBlocks
+                    == delegationManager.stakerOptOutWindowBlocks(_operator),
+                "stakerOptOutWindowBlocks not set correctly"
+            );
             require(delegationManager.delegatedTo(_operator) == _operator, "operator not delegated to self");
-        // or else the transition is disallowed
+            // or else the transition is disallowed
         } else {
-            cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased"));
+            cheats.expectRevert(
+                bytes("DelegationManager._setOperatorDetails: stakerOptOutWindowBlocks cannot be decreased")
+            );
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
         }
 
@@ -323,7 +369,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         operatorDetails.earningsReceiver = address(0);
-        cheats.expectRevert(bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address"));
+        cheats.expectRevert(
+            bytes("DelegationManager._setOperatorDetails: cannot set `earningsReceiver` to zero address")
+        );
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
@@ -332,7 +380,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
      * invariant that 'operators' are always delegated to themselves
      */
-    function testCannotSetOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails) public {
+    function testCannotSetOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails)
+        public
+    {
         cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
@@ -346,9 +396,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoAcceptsAllStakers(address staker, ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 salt) public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoAcceptsAllStakers(
+        address staker,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 salt
+    ) public filterFuzzedAddressInputs(staker) {
         // register *this contract* as an operator
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != _operator);
@@ -361,7 +413,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt),
+            "salt somehow spent too early?"
+        );
 
         IStrategy[] memory strategiesToReturn = new IStrategy[](1);
         strategiesToReturn[0] = strategyMock;
@@ -374,7 +429,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
-        delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
 
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
@@ -382,16 +437,21 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
         // verify that the salt is still marked as unused (since it wasn't checked or used)
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt),
+            "salt somehow spent too early?"
+        );
     }
 
     /**
      * @notice Delegates from `staker` to an operator, then verifies that the `staker` cannot delegate to another `operator` (at least without first undelegating)
      */
-    function testCannotDelegateWhileDelegated(address staker, address operator, ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 salt) public 
-        filterFuzzedAddressInputs(staker)
-        filterFuzzedAddressInputs(operator)
-    {
+    function testCannotDelegateWhileDelegated(
+        address staker,
+        address operator,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 salt
+    ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
         // filter out input since if the staker tries to delegate again after registering as an operator, we will revert earlier than this test is designed to check
         cheats.assume(staker != operator);
 
@@ -411,22 +471,22 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // try to delegate again and check that the call reverts
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
 
     // @notice Verifies that `staker` cannot delegate to an unregistered `operator`
-    function testCannotDelegateToUnregisteredOperator(address staker, address operator) public 
-        filterFuzzedAddressInputs(staker)
-        filterFuzzedAddressInputs(operator)
-    {
+    function testCannotDelegateToUnregisteredOperator(
+        address staker,
+        address operator
+    ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
         require(!delegationManager.isOperator(operator), "incorrect test input?");
 
         // try to delegate and check that the call reverts
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
 
@@ -439,9 +499,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoRequiresECDSASignature(address staker, bytes32 salt, uint256 expiry) public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresECDSASignature(
+        address staker,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -460,15 +522,19 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+            "salt somehow spent too early?"
+        );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
 
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
@@ -477,19 +543,26 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
             // verify that the salt is still marked as unused (since it wasn't checked or used)
-            require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too incorrectly?");
+            require(
+                !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent too incorrectly?"
+            );
         } else {
             // verify that the salt is marked as used
-            require(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent not spent?");
+            require(
+                delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent not spent?"
+            );
         }
     }
 
     /**
      * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an incorrect signature on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithBadSignature(address staker, uint256 expiry)  public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithBadSignature(
+        address staker,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -511,8 +584,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         approverSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash =
-                delegationManager.calculateDelegationApprovalDigestHash(staker, operator, delegationManager.delegationApprover(operator), emptySalt, expiry);
+            bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
+                staker, operator, delegationManager.delegationApprover(operator), emptySalt, expiry
+            );
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             // mess up the signature by flipping v's parity
             v = (v == 27 ? 28 : 27);
@@ -522,16 +596,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
 
     /**
      * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredDelegationApproverSignature(address staker, bytes32 salt, uint256 expiry)  public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredDelegationApproverSignature(
+        address staker,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
         cheats.roll(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
@@ -552,12 +628,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
     }
 
@@ -571,9 +648,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateToOperatorWhoRequiresEIP1271Signature(address staker, bytes32 salt, uint256 expiry) public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresEIP1271Signature(
+        address staker,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -598,15 +677,19 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+            "salt somehow spent too early?"
+        );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
 
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
@@ -616,10 +699,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // check that the nonce incremented appropriately
         if (staker == operator || staker == delegationManager.delegationApprover(operator)) {
             // verify that the salt is still marked as unused (since it wasn't checked or used)
-            require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too incorrectly?");
+            require(
+                !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent too incorrectly?"
+            );
         } else {
             // verify that the salt is marked as used
-            require(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent not spent?");
+            require(
+                delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent not spent?"
+            );
         }
     }
 
@@ -627,9 +716,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Like `testDelegateToOperatorWhoRequiresEIP1271Signature` but using a contract that
      * returns a value other than the EIP1271 "magic bytes" and checking that reversion occurs appropriately
      */
-    function testDelegateToOperatorWhoRequiresEIP1271Signature_RevertsOnBadReturnValue(address staker, uint256 expiry) public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresEIP1271Signature_RevertsOnBadReturnValue(
+        address staker,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -661,7 +751,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // because the ERC1271MaliciousMock contract returns the wrong amount of data, we get a low-level "EvmError: Revert" message here rather than the error message bubbling up
         // cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
         cheats.expectRevert();
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
 
@@ -675,9 +765,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoAcceptsAllStakers(address caller, bytes32 salt, uint256 expiry) public 
-        filterFuzzedAddressInputs(caller)
-    {
+    function testDelegateBySignatureToOperatorWhoAcceptsAllStakers(
+        address caller,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(caller) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -696,11 +788,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+            "salt somehow spent too early?"
+        );
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
+            _getStakerSignature(stakerPrivateKey, operator, expiry);
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
@@ -708,7 +804,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit StakerDelegated(staker, operator);
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateToBySignature(
+            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt
+        );
         cheats.stopPrank();
 
         // check all the delegation status changes
@@ -717,10 +815,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         require(!delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
         // check that the staker nonce incremented appropriately
-        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
-            "staker nonce did not increment");
+        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1, "staker nonce did not increment");
         // verify that the salt is still marked as unused (since it wasn't checked or used)
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too incorrectly?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+            "salt somehow spent too incorrectly?"
+        );
     }
 
     /**
@@ -733,9 +833,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoRequiresECDSASignature(address caller, bytes32 salt, uint256 expiry) public 
-        filterFuzzedAddressInputs(caller)
-    {
+    function testDelegateBySignatureToOperatorWhoRequiresECDSASignature(
+        address caller,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(caller) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -755,20 +857,27 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+            "salt somehow spent too early?"
+        );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
 
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
+            _getStakerSignature(stakerPrivateKey, operator, expiry);
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
-        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateToBySignature(
+            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt
+        );
         cheats.stopPrank();
 
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
@@ -778,15 +887,20 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // check that the delegationApprover nonce incremented appropriately
         if (caller == operator || caller == delegationManager.delegationApprover(operator)) {
             // verify that the salt is still marked as unused (since it wasn't checked or used)
-            require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too incorrectly?");
+            require(
+                !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent too incorrectly?"
+            );
         } else {
             // verify that the salt is marked as used
-            require(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent not spent?");
+            require(
+                delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt),
+                "salt somehow spent not spent?"
+            );
         }
 
         // check that the staker nonce incremented appropriately
-        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
-            "staker nonce did not increment");
+        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1, "staker nonce did not increment");
     }
 
     /**
@@ -800,9 +914,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts if the staker is already delegated (to the operator or to anyone else)
      * Reverts if the ‘operator’ is not actually registered as an operator
      */
-    function testDelegateBySignatureToOperatorWhoRequiresEIP1271Signature(address caller, bytes32 salt, uint256 expiry) public 
-        filterFuzzedAddressInputs(caller)
-    {
+    function testDelegateBySignatureToOperatorWhoRequiresEIP1271Signature(
+        address caller,
+        bytes32 salt,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(caller) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
 
@@ -827,20 +943,27 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
-        require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too early?");
+        require(
+            !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt),
+            "salt somehow spent too early?"
+        );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, _operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, _operator, salt, expiry);
 
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, _operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
+            _getStakerSignature(stakerPrivateKey, _operator, expiry);
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
-        delegationManager.delegateToBySignature(staker, _operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);        
+        delegationManager.delegateToBySignature(
+            staker, _operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt
+        );
         cheats.stopPrank();
 
         require(delegationManager.isDelegated(staker), "staker not delegated correctly");
@@ -850,32 +973,42 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // check that the delegationApprover nonce incremented appropriately
         if (caller == _operator || caller == delegationManager.delegationApprover(_operator)) {
             // verify that the salt is still marked as unused (since it wasn't checked or used)
-            require(!delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent too incorrectly?");
+            require(
+                !delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt),
+                "salt somehow spent too incorrectly?"
+            );
         } else {
             // verify that the salt is marked as used
-            require(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt), "salt somehow spent not spent?");
+            require(
+                delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(_operator), salt),
+                "salt somehow spent not spent?"
+            );
         }
 
         // check that the staker nonce incremented appropriately
-        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1,
-            "staker nonce did not increment");
+        require(delegationManager.stakerNonce(staker) == currentStakerNonce + 1, "staker nonce did not increment");
     }
 
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
-    function testDelegateBySignatureRevertsWhenStakerSignatureExpired(address staker, address operator, uint256 expiry, bytes memory signature) public{
+    function testDelegateBySignatureRevertsWhenStakerSignatureExpired(
+        address staker,
+        address operator,
+        uint256 expiry,
+        bytes memory signature
+    ) public {
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
-            signature: signature,
-            expiry: expiry
-        });
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
+            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: expiry});
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, emptySalt);
     }
 
     // @notice Checks that `DelegationManager.delegateToBySignature` reverts if the delegationApprover's signature has expired and their signature is checked
-    function testDelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(address caller, uint256 stakerExpiry, uint256 delegationApproverExpiry) public 
-        filterFuzzedAddressInputs(caller)
-    {
+    function testDelegateBySignatureRevertsWhenDelegationApproverSignatureExpired(
+        address caller,
+        uint256 stakerExpiry,
+        uint256 delegationApproverExpiry
+    ) public filterFuzzedAddressInputs(caller) {
         // filter to only valid `stakerExpiry` values
         cheats.assume(stakerExpiry >= block.timestamp);
         // roll to a very late timestamp
@@ -903,21 +1036,25 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             _getApproverSignature(delegationSignerPrivateKey, staker, operator, emptySalt, delegationApproverExpiry);
 
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, operator, stakerExpiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
+            _getStakerSignature(stakerPrivateKey, operator, stakerExpiry);
 
         // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
         cheats.startPrank(caller);
         cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
-        delegationManager.delegateToBySignature(staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateToBySignature(
+            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt
+        );
         cheats.stopPrank();
     }
 
     /**
      * @notice Like `testDelegateToOperatorWhoRequiresECDSASignature` but using an invalid expiry on purpose and checking that reversion occurs
      */
-    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredSignature(address staker, uint256 expiry)  public 
-        filterFuzzedAddressInputs(staker)
-    {
+    function testDelegateToOperatorWhoRequiresECDSASignature_RevertsWithExpiredSignature(
+        address staker,
+        uint256 expiry
+    ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
         cheats.roll(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
@@ -944,7 +1081,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
 
@@ -967,7 +1104,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         require(!delegationManager.isDelegated(staker), "staker not undelegated!");
-        require(delegationManager.delegatedTo(staker) == address(0), "undelegated staker should be delegated to zero address");
+        require(
+            delegationManager.delegatedTo(staker) == address(0),
+            "undelegated staker should be delegated to zero address"
+        );
     }
 
     // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
@@ -981,7 +1121,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         cheats.stopPrank();
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
-        
+
         cheats.startPrank(operator);
         delegationManager.undelegate(operator);
         cheats.stopPrank();
@@ -1013,15 +1153,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.startPrank(staker);
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit StakerDelegated(staker, operator);
-            delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
-            cheats.stopPrank();            
+            delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
+            cheats.stopPrank();
         }
 
-        uint256 _delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+        uint256 _delegatedSharesBefore =
+            delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
 
-        if(delegationManager.isDelegated(staker)) {
+        if (delegationManager.isDelegated(staker)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
-            emit OperatorSharesIncreased(operator, staker, strategy, shares);        
+            emit OperatorSharesIncreased(operator, staker, strategy, shares);
         }
 
         cheats.startPrank(address(strategyManagerMock));
@@ -1031,7 +1172,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
 
         if (delegationManager.isDelegated(staker)) {
-            require(delegatedSharesAfter == _delegatedSharesBefore + shares, "delegated shares did not increment correctly");
+            require(
+                delegatedSharesAfter == _delegatedSharesBefore + shares, "delegated shares did not increment correctly"
+            );
         } else {
             require(delegatedSharesAfter == _delegatedSharesBefore, "delegated shares incremented incorrectly");
             require(_delegatedSharesBefore == 0, "nonzero shares delegated to zero address!");
@@ -1043,7 +1186,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * who the `staker` is delegated to has in the strategies
      * @dev Checks that there is no change if the staker is not delegated
      */
-    function testDecreaseDelegatedShares(address staker, IStrategy[] memory strategies, uint128 shares, bool delegateFromStakerToOperator) public {
+    function testDecreaseDelegatedShares(
+        address staker,
+        IStrategy[] memory strategies,
+        uint128 shares,
+        bool delegateFromStakerToOperator
+    ) public {
         // sanity-filtering on fuzzed input length
         cheats.assume(strategies.length <= 32);
         // register *this contract* as an operator
@@ -1064,8 +1212,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.startPrank(staker);
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit StakerDelegated(staker, operator);
-            delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
-            cheats.stopPrank();            
+            delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
+            cheats.stopPrank();
         }
 
         uint256[] memory sharesInputArray = new uint256[](strategies.length);
@@ -1075,7 +1223,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // for each strategy in `strategies`, increase delegated shares by `shares`
         cheats.startPrank(address(strategyManagerMock));
         for (uint256 i = 0; i < strategies.length; ++i) {
-            delegationManager.increaseDelegatedShares(staker, strategies[i], shares); 
+            delegationManager.increaseDelegatedShares(staker, strategies[i], shares);
             // store delegated shares in a mapping
             delegatedSharesBefore[strategies[i]] = delegationManager.operatorShares(delegatedTo, strategies[i]);
             // also construct an array which we'll use in another loop
@@ -1088,7 +1236,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         {
             address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
             if (delegationManager.isDelegated(staker)) {
-                for (uint256 i = 0; i < strategies.length;  ++i) {
+                for (uint256 i = 0; i < strategies.length; ++i) {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
                     emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
                 }
@@ -1100,22 +1248,31 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
-        bool isDelegated =  delegationManager.isDelegated(staker);
+        bool isDelegated = delegationManager.isDelegated(staker);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]); 
+            uint256 delegatedSharesAfter = delegationManager.operatorShares(delegatedTo, strategies[i]);
 
             if (isDelegated) {
-                require(delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])] == delegatedSharesBefore[strategies[i]],
-                    "delegated shares did not decrement correctly");
+                require(
+                    delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])]
+                        == delegatedSharesBefore[strategies[i]],
+                    "delegated shares did not decrement correctly"
+                );
             } else {
-                require(delegatedSharesAfter == delegatedSharesBefore[strategies[i]], "delegated shares decremented incorrectly");
+                require(
+                    delegatedSharesAfter == delegatedSharesBefore[strategies[i]],
+                    "delegated shares decremented incorrectly"
+                );
                 require(delegatedSharesBefore[strategies[i]] == 0, "nonzero shares delegated to zero address!");
             }
         }
     }
 
     // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
-    function testCannotCallIncreaseDelegatedSharesFromNonPermissionedAddress(address operator, uint256 shares) public fuzzedAddress(operator) {
+    function testCannotCallIncreaseDelegatedSharesFromNonPermissionedAddress(
+        address operator,
+        uint256 shares
+    ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
         cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
@@ -1125,8 +1282,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
     function testCannotCallDecreaseDelegatedSharesFromNonPermissionedAddress(
-        address operator,  
-        IStrategy[] memory strategies,  
+        address operator,
+        IStrategy[] memory strategies,
         uint256[] memory shareAmounts
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
@@ -1137,9 +1294,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testCannotDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+    function testCannotDelegateWhenOperatorIsFrozen(
+        address operator,
+        address staker
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         cheats.assume(operator != staker);
-        
+
         cheats.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -1158,11 +1318,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
-    function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
-        fuzzedAddress(staker)
-        fuzzedAddress(operator)
-        fuzzedAddress(operator2)
-    {
+    function testCannotDelegateWhenStakerHasExistingDelegation(
+        address staker,
+        address operator,
+        address operator2
+    ) public fuzzedAddress(staker) fuzzedAddress(operator) fuzzedAddress(operator2) {
         cheats.assume(operator != operator2);
         cheats.assume(staker != operator);
         cheats.assume(staker != operator2);
@@ -1199,7 +1359,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that delegating is not possible when the "new delegations paused" switch is flipped
-    function testCannotDelegateWhenPausedNewDelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+    function testCannotDelegateWhenPausedNewDelegationIsSet(
+        address operator,
+        address staker
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         // set the pausing flag
         cheats.startPrank(pauser);
         delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
@@ -1213,7 +1376,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
-    function testCannotUndelegateWhenPausedUndelegationIsSet(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
+    function testCannotUndelegateWhenPausedUndelegationIsSet(
+        address operator,
+        address staker
+    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
         // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
         IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
@@ -1236,9 +1402,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that the `undelegate` function properly calls `strategyManager.forceTotalWithdrawal` when necessary
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
-    function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
-        fuzzedAddress(staker)
-    {
+    function testForceUndelegation(
+        address staker,
+        bytes32 salt,
+        bool callFromOperatorOrApprover
+    ) public fuzzedAddress(staker) {
         address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         address operator = address(this);
 
@@ -1273,10 +1441,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
      * to or the operator's `delegationApprover`), or the staker themselves
      */
-    function testCannotCallUndelegateFromImproperAddress(address staker, address caller) public
-        fuzzedAddress(staker)
-        fuzzedAddress(caller)
-    {
+    function testCannotCallUndelegateFromImproperAddress(
+        address staker,
+        address caller
+    ) public fuzzedAddress(staker) fuzzedAddress(caller) {
         address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         address operator = address(this);
 
@@ -1303,13 +1471,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice verifies that `DelegationManager.undelegate` reverts if trying to undelegate an operator from themselves
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
-    function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
+    function testOperatorCannotForceUndelegateThemself(
+        address delegationApprover,
+        bool callFromOperatorOrApprover
+    ) public {
         // register *this contract* as an operator
         address operator = address(this);
         IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: delegationApprover,
-            stakerOptOutWindowBlocks: 0
+            stakerOptOutWindowBlocks: 100
         });
         testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
@@ -1330,10 +1501,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /**
      * @notice Verifies that the reversion occurs when trying to reuse an 'approverSalt'
      */
-    function test_Revert_WhenTryingToReuseSalt(address staker_one, address staker_two, bytes32 salt) public
-        fuzzedAddress(staker_one)
-        fuzzedAddress(staker_two)
-    {
+    function test_Revert_WhenTryingToReuseSalt(
+        address staker_one,
+        address staker_two,
+        bytes32 salt
+    ) public fuzzedAddress(staker_one) fuzzedAddress(staker_two) {
         // address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         address operator = address(this);
 
@@ -1368,13 +1540,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice internal function for calculating a signature from the delegationSigner corresponding to `_delegationSignerPrivateKey`, approving
      * the `staker` to delegate to `operator`, with the specified `salt`, and expiring at `expiry`.
      */
-    function _getApproverSignature(uint256 _delegationSignerPrivateKey, address staker, address operator, bytes32 salt, uint256 expiry)
-        internal view returns (ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry)
-    {
+    function _getApproverSignature(
+        uint256 _delegationSignerPrivateKey,
+        address staker,
+        address operator,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry) {
         approverSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash =
-                delegationManager.calculateDelegationApprovalDigestHash(staker, operator, delegationManager.delegationApprover(operator), salt, expiry);
+            bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
+                staker, operator, delegationManager.delegationApprover(operator), salt, expiry
+            );
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
         }
@@ -1385,9 +1562,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @notice internal function for calculating a signature from the staker corresponding to `_stakerPrivateKey`, delegating them to
      * the `operator`, and expiring at `expiry`.
      */
-    function _getStakerSignature(uint256 _stakerPrivateKey, address operator, uint256 expiry)
-        internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry)
-    {
+    function _getStakerSignature(
+        uint256 _stakerPrivateKey,
+        address operator,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry) {
         address staker = cheats.addr(stakerPrivateKey);
         stakerSignatureAndExpiry.expiry = expiry;
         {
@@ -1398,27 +1577,131 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         return stakerSignatureAndExpiry;
     }
 
-   function test_RegisterAsOperator() public {}
+    function test_RegisterAsOperator() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
 
-    function test_RevertsWhen_AlreadyOperator_RegisterAsOperator() public {}
+        delegationManager.registerAsOperator(operatorDetails, "");
+        assertTrue(delegationManager.isOperator(address(this)), "not register operator");
+    }
 
-    function test_RevertsWhen_OperatorIsActivelyDelegated_RegisterAsOperator() public {}
+    function test_RevertsWhen_AlreadyOperator_RegisterAsOperator() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
 
-    function test_RevertsWhen_StakerOptOutWindowBlocksGtMax_RegisterAsOperator() public {}
+        delegationManager.registerAsOperator(operatorDetails, "");
 
-    function test_RevertsWhen_EarningsReceiverAddress0_RegisterAsOperator() public {}
+        vm.expectRevert();
+        delegationManager.registerAsOperator(operatorDetails, "");
+    }
 
-    function test_SetOperatorDetails() public {}
+    function test_RevertsWhen_OperatorIsActivelyDelegated_RegisterAsOperator() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
 
-    function test_RevertsWhen_EarningsReceiverAddress0_SetOperatorDetails() public {}
+        delegationManager.registerAsOperator(operatorDetails, "");
 
-    function test_RevertsWhen_StakerOptOutWindowBlocksGreaterThanMaxOptOutWindowBlocks_SetOperatorDetails() public {}
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        address staker = address(420);
+        vm.prank(staker);
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
 
-    function test_RevertsWhen_StakerOptOutWindowBlocksDecreased_SetOperatorDetails() public {}
+        operatorDetails.earningsReceiver = staker;
+        vm.expectRevert();
+        vm.prank(staker);
+        delegationManager.registerAsOperator(operatorDetails, "");
+    }
 
-    function test_UpdateOperatorMetdataURI() public {}
+    function test_RevertsWhen_StakerOptOutWindowBlocksGtMax_RegisterAsOperator() public {
+        uint256 maxOptOutWindow = delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS();
 
-    function test_RevertsWhen_NotOperator_UpdateOperatorMetdataURI() public {}
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: uint32(maxOptOutWindow + 1)
+        });
+        vm.expectRevert();
+        delegationManager.registerAsOperator(operatorDetails, "");
+    }
+
+    function test_RevertsWhen_EarningsReceiverAddress0_RegisterAsOperator() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(0),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
+        vm.expectRevert();
+        delegationManager.registerAsOperator(operatorDetails, "");
+    }
+
+    function test_SetOperatorDetails() public {
+        test_RegisterAsOperator();
+
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(42),
+            delegationApprover: address(42),
+            stakerOptOutWindowBlocks: 100
+        });
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    function test_RevertsWhen_EarningsReceiverAddress0_SetOperatorDetails() public {
+        test_RegisterAsOperator();
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(0),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
+        vm.expectRevert();
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    function test_RevertsWhen_StakerOptOutWindowBlocksGreaterThanMaxOptOutWindowBlocks_SetOperatorDetails() public {
+        uint256 maxOptOutWindow = delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS();
+        test_RegisterAsOperator();
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: uint32(maxOptOutWindow + 1)
+        });
+        vm.expectRevert();
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    function test_RevertsWhen_StakerOptOutWindowBlocksDecreased_SetOperatorDetails() public {
+        uint256 maxOptOutWindow = delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS();
+        test_RegisterAsOperator();
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 99
+        });
+        vm.expectRevert();
+        delegationManager.modifyOperatorDetails(operatorDetails);
+    }
+
+    function test_UpdateOperatorMetdataURI() public {
+        test_RegisterAsOperator();
+
+        delegationManager.updateOperatorMetadataURI("updated");
+    }
+
+    function test_RevertsWhen_NotOperator_UpdateOperatorMetdataURI() public {
+        test_RegisterAsOperator();
+
+        vm.prank(address(420));
+        vm.expectRevert();
+        delegationManager.updateOperatorMetadataURI("updated");
+    }
 
     function test_When_NoApprover_DelegateTo() public {}
 
