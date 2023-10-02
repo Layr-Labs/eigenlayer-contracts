@@ -333,8 +333,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         IStrategy strategy,
         uint256 shares
     ) external onlyStrategyManagerOrEigenPodManager {
-        // if the staker is delegated to an operator and not in undelegation limbo, then add strategy shares to the operator's shares
-        if (isDelegated(staker) && !isInUndelegationLimbo(staker)) {
+        // if the staker is delegated to an operator, then add strategy shares to the operator's shares
+        if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
             _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
         }
@@ -354,8 +354,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         IStrategy[] calldata strategies,
         uint256[] calldata shares
     ) external onlyStrategyManagerOrEigenPodManager {
-        // if the staker is delegated to an operator and not in undelegation limbo, then subtract strategy shares from the operator's shares
-        if (isDelegated(staker) && !isInUndelegationLimbo(staker)) {
+        // if the staker is delegated to an operator, then subtract strategy shares from the operator's shares
+        if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
             uint256 stratsLength = strategies.length;
             for (uint256 i = 0; i < stratsLength; ) {
