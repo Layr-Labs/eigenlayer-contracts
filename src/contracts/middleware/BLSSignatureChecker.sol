@@ -175,9 +175,9 @@ contract BLSSignatureChecker {
         }
         {
             // verify the signature
-            (bool pairingSuccessful, bool sigantureIsValid) = trySignatureAndApkVerification(msgHash, apk, nonSignerStakesAndSignature.apkG2, nonSignerStakesAndSignature.sigma);
+            (bool pairingSuccessful, bool signatureIsValid) = trySignatureAndApkVerification(msgHash, apk, nonSignerStakesAndSignature.apkG2, nonSignerStakesAndSignature.sigma);
             require(pairingSuccessful, "BLSSignatureChecker.checkSignatures: pairing precompile call failed");
-            require(sigantureIsValid, "BLSSignatureChecker.checkSignatures: signature is invalid");
+            require(signatureIsValid, "BLSSignatureChecker.checkSignatures: signature is invalid");
         }
         // set signatoryRecordHash variable used for fraudproofs
         bytes32 signatoryRecordHash = MiddlewareUtils.computeSignatoryRecordHash(
