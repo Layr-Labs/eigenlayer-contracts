@@ -6,7 +6,7 @@ However there is a way we can combine these proofs into a single proof.  This is
 
 The idea is simple, in a Merkle tree, every node has two children: left (or 0) and right (or 1). Starting from the root and moving down to a specific leaf, you can interpret each bit in the binary representation of the leaf's index as an instruction to traverse left (for 0) or right (for 1).  The length of a binary representation of an index is just `log(num_leaves) = height_of_the tree`.  
 
-Taking an example, lets say I had one merkle tree A who's Nth leaf was the root of merkle tree B.  So to calculate the index for for the Mth in B against the root of A, the index would be:
+Taking an example, lets say I had one merkle tree A who's Nth leaf was the root of merkle tree B.  So to calculate the index for the Mth leaf in B against the root of A, the index would be:
 `index_B_against_A = N << height_of_merkle_tree_B | M`.  
 
 
@@ -64,7 +64,7 @@ function verifyWithdrawal(
 ```
 Verifies a withdrawal, either [full or partial](https://eth2book.info/capella/part2/deposits-withdrawals/withdrawal-processing/#partial-and-full-withdrawals), of a validator.  There are a maximum of 16 withdrawals per block in the consensus layer.  This proof proves the inclusion of a given [withdrawal](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#withdrawal) in the block for a given slot.  
 
-One important note is that we use [`historical_summaries`](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#withdrawal) to prove the blocks that contain withdrawals.  Each new [historical summary](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#historicalsummary) is added every 8192 slots, i.e., if `slot % 8192 = 0`, then `slot.state_roots` and `slot.block_roots` are merkleized and are used to create the latest `historical_summaries` entry.  
+One important note is that we use [`historical_summaries`](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#historical-summaries-updates) to prove the blocks that contain withdrawals.  Each new [historical summary](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#historicalsummary) is added every 8192 slots, i.e., if `slot % 8192 = 0`, then `slot.state_roots` and `slot.block_roots` are merkleized and are used to create the latest `historical_summaries` entry.  
 
 ![Verify Withdrawal Proof Structure](../../images/Withdrawal_Proof.png)
 
