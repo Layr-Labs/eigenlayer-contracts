@@ -576,6 +576,20 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     }
 
+    // @notice verifies that the `StrategyManager.queueWithdrawal` function reverts when the caller is in undelegation limbo
+    function test_Revert_StakerInUndelegationLimboTriesToQueueWithdrawal() public {
+        address staker = address(this);
+        delegationManagerMock.setIsInUndelegationLimbo(staker, true);
+        require(delegationManagerMock.isInUndelegationLimbo(staker), "bad test setup, staker not in undelegation limbo");
+
+        uint256[] memory strategyIndexes;
+        IStrategy[] memory strategies;
+        uint256[] memory shares;
+        address withdrawer = staker;
+        cheats.expectRevert(bytes("StrategyManager._queueWithdrawal: cannot queue a withdrawal when in undelegation limbo"));
+        strategyManager.queueWithdrawal(strategyIndexes, strategies, shares, withdrawer);
+    }
+
     function testQueueWithdrawal_ToSelf(uint256 depositAmount, uint256 withdrawalAmount) public
         returns (IStrategyManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     {

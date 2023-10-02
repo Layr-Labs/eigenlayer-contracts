@@ -100,7 +100,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function domainSeparator() external view returns (bytes32) {}
 
-    function isInUndelegationLimbo(address /*staker*/) external view returns (bool) {}
+    mapping(address => bool) public isInUndelegationLimbo;
+    function setIsInUndelegationLimbo(address staker, bool statusToSet) public {
+        isInUndelegationLimbo[staker] = statusToSet;
+    }
 
     function stakerUndelegationLimboStatus(address /*staker*/) external view returns (UndelegationLimboStatus memory) {}
 }

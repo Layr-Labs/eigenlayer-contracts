@@ -272,6 +272,18 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         eigenPodManager.queueWithdrawal(0, address(this));
     }
 
+    // @notice verifies that the `EigenPodManager.queueWithdrawal` function reverts when the caller is in undelegation limbo
+    function test_Revert_StakerInUndelegationLimboTriesToQueueWithdrawal() public {
+        address staker = address(this);
+        delegationManagerMock.setIsInUndelegationLimbo(staker, true);
+        require(delegationManagerMock.isInUndelegationLimbo(staker), "bad test setup, staker not in undelegation limbo");
+
+        uint256 amountWei = 1e9;
+        address withdrawer = staker;
+        cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal when in undelegation limbo"));
+        eigenPodManager.queueWithdrawal(amountWei, withdrawer);
+    }
+
     function testCompleteQueuedWithdrawal() external {
         address staker = address(this);
         uint256 withdrawalAmount = 1e18;
