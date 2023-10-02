@@ -161,7 +161,11 @@ contract IndexRegistry is IIndexRegistry {
     }
 
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
-        return _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index;
+        uint256 totalOperatorsHistoryLength = _totalOperatorsHistory[quorumNumber].length;
+        if (totalOperatorsHistoryLength == 0) {
+            return 0;
+        }
+        return _totalOperatorsHistory[quorumNumber][totalOperatorsHistoryLength - 1].index;
     }
 
     /**
