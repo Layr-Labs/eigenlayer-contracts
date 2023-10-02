@@ -66,6 +66,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
+    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
+    IStakeRegistry public stakeRegistry;
+
     IEigenPodManager public immutable eigenPodManager;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
@@ -79,5 +82,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[43] private __gap;
 }
