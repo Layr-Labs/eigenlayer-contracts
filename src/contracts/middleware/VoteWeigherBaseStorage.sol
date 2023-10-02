@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IVoteWeigher.sol";
 import "../interfaces/IServiceManager.sol";
@@ -16,25 +15,16 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
-    /**
-     * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
-     * multiplied by its multiplier, then divided by WEIGHTING_DIVISOR
-     */
-    struct StrategyAndWeightingMultiplier {
-        IStrategy strategy;
-        uint96 multiplier;
-    }
-
     /// @notice Constant used as a divisor in calculating weights.
-    uint256 internal constant WEIGHTING_DIVISOR = 1e18;
+    uint256 public constant WEIGHTING_DIVISOR = 1e18;
     /// @notice Maximum length of dynamic arrays in the `strategiesConsideredAndMultipliers` mapping.
-    uint8 internal constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
+    uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
     uint256 internal constant MAX_BIPS = 10000;
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
-    
+
     /// @notice The address of the StrategyManager contract for EigenLayer.
     IStrategyManager public immutable strategyManager;
 
@@ -44,34 +34,34 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     /// @notice The ServiceManager contract for this middleware, where tasks are created / initiated.
     IServiceManager public immutable serviceManager;
 
-    /// @notice Number of quorums that are being used by the middleware.
-    uint256 public immutable NUMBER_OF_QUORUMS;
+    /// @notice The number of quorums that the VoteWeigher is considering.
+    uint16 public quorumCount;
 
     /**
      * @notice mapping from quorum number to the list of strategies considered and their
      * corresponding multipliers for that specific quorum
      */
-    mapping(uint256 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
+    mapping(uint8 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
 
     /**
      * @notice This defines the earnings split between different quorums. Mapping is quorumNumber => BIPS which the quorum earns, out of the total earnings.
      * @dev The sum of all entries, i.e. sum(quorumBips[0] through quorumBips[NUMBER_OF_QUORUMS - 1]) should *always* be 10,000!
      */
-    mapping(uint256 => uint256) public quorumBips;
+    mapping(uint8 => uint256) public quorumBips;
 
     constructor(
         IStrategyManager _strategyManager,
-        IServiceManager _serviceManager,
-        uint8 _NUMBER_OF_QUORUMS
+        IServiceManager _serviceManager
     ) {
         // sanity check that the VoteWeigher is being initialized with at least 1 quorum
-        require(_NUMBER_OF_QUORUMS != 0, "VoteWeigherBaseStorage.constructor: _NUMBER_OF_QUORUMS == 0");
         strategyManager = _strategyManager;
         delegation = _strategyManager.delegation();
         slasher = _strategyManager.slasher();
         serviceManager = _serviceManager;
-        NUMBER_OF_QUORUMS = _NUMBER_OF_QUORUMS;
         // disable initializers so that the implementation contract cannot be initialized
         _disableInitializers();
     }
+
+    // storage gap for upgradeability
+    uint256[47] private __GAP;
 }

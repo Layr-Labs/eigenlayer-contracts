@@ -14,7 +14,16 @@ interface IDelayedWithdrawalRouter {
         DelayedWithdrawal[] delayedWithdrawals;
     }
 
-    /** 
+     /// @notice event for delayedWithdrawal creation
+    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
+
+    /// @notice event for the claiming of delayedWithdrawals
+    event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
+
+    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+
+    /**
      * @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.
      * @dev Only callable by the `podOwner`'s EigenPod contract.
      */
@@ -44,7 +53,7 @@ interface IDelayedWithdrawalRouter {
 
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
     function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
-    
+
     /// @notice Getter function for fetching the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array
     function userDelayedWithdrawalByIndex(address user, uint256 index) external view returns (DelayedWithdrawal memory);
 

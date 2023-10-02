@@ -9,6 +9,11 @@ import "../libraries/BN254.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IBLSPublicKeyCompendium {
+
+    // EVENTS
+    /// @notice Emitted when `operator` registers with the public key `pk`.
+    event NewPubkeyRegistration(address operator, BN254.G1Point pubkeyG1, BN254.G2Point pubkeyG2);
+
     /**
      * @notice mapping from operator address to pubkey hash.
      * Returns *zero* if the `operator` has never registered, and otherwise returns the hash of the public key of the operator.
@@ -24,10 +29,9 @@ interface IBLSPublicKeyCompendium {
 
     /**
      * @notice Called by an operator to register themselves as the owner of a BLS public key and reveal their G1 and G2 public key.
-     * @param s is the field element of the operator's Schnorr signature
-     * @param rPoint is the group element of the operator's Schnorr signature
-     * @param pubkeyG1 is the the G1 pubkey of the operator
-     * @param pubkeyG2 is the G2 with the same private key as the pubkeyG1
+     * @param signedMessageHash is the registration message hash signed by the private key of the operator
+     * @param pubkeyG1 is the corresponding G1 public key of the operator 
+     * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
-    function registerBLSPublicKey(uint256 s, BN254.G1Point memory rPoint, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
+    function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
 }

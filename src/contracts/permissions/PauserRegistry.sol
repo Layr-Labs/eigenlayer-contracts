@@ -15,17 +15,13 @@ contract PauserRegistry is IPauserRegistry {
     /// @notice Unique address that holds the unpauser role. Capable of changing *both* the pauser and unpauser addresses.
     address public unpauser;
 
-    event PauserStatusChanged(address pauser, bool canPause);
-
-    event UnpauserChanged(address previousUnpauser, address newUnpauser);
-
     modifier onlyUnpauser() {
         require(msg.sender == unpauser, "msg.sender is not permissioned as unpauser");
         _;
     }
 
     constructor(address[] memory _pausers, address _unpauser) {
-        for(uint256 i = 0; i < _pausers.length; i++) {
+        for (uint256 i = 0; i < _pausers.length; i++) {
             _setIsPauser(_pausers[i], true);
         }
         _setUnpauser(_unpauser);

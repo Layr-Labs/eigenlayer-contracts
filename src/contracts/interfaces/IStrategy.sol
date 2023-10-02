@@ -54,7 +54,13 @@ interface IStrategy {
      */
     function userUnderlying(address user) external returns (uint256);
 
-     /**
+    /**
+     * @notice convenience function for fetching the current total shares of `user` in this strategy, by
+     * querying the `strategyManager` contract
+     */
+    function shares(address user) external view returns (uint256);
+
+    /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token

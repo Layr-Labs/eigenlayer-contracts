@@ -46,46 +46,39 @@ library BN254 {
         uint256[2] Y;
     }
 
+    function generatorG1() internal pure returns (G1Point memory) {
+        return G1Point(1, 2);
+    }
+
     // generator of group G2
     /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
-    uint256 internal constant G2x1 =
-        11559732032986387107991004021392285783925812861821192530917403151452391805634;
-    uint256 internal constant G2x0 =
-        10857046999023057135944570762232829481370756359578518086990519993285655852781;
-    uint256 internal constant G2y1 =
-        4082367875863433681332203403145435568316851327593401208105741076214120093531;
-    uint256 internal constant G2y0 =
-        8495653923123431417604973247489272438418190587263600148770280649306958101930;
+    uint256 internal constant G2x1 = 11559732032986387107991004021392285783925812861821192530917403151452391805634;
+    uint256 internal constant G2x0 = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
+    uint256 internal constant G2y1 = 4082367875863433681332203403145435568316851327593401208105741076214120093531;
+    uint256 internal constant G2y0 = 8495653923123431417604973247489272438418190587263600148770280649306958101930;
+
     /// @notice returns the G2 generator
     /// @dev mind the ordering of the 1s and 0s!
     ///      this is because of the (unknown to us) convention used in the bn254 pairing precompile contract
     ///      "Elements a * i + b of F_p^2 are encoded as two elements of F_p, (a, b)."
     ///      https://github.com/ethereum/EIPs/blob/master/EIPS/eip-197.md#encoding
     function generatorG2() internal pure returns (G2Point memory) {
-        return G2Point(
-            [G2x1, G2x0], [G2y1, G2y0]
-        );
+        return G2Point([G2x1, G2x0], [G2y1, G2y0]);
     }
 
     // negation of the generator of group G2
     /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
-    uint256 internal constant nG2x1 =
-        11559732032986387107991004021392285783925812861821192530917403151452391805634;
-    uint256 internal constant nG2x0 =
-        10857046999023057135944570762232829481370756359578518086990519993285655852781;
-    uint256 internal constant nG2y1 =
-        17805874995975841540914202342111839520379459829704422454583296818431106115052;
-    uint256 internal constant nG2y0 =
-        13392588948715843804641432497768002650278120570034223513918757245338268106653;
+    uint256 internal constant nG2x1 = 11559732032986387107991004021392285783925812861821192530917403151452391805634;
+    uint256 internal constant nG2x0 = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
+    uint256 internal constant nG2y1 = 17805874995975841540914202342111839520379459829704422454583296818431106115052;
+    uint256 internal constant nG2y0 = 13392588948715843804641432497768002650278120570034223513918757245338268106653;
+
     function negGeneratorG2() internal pure returns (G2Point memory) {
-        return G2Point(
-            [nG2x1, nG2x0], [nG2y1, nG2y0]
-        );
+        return G2Point([nG2x1, nG2x0], [nG2y1, nG2y0]);
     }
 
     bytes32 internal constant powersOfTauMerkleRoot =
         0x22c998e49752bbb1918ba87d6d59dd0e83620a311ba91dd4b2cc84990b31b56f;
-
 
     /**
      * @param p Some point in G1.
@@ -103,10 +96,7 @@ library BN254 {
     /**
      * @return r the sum of two points of G1
      */
-    function plus(
-        G1Point memory p1,
-        G1Point memory p2
-    ) internal view returns (G1Point memory r) {
+    function plus(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -128,14 +118,54 @@ library BN254 {
     }
 
     /**
+     * @notice an optimized ecMul implementation that takes O(log_2(s)) ecAdds
+     * @param p the point to multiply
+     * @param s the scalar to multiply by
+     * @dev this function is only safe to use if the scalar is 9 bits or less
+     */ 
+    function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
+        require(s < 2**9, "scalar-too-large");
+
+        // if s is 1 return p
+        if(s == 1) {
+            return p;
+        }
+
+        // the accumulated product to return
+        BN254.G1Point memory acc = BN254.G1Point(0, 0);
+        // the 2^n*p to add to the accumulated product in each iteration
+        BN254.G1Point memory p2n = p;
+        // value of most signifigant bit
+        uint16 m = 1;
+        // index of most signifigant bit
+        uint8 i = 0;
+
+        //loop until we reach the most signifigant bit
+        while(s > m){
+            unchecked {
+                // if the  current bit is 1, add the 2^n*p to the accumulated product
+                if (s >> i & 1 == 1) {
+                    acc = plus(acc, p2n);
+                }
+                // double the 2^n*p for the next iteration
+                p2n = plus(p2n, p2n);
+
+                // increment the index and double the value of the most signifigant bit
+                m <<= 1;
+                ++i;
+            }
+        }
+        
+        // return the accumulated product
+        return acc;
+    }
+
+    /**
      * @return r the product of a point on G1 and a scalar, i.e.
      *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
      *         points p.
      */
-    function scalar_mul(
-        G1Point memory p,
-        uint256 s
-    ) internal view returns (G1Point memory r) {
+    function scalar_mul(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;
@@ -185,14 +215,7 @@ library BN254 {
 
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(
-                sub(gas(), 2000),
-                8,
-                input,
-                mul(12, 0x20),
-                out,
-                0x20
-            )
+            success := staticcall(sub(gas(), 2000), 8, input, mul(12, 0x20), out, 0x20)
             // Use "invalid" to make gas estimation work
             switch success
             case 0 {
@@ -236,14 +259,7 @@ library BN254 {
 
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(
-                pairingGas,
-                8,
-                input,
-                mul(12, 0x20),
-                out,
-                0x20
-            )
+            success := staticcall(pairingGas, 8, input, mul(12, 0x20), out, 0x20)
         }
 
         //Out is the output of the pairing precompile, either 0 or 1 based on whether the two pairings are equal.
@@ -254,46 +270,49 @@ library BN254 {
 
     /// @return the keccak256 hash of the G1 Point
     /// @dev used for BLS signatures
-    function hashG1Point(
-        BN254.G1Point memory pk
-    ) internal pure returns (bytes32) {
+    function hashG1Point(BN254.G1Point memory pk) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(pk.X, pk.Y));
     }
 
+    /// @return the keccak256 hash of the G2 Point
+    /// @dev used for BLS signatures
+    function hashG2Point(
+        BN254.G2Point memory pk
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
+    }
 
     /**
      * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
      */
-    function hashToG1(bytes32 _x) internal view returns (uint256, uint256) {
+    function hashToG1(bytes32 _x) internal view returns (G1Point memory) {
         uint256 beta = 0;
         uint256 y = 0;
 
         // XXX: Gen Order (n) or Field Order (p) ?
         uint256 x = uint256(_x) % FP_MODULUS;
 
-        while( true ) {
+        while (true) {
             (beta, y) = findYFromX(x);
 
             // y^2 == beta
             if( beta == mulmod(y, y, FP_MODULUS) ) {
-                return (x, y);
+                return G1Point(x, y);
             }
 
             x = addmod(x, 1, FP_MODULUS);
         }
-        return (0, 0);
+        return G1Point(0, 0);
     }
 
     /**
-    * Given X, find Y
-    *
-    *   where y = sqrt(x^3 + b)
-    *
-    * Returns: (x^3 + b), y
-    */
-    function findYFromX(uint256 x)
-        internal view returns(uint256, uint256)
-    {
+     * Given X, find Y
+     *
+     *   where y = sqrt(x^3 + b)
+     *
+     * Returns: (x^3 + b), y
+     */
+    function findYFromX(uint256 x) internal view returns (uint256, uint256) {
         // beta = (x^3 + b) % p
         uint256 beta = addmod(mulmod(mulmod(x, x, FP_MODULUS), x, FP_MODULUS), 3, FP_MODULUS);
 
@@ -308,16 +327,19 @@ library BN254 {
         bool success;
         uint256[1] memory output;
         uint[6] memory input;
-        input[0] = 0x20;        // baseLen = new(big.Int).SetBytes(getData(input, 0, 32))
-        input[1] = 0x20;        // expLen  = new(big.Int).SetBytes(getData(input, 32, 32))
-        input[2] = 0x20;        // modLen  = new(big.Int).SetBytes(getData(input, 64, 32))
+        input[0] = 0x20; // baseLen = new(big.Int).SetBytes(getData(input, 0, 32))
+        input[1] = 0x20; // expLen  = new(big.Int).SetBytes(getData(input, 32, 32))
+        input[2] = 0x20; // modLen  = new(big.Int).SetBytes(getData(input, 64, 32))
         input[3] = _base;
         input[4] = _exponent;
         input[5] = _modulus;
         assembly {
             success := staticcall(sub(gas(), 2000), 5, input, 0xc0, output, 0x20)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 {
+                invalid()
+            }
         }
         require(success, "BN254.expMod: call failure");
         return output[0];

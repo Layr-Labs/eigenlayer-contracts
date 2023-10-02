@@ -11,8 +11,8 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
     --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
     --optimistic_loop \
-    --send_only \
     --prover_args '-optimisticFallback true' \
+    --optimistic_hashing \
     $RULE \
     --loop_iter 3 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
