@@ -1678,7 +1678,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     }
 
     function test_RevertsWhen_StakerOptOutWindowBlocksDecreased_SetOperatorDetails() public {
-        uint256 maxOptOutWindow = delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS();
         test_RegisterAsOperator();
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
@@ -1703,13 +1702,80 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.updateOperatorMetadataURI("updated");
     }
 
-    function test_When_NoApprover_DelegateTo() public {}
+    function test_When_NoApprover_DelegateTo() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
 
-    function test_When_WithApproverSig_DelegateTo() public {}
+        delegationManager.registerAsOperator(operatorDetails, "");
 
-    function test_RevertsWhen_DelegateApproverSignatureExpired_DelegateTo() public {}
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        address staker = address(420);
+        vm.prank(staker);
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
+    }
 
-    function test_When_CallerIsAnOperator_DelegateTo() public {}
+    function test_When_WithApproverSig_DelegateTo() public {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 100
+        });
+
+        delegationManager.registerAsOperator(operatorDetails, "");
+
+        address staker = address(420);
+        bytes32 salt = bytes32(0);
+        uint256 expiry = block.timestamp + 1;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        /// if address(this) -> not the operator results in not signer error (should be not operator)
+        vm.prank(staker);
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
+    }
+
+    function test_RevertsWhen_DelegateApproverSignatureExpired_DelegateTo() public {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 100
+        });
+
+        delegationManager.registerAsOperator(operatorDetails, "");
+
+        address staker = address(420);
+        bytes32 salt = bytes32(0);
+        uint256 expiry = block.timestamp + 1;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        vm.prank(staker);
+        vm.warp(expiry + 1);
+        vm.expectRevert();
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
+    }
+
+    function test_When_CallerIsAnOperator_DelegateTo() public {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 100
+        });
+
+        delegationManager.registerAsOperator(operatorDetails, "");
+
+        address staker = address(420);
+        bytes32 salt = bytes32(0);
+        uint256 expiry = block.timestamp + 1;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
+            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        vm.expectRevert();
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
+    }
 
     function test_RevertsWhen_OperatorIsFrozen_DelegateTo() public {}
 
