@@ -165,4 +165,16 @@ contract BitmapUtilsUnitTests is Test {
         }
         require(libraryOutput == numOnes, "inconsistency in countNumOnes function");
     }
+
+    // @notice some simple sanity checks on the `numberIsInBitmap` function
+    function testNumberIsInBitmap() public view {
+        require(bitmapUtilsWrapper.numberIsInBitmap(2 ** 6, 6), "numberIsInBitmap function is broken 0");
+        require(bitmapUtilsWrapper.numberIsInBitmap(1, 0), "numberIsInBitmap function is broken 1");
+        require(bitmapUtilsWrapper.numberIsInBitmap(255, 7), "numberIsInBitmap function is broken 2");
+        require(bitmapUtilsWrapper.numberIsInBitmap(1024, 10), "numberIsInBitmap function is broken 3");
+        for (uint256 i = 0; i < 256; ++i) {
+            require(bitmapUtilsWrapper.numberIsInBitmap(type(uint256).max, uint8(i)), "numberIsInBitmap function is broken 4");
+            require(!bitmapUtilsWrapper.numberIsInBitmap(0, uint8(i)), "numberIsInBitmap function is broken 5");
+        }
+    }
 }
