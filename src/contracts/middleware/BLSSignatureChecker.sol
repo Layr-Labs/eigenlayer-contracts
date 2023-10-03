@@ -125,7 +125,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                     // keep track of the nonSigners index in the quorum
                     uint32 nonSignerForQuorumIndex = 0;
                     // if the nonSigner is a part of the quorum, subtract their stake from the running total
-                    if (nonSignerQuorumBitmaps[i] >> quorumNumber & 1 == 1) {
+                    if (BitmapUtils.numberIsInBitmap(nonSignerQuorumBitmaps[i], quorumNumber)) {
                         quorumStakeTotals.signedStakeForQuorum[quorumNumberIndex] -=
                             stakeRegistry.getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(
                                 quorumNumber,

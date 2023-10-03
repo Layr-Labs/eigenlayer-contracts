@@ -275,4 +275,9 @@ library BitmapUtils {
         }
         return count;
     }
+
+    // @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
+    function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) internal pure returns (bool) {
+        return (((bitmap >> numberToCheckForInclusion) & 1) == 1);
+    }
 }
