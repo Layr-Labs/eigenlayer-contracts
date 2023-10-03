@@ -14,9 +14,9 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
  * - enabling anyone to register as an operator in EigenLayer
- * - allowing operators to specify parameters related to stakers who delegate to them
- * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
+ * - allowing operators to specify parameters related to Stakers who delegate to them
+ * - enabling any Staker to delegate its stake to the operator of its choice (a given Staker can only delegate to a single operator at a time)
+ * - enabling a Staker to undelegate its assets from the operator it is delegated to
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
     /**
@@ -160,7 +160,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Caller delegates a staker's stake to an operator with valid signatures from both parties.
+     * @notice Caller delegates a Staker's stake to an operator with valid signatures from both parties.
      * @param staker The account delegating stake to an `operator` account
      * @param operator The account (`staker`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param stakerSignatureAndExpiry Signed data from the staker authorizing delegating stake to an operator
@@ -209,7 +209,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into "undelegation limbo", if necessary.
+     * @notice Undelegates the `staker` from the operator who they are delegated to. Puts the `staker` into "undelegation limbo", if necessary.
      * @param staker The account to be undelegated.
      *
      * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
@@ -270,7 +270,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
         }
 
-        // emit an event if this action was not initiated by the staker themselves
+        // emit an event if this action was not initiated by the Staker themselves
         if (msg.sender != staker) {
             emit StakerForceUndelegated(staker, operator);
         }
@@ -281,9 +281,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Called by a staker to exit the "undelegation limbo" mode.
+     * @notice Called by a Staker to exit the "undelegation limbo" mode.
      * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
-     * This is because undelegation limbo is subject to some of the same restrictions as completing a withdrawal, to ensure that a staker cannot use undelegation
+     * This is because undelegation limbo is subject to some of the same restrictions as completing a withdrawal, to ensure that a Staker cannot use undelegation
      * limbo to avoid potentially being subject to slashing.
      * @dev Note that this checks against the frozen status of the operator *that the caller was delegated to when they entered undelegation limbo*, to provide
      * the same kind of slashing eligibility as withdrawals via the StrategyManager or DelegationManager.
@@ -305,7 +305,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.exitUndelegationLimbo: shares in limbo are still slashable"
         );
 
-        // a staker cannot be simultaneously in delegation limbo and delegated to an operator, so we do not need to return any shares to the delegation system here
+        // a Staker cannot be simultaneously in delegation limbo and delegated to an operator, so we do not need to return any shares to the delegation system here
 
         // delete the pod owner's undelegation limbo details and emit an event
         delete _stakerUndelegationLimboStatus[msg.sender];
@@ -313,7 +313,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Increases a staker's delegated share balance in a strategy.
+     * @notice Increases a Staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param shares The number of shares to increase.
@@ -334,7 +334,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Decreases a staker's delegated share balance in a strategy.
+     * @notice Decreases a Staker's delegated share balance in a strategy.
      * @param staker The address to decrease the delegated shares for their operator.
      * @param strategies An array of strategies to crease the delegated shares.
      * @param shares An array of the number of shares to decrease for a operator and strategy.
@@ -420,7 +420,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         address _delegationApprover = _operatorDetails[operator].delegationApprover;
         /**
          * Check the `_delegationApprover`'s signature, if applicable.
-         * If the `_delegationApprover` is the zero address, then the operator allows all stakers to delegate to them and this verification is skipped.
+         * If the `_delegationApprover` is the zero address, then the operator allows all Stakers to delegate to them and this verification is skipped.
          * If the `_delegationApprover` or the `operator` themselves is the caller, then approval is assumed and signature verification is skipped as well.
          */
         if (_delegationApprover != address(0) && msg.sender != _delegationApprover && msg.sender != operator) {
