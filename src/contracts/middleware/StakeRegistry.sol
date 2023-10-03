@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
+import "../libraries/BitmapUtils.sol";
 import "./StakeRegistryStorage.sol";
 
 /**
@@ -254,7 +255,7 @@ contract StakeRegistry is StakeRegistryStorage {
                     continue;
                 }
                 // if the operator is a part of the quorum
-                if (quorumBitmap >> quorumNumber & 1 == 1) {
+                if (BitmapUtils.numberIsInBitmap(quorumBitmap, quorumNumber)) {
                     // if the total stake has not been loaded yet, load it
                     if (totalStakeUpdate.updateBlockNumber == 0) {
                         totalStakeUpdate = _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1];
