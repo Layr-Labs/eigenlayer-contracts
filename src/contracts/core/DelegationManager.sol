@@ -283,7 +283,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Called by a staker to exit the "undelegation limbo" mode.
      * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
-     * This is because undelegation limbo is subject to the same restrictions as completing a withdrawal, to ensure that a staker cannot use undelegation
+     * This is because undelegation limbo is subject to some of the same restrictions as completing a withdrawal, to ensure that a staker cannot use undelegation
      * limbo to avoid potentially being subject to slashing.
      * @dev Note that this checks against the frozen status of the operator *that the caller was delegated to when they entered undelegation limbo*, to provide
      * the same kind of slashing eligibility as withdrawals via the StrategyManager or DelegationManager.
@@ -296,20 +296,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             "DelegationManager.exitUndelegationLimbo: must be in undelegation limbo"
         );
 
-        uint32 limboStartBlock = _stakerUndelegationLimboStatus[msg.sender].startBlock;
         require(
             slasher.canWithdraw(
                 _stakerUndelegationLimboStatus[msg.sender].delegatedAddress,
-                limboStartBlock,
+                _stakerUndelegationLimboStatus[msg.sender].startBlock,
                 middlewareTimesIndex
             ),
             "DelegationManager.exitUndelegationLimbo: shares in limbo are still slashable"
-        );
-
-        // enforce minimum delay lag
-        require(
-            limboStartBlock + strategyManager.withdrawalDelayBlocks() <= block.number,
-            "DelegationManager.exitUndelegationLimbo: withdrawalDelayBlocks period has not yet passed"
         );
 
         // a staker cannot be simultaneously in delegation limbo and delegated to an operator, so we do not need to return any shares to the delegation system here
