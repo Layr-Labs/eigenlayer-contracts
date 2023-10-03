@@ -239,6 +239,9 @@ interface IStrategyManager {
     /// @notice Returns the EigenPodManager contract of EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);
 
+    /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
+    function strategyWhitelister() external view returns (address);
+
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
 

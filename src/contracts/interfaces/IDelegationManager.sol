@@ -2,6 +2,9 @@
 pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
+import "./IStrategyManager.sol";
+import "./IEigenPodManager.sol";
+import "./ISlasher.sol";
 
 /**
  * @title DelegationManager
@@ -325,4 +328,13 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    /// @notice The StrategyManager contract for EigenLayer
+    function strategyManager() external view returns (IStrategyManager);
+
+    /// @notice The Slasher contract for EigenLayer
+    function slasher() external view returns (ISlasher);
+
+    /// @notice The EigenPodManager contract for EigenLayer
+    function eigenPodManager() external view returns (IEigenPodManager);
 }

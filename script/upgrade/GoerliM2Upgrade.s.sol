@@ -28,6 +28,11 @@ import "../../src/test/mocks/ETHDepositMock.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
+interface IDelegationManagerV0 {
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
+
 // # To load the variables in the .env file
 // source .env
 
@@ -56,6 +61,12 @@ contract GoerliM2Deployment is Script, Test {
     IBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
 
+    address public strategyWhitelister;
+    uint256 public withdrawalDelayBlocks;
+    bytes32 public delegationManagerDomainSeparator;
+    uint256 public numPods;
+    uint256 public maxPods;
+
     function run() external {
         // read and log the chainID
         uint256 chainId = block.chainid;
@@ -71,6 +82,12 @@ contract GoerliM2Deployment is Script, Test {
         eigenPodBeacon = eigenPodManager.eigenPodBeacon();
         ethPOS = eigenPodManager.ethPOS();
 
+        // store pre-upgrade values to check against later
+        strategyWhitelister = strategyManager.strategyWhitelister();
+        withdrawalDelayBlocks = strategyManager.withdrawalDelayBlocks();
+        delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
+        numPods = eigenPodManager.numPods();
+        maxPods = eigenPodManager.maxPods();
 
         vm.startBroadcast();
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -117,5 +134,53 @@ contract GoerliM2Deployment is Script, Test {
         // serialize all the data
         string memory finalJson = vm.serializeString(parent_object, chain_info, chain_info_output);
         vm.writeJson(finalJson, "script/output/M2_deployment_data.json");
+
+        test_UpgradeCorrectness();
     }
+
+    // Call contracts to ensure that all simple view functions return the same values (e.g. the return value of `StrategyManager.delegation()` hasn’t changed)
+    // StrategyManager: delegation, eigenPodManager, slasher, strategyWhitelister, withdrawalDelayBlocks all unchanged
+    // DelegationManager: DOMAIN_SEPARATOR, strategyManager, slasher  all unchanged
+    // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods, maxPods  all unchanged
+    // delegationManager is now correct (added immutable)
+    function test_UpgradeCorrectness() public view {
+        require(strategyManager.delegation() == delegation, "strategyManager.delegation incorrect");
+        require(strategyManager.eigenPodManager() == eigenPodManager, "strategyManager.eigenPodManager incorrect");
+        require(strategyManager.slasher() == slasher, "strategyManager.slasher incorrect");
+        require(strategyManager.strategyWhitelister() == strategyWhitelister, "strategyManager.strategyWhitelister incorrect");
+        require(strategyManager.withdrawalDelayBlocks() == withdrawalDelayBlocks, "strategyManager.withdrawalDelayBlocks incorrect");
+
+        require(delegation.domainSeparator() == delegationManagerDomainSeparator, "delegation.domainSeparator incorrect");
+        require(delegation.slasher() == slasher, "delegation.slasher incorrect");
+        require(delegation.eigenPodManager() == eigenPodManager, "delegation.eigenPodManager incorrect");
+
+        require(eigenPodManager.ethPOS() == ethPOS, "eigenPodManager.ethPOS incorrect");
+        require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager.eigenPodBeacon incorrect");
+        require(eigenPodManager.strategyManager() == strategyManager, "eigenPodManager.strategyManager incorrect");
+        require(eigenPodManager.slasher() == slasher, "eigenPodManager.slasher incorrect");
+        require(address(eigenPodManager.beaconChainOracle()) == beaconChainOracleGoerli, "eigenPodManager.beaconChainOracle incorrect");
+        require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
+        require(eigenPodManager.maxPods() == maxPods, "eigenPodManager.maxPods incorrect");
+        require(eigenPodManager.delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
+    }
+
+// Existing LST depositor – ensure that strategy length and shares are all identical
+// Existing LST depositor – ensure that an existing queued withdrawal remains queued
+// Check from stored root, and recalculate root and make sure it matches
+// Check that completing the withdrawal results in the same behavior (same transfer of ERC20 tokens)
+// Check that staker nonce & numWithdrawalsQueued remains the same as before the upgrade
+// Existing LST depositor – queuing a withdrawal before/after the upgrade has the same effects (same decrease in shares, resultant withdrawal root)
+// Existing EigenPod owner – EigenPodManager.ownerToPod remains the same
+// Existing EigenPod owner –  EigenPodManager.hasPod remains the same
+// Existing EigenPod owner –  EigenPod.podOwner remains the same
+// Existing EigenPod owner –  EigenPod.mostRecentWithdrawalTimestamp (after upgrade) == EigenPod.mostRecentWithdrawalBlock (before upgrade)
+// Existing EigenPod owner – EigenPod.hasRestaked remains false
+// Can call EigenPod.activateRestaking and it correctly:
+// Sends all funds in EigenPod (need to make sure it has nonzero balance beforehand)
+// Sets `hasRestaked` to ‘true’
+// Emits a ‘RestakingActivated’ event
+// EigenPod.mostRecentWithdrawalTimestamp updates correctly
+// EigenPod: ethPOS, delayedWithdrawalRouter, eigenPodManager
+// Call contracts to make sure they are still “initialized” (ensure that trying to call initializer reverts)
+
 }

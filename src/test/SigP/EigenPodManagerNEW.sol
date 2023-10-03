@@ -246,4 +246,9 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
     function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
+
+    function delegationManager() external view returns (IDelegationManager) {}
+    function maxPods() external view returns (uint256) {}
+    function numPods() external view returns (uint256) {}
+
 }

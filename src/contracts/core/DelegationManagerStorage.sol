@@ -38,6 +38,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The Slasher contract for EigenLayer
     ISlasher public immutable slasher;
 
+    /// @notice The EigenPodManager contract for EigenLayer
+    IEigenPodManager public immutable eigenPodManager;
+
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
@@ -65,8 +68,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
-
-    IEigenPodManager public immutable eigenPodManager;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;

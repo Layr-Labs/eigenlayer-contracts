@@ -182,6 +182,10 @@ interface IEigenPodManager is IPausable {
     /// @notice EigenLayer's Slasher contract
     function slasher() external view returns (ISlasher);
 
+    /// @notice EigenLayer's DelegationManager contract
+    function delegationManager() external view returns (IDelegationManager);
+
+    /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(address podOwner) external view returns (bool);
 
     /// @notice returns shares of provided podOwner
@@ -189,6 +193,12 @@ interface IEigenPodManager is IPausable {
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
+
+    /// @notice The number of EigenPods that have been deployed
+    function numPods() external view returns (uint256);
+
+    /// @notice The maximum number of EigenPods that can be deployed
+    function maxPods() external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
     function calculateWithdrawalRoot(

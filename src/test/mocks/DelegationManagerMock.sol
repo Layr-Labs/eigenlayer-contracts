@@ -100,4 +100,9 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
+
+    function eigenPodManager() external view returns (IEigenPodManager) {}
+    function slasher() external view returns (ISlasher) {}
+    function strategyManager() external view returns (IStrategyManager) {}
+
 }
