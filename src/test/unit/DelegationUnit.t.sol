@@ -12,6 +12,7 @@ import "../mocks/EigenPodManagerMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../Delegation.t.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyManagerMock strategyManagerMock;
@@ -92,7 +93,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         cheats.startPrank(eigenLayerProxyAdmin.owner());
         eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
+            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation)
         );
         cheats.stopPrank();
 
@@ -296,8 +298,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             );
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
             // or the transition is allowed,
-        } else if (modifiedOperatorDetails.stakerOptOutWindowBlocks >= initialOperatorDetails.stakerOptOutWindowBlocks)
-        {
+        } else if (
+            modifiedOperatorDetails.stakerOptOutWindowBlocks >= initialOperatorDetails.stakerOptOutWindowBlocks
+        ) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorDetailsModified(_operator, modifiedOperatorDetails);
             delegationManager.modifyOperatorDetails(modifiedOperatorDetails);
@@ -311,8 +314,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 "delegationApprover not set correctly"
             );
             require(
-                modifiedOperatorDetails.stakerOptOutWindowBlocks
-                    == delegationManager.stakerOptOutWindowBlocks(_operator),
+                modifiedOperatorDetails.stakerOptOutWindowBlocks ==
+                    delegationManager.stakerOptOutWindowBlocks(_operator),
                 "stakerOptOutWindowBlocks not set correctly"
             );
             require(delegationManager.delegatedTo(_operator) == _operator, "operator not delegated to self");
@@ -380,9 +383,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * @dev This is an important check to ensure that our definition of 'operator' remains consistent, in particular for preserving the
      * invariant that 'operators' are always delegated to themselves
      */
-    function testCannotSetOperatorDetailsWithoutRegistering(IDelegationManager.OperatorDetails memory operatorDetails)
-        public
-    {
+    function testCannotSetOperatorDetailsWithoutRegistering(
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) public {
         cheats.expectRevert(bytes("DelegationManager.modifyOperatorDetails: caller must be an operator"));
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
@@ -527,8 +530,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            salt,
+            expiry
+        );
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -585,7 +593,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         approverSignatureAndExpiry.expiry = expiry;
         {
             bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
-                staker, operator, delegationManager.delegationApprover(operator), emptySalt, expiry
+                staker,
+                operator,
+                delegationManager.delegationApprover(operator),
+                emptySalt,
+                expiry
             );
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             // mess up the signature by flipping v's parity
@@ -628,8 +640,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            salt,
+            expiry
+        );
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -682,8 +699,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            salt,
+            expiry
+        );
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -795,8 +817,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
-            _getStakerSignature(stakerPrivateKey, operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+            stakerPrivateKey,
+            operator,
+            expiry
+        );
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
@@ -805,7 +830,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // use an empty approver signature input since none is needed / the input is unchecked
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
-            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt
+            staker,
+            operator,
+            stakerSignatureAndExpiry,
+            approverSignatureAndExpiry,
+            emptySalt
         );
         cheats.stopPrank();
 
@@ -862,21 +891,33 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            salt,
+            expiry
+        );
 
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
-            _getStakerSignature(stakerPrivateKey, operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+            stakerPrivateKey,
+            operator,
+            expiry
+        );
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
         delegationManager.delegateToBySignature(
-            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt
+            staker,
+            operator,
+            stakerSignatureAndExpiry,
+            approverSignatureAndExpiry,
+            salt
         );
         cheats.stopPrank();
 
@@ -948,21 +989,33 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, _operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            _operator,
+            salt,
+            expiry
+        );
 
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
-            _getStakerSignature(stakerPrivateKey, _operator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+            stakerPrivateKey,
+            _operator,
+            expiry
+        );
 
         // delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`
         cheats.startPrank(caller);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, _operator);
         delegationManager.delegateToBySignature(
-            staker, _operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt
+            staker,
+            _operator,
+            stakerSignatureAndExpiry,
+            approverSignatureAndExpiry,
+            salt
         );
         cheats.stopPrank();
 
@@ -998,8 +1051,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     ) public {
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry =
-            ISignatureUtils.SignatureWithExpiry({signature: signature, expiry: expiry});
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
+            signature: signature,
+            expiry: expiry
+        });
         delegation.delegateToBySignature(staker, operator, signatureWithExpiry, signatureWithExpiry, emptySalt);
     }
 
@@ -1032,18 +1087,30 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, emptySalt, delegationApproverExpiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            emptySalt,
+            delegationApproverExpiry
+        );
 
         // calculate the staker signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry =
-            _getStakerSignature(stakerPrivateKey, operator, stakerExpiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+            stakerPrivateKey,
+            operator,
+            stakerExpiry
+        );
 
         // try delegate from the `staker` to the operator, via having the `caller` call `DelegationManager.delegateToBySignature`, and check for reversion
         cheats.startPrank(caller);
         cheats.expectRevert(bytes("DelegationManager._delegate: approver signature expired"));
         delegationManager.delegateToBySignature(
-            staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt
+            staker,
+            operator,
+            stakerSignatureAndExpiry,
+            approverSignatureAndExpiry,
+            emptySalt
         );
         cheats.stopPrank();
     }
@@ -1075,8 +1142,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, operator, emptySalt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            operator,
+            emptySalt,
+            expiry
+        );
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -1157,8 +1229,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.stopPrank();
         }
 
-        uint256 _delegatedSharesBefore =
-            delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+        uint256 _delegatedSharesBefore = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            strategy
+        );
 
         if (delegationManager.isDelegated(staker)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -1169,11 +1243,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.increaseDelegatedShares(staker, strategy, shares);
         cheats.stopPrank();
 
-        uint256 delegatedSharesAfter = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategy);
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(
+            delegationManager.delegatedTo(staker),
+            strategy
+        );
 
         if (delegationManager.isDelegated(staker)) {
             require(
-                delegatedSharesAfter == _delegatedSharesBefore + shares, "delegated shares did not increment correctly"
+                delegatedSharesAfter == _delegatedSharesBefore + shares,
+                "delegated shares did not increment correctly"
             );
         } else {
             require(delegatedSharesAfter == _delegatedSharesBefore, "delegated shares incremented incorrectly");
@@ -1238,7 +1316,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             if (delegationManager.isDelegated(staker)) {
                 for (uint256 i = 0; i < strategies.length; ++i) {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
-                    emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
+                    emit OperatorSharesDecreased(
+                        operatorToDecreaseSharesOf,
+                        staker,
+                        strategies[i],
+                        sharesInputArray[i]
+                    );
                 }
             }
         }
@@ -1254,8 +1337,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
             if (isDelegated) {
                 require(
-                    delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])]
-                        == delegatedSharesBefore[strategies[i]],
+                    delegatedSharesAfter + totalSharesForStrategyInArray[address(strategies[i])] ==
+                        delegatedSharesBefore[strategies[i]],
                     "delegated shares did not decrement correctly"
                 );
             } else {
@@ -1431,7 +1514,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
             emit ForceTotalWithdrawalCalled(staker);
         }
-        (bytes32 returnValue) = delegationManager.undelegate(staker);
+        bytes32 returnValue = delegationManager.undelegate(staker);
         // check that the return value is empty, as specified in the mock contract
         require(returnValue == bytes32(uint256(0)), "contract returned wrong return value");
         cheats.stopPrank();
@@ -1526,8 +1609,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testDelegateToOperatorWhoRequiresECDSASignature(staker_one, salt, expiry);
 
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker_two, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker_two,
+            operator,
+            salt,
+            expiry
+        );
 
         // try to delegate to the operator from `staker_two`, and verify that the call reverts for the proper reason (trying to reuse a salt)
         cheats.startPrank(staker_two);
@@ -1550,7 +1638,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         approverSignatureAndExpiry.expiry = expiry;
         {
             bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
-                staker, operator, delegationManager.delegationApprover(operator), salt, expiry
+                staker,
+                operator,
+                delegationManager.delegationApprover(operator),
+                salt,
+                expiry
             );
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
             approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
@@ -1584,7 +1676,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator({
+            registeringOperatorDetails: operatorDetails,
+            metadataURI: emptyStringForMetadataURI
+        });
         assertTrue(delegationManager.isOperator(address(this)), "not register operator");
     }
 
@@ -1595,10 +1690,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         vm.expectRevert();
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
     function test_RevertsWhen_OperatorIsActivelyDelegated_RegisterAsOperator() public {
@@ -1608,7 +1703,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         address staker = address(420);
@@ -1618,7 +1713,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         operatorDetails.earningsReceiver = staker;
         vm.expectRevert();
         vm.prank(staker);
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
     function test_RevertsWhen_StakerOptOutWindowBlocksGtMax_RegisterAsOperator() public {
@@ -1630,7 +1725,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: uint32(maxOptOutWindow + 1)
         });
         vm.expectRevert();
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
     function test_RevertsWhen_EarningsReceiverAddress0_RegisterAsOperator() public {
@@ -1640,7 +1735,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
         vm.expectRevert();
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
     }
 
     function test_SetOperatorDetails() public {
@@ -1688,6 +1783,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.modifyOperatorDetails(operatorDetails);
     }
 
+    function test_RevertsWhen_NotOperator_SetOperatorDetails() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 99
+        });
+        vm.expectRevert();
+        delegationManager.modifyOperatorDetails(operatorDetails);
+
+    }
+
     function test_UpdateOperatorMetdataURI() public {
         test_RegisterAsOperator();
 
@@ -1709,11 +1815,46 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         address staker = address(420);
         vm.prank(staker);
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
+    }
+
+function test_RevertsWhen_AlreadyDelegatedAndNoApprover_DelegateTo() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 100
+        });
+
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        address staker = address(420);
+        vm.startPrank(staker);
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
+        vm.expectRevert();
+        delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
+        vm.stopPrank();
+    }
+
+
+function test_RevertsWhen_ApproveAndNoSig_DelegateTo() public {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(this),
+            delegationApprover: address(this),
+            stakerOptOutWindowBlocks: 100
+        });
+
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        address staker = address(420);
+        vm.prank(staker);
+        vm.expectRevert();
         delegationManager.delegateTo(address(this), approverSignatureAndExpiry, bytes32(0));
     }
 
@@ -1725,13 +1866,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         address staker = address(420);
         bytes32 salt = bytes32(0);
         uint256 expiry = block.timestamp + 1;
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            address(this),
+            salt,
+            expiry
+        );
         /// if address(this) -> not the operator results in not signer error (should be not operator)
         vm.prank(staker);
         delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
@@ -1745,13 +1891,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         address staker = address(420);
         bytes32 salt = bytes32(0);
         uint256 expiry = block.timestamp + 1;
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            address(this),
+            salt,
+            expiry
+        );
         vm.prank(staker);
         vm.warp(expiry + 1);
         vm.expectRevert();
@@ -1766,13 +1917,18 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             stakerOptOutWindowBlocks: 100
         });
 
-        delegationManager.registerAsOperator(operatorDetails, "");
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         address staker = address(420);
         bytes32 salt = bytes32(0);
         uint256 expiry = block.timestamp + 1;
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry =
-            _getApproverSignature(delegationSignerPrivateKey, staker, address(this), salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+            delegationSignerPrivateKey,
+            staker,
+            address(this),
+            salt,
+            expiry
+        );
         vm.expectRevert();
         delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
     }
@@ -1838,4 +1994,33 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function test_CalculateCurrentStakerDelegationDigestHash() public {}
 
     function test_CalculateDelegationApprovalDigestHash() public {}
+
+    function _createOperatorDetails(
+        address earningsReceiver,
+        address delegationApprover,
+        uint256 stakerOptOutWindowBlocks
+    ) internal pure returns (IDelegationManager.OperatorDetails memory) {
+        uint32 stakerOptOutWindowBlocks32 = SafeCast.toUint32(stakerOptOutWindowBlocks);
+        return
+            IDelegationManager.OperatorDetails({
+                earningsReceiver: earningsReceiver,
+                delegationApprover: delegationApprover,
+                stakerOptOutWindowBlocks: stakerOptOutWindowBlocks32
+            });
+    }
+
+    function _registerOperator(
+        IDelegationManager.OperatorDetails memory operatorDetails,
+        string memory metadataURI
+    ) internal {
+        delegationManager.registerAsOperator(operatorDetails, metadataURI);
+    }
+
+    function delegateToOperator(
+        address operator,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry,
+        bytes32 salt
+    ) internal {
+        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);
+    }
 }
