@@ -200,6 +200,251 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
+    struct QueueEntry {
+        address staker;
+        address delegatedTo;
+        address withdrawer;
+        uint96 nonce;
+        uint32 startBlock;
+        IStrategy[] strategies;
+        uint[] shares;
+    }
+
+    mapping(bytes32 => bool) pendingActions;
+    mapping(address => uint96) numWithdrawalsQueued;
+
+    uint public withdrawalDelayBlocks;
+
+    /**
+     * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
+     * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
+     * both the staker and operator, and places the shares and strategies in a queue.
+     */
+    function queueUndelegation(address staker) external onlyWhenNotPaused(PAUSED_EXIT_QUEUE) returns (bytes32) {
+        require(isDelegated(staker), "DelegationManager.queueUndelegation: staker must be delegated to undelegate");
+        address operator = delegatedTo[staker];
+        require(!isOperator(staker), "DelegationManager.queueUndelegation: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.queueUndelegation: cannot undelegate zero address");
+        require(
+            msg.sender == staker ||
+                msg.sender == operator ||
+                msg.sender == _operatorDetails[operator].delegationApprover,
+            "DelegationManager.queueUndelegation: caller cannot undelegate staker"
+        );
+
+        // Gather strategies and shares to remove from staker/operator during undelegation
+        // Undelegation removes ALL currently-active strategies and shares
+        (IStrategy[] memory strategies, uint[] memory shares)
+            = getDelegatableShares(staker);
+
+        // emit an event if this action was not initiated by the staker themselves
+        if (msg.sender != staker) {
+            emit StakerForceUndelegated(staker, operator);
+        }
+
+        // undelegate the staker
+        emit StakerUndelegated(staker, operator);
+        delegatedTo[staker] = address(0);
+
+        // Remove all strategies/shares from staker and operator and place into queue
+        return _removeSharesAndEnterQueue({
+            staker: staker,
+            operator: operator,
+            withdrawer: staker,
+            strategies: strategies,
+            shares: shares
+        });
+    }
+
+    /**
+     * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
+     * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
+     *
+     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     */
+     function queueWithdrawal(
+        IStrategy[] calldata strategies,
+        uint[] calldata shares,
+        address withdrawer
+    ) external onlyWhenNotPaused(PAUSED_EXIT_QUEUE) {
+        require(strategies.length == shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
+        require(withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+        require(!isOperator(msg.sender), "DelegationManager.queueWithdrawal: operators cannot enter queue");
+
+        address operator = delegatedTo[msg.sender];
+
+        // Remove shares from staker's strategies and place strategies/shares in queue.
+        // If the staker is delegated to an operator, the operator's delegated shares are also reduced
+        // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
+        return _removeSharesAndEnterQueue({
+            staker: msg.sender,
+            operator: operator,
+            withdrawer: withdrawer,
+            strategies: strategies,
+            shares: shares
+        });
+    }
+
+    function completeQueuedAction(
+        QueueEntry calldata entry,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external onlyWhenNotPaused(...) {
+        bytes32 queueEntryRoot = calculateQueueEntryRoot(entry);
+
+        require(
+            pendingActions[queueEntryRoot], 
+            "DelegationManager.completeQueuedAction: action is not in queue"
+        );
+
+        require(
+            slasher.canWithdraw(entry.delegatedTo, entry.startBlock, middlewareTimesIndex),
+            "DelegationManager.completeQueuedAction: pending action is still slashable"
+        );
+
+        require(
+            entry.startBlock + withdrawalDelayBlocks <= block.number, 
+            "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed"
+        );
+
+        require(
+            msg.sender == entry.withdrawer, 
+            "DelegationManager.completeQueuedAction: only withdrawer can complete action"
+        );
+
+        if (receiveAsTokens) {
+            require(
+                tokens.length == entry.strategies.length, 
+                "DelegationManager.completeQueuedAction: input length mismatch"
+            );
+        }
+
+        // Remove `queueEntryRoot` from pending roots
+        delete pendingActions[queueEntryRoot];
+
+        address currentOperator = delegatedTo[msg.sender];
+
+        // Finalize action by converting shares to tokens for each strategy, or
+        // by re-awarding shares in each strategy.
+        for (uint i = 0; i < entry.strategies.length; ) {
+            if (receiveAsTokens) {
+                _withdrawSharesAsTokens({
+                    staker: entry.staker,
+                    withdrawer: msg.sender,
+                    strategy: entry.strategies[i],
+                    shares: entry.shares[i],
+                    token: tokens[i]
+                });
+            } else {
+                // Award shares back to staker in StrategyManager/EigenPodManager
+                // If staker is delegated, increases shares delegated to operator
+                _awardAndDelegateShares({
+                    staker: entry.staker,
+                    withdrawer: msg.sender,
+                    operator: currentOperator,
+                    strategy: entry.strategies[i],
+                    shares: entry.shares[i]
+                });
+            }
+
+            unchecked { ++i; }
+        }
+
+        // TODO: emit event here
+    }
+
+    function _removeSharesAndEnterQueue(
+        address staker, 
+        address operator,
+        address withdrawer,
+        IStrategy[] memory strategies, 
+        uint[] memory shares
+    ) internal {
+
+        // Remove shares from staker and operator
+        // Each of these operations fail if we attempt to remove more shares than exist
+        for (uint i = 0; i < strategies.length;) {
+            // Similar to `isDelegated` logic
+            if (operator != address(0)) {
+                _decreaseOperatorShares({
+                    opreator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    shares: shares[i]
+                });
+            }
+
+            // Remove active shares from EigenPodManager/StrategyManager
+            if (strategies[i] == beaconChainETHStrategy) {
+                eigenPodManager.removeShares(staker, shares[i]);
+            } else {
+                strategyManager.removeShares(staker, strategies[i], shares[i]);
+            }
+
+            unchecked { ++i; }
+        }
+
+        // Create queue entry and increment withdrawal nonce
+        uint96 nonce = numWithdrawalsQueued[staker];
+        numWithdrawalsQueued[staker]++;
+
+        QueueEntry memory entry = QueueEntry({
+            staker: staker,
+            delegatedTo: operator,
+            withdrawer: withdrawer,
+            nonce: nonce,
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            shares: shares
+        });
+
+        bytes32 queueEntryRoot = calculateQueueEntryRoot(entry);
+
+        // Place entry in queue
+        pendingActions[queueEntryRoot] = true;
+
+        // TODO: emit event here
+        return queueEntryRoot;
+    }
+
+    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint shares, IERC20 token) internal {
+        if (strategy == beaconChainETHStrategy) {
+            eigenPodManager.withdrawSharesAsTokens({
+                podOwner: staker,
+                destination: withdrawer,
+                shares: shares
+            });
+        } else {
+            strategyManager.withdrawSharesAsTokens(destination, strategy, shares, token);
+        }
+    }
+
+    function _awardAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint shares) internal {
+        // Similar to `isDelegated` logic
+        if (operator != address(0)) {
+            _increaseOperatorShares({
+                operator: operator,
+                staker: staker,
+                strategy: strategy,
+                shares: shares
+            });
+        }
+
+        // When awarding podOwnerShares in EigenPodManager, we need to be sure
+        // to only give them back to the original podOwner. Other strategy shares
+        // can be awarded to the withdrawer.
+        if (strategy == beaconChainETHStrategy) {
+            eigenPodManager.awardShares({
+                podOwner: staker,
+                shares: shares
+            });
+        } else {
+            strategyManager.awardShares(withdrawer, strategy, shares);
+        }
+    }
+
     /**
      * @notice Undelegates the staker from the operator who they are delegated to. Puts the staker into the "undelegation limbo" mode of the EigenPodManager
      * and queues a withdrawal of all of the staker's shares in the StrategyManager (to the staker), if necessary.
@@ -511,6 +756,45 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
+    }
+
+    /**
+     * @notice Returns the number of actively-delegatable shares a staker has across all strategies
+     */
+    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint[] memory) {
+        // Get currently active shares and strategies for `staker`
+        uint podShares = eigenPodManager.podOwnerShares(staker);
+        (IStrategy[] memory strategyManagerStrats, uint[] memory strategyManagerShares) 
+            = strategyManager.getDeposits(staker);
+
+        if (podShares == 0) {
+            // Has shares in StrategyManager, but not in EigenPodManager
+            return (strategyManagerStrats, strategyManagerShares);
+        } else if (strategyManagerStrats.length == 0) {
+            // Has shares in EigenPodManager, but not in StrategyManager
+            return ([beaconChainETHStrategy], [podShares]);
+        } else {
+            // Has shares in both
+            
+            // 1. Allocate return arrays
+            IStrategy[] memory strategies = new IStrategy[](strategyManagerStrats.length + 1);
+            uint[] memory shares = new uint[](strategies.length);
+            
+            // 2. Place StrategyManager strats/shares in return arrays
+            for (uint i = 0; i < strategyManagerStrats.length; ) {
+                strategies[i] = strategyManagerStrats[i];
+                shares[i] = strategyManagerShares[i];
+
+                unchecked { ++i; }
+            }
+
+            // 3. Place EigenPodManager strat/shares in return arrays
+            strategies[strategies.length - 1] = beaconChainETHStrategy;
+            shares[strategies.length - 1] = podShares;
+
+            // 4. Return both StrategyManager/EigenPodManager strats/shares
+            return (strategies, shares);
+        }
     }
 
     /**
