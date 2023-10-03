@@ -144,7 +144,7 @@ library BN254 {
         while(s > m){
             unchecked {
                 // if the  current bit is 1, add the 2^n*p to the accumulated product
-                if (s >> i & 1 == 1) {
+                if ((s >> i) & 1 == 1) {
                     acc = plus(acc, p2n);
                 }
                 // double the 2^n*p for the next iteration
