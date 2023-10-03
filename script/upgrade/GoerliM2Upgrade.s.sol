@@ -61,6 +61,7 @@ contract GoerliM2Deployment is Script, Test {
     IBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
 
+    ProxyAdmin public eigenLayerProxyAdmin;
     address public strategyWhitelister;
     uint256 public withdrawalDelayBlocks;
     bytes32 public delegationManagerDomainSeparator;
@@ -81,6 +82,8 @@ contract GoerliM2Deployment is Script, Test {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(stdJson.readAddress(deployment_data, ".addresses.delayedWithdrawalRouter"));
         eigenPodBeacon = eigenPodManager.eigenPodBeacon();
         ethPOS = eigenPodManager.ethPOS();
+
+        eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(deployment_data, ".addresses.eigenLayerProxyAdmin"));
 
         // store pre-upgrade values to check against later
         strategyWhitelister = strategyManager.strategyWhitelister();
@@ -135,7 +138,32 @@ contract GoerliM2Deployment is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, chain_info, chain_info_output);
         vm.writeJson(finalJson, "script/output/M2_deployment_data.json");
 
+        vm.stopBroadcast();
+
+        // perform automated testing
+        test_SimulatePerformingUpgrade();
         test_UpgradeCorrectness();
+    }
+
+    function test_SimulatePerformingUpgrade() public {
+        cheats.startPrank(eigenLayerProxyAdmin.owner());
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delegation))),
+            address(delegationImplementation)
+        );
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation)
+        );
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation)
+        );
+        cheats.stopPrank();
+        cheats.prank(UpgradeableBeacon(address(eigenPodBeacon)).owner());
+        UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodImplementation));
+        cheats.prank(Ownable(address(eigenPodManager)).owner());
+        eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(beaconChainOracleGoerli));
     }
 
     // Call contracts to ensure that all simple view functions return the same values (e.g. the return value of `StrategyManager.delegation()` hasn’t changed)
