@@ -667,33 +667,23 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             );
         }
 
-        // retrieve any beacon chain ETH shares the staker might have
-        uint256 beaconChainETHShares = eigenPodManager.podOwnerShares(staker);
-
-        // increase the operator's shares in the canonical 'beaconChainETHStrategy' *if* the staker is not in "undelegation limbo"
-        if (beaconChainETHShares != 0 && !eigenPodManager.isInUndelegationLimbo(staker)) {
-            _increaseOperatorShares({
-                operator: operator,
-                staker: staker,
-                strategy: beaconChainETHStrategy,
-                shares: beaconChainETHShares
-            });
-        }
-
-        // retrieve `staker`'s list of strategies and the staker's shares in each strategy from the StrategyManager
-        (IStrategy[] memory strategies, uint256[] memory shares) = strategyManager.getDeposits(staker);
-
-        // update the share amounts for each of the `operator`'s strategies
-        for (uint256 i = 0; i < strategies.length; ) {
-            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategies[i], shares: shares[i]});
-            unchecked {
-                ++i;
-            }
-        }
-
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
+
+        (IStrategy[] memory strategies, uint[] memory shares)
+            = getDelegatableShares(staker);
+
+        for (uint i = 0; i < strategies.length;) {
+            _increaseOperatorShares({
+                operator: operator,
+                staker: staker,
+                strategy: strategies[i],
+                shares: shares[i]
+            });
+
+            unchecked { ++i; }
+        }
     }
 
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
