@@ -1,36 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-
-import "../interfaces/IIndexRegistry.sol";
-import "../interfaces/IRegistryCoordinator.sol";
+import "./IndexRegistryStorage.sol";
 import "../libraries/BN254.sol";
 
-contract IndexRegistry is IIndexRegistry {
+contract IndexRegistry is IndexRegistryStorage {
 
-    /// @notice The value that indices of deregistered operators are set to
-    uint32 public constant OPERATOR_DEREGISTERED_INDEX = type(uint32).max;
-
-    IRegistryCoordinator public immutable registryCoordinator;
-
-    // list of all operators ever registered, may include duplicates. used to avoid running an indexer on nodes
-    bytes32[] public globalOperatorList;
-
-    // mapping of operatorId => quorumNumber => index history of that operator
-    mapping(bytes32 => mapping(uint8 => OperatorIndexUpdate[])) internal _operatorIdToIndexHistory;
-    // mapping of quorumNumber => history of numbers of unique registered operators
-    mapping(uint8 => OperatorIndexUpdate[]) internal _totalOperatorsHistory;
-
+    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(registryCoordinator), "IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
         _;
     }
 
+    /// @notice sets the (immutable) `registryCoordinator` address
     constructor(
         IRegistryCoordinator _registryCoordinator
-    ){
-        registryCoordinator = _registryCoordinator;
-    }
+    ) IndexRegistryStorage(_registryCoordinator) {}
 
     /**
      * @notice Registers the operator with the specified `operatorId` for the quorums specified by `quorumNumbers`.

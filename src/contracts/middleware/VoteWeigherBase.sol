@@ -33,11 +33,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) 
-    // solhint-disable-next-line no-empty-blocks
-    {
-
-    }
+    ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) {}
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
