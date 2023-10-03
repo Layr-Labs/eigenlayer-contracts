@@ -13,6 +13,15 @@ import "../interfaces/IDelegationManager.sol";
  * @notice Note that `NUMBER_OF_QUORUMS` is expected to remain constant, as suggested by its uppercase formatting.
  */
 interface IVoteWeigher {
+    /// @notice emitted when a new quorum is created
+    event QuorumCreated(uint8 indexed quorumNumber);
+    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]` with the `multiplier`
+    event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy, uint96 multiplier);
+    /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
+    /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
+
     /**
      * @notice In weighing a particular strategy, the amount of underlying asset for that strategy is
      * multiplied by its multiplier, then divided by WEIGHTING_DIVISOR

@@ -267,7 +267,7 @@ library BitmapUtils {
     }
 
     /// @return count number of ones in binary representation of `n`
-    function countNumOnes(uint256 n) public pure returns (uint16) {
+    function countNumOnes(uint256 n) internal pure returns (uint16) {
         uint16 count = 0;
         while (n > 0) {
             n &= (n - 1);

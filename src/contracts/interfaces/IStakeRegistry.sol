@@ -148,10 +148,6 @@ interface IStakeRegistry is IRegistry {
     /**
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
-     * @param operatorIds are the ids of the operators whose stake information is getting updated
-     * @param prevElements are the elements before this middleware in the operator's linked list within the slasher
-     * @dev Precondition:
-     *          1) `quorumBitmaps[i]` should be the bitmap that represents the quorums that `operators[i]` registered for
      */
-    function updateStakes(address[] memory operators, bytes32[] memory operatorIds, uint256[] memory prevElements) external;
+    function updateStakes(address[] memory operators) external;
 }

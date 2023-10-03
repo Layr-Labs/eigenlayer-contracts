@@ -238,7 +238,8 @@ contract EigenLayerDeploy is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(
             strategyManager,
-            slasher
+            slasher,
+            eigenPodManager
         );
         strategyManagerImplementation = new StrategyManager(
             delegation,
@@ -250,7 +251,8 @@ contract EigenLayerDeploy is Script, Test {
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
-            slasher
+            slasher,
+            delegation
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(
             eigenPodManager
@@ -718,7 +720,7 @@ contract EigenLayerDeploy is Script, Test {
         );
     }
 
-    function _verifyInitializationParams() internal {
+    function _verifyInitializationParams() internal view {
         // // one week in blocks -- 50400
         // uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
         // uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;

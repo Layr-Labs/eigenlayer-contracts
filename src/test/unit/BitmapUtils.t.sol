@@ -152,4 +152,17 @@ contract BitmapUtilsUnitTests is Test {
         uint256 gasSpent = gasLeftBefore - gasLeftAfter;
         emit log_named_uint("gasSpent", gasSpent);
     }
+
+    // @notice check for consistency of `countNumOnes` function
+    function testCountNumOnes(uint256 input) public view {
+        uint16 libraryOutput = bitmapUtilsWrapper.countNumOnes(input);
+        // run dumb routine
+        uint16 numOnes = 0;
+        for (uint256 i = 0; i < 256; ++i) {
+            if ((input >> i) & 1 == 1) {
+                ++numOnes; 
+            }
+        }
+        require(libraryOutput == numOnes, "inconsistency in countNumOnes function");
+    }
 }

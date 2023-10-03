@@ -11,10 +11,12 @@ import "../interfaces/IBLSPubkeyRegistry.sol";
 import "../interfaces/IVoteWeigher.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IIndexRegistry.sol";
+import "../interfaces/IPauserRegistry.sol";
 
 import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/BitmapUtils.sol";
-import "../libraries/MiddlewareUtils.sol";
+
+import "../permissions/Pausable.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -24,14 +26,20 @@ import "../libraries/MiddlewareUtils.sol";
  * 
  * @author Layr Labs, Inc.
  */
-contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater {
+contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistryCoordinatorWithIndices, ISocketUpdater, Pausable {
     using BN254 for BN254.G1Point;
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
-
+    /// @notice The basis point denominator
     uint16 internal constant BIPS_DENOMINATOR = 10000;
+    /// @notice The maximum value of a quorum bitmap
+    uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
+    /// @notice Index for flag that pauses operator registration
+    uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
+    /// @notice Index for flag that pauses operator deregistration
+    uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
 
     /// @notice the EigenLayer Slasher
     ISlasher public immutable slasher;
@@ -83,7 +91,15 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         indexRegistry = _indexRegistry;
     }
 
-    function initialize(address _churnApprover, address _ejector, OperatorSetParam[] memory _operatorSetParams) external initializer {
+    function initialize(
+        address _churnApprover,
+        address _ejector,
+        OperatorSetParam[] memory _operatorSetParams,
+        IPauserRegistry _pauserRegistry,
+        uint256 _initialPausedStatus
+    ) external initializer {
+        // set initial paused status
+        _initializePauser(_pauserRegistry, _initialPausedStatus);
         // set the churnApprover
         _setChurnApprover(_churnApprover);
         // set the ejector
@@ -238,7 +254,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param registrationData is the data that is decoded to get the operator's registration information
      * @dev `registrationData` should be a G1 point representing the operator's BLS public key and their socket
      */
-    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata registrationData) external {
+    function registerOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        bytes calldata registrationData
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         // get the operator's BLS public key
         (BN254.G1Point memory pubkey, string memory socket) = abi.decode(registrationData, (BN254.G1Point, string));
         // call internal function to register the operator
@@ -251,13 +270,17 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param pubkey is the BLS public key of the operator
      * @param socket is the socket of the operator
      */
-    function registerOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, string calldata socket) external {
+    function registerOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        BN254.G1Point memory pubkey,
+        string calldata socket
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         _registerOperatorWithCoordinatorAndNoOverfilledQuorums(msg.sender, quorumNumbers, pubkey, socket);
     }
 
     /**
      * @notice Registers msg.sender as an operator with the middleware when the quorum operator limit is full. To register 
-     * while maintaining the limit, the operator chooses another registered opeerator with lower stake to kick.
+     * while maintaining the limit, the operator chooses another registered operator with lower stake to kick.
      * @param quorumNumbers are the bytes representing the quorum numbers that the operator is registering for
      * @param pubkey is the BLS public key of the operator
      * @param operatorKickParams are the parameters for the deregistration of the operator that is being kicked from each 
@@ -271,7 +294,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         string calldata socket,
         OperatorKickParam[] calldata operatorKickParams,
         SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
-    ) external {
+    ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         // register the operator
         uint32[] memory numOperatorsPerQuorum = _registerOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, socket);
 
@@ -334,7 +357,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * @param deregistrationData is the the data that is decoded to get the operator's deregistration information
      * @dev `deregistrationData` should be a tuple of the operator's BLS public key, the list of operator ids to swap
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, bytes calldata deregistrationData) external {
+    function deregisterOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        bytes calldata deregistrationData
+    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // get the operator's deregistration information
         (BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) 
             = abi.decode(deregistrationData, (BN254.G1Point, bytes32[]));
@@ -351,7 +377,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
      * those of the operator's with the largest index in each quorum that the operator is deregistering from, in
      * ascending order of quorum number.
      */
-    function deregisterOperatorWithCoordinator(bytes calldata quorumNumbers, BN254.G1Point memory pubkey, bytes32[] memory operatorIdsToSwap) external {
+    function deregisterOperatorWithCoordinator(
+        bytes calldata quorumNumbers,
+        BN254.G1Point memory pubkey,
+        bytes32[] memory operatorIdsToSwap
+    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         _deregisterOperatorWithCoordinator(msg.sender, quorumNumbers, pubkey, operatorIdsToSwap);
     }
 
@@ -410,7 +440,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         _beforeRegisterOperator(operator, quorumNumbers);
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        require(quorumBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
+        require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
         require(quorumBitmap != 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
         bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
@@ -447,6 +477,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         // serviceManager.recordFirstStakeUpdate(operator, 0);
 
+        emit OperatorRegistered(operator, operatorId);
+
         emit OperatorSocketUpdate(operatorId, socket);
 
         return numOperatorsPerQuorum;
@@ -471,7 +503,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // get the quorumNumbers of the operator
         uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        require(quorumsToRemoveBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
+        require(quorumsToRemoveBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
         // check that the quorumNumbers of the operator matches the quorumNumbers passed in
@@ -507,12 +539,14 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             }));
         } else {
             // @notice Registrant must continue to serve until the latest block at which an active task expires. this info is used in challenges
-            uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
+            // uint32 latestServeUntilBlock = serviceManager.latestServeUntilBlock();
 
             // record a stake update unbonding the operator after `latestServeUntilBlock`
             // serviceManager.recordLastStakeUpdateAndRevokeSlashingAbility(operator, latestServeUntilBlock);
             // set the status of the operator to DEREGISTERED
             _operators[operator].status = OperatorStatus.DEREGISTERED;
+
+            emit OperatorDeregistered(operator, operatorId);
         }
     }
 

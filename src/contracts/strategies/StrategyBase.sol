@@ -39,7 +39,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * incurring reasonably small losses to depositors
      */
     uint256 internal constant SHARES_OFFSET = 1e3;
-    /** 
+    /**
      * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
@@ -72,7 +72,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
-    function _initializeStrategyBase(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) internal onlyInitializing {
+    function _initializeStrategyBase(
+        IERC20 _underlyingToken,
+        IPauserRegistry _pauserRegistry
+    ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
         _initializePauser(_pauserRegistry, UNPAUSE_ALL);
     }
@@ -89,14 +92,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
-    function deposit(IERC20 token, uint256 amount)
-        external
-        virtual
-        override
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyStrategyManager
-        returns (uint256 newShares)
-    {
+    function deposit(
+        IERC20 token,
+        uint256 amount
+    ) external virtual override onlyWhenNotPaused(PAUSED_DEPOSITS) onlyStrategyManager returns (uint256 newShares) {
         // call hook to allow for any pre-deposit logic
         _beforeDeposit(token, amount);
 
@@ -132,16 +131,14 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
      */
-    function withdraw(address depositor, IERC20 token, uint256 amountShares)
-        external
-        virtual
-        override
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyStrategyManager
-    {
+    function withdraw(
+        address depositor,
+        IERC20 token,
+        uint256 amountShares
+    ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager {
         // call hook to allow for any pre-withdrawal logic
         _beforeWithdrawal(depositor, token, amountShares);
-        
+
         require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
 
         // copy `totalShares` value to memory, prior to any change
@@ -168,14 +165,13 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         underlyingToken.safeTransfer(depositor, amountToSend);
     }
 
-
     /**
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */
     // solhint-disable-next-line no-empty-blocks
-    function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
+    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {}
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
