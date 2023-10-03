@@ -106,4 +106,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     }
 
     function stakerUndelegationLimboStatus(address /*staker*/) external view returns (UndelegationLimboStatus memory) {}
+
+    function exitUndelegationLimbo(
+        uint256 middlewareTimesIndex
+    ) external {}
 }

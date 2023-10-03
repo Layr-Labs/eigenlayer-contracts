@@ -208,6 +208,18 @@ interface IDelegationManager {
     function undelegate(address staker) external;
 
     /**
+     * @notice Called by a Staker to exit the "undelegation limbo" mode.
+     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure that the caller can exit undelegation limbo.
+     * This is because undelegation limbo is subject to some of the same restrictions as completing a withdrawal, to ensure that a Staker cannot use undelegation
+     * limbo to avoid potentially being subject to slashing.
+     * @dev Note that this checks against the frozen status of the operator *that the caller was delegated to when they entered undelegation limbo*, to provide
+     * the same kind of slashing eligibility as withdrawals via the StrategyManager or DelegationManager.
+     */
+    function exitUndelegationLimbo(
+        uint256 middlewareTimesIndex
+    ) external;
+
+    /**
      * @notice Increases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
