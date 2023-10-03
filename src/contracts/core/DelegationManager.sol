@@ -290,7 +290,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function exitUndelegationLimbo(
         uint256 middlewareTimesIndex
-    ) external {
+    ) external onlyNotFrozen(_stakerUndelegationLimboStatus[msg.sender].delegatedAddress) {
         require(
             isInUndelegationLimbo(msg.sender),
             "DelegationManager.exitUndelegationLimbo: must be in undelegation limbo"
