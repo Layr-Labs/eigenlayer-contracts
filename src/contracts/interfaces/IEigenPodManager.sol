@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
+import "./IDelegationManager.sol";
 import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
