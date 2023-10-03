@@ -141,11 +141,11 @@ contract GoerliM2Deployment is Script, Test {
         vm.stopBroadcast();
 
         // perform automated testing
-        test_SimulatePerformingUpgrade();
-        test_UpgradeCorrectness();
+        simulatePerformingUpgrade();
+        checkUpgradeCorrectness();
     }
 
-    function test_SimulatePerformingUpgrade() public {
+    function simulatePerformingUpgrade() public {
         cheats.startPrank(eigenLayerProxyAdmin.owner());
         eigenLayerProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(delegation))),
@@ -171,7 +171,7 @@ contract GoerliM2Deployment is Script, Test {
     // DelegationManager: DOMAIN_SEPARATOR, strategyManager, slasher  all unchanged
     // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods, maxPods  all unchanged
     // delegationManager is now correct (added immutable)
-    function test_UpgradeCorrectness() public view {
+    function checkUpgradeCorrectness() public view {
         require(strategyManager.delegation() == delegation, "strategyManager.delegation incorrect");
         require(strategyManager.eigenPodManager() == eigenPodManager, "strategyManager.eigenPodManager incorrect");
         require(strategyManager.slasher() == slasher, "strategyManager.slasher incorrect");
