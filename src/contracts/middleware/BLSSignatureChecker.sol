@@ -15,7 +15,6 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     // CONSTANTS & IMMUTABLES
 
     // gas cost of multiplying 2 pairings
-    // TODO: verify this
     uint256 constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     IRegistryCoordinator public immutable registryCoordinator;
@@ -106,7 +105,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
                         nonSignerStakesAndSignature.nonSignerPubkeys[i]
                             .negate()
                             .scalar_mul_tiny(
-                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) // we subtract the nonSignerPubkey from each quorum that they are a part of, TODO: 
+                                BitmapUtils.countNumOnes(nonSignerQuorumBitmaps[i] & signingQuorumBitmap) 
                             )
                     );
                 }
@@ -147,15 +146,17 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         }
         {
             // verify the signature
-            (bool pairingSuccessful, bool signatureIsValid) = trySignatureAndApkVerification(msgHash, apk, nonSignerStakesAndSignature.apkG2, nonSignerStakesAndSignature.sigma);
+            (bool pairingSuccessful, bool signatureIsValid) = trySignatureAndApkVerification(
+                msgHash, 
+                apk, 
+                nonSignerStakesAndSignature.apkG2, 
+                nonSignerStakesAndSignature.sigma
+            );
             require(pairingSuccessful, "BLSSignatureChecker.checkSignatures: pairing precompile call failed");
             require(signatureIsValid, "BLSSignatureChecker.checkSignatures: signature is invalid");
         }
         // set signatoryRecordHash variable used for fraudproofs
-        bytes32 signatoryRecordHash = MiddlewareUtils.computeSignatoryRecordHash(
-            referenceBlockNumber,
-            nonSignerPubkeyHashes
-        );
+        bytes32 signatoryRecordHash = keccak256(abi.encodePacked(referenceBlockNumber, nonSignerPubkeyHashes));
 
         // return the total stakes that signed for each quorum, and a hash of the information required to prove the exact signers and stake
         return (quorumStakeTotals, signatoryRecordHash);

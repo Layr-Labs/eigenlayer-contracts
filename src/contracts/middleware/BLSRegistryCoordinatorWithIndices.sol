@@ -15,7 +15,6 @@ import "../interfaces/IPauserRegistry.sol";
 
 import "../libraries/EIP1271SignatureUtils.sol";
 import "../libraries/BitmapUtils.sol";
-import "../libraries/MiddlewareUtils.sol";
 
 import "../permissions/Pausable.sol";
 
@@ -33,9 +32,10 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
         keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
-
+    /// @notice The basis point denominator
     uint16 internal constant BIPS_DENOMINATOR = 10000;
-
+    /// @notice The maximum value of a quorum bitmap
+    uint256 internal constant MAX_QUORUM_BITMAP = type(uint192).max;
     /// @notice Index for flag that pauses operator registration
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     /// @notice Index for flag that pauses operator deregistration
@@ -439,7 +439,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         
         // get the quorum bitmap from the quorum numbers
         uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        require(quorumBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
+        require(quorumBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap exceeds of max bitmap size");
         require(quorumBitmap != 0, "BLSRegistryCoordinatorWithIndices._registerOperatorWithCoordinator: quorumBitmap cannot be 0");
         // register the operator with the BLSPubkeyRegistry and get the operatorId (in this case, the pubkeyHash) back
         bytes32 operatorId = blsPubkeyRegistry.registerOperator(operator, quorumNumbers, pubkey);
@@ -500,7 +500,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
         // get the quorumNumbers of the operator
         uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        require(quorumsToRemoveBitmap <= MiddlewareUtils.MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
+        require(quorumsToRemoveBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
         // check that the quorumNumbers of the operator matches the quorumNumbers passed in

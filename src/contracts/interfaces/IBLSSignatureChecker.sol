@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "../interfaces/IBLSRegistryCoordinatorWithIndices.sol";
-import "../libraries/MiddlewareUtils.sol";
 import "../libraries/BN254.sol";
 import "../libraries/BitmapUtils.sol";
 
