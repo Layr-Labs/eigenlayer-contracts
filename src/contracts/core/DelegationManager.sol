@@ -215,6 +215,16 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     uint public withdrawalDelayBlocks;
 
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+
+    function setWithdrawalDelayBlocks(uint256 _newWithdrawalDelayBlocks) external onlyOwner {
+        require(
+            _newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager.setWithdrawalDelayBlocks: _newWithdrawalDelayBlocks too high"
+        );
+        withdrawalDelayBlocks = _newWithdrawalDelayBlocks;
+    }
+
     /**
      * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
