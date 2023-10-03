@@ -19,7 +19,6 @@ import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/middleware/IndexRegistry.sol";
 
 import "../../contracts/libraries/BitmapUtils.sol";
-import "../../contracts/libraries/MiddlewareUtils.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
@@ -102,6 +101,8 @@ contract MockAVSDeployer is Test {
         BN254.G1Point pubkey;
         uint96[] stakes; // in every quorum for simplicity
     }
+
+    uint256 MAX_QUORUM_BITMAP = type(uint192).max;
 
     function _deployMockEigenLayerAndAVS() internal {
         _deployMockEigenLayerAndAVS(numQuorums);
@@ -289,7 +290,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap &= MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 
@@ -307,7 +308,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96[] memory stakes) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap &= MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 

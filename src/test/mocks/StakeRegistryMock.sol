@@ -1,36 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "./IRegistry.sol";
+import "../../contracts/interfaces/IStakeRegistry.sol";
 
 /**
  * @title Interface for a `Registry` that keeps track of stakes of operators for up to 256 quorums.
  * @author Layr Labs, Inc.
  */
-interface IStakeRegistry is IRegistry {
-    // EVENTS
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
-    
-    // DATA STRUCTURES
+contract StakeRegistryMock is IStakeRegistry {
 
-    /// @notice struct used to store the stakes of an individual operator or the sum of all operators' stakes, for storage
-    struct OperatorStakeUpdate {
-        // the block number at which the stake amounts were updated and stored
-        uint32 updateBlockNumber;
-        // the block number at which the *next update* occurred.
-        /// @notice This entry has the value **0** until another update takes place.
-        uint32 nextUpdateBlockNumber;
-        // stake weight for the quorum
-        uint96 stake;
-    }
-
-    // EVENTS
-    event MinimumStakeForQuorumUpdated(uint8 indexed quorumNumber, uint96 minimumStake);
+    function registryCoordinator() external view returns (IRegistryCoordinator) {}
 
     /**
      * @notice Registers the `operator` with `operatorId` for the specified `quorumNumbers`.
@@ -44,7 +23,7 @@ interface IStakeRegistry is IRegistry {
      *         3) `quorumNumbers` is ordered in ascending order
      *         4) the operator is not already registered
      */
-    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external;
+    function registerOperator(address operator, bytes32 operatorId, bytes memory quorumNumbers) external {}
 
     /**
      * @notice Deregisters the operator with `operatorId` for the specified `quorumNumbers`.
@@ -58,28 +37,28 @@ interface IStakeRegistry is IRegistry {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external;
+    function deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) external {}
 
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
-    function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);
+    function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96) {}
 
-    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
+    function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256) {}
 
     /**
      * @notice Returns the `index`-th entry in the dynamic array of total stake, `totalStakeHistory` for quorum `quorumNumber`.
      * @param quorumNumber The quorum number to get the stake for.
      * @param index Array index for lookup, within the dynamic array `totalStakeHistory[quorumNumber]`.
      */
-    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory);
+    function getTotalStakeUpdateForQuorumFromIndex(uint8 quorumNumber, uint256 index) external view returns (OperatorStakeUpdate memory) {}
 
     /// @notice Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
     function getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
-        returns (uint32);
+        returns (uint32) {}
 
     /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
-    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) ;
+    function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(uint32 blockNumber, bytes calldata quorumNumbers) external view returns(uint32[] memory) {}
 
     /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
@@ -91,13 +70,13 @@ interface IStakeRegistry is IRegistry {
     function getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8 quorumNumber, bytes32 operatorId, uint256 index)
         external
         view
-        returns (OperatorStakeUpdate memory);
+        returns (OperatorStakeUpdate memory) {}
 
     /**
      * @notice Returns the most recent stake weight for the `operatorId` for a certain quorum
      * @dev Function returns an OperatorStakeUpdate struct with **every entry equal to 0** in the event that the operator has no stake history
      */
-    function getMostRecentStakeUpdateByOperatorId(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory);
+    function getMostRecentStakeUpdateByOperatorId(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate memory) {}
 
     /**
      * @notice Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
@@ -113,7 +92,7 @@ interface IStakeRegistry is IRegistry {
     function getStakeForQuorumAtBlockNumberFromOperatorIdAndIndex(uint8 quorumNumber, uint32 blockNumber, bytes32 operatorId, uint256 index)
         external
         view
-        returns (uint96);
+        returns (uint96) {}
 
     /**
      * @notice Returns the total stake weight for quorum `quorumNumber`, at the `index`-th entry in the 
@@ -125,29 +104,41 @@ interface IStakeRegistry is IRegistry {
      * @dev Function will revert if `index` is out-of-bounds.
      * @dev used the BLSSignatureChecker to get past stakes of signing operators
      */
-    function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96);
+    function getTotalStakeAtBlockNumberFromIndex(uint8 quorumNumber, uint32 blockNumber, uint256 index) external view returns (uint96) {}
 
     /**
      * @notice Returns the most recent stake weight for the `operatorId` for quorum `quorumNumber`
      * @dev Function returns weight of **0** in the event that the operator has no stake history
      */
-    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96);
+    function getCurrentOperatorStakeForQuorum(bytes32 operatorId, uint8 quorumNumber) external view returns (uint96) {}
 
     /// @notice Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
     function getStakeForOperatorIdForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber)
         external
         view
-        returns (uint96);
+        returns (uint96){}
 
     /**
      * @notice Returns the stake weight from the latest entry in `_totalStakeHistory` for quorum `quorumNumber`.
      * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
      */
-    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96);
+    function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {}
 
     /**
      * @notice Used for updating information on deposits of nodes.
      * @param operators are the addresses of the operators whose stake information is getting updated
      */
-    function updateStakes(address[] memory operators) external;
+    function updateStakes(address[] memory operators) external {
+        for (uint256 i = 0; i < operators.length; i++) {
+            emit StakeUpdate(
+                bytes32(uint256(keccak256(abi.encodePacked(operators[i], "operatorId")))),
+                uint8(uint256(keccak256(abi.encodePacked(operators[i], i, "quorumNumber")))),
+                uint96(uint256(keccak256(abi.encodePacked(operators[i], i, "stake"))))
+            );
+        }
+    }
+
+    function getMockOperatorId(address operator) external returns(bytes32) {
+        return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
+    }
 }

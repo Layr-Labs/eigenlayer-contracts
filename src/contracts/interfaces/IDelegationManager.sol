@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
+import "./IStakeRegistry.sol";
 
 /**
  * @title DelegationManager
@@ -68,10 +69,13 @@ interface IDelegationManager is ISignatureUtils {
         uint256 expiry;
     }
 
-    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
+    /// @notice Emitted when the StakeRegistry is set
+    event StakeRegistrySet(IStakeRegistry stakeRegistry);
+
+    /// @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
-    // @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
+    /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
     event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
 
     /**
@@ -92,8 +96,15 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
 
-    // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
+    /// @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
     event StakerForceUndelegated(address indexed staker, address indexed operator);
+
+    /**
+     * @notice Sets the address of the stakeRegistry
+     * @param _stakeRegistry is the address of the StakeRegistry contract to call for stake updates when operator shares are changed
+     * @dev Only callable once
+     */
+    function setStakeRegistry(IStakeRegistry _stakeRegistry) external;
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -205,6 +216,9 @@ interface IDelegationManager is ISignatureUtils {
         IStrategy[] calldata strategies,
         uint256[] calldata shares
     ) external;
+
+    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
+    function stakeRegistry() external view returns (IStakeRegistry);
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

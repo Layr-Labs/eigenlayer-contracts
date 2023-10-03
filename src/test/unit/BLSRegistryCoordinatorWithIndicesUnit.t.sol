@@ -182,7 +182,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     }
 
     function testRegisterOperatorWithCoordinatorForFuzzedQuorums_Valid(uint256 quorumBitmap) public {
-        quorumBitmap = quorumBitmap & MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap = quorumBitmap & MAX_QUORUM_BITMAP;
         cheats.assume(quorumBitmap != 0);
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
@@ -453,7 +453,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         uint32 registrationBlockNumber = 100;
         uint32 deregistrationBlockNumber = 200;
 
-        quorumBitmap = quorumBitmap & MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap = quorumBitmap & MAX_QUORUM_BITMAP;
         cheats.assume(quorumBitmap != 0);
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 

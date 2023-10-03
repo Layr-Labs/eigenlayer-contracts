@@ -76,7 +76,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      *         6) `pubkey` is the same as the parameter used when registering
      */   
-    function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator returns(bytes32){
+    function deregisterOperator(address operator, bytes memory quorumNumbers, BN254.G1Point memory pubkey) external onlyRegistryCoordinator {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,"BLSPubkeyRegistry.registerOperator: operator does not own pubkey");
@@ -85,7 +85,6 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         _processQuorumApkUpdate(quorumNumbers, pubkey.negate());
         
         emit OperatorRemovedFromQuorums(operator, quorumNumbers);
-        return pubkeyHash;
     }
 
     /**

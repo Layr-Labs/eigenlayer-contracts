@@ -135,22 +135,22 @@ library BN254 {
         BN254.G1Point memory acc = BN254.G1Point(0, 0);
         // the 2^n*p to add to the accumulated product in each iteration
         BN254.G1Point memory p2n = p;
-        // value of most signifigant bit
+        // value of most significant bit
         uint16 m = 1;
-        // index of most signifigant bit
+        // index of most significant bit
         uint8 i = 0;
 
-        //loop until we reach the most signifigant bit
+        //loop until we reach the most significant bit
         while(s > m){
             unchecked {
                 // if the  current bit is 1, add the 2^n*p to the accumulated product
-                if (s >> i & 1 == 1) {
+                if ((s >> i) & 1 == 1) {
                     acc = plus(acc, p2n);
                 }
                 // double the 2^n*p for the next iteration
                 p2n = plus(p2n, p2n);
 
-                // increment the index and double the value of the most signifigant bit
+                // increment the index and double the value of the most significant bit
                 m <<= 1;
                 ++i;
             }
@@ -289,7 +289,6 @@ library BN254 {
         uint256 beta = 0;
         uint256 y = 0;
 
-        // XXX: Gen Order (n) or Field Order (p) ?
         uint256 x = uint256(_x) % FP_MODULUS;
 
         while (true) {
