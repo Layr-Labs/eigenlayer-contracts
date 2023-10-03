@@ -308,43 +308,10 @@ contract EigenPodManager is
         return stateRoot;
     }
 
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        BeaconChainQueuedWithdrawal memory queuedWithdrawal
-    ) public pure returns (bytes32) {
-        return (
-            keccak256(
-                abi.encode(
-                    queuedWithdrawal.shares,
-                    queuedWithdrawal.podOwner,
-                    queuedWithdrawal.nonce,
-                    queuedWithdrawal.withdrawalStartBlock,
-                    queuedWithdrawal.delegatedAddress,
-                    queuedWithdrawal.withdrawer
-                )
-            )
-        );
-    }
-
     /**
-     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
-     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
+     * @notice Returns 'true' if the pod owner has shares
      */
     function podOwnerHasActiveShares(address staker) public view returns (bool) {
-        if ((podOwnerShares[staker] == 0) || (isInUndelegationLimbo(staker))) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {
-        return _podOwnerUndelegationLimboStatus[podOwner];
-    }
-
-    // @notice Getter function for `_podOwnerUndelegationLimboStatus.active`.
-    function isInUndelegationLimbo(address podOwner) public view returns (bool) {
-        return _podOwnerUndelegationLimboStatus[podOwner].active;
+        return podOwnerShares[staker] != 0;
     }
 }

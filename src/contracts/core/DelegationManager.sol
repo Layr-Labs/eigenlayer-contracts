@@ -797,6 +797,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    function calculateQueueEntryRoot(QueueEntry memory entry) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                entry.staker,
+                entry.delegatedTo,
+                entry.withdrawer,
+                entry.nonce,
+                entry.startBlock,
+                entry.strategies,
+                entry.shares
+            )
+        );
+    }
+
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
      * @param staker The signing staker

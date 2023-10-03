@@ -111,7 +111,7 @@ contract StrategyManager is
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
-        _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
+        // _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /**
@@ -209,14 +209,6 @@ contract StrategyManager is
         IERC20 token
     ) external onlyDelegationManager {
         strategy.withdraw(destination, token, shares);
-    }
-
-    /**
-     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
-     * @param _withdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
-     */
-    function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner {
-        _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /**
@@ -414,19 +406,6 @@ contract StrategyManager is
     }
 
     /**
-     * @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
-     * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
-     */
-    function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
-        require(
-            _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high"
-        );
-        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
-        withdrawalDelayBlocks = _withdrawalDelayBlocks;
-    }
-
-    /**
      * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
      * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
      */
@@ -469,22 +448,6 @@ contract StrategyManager is
         } else {
             return _calculateDomainSeparator();
         }
-    }
-
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
-        return (
-            keccak256(
-                abi.encode(
-                    queuedWithdrawal.strategies,
-                    queuedWithdrawal.shares,
-                    queuedWithdrawal.depositor,
-                    queuedWithdrawal.withdrawerAndNonce,
-                    queuedWithdrawal.withdrawalStartBlock,
-                    queuedWithdrawal.delegatedAddress
-                )
-            )
-        );
     }
 
     // @notice Internal function for calculating the current domain separator of this contract
