@@ -71,6 +71,9 @@ interface IBLSPubkeyRegistry is IRegistry {
     /// @notice Returns the `ApkUpdate` struct at `index` in the list of APK updates for the `quorumNumber`
     function getApkUpdateForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (ApkUpdate memory);
 
+    /// @notice Returns the operator address for the given `pubkeyHash`
+    function getOperatorFromPubkeyHash(bytes32 pubkeyHash) external view returns (address);
+
     /**
      * @notice get 24 byte hash of the apk of `quorumNumber` at `blockNumber` using the provided `index`;
      * called by checkSignatures in BLSSignatureChecker.sol.

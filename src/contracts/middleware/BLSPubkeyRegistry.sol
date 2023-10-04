@@ -59,7 +59,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         require(pubkeyHash != ZERO_PK_HASH, "BLSPubkeyRegistry.registerOperator: cannot register zero pubkey");
         //ensure that the operator owns their public key by referencing the BLSPubkeyCompendium
         require(
-            pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,
+            getOperatorFromPubkeyHash(pubkeyHash) == operator,
             "BLSPubkeyRegistry.registerOperator: operator does not own pubkey"
         );
         // update each quorum's aggregate pubkey
@@ -94,7 +94,7 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         bytes32 pubkeyHash = BN254.hashG1Point(pubkey);
 
         require(
-            pubkeyCompendium.pubkeyHashToOperator(pubkeyHash) == operator,
+            getOperatorFromPubkeyHash(pubkeyHash) == operator,
             "BLSPubkeyRegistry.registerOperator: operator does not own pubkey"
         );
 
@@ -165,6 +165,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
     /// @notice Returns the length of ApkUpdates for the provided `quorumNumber`
     function getQuorumApkHistoryLength(uint8 quorumNumber) external view returns (uint32) {
         return uint32(quorumApkUpdates[quorumNumber].length);
+    }
+
+    /// @notice Returns the operator address for the given `pubkeyHash`
+    function getOperatorFromPubkeyHash(bytes32 pubkeyHash) public view returns (address) {
+        return pubkeyCompendium.pubkeyHashToOperator(pubkeyHash);
     }
 
     function _processQuorumApkUpdate(bytes memory quorumNumbers, BN254.G1Point memory point) internal {

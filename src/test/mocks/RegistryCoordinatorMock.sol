@@ -14,6 +14,9 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     /// @notice Returns the stored id for the specified `operator`.
     function getOperatorId(address operator) external view returns (bytes32){}
 
+    /// @notice Returns the operator address for the given `operatorId`
+    function getOperatorFromId(bytes32 operatorId) external view returns (address) {}
+
     /// @notice Returns the status for the given `operator`
     function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus){}
 

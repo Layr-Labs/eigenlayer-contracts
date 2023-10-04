@@ -133,6 +133,11 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         return _operators[operator].operatorId;
     }
 
+    /// @notice Returns the operator address for the given `operatorId`
+    function getOperatorFromId(bytes32 operatorId) external view returns (address) {
+        return blsPubkeyRegistry.getOperatorFromPubkeyHash(operatorId);
+    }
+
     /// @notice Returns the status for the given `operator`
     function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus) {
         return _operators[operator].status;

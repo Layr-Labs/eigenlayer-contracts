@@ -51,6 +51,9 @@ interface IRegistryCoordinator {
     /// @notice Returns the operatorId for the given `operator`
     function getOperatorId(address operator) external view returns (bytes32);
 
+    /// @notice Returns the operator address for the given `operatorId`
+    function getOperatorFromId(bytes32 operatorId) external view returns (address operator);
+
     /// @notice Returns the status for the given `operator`
     function getOperatorStatus(address operator) external view returns (IRegistryCoordinator.OperatorStatus);
 
