@@ -145,15 +145,17 @@ contract EigenPodUnitTests is EigenPodTests {
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
 
-    // function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {
-    //     setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-    //     _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-    //     IEigenPod pod = eigenPodManager.getPod(podOwner);
+    function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {
+        cheats.assume(largerAmount > GWEI_TO_WEI);
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
 
-    //     cheats.startPrank(address(eigenPodManager));
+        cheats.startPrank(address(eigenPodManager));
 
-    //     cheats.expectRevert(bytes("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"));
-    //     pod.decrementWithdrawableRestakedExecutionLayerGwei(largerAmount);
-    // }
+        cheats.expectRevert(bytes("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"));
+        pod.decrementWithdrawableRestakedExecutionLayerGwei(largerAmount);
+        cheats.stopPrank();
+    }
 
 }
