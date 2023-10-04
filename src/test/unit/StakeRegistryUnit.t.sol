@@ -182,10 +182,6 @@ contract StakeRegistryTest is Test {
         stakeRegistry.updateStakes(operators);
     }
 
-    function test_RevertsIf_OperatorStakesAfterBlock_UpdateStakes() public {}
-
-    function test_RevertsIf_NewerOperatorStakeUpdateAvailable_UpdateStakes() public {}
-
     function test_RevertsIf_NotServiceManager_SetMinimumStakeForQuorum() public {
         vm.expectRevert(ONLY_SERVICE_MANAGER);
         stakeRegistry.setMinimumStakeForQuorum(DEFAULT_QUORUM_NUMBER, 0);
@@ -256,10 +252,6 @@ contract StakeRegistryTest is Test {
         stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(0, DEFAULT_OPERATOR_ID, 0);
     }
 
-    function test_RevertsIf_NoStakeForOperatorAndQuorumAtBlock_GetStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber()
-        public
-    {}
-
     // Check that operator stake is 0 after deregistering
     function test_DeregisterOperator() public {
         stakeRegistry.setOperatorWeight(DEFAULT_QUORUM_NUMBER, DEFAULT_OPERATOR, 1);
@@ -300,8 +292,6 @@ contract StakeRegistryTest is Test {
         vm.expectRevert(GREATEST_QUORUM_GT_QUORUM_COUNT_DEREGISTER);
         stakeRegistry.deregisterOperator(DEFAULT_OPERATOR_ID, quorumNumbers);
     }
-
-    function test_checkOperatorInactiveAtBlockNumber() public {}
 
     function testFuzz_SetMinimumStakeForQuorum(uint8 quorumNumber, uint96 minimumStakeForQuorum) public {
         // set the minimum stake for quorum
