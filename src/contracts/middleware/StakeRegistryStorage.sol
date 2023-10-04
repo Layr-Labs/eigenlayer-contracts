@@ -36,5 +36,5 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     }
 
     // storage gap for upgradeability
-    uint256[63] private __GAP;
+    uint256[65] private __GAP;
 }

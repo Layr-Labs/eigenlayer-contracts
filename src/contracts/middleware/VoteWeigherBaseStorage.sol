@@ -53,7 +53,6 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
     ) {
-        // sanity check that the VoteWeigher is being initialized with at least 1 quorum
         strategyManager = _strategyManager;
         delegation = _strategyManager.delegation();
         slasher = _strategyManager.slasher();
@@ -63,5 +62,5 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     }
 
     // storage gap for upgradeability
-    uint256[47] private __GAP;
+    uint256[48] private __GAP;
 }

@@ -1,27 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../interfaces/IBLSPubkeyRegistry.sol";
-import "../interfaces/IRegistryCoordinator.sol";
-import "../interfaces/IBLSPublicKeyCompendium.sol";
-
+import "./BLSPubkeyRegistryStorage.sol";
 import "../libraries/BN254.sol";
 
-contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
+contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
     using BN254 for BN254.G1Point;
 
-    /// @notice the hash of the zero pubkey aka BN254.G1Point(0,0)
-    bytes32 internal constant ZERO_PK_HASH = hex"ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5";
-    /// @notice the registry coordinator contract
-    IRegistryCoordinator public immutable registryCoordinator;
-    /// @notice the BLSPublicKeyCompendium contract against which pubkey ownership is checked
-    IBLSPublicKeyCompendium public immutable pubkeyCompendium;
-
-    // mapping of quorumNumber => ApkUpdate[], tracking the aggregate pubkey updates of every quorum
-    mapping(uint8 => ApkUpdate[]) public quorumApkUpdates;
-    // mapping of quorumNumber => current aggregate pubkey of quorum
-    mapping(uint8 => BN254.G1Point) private quorumApk;
-
+    /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(
             msg.sender == address(registryCoordinator),
@@ -30,10 +16,11 @@ contract BLSPubkeyRegistry is IBLSPubkeyRegistry {
         _;
     }
 
-    constructor(IRegistryCoordinator _registryCoordinator, IBLSPublicKeyCompendium _pubkeyCompendium) {
-        registryCoordinator = _registryCoordinator;
-        pubkeyCompendium = _pubkeyCompendium;
-    }
+    /// @notice Sets the (immutable) `registryCoordinator` and `pubkeyCompendium` addresses
+    constructor(
+        IRegistryCoordinator _registryCoordinator, 
+        IBLSPublicKeyCompendium _pubkeyCompendium
+    ) BLSPubkeyRegistryStorage(_registryCoordinator, _pubkeyCompendium) {}
 
     /**
      * @notice Registers the `operator`'s pubkey for the specified `quorumNumbers`.
