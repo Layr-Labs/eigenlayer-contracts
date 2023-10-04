@@ -1,63 +1,62 @@
 StakeRegistry
----- initialize
-|-------- when called on construction
-|------------ when input param lengths match
-|---------------- it should intialize correctly 
-|------------ when lengths dont match
-|---------------- it should revert
----- updateStakes
-|-------- when all empty arrays passed 
-|------------ it should revert
-|-------- when all operators above minimumStakeForQuorum
-|------------ it should updates stakes
-|--------- when all operators below minimumStakeForQuorum
-|------------- it shouldn't update stake or revert
-|--------- when at least operator below minimumStakeForQuorum
-|------------- it should only update stake for operators with sufficient stake 
-|--------- when operator below minimumStakeForQuorum operatorId reversed
-|------------- it should revert
-|--------- when operator already updated stake 
-|------------- it should revert
-|--------- when operator stake is after block
-|------------- it should revert
-|--------- when newer operator stake available
-|------------- it should revert
----- setMinimumStakeForQuorum
-|-------- when caller is service manager
-|------------ it should update minimumStakeForQuorum
-|-------- when caller is NOT service manager
-|------------ it should revert 
----- registerOperator
-|-------- when caller is registryCoordinator
-|------------ when operator weight above minimumStakeForQuorum
-|---------------- when operator isnt already registered
-|-------------------- it should register operator
-|---------------- when operator is already registered
-|-------------------- it should revert
-|------------ when operator weight below minimumStakeForQuorum
-|---------------- it should revert
-|------------ when quorum numbers greater than quorum count
-|---------------- it should revert
-|-------- when caller is NOT registryCoordinator
-|------------ it should revert
----- getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber
-|-------- when operator has stake at block
-|------------- it should return the operators stake
-|-------- when operator has NO stake at block
-|------------- it should revert 
-|-------- when NO stake for quorum at block at block
-|------------- it should revert 
----- deregisterOperator
-|-------- when caller is registry coordinator
-|------------ when quorum counte greater than quorums 
-|---------------- it should deregister operator
-|------------ when quorum count less than quorums 
-|---------------- it should revert
-|-------- when caller is not registry coordinator
-|------------ it should revert
----- checkOperatorStatus
-|-------- when operator is active at block
-|------------ it should return true
-|-------- when operator is NOT active at block
-|------------ it should return false
-
+├─ initialize
+│  └─ when called on construction
+│     ├─ when input param lengths match
+│     │  └─ it should intialize correctly
+│     └─ when lengths dont match
+│        └─ it should revert
+├─ updateStakes
+│  ├─ when all empty arrays passed
+│  │  └─ it should revert
+│  ├─ when all operators above minimumStakeForQuorum
+│  │  └─ it should updates stakes
+│  ├─ when all operators below minimumStakeForQuorum
+│  │  └─ it shouldn't update stake or revert
+│  ├─ when at least operator below minimumStakeForQuorum
+│  │  └─ it should only update stake for operators with sufficient stake
+│  ├─ when operator below minimumStakeForQuorum operatorId reversed
+│  │  └─ it should revert
+│  ├─ when operator already updated stake
+│  │  └─ it should revert
+│  ├─ when operator stake is after block
+│  │  └─ it should revert
+│  └─ when newer operator stake available
+│     └─ it should revert
+├─ setMinimumStakeForQuorum
+│  ├─ when caller is service manager
+│  │  └─ it should update minimumStakeForQuorum
+│  └─ when caller is NOT service manager
+│     └─ it should revert
+├─ registerOperator
+│  ├─ when caller is registryCoordinator
+│  │  ├─ when operator weight above minimumStakeForQuorum
+│  │  │  ├─ when operator isnt already registered
+│  │  │  │  └─ it should register operator
+│  │  │  └─ when operator is already registered
+│  │  │     └─ it should revert
+│  │  ├─ when operator weight below minimumStakeForQuorum
+│  │  │  └─ it should revert
+│  │  └─ when quorum numbers greater than quorum count
+│  │     └─ it should revert
+│  └─ when caller is NOT registryCoordinator
+│     └─ it should revert
+├─ getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber
+│  ├─ when operator has stake at block
+│  │  └─ it should return the operators stake
+│  ├─ when operator has NO stake at block
+│  │  └─ it should revert
+│  └─ when NO stake for quorum at block at block
+│     └─ it should revert
+├─ deregisterOperator
+│  ├─ when caller is registry coordinator
+│  │  ├─ when quorum counte greater than quorums
+│  │  │  └─ it should deregister operator
+│  │  └─ when quorum count less than quorums
+│  │     └─ it should revert
+│  └─ when caller is not registry coordinator
+│     └─ it should revert
+└─ checkOperatorStatus
+   ├─ when operator is active at block
+   │  └─ it should return true
+   └─ when operator is NOT active at block
+      └─ it should return false
