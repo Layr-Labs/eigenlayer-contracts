@@ -281,6 +281,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     }
 
+    function testTryToWithdrawBeforeRestakingAfterHasRestakedIsSet() public {
+        cheats.startPrank(podOwner);
+        eigenPodManager.createPod();
+        cheats.stopPrank();
+
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == true, "Pod should be restaked");
+
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
+        pod.withdrawBeforeRestaking();
+    }
+
     function testWithdrawBeforeRestaking() public {
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
