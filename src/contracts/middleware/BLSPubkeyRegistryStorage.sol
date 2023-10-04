@@ -28,5 +28,5 @@ abstract contract BLSPubkeyRegistryStorage is Initializable, IBLSPubkeyRegistry 
     }
 
     // storage gap for upgradeability
-    uint256[47] private __GAP;
+    uint256[48] private __GAP;
 }

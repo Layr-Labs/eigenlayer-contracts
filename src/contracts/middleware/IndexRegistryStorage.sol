@@ -31,5 +31,5 @@ abstract contract IndexRegistryStorage is Initializable, IIndexRegistry {
     }
 
     // storage gap for upgradeability
-    uint256[46] private __GAP;
+    uint256[47] private __GAP;
 }
