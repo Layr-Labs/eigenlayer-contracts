@@ -257,6 +257,28 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
     }
+    //post M2, all new pods deployed will have "hasRestaked = true".  THis tests that
+    function testDeployedPodIsRestaked(address podOwner) public {
+        cheats.startPrank(podOwner);
+        eigenPodManager.createPod();
+        cheats.stopPrank();
+
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == true, "Pod should be restaked");
+    }
+
+    function tryToActivateRestakingAfterHasRestakedIsSet() public {
+       cheats.startPrank(podOwner);
+        eigenPodManager.createPod();
+        cheats.stopPrank();
+
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(pod.hasRestaked() == true, "Pod should be restaked");
+
+        cheats.startPrank(podOwner);
+        pod.activateRestaking();
+
+    }
 
     function testWithdrawBeforeRestaking() public {
         testStaking();
@@ -453,7 +475,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     * This is specifically for the case where a validator has redeposited into their exited validator and needs to prove another withdrawal
     * to get their funds out
     */
-    function testWithdrawAfterFullWithdrawal() external {
+    function testWithdrawalAfterWithdrawnStatusIsSet() external {
         IEigenPod pod = testFullWithdrawalFlow();
 
         // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_slot_6399999.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest_AdvancedOneSlot.json" true
