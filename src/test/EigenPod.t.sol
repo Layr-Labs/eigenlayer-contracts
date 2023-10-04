@@ -267,7 +267,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(pod.hasRestaked() == true, "Pod should be restaked");
     }
 
-    function tryToActivateRestakingAfterHasRestakedIsSet() public {
+    function testTryToActivateRestakingAfterHasRestakedIsSet() public {
        cheats.startPrank(podOwner);
         eigenPodManager.createPod();
         cheats.stopPrank();
@@ -276,6 +276,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(pod.hasRestaked() == true, "Pod should be restaked");
 
         cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
         pod.activateRestaking();
 
     }
