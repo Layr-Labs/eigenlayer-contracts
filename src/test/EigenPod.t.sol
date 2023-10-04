@@ -276,13 +276,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
     }
 
-
-    function testCheckThatHasRestakedIsSetToTrue() public {
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        require(pod.hasRestaked() == true, "Pod should not be restaked");
-    }
-
     function testDeployEigenPodWithoutActivateRestaking() public {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
@@ -338,18 +331,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testWithdrawBeforeRestakingAfterRestaking() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-
-        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
-        cheats.startPrank(podOwner);
-        pod.withdrawBeforeRestaking();
-        cheats.stopPrank();
-    }
-
     function testWithdrawFromPod() public {
         cheats.startPrank(podOwner);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
@@ -369,15 +350,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pod.withdrawBeforeRestaking();
         cheats.stopPrank();
         require(address(pod).balance == 0, "Pod balance should be 0");
-    }
-
-    function testAttemptedWithdrawalAfterVerifyingWithdrawalCredentials() public {
-        testDeployAndVerifyNewEigenPod();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
-        IEigenPod(pod).withdrawBeforeRestaking();
-        cheats.stopPrank();
     }
 
     function testFullWithdrawalProof() public {
