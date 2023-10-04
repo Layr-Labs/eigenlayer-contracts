@@ -426,6 +426,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _awardAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint shares) internal {
+        // When awarding podOwnerShares in EigenPodManager, we need to be sure
+        // to only give them back to the original podOwner. Other strategy shares
+        // can be awarded to the withdrawer.
+        if (strategy == beaconChainETHStrategy) {
+            // update shares amount depending upon the returned value
+            // the return value will be lower than the input value in the case where the staker has an existing share deficit
+            shares = eigenPodManager.awardShares({
+                podOwner: staker,
+                shares: shares
+            });
+        } else {
+            strategyManager.awardShares(withdrawer, strategy, shares);
+        }
+
         // Similar to `isDelegated` logic
         if (operator != address(0)) {
             _increaseOperatorShares({
@@ -434,18 +448,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 strategy: strategy,
                 shares: shares
             });
-        }
-
-        // When awarding podOwnerShares in EigenPodManager, we need to be sure
-        // to only give them back to the original podOwner. Other strategy shares
-        // can be awarded to the withdrawer.
-        if (strategy == beaconChainETHStrategy) {
-            eigenPodManager.awardShares({
-                podOwner: staker,
-                shares: shares
-            });
-        } else {
-            strategyManager.awardShares(withdrawer, strategy, shares);
         }
     }
 

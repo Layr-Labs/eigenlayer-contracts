@@ -155,11 +155,13 @@ contract EigenPodManager is
         _removeShares(podOwner, shares);
     }
 
+    // @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible
+    // @dev Returns the number of shares added to `podOwnerShares[podOwner]`
     function awardShares(
         address podOwner,
         uint256 shares
-    ) external onlyDelegationManager {
-        _addShares(podOwner, shares);
+    ) external onlyDelegationManager returns (uint256) {
+        return _addShares(podOwner, shares);
     }
 
     // TODO the 2 calls here can probably be combined?
