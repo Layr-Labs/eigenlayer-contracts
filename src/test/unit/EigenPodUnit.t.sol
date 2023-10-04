@@ -145,7 +145,7 @@ contract EigenPodUnitTests is EigenPodTests {
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
 
-    function testIncrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) external {
+    function testIncrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) public returns (IEigenPod) {
         cheats.assume(amount > GWEI_TO_WEI);
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -159,7 +159,19 @@ contract EigenPodUnitTests is EigenPodTests {
         uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
         uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
         require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore + amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
+        return pod;
+    }
 
+    function testDecrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) external {
+        IEigenPod pod = testIncrementWithdrawableRestakedExecutionLayerGwei(amount);
+
+        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
+        pod.decrementWithdrawableRestakedExecutionLayerGwei(amount);
+
+        uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
+
+        uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
+        require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore - amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
     }
 
     function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {

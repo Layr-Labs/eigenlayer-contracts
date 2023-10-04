@@ -476,9 +476,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @param amountWei is the amount of ETH in wei to increment withdrawableRestakedExecutionLayerGwei by
      */
     function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        emit log_named_uint("amountWei", amountWei);
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        emit log_named_uint("amountWei", amountGwei);
         withdrawableRestakedExecutionLayerGwei += amountGwei;
     }
 
