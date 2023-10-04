@@ -75,12 +75,14 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
-    struct QueuedWithdrawal {
+    struct QueueEntry {
         address staker;
         address delegatedTo;
         address withdrawer;
         uint96 nonce;
         uint32 startBlock;
+        bool isUndelegating;
+        bool isWithdrawing;
         IStrategy[] strategies;
         uint[] shares;
     }

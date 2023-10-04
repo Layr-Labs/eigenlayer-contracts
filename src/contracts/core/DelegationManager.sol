@@ -226,11 +226,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      *
-     * @param queueWithdrawal Determines if undelegation should also queue a withdrawal. If caller is NOT the staker, 
+     * @param alsoWithdraw Determines if undelegation should also queue a withdrawal. If caller is NOT the staker, 
      * defaults to "false" and places the
      * 
      */
-    function undelegate(address staker, bool queueWithdrawal) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
+    function undelegate(address staker, bool alsoWithdraw) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         // Sanity check - shouldn't be able to hit this
         require(!currentlyUndelegating[staker], "DelegationManager.undelegate: cannot undelegate while currently undelegating");
@@ -262,7 +262,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Only the staker can decide to queue a withdrawal
         if (msg.sender != staker) {
-            queueWithdrawal = false;
+            alsoWithdraw = false;
         }
 
         // Remove all shares from the operator and place in queue
@@ -273,7 +273,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             operator: operator,
             withdrawer: staker,
             isUndelegating: true,
-            isWithdrawing: queueWithdrawal,
+            isWithdrawing: alsoWithdraw,
             strategies: strategies,
             shares: shares
         });
@@ -294,7 +294,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(strategies.length == shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
         require(!isOperator(msg.sender), "DelegationManager.queueWithdrawal: operators cannot enter queue");
-        require(!currentlyUndelegating[staker], "DelegationManager.queueWithdrawal: staker is currently undelegating");
+        require(!currentlyUndelegating[msg.sender], "DelegationManager.queueWithdrawal: staker is currently undelegating");
 
         address operator = delegatedTo[msg.sender];
 
@@ -431,8 +431,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
 
         // Create queue entry and increment withdrawal nonce
-        uint96 nonce = numWithdrawalsQueued[staker];
-        numWithdrawalsQueued[staker]++;
+        uint96 nonce = numActionsQueued[staker];
+        numActionsQueued[staker]++;
 
         QueueEntry memory entry = QueueEntry({
             staker: staker,
@@ -595,7 +595,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 approverSalt
     ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         require(!isDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
-        require(!isUndelegating[staker], "DelegationManager._delegate: staker is currently undelegating");
+        require(!currentlyUndelegating[staker], "DelegationManager._delegate: staker is currently undelegating");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 
@@ -773,16 +773,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return (strategies, shares);
     }
 
-    function calculateWithdrawalRoot(QueuedWithdrawal memory withdrawal) public pure returns (bytes32) {
+    function calculateQueueEntryRoot(QueueEntry memory entry) public pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                withdrawal.staker,
-                withdrawal.delegatedTo,
-                withdrawal.withdrawer,
-                withdrawal.nonce,
-                withdrawal.startBlock,
-                withdrawal.strategies,
-                withdrawal.shares
+                entry.staker,
+                entry.delegatedTo,
+                entry.withdrawer,
+                entry.nonce,
+                entry.startBlock,
+                entry.isUndelegating,
+                entry.isWithdrawing,
+                entry.strategies,
+                entry.shares
             )
         );
     }
