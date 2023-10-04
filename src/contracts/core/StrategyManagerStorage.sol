@@ -63,9 +63,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     /*
      * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
-     * This mapping tracked beaconChainETH "debt" in case updates were made to shares retroactively.  However, this design was
-     * replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which
-     * makes this tracking unnecessary.
+     * This mapping tracked beaconChainETH "deficit" in cases where updates were made to shares retroactively.  However, this construction was
+     * moved into the EigenPodManager contract itself.
      */
     // slither-disable-next-line incorrect-shift-in-assembly
     uint256[1] internal _deprecatedStorage;
