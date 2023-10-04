@@ -529,8 +529,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 timestampOfWithdrawal = Endian.fromLittleEndianUint64(withdrawalProofsArray[0].timestampRoot);
         uint256 newTimestamp = timestampOfWithdrawal + 2500;
         cheats.warp(newTimestamp);
-        emit log_named_uint("block.timestamp", block.timestamp);
-        emit log_named_uint("timestampOfWithdrawal",timestampOfWithdrawal);
         cheats.startPrank(podOwner);
         pod.withdrawBeforeRestaking();
         cheats.stopPrank();
@@ -549,6 +547,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
+
+    function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+
+        cheats.startPrank(address(eigenPodManager));
+        
+        cheats.expectRevert(bytes("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"));
+        pod.decrementWithdrawableRestakedExecutionLayerGwei(largerAmount);
+    }
+
 
     /**
     * @notice this test is to ensure that a full withdrawal can be made once a validator has processed their first full withrawal
