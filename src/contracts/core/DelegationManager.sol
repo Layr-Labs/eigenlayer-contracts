@@ -204,8 +204,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    mapping(bytes32 => bool) pendingWithdrawals;
-    mapping(address => uint96) numWithdrawalsQueued;
+    mapping(bytes32 => bool) pendingActions;
+    mapping(address => uint96) numActionsQueued;
+
+    mapping(address => bool) currentlyUndelegating;
 
     uint public withdrawalDelayBlocks;
 
@@ -223,17 +225,23 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
+     *
+     * @param queueWithdrawal Determines if undelegation should also queue a withdrawal. If caller is NOT the staker, 
+     * defaults to "false" and places the
+     * 
      */
-    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
-        require(isDelegated(staker), "DelegationManager.queueUndelegation: staker must be delegated to undelegate");
+    function undelegate(address staker, bool queueWithdrawal) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
+        // Sanity check - shouldn't be able to hit this
+        require(!currentlyUndelegating[staker], "DelegationManager.undelegate: cannot undelegate while currently undelegating");
         address operator = delegatedTo[staker];
-        require(!isOperator(staker), "DelegationManager.queueUndelegation: operators cannot be undelegated");
-        require(staker != address(0), "DelegationManager.queueUndelegation: cannot undelegate zero address");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
         require(
             msg.sender == staker ||
                 msg.sender == operator ||
                 msg.sender == _operatorDetails[operator].delegationApprover,
-            "DelegationManager.queueUndelegation: caller cannot undelegate staker"
+            "DelegationManager.undelegate: caller cannot undelegate staker"
         );
 
         // Gather strategies and shares to remove from staker/operator during undelegation
@@ -246,15 +254,26 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             emit StakerForceUndelegated(staker, operator);
         }
 
-        // undelegate the staker
-        emit StakerUndelegated(staker, operator);
+        // Undelegate the staker and mark them as "currently undelegating"
+        // Staker cannot redelegate until queue completes
         delegatedTo[staker] = address(0);
+        currentlyUndelegating[staker] = true;
+        emit StakerUndelegated(staker, operator);
 
-        // Remove all strategies/shares from staker and operator and place into queue
-        return _removeSharesAndQueueWithdrawal({
+        // Only the staker can decide to queue a withdrawal
+        if (msg.sender != staker) {
+            queueWithdrawal = false;
+        }
+
+        // Remove all shares from the operator and place in queue
+        // If the staker has chosen to queue a withdrawal, shares will
+        // also be removed from the staker.
+        return _removeSharesAndEnterQueue({
             staker: staker,
             operator: operator,
             withdrawer: staker,
+            isUndelegating: true,
+            isWithdrawing: queueWithdrawal,
             strategies: strategies,
             shares: shares
         });
@@ -275,81 +294,94 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(strategies.length == shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
         require(!isOperator(msg.sender), "DelegationManager.queueWithdrawal: operators cannot enter queue");
+        require(!currentlyUndelegating[staker], "DelegationManager.queueWithdrawal: staker is currently undelegating");
 
         address operator = delegatedTo[msg.sender];
 
         // Remove shares from staker's strategies and place strategies/shares in queue.
         // If the staker is delegated to an operator, the operator's delegated shares are also reduced
         // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
-        return _removeSharesAndQueueWithdrawal({
+        return _removeSharesAndEnterQueue({
             staker: msg.sender,
             operator: operator,
             withdrawer: withdrawer,
+            isUndelegating: false,
+            isWithdrawing: true,
             strategies: strategies,
             shares: shares
         });
     }
 
-    function completeQueuedWithdrawal(
-        QueuedWithdrawal calldata withdrawal,
+    function completeQueuedAction(
+        QueueEntry calldata entry,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) {
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bytes32 entryRoot = calculateQueueEntryRoot(entry);
 
         require(
-            pendingWithdrawals[withdrawalRoot], 
+            pendingActions[entryRoot], 
             "DelegationManager.completeQueuedAction: action is not in queue"
         );
 
         require(
-            slasher.canWithdraw(withdrawal.delegatedTo, withdrawal.startBlock, middlewareTimesIndex),
+            slasher.canWithdraw(entry.delegatedTo, entry.startBlock, middlewareTimesIndex),
             "DelegationManager.completeQueuedAction: pending action is still slashable"
         );
 
         require(
-            withdrawal.startBlock + withdrawalDelayBlocks <= block.number, 
+            entry.startBlock + withdrawalDelayBlocks <= block.number, 
             "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed"
         );
 
         require(
-            msg.sender == withdrawal.withdrawer, 
+            msg.sender == entry.withdrawer, 
             "DelegationManager.completeQueuedAction: only withdrawer can complete action"
         );
 
         if (receiveAsTokens) {
             require(
-                tokens.length == withdrawal.strategies.length, 
+                tokens.length == entry.strategies.length, 
                 "DelegationManager.completeQueuedAction: input length mismatch"
             );
         }
 
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
+        // Remove `entryRoot` from queue
+        delete pendingActions[entryRoot];
+
+        // If the queued action was an undelegation, staker is no longer undelegating
+        if (entry.isUndelegating) {
+            delete currentlyUndelegating[entry.staker];
+        }
+
+        // If the queued action wasn't a withdrawal, we don't need to process a withdrawal
+        if (!entry.isWithdrawing) {
+            return;
+        }
 
         address currentOperator = delegatedTo[msg.sender];
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
-        for (uint i = 0; i < withdrawal.strategies.length; ) {
+        for (uint i = 0; i < entry.strategies.length; ) {
             if (receiveAsTokens) {
                 _withdrawSharesAsTokens({
-                    staker: withdrawal.staker,
+                    staker: entry.staker,
                     withdrawer: msg.sender,
-                    strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
+                    strategy: entry.strategies[i],
+                    shares: entry.shares[i],
                     token: tokens[i]
                 });
             } else {
                 // Award shares back to staker in StrategyManager/EigenPodManager
                 // If staker is delegated, increases shares delegated to operator
                 _awardAndDelegateShares({
-                    staker: withdrawal.staker,
+                    staker: entry.staker,
                     withdrawer: msg.sender,
                     operator: currentOperator,
-                    strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i]
+                    strategy: entry.strategies[i],
+                    shares: entry.shares[i]
                 });
             }
 
@@ -359,10 +391,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // TODO: emit event here
     }
 
-    function _removeSharesAndQueueWithdrawal(
+    function _removeSharesAndEnterQueue(
         address staker, 
         address operator,
         address withdrawer,
+        bool isUndelegating,
+        bool isWithdrawing,
         IStrategy[] memory strategies, 
         uint[] memory shares
     ) internal returns (bytes32) {
@@ -380,6 +414,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 });
             }
 
+            // If we're not queueing a withdrawal, we must only be undelegating
+            // ... so, skip removing shares from the staker
+            if (!isWithdrawing) {
+                continue;
+            }
+
             // Remove active shares from EigenPodManager/StrategyManager
             if (strategies[i] == beaconChainETHStrategy) {
                 eigenPodManager.removeShares(staker, shares[i]);
@@ -394,23 +434,25 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint96 nonce = numWithdrawalsQueued[staker];
         numWithdrawalsQueued[staker]++;
 
-        QueuedWithdrawal memory withdrawal = QueuedWithdrawal({
+        QueueEntry memory entry = QueueEntry({
             staker: staker,
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
             startBlock: uint32(block.number),
+            isUndelegating: isUndelegating,
+            isWithdrawing: isWithdrawing,
             strategies: strategies,
             shares: shares
         });
 
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bytes32 entryRoot = calculateQueueEntryRoot(entry);
 
         // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
+        pendingActions[entryRoot] = true;
 
         // TODO: emit event here
-        return withdrawalRoot;
+        return entryRoot;
     }
 
     function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint shares, IERC20 token) internal {
@@ -553,6 +595,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 approverSalt
     ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         require(!isDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
+        require(!isUndelegating[staker], "DelegationManager._delegate: staker is currently undelegating");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
         require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 

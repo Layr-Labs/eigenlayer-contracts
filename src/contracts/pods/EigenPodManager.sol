@@ -150,6 +150,15 @@ contract EigenPodManager is
         address podOwner, 
         uint256 shares
     ) external onlyDelegationManager {
+        /**
+         * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
+         * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.
+         * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in
+         * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator
+         * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares'
+         * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
+         */
+        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
         _removeShares(podOwner, shares);
     }
 
@@ -166,15 +175,6 @@ contract EigenPodManager is
         address destination, 
         uint256 shares
     ) external onlyDelegationManager {
-        /**
-         * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
-         * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.
-         * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in
-         * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator
-         * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares'
-         * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
-         */
-        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
@@ -265,7 +265,7 @@ contract EigenPodManager is
             uint[] memory shares = new uint[](1);
             strategies[0] = beaconChainETHStrategy;
             shares[0] = toRemove;
-            
+
             delegationManager.decreaseDelegatedShares({
                 staker: podOwner,
                 strategies: strategies,
