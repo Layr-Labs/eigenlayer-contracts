@@ -225,15 +225,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
     function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
-        require(isDelegated(staker), "DelegationManager.queueUndelegation: staker must be delegated to undelegate");
+        require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         address operator = delegatedTo[staker];
-        require(!isOperator(staker), "DelegationManager.queueUndelegation: operators cannot be undelegated");
-        require(staker != address(0), "DelegationManager.queueUndelegation: cannot undelegate zero address");
+        require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
+        require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
         require(
             msg.sender == staker ||
                 msg.sender == operator ||
                 msg.sender == _operatorDetails[operator].delegationApprover,
-            "DelegationManager.queueUndelegation: caller cannot undelegate staker"
+            "DelegationManager.undelegate: caller cannot undelegate staker"
         );
 
         // Gather strategies and shares to remove from staker/operator during undelegation
