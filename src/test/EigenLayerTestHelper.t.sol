@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../test/EigenLayerDeployer.t.sol";
-
+import "../contracts/interfaces/ISignatureUtils.sol";
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
 
@@ -80,10 +80,10 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
 
-        // TODO: FIX THIS
-        // assertTrue(
-        //     delegation.delegationTerms(sender) == dt, "_testRegisterAsOperator: delegationTerms not set appropriately"
-        // );
+        assertTrue(
+            keccak256(abi.encode(delegation.operatorDetails(sender))) == keccak256(abi.encode(operatorDetails)),
+            "_testRegisterAsOperator: operatorDetails not set appropriately"
+        );
 
         assertTrue(delegation.isDelegated(sender), "_testRegisterAsOperator: sender not marked as actively delegated");
         cheats.stopPrank();
@@ -321,8 +321,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         //queue the withdrawal
-        // TODO: check with 'undelegateIfPossible' = false, rather than just true
-        withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer, true);
+        withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer);
         return (withdrawalRoot, queuedWithdrawal);
     }
 
@@ -350,14 +349,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     /// @param staker is the staker delegating stake to the operator.
     /// @param ethAmount is the amount of ETH to deposit into the operator's strategy.
     /// @param eigenAmount is the amount of EIGEN to deposit into the operator's strategy.
-    /// @param quorumNumbers is the array of quorum numbers to register the operator for.
     /// @param stakeRegistry is the stakeRegistry-type contract to consult for registering to an AVS
     function _testDelegation(
         address operator,
         address staker,
         uint256 ethAmount,
         uint256 eigenAmount,
-        bytes memory quorumNumbers,
         StakeRegistry stakeRegistry
     ) internal {
         if (!delegation.isOperator(operator)) {
@@ -532,8 +529,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory strategyIndexes,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
-        address withdrawer,
-        bool undelegateIfPossible
+        address withdrawer
     )
         internal
         returns (bytes32)
@@ -544,9 +540,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyIndexes,
             strategyArray,
             shareAmounts,
-            withdrawer,
-            // TODO: make this an input
-            undelegateIfPossible
+            withdrawer
         );
         cheats.stopPrank();
         return withdrawalRoot;

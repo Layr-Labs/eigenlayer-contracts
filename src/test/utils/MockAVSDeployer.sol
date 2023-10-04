@@ -19,13 +19,12 @@ import "../../contracts/middleware/BLSPubkeyRegistry.sol";
 import "../../contracts/middleware/IndexRegistry.sol";
 
 import "../../contracts/libraries/BitmapUtils.sol";
-import "../../contracts/libraries/MiddlewareUtils.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
 import "../mocks/ServiceManagerMock.sol";
 import "../mocks/OwnableMock.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/BLSPublicKeyCompendiumMock.sol";
 import "../mocks/EmptyContract.sol";
@@ -62,7 +61,7 @@ contract MockAVSDeployer is Test {
 
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
-    DelegationMock public delegationMock;
+    DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public proxyAdminOwner = address(uint160(uint256(keccak256("proxyAdminOwner"))));
@@ -103,6 +102,8 @@ contract MockAVSDeployer is Test {
         uint96[] stakes; // in every quorum for simplicity
     }
 
+    uint256 MAX_QUORUM_BITMAP = type(uint192).max;
+
     function _deployMockEigenLayerAndAVS() internal {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
@@ -119,7 +120,7 @@ contract MockAVSDeployer is Test {
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
-        delegationMock = new DelegationMock();
+        delegationMock = new DelegationManagerMock();
         eigenPodManagerMock = new EigenPodManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
@@ -289,7 +290,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96 stake) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap &= MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 
@@ -307,7 +308,7 @@ contract MockAVSDeployer is Test {
      */
     function _registerOperatorWithCoordinator(address operator, uint256 quorumBitmap, BN254.G1Point memory pubKey, uint96[] memory stakes) internal {
         // quorumBitmap can only have 192 least significant bits
-        quorumBitmap &= MiddlewareUtils.MAX_QUORUM_BITMAP;
+        quorumBitmap &= MAX_QUORUM_BITMAP;
 
         pubkeyCompendium.setBLSPublicKey(operator, pubKey);
 
@@ -372,7 +373,7 @@ contract MockAVSDeployer is Test {
         return bytes32(uint256(start) + inc);
     }
 
-    function _signOperatorChurnApproval(bytes32 registeringOperatorId, bytes memory quorumNumbers, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal  returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+    function _signOperatorChurnApproval(bytes32 registeringOperatorId, IBLSRegistryCoordinatorWithIndices.OperatorKickParam[] memory operatorKickParams, bytes32 salt,  uint256 expiry) internal view returns(ISignatureUtils.SignatureWithSaltAndExpiry memory) {
         bytes32 digestHash = registryCoordinator.calculateOperatorChurnApprovalDigestHash(
             registeringOperatorId,
             operatorKickParams,

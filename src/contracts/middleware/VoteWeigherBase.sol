@@ -17,15 +17,6 @@ import "./VoteWeigherBaseStorage.sol";
  * @dev
  */
 contract VoteWeigherBase is VoteWeigherBaseStorage {
-    /// @notice emitted when a new quorum is created
-    event QuorumCreated(uint8 indexed quorumNumber);
-    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]` with the `multiplier`
-    event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy, uint96 multiplier);
-    /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
-    event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
-    /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategiesConsideredAndMultipliers[quorumNumber]`
-    event StrategyMultiplierUpdated(uint8 indexed quorumNumber, IStrategy strategy, uint256 multiplier);
-
     /// @notice when applied to a function, ensures that the function is only callable by the current `owner` of the `serviceManager`
     modifier onlyServiceManagerOwner() {
         require(msg.sender == serviceManager.owner(), "VoteWeigherBase.onlyServiceManagerOwner: caller is not the owner of the serviceManager");
@@ -44,7 +35,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         IServiceManager _serviceManager
     ) VoteWeigherBaseStorage(_strategyManager, _serviceManager) 
     // solhint-disable-next-line no-empty-blocks
-    {}
+    {
+
+    }
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index)
@@ -123,8 +116,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         for (uint256 i = 0; i < indicesToRemoveLength;) {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy);
             // remove strategy and its associated multiplier
-            strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]] = strategiesConsideredAndMultipliers[quorumNumber][strategiesConsideredAndMultipliers[quorumNumber]
-                .length - 1];
+            strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]] = strategiesConsideredAndMultipliers[
+                quorumNumber
+            ][strategiesConsideredAndMultipliers[quorumNumber].length - 1];
             strategiesConsideredAndMultipliers[quorumNumber].pop();
 
             unchecked {
@@ -148,10 +142,9 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         uint256 numStrats = strategyIndices.length;
         require(numStrats > 0, "VoteWeigherBase.modifyStrategyWeights: no strategy indices provided");
         // sanity check on input lengths
-        require(newMultipliers.length == numStrats,
-            "VoteWeigherBase.modifyStrategyWeights: input length mismatch");
+        require(newMultipliers.length == numStrats, "VoteWeigherBase.modifyStrategyWeights: input length mismatch");
 
-        for (uint256 i = 0; i < numStrats;) {
+        for (uint256 i = 0; i < numStrats; ) {
             // change the strategy's associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].multiplier = newMultipliers[i];
             emit StrategyMultiplierUpdated(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][strategyIndices[i]].strategy, newMultipliers[i]);
@@ -200,12 +193,12 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
             numStratsExisting + numStratsToAdd <= MAX_WEIGHING_FUNCTION_LENGTH,
             "VoteWeigherBase._addStrategiesConsideredAndMultipliers: exceed MAX_WEIGHING_FUNCTION_LENGTH"
         );
-        for (uint256 i = 0; i < numStratsToAdd;) {
+        for (uint256 i = 0; i < numStratsToAdd; ) {
             // fairly gas-expensive internal loop to make sure that the *same* strategy cannot be added multiple times
-            for (uint256 j = 0; j < (numStratsExisting + i);) {
+            for (uint256 j = 0; j < (numStratsExisting + i); ) {
                 require(
-                    strategiesConsideredAndMultipliers[quorumNumber][j].strategy
-                        != _newStrategiesConsideredAndMultipliers[i].strategy,
+                    strategiesConsideredAndMultipliers[quorumNumber][j].strategy !=
+                        _newStrategiesConsideredAndMultipliers[i].strategy,
                     "VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add same strategy 2x"
                 );
                 unchecked {

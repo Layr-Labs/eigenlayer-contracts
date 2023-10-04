@@ -1,5 +1,5 @@
-// // SPDX-License-Identifier: BUSL-1.1
-// pragma solidity =0.8.12;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity =0.8.12;
 
 // import "../../src/contracts/interfaces/IStrategyManager.sol";
 // import "../../src/contracts/interfaces/IStrategy.sol";
@@ -278,25 +278,26 @@
 //         }        
 //     }
 
-//     function _testQueueWithdrawal(
-//         address staker,
-//         IStrategy[] memory strategyArray,
-//         uint256[] memory shareAmounts,
-//         uint256[] memory strategyIndexes
-//     )
-//         internal
-//     {
-//         cheats.startPrank(theMultiSig);
-//         whiteLister.queueWithdrawal(
-//             staker,
-//             strategyIndexes,
-//             strategyArray,
-//             shareAmounts,
-//             staker,
-//             true
-//         );
-//         cheats.stopPrank();
-//     }
+
+//    function _testQueueWithdrawal(
+//        address staker,
+//        IStrategy[] memory strategyArray,
+//        uint256[] memory shareAmounts,
+//        uint256[] memory strategyIndexes
+//    )
+//        internal
+//    {
+//        cheats.startPrank(theMultiSig);
+//        whiteLister.queueWithdrawal(
+//            staker,
+//            strategyIndexes,
+//            strategyArray,
+//            shareAmounts,
+//            staker
+//        );
+//        cheats.stopPrank();
+//    }
+
 
 //      function _testCompleteQueuedWithdrawal(
 //         address staker,
