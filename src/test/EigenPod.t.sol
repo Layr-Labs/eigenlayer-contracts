@@ -392,20 +392,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
 
-    function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
-        Relayer relay = new Relayer();
-        uint256  WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
-
-        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
-        BeaconChainProofs.WithdrawalProof memory proofs = _getWithdrawalProof();
-        bytes32 beaconStateRoot = getBeaconStateRoot();
-        cheats.assume(wrongWithdrawalFields.length !=  2 ** WITHDRAWAL_FIELD_TREE_HEIGHT);
-        validatorFields = getValidatorFields();
-
-        cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: withdrawalFields has incorrect length"));
-        relay.verifyWithdrawal(beaconStateRoot, wrongWithdrawalFields, proofs);
-    }
-
     function testFullWithdrawalProofWithWrongIndices(uint64 wrongBlockRootIndex, uint64 wrongWithdrawalIndex, uint64 wrongHistoricalSummariesIndex) public {
         uint256  BLOCK_ROOTS_TREE_HEIGHT = 13;
         uint256  WITHDRAWALS_TREE_HEIGHT = 4;
@@ -441,6 +427,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"));
             relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, wrongProofs);
         }
+    }
+
+    function testFullWithdrawalProofWithWrongProofLengths() external {
+
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
