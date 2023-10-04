@@ -392,6 +392,57 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
 
+    function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
+        Relayer relay = new Relayer();
+        uint256  WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
+
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        BeaconChainProofs.WithdrawalProof memory proofs = _getWithdrawalProof();
+        bytes32 beaconStateRoot = getBeaconStateRoot();
+        cheats.assume(wrongWithdrawalFields.length !=  2 ** WITHDRAWAL_FIELD_TREE_HEIGHT);
+        validatorFields = getValidatorFields();
+
+        cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: withdrawalFields has incorrect length"));
+        relay.verifyWithdrawal(beaconStateRoot, wrongWithdrawalFields, proofs);
+    }
+
+    function testFullWithdrawalProofWithWrongIndices(uint64 wrongBlockRootIndex, uint64 wrongWithdrawalIndex, uint64 wrongHistoricalSummariesIndex) public {
+        uint256  BLOCK_ROOTS_TREE_HEIGHT = 13;
+        uint256  WITHDRAWALS_TREE_HEIGHT = 4;
+        uint256 HISTORICAL_SUMMARIES_TREE_HEIGHT = 24;
+        cheats.assume(wrongBlockRootIndex > 2 ** BLOCK_ROOTS_TREE_HEIGHT);
+        cheats.assume(wrongWithdrawalIndex > 2 ** WITHDRAWALS_TREE_HEIGHT);
+        cheats.assume(wrongHistoricalSummariesIndex > 2 ** HISTORICAL_SUMMARIES_TREE_HEIGHT);
+
+        Relayer relay = new Relayer();
+
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        bytes32 beaconStateRoot = getBeaconStateRoot();
+        validatorFields = getValidatorFields();
+        withdrawalFields = getWithdrawalFields();  
+
+        {
+            BeaconChainProofs.WithdrawalProof memory wrongProofs = _getWithdrawalProof();
+            wrongProofs.blockRootIndex = wrongBlockRootIndex;
+            cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: blockRootIndex is too large"));
+            relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, wrongProofs);
+        }
+
+        {
+            BeaconChainProofs.WithdrawalProof memory wrongProofs = _getWithdrawalProof();
+            wrongProofs.withdrawalIndex = wrongWithdrawalIndex;
+            cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: withdrawalIndex is too large"));
+            relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, wrongProofs);
+        }
+
+        {
+            BeaconChainProofs.WithdrawalProof memory wrongProofs = _getWithdrawalProof();
+            wrongProofs.historicalSummaryIndex = wrongHistoricalSummariesIndex;
+            cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"));
+            relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, wrongProofs);
+        }
+    }
+
     /// @notice This test is to ensure the full withdrawal flow works
     function testFullWithdrawalFlow() public returns (IEigenPod) {
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
