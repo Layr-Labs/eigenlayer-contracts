@@ -37,7 +37,7 @@ interface IDelegationFaucet {
 
     function completeQueuedWithdrawal(
         address staker,
-        IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,
+        IDelegationManager.QueuedWithdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens

@@ -260,10 +260,16 @@ contract EigenPodManager is
             // if change in shares is negative, remove the shares (and don't bother trying to undelegate the `podOwner`)
             uint256 toRemove = uint256(-sharesDelta);
             _removeShares(podOwner, toRemove);
+
+            IStrategy[] memory strategies = new IStrategy[](1);
+            uint[] memory shares = new uint[](1);
+            strategies[0] = beaconChainETHStrategy;
+            shares[0] = toRemove;
+            
             delegationManager.decreaseDelegatedShares({
                 staker: podOwner,
-                strategies: [beaconChainETHStrategy],
-                shares: [toRemove]
+                strategies: strategies,
+                shares: shares
             });
         } else {
             // if change in shares is positive, add the shares

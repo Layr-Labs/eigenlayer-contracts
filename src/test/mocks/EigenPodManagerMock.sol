@@ -67,13 +67,13 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function unpause(uint256 /*newPausedStatus*/) external{}
 
-    function podOwnerShares(address podOwner) external returns (uint256){}
+    function podOwnerShares(address podOwner) external view returns (uint256){}
 
-    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32) {}
+    // function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32) {}
 
-    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
+    // function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
 
-    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    // function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     /**
      * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
@@ -84,11 +84,11 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     }
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
-    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+    // function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
+    // function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
 
     // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
-    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
+    // function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }

@@ -116,32 +116,32 @@ contract Whitelister is IWhitelister, Ownable {
         uint256[] calldata shares,
         address withdrawer
     ) public onlyOwner returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-                IStrategyManager.queueWithdrawal.selector,
-                strategyIndexes,
-                strategies,
-                shares,
-                withdrawer
-            );
-        return Staker(staker).callAddress(address(strategyManager), data);
+        // bytes memory data = abi.encodeWithSelector(
+        //         IStrategyManager.queueWithdrawal.selector,
+        //         strategyIndexes,
+        //         strategies,
+        //         shares,
+        //         withdrawer
+        //     );
+        // return Staker(staker).callAddress(address(strategyManager), data);
     }
 
     function completeQueuedWithdrawal(
         address staker,
-        IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,
+        IDelegationManager.QueuedWithdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
     ) public onlyOwner returns (bytes memory) {
-        bytes memory data = abi.encodeWithSelector(
-                IStrategyManager.completeQueuedWithdrawal.selector,
-                queuedWithdrawal,
-                tokens,
-                middlewareTimesIndex,
-                receiveAsTokens
-        );
+        // bytes memory data = abi.encodeWithSelector(
+        //         IStrategyManager.completeQueuedWithdrawal.selector,
+        //         queuedWithdrawal,
+        //         tokens,
+        //         middlewareTimesIndex,
+        //         receiveAsTokens
+        // );
 
-        return Staker(staker).callAddress(address(strategyManager), data);
+        // return Staker(staker).callAddress(address(strategyManager), data);
     }
 
     function transfer(

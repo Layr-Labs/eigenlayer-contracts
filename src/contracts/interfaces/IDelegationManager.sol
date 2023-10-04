@@ -75,6 +75,16 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
+    struct QueuedWithdrawal {
+        address staker;
+        address delegatedTo;
+        address withdrawer;
+        uint96 nonce;
+        uint32 startBlock;
+        IStrategy[] strategies;
+        uint[] shares;
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 

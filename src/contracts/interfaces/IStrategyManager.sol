@@ -76,6 +76,15 @@ interface IStrategyManager {
         bytes memory signature
     ) external returns (uint256 shares);
 
+    /// @notice Used by the DelegationManager to remove a staker's shares from a particular strategy when entering the withdrawal queue
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external;
+
+    /// @notice Used by the DelegationManager to award a grantee some shares that have passed through the withdrawal queue
+    function awardShares(address grantee, IStrategy strategy, uint256 shares) external;
+    
+    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a destination
+    function withdrawSharesAsTokens(address destination, IStrategy strategy, uint256 shares, IERC20 token) external;
+
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
 

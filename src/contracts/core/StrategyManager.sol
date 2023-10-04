@@ -98,14 +98,13 @@ contract StrategyManager is
      * @param initialOwner Ownership of this contract is transferred to this address.
      * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
      * @param  initialPausedStatus The initial value of `_paused` to set.
-     * @param _withdrawalDelayBlocks The initial value of `withdrawalDelayBlocks` to set.
      */
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
         IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus,
-        uint256 _withdrawalDelayBlocks
+        uint256 initialPausedStatus
+        // uint256 _withdrawalDelayBlocks TODO
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
@@ -313,7 +312,7 @@ contract StrategyManager is
         _addShares(depositor, strategy, shares);
 
         // Increase shares delegated to operator, if needed
-        delegationManager.increaseDelegatedShares(depositor, strategy, shares);
+        delegation.increaseDelegatedShares(depositor, strategy, shares);
 
         emit Deposit(depositor, token, strategy, shares);
         return shares;

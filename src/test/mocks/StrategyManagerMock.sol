@@ -97,57 +97,18 @@ contract StrategyManagerMock is
         stakerStrategyListLengthReturnValue = valueToSet;
     }
 
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function queueWithdrawal(
-        uint256[] calldata strategyIndexes,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    )
-        external returns(bytes32) {}
-
-
-    function completeQueuedWithdrawal(
-        QueuedWithdrawal calldata queuedWithdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    )
-        external{}
-
-    function completeQueuedWithdrawals(
-        QueuedWithdrawal[] calldata queuedWithdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
-        bool[] calldata receiveAsTokens
-    )
-        external{}
-
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32) {}
+    function awardShares(address grantee, IStrategy strategy, uint256 shares) external {}
+    
+    function withdrawSharesAsTokens(address destination, IStrategy strategy, uint256 shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
 
-    function withdrawalDelayBlocks() external view returns (uint256) {}
+    // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
-
-    event ForceTotalWithdrawalCalled(address staker);
-
-    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32) {
-        IStrategy[] memory emptyStrategyArray;
-        uint256[] memory emptyShareArray;
-        bytes32 emptyReturnValue;
-        emit ForceTotalWithdrawalCalled(staker);
-        return (emptyStrategyArray, emptyShareArray, emptyReturnValue);
-    }
-
 }

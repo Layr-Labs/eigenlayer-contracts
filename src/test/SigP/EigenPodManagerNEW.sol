@@ -224,26 +224,32 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         // return beaconChainOracle.getBlockRootAtTimestamp();
     }
 
-    function podOwnerShares(address podOwner) external returns (uint256){
+    function podOwnerShares(address podOwner) external view returns (uint256){
         // return podOwner[podOwner];
     }
 
-    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
+    function removeShares(address podOwner, uint256 shares) external {}
 
-    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
+    function awardShares(address podOwner, uint256 shares) external {}
 
-    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
+
+    // function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
+
+    // function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
+
+    // function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
 
     function podOwnerHasActiveShares(address staker) external view returns (bool) {}
 
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
-    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
+    // function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
 
     // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
+    // function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
 
     // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
-    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
+    // function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }
