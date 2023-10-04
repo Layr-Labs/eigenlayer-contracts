@@ -464,6 +464,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
             withdrawalFieldsArray[0] = withdrawalFields;
 
+            emit log_named_uint("tiestamp root", Endian.fromLittleEndianUint64(withdrawalProofsArray[0].timestampRoot));
+
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
 
@@ -509,6 +511,43 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawals: inputs must be same length"));
         newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+    }
+
+    function testProveWithdrawalFromBeforeLastWithdrawBeforeRestaking() external {
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+
+        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
+        require(pod.hasRestaked() != true, "Pod should not be restaked");
+
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
+
+        BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+        withdrawalProofsArray[0] = _getWithdrawalProof();
+        uint64 timestampOfWithdrawal = Endian.fromLittleEndianUint64(withdrawalProofsArray[0].timestampRoot);
+        uint256 newTimestamp = timestampOfWithdrawal + 2500;
+        cheats.warp(newTimestamp);
+        emit log_named_uint("block.timestamp", block.timestamp);
+        emit log_named_uint("timestampOfWithdrawal",timestampOfWithdrawal);
+        cheats.startPrank(podOwner);
+        pod.withdrawBeforeRestaking();
+        cheats.stopPrank();
+
+
+        bytes[] memory validatorFieldsProofArray = new bytes[](1);
+        validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());        
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+        withdrawalFieldsArray[0] = withdrawalFields;
+        cheats.warp(timestampOfWithdrawal);
+
+        cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
+        pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
 
     /**
