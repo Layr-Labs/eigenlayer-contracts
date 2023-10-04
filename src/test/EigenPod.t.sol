@@ -484,6 +484,33 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return newPod;
     }
 
+    function testMismatchedWithdrawalProofInputs(uint64 numValidators, uint64 numValidatorProofs) external {
+        cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 100);
+
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        bytes[] memory validatorFieldsProofArray = new bytes[](numValidatorProofs);
+        for (uint256 index = 0; index < numValidators; index++) {
+            validatorFieldsProofArray[index] = abi.encodePacked(getValidatorProof());
+        }
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](numValidators);
+        for (uint256 index = 0; index < validatorFieldsArray.length; index++) {
+             validatorFieldsArray[index] = getValidatorFields();
+        }
+
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+        withdrawalProofsArray[0] = _getWithdrawalProof();
+        bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+        withdrawalFieldsArray[0] = withdrawalFields;
+
+        cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawals: inputs must be same length"));
+        newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+    }
+
     /**
     * @notice this test is to ensure that a full withdrawal can be made once a validator has processed their first full withrawal
     * This is specifically for the case where a validator has redeposited into their exited validator and needs to prove another withdrawal
