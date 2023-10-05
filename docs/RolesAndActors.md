@@ -34,10 +34,6 @@ An **Operator** is a user who helps run the software build on top of EigenLayer.
 * Operators earn fees as part of the services they provide
 * Operators may be slashed by the services they register with (if they misbehave)
 
-### Pod Owners
-
-TODO
-
 ### Supporting Roles
 
 #### Pausers
