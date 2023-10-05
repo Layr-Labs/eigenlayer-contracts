@@ -894,8 +894,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.assume(nonPodOwner != podOwner);
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
+        bool restakedStatus = false;
+
         // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
-        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
+        cheats.store(address(pod), bytes32(uint256(52)), bytes32(0));
         require(pod.hasRestaked() == false, "Pod should not be restaked");
 
         //simulate a withdrawal
