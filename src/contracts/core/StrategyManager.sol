@@ -31,8 +31,6 @@ contract StrategyManager is
 {
     using SafeERC20 for IERC20;
 
-    uint256 internal constant GWEI_TO_WEI = 1e9;
-
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
     // index for flag that pauses withdrawals when set
@@ -421,7 +419,7 @@ contract StrategyManager is
 
     /**
      * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
-     * @param depositor The address to decrement shares from
+     * @param depositor The address to decrement shares from. Zero address check performed in _queueWithdrawal
      * @param strategyIndex The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that
      * the removal of the depositor's shares results in them having zero remaining shares in the `strategy`
      * @param strategy The strategy for which the `depositor`'s shares are being decremented
@@ -436,7 +434,6 @@ contract StrategyManager is
         uint256 shareAmount
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
@@ -476,15 +473,15 @@ contract StrategyManager is
         uint256 strategyIndex,
         IStrategy strategy
     ) internal {
+        uint256 stratsLength = stakerStrategyList[depositor].length;
         // if the strategy matches with the strategy index provided
-        if (stakerStrategyList[depositor][strategyIndex] == strategy) {
+        if (strategyIndex < stratsLength && stakerStrategyList[depositor][strategyIndex] == strategy) {
             // replace the strategy with the last strategy in the list
             stakerStrategyList[depositor][strategyIndex] = stakerStrategyList[depositor][
                 stakerStrategyList[depositor].length - 1
             ];
         } else {
             //loop through all of the strategies, find the right one, then replace
-            uint256 stratsLength = stakerStrategyList[depositor].length;
             uint256 j = 0;
             for (; j < stratsLength; ) {
                 if (stakerStrategyList[depositor][j] == strategy) {
@@ -514,6 +511,7 @@ contract StrategyManager is
         address withdrawer
     ) internal returns (bytes32) {
         require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
+        require(staker != address(0), "StrategyManager.queueWithdrawal: staker cannot be zero address");
         require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
 
         uint96 nonce = uint96(numWithdrawalsQueued[staker]);
