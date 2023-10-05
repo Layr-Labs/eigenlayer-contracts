@@ -100,4 +100,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
+
+    function calculateWithdrawalRoot(QueuedWithdrawal memory withdrawal) external pure returns (bytes32) {}
 }

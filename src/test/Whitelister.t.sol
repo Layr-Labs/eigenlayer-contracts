@@ -264,7 +264,8 @@ contract WhitelisterTests is EigenLayerTestHelper {
                 tokensArray,
                 dataForTestWithdrawal.delegatorShares,
                 operator,
-                dataForTestWithdrawal.withdrawerAndNonce,
+                dataForTestWithdrawal.withdrawer,
+                dataForTestWithdrawal.nonce,
                 uint32(block.number),
                 1
             );

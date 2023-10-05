@@ -148,7 +148,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -159,7 +160,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -265,7 +267,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -276,7 +279,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );

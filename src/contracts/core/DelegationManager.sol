@@ -204,10 +204,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    mapping(bytes32 => bool) pendingWithdrawals;
-    mapping(address => uint96) numWithdrawalsQueued;
+    mapping(bytes32 => bool) public pendingWithdrawals;
+    mapping(address => uint96) public numWithdrawalsQueued;
 
-    uint public withdrawalDelayBlocks;
+    uint256 public withdrawalDelayBlocks;
 
     uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
 
@@ -332,7 +332,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
-        for (uint i = 0; i < withdrawal.strategies.length; ) {
+        for (uint256 i = 0; i < withdrawal.strategies.length; ) {
             if (receiveAsTokens) {
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
@@ -369,7 +369,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
-        for (uint i = 0; i < strategies.length;) {
+        for (uint256 i = 0; i < strategies.length;) {
             // Similar to `isDelegated` logic
             if (operator != address(0)) {
                 _decreaseOperatorShares({
@@ -413,7 +413,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return withdrawalRoot;
     }
 
-    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint shares, IERC20 token) internal {
+    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 shares, IERC20 token) internal {
         if (strategy == beaconChainETHStrategy) {
             eigenPodManager.withdrawSharesAsTokens({
                 podOwner: staker,
@@ -425,7 +425,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    function _awardAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint shares) internal {
+    function _awardAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint256 shares) internal {
         // When awarding podOwnerShares in EigenPodManager, we need to be sure
         // to only give them back to the original podOwner. Other strategy shares
         // can be awarded to the withdrawer.
@@ -602,7 +602,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         (IStrategy[] memory strategies, uint[] memory shares)
             = getDelegatableShares(staker);
 
-        for (uint i = 0; i < strategies.length;) {
+        for (uint256 i = 0; i < strategies.length;) {
             _increaseOperatorShares({
                 operator: operator,
                 staker: staker,
@@ -614,12 +614,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
+    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         operatorShares[operator][strategy] += shares;
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
 
-    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint shares) internal {
+    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         // This will revert on underflow, so no check needed
         operatorShares[operator][strategy] -= shares;
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
@@ -691,7 +691,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint[] memory) {
         // Get currently active shares and strategies for `staker`
-        uint podShares = eigenPodManager.podOwnerShares(staker);
+        uint256 podShares = eigenPodManager.podOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint[] memory strategyManagerShares) 
             = strategyManager.getDeposits(staker);
 
@@ -717,7 +717,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             shares = new uint[](strategies.length);
             
             // 2. Place StrategyManager strats/shares in return arrays
-            for (uint i = 0; i < strategyManagerStrats.length; ) {
+            for (uint256 i = 0; i < strategyManagerStrats.length; ) {
                 strategies[i] = strategyManagerStrats[i];
                 shares[i] = strategyManagerShares[i];
 

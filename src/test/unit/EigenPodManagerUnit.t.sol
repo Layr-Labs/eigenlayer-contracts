@@ -260,18 +260,19 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     //     return (queuedWithdrawal, withdrawalRoot);
     // }
+// TODO: reimplement similar test
 
-    function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
-        // this also filters out the zero case, which will revert separately
-        cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
-        cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
-        eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
-    }
+    // function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
+    //     // this also filters out the zero case, which will revert separately
+    //     cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
+    //     eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
+    // }
 
-    function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
-        cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
-        eigenPodManager.queueWithdrawal(0, address(this));
-    }
+    // function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
+    //     eigenPodManager.queueWithdrawal(0, address(this));
+    // }
 
 // TODO: reimplement similar test
     // function testCompleteQueuedWithdrawal() external {

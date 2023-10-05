@@ -354,7 +354,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             queuedWithdrawal.staker,
             queuedWithdrawal.nonce,
             queuedWithdrawal.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+            delegation.calculateWithdrawalRoot(queuedWithdrawal)
         );
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
@@ -420,7 +420,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             queuedWithdrawal.staker,
             queuedWithdrawal.nonce,
             queuedWithdrawal.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+            delegation.calculateWithdrawalRoot(queuedWithdrawal)
         );
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
@@ -517,7 +517,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             delegatedTo: strategyManager.delegation().delegatedTo(staker)
         });
         // calculate the withdrawal root
-        withdrawalRoot = strategyManager.calculateWithdrawalRoot(queuedWithdrawal);
+        withdrawalRoot = delegation.calculateWithdrawalRoot(queuedWithdrawal);
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 }

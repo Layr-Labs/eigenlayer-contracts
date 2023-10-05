@@ -104,13 +104,11 @@ contract StrategyManager is
         address initialStrategyWhitelister,
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
-        // uint256 _withdrawalDelayBlocks TODO
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
-        // _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /**

@@ -151,14 +151,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
         uint256 correctMiddlewareTimesIndex = 4;
         cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, correctMiddlewareTimesIndex, false);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, correctMiddlewareTimesIndex, false);
         }
 
         //When called with a stale index the call should also revert.
         {
         uint256 staleMiddlewareTimesIndex = 2;
         cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, staleMiddlewareTimesIndex, false);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, staleMiddlewareTimesIndex, false);
         }
         
         
@@ -258,8 +258,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      /**
      * @notice Modified from existing _createQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
      * @notice Creates a queued withdrawal from `staker`, queues a withdrawal using
-     * `strategyManager.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
-     * @notice After initiating a queued withdrawal, this test checks that `strategyManager.canCompleteQueuedWithdrawal` immediately returns the correct
+     * `delegation.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
+     * @notice After initiating a queued withdrawal, this test checks that `delegation.canCompleteQueuedWithdrawal` immediately returns the correct
      * response depending on whether `staker` is delegated or not.
      * @param staker The address to initiate the queued withdrawal
      * @param amountToDeposit The amount of WETH to deposit
@@ -283,7 +283,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             shares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+            nonce: uint96(delegation.numWithdrawalsQueued(staker)),
             delegatedTo: delegation.delegatedTo(staker),
             startBlock: uint32(block.number)
         });
@@ -292,7 +292,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
         //queue the withdrawal
         cheats.startPrank(staker);
-        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer);
+        withdrawalRoot = delegation.queueWithdrawal(strategyArray, shareAmounts, withdrawer);
         cheats.stopPrank();
         return (withdrawalRoot, queuedWithdrawal);
      }
@@ -528,8 +528,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/,
-                0/*withdrawalDelayBlocks*/
+                0/*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(

@@ -335,4 +335,6 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    function calculateWithdrawalRoot(QueuedWithdrawal memory withdrawal) external pure returns (bytes32);
 }

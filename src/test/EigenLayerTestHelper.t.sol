@@ -496,12 +496,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             shares: shareAmounts,
             staker: depositor,
             withdrawer: withdrawer,
-            nonce: nonce,
+            nonce: uint96(nonce),
             startBlock: withdrawalStartBlock,
             delegatedTo: delegatedTo
         });
         // complete the queued withdrawal
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, true);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, true);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             //uint256 strategyTokenBalance = strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i]));
@@ -528,8 +528,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     {
         cheats.startPrank(depositor);
 
-        bytes32 withdrawalRoot = strategyManager.queueWithdrawal(
-            strategyIndexes,
+        bytes32 withdrawalRoot = delegation.queueWithdrawal(
             strategyArray,
             shareAmounts,
             withdrawer
