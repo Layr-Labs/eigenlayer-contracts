@@ -285,6 +285,11 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.depositIntoStrategy(IStrategy(address(reenterer)), dummyToken, amount);
     }
 
+    function test_RevertsWhen_StrategyNotWhitelisted_DepositIntoStrategy() public {}
+
+
+    /// DepsoitIntoStrategyWithSig
+
     function testDepositIntoStrategyWithSignatureSuccessfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
@@ -2005,6 +2010,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         require(!_isDepositedStrategy(staker, strategy), "Strategy still part of staker's deposited strategies");
         require(sharesAfter == 0, "Strategy still has shares for staker");
     }
+
+    function test_When_StakedInMultipleStrategies_removeStrategyFromStakerStrategyList() public {}
+
+    function test_RevertsWhen_StakerNotStakedInStrategy_removeStrategyFromStakerStrategyList() public {}
 
     function testSetWithdrawalDelayBlocks(uint16 valueToSet) external {
         // filter fuzzed inputs to allowed amounts
