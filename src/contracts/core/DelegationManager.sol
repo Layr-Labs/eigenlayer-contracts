@@ -284,7 +284,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function completeQueuedWithdrawal(
-        QueuedWithdrawal calldata withdrawal,
+        Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
@@ -352,10 +352,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // TODO: emit event here
     }
 
-    function migrateQueuedWithdrawal(Withdrawal memory withdrawalToMigrate) external {
-        
+    function migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate) external {
+        // check for existence and delete the old storage
+        strategyManager.migrateQueuedWithdrawal(strategyManagerWithdrawalToMigrate);
 
-        bytes32 newRoot = calculateWithdrawalRoot(withdrawalToMigrate);
+        address staker = strategyManagerWithdrawalToMigrate.depositor;
+        // Create queue entry and increment withdrawal nonce
+        uint96 nonce = numWithdrawalsQueued[staker];
+        numWithdrawalsQueued[staker]++;
+
+        Withdrawal memory migratedWithdrawal = Withdrawal({
+            staker: staker,
+            delegatedTo: strategyManagerWithdrawalToMigrate.delegatedAddress,
+            withdrawer: strategyManagerWithdrawalToMigrate.withdrawerAndNonce.withdrawer,
+            nonce: nonce,
+            startBlock: strategyManagerWithdrawalToMigrate.withdrawalStartBlock,
+            strategies: strategyManagerWithdrawalToMigrate.strategies,
+            shares: strategyManagerWithdrawalToMigrate.shares
+        });
+
+        // create the new storage
+        bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
+        pendingWithdrawals[newRoot] = true;
 
         // TODO: emit event here
     }
@@ -395,7 +413,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint96 nonce = numWithdrawalsQueued[staker];
         numWithdrawalsQueued[staker]++;
 
-        Withdrawal memory withdrawal = QueuedWithdrawal({
+        Withdrawal memory withdrawal = Withdrawal({
             staker: staker,
             delegatedTo: operator,
             withdrawer: withdrawer,

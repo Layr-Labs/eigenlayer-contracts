@@ -451,4 +451,30 @@ contract StrategyManager is
     function _calculateDomainSeparator() internal view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
+
+// LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
+    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
+    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
+        return (
+            keccak256(
+                abi.encode(
+                    queuedWithdrawal.strategies,
+                    queuedWithdrawal.shares,
+                    queuedWithdrawal.depositor,
+                    queuedWithdrawal.withdrawerAndNonce,
+                    queuedWithdrawal.withdrawalStartBlock,
+                    queuedWithdrawal.delegatedAddress
+                )
+            )
+        );
+    }
+
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory existingQueuedWithdrawal) external onlyDelegationManager {
+        // check for existence
+        bytes32 existingWithdrawalRoot = calculateWithdrawalRoot(existingQueuedWithdrawal);
+        require(withdrawalRootPending[existingWithdrawalRoot], "StrategyManager.migrateQueuedWithdrawal: withdrawal does not exist");
+
+        // delete the withdrawal
+        withdrawalRootPending[existingWithdrawalRoot] = false;
+    }
 }

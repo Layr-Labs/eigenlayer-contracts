@@ -13,7 +13,6 @@ import "./IEigenPodManager.sol";
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager {
-
     /**
      * @notice Emitted when a new deposit occurs on behalf of `depositor`.
      * @param depositor Is the staker who is depositing funds into EigenLayer.
@@ -117,4 +116,28 @@ interface IStrategyManager {
 
     /// @notice Returns the EigenPodManager contract of EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);
+
+// LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
+    // packed struct for queued withdrawals; helps deal with stack-too-deep errors
+    struct DeprecatedStruct_WithdrawerAndNonce {
+        address withdrawer;
+        uint96 nonce;
+    }
+
+    /**
+     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
+     * In functions that operate on existing queued withdrawals -- e.g. `startQueuedWithdrawalWaitingPeriod` or `completeQueuedWithdrawal`,
+     * the data is resubmitted and the hash of the submitted data is computed by `calculateWithdrawalRoot` and checked against the
+     * stored hash in order to confirm the integrity of the submitted data.
+     */
+    struct DeprecatedStruct_QueuedWithdrawal {
+        IStrategy[] strategies;
+        uint256[] shares;
+        address depositor;
+        DeprecatedStruct_WithdrawerAndNonce withdrawerAndNonce;
+        uint32 withdrawalStartBlock;
+        address delegatedAddress;
+    }
+
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory existingQueuedWithdrawal) external;
 }
