@@ -30,7 +30,7 @@ contract BLSSignatureCheckerUnitTests is BLSMockAVSDeployer {
         uint256 gasBefore = gasleft();
         (
             BLSSignatureChecker.QuorumStakeTotals memory quorumStakeTotals,
-            bytes32 signatoryRecordHash
+            /* bytes32 signatoryRecordHash */
         ) = blsSignatureChecker.checkSignatures(
             msgHash, 
             quorumNumbers,

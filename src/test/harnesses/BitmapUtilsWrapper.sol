@@ -30,4 +30,12 @@ contract BitmapUtilsWrapper is Test {
     function bytesArrayToBitmap_Yul(bytes calldata bytesArray) external pure returns (uint256) {
         return BitmapUtils.bytesArrayToBitmap_Yul(bytesArray);
     }
+
+    function countNumOnes(uint256 n) external pure returns (uint16) {
+        return BitmapUtils.countNumOnes(n);
+    }
+
+    function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) external pure returns (bool) {
+        return BitmapUtils.numberIsInBitmap(bitmap, numberToCheckForInclusion);
+    }
 }

@@ -60,14 +60,14 @@ contract Operators is Test {
         return pubkey;
     }
 
-    function readUint(string memory json, uint256 index, string memory key) public returns (uint) {
+    function readUint(string memory json, uint256 index, string memory key) public returns (uint256) {
         return stringToUint(stdJson.readString(json, string.concat(operatorPrefix(index), key)));
     }
 
-    function stringToUint(string memory s) public pure returns (uint) {
+    function stringToUint(string memory s) public pure returns (uint256) {
         bytes memory b = bytes(s);
-        uint result = 0;
-        for (uint i = 0; i < b.length; i++) {
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
             if (uint256(uint8(b[i])) >= 48 && uint256(uint8(b[i])) <= 57) {
                 result = result * 10 + (uint256(uint8(b[i])) - 48); 
             }

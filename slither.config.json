@@ -1,5 +1,5 @@
 {
-    "detectors_to_exclude": "assembly,solc-version,naming-convention,incorrect-equality,uninitialized-local,timestamp,low-level-calls,unimplemented-functions,too-many-digits,similar-names,calls-loop,arbitrary-send-eth,reentrancy-no-eth,reentrancy-benign,reentrancy-events,unused-state,incorrect-shift-in-assembly",
+    "detectors_to_exclude": "assembly,solc-version,naming-convention,incorrect-equality,uninitialized-local,timestamp,low-level-calls,unimplemented-functions,too-many-digits,similar-names,calls-loop,arbitrary-send-eth,reentrancy-no-eth,reentrancy-benign,reentrancy-events,unused-state,incorrect-shift-in-assembly,dead-code",
     "filter_paths": "lib/|test/|mocks/|BytesLib|script/",
     "solc_remaps": [
         "forge-std/=lib/forge-std/src/",

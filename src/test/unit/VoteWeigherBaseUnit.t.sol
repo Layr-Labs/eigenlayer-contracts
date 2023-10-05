@@ -13,7 +13,7 @@ import "../../contracts/middleware/VoteWeigherBase.sol";
 
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/OwnableMock.sol";
-import "../mocks/DelegationMock.sol";
+import "../mocks/DelegationManagerMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -27,7 +27,7 @@ contract VoteWeigherBaseUnitTests is Test {
     address serviceManagerOwner;
     IServiceManager public serviceManager;
 
-    DelegationMock delegationMock;
+    DelegationManagerMock delegationMock;
 
     VoteWeigherBase public voteWeigher;
 
@@ -69,7 +69,7 @@ contract VoteWeigherBaseUnitTests is Test {
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         StrategyManagerMock strategyManagerMock = new StrategyManagerMock();
-        delegationMock = new DelegationMock();
+        delegationMock = new DelegationManagerMock();
         strategyManagerMock.setAddresses(
             delegationMock,
             IEigenPodManager(address(uint160(uint256(keccak256(abi.encodePacked("eigenPodManager")))))),

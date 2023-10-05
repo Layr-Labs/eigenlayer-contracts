@@ -46,7 +46,7 @@ interface IBLSRegistryCoordinatorWithIndices is ISignatureUtils, IRegistryCoordi
 
     /// @notice Returns the operator set params for the given `quorumNumber`
     function getOperatorSetParams(uint8 quorumNumber) external view returns (OperatorSetParam memory);
-    /// @notice the stake registry for this corrdinator is the contract itself
+    /// @notice the Stake registry contract that will keep track of operators' stakes
     function stakeRegistry() external view returns (IStakeRegistry);
     /// @notice the BLS Pubkey Registry contract that will keep track of operators' BLS public keys
     function blsPubkeyRegistry() external view returns (IBLSPubkeyRegistry);

@@ -60,7 +60,7 @@ interface IBLSPubkeyRegistry is IRegistry {
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      *         6) `pubkey` is the same as the parameter used when registering
      */ 
-    function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external returns(bytes32);
+    function deregisterOperator(address operator, bytes calldata quorumNumbers, BN254.G1Point memory pubkey) external;
     
     /// @notice Returns the current APK for the provided `quorumNumber `
     function getApkForQuorum(uint8 quorumNumber) external view returns (BN254.G1Point memory);

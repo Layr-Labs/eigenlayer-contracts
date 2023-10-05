@@ -36,7 +36,7 @@ library BitmapUtils {
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
 
-        // perform the 0-th loop iteration with the ordering check *omitted* (since it is unnecessary / will always pass)
+        // perform the 0-th loop iteration with the duplicate check *omitted* (since it is unnecessary / will always pass)
         // construct a single-bit mask from the numerical value of the 0th byte of the array, and immediately add it to the bitmap
         bitmap = uint256(1 << uint8(bytesArray[0]));
 
@@ -267,12 +267,17 @@ library BitmapUtils {
     }
 
     /// @return count number of ones in binary representation of `n`
-    function countNumOnes(uint256 n) public pure returns (uint16) {
+    function countNumOnes(uint256 n) internal pure returns (uint16) {
         uint16 count = 0;
         while (n > 0) {
             n &= (n - 1);
             count++;
         }
         return count;
+    }
+
+    // @notice returns 'true' if `numberToCheckForInclusion` is in `bitmap` and 'false' otherwise.
+    function numberIsInBitmap(uint256 bitmap, uint8 numberToCheckForInclusion) internal pure returns (bool) {
+        return (((bitmap >> numberToCheckForInclusion) & 1) == 1);
     }
 }
