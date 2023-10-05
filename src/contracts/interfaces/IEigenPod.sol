@@ -96,7 +96,7 @@ interface IEigenPod {
 
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_VALIDATOR_BALANCE_GWEI() external view returns (uint64);
+    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);

@@ -35,7 +35,7 @@
      "eigenPod":
           {
                "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-               "MAX_VALIDATOR_BALANCE_GWEI": "31000000000",
+               "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "31000000000",
                "RESTAKED_BALANCE_OFFSET_GWEI": "750000000"
 
           },
