@@ -234,22 +234,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 
-    // function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
-
-    // function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
-
-    // function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
-
     function beaconChainETHStrategy() external view returns (IStrategy){}
 
     function podOwnerHasActiveShares(address staker) external view returns (bool) {}
-
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
-    // function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
-
-    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    // function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
-
-    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
-    // function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }

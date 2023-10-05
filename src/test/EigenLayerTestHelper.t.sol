@@ -279,7 +279,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory strategyIndexes,
         address withdrawer
     )
-        internal returns(bytes32 withdrawalRoot, IStrategyManager.QueuedWithdrawal memory queuedWithdrawal)
+        internal returns(bytes32 withdrawalRoot, IDelegationManager.QueuedWithdrawal memory queuedWithdrawal)
     {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
@@ -297,18 +297,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             );
         }
 
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-            withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker))
-        });
-
-        queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: staker,
-            withdrawerAndNonce: withdrawerAndNonce,
-            delegatedAddress: delegation.delegatedTo(staker),
-            withdrawalStartBlock: uint32(block.number)
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+            delegatedTo: delegation.delegatedTo(staker),
+            startBlock: uint32(block.number)
         });
 
         {
@@ -410,7 +406,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param tokensArray is the array of tokens to withdraw from said strategies
      * @param shareAmounts is the array of shares to be withdrawn from said strategies
      * @param delegatedTo is the address the staker has delegated their shares to
-     * @param withdrawerAndNonce is a struct containing the withdrawer and the nonce of the withdrawal
      * @param withdrawalStartBlock the block number of the original queued withdrawal
      * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
      */
@@ -421,16 +416,17 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IERC20[] memory tokensArray,
         uint256[] memory shareAmounts,
         address delegatedTo,
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce,
+        address withdrawer,
+        uint256 nonce,
         uint32 withdrawalStartBlock,
         uint256 middlewareTimesIndex
     )
         internal
     {
-        cheats.startPrank(withdrawerAndNonce.withdrawer);
+        cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
-            sharesBefore.push(strategyManager.stakerStrategyShares(withdrawerAndNonce.withdrawer, strategyArray[i]));
+            sharesBefore.push(strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]));
 
         }
         // emit log_named_uint("strategies", strategyArray.length);
@@ -441,21 +437,22 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         // emit log_named_address("delegatedAddress", delegatedTo);
         // emit log("************************************************************************************************");
 
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: depositor,
-            withdrawerAndNonce: withdrawerAndNonce,
-            withdrawalStartBlock: withdrawalStartBlock,
-            delegatedAddress: delegatedTo
+            staker: depositor,
+            withdrawer: withdrawer,
+            nonce: uint96(nonce),
+            startBlock: withdrawalStartBlock,
+            delegatedTo: delegatedTo
         });
 
         // complete the queued withdrawal
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, false);
+        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, false);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             require(
-                strategyManager.stakerStrategyShares(withdrawerAndNonce.withdrawer, strategyArray[i])
+                strategyManager.stakerStrategyShares(withdrawer, strategyArray[i])
                     == sharesBefore[i] + shareAmounts[i],
                 "_testCompleteQueuedWithdrawalShares: withdrawer shares not incremented"
             );
@@ -470,7 +467,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param tokensArray is the array of tokens to withdraw from said strategies
      * @param shareAmounts is the array of shares to be withdrawn from said strategies
      * @param delegatedTo is the address the staker has delegated their shares to
-     * @param withdrawerAndNonce is a struct containing the withdrawer and the nonce of the withdrawal
      * @param withdrawalStartBlock the block number of the original queued withdrawal
      * @param middlewareTimesIndex index in the middlewareTimes array used to queue this withdrawal
      */
@@ -480,27 +476,29 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IERC20[] memory tokensArray,
         uint256[] memory shareAmounts,
         address delegatedTo,
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce,
+        address withdrawer,
+        uint256 nonce,
         uint32 withdrawalStartBlock,
         uint256 middlewareTimesIndex
     )
         internal
     {
-        cheats.startPrank(withdrawerAndNonce.withdrawer);
+        cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
-            balanceBefore.push(strategyArray[i].underlyingToken().balanceOf(withdrawerAndNonce.withdrawer));
+            balanceBefore.push(strategyArray[i].underlyingToken().balanceOf(withdrawer));
             priorTotalShares.push(strategyArray[i].totalShares());
             strategyTokenBalance.push(strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i])));
         }
     
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: depositor,
-            withdrawerAndNonce: withdrawerAndNonce,
-            withdrawalStartBlock: withdrawalStartBlock,
-            delegatedAddress: delegatedTo
+            staker: depositor,
+            withdrawer: withdrawer,
+            nonce: nonce,
+            startBlock: withdrawalStartBlock,
+            delegatedTo: delegatedTo
         });
         // complete the queued withdrawal
         strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, middlewareTimesIndex, true);
@@ -510,7 +508,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             uint256 tokenBalanceDelta = strategyTokenBalance[i] * shareAmounts[i] / priorTotalShares[i];
 
             require(
-                strategyArray[i].underlyingToken().balanceOf(withdrawerAndNonce.withdrawer)
+                strategyArray[i].underlyingToken().balanceOf(withdrawer)
                     == balanceBefore[i] + tokenBalanceDelta,
                 "_testCompleteQueuedWithdrawalTokens: withdrawer balance not incremented"
             );

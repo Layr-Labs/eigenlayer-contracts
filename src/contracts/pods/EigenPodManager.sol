@@ -240,18 +240,18 @@ contract EigenPodManager is
     function _addShares(address podOwner, uint256 shareAmount) internal returns (uint256) {
         require(podOwner != address(0), "EigenPodManager._addShares: podOwner cannot be zero address");
 
-        podOwnerShareDeficit = podOwnerShareDeficit[podOwner];
+        uint256 currentShareDeficit = podOwnerShareDeficit[podOwner];
 
         // skip dealing with deficit if there isn't any
-        if (podOwnerShareDeficit == 0) {
+        if (currentShareDeficit == 0) {
             podOwnerShares[podOwner] += shareAmount;
             return shareAmount;            
         }
 
         // get rid of the whole deficit if possible
-        if (shareAmount >= podOwnerShareDeficit) {
+        if (shareAmount >= currentShareDeficit) {
             podOwnerShareDeficit[podOwner] = 0;
-            shareAmount -= podOwnerShareDeficit;
+            shareAmount -= currentShareDeficit;
             podOwnerShares[podOwner] += shareAmount;
             return shareAmount;
         // otherwise get rid of as much deficit as possible
