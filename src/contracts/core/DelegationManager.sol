@@ -229,7 +229,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Gather strategies and shares to remove from staker/operator during undelegation
         // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint[] memory shares)
+        (IStrategy[] memory strategies, uint256[] memory shares)
             = getDelegatableShares(staker);
 
         // emit an event if this action was not initiated by the staker themselves
@@ -260,7 +260,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
      function queueWithdrawal(
         IStrategy[] calldata strategies,
-        uint[] calldata shares,
+        uint256[] calldata shares,
         address withdrawer
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
         require(strategies.length == shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
@@ -398,7 +398,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         address operator,
         address withdrawer,
         IStrategy[] memory strategies, 
-        uint[] memory shares
+        uint256[] memory shares
     ) internal returns (bytes32) {
 
         // Remove shares from staker and operator
@@ -631,7 +631,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
 
-        (IStrategy[] memory strategies, uint[] memory shares)
+        (IStrategy[] memory strategies, uint256[] memory shares)
             = getDelegatableShares(staker);
 
         for (uint256 i = 0; i < strategies.length;) {
@@ -721,10 +721,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Returns the number of actively-delegatable shares a staker has across all strategies
      */
-    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint[] memory) {
+    function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get currently active shares and strategies for `staker`
         uint256 podShares = eigenPodManager.podOwnerShares(staker);
-        (IStrategy[] memory strategyManagerStrats, uint[] memory strategyManagerShares) 
+        (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
             = strategyManager.getDeposits(staker);
 
         // Has shares in StrategyManager, but not in EigenPodManager
@@ -733,12 +733,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
 
         IStrategy[] memory strategies;
-        uint[] memory shares;
+        uint256[] memory shares;
 
         if (strategyManagerStrats.length == 0) {
             // Has shares in EigenPodManager, but not in StrategyManager
             strategies = new IStrategy[](1);
-            shares = new uint[](1);
+            shares = new uint256[](1);
             strategies[0] = beaconChainETHStrategy;
             shares[0] = podShares;
         } else {
@@ -746,7 +746,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             
             // 1. Allocate return arrays
             strategies = new IStrategy[](strategyManagerStrats.length + 1);
-            shares = new uint[](strategies.length);
+            shares = new uint256[](strategies.length);
             
             // 2. Place StrategyManager strats/shares in return arrays
             for (uint256 i = 0; i < strategyManagerStrats.length; ) {
