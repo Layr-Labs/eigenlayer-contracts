@@ -232,23 +232,27 @@ interface IDelegationManager {
      * @param shares The number of shares to increase.
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-     * @dev Callable only by the StrategyManager.
+     * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external;
 
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
-     * @param staker The address to decrease the delegated shares for their operator.
-     * @param strategies An array of strategies to crease the delegated shares.
-     * @param shares An array of the number of shares to decrease for a operator and strategy.
+     * @param staker The address to increase the delegated shares for their operator.
+     * @param strategy The strategy in which to decrease the delegated shares.
+     * @param shares The number of shares to decrease.
      *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function decreaseDelegatedShares(
         address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares
+        IStrategy strategy,
+        uint256 shares
     ) external;
 
     /**

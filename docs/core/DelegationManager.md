@@ -275,7 +275,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 #### `decreaseDelegatedShares`
 
 ```solidity
-function decreaseDelegatedShares(address staker, IStrategy[] calldata strategies, uint256[] calldata shares)
+function decreaseDelegatedShares(address staker, IStrategy strategy, uint256 shares)
     external
     onlyStrategyManagerOrEigenPodManager
 ```

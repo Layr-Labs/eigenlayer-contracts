@@ -286,24 +286,18 @@ contract EigenPodManager is
     // @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
     function _recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) internal {
         if (sharesDelta < 0) {
-            // if change in shares is negative, remove the shares (and don't bother trying to undelegate the `podOwner`)
-            uint256 toRemove = uint256(-sharesDelta);
-            uint256 amountRemoved = _removeShares(podOwner, toRemove);
-
-            IStrategy[] memory strategies = new IStrategy[](1);
-            uint[] memory shares = new uint[](1);
-            strategies[0] = beaconChainETHStrategy;
-            shares[0] = amountRemoved;
-            
+            // if change in shares is negative, remove the shares (and add to shares deficit, if necessary)
+            uint256 amountRemoved = _removeShares(podOwner, uint256(-sharesDelta));
+            // inform DelegationManager of the change in shares
             delegationManager.decreaseDelegatedShares({
                 staker: podOwner,
-                strategies: strategies,
-                shares: shares
+                strategy: beaconChainETHStrategy,
+                shares: amountRemoved
             });
         } else {
-            // if change in shares is positive, add the shares
-            uint256 toAdd = uint256(sharesDelta);
-            uint256 sharesAdded = _addShares(podOwner, toAdd);
+            // if change in shares is positive, add the shares (and reduce the shares deficit, if possible)
+            uint256 sharesAdded = _addShares(podOwner, uint256(sharesDelta));
+            // inform DelegationManager of the change in shares
             delegationManager.increaseDelegatedShares({
                 staker: podOwner,
                 strategy: beaconChainETHStrategy,

@@ -3,7 +3,7 @@ methods {
     //// External Calls
 	// external calls to DelegationManager 
     function undelegate(address) external;
-    function decreaseDelegatedShares(address,address[],uint256[]) external;
+    function decreaseDelegatedShares(address,address,uint256) external;
 	function increaseDelegatedShares(address,address,uint256) external;
 
 	// external calls to Slasher
@@ -37,9 +37,7 @@ methods {
     function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
 	
     //// Harnessed Functions
-    // Harnessed calls
-    function decreaseDelegatedShares(address,address,address,uint256,uint256) external;
-    // Harmessed getters
+    // Harnessed getters
     function get_operatorShares(address,address) external returns (uint256) envfree;
 
     //envfree functions
