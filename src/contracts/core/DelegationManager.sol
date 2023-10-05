@@ -349,7 +349,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             unchecked { ++i; }
         }
 
-        // TODO: emit event here
+        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     function migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate) external {
@@ -375,7 +375,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
         pendingWithdrawals[newRoot] = true;
 
-        // TODO: emit event here
+        emit WithdrawalQueued(newRoot, migratedWithdrawal);
     }
 
     function _removeSharesAndQueueWithdrawal(
@@ -428,7 +428,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
 
-        // TODO: emit event here
+        emit WithdrawalQueued(withdrawalRoot, withdrawal);
         return withdrawalRoot;
     }
 

@@ -113,6 +113,16 @@ interface IDelegationManager {
     event StakerForceUndelegated(address indexed staker, address indexed operator);
 
     /**
+     * @notice Emitted when a new withdrawal is queued.
+     * @param withdrawalRoot Is the hash of the `withdrawal`.
+     * @param withdrawal Is the withdrawal itself.
+     */
+    event WithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
+
+    /// @notice Emitted when a queued withdrawal is completed
+    event WithdrawalCompleted(bytes32 withdrawalRoot);
+
+    /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
