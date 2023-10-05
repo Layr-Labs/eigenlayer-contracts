@@ -28,14 +28,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
-    /**
-     * @dev Chain ID at the time of contract deployment
-     */
+    // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    /**
-     * @dev Maximum Value for stakerOptOutWindowApproximately that is approximately equivalent to 6 months in blocks.
-     */
+    // @dev Maximum Value for `stakerOptOutWindowBlocks`. Approximately equivalent to 6 months in blocks.
     uint256 public constant MAX_STAKER_OPT_OUT_WINDOW_BLOCKS = (180 days) / 12;
 
     /// @notice Canonical, virtual beacon chain ETH strategy
@@ -269,7 +265,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
         require(strategies.length == shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
         require(withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
-        require(!isOperator(msg.sender), "DelegationManager.queueWithdrawal: operators cannot enter queue");
 
         address operator = delegatedTo[msg.sender];
 
