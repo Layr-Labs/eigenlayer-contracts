@@ -393,102 +393,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit WithdrawalMigrated(oldWithdrawalRoot, newRoot);
     }
 
-    function _removeSharesAndQueueWithdrawal(
-        address staker, 
-        address operator,
-        address withdrawer,
-        IStrategy[] memory strategies, 
-        uint256[] memory shares
-    ) internal returns (bytes32) {
-
-        // Remove shares from staker and operator
-        // Each of these operations fail if we attempt to remove more shares than exist
-        for (uint256 i = 0; i < strategies.length;) {
-            // Similar to `isDelegated` logic
-            if (operator != address(0)) {
-                _decreaseOperatorShares({
-                    operator: operator,
-                    staker: staker,
-                    strategy: strategies[i],
-                    shares: shares[i]
-                });
-            }
-
-            // Remove active shares from EigenPodManager/StrategyManager
-            if (strategies[i] == beaconChainETHStrategy) {
-                eigenPodManager.removeShares(staker, shares[i]);
-            } else {
-                strategyManager.removeShares(staker, strategies[i], shares[i]);
-            }
-
-            unchecked { ++i; }
-        }
-
-        // Create queue entry and increment withdrawal nonce
-        uint96 nonce = numWithdrawalsQueued[staker];
-        numWithdrawalsQueued[staker]++;
-
-        Withdrawal memory withdrawal = Withdrawal({
-            staker: staker,
-            delegatedTo: operator,
-            withdrawer: withdrawer,
-            nonce: nonce,
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            shares: shares
-        });
-
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
-
-        // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
-
-        emit WithdrawalQueued(withdrawalRoot, withdrawal);
-        return withdrawalRoot;
-    }
-
-    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 shares, IERC20 token) internal {
-        if (strategy == beaconChainETHStrategy) {
-            eigenPodManager.withdrawSharesAsTokens({
-                podOwner: staker,
-                destination: withdrawer,
-                shares: shares
-            });
-        } else {
-            strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
-        }
-    }
-
-    function _addAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint256 shares) internal {
-        // When awarding podOwnerShares in EigenPodManager, we need to be sure
-        // to only give them back to the original podOwner. Other strategy shares
-        // can be awarded to the withdrawer.
-        if (strategy == beaconChainETHStrategy) {
-            // update shares amount depending upon the returned value
-            // the return value will be lower than the input value in the case where the staker has an existing share deficit
-            shares = eigenPodManager.addShares({
-                podOwner: staker,
-                shares: shares
-            });
-            // since these shares are given back to the pod owner, they must be delegated to the *pod owner*'s operator, which could be different from the withdrawer's
-            operator = delegatedTo[staker];
-            // we also want to emit the event within `_increaseOperatorShares` with the correct fields. Since the staker receives the shares, they should be in the event.
-            withdrawer = staker;
-        } else {
-            strategyManager.addShares(withdrawer, strategy, shares);
-        }
-        // Similar to `isDelegated` logic
-        if (operator != address(0)) {
-            _increaseOperatorShares({
-                operator: operator,
-                // the 'staker' here is the address receiving new shares
-                staker: withdrawer,
-                strategy: strategy,
-                shares: shares
-            });
-        }
-    }
-
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated shares for their operator.
@@ -646,15 +550,125 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         operatorShares[operator][strategy] += shares;
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
 
+    // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
     function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         // This will revert on underflow, so no check needed
         operatorShares[operator][strategy] -= shares;
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
+    }
+
+    /**
+     * @notice Removes `shares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+     * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
+     */
+    function _removeSharesAndQueueWithdrawal(
+        address staker, 
+        address operator,
+        address withdrawer,
+        IStrategy[] memory strategies, 
+        uint256[] memory shares
+    ) internal returns (bytes32) {
+
+        // Remove shares from staker and operator
+        // Each of these operations fail if we attempt to remove more shares than exist
+        for (uint256 i = 0; i < strategies.length;) {
+            // Similar to `isDelegated` logic
+            if (operator != address(0)) {
+                _decreaseOperatorShares({
+                    operator: operator,
+                    staker: staker,
+                    strategy: strategies[i],
+                    shares: shares[i]
+                });
+            }
+
+            // Remove active shares from EigenPodManager/StrategyManager
+            if (strategies[i] == beaconChainETHStrategy) {
+                eigenPodManager.removeShares(staker, shares[i]);
+            } else {
+                strategyManager.removeShares(staker, strategies[i], shares[i]);
+            }
+
+            unchecked { ++i; }
+        }
+
+        // Create queue entry and increment withdrawal nonce
+        uint96 nonce = numWithdrawalsQueued[staker];
+        numWithdrawalsQueued[staker]++;
+
+        Withdrawal memory withdrawal = Withdrawal({
+            staker: staker,
+            delegatedTo: operator,
+            withdrawer: withdrawer,
+            nonce: nonce,
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            shares: shares
+        });
+
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+
+        // Place withdrawal in queue
+        pendingWithdrawals[withdrawalRoot] = true;
+
+        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        return withdrawalRoot;
+    }
+
+    /**
+     * @notice Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares, then a call is ultimately forwarded to the
+     * `staker`s EigenPod; otherwise a call is ultimately forwarded to the `strategy` with info on the `token`.
+     */
+    function _withdrawSharesAsTokens(address staker, address withdrawer, IStrategy strategy, uint256 shares, IERC20 token) internal {
+        if (strategy == beaconChainETHStrategy) {
+            eigenPodManager.withdrawSharesAsTokens({
+                podOwner: staker,
+                destination: withdrawer,
+                shares: shares
+            });
+        } else {
+            strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
+        }
+    }
+
+    /**
+     * @notice If the shares are virtual beaconChainETH shares, then adds shares to the `staker` and delegates the new shares to the `staker`s operator.
+     * Otherwise adds `shares` in `strategy` to `withdrawer` and delegates them to `operator`
+     */
+    function _addAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint256 shares) internal {
+        // When awarding podOwnerShares in EigenPodManager, we need to be sure
+        // to only give them back to the original podOwner. Other strategy shares
+        // can be awarded to the withdrawer.
+        if (strategy == beaconChainETHStrategy) {
+            // update shares amount depending upon the returned value
+            // the return value will be lower than the input value in the case where the staker has an existing share deficit
+            shares = eigenPodManager.addShares({
+                podOwner: staker,
+                shares: shares
+            });
+            // since these shares are given back to the pod owner, they must be delegated to the *pod owner*'s operator, which could be different from the withdrawer's
+            operator = delegatedTo[staker];
+            // we also want to emit the event within `_increaseOperatorShares` with the correct fields. Since the staker receives the shares, they should be in the event.
+            withdrawer = staker;
+        } else {
+            strategyManager.addShares(withdrawer, strategy, shares);
+        }
+        // Similar to `isDelegated` logic
+        if (operator != address(0)) {
+            _increaseOperatorShares({
+                operator: operator,
+                // the 'staker' here is the address receiving new shares
+                staker: withdrawer,
+                strategy: strategy,
+                shares: shares
+            });
+        }
     }
 
     /*******************************************************************************
