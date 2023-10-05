@@ -71,8 +71,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
+    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
 
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     mapping(address => uint96) public numWithdrawalsQueued;
 
     uint256 public withdrawalDelayBlocks;
