@@ -9,18 +9,30 @@ The primary function of the `StrategyManager` is to handle accounting for indivi
 
 As of M2, three LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`: cbETH, rETH, and stETH. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see below).
 
-*Important state variables*:
+#### High-level Concepts
+
+This document organizes methods according to the following themes (click each to be taken to the relevant section):
+* [Depositing Into Strategies](#depositing-into-strategies)
+* [Withdrawal Processing](#withdrawal-processing)
+* [Strategies](#strategies)
+* [System Configuration](#system-configuration)
+
+#### Important state variables
+
 * `mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares`: Tracks the current balance a Staker holds in a given strategy. Updated on deposit/withdraw.
 * `mapping(address => IStrategy[]) public stakerStrategyList`: Maintains a list of the strategies a Staker holds a nonzero number of shares in.
     * Updated as needed when Stakers deposit and withdraw: if a Staker has a zero balance in a Strategy, it is removed from the list. Likewise, if a Staker deposits into a Strategy and did not previously have a balance, it is added to the list.
 * `mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit`: The `strategyWhitelister` is (as of M2) a permissioned role that can be changed by the contract owner. The `strategyWhitelister` has currently whitelisted 3 `StrategyBaseTVLLimits` contracts in this mapping, one for each supported LST.
 
-*Helpful definitions*:
+#### Helpful definitions
+
 * `stakerStrategyListLength(address staker) -> (uint)`:
     * Gives `stakerStrategyList[staker].length`
     * Used (especially by the `DelegationManager`) to determine whether a Staker has shares in any strategy in the `StrategyManager` (will be 0 if not)
 
-### Stakers
+---
+
+### Depositing Into Strategies
 
 The following methods are called by Stakers as they (i) deposit LSTs into strategies to receive shares:
 
@@ -92,7 +104,7 @@ function depositIntoStrategyWithSignature(
 *As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
-### DelegationManager
+### Withdrawal Processing
 
 These methods are callable ONLY by the `DelegationManager`, and are used when processing undelegations and withdrawals:
 * [`StrategyManager.removeShares`](#removeshares)
@@ -182,55 +194,7 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 * Caller MUST be the `DelegationManager`
 * See [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
-### Operator
-
-#### `setStrategyWhitelister`
-
-```solidity
-function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner
-```
-
-Allows the `owner` to update the Strategy Whitelister address.
-
-*Effects*:
-* Updates `StrategyManager.strategyWhitelister`
-
-*Requirements*:
-* Caller MUST be the `owner`
-
-### Strategy Whitelister
-
-#### `addStrategiesToDepositWhitelist`
-
-```solidity
-function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister
-```
-
-Allows the Strategy Whitelister address to add any number of strategies to the `StrategyManager` whitelist. Strategies on the whitelist are eligible for deposit via `depositIntoStrategy`.
-
-*Effects*:
-* Adds entries to `StrategyManager.strategyIsWhitelistedForDeposit`
-
-*Requirements*:
-* Caller MUST be the `strategyWhitelister`
-
-#### `removeStrategiesFromDepositWhitelist`
-
-```solidity
-function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister
-```
-
-Allows the Strategy Whitelister address to remove any number of strategies from the `StrategyManager` whitelist. The removed strategies will no longer be eligible for deposit via `depositIntoStrategy`. However, withdrawals for previously-whitelisted strategies may still be initiated and completed, as long as the Staker has shares to withdraw.
-
-*Effects*:
-* Removes entries from `StrategyManager.strategyIsWhitelistedForDeposit`
-
-*Requirements*:
-* Caller MUST be the `strategyWhitelister`
-
----
-
-### StrategyBaseTVLLimits
+### Strategies
 
 `StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file.
 
@@ -289,3 +253,47 @@ This method converts the withdrawal shares back into tokens using the strategy's
 * The passed-in `token` MUST match the strategy's `underlyingToken`
 * The `amountShares` being withdrawn MUST NOT exceed the `totalShares` in the strategy
 * The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
+
+### System Configuration
+
+#### `setStrategyWhitelister`
+
+```solidity
+function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner
+```
+
+Allows the `owner` to update the Strategy Whitelister address.
+
+*Effects*:
+* Updates `StrategyManager.strategyWhitelister`
+
+*Requirements*:
+* Caller MUST be the `owner`
+
+#### `addStrategiesToDepositWhitelist`
+
+```solidity
+function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external onlyStrategyWhitelister
+```
+
+Allows the Strategy Whitelister address to add any number of strategies to the `StrategyManager` whitelist. Strategies on the whitelist are eligible for deposit via `depositIntoStrategy`.
+
+*Effects*:
+* Adds entries to `StrategyManager.strategyIsWhitelistedForDeposit`
+
+*Requirements*:
+* Caller MUST be the `strategyWhitelister`
+
+#### `removeStrategiesFromDepositWhitelist`
+
+```solidity
+function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist) external onlyStrategyWhitelister
+```
+
+Allows the Strategy Whitelister address to remove any number of strategies from the `StrategyManager` whitelist. The removed strategies will no longer be eligible for deposit via `depositIntoStrategy`. However, withdrawals for previously-whitelisted strategies may still be initiated and completed, as long as the Staker has shares to withdraw.
+
+*Effects*:
+* Removes entries from `StrategyManager.strategyIsWhitelistedForDeposit`
+
+*Requirements*:
+* Caller MUST be the `strategyWhitelister`
