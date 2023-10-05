@@ -109,12 +109,6 @@ interface IEigenPodManager is IPausable {
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
-    /**
-     * @notice Returns 'false' if `staker` has removed all of their beacon chain ETH "shares" from delegation, either by queuing a
-     * withdrawal for them OR by going into "undelegation limbo", and 'true' otherwise
-     */
-    function podOwnerHasActiveShares(address staker) external view returns (bool);
-
     /// @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue
     function removeShares(address podOwner, uint256 shares) external;
 

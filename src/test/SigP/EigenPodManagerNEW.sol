@@ -235,6 +235,4 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
-
-    function podOwnerHasActiveShares(address staker) external view returns (bool) {}
 }

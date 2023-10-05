@@ -202,7 +202,7 @@ contract StrategyManager is
     function withdrawSharesAsTokens(
         address destination,
         IStrategy strategy,
-        uint shares,
+        uint256 shares,
         IERC20 token
     ) external onlyDelegationManager {
         strategy.withdraw(destination, token, shares);

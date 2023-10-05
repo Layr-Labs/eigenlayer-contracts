@@ -13,19 +13,21 @@ methods {
 	// external calls to StrategyManager
     function _.getDeposits(address) external => DISPATCHER(true);
     function _.slasher() external => DISPATCHER(true);
-	function _.deposit(address,uint256) external => DISPATCHER(true);
-	function _.withdraw(address,address,uint256) external => DISPATCHER(true);
-	function _.stakerStrategyListLength(address) external => DISPATCHER(true);
-    function _.forceTotalWithdrawal(address staker) external => DISPATCHER(true);
+    function _.addShares(address,address,uint256) external => DISPATCHER(true);
+    function _.removeShares(address,address,uint256) external => DISPATCHER(true);
+    function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
-	function _.podOwnerHasActiveShares(address) external => DISPATCHER(true);
-    function _.forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external => DISPATCHER(true);
+    function _.addShares(address,uint256) external => DISPATCHER(true);
+    function _.removeShares(address,uint256) external => DISPATCHER(true);
+    function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
     
+    // external calls to DelayedWithdrawalRouter (from EigenPod)
+    function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
+
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);

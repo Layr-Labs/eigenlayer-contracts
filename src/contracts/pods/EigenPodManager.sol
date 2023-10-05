@@ -342,10 +342,4 @@ contract EigenPodManager is
         return stateRoot;
     }
 
-    /**
-     * @notice Returns 'true' if the pod owner has shares
-     */
-    function podOwnerHasActiveShares(address staker) public view returns (bool) {
-        return podOwnerShares[staker] != 0;
-    }
 }
