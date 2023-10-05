@@ -271,7 +271,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         IStrategy[] memory strategyArray,
         IERC20[] memory /*tokensArray*/,
         uint256[] memory shareAmounts,
-        uint256[] memory strategyIndexes,
+        uint256[] memory /*strategyIndexes*/,
         address withdrawer
     )
         internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)

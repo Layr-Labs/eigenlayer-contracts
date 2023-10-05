@@ -80,7 +80,7 @@ contract StrategyManagerMock is
      * @notice Get all details on the depositor's deposits and corresponding shares
      * @return (depositor's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(address /*depositor*/) external view returns (IStrategy[] memory, uint256[] memory) {
         return (strategiesToReturn, sharesToReturn);
     }
 

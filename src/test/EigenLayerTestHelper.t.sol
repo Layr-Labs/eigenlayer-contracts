@@ -518,7 +518,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
     function _testQueueWithdrawal(
         address depositor,
-        uint256[] memory strategyIndexes,
+        uint256[] memory /*strategyIndexes*/,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
         address withdrawer
