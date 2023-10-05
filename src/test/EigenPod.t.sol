@@ -59,7 +59,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] validatorFields;
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint64  MAX_VALIDATOR_BALANCE_GWEI = 32e9;
+    uint64  MAX_VALIDATOR_BALANCE_GWEI = 31e9;
     uint64  RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 internal constant GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
@@ -759,7 +759,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
         emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
         emit log_named_uint("beaconChainETHAfter", beaconChainETHAfter);
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
+        assertTrue(beaconChainETHAfter - beaconChainETHBefore == (pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
         assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 

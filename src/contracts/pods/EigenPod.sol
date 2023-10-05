@@ -550,6 +550,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         // record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
+        emit log_named_uint("validatorInfo.restakedBalanceGwei", validatorInfo.restakedBalanceGwei);
+        emit log_named_uint("validatorEffectiveBalanceGwei", validatorEffectiveBalanceGwei);
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
