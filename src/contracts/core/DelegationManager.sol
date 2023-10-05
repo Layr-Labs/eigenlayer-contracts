@@ -470,15 +470,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 podOwner: staker,
                 shares: shares
             });
+            // since these shares are given back to the pod owner, they must be delegated to the *pod owner*'s operator, which could be different from the withdrawer's
+            operator = delegatedTo[staker];
+            // we also want to emit the event within `_increaseOperatorShares` with the correct fields. Since the staker receives the shares, they should be in the event.
+            withdrawer = staker;
         } else {
             strategyManager.addShares(withdrawer, strategy, shares);
         }
-
         // Similar to `isDelegated` logic
         if (operator != address(0)) {
             _increaseOperatorShares({
                 operator: operator,
-                staker: staker,
+                // the 'staker' here is the address receiving new shares
+                staker: withdrawer,
                 strategy: strategy,
                 shares: shares
             });
