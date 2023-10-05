@@ -204,12 +204,17 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    function setWithdrawalDelayBlocks(uint256 _newWithdrawalDelayBlocks) external onlyOwner {
+    /**
+     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
+     * @param newWithdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
+     */
+    function setWithdrawalDelayBlocks(uint256 newWithdrawalDelayBlocks) external onlyOwner {
         require(
-            _newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "DelegationManager.setWithdrawalDelayBlocks: _newWithdrawalDelayBlocks too high"
+            newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager.setWithdrawalDelayBlocks: newWithdrawalDelayBlocks too high"
         );
-        withdrawalDelayBlocks = _newWithdrawalDelayBlocks;
+        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, newWithdrawalDelayBlocks);
+        withdrawalDelayBlocks = newWithdrawalDelayBlocks;
     }
 
     /**
