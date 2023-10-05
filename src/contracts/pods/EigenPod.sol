@@ -681,7 +681,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         } else {
             // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer
             // (i.e. none is instantly withdrawable)
-            withdrawalAmountGwei = withdrawalAmountGwei;
             withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
             withdrawalAmountWei = withdrawalAmountGwei * GWEI_TO_WEI;
         }
