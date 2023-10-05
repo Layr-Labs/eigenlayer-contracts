@@ -75,13 +75,25 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
+    /**
+     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
+     * In functions that operate on existing queued withdrawals -- e.g. completeQueuedWithdrawal`, the data is resubmitted and the hash of the submitted
+     * data is computed by `calculateWithdrawalRoot` and checked against the stored hash in order to confirm the integrity of the submitted data.
+     */
     struct Withdrawal {
+        // The address that originated the Withdrawal
         address staker;
+        // The address that the staker was delegated to at the time that the Withdrawal was created
         address delegatedTo;
+        // The address that can complete the Withdrawal + will receive funds when completing the withdrawal
         address withdrawer;
+        // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint96 nonce;
+        // Block number when the Withdrawal was created
         uint32 startBlock;
+        // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
         uint256[] shares;
     }
 
