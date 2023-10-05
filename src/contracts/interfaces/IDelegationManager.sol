@@ -122,6 +122,9 @@ interface IDelegationManager {
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
 
+    /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
+    event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
+
     /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.

@@ -354,7 +354,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     function migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate) external {
         // check for existence and delete the old storage
-        strategyManager.migrateQueuedWithdrawal(strategyManagerWithdrawalToMigrate);
+        bytes32 oldWithdrawalRoot = strategyManager.calculateWithdrawalRoot(strategyManagerWithdrawalToMigrate);
+        strategyManager.migrateQueuedWithdrawal(oldWithdrawalRoot);
 
         address staker = strategyManagerWithdrawalToMigrate.depositor;
         // Create queue entry and increment withdrawal nonce
@@ -376,6 +377,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         pendingWithdrawals[newRoot] = true;
 
         emit WithdrawalQueued(newRoot, migratedWithdrawal);
+
+        emit WithdrawalMigrated(oldWithdrawalRoot, newRoot);
     }
 
     function _removeSharesAndQueueWithdrawal(

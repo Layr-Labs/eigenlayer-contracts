@@ -208,6 +208,15 @@ contract StrategyManager is
         strategy.withdraw(destination, token, shares);
     }
 
+    // @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
+    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external onlyDelegationManager {
+        // check for existence
+        require(withdrawalRootPending[existingWithdrawalRoot], "StrategyManager.migrateQueuedWithdrawal: withdrawal does not exist");
+
+        // delete the withdrawal
+        withdrawalRootPending[existingWithdrawalRoot] = false;
+    }
+
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
@@ -467,14 +476,5 @@ contract StrategyManager is
                 )
             )
         );
-    }
-
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory existingQueuedWithdrawal) external onlyDelegationManager {
-        // check for existence
-        bytes32 existingWithdrawalRoot = calculateWithdrawalRoot(existingQueuedWithdrawal);
-        require(withdrawalRootPending[existingWithdrawalRoot], "StrategyManager.migrateQueuedWithdrawal: withdrawal does not exist");
-
-        // delete the withdrawal
-        withdrawalRootPending[existingWithdrawalRoot] = false;
     }
 }

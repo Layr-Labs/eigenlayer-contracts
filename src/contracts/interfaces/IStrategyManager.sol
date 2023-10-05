@@ -139,5 +139,7 @@ interface IStrategyManager {
         address delegatedAddress;
     }
 
-    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory existingQueuedWithdrawal) external;
+    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external;
+
+    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 }
