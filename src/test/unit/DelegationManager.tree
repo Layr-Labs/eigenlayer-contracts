@@ -1,0 +1,84 @@
+├─ DelegationManager
+├─ initialize
+│  ├─ when called on deployment
+│  │  └─ it should initialize correctly
+│  └─ when called after deployment
+│     └─ it should revert
+├─ setStakeRegistery
+│  └─ when caller is owner
+│     ├─ when stake registery is NOT set
+│     │  ├─ when input is NOT address 0
+│     │  │  └─ it should update the stake registery
+│     │  └─ when input is address 0
+│     │     └─ it should revert
+│     └─ when the stake registery is set
+│        ├─ when caller is owner
+│        │  └─ it should revert
+│        └─ when caller is NOT owner
+│           └─ it should revert
+├─ setOperatorDetails
+│  ├─ when caller is an operator
+│  │  ├─ when operator tries to update their earningsReceiver to address 0
+│  │  │  └─ it should revert
+│  │  ├─ when operator tries to decrease their stakerOptOutWindowBlocks
+│  │  │  └─ it should revert
+│  │  └─ when operator tries to incrase their stakerOptOutWindowBlocks more than maxStakerOptOutWindowBlocks
+│  │     └─ it should revert
+│  └─ when caller is not an operator
+│     └─ it should revert
+├─ updateOperatorMetadata
+│  ├─ when caller is an operator
+│  │  └─ it should update the operators metadataURI
+│  └─ when caller is not an operator
+│     └─ it should revert
+├─ registerAsOperator
+├─ delegateTo
+│  ├─ when caller is already delegated
+│  │  └─ it should revert
+│  └─ when caller isnt already delegated
+│     ├─ when operator does NOT require approver sig
+│     │  ├─ when operator is NOT a registered operator
+│     │  │  └─ it should revert
+│     │  └─ when operator is a registered operator
+│     │     └─ it should delegate staker to operator
+│     ├─ when operator requires approver sig
+│     │  └─ when the approver sig is valid
+│     │     ├─ it should delegate the staker to operator
+│     │     └─ when the approver sig is invalid
+│     │        ├─ when the signature is expired
+│     │        │  └─ it should revert
+│     │        ├─ when the approver signature is from non-erc1271 compliant wallet
+│     │        │  └─ it should revert
+│     │        ├─ when the signer of the approver sig is NOT approver
+│     │        │  └─ it should revert
+│     │        ├─ when the nonce is invalid
+│     │        │  └─ it should revert
+│     │        └─ when the no signature provided
+│     │           └─ it should revert
+│     ├─ when operator is frozen
+│     │  └─ it should revert
+│     ├─ when staker tries delegating to operator that isn't registered
+│     │  └─ it should revert
+│     ├─ when delegation is paused
+│     │  └─ it should revert
+│     └─ when staker is an operator themselves
+│        └─ it should revert
+├─ delegateToWithSignature
+│  ├─ when staker delegation signature is valid
+│  │  └─ it should delegate staker to operator
+│  └─ when staker delegation signature is invalid
+│     ├─ when nonce is invalid
+│     │  └─ it should revert
+│     ├─ when signature is expired
+│     │  └─ it should revert
+│     └─ when no signature provided
+│        └─ it should revert
+├─ undelegate
+│  ├─ when caller is delegated to an operator
+│  │  └─ it should undelegate the staker
+│  ├─ when the caller is an operator
+│  │  └─ it should revert
+│  └─ when caller isnt delegated to an operator
+│     └─ it should revert
+├─ increaseDelegatedShares
+└─ decreaseDelegatedShares
