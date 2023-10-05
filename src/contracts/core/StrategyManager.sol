@@ -473,15 +473,15 @@ contract StrategyManager is
         uint256 strategyIndex,
         IStrategy strategy
     ) internal {
+        uint256 stratsLength = stakerStrategyList[depositor].length;
         // if the strategy matches with the strategy index provided
-        if (stakerStrategyList[depositor][strategyIndex] == strategy) {
+        if (strategyIndex < stratsLength && stakerStrategyList[depositor][strategyIndex] == strategy) {
             // replace the strategy with the last strategy in the list
             stakerStrategyList[depositor][strategyIndex] = stakerStrategyList[depositor][
                 stakerStrategyList[depositor].length - 1
             ];
         } else {
             //loop through all of the strategies, find the right one, then replace
-            uint256 stratsLength = stakerStrategyList[depositor].length;
             uint256 j = 0;
             for (; j < stratsLength; ) {
                 if (stakerStrategyList[depositor][j] == strategy) {
