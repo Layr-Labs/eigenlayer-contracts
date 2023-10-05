@@ -18,10 +18,27 @@ contract EigenPodUnitTests is EigenPodTests {
         relay.verifyWithdrawal(beaconStateRoot, wrongWithdrawalFields, proofs);
     }
     
-    function testCheckThatHasRestakedIsSetToTrue() public {
+    function testCheckThatHasRestakedIsSetToTrue() public returns (IEigenPod){
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
         require(pod.hasRestaked() == true, "Pod should not be restaked");
+        return pod;
+    }
+
+    function testActivateRestakingWithM2Pods() external {
+        IEigenPod pod = testCheckThatHasRestakedIsSetToTrue();
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
+        pod.activateRestaking();
+        cheats.stopPrank(); 
+    }
+
+    function testWithdrawBeforeRestakingWithM2Pods() external {
+        IEigenPod pod = testCheckThatHasRestakedIsSetToTrue();
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
+        pod.withdrawBeforeRestaking();
+        cheats.stopPrank(); 
     }
 
     function testAttemptedWithdrawalAfterVerifyingWithdrawalCredentials() public {
