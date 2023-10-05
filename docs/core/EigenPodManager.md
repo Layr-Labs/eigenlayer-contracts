@@ -535,31 +535,19 @@ Withdrawals can be completed after a delay via `EigenPodManager.completeQueuedWi
 *As of M2*:
 * The `onlyNotFrozen` modifier is a no-op
 
-#### `EigenPodManager.completeQueuedWithdrawal`
-
-```solidity
-function completeQueuedWithdrawal(
-    BeaconChainQueuedWithdrawal memory queuedWithdrawal,
-    uint256 middlewareTimesIndex
-)
-    external
-    onlyNotFrozen(queuedWithdrawal.delegatedAddress)
-    nonReentrant
-    onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
-```
-
-*Effects*:
-* TODO
-
-*Requirements*:
-* Pause status MUST NOT be set: `PAUSED_WITHDRAW_RESTAKED_ETH`
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is a no-op
-* `slasher.canWithdraw` is a no-op
-* The `middlewareTimesIndex` parameter is unused
-
 ### Other Methods
+
+#### `EigenPodManager.removeShares`
+
+TODO
+
+#### `EigenPodManager.addShares`
+
+TODO
+
+#### `EigenPodManager.withdrawSharesAsTokens`
+
+TODO
 
 #### `DelayedWithdrawalRouter.createDelayedWithdrawal`
 
