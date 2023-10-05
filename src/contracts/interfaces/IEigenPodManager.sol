@@ -109,12 +109,20 @@ interface IEigenPodManager is IPausable {
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
-    /// @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue
+    /**
+     * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
+     * Simply decreases the `podOwner`'s shares by `shares`, reverting if `shares` exceeds `podOwnerShares[podOwner]`.
+     */
     function removeShares(address podOwner, uint256 shares) external;
 
-    /// @notice Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
+    /**
+     * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
+     * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
+     * @dev Returns the number of shares added to `podOwnerShares[podOwner]`, which will be less than the `shares` input in the event that the
+     * podOwner has an existing shares deficit
+     */
     function addShares(address podOwner, uint256 shares) external returns (uint256);
 
-    /// @notice Used by the DelegationManager to complete a withdrawal by sending tokens to some destionation address
+    /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 }

@@ -19,17 +19,14 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
-    /**
-     * @dev Index for flag that pauses new delegations when set
-     */
+    // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
-    // @dev Index for flag that pauses undelegations when set
-    uint8 internal constant PAUSED_UNDELEGATION = 1;
+    // @dev Index for flag that pauses queuing new withdrawals when set.
+    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
 
-    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 2;
-
-    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 3;
+    // @dev Index for flag that pauses completing existing withdrawals when set.
+    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
     /**
      * @dev Chain ID at the time of contract deployment

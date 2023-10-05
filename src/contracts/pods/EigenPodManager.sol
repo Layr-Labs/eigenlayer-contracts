@@ -146,6 +146,10 @@ contract EigenPodManager is
         _recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
     }
 
+    /**
+     * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
+     * Simply decreases the `podOwner`'s shares by `shares`, reverting if `shares` exceeds `podOwnerShares[podOwner]`.
+     */
     function removeShares(
         address podOwner, 
         uint256 shares
@@ -155,8 +159,12 @@ contract EigenPodManager is
         _removeShares(podOwner, shares);
     }
 
-    // @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible
-    // @dev Returns the number of shares added to `podOwnerShares[podOwner]`
+    /**
+     * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
+     * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
+     * @dev Returns the number of shares added to `podOwnerShares[podOwner]`, which will be less than the `shares` input in the event that the
+     * podOwner has an existing shares deficit
+     */
     function addShares(
         address podOwner,
         uint256 shares
@@ -164,20 +172,13 @@ contract EigenPodManager is
         return _addShares(podOwner, shares);
     }
 
+    /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
     // TODO the 2 calls here can probably be combined?
     function withdrawSharesAsTokens(
         address podOwner, 
         address destination, 
         uint256 shares
     ) external onlyDelegationManager {
-        /**
-         * This decrements the withdrawableRestakedExecutionLayerGwei which is incremented only when a podOwner proves a full withdrawal.
-         * Remember that withdrawableRestakedExecutionLayerGwei tracks the currently withdrawable ETH from the EigenPod.
-         * By doing this, we ensure that the number of shares in EigenLayer matches the amount of withdrawable ETH in
-         * the pod plus any ETH still staked on the beacon chain via other validators pointed to the pod. As a result, a validator
-         * must complete a full withdrawal from the execution layer prior to queuing a withdrawal of 'beacon chain ETH shares'
-         * via EigenLayer, since otherwise withdrawableRestakedExecutionLayerGwei will be 0.
-         */
         ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
