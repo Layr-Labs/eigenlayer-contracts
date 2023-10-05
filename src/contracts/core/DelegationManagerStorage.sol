@@ -38,6 +38,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The Slasher contract for EigenLayer
     ISlasher public immutable slasher;
 
+    /// @notice The EigenPodManager contract for EigenLayer
+    IEigenPodManager public immutable eigenPodManager;
+
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
@@ -66,7 +71,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
-    IEigenPodManager public immutable eigenPodManager;
+    mapping(bytes32 => bool) public pendingWithdrawals;
+
+    mapping(address => uint96) public numWithdrawalsQueued;
+
+    uint256 public withdrawalDelayBlocks;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
@@ -79,5 +88,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[41] private __gap;
 }

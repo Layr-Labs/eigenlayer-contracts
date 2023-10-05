@@ -82,7 +82,7 @@ interface IDelegationManager {
         uint96 nonce;
         uint32 startBlock;
         IStrategy[] strategies;
-        uint[] shares;
+        uint256[] shares;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.

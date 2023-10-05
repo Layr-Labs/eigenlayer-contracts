@@ -204,13 +204,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
     }
 
-    mapping(bytes32 => bool) public pendingWithdrawals;
-    mapping(address => uint96) public numWithdrawalsQueued;
-
-    uint256 public withdrawalDelayBlocks;
-
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
-
     function setWithdrawalDelayBlocks(uint256 _newWithdrawalDelayBlocks) external onlyOwner {
         require(
             _newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
