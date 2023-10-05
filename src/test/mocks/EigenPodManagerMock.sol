@@ -73,7 +73,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         return false;
     }
 
-    function awardShares(address podOwner, uint256 shares) external returns (uint256) {}
+    function addShares(address podOwner, uint256 shares) external returns (uint256) {}
 
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 

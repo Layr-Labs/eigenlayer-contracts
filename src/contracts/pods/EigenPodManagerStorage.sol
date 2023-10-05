@@ -71,10 +71,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;
 
-    // @notice Mapping: pod owner => UndelegationLimboStatus struct. Mapping is internal so we can have a getter that returns a memory struct.
-    // mapping(address => IEigenPodManager.UndelegationLimboStatus) internal _podOwnerUndelegationLimboStatus;
-    uint private __deprecated__UndelegationLimboStatus;
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,

@@ -157,7 +157,7 @@ contract EigenPodManager is
 
     // @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible
     // @dev Returns the number of shares added to `podOwnerShares[podOwner]`
-    function awardShares(
+    function addShares(
         address podOwner,
         uint256 shares
     ) external onlyDelegationManager returns (uint256) {

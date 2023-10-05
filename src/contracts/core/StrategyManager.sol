@@ -191,7 +191,7 @@ contract StrategyManager is
         _removeShares(staker, 0, strategy, shares);
     }
 
-    function awardShares(
+    function addShares(
         address grantee,
         IStrategy strategy,
         uint256 shares

@@ -230,7 +230,7 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     function removeShares(address podOwner, uint256 shares) external {}
 
-    function awardShares(address podOwner, uint256 shares) external returns (uint256) {}
+    function addShares(address podOwner, uint256 shares) external returns (uint256) {}
 
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 

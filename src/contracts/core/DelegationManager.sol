@@ -454,12 +454,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         if (strategy == beaconChainETHStrategy) {
             // update shares amount depending upon the returned value
             // the return value will be lower than the input value in the case where the staker has an existing share deficit
-            shares = eigenPodManager.awardShares({
+            shares = eigenPodManager.addShares({
                 podOwner: staker,
                 shares: shares
             });
         } else {
-            strategyManager.awardShares(withdrawer, strategy, shares);
+            strategyManager.addShares(withdrawer, strategy, shares);
         }
 
         // Similar to `isDelegated` logic
