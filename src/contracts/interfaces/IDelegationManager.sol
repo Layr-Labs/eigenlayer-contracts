@@ -75,7 +75,7 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
-    struct QueuedWithdrawal {
+    struct Withdrawal {
         address staker;
         address delegatedTo;
         address withdrawer;
@@ -336,5 +336,5 @@ interface IDelegationManager {
      */
     function domainSeparator() external view returns (bytes32);
 
-    function calculateWithdrawalRoot(QueuedWithdrawal memory withdrawal) external pure returns (bytes32);
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 }

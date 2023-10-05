@@ -23,7 +23,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         address middleware = address(0xdeadbeef);
         address middleware_2 = address(0x009849);
         address staker = getOperatorAddress(0);
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
         
         uint256 depositAmount = 1 ether;
         IStrategy strategy = wethStrat;
@@ -274,11 +274,11 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint256[] memory strategyIndexes,
         address withdrawer
     )
-        internal returns(bytes32 withdrawalRoot, IDelegationManager.QueuedWithdrawal memory queuedWithdrawal)
+        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
     {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
-        queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: staker,

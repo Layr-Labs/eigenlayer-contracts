@@ -352,6 +352,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // TODO: emit event here
     }
 
+    function migrateQueuedWithdrawal(Withdrawal memory withdrawalToMigrate) external {
+        
+
+        bytes32 newRoot = calculateWithdrawalRoot(withdrawalToMigrate);
+
+        // TODO: emit event here
+    }
+
     function _removeSharesAndQueueWithdrawal(
         address staker, 
         address operator,
@@ -387,7 +395,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint96 nonce = numWithdrawalsQueued[staker];
         numWithdrawalsQueued[staker]++;
 
-        QueuedWithdrawal memory withdrawal = QueuedWithdrawal({
+        Withdrawal memory withdrawal = QueuedWithdrawal({
             staker: staker,
             delegatedTo: operator,
             withdrawer: withdrawer,
@@ -725,7 +733,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return (strategies, shares);
     }
 
-    function calculateWithdrawalRoot(QueuedWithdrawal memory withdrawal) public pure returns (bytes32) {
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 withdrawal.staker,

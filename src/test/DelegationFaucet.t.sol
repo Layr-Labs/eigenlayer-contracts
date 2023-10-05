@@ -273,7 +273,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         // Queue withdrawal
         (
-            IDelegationManager.QueuedWithdrawal memory queuedWithdrawal,
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
             , /*tokensArray is unused in this test*/
              /*withdrawalRoot is unused in this test*/
         ) = _setUpQueuedWithdrawalStructSingleStrat(
@@ -335,11 +335,11 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             tokensArray[0] = stakeToken;
         }
 
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
             uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
 
-            queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+            queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
                 staker: stakerContract,
@@ -401,11 +401,11 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             tokensArray[0] = stakeToken;
         }
 
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
             uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
 
-            queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+            queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
                 staker: stakerContract,
@@ -496,7 +496,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         internal
         view
         returns (
-            IDelegationManager.QueuedWithdrawal memory queuedWithdrawal,
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
             IERC20[] memory tokensArray,
             bytes32 withdrawalRoot
         )
@@ -507,7 +507,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         strategyArray[0] = strategy;
         tokensArray[0] = token;
         shareAmounts[0] = shareAmount;
-        queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: staker,

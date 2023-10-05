@@ -308,7 +308,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
     )
         internal
     {
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: staker,

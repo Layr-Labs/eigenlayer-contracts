@@ -577,7 +577,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     // }
 
     // function testQueueWithdrawal_ToSelf(uint256 depositAmount, uint256 withdrawalAmount) public
-    //     returns (IDelegationManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
+    //     returns (IDelegationManager.Withdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     // {
     //     // filtering of fuzzed inputs
     //     cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
@@ -588,7 +588,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     //     testDepositIntoStrategySuccessfully(/*staker*/ address(this), depositAmount);
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot) =
     //         _setUpQueuedWithdrawalStructSingleStrat(/*staker*/ address(this), /*withdrawer*/ address(this), dummyToken, _tempStrategyStorage, withdrawalAmount);
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
@@ -636,7 +636,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     // }
 
     // function testQueueWithdrawal_ToSelf_TwoStrategies(uint256 depositAmount, uint256 withdrawalAmount) public
-    //     returns (IDelegationManager.QueuedWithdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
+    //     returns (IDelegationManager.Withdrawal memory /* queuedWithdrawal */, IERC20[] memory /* tokensArray */, bytes32 /* withdrawalRoot */)
     // {
     //     // filtering of fuzzed inputs
     //     cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
@@ -657,7 +657,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     _depositIntoStrategySuccessfully(dummyStrat, /*staker*/ address(this), depositAmount);
     //     _depositIntoStrategySuccessfully(dummyStrat2, /*staker*/ address(this), depositAmount);
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
     //         _setUpQueuedWithdrawalStructSingleStrat_MultipleStrategies(/*staker*/ address(this), /*withdrawer*/ address(this), strategies, amounts);
 
     //     // uint256 sharesBefore = strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[0]) + strategyManager.stakerStrategyShares(/*staker*/ address(this), strategies[1]);
@@ -706,7 +706,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     //     testDepositIntoStrategySuccessfully(staker, amount);
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
     //         _setUpQueuedWithdrawalStructSingleStrat(staker, withdrawer, /*token*/ dummyToken, _tempStrategyStorage, amount);
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
@@ -772,7 +772,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     //     testDepositIntoStrategySuccessfully(staker, depositAmount);
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, /*IERC20[] memory tokensArray*/, bytes32 withdrawalRoot) =
     //         _setUpQueuedWithdrawalStructSingleStrat(staker, /*withdrawer*/ staker, token, strategy, withdrawalAmount);
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
@@ -818,13 +818,13 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256[] memory strategyIndexes = new uint256[](1);
     //     strategyIndexes[0] = 0;
 
-    //     IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+    //     IDelegationManager.Withdrawal memory queuedWithdrawal;
 
     //     {
     //         uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
 
     //         queuedWithdrawal = 
-    //             IDelegationManager.QueuedWithdrawal({
+    //             IDelegationManager.Withdrawal({
     //                 strategies: strategyArray,
     //                 shares: shareAmounts,
     //                 staker: staker,
@@ -877,13 +877,13 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256[] memory strategyIndexes = new uint256[](1);
     //     strategyIndexes[0] = 0;
 
-    //     IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+    //     IDelegationManager.Withdrawal memory queuedWithdrawal;
 
     //     {
     //         uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
 
     //         queuedWithdrawal = 
-    //             IDelegationManager.QueuedWithdrawal({
+    //             IDelegationManager.Withdrawal({
     //                 strategies: strategyArray,
     //                 shares: shareAmounts,
     //                 staker: staker,
@@ -919,7 +919,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     IStrategy strategy = queuedWithdrawal.strategies[0];
@@ -950,7 +950,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     IStrategy strategy = queuedWithdrawal.strategies[0];
@@ -1011,13 +1011,13 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256[] memory strategyIndexes = new uint256[](1);
     //     strategyIndexes[0] = 0;
 
-    //     IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+    //     IDelegationManager.Withdrawal memory queuedWithdrawal;
 
     //     {
     //         uint256 nonce = strategyManager.numWithdrawalsQueued(_tempStakerStorage);
 
     //         queuedWithdrawal = 
-    //             IDelegationManager.QueuedWithdrawal({
+    //             IDelegationManager.Withdrawal({
     //                 strategies: strategyArray,
     //                 shares: shareAmounts,
     //                 staker: _tempStakerStorage,
@@ -1057,11 +1057,11 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256[] memory strategyIndexes = new uint256[](1);
     //     strategyIndexes[0] = 0;
 
-    //     IDelegationManager.QueuedWithdrawal memory queuedWithdrawal;
+    //     IDelegationManager.Withdrawal memory queuedWithdrawal;
 
     //     {
     //         queuedWithdrawal = 
-    //             IDelegationManager.QueuedWithdrawal({
+    //             IDelegationManager.Withdrawal({
     //                 strategies: strategyArray,
     //                 shares: shareAmounts,
     //                 staker: _tempStakerStorage,
@@ -1094,7 +1094,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     IStrategy strategy = queuedWithdrawal.strategies[0];
@@ -1123,7 +1123,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     IStrategy strategy = queuedWithdrawal.strategies[0];
@@ -1151,7 +1151,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     IStrategy strategy = queuedWithdrawal.strategies[0];
@@ -1187,7 +1187,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     uint256 middlewareTimesIndex = 0;
@@ -1215,7 +1215,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     uint256 depositAmount = 1e18;
     //     uint256 withdrawalAmount = 1e18;
 
-    //     (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
+    //     (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, /*bytes32 withdrawalRoot*/) =
     //         testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
 
     //     uint256 middlewareTimesIndex = 0;
@@ -1671,7 +1671,7 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     // INTERNAL / HELPER FUNCTIONS
     function _setUpQueuedWithdrawalStructSingleStrat(address staker, address withdrawer, IERC20 token, IStrategy strategy, uint256 shareAmount)
-        internal view returns (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot)
+        internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot)
     {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         tokensArray = new IERC20[](1);
@@ -1680,7 +1680,7 @@ contract StrategyManagerUnitTests is Test, Utils {
         tokensArray[0] = token;
         shareAmounts[0] = shareAmount;
         queuedWithdrawal = 
-            IDelegationManager.QueuedWithdrawal({
+            IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
                 staker: staker,
@@ -1734,10 +1734,10 @@ contract StrategyManagerUnitTests is Test, Utils {
         IStrategy[] memory strategyArray, 
         uint256[] memory shareAmounts
     )
-        internal view returns (IDelegationManager.QueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
+        internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
     {
         queuedWithdrawal = 
-            IDelegationManager.QueuedWithdrawal({
+            IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
                 staker: staker,

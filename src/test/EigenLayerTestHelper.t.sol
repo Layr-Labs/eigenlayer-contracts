@@ -279,7 +279,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory strategyIndexes,
         address withdrawer
     )
-        internal returns(bytes32 withdrawalRoot, IDelegationManager.QueuedWithdrawal memory queuedWithdrawal)
+        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
     {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
@@ -297,7 +297,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             );
         }
 
-        queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: staker,
@@ -437,7 +437,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         // emit log_named_address("delegatedAddress", delegatedTo);
         // emit log("************************************************************************************************");
 
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: depositor,
@@ -491,7 +491,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyTokenBalance.push(strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i])));
         }
     
-        IDelegationManager.QueuedWithdrawal memory queuedWithdrawal = IDelegationManager.QueuedWithdrawal({
+        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
             staker: depositor,
