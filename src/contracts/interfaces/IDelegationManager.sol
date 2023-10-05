@@ -364,5 +364,6 @@ interface IDelegationManager {
      */
     function domainSeparator() external view returns (bytes32);
 
+    /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 }

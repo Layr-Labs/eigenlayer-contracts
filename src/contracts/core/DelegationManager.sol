@@ -774,18 +774,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return (strategies, shares);
     }
 
+    /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                withdrawal.staker,
-                withdrawal.delegatedTo,
-                withdrawal.withdrawer,
-                withdrawal.nonce,
-                withdrawal.startBlock,
-                withdrawal.strategies,
-                withdrawal.shares
-            )
-        );
+        return keccak256(abi.encode(withdrawal));
     }
 
     /**
