@@ -20,6 +20,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
+
+    // system contracts
+    IDelegationManager public immutable delegation;
+    IEigenPodManager public immutable eigenPodManager;
+    ISlasher public immutable slasher;
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -31,11 +37,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     // maximum length of dynamic arrays in `stakerStrategyList` mapping, for sanity's sake
     uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
-
-    // system contracts
-    IDelegationManager public immutable delegation;
-    IEigenPodManager public immutable eigenPodManager;
-    ISlasher public immutable slasher;
 
     /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
     address public strategyWhitelister;

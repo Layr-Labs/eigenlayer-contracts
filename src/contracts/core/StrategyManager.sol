@@ -31,12 +31,8 @@ contract StrategyManager is
 {
     using SafeERC20 for IERC20;
 
-    uint256 internal constant GWEI_TO_WEI = 1e9;
-
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
-    // index for flag that pauses withdrawals when set
-    uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
     // chain id at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
