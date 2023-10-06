@@ -231,4 +231,41 @@ contract EigenPodUnitTests is EigenPodTests {
         cheats.stopPrank();
     }
 
+    function testPodReceiveFallBack(uint256 amountETH) external {
+        cheats.assume(amountETH > 0);
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        cheats.deal(address(this), amountETH);
+
+        Address.sendValue(payable(address(pod)), amountETH);
+    }
+
+    /**
+    * This is a regression test for a bug (EIG-14) found by Hexens.  Lets say podOwner sends 32 ETH to the EigenPod, 
+    * the nonBeaconChainETHBalanceWei increases by 32 ETH. podOwner calls withdrawBeforeRestaking, which 
+    * will simply send the entire ETH balance (32 ETH) to the owner. The owner activates restaking, 
+    * creates a validator and verifies the withdrawal credentials, receiving 32 ETH in shares.  
+    * They can exit the validator, the pod gets the 32ETH and they can call withdrawNonBeaconChainETHBalanceWei
+    * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.
+     */
+    function testValidatorBalanceCannotBeRemovedFromPodViaNonBeaconChainETHBalanceWei() external {
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        
+        uint256 amount = 32 ether;
+
+        cheats.deal(address(this), amount);
+        Address.sendValue(payable(address(newPod)), amount);
+        require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
+        //this is an M1 pod so hasRestaked should be false
+        require(newPod.hasRestaked() == false, "Pod should be restaked");
+        pod.activateRestaking();
+        require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
+    }
+
 }

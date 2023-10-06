@@ -727,6 +727,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _processWithdrawalBeforeRestaking(address _podOwner) internal {
         mostRecentWithdrawalTimestamp = uint32(block.timestamp);
+        nonBeaconChainETHBalanceWei = 0;
         _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
     }
 

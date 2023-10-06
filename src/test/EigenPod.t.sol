@@ -416,48 +416,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
-        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
-        uint64 restakedExecutionLayerGweiBefore = newPod.withdrawableRestakedExecutionLayerGwei();
-       
-        withdrawalFields = getWithdrawalFields();
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
-        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
-        cheats.deal(address(newPod), leftOverBalanceWEI);
-        emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
-        emit log_named_uint("address(newPod)", address(newPod).balance);
-        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
-        
-        uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
-        {
-            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
-            withdrawalProofsArray[0] = _getWithdrawalProof();
-            bytes[] memory validatorFieldsProofArray = new bytes[](1);
-            validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
-            bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-            validatorFieldsArray[0] = getValidatorFields();
-            bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
-            withdrawalFieldsArray[0] = withdrawalFields;
-
-            BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
-
-
-            //cheats.expectEmit(true, true, true, true, address(newPod));
-            emit FullWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot)), podOwner, withdrawalAmountGwei);
-            newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
-        }
-        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
-            "restakedExecutionLayerGwei has not been incremented correctly");
-        require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
-            "pod delayed withdrawal balance hasn't been updated correctly");
-        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
-
-        cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
-        uint256 podOwnerBalanceBefore = address(podOwner).balance;
-        delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
-        require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
-        return newPod;
+        return _proveWithdrawalForPod(newPod);
     }
 
     /**
@@ -1210,6 +1169,51 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
     }
 
+    function _proveWithdrawalForPod(IEigenPod newPod) internal returns(IEigenPod) {
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
+        uint64 restakedExecutionLayerGweiBefore = newPod.withdrawableRestakedExecutionLayerGwei();
+       
+        withdrawalFields = getWithdrawalFields();
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
+        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        cheats.deal(address(newPod), leftOverBalanceWEI);
+        emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
+        emit log_named_uint("address(newPod)", address(newPod).balance);
+        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
+        
+        uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
+        {
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+            withdrawalProofsArray[0] = _getWithdrawalProof();
+            bytes[] memory validatorFieldsProofArray = new bytes[](1);
+            validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
+            bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+            validatorFieldsArray[0] = getValidatorFields();
+            bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+            withdrawalFieldsArray[0] = withdrawalFields;
+
+            BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+
+            //cheats.expectEmit(true, true, true, true, address(newPod));
+            emit FullWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot)), podOwner, withdrawalAmountGwei);
+            newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        }
+        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
+            "restakedExecutionLayerGwei has not been incremented correctly");
+        require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
+            "pod delayed withdrawal balance hasn't been updated correctly");
+        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
+
+        cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
+        uint256 podOwnerBalanceBefore = address(podOwner).balance;
+        delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
+        require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
+
+    }
+
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
     // verifies that the storage of DelegationManager contract is updated appropriately
     function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
@@ -1302,6 +1306,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, _signature, _depositDataRoot);
         cheats.stopPrank();
 
+        return _verifyWithdrawalCredentials(newPod, _podOwner);
+    }
+
+    function _verifyWithdrawalCredentials(IEigenPod newPod, address _podOwner) internal returns(IEigenPod) {
         uint64 timestamp = 0;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
