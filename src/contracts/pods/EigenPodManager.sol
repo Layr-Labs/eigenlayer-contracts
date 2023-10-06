@@ -147,16 +147,15 @@ contract EigenPodManager is
             }
         // if change in shares is positive, inform the DelegationManager of any increase in staker shares above zero
         } else {
-            // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
-            // skip making any call if this condition isn't met.
+            // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero, so only make a call if this condition is met
             if (updatedPodOwnerShares > 0) {
                 uint256 increaseInPositiveShares;
-                // if the currentPodOwnerShares are less than zero, then the increase in the amount above zero will be less than `sharesDelta`
+                // if the currentPodOwnerShares are less than zero, then the increase in the amount above zero must simply be the pod owner's new share amount
                 if (currentPodOwnerShares < 0) {
                     increaseInPositiveShares = uint256(updatedPodOwnerShares);
                 // otherwise, the pod owner's shares amount above zero must have increased by the full `sharesDelta`
                 } else {
-                    increaseInPositiveShares = uint256(updatedPodOwnerShares);
+                    increaseInPositiveShares = uint256(sharesDelta);
                 }
                 // inform DelegationManager of the change in shares
                 delegationManager.increaseDelegatedShares({
@@ -171,15 +170,15 @@ contract EigenPodManager is
     /**
      * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
      * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden from resulting in the `podOwner`
-     * incurring a "share deficit".
+     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this fucntion to
+     * result in the `podOwner` incurring a "share deficit".
      */
     function removeShares(
         address podOwner, 
         uint256 shares
     ) external onlyDelegationManager {
         require(podOwner != address(0), "EigenPodManager.removeShares: podOwner cannot be zero address");
-        require(int256(shares) > 0, "EigenPodManager.removeShares: shares amount is negative");
+        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares amount is negative");
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
         require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -196,7 +195,7 @@ contract EigenPodManager is
         uint256 shares
     ) external onlyDelegationManager returns (uint256) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
-        require(int256(shares) > 0, "EigenPodManager.addShares: shares cannot be negative");
+        require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
 
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
@@ -225,14 +224,14 @@ contract EigenPodManager is
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
-        // skip dealing with deficit if there isn't any
+        // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
             uint256 currentShareDeficit = uint256(-currentPodOwnerShares);
             // get rid of the whole deficit if possible, and pass any remaining shares onto destination
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
-            // otherwise get rid of as much deficit as possible, and return early
+            // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
                 return;

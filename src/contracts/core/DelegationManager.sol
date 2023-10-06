@@ -655,8 +655,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // to only give them back to the original podOwner. Other strategy shares
         // can be awarded to the withdrawer.
         if (strategy == beaconChainETHStrategy) {
-            // update shares amount depending upon the returned value
-            // the return value will be lower than the input value in the case where the staker has an existing share deficit
+            /**
+             * Update shares amount depending upon the returned value.
+             * The return value will be lower than the input value in the case where the staker has an existing share deficit
+             */
             shares = eigenPodManager.addShares({
                 podOwner: staker,
                 shares: shares
