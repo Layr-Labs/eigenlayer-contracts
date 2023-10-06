@@ -302,7 +302,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             shares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+            nonce: uint96(delegation.numWithdrawalsQueued(staker)),
             delegatedTo: delegation.delegatedTo(staker),
             startBlock: uint32(block.number)
         });

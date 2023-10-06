@@ -183,6 +183,7 @@ contract StrategyManager is
         shares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
+    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     function removeShares(
         address staker,
         IStrategy strategy,
@@ -191,24 +192,27 @@ contract StrategyManager is
         _removeShares(staker, 0, strategy, shares);
     }
 
+    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     function addShares(
-        address grantee,
+        address staker,
         IStrategy strategy,
         uint256 shares
     ) external onlyDelegationManager {
-        _addShares(grantee, strategy, shares);
+        _addShares(staker, strategy, shares);
     }
 
+    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
     function withdrawSharesAsTokens(
-        address destination,
+        address recipient,
         IStrategy strategy,
         uint256 shares,
         IERC20 token
     ) external onlyDelegationManager {
-        strategy.withdraw(destination, token, shares);
+        strategy.withdraw(recipient, token, shares);
     }
 
-    // @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
+    /// @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
+    /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
     function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external onlyDelegationManager {
         // check for existence
         require(withdrawalRootPending[existingWithdrawalRoot], "StrategyManager.migrateQueuedWithdrawal: withdrawal does not exist");

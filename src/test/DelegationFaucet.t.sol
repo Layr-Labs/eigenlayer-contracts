@@ -269,7 +269,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         uint256 operatorSharesBefore = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceBefore = delegation.numWithdrawalsQueued(/*staker*/ stakerContract);
 
         // Queue withdrawal
         (
@@ -294,7 +294,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         );
         uint256 operatorSharesAfter = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceAfter = delegation.numWithdrawalsQueued(/*staker*/ stakerContract);
 
         assertEq(
             operatorSharesBefore,
@@ -337,7 +337,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
-            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+            uint256 nonce = delegation.numWithdrawalsQueued(stakerContract);
 
             queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
@@ -403,7 +403,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
-            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+            uint256 nonce = delegation.numWithdrawalsQueued(stakerContract);
 
             queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
@@ -512,7 +512,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             shares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+            nonce: uint96(delegation.numWithdrawalsQueued(staker)),
             startBlock: uint32(block.number),
             delegatedTo: strategyManager.delegation().delegatedTo(staker)
         });

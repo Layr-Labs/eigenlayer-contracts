@@ -368,6 +368,10 @@ interface IDelegationManager {
      */
     function domainSeparator() external view returns (bytes32);
 
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
+    function numWithdrawalsQueued(address staker) external view returns (uint96);
+
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 }
