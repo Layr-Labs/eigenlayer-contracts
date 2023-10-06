@@ -266,14 +266,15 @@ After waiting `withdrawalDelayBlocks`, this allows the `withdrawer` of a `Withdr
 For each strategy/share pair in the `Withdrawal`:
 * If the `withdrawer` chooses to receive tokens:
     * The shares are converted to their underlying tokens via either the `EigenPodManager` or `StrategyManager` and sent to the `withdrawer`.
-* If the `withdrawer` chooses to receive shares: 
-    * The shares are awarded to the `withdrawer` via either the `EigenPodManager` or `StrategyManager`
+* If the `withdrawer` chooses to receive shares (and the strategy belongs to the `StrategyManager`): 
+    * The shares are awarded to the `withdrawer` via the `StrategyManager`
     * If the `withdrawer` is delegated to an Operator, that Operator's delegated shares are increased by the added shares (according to the strategy being added to).
 
-Note that `Withdrawals` concerning `EigenPodManager` shares have some additional nuance depending on whether a withdrawal is specified to be received as tokens vs shares (read more about "why" in [`EigenPodManager.md`](./EigenPodManager.md)):
+`Withdrawals` concerning `EigenPodManager` shares have some additional nuance depending on whether a withdrawal is specified to be received as tokens vs shares (read more about "why" in [`EigenPodManager.md`](./EigenPodManager.md)):
 * `EigenPodManager` withdrawals received as shares: 
     * Shares ALWAYS go back to the originator of the withdrawal (rather than the `withdrawer` address). 
-    * Shares received by the originator may be lower than the shares originally withdrawn if the originator has debt
+    * Shares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
+    * Shares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
 * `EigenPodManager` withdrawals received as tokens:
     * Before the withdrawal can be completed, the originator needs to prove that a withdrawal occured on the beacon chain (see [`EigenPod.verifyAndProcessWithdrawals`](./EigenPodManager.md#eigenpodverifyandprocesswithdrawals)).
 
@@ -283,9 +284,12 @@ Note that `Withdrawals` concerning `EigenPodManager` shares have some additional
     * See [`StrategyManager.withdrawSharesAsTokens`](./StrategyManager.md#withdrawsharesastokens)
     * See [`EigenPodManager.withdrawSharesAsTokens`](./EigenPodManager.md#eigenpodmanagerwithdrawsharesastokens)
 * If `!receiveAsTokens`:
-    * If the `withdrawer` is delegated to an Operator, the shares/strategies are added to the Operator's delegated token balances
-    * See [`StrategyManager.addShares`](./StrategyManager.md#addshares)
-    * See [`EigenPodManager.addShares`](./EigenPodManager.md#eigenpodmanageraddshares)
+    * For `StrategyManager` strategies:
+        * Shares are awarded to the `withdrawer` and delegated to the `withdrawer's` Operator
+        * See [`StrategyManager.addShares`](./StrategyManager.md#addshares)
+    * For the native beacon chain ETH strategy (`EigenPodManager`):
+        * Shares are awarded to `withdrawal.staker`, and delegated to the Staker's Operator
+        * See [`EigenPodManager.addShares`](./EigenPodManager.md#eigenpodmanageraddshares)
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EXIT_WITHDRAWAL_QUEUE`
@@ -356,7 +360,7 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 * `EigenPod.verifyBalanceUpdate`
 * `EigenPod.verifyAndProcessWithdrawals`
 
-*Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for each of the `strategies` are decreased (by the corresponding amount in the `shares` array).
+*Effects*: If the Staker in question is delegated to an Operator, the Operator's delegated balance for the `strategy` is decreased by `shares`
 * This method is a no-op if the Staker is not delegated an an Operator.
 
 *Requirements*:

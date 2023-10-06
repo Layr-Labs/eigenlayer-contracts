@@ -147,7 +147,7 @@ The Staker's share balance for the `strategy` is decreased by the removed `share
 
 ```solidity
 function addShares(
-    address grantee,
+    address staker,
     IStrategy strategy,
     uint256 shares
 ) 
@@ -155,25 +155,25 @@ function addShares(
     onlyDelegationManager
 ```
 
-The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). In this case, the `shares` originally removed (via `removeShares`) are awarded to the `grantee` passed in by the `DelegationManager`.
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). In this case, the `shares` originally removed (via `removeShares`) are awarded to the `staker` passed in by the `DelegationManager`.
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
 
 *Effects*:
-* The `grantee's` share balance for the given `strategy` is increased by `shares`
-    * If the prior balance was zero, the `strategy` is added to the `grantee's` strategy list
+* The `staker's` share balance for the given `strategy` is increased by `shares`
+    * If the prior balance was zero, the `strategy` is added to the `staker's` strategy list
 
 *Requirements*:
 * Caller MUST be the `DelegationManager`
-* `grantee` parameter MUST NOT be zero
+* `staker` parameter MUST NOT be zero
 * `shares` parameter MUST NOT be zero
 
 #### `withdrawSharesAsTokens`
 
 ```solidity
 function withdrawSharesAsTokens(
-    address destination,
+    address recipient,
     IStrategy strategy,
     uint shares,
     IERC20 token
@@ -182,7 +182,7 @@ function withdrawSharesAsTokens(
     onlyDelegationManager
 ```
 
-The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as the tokens underlying the shares. In this case, the `shares` originally removed (via `removeShares`) are converted to tokens within the `strategy` and sent to the `destination`.
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as the tokens underlying the shares. In this case, the `shares` originally removed (via `removeShares`) are converted to tokens within the `strategy` and sent to the `recipient`.
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
