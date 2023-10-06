@@ -655,8 +655,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // to only give them back to the original podOwner. Other strategy shares
         // can be awarded to the withdrawer.
         if (strategy == beaconChainETHStrategy) {
-            // update shares amount depending upon the returned value
-            // the return value will be lower than the input value in the case where the staker has an existing share deficit
+            /**
+             * Update shares amount depending upon the returned value.
+             * The return value will be lower than the input value in the case where the staker has an existing share deficit
+             */
             shares = eigenPodManager.addShares({
                 podOwner: staker,
                 shares: shares
@@ -746,12 +748,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get currently active shares and strategies for `staker`
-        uint256 podShares = eigenPodManager.podOwnerShares(staker);
+        int256 podShares = eigenPodManager.podOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
             = strategyManager.getDeposits(staker);
 
         // Has shares in StrategyManager, but not in EigenPodManager
-        if (podShares == 0) {
+        if (podShares <= 0) {
             return (strategyManagerStrats, strategyManagerShares);
         }
 
@@ -763,7 +765,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             strategies = new IStrategy[](1);
             shares = new uint256[](1);
             strategies[0] = beaconChainETHStrategy;
-            shares[0] = podShares;
+            shares[0] = uint256(podShares);
         } else {
             // Has shares in both
             
@@ -781,7 +783,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // 3. Place EigenPodManager strat/shares in return arrays
             strategies[strategies.length - 1] = beaconChainETHStrategy;
-            shares[strategies.length - 1] = podShares;
+            shares[strategies.length - 1] = uint256(podShares);
         }
 
         return (strategies, shares);

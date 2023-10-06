@@ -54,16 +54,15 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     uint256 public maxPods;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
-    /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
-    mapping(address => uint256) public podOwnerShares;
-
     /**
-     * @notice Mapping from Pod owner to an amount in a "deficit-like" accounting structure. This is necessary to accommodate the fact that a pod owner's
-     * virtual "beacon chain ETH shares" can decrease between the pod owner queuing and completing a withdrawal. When the pod owner's shares would otherwise
-     * increase or when a withdrawal, this "deficit" is decreased first _instead_. Likewise, when a withdrawal is completed, this "deficit" is decreased and 
-     * the withdrawal amount is decreased; we can think of this as the withdrawal "paying off the deficit".
+     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
+     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
+     * decrease between the pod owner queuing and completing a withdrawal.
+     * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
+     * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
+     * as the withdrawal "paying off the deficit".
      */
-    mapping(address => uint256) public podOwnerShareDeficit;
+    mapping(address => int256) public podOwnerShares;
 
     /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
