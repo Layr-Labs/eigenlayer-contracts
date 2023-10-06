@@ -195,7 +195,6 @@ contract EigenPodManager is
         }
 
         // Actually withdraw to the destination
-        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
 

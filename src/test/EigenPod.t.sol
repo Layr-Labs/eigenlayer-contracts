@@ -1162,7 +1162,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         uint256 shareAmount = 31e18;
-        cheats.expectRevert("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance");
+        // expect revert from underflow
+        cheats.expectRevert();
         _testQueueWithdrawal(podOwner, shareAmount);
     }
 

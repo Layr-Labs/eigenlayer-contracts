@@ -457,33 +457,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /**
-     * @notice This function is called to decrement withdrawableRestakedExecutionLayerGwei when a validator queues a withdrawal.
-     * @param amountWei is the amount of ETH in wei to decrement withdrawableRestakedExecutionLayerGwei by
-     */
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        require(
-            withdrawableRestakedExecutionLayerGwei >= amountGwei,
-            "EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"
-        );
-        withdrawableRestakedExecutionLayerGwei -= amountGwei;
-    }
-
-    /**
-     * @notice This function is called to increment withdrawableRestakedExecutionLayerGwei when a validator's withdrawal is completed.
-     * @param amountWei is the amount of ETH in wei to increment withdrawableRestakedExecutionLayerGwei by
-     */
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        withdrawableRestakedExecutionLayerGwei += amountGwei;
-    }
-
-    /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * `amountWei` input (when converted to GWEI).
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
+        withdrawableRestakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
         _sendETH(recipient, amountWei);
