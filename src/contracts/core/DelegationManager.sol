@@ -365,33 +365,41 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /// @notice Migrates an existing queued withdrawal from the StrategyManager contract to this contract.
     /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
-    function migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate) external {
-        // check for existence and delete the old storage
-        bytes32 oldWithdrawalRoot = strategyManager.calculateWithdrawalRoot(strategyManagerWithdrawalToMigrate);
-        strategyManager.migrateQueuedWithdrawal(oldWithdrawalRoot);
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory strategyManagerWithdrawalsToMigrate) external {
+        for(uint256 i = 0; i < strategyManagerWithdrawalsToMigrate.length;) {
+            IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate = strategyManagerWithdrawalsToMigrate[i];
+            // Delete withdrawal root from strateyManager
+            (bool isDeleted, bytes32 oldWithdrawalRoot) = strategyManager.migrateQueuedWithdrawal(strategyManagerWithdrawalToMigrate);
+            // If old storage is deleted from strategyManager
+            if (isDeleted) {
+                address staker = strategyManagerWithdrawalToMigrate.staker;
+                // Create queue entry and increment withdrawal nonce
+                uint256 nonce = cumulativeWithdrawalsQueued[staker];
+                cumulativeWithdrawalsQueued[staker]++;
 
-        address staker = strategyManagerWithdrawalToMigrate.staker;
-        // Create queue entry and increment withdrawal nonce
-        uint256 nonce = cumulativeWithdrawalsQueued[staker];
-        cumulativeWithdrawalsQueued[staker]++;
+                Withdrawal memory migratedWithdrawal = Withdrawal({
+                    staker: staker,
+                    delegatedTo: strategyManagerWithdrawalToMigrate.delegatedAddress,
+                    withdrawer: strategyManagerWithdrawalToMigrate.withdrawerAndNonce.withdrawer,
+                    nonce: nonce,
+                    startBlock: strategyManagerWithdrawalToMigrate.withdrawalStartBlock,
+                    strategies: strategyManagerWithdrawalToMigrate.strategies,
+                    shares: strategyManagerWithdrawalToMigrate.shares
+                });
 
-        Withdrawal memory migratedWithdrawal = Withdrawal({
-            staker: staker,
-            delegatedTo: strategyManagerWithdrawalToMigrate.delegatedAddress,
-            withdrawer: strategyManagerWithdrawalToMigrate.withdrawerAndNonce.withdrawer,
-            nonce: nonce,
-            startBlock: strategyManagerWithdrawalToMigrate.withdrawalStartBlock,
-            strategies: strategyManagerWithdrawalToMigrate.strategies,
-            shares: strategyManagerWithdrawalToMigrate.shares
-        });
+                // create the new storage
+                bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
+                pendingWithdrawals[newRoot] = true;
 
-        // create the new storage
-        bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
-        pendingWithdrawals[newRoot] = true;
+                emit WithdrawalQueued(newRoot, migratedWithdrawal);
 
-        emit WithdrawalQueued(newRoot, migratedWithdrawal);
-
-        emit WithdrawalMigrated(oldWithdrawalRoot, newRoot);
+                emit WithdrawalMigrated(oldWithdrawalRoot, newRoot);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        
     }
 
     /**
