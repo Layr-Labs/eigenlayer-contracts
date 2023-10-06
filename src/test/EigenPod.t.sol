@@ -1183,7 +1183,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
 */
-    function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
+    function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal view {
         int256 shares = eigenPodManager.podOwnerShares(podowner);
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         

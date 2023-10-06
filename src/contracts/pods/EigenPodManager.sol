@@ -123,11 +123,11 @@ contract EigenPodManager is
         address podOwner,
         uint256 amountWei
     ) external onlyEigenPod(podOwner) onlyNotFrozen(podOwner) nonReentrant {
-        _addShares(podOwner, amountWei);
+        uint256 sharesAddedAboveZero = _addShares(podOwner, amountWei);
         delegationManager.increaseDelegatedShares({
             staker: podOwner,
             strategy: beaconChainETHStrategy,
-            shares: amountWei
+            shares: sharesAddedAboveZero
         });
         emit BeaconChainETHDeposited(podOwner, amountWei);
     }
