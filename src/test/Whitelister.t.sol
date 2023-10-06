@@ -313,7 +313,7 @@ contract WhitelisterTests is EigenLayerTestHelper {
             shares: shareAmounts,
             staker: staker,
             withdrawer: withdrawer,
-            nonce: uint96(nonce),
+            nonce: nonce,
             startBlock: withdrawalStartBlock,
             delegatedTo: delegatedTo
         });

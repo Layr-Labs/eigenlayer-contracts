@@ -44,6 +44,14 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
 
     /**
+     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    uint256 public withdrawalDelayBlocks;
+
+    /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
      */
@@ -76,9 +84,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    mapping(address => uint96) public numWithdrawalsQueued;
-
-    uint256 public withdrawalDelayBlocks;
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;

@@ -125,71 +125,6 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
     }
 
-    function testRestakeBeaconChainETHSuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
-        // filter out zero case since it will revert with "EigenPodManager._addShares: shares should not be zero!"
-        cheats.assume(amount != 0);
-
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
-
-        cheats.startPrank(address(eigenPod));
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit BeaconChainETHDeposited(staker, amount);
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-
-        uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
-        require(sharesAfter == sharesBefore + amount, "sharesAfter != sharesBefore + amount");
-    }
-
-    function testRestakeBeaconChainETHFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
-        uint256 amount = 1e18;
-        address staker = address(this);
-
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        cheats.assume(improperCaller != address(eigenPod));
-
-        cheats.expectRevert(bytes("EigenPodManager.onlyEigenPod: not a pod"));
-        cheats.startPrank(address(improperCaller));
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-    }
-
-    function testRestakeBeaconChainETHFailsWhenStakerFrozen() public {
-        uint256 amount = 1e18;
-        address staker = address(this);
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        cheats.startPrank(address(eigenPod));
-        cheats.expectRevert(bytes("EigenPodManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-    }
-
-// TODO: salvage / re-implement a check for reentrancy guard on functions, as possible
-    // function testRestakeBeaconChainETHFailsWhenReentering() public {
-    //     uint256 amount = 1e18;
-    //     address staker = address(this);
-    //     IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-
-    //     _beaconChainReentrancyTestsSetup();
-
-    //     address targetToUse = address(eigenPodManager);
-    //     uint256 msgValueToUse = 0;
-    //     bytes memory calldataToUse = abi.encodeWithSelector(EigenPodManager.restakeBeaconChainETH.selector, staker, amount);
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
-
-    //     // etch the EigenPod to instead contain Reenterer code
-    //     vm.etch(address(eigenPod), address(reenterer).code);
-
-    //     cheats.startPrank(address(eigenPod));
-    //     eigenPodManager.restakeBeaconChainETH(staker, amount);
-    //     cheats.stopPrank();
-    // }
-
     function testRecordBeaconChainETHBalanceUpdateFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
         address staker = address(this);
         IEigenPod eigenPod = _deployEigenPodForStaker(staker);
@@ -331,7 +266,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
     //         shares: amountWei,
     //         podOwner: staker,
-    //         nonce: uint96(eigenPodManager.numWithdrawalsQueued(staker)),
+    //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
     //         startBlock: uint32(block.number),
     //         delegatedTo: delegationManagerMock.delegatedTo(staker),
     //         withdrawer: withdrawer
@@ -341,7 +276,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
     //     // get staker nonce and shares before queuing
-    //     uint256 nonceBefore = eigenPodManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
     //     uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
     //     // actually create the queued withdrawal, and check for event emission
@@ -363,7 +298,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
 
     //     // verify that staker nonce incremented correctly and shares decremented correctly
-    //     uint256 nonceAfter = eigenPodManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
     //     uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
     //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
     //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");

@@ -31,7 +31,7 @@ contract StrategyManagerMock is
     uint256[] public sharesToReturn;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
-    mapping(address => uint256) public numWithdrawalsQueued;
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -99,9 +99,9 @@ contract StrategyManagerMock is
 
     function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function addShares(address grantee, IStrategy strategy, uint256 shares) external {}
+    function addShares(address staker, IStrategy strategy, uint256 shares) external {}
     
-    function withdrawSharesAsTokens(address destination, IStrategy strategy, uint256 shares, IERC20 token) external {}
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
@@ -112,7 +112,7 @@ contract StrategyManagerMock is
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
 
-    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external {}
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32) {}
 
     function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
 }

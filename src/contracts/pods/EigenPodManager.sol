@@ -114,25 +114,6 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
-     * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amountWei The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function restakeBeaconChainETH(
-        address podOwner,
-        uint256 amountWei
-    ) external onlyEigenPod(podOwner) onlyNotFrozen(podOwner) nonReentrant {
-        _addShares(podOwner, amountWei);
-        delegationManager.increaseDelegatedShares({
-            staker: podOwner,
-            strategy: beaconChainETHStrategy,
-            shares: amountWei
-        });
-        emit BeaconChainETHDeposited(podOwner, amountWei);
-    }
-
-    /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner is the pod owner whose balance is being updated.
@@ -173,13 +154,27 @@ contract EigenPodManager is
     }
 
     /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
     // TODO the 2 calls here can probably be combined?
     function withdrawSharesAsTokens(
         address podOwner, 
         address destination, 
         uint256 shares
     ) external onlyDelegationManager {
-        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
+        uint256 currentShareDeficit = podOwnerShareDeficit[podOwner];
+
+        // skip dealing with deficit if there isn't any
+        if (currentShareDeficit != 0) {
+            // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+            if (shares > currentShareDeficit) {
+                podOwnerShareDeficit[podOwner] = 0;
+                shares -= currentShareDeficit;
+            // otherwise get rid of as much deficit as possible, and return early
+            } else {
+                podOwnerShareDeficit[podOwner] -= shares;
+            }
+        }
+
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
@@ -266,7 +261,7 @@ contract EigenPodManager is
     // @notice Reduces the `podOwner`'s shares by `shareAmount`, adding to deficit if necessary
     // @dev Returns the number of shares removed from `podOwnerShares[podOwner]`
     function _removeShares(address podOwner, uint256 shareAmount) internal returns (uint256) {
-        require(podOwner != address(0), "EigenPodManager._removeShares: depositor cannot be zero address");
+        require(podOwner != address(0), "EigenPodManager._removeShares: podOwner cannot be zero address");
 
         uint256 currentPodOwnerShares = podOwnerShares[podOwner];
 

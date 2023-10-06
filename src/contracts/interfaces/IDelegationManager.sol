@@ -88,7 +88,7 @@ interface IDelegationManager {
         // The address that can complete the Withdrawal + will receive funds when completing the withdrawal
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
-        uint96 nonce;
+        uint256 nonce;
         // Block number when the Withdrawal was created
         uint32 startBlock;
         // Array of strategies that the Withdrawal contains
@@ -367,6 +367,10 @@ interface IDelegationManager {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
+    function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);

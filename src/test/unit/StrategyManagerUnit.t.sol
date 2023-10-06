@@ -660,7 +660,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //         );
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
-    //     uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
+    //     uint256 nonceBefore = delegationManagerMock.cumulativeWithdrawalsQueued(/*staker*/ address(this));
 
     //     require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
@@ -694,7 +694,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     }
 
     //     uint256 sharesAfter = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
-    //     uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ address(this));
+    //     uint256 nonceAfter = delegationManagerMock.cumulativeWithdrawalsQueued(/*staker*/ address(this));
 
     //     require(strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is false!");
     //     require(sharesAfter == sharesBefore - withdrawalAmount, "sharesAfter != sharesBefore - withdrawalAmount");
@@ -830,7 +830,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //         );
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-    //     uint256 nonceBefore = strategyManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceBefore = delegationManagerMock.cumulativeWithdrawalsQueued(staker);
 
     //     require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
@@ -865,7 +865,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     );
 
     //     uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-    //     uint256 nonceAfter = strategyManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceAfter = delegationManagerMock.cumulativeWithdrawalsQueued(staker);
 
     //     require(strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is false!");
     //     require(sharesAfter == sharesBefore - amount, "sharesAfter != sharesBefore - amount");
@@ -958,7 +958,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     ) = _setUpQueuedWithdrawalStructSingleStrat(staker, /*withdrawer*/ staker, token, strategy, withdrawalAmount);
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
-    //     uint256 nonceBefore = strategyManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceBefore = delegationManagerMock.cumulativeWithdrawalsQueued(staker);
 
     //     require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
@@ -978,7 +978,7 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     );
 
     //     uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
-    //     uint256 nonceAfter = strategyManager.numWithdrawalsQueued(address(this));
+    //     uint256 nonceAfter = delegationManagerMock.cumulativeWithdrawalsQueued(address(this));
 
     //     require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is true!");
     //     require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
@@ -1010,20 +1010,19 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
 
     //     {
-    //         uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
+    //         uint256 nonce = delegationManagerMock.cumulativeWithdrawalsQueued(staker);
 
-    //         IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-    //             withdrawer: staker,
-    //             nonce: (uint96(nonce) - 1)
-    //         });
-    //         queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
-    //             strategies: strategyArray,
-    //             shares: shareAmounts,
-    //             depositor: staker,
-    //             withdrawerAndNonce: withdrawerAndNonce,
-    //             withdrawalStartBlock: uint32(block.number),
-    //             delegatedAddress: strategyManager.delegation().delegatedTo(staker)
-    //         });
+    //         queuedWithdrawal = 
+    //             IDelegationManager.Withdrawal({
+    //                 strategies: strategyArray,
+    //                 shares: shareAmounts,
+    //                 staker: staker,
+    //                 withdrawer: staker,
+    //                 nonce: (nonce - 1),
+    //                 startBlock: uint32(block.number),
+    //                 delegatedTo: strategyManager.delegation().delegatedTo(staker)
+    //             }
+    //         );
     //     }
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(address(this), strategy);
@@ -1072,20 +1071,19 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
 
     //     {
-    //         uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
+    //         uint256 nonce = delegationManagerMock.cumulativeWithdrawalsQueued(staker);
 
-    //         IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-    //             withdrawer: staker,
-    //             nonce: (uint96(nonce) - 1)
-    //         });
-    //         queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
-    //             strategies: strategyArray,
-    //             shares: shareAmounts,
-    //             depositor: staker,
-    //             withdrawerAndNonce: withdrawerAndNonce,
-    //             withdrawalStartBlock: uint32(block.number),
-    //             delegatedAddress: strategyManager.delegation().delegatedTo(staker)
-    //         });
+    //         queuedWithdrawal = 
+    //             IDelegationManager.Withdrawal({
+    //                 strategies: strategyArray,
+    //                 shares: shareAmounts,
+    //                 staker: staker,
+    //                 withdrawer: staker,
+    //                 nonce: (nonce - 1),
+    //                 startBlock: uint32(block.number),
+    //                 delegatedTo: strategyManager.delegation().delegatedTo(staker)
+    //             }
+    //         );
     //     }
 
     //     uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
@@ -1268,20 +1266,19 @@ contract StrategyManagerUnitTests is Test, Utils {
     //     IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
 
     //     {
-    //         uint256 nonce = strategyManager.numWithdrawalsQueued(_tempStakerStorage);
+    //         uint256 nonce = delegationManagerMock.cumulativeWithdrawalsQueued(_tempStakerStorage);
 
-    //         IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-    //             withdrawer: _tempStakerStorage,
-    //             nonce: (uint96(nonce) - 1)
-    //         });
-    //         queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
-    //             strategies: strategyArray,
-    //             shares: shareAmounts,
-    //             depositor: _tempStakerStorage,
-    //             withdrawerAndNonce: withdrawerAndNonce,
-    //             withdrawalStartBlock: uint32(block.number),
-    //             delegatedAddress: strategyManager.delegation().delegatedTo(_tempStakerStorage)
-    //         });
+    //         queuedWithdrawal = 
+    //             IDelegationManager.Withdrawal({
+    //                 strategies: strategyArray,
+    //                 shares: shareAmounts,
+    //                 staker: _tempStakerStorage,
+    //                 withdrawer: _tempStakerStorage,
+    //                 nonce: (nonce - 1),
+    //                 startBlock: uint32(block.number),
+    //                 delegatedTo: strategyManager.delegation().delegatedTo(_tempStakerStorage)
+    //             }
+    //         );
     //     }
 
     //     uint256 middlewareTimesIndex = 0;
@@ -2175,7 +2172,7 @@ contract StrategyManagerUnitTests is Test, Utils {
                 shares: shareAmounts,
                 staker: staker,
                 withdrawer: withdrawer,
-                nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+                nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
                 startBlock: uint32(block.number),
                 delegatedTo: strategyManager.delegation().delegatedTo(staker)
             }
@@ -2241,7 +2238,7 @@ contract StrategyManagerUnitTests is Test, Utils {
                 shares: shareAmounts,
                 staker: staker,
                 withdrawer: withdrawer,
-                nonce: uint96(strategyManager.numWithdrawalsQueued(staker)),
+                nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
                 startBlock: uint32(block.number),
                 delegatedTo: strategyManager.delegation().delegatedTo(staker)
             }

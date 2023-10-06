@@ -14,13 +14,13 @@ import "./IEigenPodManager.sol";
  */
 interface IStrategyManager {
     /**
-     * @notice Emitted when a new deposit occurs on behalf of `depositor`.
-     * @param depositor Is the staker who is depositing funds into EigenLayer.
-     * @param strategy Is the strategy that `depositor` has deposited into.
-     * @param token Is the token that `depositor` deposited.
-     * @param shares Is the number of new shares `depositor` has been granted in `strategy`.
+     * @notice Emitted when a new deposit occurs on behalf of `staker`.
+     * @param staker Is the staker who is depositing funds into EigenLayer.
+     * @param strategy Is the strategy that `staker` has deposited into.
+     * @param token Is the token that `staker` deposited.
+     * @param shares Is the number of new shares `staker` has been granted in `strategy`.
      */
-    event Deposit(address depositor, IERC20 token, IStrategy strategy, uint256 shares);
+    event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
@@ -35,7 +35,7 @@ interface IStrategyManager {
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
@@ -52,7 +52,7 @@ interface IStrategyManager {
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
@@ -75,23 +75,23 @@ interface IStrategyManager {
         bytes memory signature
     ) external returns (uint256 shares);
 
-    /// @notice Used by the DelegationManager to remove a staker's shares from a particular strategy when entering the withdrawal queue
+    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     function removeShares(address staker, IStrategy strategy, uint256 shares) external;
 
-    /// @notice Used by the DelegationManager to award a grantee some shares that have passed through the withdrawal queue
-    function addShares(address grantee, IStrategy strategy, uint256 shares) external;
+    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
+    function addShares(address staker, IStrategy strategy, uint256 shares) external;
     
-    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a destination
-    function withdrawSharesAsTokens(address destination, IStrategy strategy, uint256 shares, IERC20 token) external;
+    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
 
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
     /**
-     * @notice Get all details on the depositor's deposits and corresponding shares
-     * @return (depositor's strategies, shares in these strategies)
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory);
+    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address staker) external view returns (uint256);
@@ -133,13 +133,13 @@ interface IStrategyManager {
     struct DeprecatedStruct_QueuedWithdrawal {
         IStrategy[] strategies;
         uint256[] shares;
-        address depositor;
+        address staker;
         DeprecatedStruct_WithdrawerAndNonce withdrawerAndNonce;
         uint32 withdrawalStartBlock;
         address delegatedAddress;
     }
 
-    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external;
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32);
 
     function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32);
 }
