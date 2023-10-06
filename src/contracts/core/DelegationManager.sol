@@ -363,7 +363,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit WithdrawalCompleted(withdrawalRoot);
     }
 
-    /// @notice Migrates an existing queued withdrawal from the StrategyManager contract to this contract.
+    /// @notice Migrates an array of queued withdrawals from the StrategyManager contract to this contract.
     /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
     function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory strategyManagerWithdrawalsToMigrate) external {
         for(uint256 i = 0; i < strategyManagerWithdrawalsToMigrate.length;) {
