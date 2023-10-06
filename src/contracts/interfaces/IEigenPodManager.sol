@@ -124,5 +124,6 @@ interface IEigenPodManager is IPausable {
     function addShares(address podOwner, uint256 shares) external returns (uint256);
 
     /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 }

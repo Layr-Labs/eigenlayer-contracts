@@ -173,14 +173,29 @@ contract EigenPodManager is
     }
 
     /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
     // TODO the 2 calls here can probably be combined?
     function withdrawSharesAsTokens(
         address podOwner, 
         address destination, 
         uint256 shares
     ) external onlyDelegationManager {
-        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
+        uint256 currentShareDeficit = podOwnerShareDeficit[podOwner];
+
+        // skip dealing with deficit if there isn't any
+        if (currentShareDeficit != 0) {
+            // get rid of the whole deficit if possible, and pass any remaining shares onto destination
+            if (shares > currentShareDeficit) {
+                podOwnerShareDeficit[podOwner] = 0;
+                shares -= currentShareDeficit;
+            // otherwise get rid of as much deficit as possible, and return early
+            } else {
+                podOwnerShareDeficit[podOwner] -= shares;
+            }
+        }
+
         // Actually withdraw to the destination
+        ownerToPod[podOwner].decrementWithdrawableRestakedExecutionLayerGwei(shares);
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
 
