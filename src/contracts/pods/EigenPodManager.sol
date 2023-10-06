@@ -201,14 +201,13 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
-        // skip dealing with deficit if there isn't any
+        // if there wasn't any deficit to begin with, then the increase must be the full `shares` amount
         if (currentPodOwnerShares > 0) {
             return shares;            
-        // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
-        // simply return '0' early if this condition isn't met.
+        // if the updatedPodOwnerShares is zero or less, then there can't be any increase in the amount above zero, so return '0' in this case
         } else if (updatedPodOwnerShares <= 0) {
             return 0;
-        // otherwise, the pod owner's shares amount must have increased by the current amount above zero
+        // otherwise, the pod owner's shares amount must have increased by the amount that their updated balance exceeds zero
         } else {
             return uint256(updatedPodOwnerShares);
         }
