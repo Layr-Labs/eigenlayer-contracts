@@ -15,8 +15,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}
 
-    function restakeBeaconChainETH(address /*podOwner*/, uint256 /*amount*/) external pure {}
-
     function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
     
     function withdrawRestakedBeaconChainETH(address /*podOwner*/, address /*recipient*/, uint256 /*amount*/) external pure {}

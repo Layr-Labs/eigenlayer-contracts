@@ -114,25 +114,6 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
-     * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amountWei The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function restakeBeaconChainETH(
-        address podOwner,
-        uint256 amountWei
-    ) external onlyEigenPod(podOwner) onlyNotFrozen(podOwner) nonReentrant {
-        uint256 sharesAddedAboveZero = _addShares(podOwner, amountWei);
-        delegationManager.increaseDelegatedShares({
-            staker: podOwner,
-            strategy: beaconChainETHStrategy,
-            shares: sharesAddedAboveZero
-        });
-        emit BeaconChainETHDeposited(podOwner, amountWei);
-    }
-
-    /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner is the pod owner whose balance is being updated.

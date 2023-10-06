@@ -120,14 +120,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     }
 
     /**
-     * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
-     * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {}
-
-    /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.

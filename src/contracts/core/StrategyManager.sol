@@ -206,12 +206,15 @@ contract StrategyManager is
 
     /// @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
     /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
-    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external onlyDelegationManager {
-        // check for existence
-        require(withdrawalRootPending[existingWithdrawalRoot], "StrategyManager.migrateQueuedWithdrawal: withdrawal does not exist");
-
-        // delete the withdrawal
-        withdrawalRootPending[existingWithdrawalRoot] = false;
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external onlyDelegationManager returns(bool, bytes32) {
+        bytes32 existingWithdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+        bool isDeleted;
+        // Delete the withdrawal root if it exists
+        if (withdrawalRootPending[existingWithdrawalRoot]) {
+            withdrawalRootPending[existingWithdrawalRoot] = false;
+            isDeleted = true;
+        }
+        return (isDeleted, existingWithdrawalRoot);
     }
 
     /**

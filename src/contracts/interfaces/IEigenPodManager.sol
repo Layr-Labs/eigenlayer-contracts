@@ -55,14 +55,6 @@ interface IEigenPodManager is IPausable {
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
 
     /**
-     * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
-     * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external;
-
-    /**
      * @notice Records an update in beacon chain strategy shares in the strategy manager
      * @param podOwner is the pod owner whose shares are to be updated,
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares

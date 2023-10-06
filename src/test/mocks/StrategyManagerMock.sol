@@ -112,7 +112,7 @@ contract StrategyManagerMock is
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
 
-    function migrateQueuedWithdrawal(bytes32 existingWithdrawalRoot) external {}
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32) {}
 
     function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
 }
