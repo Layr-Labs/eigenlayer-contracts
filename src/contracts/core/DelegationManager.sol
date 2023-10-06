@@ -389,6 +389,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
                 // create the new storage
                 bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
+                // safety check to ensure that root doesn't exist already -- this should *never* be hit
+                require(!pendingWithdrawals[newRoot], "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
                 pendingWithdrawals[newRoot] = true;
 
                 emit WithdrawalQueued(newRoot, migratedWithdrawal);
