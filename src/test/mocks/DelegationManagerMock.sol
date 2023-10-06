@@ -39,7 +39,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
-    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/) external pure {}
+    function decreaseDelegatedShares(
+        address /*staker*/,
+        IStrategy /*strategy*/,
+        uint256 /*shares*/
+    ) external pure {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -100,4 +104,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
+
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 }

@@ -56,7 +56,8 @@ contract WhitelisterTests is EigenLayerTestHelper {
     struct DataForTestWithdrawal {
         IStrategy[] delegatorStrategies;
         uint256[] delegatorShares;
-        IStrategyManager.WithdrawerAndNonce withdrawerAndNonce;
+        address withdrawer;
+        uint96 nonce;
     }
 
     function setUp() public virtual override{
@@ -232,15 +233,10 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("delegatorShares of staker", delegatorShares[0]);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
+            dataForTestWithdrawal.withdrawer = staker;
+            // harcoded nonce value
+            dataForTestWithdrawal.nonce = 0;
 
-            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = 
-                IStrategyManager.WithdrawerAndNonce({
-                    withdrawer: staker,
-                    // harcoded nonce value
-                    nonce: 0
-                }
-            );
-            dataForTestWithdrawal.withdrawerAndNonce = withdrawerAndNonce;
             // find the expected amount out
             expectedTokensOut = delegatorStrategies[0].sharesToUnderlying(delegatorShares[0]);
             emit log_named_uint("expectedTokensOut", expectedTokensOut);
@@ -268,7 +264,8 @@ contract WhitelisterTests is EigenLayerTestHelper {
                 tokensArray,
                 dataForTestWithdrawal.delegatorShares,
                 operator,
-                dataForTestWithdrawal.withdrawerAndNonce,
+                dataForTestWithdrawal.withdrawer,
+                dataForTestWithdrawal.nonce,
                 uint32(block.number),
                 1
             );
@@ -304,26 +301,26 @@ contract WhitelisterTests is EigenLayerTestHelper {
         IERC20[] memory tokensArray,
         uint256[] memory shareAmounts,
         address delegatedTo,
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce,
+        address withdrawer,
+        uint256 nonce,
         uint32 withdrawalStartBlock,
         uint256 middlewareTimesIndex
     )
         internal
     {
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: staker,
-            withdrawerAndNonce: withdrawerAndNonce,
-            withdrawalStartBlock: withdrawalStartBlock,
-            delegatedAddress: delegatedTo
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: uint96(nonce),
+            startBlock: withdrawalStartBlock,
+            delegatedTo: delegatedTo
         });
 
         // emit log("*******************COMPLETE***************************");
         // emit log_named_address("delegatedAddress", delegatedTo);
         // emit log_named_uint("withdrawalStartBlock", withdrawalStartBlock);
-        // emit log_named_uint("withdrawerAndNonce.Nonce", withdrawerAndNonce.nonce);
-        // emit log_named_address("withdrawerAndNonce.Adress", withdrawerAndNonce.withdrawer);
         // emit log_named_address("depositor", staker);
         // emit log("***********************************************************************");
 

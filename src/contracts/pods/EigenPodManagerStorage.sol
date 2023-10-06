@@ -57,14 +57,19 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Pod owner to the number of shares they have in the beacon chain ETH strategy
     mapping(address => uint256) public podOwnerShares;
 
+    /**
+     * @notice Mapping from Pod owner to an amount in a "deficit-like" accounting structure. This is necessary to accommodate the fact that a pod owner's
+     * virtual "beacon chain ETH shares" can decrease between the pod owner queuing and completing a withdrawal. When the pod owner's shares would otherwise
+     * increase or when a withdrawal, this "deficit" is decreased first _instead_. Likewise, when a withdrawal is completed, this "deficit" is decreased and 
+     * the withdrawal amount is decreased; we can think of this as the withdrawal "paying off the deficit".
+     */
+    mapping(address => uint256) public podOwnerShareDeficit;
+
     /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public numWithdrawalsQueued;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;
-
-    // @notice Mapping: pod owner => UndelegationLimboStatus struct. Mapping is internal so we can have a getter that returns a memory struct.
-    mapping(address => IEigenPodManager.UndelegationLimboStatus) internal _podOwnerUndelegationLimboStatus;
 
     constructor(
         IETHPOSDeposit _ethPOS,
@@ -85,5 +90,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[40] private __gap;
 }
