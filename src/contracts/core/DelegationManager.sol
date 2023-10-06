@@ -259,7 +259,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-     function queueWithdrawal(
+    function queueWithdrawal(
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer
