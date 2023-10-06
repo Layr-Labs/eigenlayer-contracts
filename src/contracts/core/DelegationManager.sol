@@ -573,16 +573,45 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     shares: withdrawal.shares[i],
                     token: tokens[i]
                 });
+            // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
             } else {
-                // Award shares back to staker in StrategyManager/EigenPodManager
-                // If staker is delegated, increases shares delegated to operator
-                _addAndDelegateShares({
-                    staker: withdrawal.staker,
-                    withdrawer: msg.sender,
-                    operator: currentOperator,
-                    strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i]
-                });
+                /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
+                 * Other strategy sharescan + will be awarded to the withdrawer.
+                 */
+                if (withdrawal.strategies[i] == beaconChainETHStrategy) {
+                    address staker = withdrawal.staker;
+                    /**
+                    * Update shares amount depending upon the returned value.
+                    * The return value will be lower than the input value in the case where the staker has an existing share deficit
+                    */
+                    uint256 increaseInDelegateableShares = eigenPodManager.addShares({
+                        podOwner: staker,
+                        shares: withdrawal.shares[i]
+                    });
+                    address podOwnerOperator = delegatedTo[staker];
+                    // Similar to `isDelegated` logic
+                    if (podOwnerOperator != address(0)) {
+                        _increaseOperatorShares({
+                            operator: podOwnerOperator,
+                            // the 'staker' here is the address receiving new shares
+                            staker: staker,
+                            strategy: withdrawal.strategies[i],
+                            shares: increaseInDelegateableShares
+                        });
+                    }
+                } else {
+                    strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
+                    // Similar to `isDelegated` logic
+                    if (currentOperator != address(0)) {
+                        _increaseOperatorShares({
+                            operator: currentOperator,
+                            // the 'staker' here is the address receiving new shares
+                            staker: msg.sender,
+                            strategy: withdrawal.strategies[i],
+                            shares: withdrawal.shares[i]
+                        });
+                    }
+                }
             }
 
             unchecked { ++i; }
@@ -675,42 +704,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             });
         } else {
             strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
-        }
-    }
-
-    /**
-     * @notice If the shares are virtual beaconChainETH shares, then adds shares to the `staker` and delegates the new shares to the `staker`s operator.
-     * Otherwise adds `shares` in `strategy` to `withdrawer` and delegates them to `operator`
-     */
-    function _addAndDelegateShares(address staker, address withdrawer, address operator, IStrategy strategy, uint256 shares) internal {
-        // When awarding podOwnerShares in EigenPodManager, we need to be sure
-        // to only give them back to the original podOwner. Other strategy shares
-        // can be awarded to the withdrawer.
-        if (strategy == beaconChainETHStrategy) {
-            /**
-             * Update shares amount depending upon the returned value.
-             * The return value will be lower than the input value in the case where the staker has an existing share deficit
-             */
-            shares = eigenPodManager.addShares({
-                podOwner: staker,
-                shares: shares
-            });
-            // since these shares are given back to the pod owner, they must be delegated to the *pod owner*'s operator, which could be different from the withdrawer's
-            operator = delegatedTo[staker];
-            // we also want to emit the event within `_increaseOperatorShares` with the correct fields. Since the staker receives the shares, they should be in the event.
-            withdrawer = staker;
-        } else {
-            strategyManager.addShares(withdrawer, strategy, shares);
-        }
-        // Similar to `isDelegated` logic
-        if (operator != address(0)) {
-            _increaseOperatorShares({
-                operator: operator,
-                // the 'staker' here is the address receiving new shares
-                staker: withdrawer,
-                strategy: strategy,
-                shares: shares
-            });
         }
     }
 
