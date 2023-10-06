@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/ISlasher.sol";
 import "./DelegationManagerStorage.sol";
 import "../permissions/Pausable.sol";
@@ -18,7 +19,7 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage {
+contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage, ReentrancyGuardUpgradeable {
     // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -299,68 +300,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) {
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+        _completeQueuedWithdrawal(withdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
+    }
 
-        require(
-            pendingWithdrawals[withdrawalRoot], 
-            "DelegationManager.completeQueuedAction: action is not in queue"
-        );
-
-        require(
-            slasher.canWithdraw(withdrawal.delegatedTo, withdrawal.startBlock, middlewareTimesIndex),
-            "DelegationManager.completeQueuedAction: pending action is still slashable"
-        );
-
-        require(
-            withdrawal.startBlock + withdrawalDelayBlocks <= block.number, 
-            "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed"
-        );
-
-        require(
-            msg.sender == withdrawal.withdrawer, 
-            "DelegationManager.completeQueuedAction: only withdrawer can complete action"
-        );
-
-        if (receiveAsTokens) {
-            require(
-                tokens.length == withdrawal.strategies.length, 
-                "DelegationManager.completeQueuedAction: input length mismatch"
-            );
+    /**
+     * @notice Array-ified version of `completeQueuedWithdrawal`.
+     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+     * @param withdrawals The Withdrawals to complete.
+     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param middlewareTimesIndexes One index to reference per Withdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
+     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
+     * @dev See `completeQueuedWithdrawal` for relevant dev tags
+     */
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
+    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            _completeQueuedWithdrawal(withdrawals[i], tokens[i], middlewareTimesIndexes[i], receiveAsTokens[i]);
         }
-
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
-
-        address currentOperator = delegatedTo[msg.sender];
-
-        // Finalize action by converting shares to tokens for each strategy, or
-        // by re-awarding shares in each strategy.
-        for (uint256 i = 0; i < withdrawal.strategies.length; ) {
-            if (receiveAsTokens) {
-                _withdrawSharesAsTokens({
-                    staker: withdrawal.staker,
-                    withdrawer: msg.sender,
-                    strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
-                    token: tokens[i]
-                });
-            } else {
-                // Award shares back to staker in StrategyManager/EigenPodManager
-                // If staker is delegated, increases shares delegated to operator
-                _addAndDelegateShares({
-                    staker: withdrawal.staker,
-                    withdrawer: msg.sender,
-                    operator: currentOperator,
-                    strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i]
-                });
-            }
-
-            unchecked { ++i; }
-        }
-
-        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     /// @notice Migrates an array of queued withdrawals from the StrategyManager contract to this contract.
@@ -559,6 +520,75 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             unchecked { ++i; }
         }
+    }
+
+    function _completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) internal {
+        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+
+        require(
+            pendingWithdrawals[withdrawalRoot], 
+            "DelegationManager.completeQueuedAction: action is not in queue"
+        );
+
+        require(
+            slasher.canWithdraw(withdrawal.delegatedTo, withdrawal.startBlock, middlewareTimesIndex),
+            "DelegationManager.completeQueuedAction: pending action is still slashable"
+        );
+
+        require(
+            withdrawal.startBlock + withdrawalDelayBlocks <= block.number, 
+            "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed"
+        );
+
+        require(
+            msg.sender == withdrawal.withdrawer, 
+            "DelegationManager.completeQueuedAction: only withdrawer can complete action"
+        );
+
+        if (receiveAsTokens) {
+            require(
+                tokens.length == withdrawal.strategies.length, 
+                "DelegationManager.completeQueuedAction: input length mismatch"
+            );
+        }
+
+        // Remove `withdrawalRoot` from pending roots
+        delete pendingWithdrawals[withdrawalRoot];
+
+        address currentOperator = delegatedTo[msg.sender];
+
+        // Finalize action by converting shares to tokens for each strategy, or
+        // by re-awarding shares in each strategy.
+        for (uint256 i = 0; i < withdrawal.strategies.length; ) {
+            if (receiveAsTokens) {
+                _withdrawSharesAsTokens({
+                    staker: withdrawal.staker,
+                    withdrawer: msg.sender,
+                    strategy: withdrawal.strategies[i],
+                    shares: withdrawal.shares[i],
+                    token: tokens[i]
+                });
+            } else {
+                // Award shares back to staker in StrategyManager/EigenPodManager
+                // If staker is delegated, increases shares delegated to operator
+                _addAndDelegateShares({
+                    staker: withdrawal.staker,
+                    withdrawer: msg.sender,
+                    operator: currentOperator,
+                    strategy: withdrawal.strategies[i],
+                    shares: withdrawal.shares[i]
+                });
+            }
+
+            unchecked { ++i; }
+        }
+
+        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
