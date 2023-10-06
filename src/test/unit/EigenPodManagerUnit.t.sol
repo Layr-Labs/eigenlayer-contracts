@@ -331,7 +331,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
     //         shares: amountWei,
     //         podOwner: staker,
-    //         nonce: uint96(eigenPodManager.numWithdrawalsQueued(staker)),
+    //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
     //         startBlock: uint32(block.number),
     //         delegatedTo: delegationManagerMock.delegatedTo(staker),
     //         withdrawer: withdrawer
@@ -341,7 +341,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
     //     // get staker nonce and shares before queuing
-    //     uint256 nonceBefore = eigenPodManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
     //     uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
     //     // actually create the queued withdrawal, and check for event emission
@@ -363,7 +363,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
     //     require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
 
     //     // verify that staker nonce incremented correctly and shares decremented correctly
-    //     uint256 nonceAfter = eigenPodManager.numWithdrawalsQueued(staker);
+    //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
     //     uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
     //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
     //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");

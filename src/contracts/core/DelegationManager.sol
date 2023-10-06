@@ -372,8 +372,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         address staker = strategyManagerWithdrawalToMigrate.depositor;
         // Create queue entry and increment withdrawal nonce
-        uint96 nonce = numWithdrawalsQueued[staker];
-        numWithdrawalsQueued[staker]++;
+        uint256 nonce = cumulativeWithdrawalsQueued[staker];
+        cumulativeWithdrawalsQueued[staker]++;
 
         Withdrawal memory migratedWithdrawal = Withdrawal({
             staker: staker,
@@ -600,8 +600,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
 
         // Create queue entry and increment withdrawal nonce
-        uint96 nonce = numWithdrawalsQueued[staker];
-        numWithdrawalsQueued[staker]++;
+        uint256 nonce = cumulativeWithdrawalsQueued[staker];
+        cumulativeWithdrawalsQueued[staker]++;
 
         Withdrawal memory withdrawal = Withdrawal({
             staker: staker,

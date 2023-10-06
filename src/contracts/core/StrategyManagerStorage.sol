@@ -57,12 +57,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(bytes32 => bool) public withdrawalRootPending;
 
     /*
-     * Reserved space previously used by the deprecated mapping(address => uint256) numWithdrawalsQueued.
+     * Reserved space previously used by the deprecated mapping(address => uint256) cumulativeWithdrawalsQueued.
      * This mapping tracked the cumulative number of queued withdrawals initiated by a staker.
      * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
      */
     // slither-disable-next-line incorrect-shift-in-assembly
-    uint256[1] internal _deprecatedStorage_numWithdrawalsQueued;
+    uint256[1] internal _deprecatedStorage_cumulativeWithdrawalsQueued;
 
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;

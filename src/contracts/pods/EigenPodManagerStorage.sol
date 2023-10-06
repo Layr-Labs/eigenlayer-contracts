@@ -66,7 +66,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     mapping(address => uint256) public podOwnerShareDeficit;
 
     /// @notice Mapping: podOwner => cumulative number of queued withdrawals of beaconchainETH they have ever initiated. only increments (doesn't decrement)
-    mapping(address => uint256) public numWithdrawalsQueued;
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;

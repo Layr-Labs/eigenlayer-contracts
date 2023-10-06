@@ -76,7 +76,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
-    mapping(address => uint96) public numWithdrawalsQueued;
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
     uint256 public withdrawalDelayBlocks;
 
