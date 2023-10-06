@@ -18,9 +18,6 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * functionalities are:
  * - adding and removing strategies that any delegator can deposit into
  * - enabling deposit of assets into specified strategy(s)
- * - enabling withdrawal of assets from specified strategy(s)
- * - recording deposit of ETH into settlement layer
- * - slashing of assets for permissioned strategies
  */
 contract StrategyManager is
     Initializable,
