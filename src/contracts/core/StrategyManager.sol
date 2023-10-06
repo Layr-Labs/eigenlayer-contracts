@@ -111,7 +111,7 @@ contract StrategyManager is
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
@@ -134,7 +134,7 @@ contract StrategyManager is
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
@@ -268,43 +268,43 @@ contract StrategyManager is
     // INTERNAL FUNCTIONS
 
     /**
-     * @notice This function adds `shares` for a given `strategy` to the `depositor` and runs through the necessary update logic.
-     * @param depositor The address to add shares to
-     * @param strategy The Strategy in which the `depositor` is receiving shares
-     * @param shares The amount of shares to grant to the `depositor`
-     * @dev In particular, this function calls `delegation.increaseDelegatedShares(depositor, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[depositor][strategy]`, and adds `strategy`
-     * to the `depositor`'s list of strategies, if it is not in the list already.
+     * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
+     * @param staker The address to add shares to
+     * @param strategy The Strategy in which the `staker` is receiving shares
+     * @param shares The amount of shares to grant to the `staker`
+     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
+     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address depositor, IStrategy strategy, uint256 shares) internal {
+    function _addShares(address staker, IStrategy strategy, uint256 shares) internal {
         // sanity checks on inputs
-        require(depositor != address(0), "StrategyManager._addShares: depositor cannot be zero address");
+        require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
         require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
 
         // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[depositor][strategy] == 0) {
+        if (stakerStrategyShares[staker][strategy] == 0) {
             require(
-                stakerStrategyList[depositor].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
+                stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
                 "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
             );
-            stakerStrategyList[depositor].push(strategy);
+            stakerStrategyList[staker].push(strategy);
         }
 
         // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[depositor][strategy] += shares;
+        stakerStrategyShares[staker][strategy] += shares;
     }
 
     /**
      * @notice Internal function in which `amount` of ERC20 `token` is transferred from `msg.sender` to the Strategy-type contract
-     * `strategy`, with the resulting shares credited to `depositor`.
-     * @param depositor The address that will be credited with the new shares.
+     * `strategy`, with the resulting shares credited to `staker`.
+     * @param staker The address that will be credited with the new shares.
      * @param strategy The Strategy contract to deposit into.
      * @param token The ERC20 token to deposit.
      * @param amount The amount of `token` to deposit.
-     * @return shares The amount of *new* shares in `strategy` that have been credited to the `depositor`.
+     * @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
      */
     function _depositIntoStrategy(
-        address depositor,
+        address staker,
         IStrategy strategy,
         IERC20 token,
         uint256 amount
@@ -315,35 +315,35 @@ contract StrategyManager is
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
         shares = strategy.deposit(token, amount);
 
-        // add the returned shares to the depositor's existing shares for this strategy
-        _addShares(depositor, strategy, shares);
+        // add the returned shares to the staker's existing shares for this strategy
+        _addShares(staker, strategy, shares);
 
         // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(depositor, strategy, shares);
+        delegation.increaseDelegatedShares(staker, strategy, shares);
 
-        emit Deposit(depositor, token, strategy, shares);
+        emit Deposit(staker, token, strategy, shares);
         return shares;
     }
 
     /**
-     * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
-     * @param depositor The address to decrement shares from
-     * @param strategy The strategy for which the `depositor`'s shares are being decremented
+     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @param staker The address to decrement shares from
+     * @param strategy The strategy for which the `staker`'s shares are being decremented
      * @param shareAmount The amount of shares to decrement
-     * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
-     * then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned.
+     * @dev If the amount of shares represents all of the staker`s shares in said strategy,
+     * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
     function _removeShares(
-        address depositor,
+        address staker,
         IStrategy strategy,
         uint256 shareAmount
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
+        require(staker != address(0), "StrategyManager._removeShares: staker cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[depositor][strategy];
+        uint256 userShares = stakerStrategyShares[staker][strategy];
 
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
@@ -351,37 +351,37 @@ contract StrategyManager is
             userShares = userShares - shareAmount;
         }
 
-        // subtract the shares from the depositor's existing shares for this strategy
-        stakerStrategyShares[depositor][strategy] = userShares;
+        // subtract the shares from the staker's existing shares for this strategy
+        stakerStrategyShares[staker][strategy] = userShares;
 
-        // if no existing shares, remove the strategy from the depositor's dynamic array of strategies
+        // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userShares == 0) {
-            _removeStrategyFromStakerStrategyList(depositor, strategy);
+            _removeStrategyFromStakerStrategyList(staker, strategy);
 
-            // return true in the event that the strategy was removed from stakerStrategyList[depositor]
+            // return true in the event that the strategy was removed from stakerStrategyList[staker]
             return true;
         }
-        // return false in the event that the strategy was *not* removed from stakerStrategyList[depositor]
+        // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
         return false;
     }
 
     /**
-     * @notice Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `stakerStrategyList[depositor]`
-     * @param depositor The user whose array will have an entry removed
-     * @param strategy The Strategy to remove from `stakerStrategyList[depositor]`
+     * @notice Removes `strategy` from `staker`'s dynamic array of strategies, i.e. from `stakerStrategyList[staker]`
+     * @param staker The user whose array will have an entry removed
+     * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
      */
     function _removeStrategyFromStakerStrategyList(
-        address depositor,
+        address staker,
         IStrategy strategy
     ) internal {
         //loop through all of the strategies, find the right one, then replace
-        uint256 stratsLength = stakerStrategyList[depositor].length;
+        uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
         for (; j < stratsLength; ) {
-            if (stakerStrategyList[depositor][j] == strategy) {
+            if (stakerStrategyList[staker][j] == strategy) {
                 //replace the strategy with the last strategy in the list
-                stakerStrategyList[depositor][j] = stakerStrategyList[depositor][
-                    stakerStrategyList[depositor].length - 1
+                stakerStrategyList[staker][j] = stakerStrategyList[staker][
+                    stakerStrategyList[staker].length - 1
                 ];
                 break;
             }
@@ -390,7 +390,7 @@ contract StrategyManager is
         // if we didn't find the strategy, revert
         require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
         // pop off the last entry in the list of strategies
-        stakerStrategyList[depositor].pop();
+        stakerStrategyList[staker].pop();
     }
 
     /**
@@ -404,21 +404,21 @@ contract StrategyManager is
 
     // VIEW FUNCTIONS
     /**
-     * @notice Get all details on the depositor's deposits and corresponding shares
-     * @param depositor The staker of interest, whose deposits this function will fetch
-     * @return (depositor's strategies, shares in these strategies)
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @param staker The staker of interest, whose deposits this function will fetch
+     * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
-        uint256 strategiesLength = stakerStrategyList[depositor].length;
+    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ) {
-            shares[i] = stakerStrategyShares[depositor][stakerStrategyList[depositor][i]];
+            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;
             }
         }
-        return (stakerStrategyList[depositor], shares);
+        return (stakerStrategyList[staker], shares);
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
@@ -451,7 +451,7 @@ contract StrategyManager is
                 abi.encode(
                     queuedWithdrawal.strategies,
                     queuedWithdrawal.shares,
-                    queuedWithdrawal.depositor,
+                    queuedWithdrawal.staker,
                     queuedWithdrawal.withdrawerAndNonce,
                     queuedWithdrawal.withdrawalStartBlock,
                     queuedWithdrawal.delegatedAddress

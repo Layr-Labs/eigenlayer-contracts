@@ -370,7 +370,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 oldWithdrawalRoot = strategyManager.calculateWithdrawalRoot(strategyManagerWithdrawalToMigrate);
         strategyManager.migrateQueuedWithdrawal(oldWithdrawalRoot);
 
-        address staker = strategyManagerWithdrawalToMigrate.depositor;
+        address staker = strategyManagerWithdrawalToMigrate.staker;
         // Create queue entry and increment withdrawal nonce
         uint256 nonce = cumulativeWithdrawalsQueued[staker];
         cumulativeWithdrawalsQueued[staker]++;

@@ -280,7 +280,7 @@ contract EigenPodManager is
     // @notice Reduces the `podOwner`'s shares by `shareAmount`, adding to deficit if necessary
     // @dev Returns the number of shares removed from `podOwnerShares[podOwner]`
     function _removeShares(address podOwner, uint256 shareAmount) internal returns (uint256) {
-        require(podOwner != address(0), "EigenPodManager._removeShares: depositor cannot be zero address");
+        require(podOwner != address(0), "EigenPodManager._removeShares: podOwner cannot be zero address");
 
         uint256 currentPodOwnerShares = podOwnerShares[podOwner];
 
