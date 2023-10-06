@@ -154,7 +154,24 @@ contract EigenPodManager is
         address podOwner,
         uint256 shares
     ) external onlyDelegationManager returns (uint256) {
-        return _addShares(podOwner, shares);
+        require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
+        require(int256(shares) > 0, "EigenPodManager.addShares: shares cannot be negative");
+
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        // skip dealing with deficit if there isn't any
+        if (currentPodOwnerShares > 0) {
+            return shares;            
+        // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
+        // simply return '0' early if this condition isn't met.
+        } else if (updatedPodOwnerShares <= 0) {
+            return 0;
+        // otherwise, the pod owner's shares amount must have increased by the current amount above zero
+        } else {
+            return uint256(updatedPodOwnerShares);
+        }
     }
 
     /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
@@ -235,32 +252,6 @@ contract EigenPodManager is
     function _setMaxPods(uint256 _maxPods) internal {
         emit MaxPodsUpdated(maxPods, _maxPods);
         maxPods = _maxPods;
-    }
-
-    /**
-     * @notice Increases the `podOwner`'s shares by `shareAmount`, paying off deficit if possible
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input in the event that the
-     * podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
-     */
-    function _addShares(address podOwner, uint256 shareAmount) internal returns (uint256) {
-        require(podOwner != address(0), "EigenPodManager._addShares: podOwner cannot be zero address");
-        require(int256(shareAmount) > 0, "EigenPodManager._addShares: shareAmount cannot be negative");
-
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shareAmount);
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
-
-        // skip dealing with deficit if there isn't any
-        if (currentPodOwnerShares > 0) {
-            return shareAmount;            
-        // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
-        // simply return '0' early if this condition isn't met.
-        } else if (updatedPodOwnerShares <= 0) {
-            return 0;
-        // otherwise, the pod owner's shares amount must have increased by the current amount above zero
-        } else {
-            return uint256(updatedPodOwnerShares);
-        }
     }
 
     // @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
