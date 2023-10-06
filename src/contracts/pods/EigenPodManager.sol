@@ -21,8 +21,8 @@ import "./EigenPodManagerStorage.sol";
  * @notice The main functionalities are:
  * - creating EigenPods
  * - staking for new validators on EigenPods
- * - keeping track of the balances of all validators of EigenPods, and their stake in EigenLayer
- * - withdrawing eth when withdrawals are initiated
+ * - keeping track of the restaked balances of all EigenPod owners
+ * - withdrawing eth when withdrawals are completed
  */
 contract EigenPodManager is
     Initializable,
@@ -114,8 +114,7 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
-     *         balance of a validator is lower than how much stake they have committed to EigenLayer
+     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
@@ -124,7 +123,49 @@ contract EigenPodManager is
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
-        _recordBeaconChainETHBalanceUpdate(podOwner, sharesDelta);
+        require(podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
+        int256 currentPodOwnerShares = podOwnerShares[podOwner];
+        int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
+        podOwnerShares[podOwner] = updatedPodOwnerShares;
+        // inform the DelegationManager of the change in shares above zero
+
+        // if change in shares is negative, inform the DelegationManager of any decrease in staker shares above zero
+        if (sharesDelta < 0) {
+            // if the currentPodOwnerShares are zero or less, then there will not be any decrease in the amount above zero, so skip making any call here
+            if (currentPodOwnerShares > 0) {
+                uint256 decreaseInPositiveShares;
+                if (updatedPodOwnerShares <= 0) {
+                    decreaseInPositiveShares = uint256(currentPodOwnerShares);
+                } else {
+                    decreaseInPositiveShares = uint256(sharesDelta);
+                }
+                delegationManager.decreaseDelegatedShares({
+                    staker: podOwner,
+                    strategy: beaconChainETHStrategy,
+                    shares: decreaseInPositiveShares
+                });
+            }
+        // if change in shares is positive, inform the DelegationManager of any increase in staker shares above zero
+        } else {
+            // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
+            // skip making any call if this condition isn't met.
+            if (updatedPodOwnerShares > 0) {
+                uint256 increaseInPositiveShares;
+                // if the currentPodOwnerShares are less than zero, then the increase in the amount above zero will be less than `sharesDelta`
+                if (currentPodOwnerShares < 0) {
+                    increaseInPositiveShares = uint256(updatedPodOwnerShares);
+                // otherwise, the pod owner's shares amount above zero must have increased by the full `sharesDelta`
+                } else {
+                    increaseInPositiveShares = uint256(updatedPodOwnerShares);
+                }
+                // inform DelegationManager of the change in shares
+                delegationManager.increaseDelegatedShares({
+                    staker: podOwner,
+                    strategy: beaconChainETHStrategy,
+                    shares: increaseInPositiveShares
+                });
+            }
+        }
     }
 
     /**
@@ -252,53 +293,6 @@ contract EigenPodManager is
     function _setMaxPods(uint256 _maxPods) internal {
         emit MaxPodsUpdated(maxPods, _maxPods);
         maxPods = _maxPods;
-    }
-
-    // @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure delegated shares are also tracked correctly
-    function _recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) internal {
-        require(podOwner != address(0), "EigenPodManager._recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
-        int256 currentPodOwnerShares = podOwnerShares[podOwner];
-        int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
-        podOwnerShares[podOwner] = updatedPodOwnerShares;
-        // inform the DelegationManager of the change in shares above zero
-
-        // if change in shares is negative, inform the DelegationManager of any decrease in staker shares above zero
-        if (sharesDelta < 0) {
-            // if the currentPodOwnerShares are zero or less, then there will not be any decrease in the amount above zero, so skip making any call here
-            if (currentPodOwnerShares > 0) {
-                uint256 decreaseInPositiveShares;
-                if (updatedPodOwnerShares <= 0) {
-                    decreaseInPositiveShares = uint256(currentPodOwnerShares);
-                } else {
-                    decreaseInPositiveShares = uint256(sharesDelta);
-                }
-                delegationManager.decreaseDelegatedShares({
-                    staker: podOwner,
-                    strategy: beaconChainETHStrategy,
-                    shares: decreaseInPositiveShares
-                });
-            }
-        // if change in shares is positive, inform the DelegationManager of any increase in staker shares above zero
-        } else {
-            // the updatedPodOwnerShares must be greater than zero for there to be any increase in the amount above zero
-            // skip making any call if this condition isn't met.
-            if (updatedPodOwnerShares > 0) {
-                uint256 increaseInPositiveShares;
-                // if the currentPodOwnerShares are less than zero, then the increase in the amount above zero will be less than `sharesDelta`
-                if (currentPodOwnerShares < 0) {
-                    increaseInPositiveShares = uint256(updatedPodOwnerShares);
-                // otherwise, the pod owner's shares amount above zero must have increased by the full `sharesDelta`
-                } else {
-                    increaseInPositiveShares = uint256(updatedPodOwnerShares);
-                }
-                // inform DelegationManager of the change in shares
-                delegationManager.increaseDelegatedShares({
-                    staker: podOwner,
-                    strategy: beaconChainETHStrategy,
-                    shares: increaseInPositiveShares
-                });
-            }
-        }
     }
 
     // VIEW FUNCTIONS
