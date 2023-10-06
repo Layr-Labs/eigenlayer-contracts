@@ -386,7 +386,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // virtually deposit for new ETH validator(s)
-        eigenPodManager.restakeBeaconChainETH(podOwner, totalAmountToBeRestakedWei);
+        require(int256(totalAmountToBeRestakedWei) > 0, "EigenPod.verifyWithdrawalCredentials: overflow in totalAmountToBeRestakedWei");
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
     }
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
