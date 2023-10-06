@@ -125,12 +125,12 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
     }
 
-    function testRestakeBeaconChainETHSuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
+    function testRestakeBeaconChainETHSuccessfully(address staker, uint128 amount) public filterFuzzedAddressInputs(staker) {
         // filter out zero case since it will revert with "EigenPodManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
 
         IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
+        int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
         cheats.startPrank(address(eigenPod));
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
@@ -138,8 +138,8 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         eigenPodManager.restakeBeaconChainETH(staker, amount);
         cheats.stopPrank();
 
-        uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
-        require(sharesAfter == sharesBefore + amount, "sharesAfter != sharesBefore + amount");
+        int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
+        require(sharesAfter == sharesBefore + int256(uint256(amount)), "sharesAfter != sharesBefore + amount");
     }
 
     function testRestakeBeaconChainETHFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
@@ -342,7 +342,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     //     // get staker nonce and shares before queuing
     //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
+    //     int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
     //     // actually create the queued withdrawal, and check for event emission
     //     cheats.startPrank(staker);
@@ -364,7 +364,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     //     // verify that staker nonce incremented correctly and shares decremented correctly
     //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
+    //     int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
     //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
     //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
 
