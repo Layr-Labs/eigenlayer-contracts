@@ -185,7 +185,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 shares
     ) external onlyDelegationManager {
-        _removeShares(staker, 0, strategy, shares);
+        _removeShares(staker, strategy, shares);
     }
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
@@ -328,8 +328,6 @@ contract StrategyManager is
     /**
      * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
      * @param depositor The address to decrement shares from
-     * @param strategyIndex The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that
-     * the removal of the depositor's shares results in them having zero remaining shares in the `strategy`
      * @param strategy The strategy for which the `depositor`'s shares are being decremented
      * @param shareAmount The amount of shares to decrement
      * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
@@ -337,7 +335,6 @@ contract StrategyManager is
      */
     function _removeShares(
         address depositor,
-        uint256 strategyIndex,
         IStrategy strategy,
         uint256 shareAmount
     ) internal returns (bool) {
@@ -359,7 +356,7 @@ contract StrategyManager is
 
         // if no existing shares, remove the strategy from the depositor's dynamic array of strategies
         if (userShares == 0) {
-            _removeStrategyFromStakerStrategyList(depositor, strategyIndex, strategy);
+            _removeStrategyFromStakerStrategyList(depositor, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[depositor]
             return true;
@@ -371,42 +368,27 @@ contract StrategyManager is
     /**
      * @notice Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `stakerStrategyList[depositor]`
      * @param depositor The user whose array will have an entry removed
-     * @param strategyIndex Preferably the index of `strategy` in `stakerStrategyList[depositor]`. If the input is incorrect, then a brute-force
-     * fallback routine will be used to find the correct input
      * @param strategy The Strategy to remove from `stakerStrategyList[depositor]`
-     * @dev the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
-     * index is incorrect, then we revert to a brute-force search.
      */
     function _removeStrategyFromStakerStrategyList(
         address depositor,
-        uint256 strategyIndex,
         IStrategy strategy
     ) internal {
-        // if the strategy matches with the strategy index provided
-        if (stakerStrategyList[depositor][strategyIndex] == strategy) {
-            // replace the strategy with the last strategy in the list
-            stakerStrategyList[depositor][strategyIndex] = stakerStrategyList[depositor][
-                stakerStrategyList[depositor].length - 1
-            ];
-        } else {
-            //loop through all of the strategies, find the right one, then replace
-            uint256 stratsLength = stakerStrategyList[depositor].length;
-            uint256 j = 0;
-            for (; j < stratsLength; ) {
-                if (stakerStrategyList[depositor][j] == strategy) {
-                    //replace the strategy with the last strategy in the list
-                    stakerStrategyList[depositor][j] = stakerStrategyList[depositor][
-                        stakerStrategyList[depositor].length - 1
-                    ];
-                    break;
-                }
-                unchecked {
-                    ++j;
-                }
+        //loop through all of the strategies, find the right one, then replace
+        uint256 stratsLength = stakerStrategyList[depositor].length;
+        uint256 j = 0;
+        for (; j < stratsLength; ) {
+            if (stakerStrategyList[depositor][j] == strategy) {
+                //replace the strategy with the last strategy in the list
+                stakerStrategyList[depositor][j] = stakerStrategyList[depositor][
+                    stakerStrategyList[depositor].length - 1
+                ];
+                break;
             }
-            // if we didn't find the strategy, revert
-            require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
+            unchecked { ++j; }
         }
+        // if we didn't find the strategy, revert
+        require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
         // pop off the last entry in the list of strategies
         stakerStrategyList[depositor].pop();
     }
