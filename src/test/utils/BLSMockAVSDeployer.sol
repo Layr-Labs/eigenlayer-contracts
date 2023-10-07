@@ -71,8 +71,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
         address[] memory operators = new address[](maxOperatorsToRegister);
         BN254.G1Point[] memory pubkeys = new BN254.G1Point[](maxOperatorsToRegister);
         BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature;
-        nonSignerStakesAndSignature.quorumApks = new BN254.G1Point[](quorumNumbers.length);
-        nonSignerStakesAndSignature.nonSignerPubkeys = new BN254.G1Point[](numNonSigners);
+        nonSignerStakesAndSignature.quorumApksG1 = new BN254.G1Point[](quorumNumbers.length);
+        nonSignerStakesAndSignature.nonSignersPubkeysG1 = new BN254.G1Point[](numNonSigners);
         bytes32[] memory nonSignerOperatorIds = new bytes32[](numNonSigners);
         {
             uint256 signerIndex = 0;
@@ -84,8 +84,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
                     signerIndex++;
                 } else if (nonSignerIndex < nonSignerPrivateKeys.length) {
                     privateKeys[i] = nonSignerPrivateKeys[nonSignerIndex];
-                    nonSignerStakesAndSignature.nonSignerPubkeys[nonSignerIndex] = BN254.generatorG1().scalar_mul(privateKeys[i]);
-                    nonSignerOperatorIds[nonSignerIndex] = nonSignerStakesAndSignature.nonSignerPubkeys[nonSignerIndex].hashG1Point();
+                    nonSignerStakesAndSignature.nonSignersPubkeysG1[nonSignerIndex] = BN254.generatorG1().scalar_mul(privateKeys[i]);
+                    nonSignerOperatorIds[nonSignerIndex] = nonSignerStakesAndSignature.nonSignersPubkeysG1[nonSignerIndex].hashG1Point();
                     nonSignerIndex++;
                 } else {
                     privateKeys[i] = signerPrivateKeys[signerIndex];
@@ -96,8 +96,8 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
                 pubkeys[i] = BN254.generatorG1().scalar_mul(privateKeys[i]);
 
                 // add the public key to each quorum
-                for (uint j = 0; j < nonSignerStakesAndSignature.quorumApks.length; j++) {
-                    nonSignerStakesAndSignature.quorumApks[j] = nonSignerStakesAndSignature.quorumApks[j].plus(pubkeys[i]);
+                for (uint j = 0; j < nonSignerStakesAndSignature.quorumApksG1.length; j++) {
+                    nonSignerStakesAndSignature.quorumApksG1[j] = nonSignerStakesAndSignature.quorumApksG1[j].plus(pubkeys[i]);
                 }
             }
         }
@@ -118,12 +118,12 @@ contract BLSMockAVSDeployer is MockAVSDeployer {
             nonSignerOperatorIds
         );
 
-        nonSignerStakesAndSignature.nonSignerQuorumBitmapIndices = checkSignaturesIndices.nonSignerQuorumBitmapIndices;
-        nonSignerStakesAndSignature.apkG2 = aggSignerApkG2;
-        nonSignerStakesAndSignature.sigma = sigma;
+        nonSignerStakesAndSignature.nonSignersQuorumBitmapIndices = checkSignaturesIndices.nonSignersQuorumBitmapIndices;
+        nonSignerStakesAndSignature.signersApkG2 = aggSignerApkG2;
+        nonSignerStakesAndSignature.signersAggSigG1 = sigma;
         nonSignerStakesAndSignature.quorumApkIndices = checkSignaturesIndices.quorumApkIndices;
-        nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
-        nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
+        nonSignerStakesAndSignature.quorumTotalStakeIndices = checkSignaturesIndices.quorumTotalStakeIndices;
+        nonSignerStakesAndSignature.quorumNonSignersStakeIndices = checkSignaturesIndices.quorumNonSignersStakeIndices;
 
         return (referenceBlockNumber, nonSignerStakesAndSignature);
     }
