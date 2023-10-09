@@ -20,6 +20,8 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -34,7 +36,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
 
@@ -57,8 +59,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice The single EigenPodManager for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    ///@notice The maximum amount of ETH, in gwei, a validator can have staked in the beacon chain
-    uint64 public immutable MAX_VALIDATOR_BALANCE_GWEI;
+    ///@notice The maximum amount of ETH, in gwei, a validator can have restaked in the eigenlayer
+    uint64 public immutable MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
 
     /**
      * @notice The value used in our effective restaked balance calculation, to set the
@@ -147,13 +149,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IETHPOSDeposit _ethPOS,
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
-        uint64 _MAX_VALIDATOR_BALANCE_GWEI,
+        uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
         uint64 _RESTAKED_BALANCE_OFFSET_GWEI
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
-        MAX_VALIDATOR_BALANCE_GWEI = _MAX_VALIDATOR_BALANCE_GWEI;
+        MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
         _disableInitializers();
     }
@@ -677,20 +679,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * in the beacon chain as a full withdrawal.  Thus such a validator can prove another full withdrawal, and
          * withdraw that ETH via the queuedWithdrawal flow in the strategy manager.
          */
-            // if the withdrawal amount is greater than the MAX_VALIDATOR_BALANCE_GWEI (i.e. the max amount restaked on EigenLayer, per ETH validator)
-        uint64 maxRestakedBalanceGwei = _calculateRestakedBalanceGwei(MAX_VALIDATOR_BALANCE_GWEI);
-        if (withdrawalAmountGwei > maxRestakedBalanceGwei) {
+            // if the withdrawal amount is greater than the MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR (i.e. the max amount restaked on EigenLayer, per ETH validator)
+        if (withdrawalAmountGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
             // then the excess is immediately withdrawable
             verifiedWithdrawal.amountToSend =
-                uint256(withdrawalAmountGwei - maxRestakedBalanceGwei) *
+                uint256(withdrawalAmountGwei - MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) *
                 uint256(GWEI_TO_WEI);
-            // and the extra execution layer ETH in the contract is MAX_VALIDATOR_BALANCE_GWEI, which must be withdrawn through EigenLayer's normal withdrawal process
-            withdrawableRestakedExecutionLayerGwei += maxRestakedBalanceGwei;
-            withdrawalAmountWei = maxRestakedBalanceGwei * GWEI_TO_WEI;
+            // and the extra execution layer ETH in the contract is MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, which must be withdrawn through EigenLayer's normal withdrawal process
+            withdrawableRestakedExecutionLayerGwei += MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+            withdrawalAmountWei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI;
         } else {
             // otherwise, just use the full withdrawal amount to continue to "back" the podOwner's remaining shares in EigenLayer
             // (i.e. none is instantly withdrawable)
-            withdrawalAmountGwei = _calculateRestakedBalanceGwei(withdrawalAmountGwei);
             withdrawableRestakedExecutionLayerGwei += withdrawalAmountGwei;
             withdrawalAmountWei = withdrawalAmountGwei * GWEI_TO_WEI;
         }
@@ -737,6 +737,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _processWithdrawalBeforeRestaking(address _podOwner) internal {
         mostRecentWithdrawalTimestamp = uint32(block.timestamp);
+        nonBeaconChainETHBalanceWei = 0;
         _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
     }
 
@@ -759,7 +760,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         // slither-disable-next-line divide-before-multiply
         uint64 effectiveBalanceGwei = uint64(((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI) * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_VALIDATOR_BALANCE_GWEI, effectiveBalanceGwei));
+        return uint64(MathUpgradeable.min(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, effectiveBalanceGwei));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {

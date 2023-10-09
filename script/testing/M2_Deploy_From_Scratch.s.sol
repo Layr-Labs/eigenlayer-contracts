@@ -77,7 +77,7 @@ contract Deployer_M2 is Script, Test {
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     // IMMUTABLES TO SET
-    uint64 MAX_VALIDATOR_BALANCE_GWEI;
+    uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
     uint64 RESTAKED_BALANCE_OFFSET_GWEI;
     uint64 GENESIS_TIME = 1616508000;
 
@@ -113,7 +113,7 @@ contract Deployer_M2 is Script, Test {
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
-        MAX_VALIDATOR_BALANCE_GWEI = uint64(stdJson.readUint(config_data, ".eigenPod.MAX_VALIDATOR_BALANCE_GWEI"));
+        MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = uint64(stdJson.readUint(config_data, ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR"));
         RESTAKED_BALANCE_OFFSET_GWEI = uint64(stdJson.readUint(config_data, ".eigenPod.RESTAKED_BALANCE_OFFSET_GWEI"));
 
         // tokens to deploy strategies for
@@ -176,7 +176,7 @@ contract Deployer_M2 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_VALIDATOR_BALANCE_GWEI,
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             RESTAKED_BALANCE_OFFSET_GWEI
         );
 
@@ -444,9 +444,9 @@ contract Deployer_M2 is Script, Test {
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
-        // uint256 MAX_VALIDATOR_BALANCE_GWEI = 31 ether;
-        require(eigenPodImplementation.MAX_VALIDATOR_BALANCE_GWEI() == 31 gwei,
-            "eigenPod: MAX_VALIDATOR_BALANCE_GWEI initialized incorrectly");
+        // uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31 ether;
+        require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 31 gwei,
+            "eigenPod: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR initialized incorrectly");
 
         require(strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly");
