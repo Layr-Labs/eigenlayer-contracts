@@ -45,6 +45,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
+    /// @notice The number of seconds in a slot in the beacon chain
+    uint256 internal constant SECONDS_PER_SLOT = 12;
+
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -62,6 +65,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * amount by which to underestimate the validator's effective balance.
      */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
+
+    /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
+    uint64 public immutable GENESIS_TIME;
 
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
@@ -202,6 +208,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
+
+        require(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) >
+                (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH, "balance update is being proven after a validator is withdrawable");
+        
 
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
@@ -759,6 +769,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal pure returns (int256) {
         return (int256(newAmountWei) - int256(currentAmountWei));
     }
+
+    // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
+    function _computeSlotAtTimestamp(uint64 timestamp) internal view returns (uint64) {
+        require(timestamp >= GENESIS_TIME, "EigenPod._computeSlotAtTimestamp: timestamp is before genesis");
+        return (timestamp - GENESIS_TIME) / SECONDS_PER_SLOT;
+    }
+
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
