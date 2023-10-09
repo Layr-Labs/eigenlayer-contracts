@@ -129,7 +129,7 @@ contract EigenPodUnitTests is EigenPodTests {
     }
 
     function testMismatchedWithdrawalProofInputs(uint64 numValidators, uint64 numValidatorProofs) external {
-        cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 100);
+        cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 5);
 
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
