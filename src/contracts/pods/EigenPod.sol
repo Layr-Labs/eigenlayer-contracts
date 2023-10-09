@@ -208,10 +208,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32[] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
         // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's balance *recently* changed.
+        emit log_named_uint("oracleTimestamp", oracleTimestamp);
+        emit log_named_uint("block.timestamp", block.timestamp);
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
+
+        emit log_named_uint("withdrawable epoch", Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]));
+        emit log_named_uint("current epoch", _computeSlotAtTimestamp(oracleTimestamp) / BeaconChainProofs.SLOTS_PER_EPOCH);
+        emit log_named_uint("slot at timestamp", _computeSlotAtTimestamp(oracleTimestamp)); 
+
 
         /**
         * checks that a balance update can only be made before the validator is withdrawable.  If this is not checked

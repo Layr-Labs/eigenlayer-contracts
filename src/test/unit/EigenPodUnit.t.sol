@@ -50,7 +50,8 @@ contract EigenPodUnitTests is EigenPodTests {
         cheats.stopPrank();
     }
 
-    function testBalanceProofWithWrongTimestamp() public {
+    function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
+        cheats.assume(timestamp > GOERLI_GENESIS_TIME);
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -62,10 +63,10 @@ contract EigenPodUnitTests is EigenPodTests {
          // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         // prove overcommitted balance
-        cheats.roll(block.number + 10);
+        cheats.warp(timestamp);
         _proveOverCommittedStake(newPod);
 
-        cheats.roll(block.number - 5);
+        
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
@@ -74,7 +75,7 @@ contract EigenPodUnitTests is EigenPodTests {
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-        newPod.verifyBalanceUpdate(uint64(block.number), validatorIndex, stateRootProofStruct, proofs, validatorFields);
+        newPod.verifyBalanceUpdate(uint64(block.timestamp - 1), validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 
 
