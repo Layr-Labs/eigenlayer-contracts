@@ -248,7 +248,8 @@ contract EigenPodUnitTests is EigenPodTests {
     * will simply send the entire ETH balance (32 ETH) to the owner. The owner activates restaking, 
     * creates a validator and verifies the withdrawal credentials, receiving 32 ETH in shares.  
     * They can exit the validator, the pod gets the 32ETH and they can call withdrawNonBeaconChainETHBalanceWei
-    * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.
+    * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.  This was an issue because 
+    * nonBeaconChainETHBalanceWei was never zeroed out in _processWithdrawalBeforeRestaking
      */
     function testValidatorBalanceCannotBeRemovedFromPodViaNonBeaconChainETHBalanceWei() external {
         cheats.startPrank(podOwner);
@@ -261,11 +262,16 @@ contract EigenPodUnitTests is EigenPodTests {
         uint256 amount = 32 ether;
 
         cheats.deal(address(this), amount);
+        // simulate a withdrawal processed on the beacon chain, pod balance goes to 32 ETH
         Address.sendValue(payable(address(newPod)), amount);
         require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
+        //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(1)));
         //this is an M1 pod so hasRestaked should be false
         require(newPod.hasRestaked() == false, "Pod should be restaked");
+        cheats.startPrank(podOwner);
         newPod.activateRestaking();
+        cheats.stopPrank();
         require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
     }
 
