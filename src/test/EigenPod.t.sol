@@ -555,14 +555,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice verifies that multiple full withdrawals for a single validator fail
     function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
         newPod = testFullWithdrawalFlow();
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
+        emit log_named_uint("HELLOWOWOWOWO", newPod.nonBeaconChainETHBalanceWei());
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
+        emit log("hello");
+        cheats.deal(address(newPod), leftOverBalanceWEI);
+
+
         BeaconChainProofs.WithdrawalProof memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
         withdrawalFields = getWithdrawalFields();   
         validatorFields = getValidatorFields();
-        
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
-        cheats.deal(address(newPod), leftOverBalanceWEI);
 
         BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
         withdrawalProofsArray[0] = withdrawalProofs;
@@ -1196,9 +1199,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-
-            //cheats.expectEmit(true, true, true, true, address(newPod));
-            emit FullWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofsArray[0].slotRoot)), podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
         }
         require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
@@ -1206,12 +1206,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
             "pod delayed withdrawal balance hasn't been updated correctly");
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
-
+    
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
         uint256 podOwnerBalanceBefore = address(podOwner).balance;
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
         require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
-
+        return newPod;
     }
 
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
