@@ -150,13 +150,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
+        uint64 _GENESIS_TIME
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
+        GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
 
@@ -210,9 +212,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
-
+        
+        // checks that a balance update can only be made before the validator is withdrawable
         require(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) >
-                (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH, "balance update is being proven after a validator is withdrawable");
+                (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH, "EigenPod.verifyBalanceUpdate: balance update is being proven after a validator is withdrawable");
         
 
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
@@ -774,7 +777,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
     function _computeSlotAtTimestamp(uint64 timestamp) internal view returns (uint64) {
         require(timestamp >= GENESIS_TIME, "EigenPod._computeSlotAtTimestamp: timestamp is before genesis");
-        return (timestamp - GENESIS_TIME) / SECONDS_PER_SLOT;
+        return uint64((timestamp - GENESIS_TIME) / SECONDS_PER_SLOT);
     }
 
 

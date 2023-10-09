@@ -79,7 +79,7 @@ contract Deployer_M1 is Script, Test {
     uint256 REQUIRED_BALANCE_WEI;
     uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
     uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
-    uint64 GENESIS_TIME = 1616508000;
+    uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -177,7 +177,8 @@ contract Deployer_M1 is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             uint64(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
-            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
+            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI),
+            GOERLI_GENESIS_TIME
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));

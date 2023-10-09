@@ -61,7 +61,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
     uint64  MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31e9;
     uint64  RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
-    uint64 internal constant GENESIS_TIME = 1616508000;
+    uint64 internal constant GOERLI_GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
     // bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
@@ -153,7 +153,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 delayedWithdrawalRouter,
                 IEigenPodManager(podManagerAddress),
                 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-                RESTAKED_BALANCE_OFFSET_GWEI
+                RESTAKED_BALANCE_OFFSET_GWEI,
+                GOERLI_GENESIS_TIME
         );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
@@ -1454,7 +1455,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
-        return uint64(GENESIS_TIME + slot * SECONDS_PER_SLOT);
+        return uint64(GOERLI_GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
 
