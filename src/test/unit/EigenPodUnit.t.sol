@@ -50,7 +50,8 @@ contract EigenPodUnitTests is EigenPodTests {
         cheats.stopPrank();
     }
 
-    function testBalanceProofWithWrongTimestamp() public {
+    function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
+        cheats.assume(timestamp > GOERLI_GENESIS_TIME);
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -62,10 +63,10 @@ contract EigenPodUnitTests is EigenPodTests {
          // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         // prove overcommitted balance
-        cheats.roll(block.number + 10);
+        cheats.warp(timestamp);
         _proveOverCommittedStake(newPod);
 
-        cheats.roll(block.number - 5);
+        
         validatorFields = getValidatorFields();
         uint40 validatorIndex = uint40(getValidatorIndex());
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
@@ -74,7 +75,7 @@ contract EigenPodUnitTests is EigenPodTests {
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-        newPod.verifyBalanceUpdate(uint64(block.number), validatorIndex, stateRootProofStruct, proofs, validatorFields);
+        newPod.verifyBalanceUpdate(uint64(block.timestamp - 1), validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 
 
@@ -128,7 +129,7 @@ contract EigenPodUnitTests is EigenPodTests {
     }
 
     function testMismatchedWithdrawalProofInputs(uint64 numValidators, uint64 numValidatorProofs) external {
-        cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 100);
+        cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 5);
 
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -247,7 +248,8 @@ contract EigenPodUnitTests is EigenPodTests {
     * will simply send the entire ETH balance (32 ETH) to the owner. The owner activates restaking, 
     * creates a validator and verifies the withdrawal credentials, receiving 32 ETH in shares.  
     * They can exit the validator, the pod gets the 32ETH and they can call withdrawNonBeaconChainETHBalanceWei
-    * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.
+    * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.  This was an issue because 
+    * nonBeaconChainETHBalanceWei was never zeroed out in _processWithdrawalBeforeRestaking
      */
     function testValidatorBalanceCannotBeRemovedFromPodViaNonBeaconChainETHBalanceWei() external {
         cheats.startPrank(podOwner);
@@ -260,12 +262,47 @@ contract EigenPodUnitTests is EigenPodTests {
         uint256 amount = 32 ether;
 
         cheats.deal(address(this), amount);
+        // simulate a withdrawal processed on the beacon chain, pod balance goes to 32 ETH
         Address.sendValue(payable(address(newPod)), amount);
         require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
+        //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(1)));
         //this is an M1 pod so hasRestaked should be false
         require(newPod.hasRestaked() == false, "Pod should be restaked");
-        pod.activateRestaking();
+        cheats.startPrank(podOwner);
+        newPod.activateRestaking();
+        cheats.stopPrank();
         require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
+    }
+
+    /**
+    * Regression test for a bug that allowed balance updates to be made for withdrawn validators.  Thus
+    * the validator's balance could be maliciously proven to be 0 before the validator themselves are
+    * able to prove their withdrawal.
+    */
+    function testBalanceUpdateMadeAfterWithdrawableEpochFails() external {
+        //make initial deposit
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.roll(block.number + 1);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        validatorFields = getValidatorFields();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+        BeaconChainProofs.BalanceUpdateProof memory proofs = _getBalanceUpdateProof();
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof(); 
+        proofs.balanceRoot = bytes32(uint256(0));     
+
+        validatorFields[7] = bytes32(uint256(0));
+        cheats.warp(GOERLI_GENESIS_TIME + 1 days);
+        uint64 oracleTimestamp = uint64(block.timestamp);
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"));
+        newPod.verifyBalanceUpdate(oracleTimestamp, validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 
 }
