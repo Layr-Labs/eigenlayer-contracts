@@ -326,26 +326,26 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /// @notice Migrates an array of queued withdrawals from the StrategyManager contract to this contract.
     /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
-    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory strategyManagerWithdrawalsToMigrate) external {
-        for(uint256 i = 0; i < strategyManagerWithdrawalsToMigrate.length;) {
-            IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory strategyManagerWithdrawalToMigrate = strategyManagerWithdrawalsToMigrate[i];
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToMigrate) external {
+        for(uint256 i = 0; i < withdrawalsToMigrate.length;) {
+            IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory withdrawalToMigrate = withdrawalsToMigrate[i];
             // Delete withdrawal root from strateyManager
-            (bool isDeleted, bytes32 oldWithdrawalRoot) = strategyManager.migrateQueuedWithdrawal(strategyManagerWithdrawalToMigrate);
+            (bool isDeleted, bytes32 oldWithdrawalRoot) = strategyManager.migrateQueuedWithdrawal(withdrawalToMigrate);
             // If old storage is deleted from strategyManager
             if (isDeleted) {
-                address staker = strategyManagerWithdrawalToMigrate.staker;
+                address staker = withdrawalToMigrate.staker;
                 // Create queue entry and increment withdrawal nonce
                 uint256 nonce = cumulativeWithdrawalsQueued[staker];
                 cumulativeWithdrawalsQueued[staker]++;
 
                 Withdrawal memory migratedWithdrawal = Withdrawal({
                     staker: staker,
-                    delegatedTo: strategyManagerWithdrawalToMigrate.delegatedAddress,
-                    withdrawer: strategyManagerWithdrawalToMigrate.withdrawerAndNonce.withdrawer,
+                    delegatedTo: withdrawalToMigrate.delegatedAddress,
+                    withdrawer: withdrawalToMigrate.withdrawerAndNonce.withdrawer,
                     nonce: nonce,
-                    startBlock: strategyManagerWithdrawalToMigrate.withdrawalStartBlock,
-                    strategies: strategyManagerWithdrawalToMigrate.strategies,
-                    shares: strategyManagerWithdrawalToMigrate.shares
+                    startBlock: withdrawalToMigrate.withdrawalStartBlock,
+                    strategies: withdrawalToMigrate.strategies,
+                    shares: withdrawalToMigrate.shares
                 });
 
                 // create the new storage
@@ -777,7 +777,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Returns the number of actively-delegatable shares a staker has across all strategies
+     * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
+     * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
      */
     function getDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
         // Get currently active shares and strategies for `staker`
@@ -785,7 +786,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
             = strategyManager.getDeposits(staker);
 
-        // Has shares in StrategyManager, but not in EigenPodManager
+        // Has no shares in EigenPodManager, but potentially some in StrategyManager
         if (podShares <= 0) {
             return (strategyManagerStrats, strategyManagerShares);
         }
