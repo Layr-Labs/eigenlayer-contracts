@@ -159,6 +159,7 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
+* `DelegationManager.completeQueuedWithdrawals`
 
 *Effects*:
 * The `staker's` share balance for the given `strategy` is increased by `shares`
@@ -186,6 +187,7 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
+* `DelegationManager.completeQueuedWithdrawals`
 
 *Effects*:
 * Calls [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
@@ -196,12 +198,17 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 
 ### Strategies
 
-`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file.
+`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file:
+* [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
+* [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
 #### `StrategyBaseTVLLimits.deposit`
 
 ```solidity
-function deposit(IERC20 token, uint256 amount)
+function deposit(
+    IERC20 token, 
+    uint256 amount
+)
     external
     onlyWhenNotPaused(PAUSED_DEPOSITS)
     onlyStrategyManager
@@ -230,7 +237,11 @@ The new shares created are returned to the `StrategyManager` to be added to the 
 #### `StrategyBaseTVLLimits.withdraw`
 
 ```solidity
-function withdraw(address depositor, IERC20 token, uint256 amountShares)
+function withdraw(
+    address recipient, 
+    IERC20 token, 
+    uint256 amountShares
+)
     external
     onlyWhenNotPaused(PAUSED_WITHDRAWALS)
     onlyStrategyManager
@@ -238,14 +249,15 @@ function withdraw(address depositor, IERC20 token, uint256 amountShares)
 
 The `StrategyManager` calls this method when a queued withdrawal is completed and the withdrawer has specified they would like to convert their withdrawn shares to tokens. 
 
-This method converts the withdrawal shares back into tokens using the strategy's exchange rate. The strategy's total shares are decreased to reflect the withdrawal before transferring the tokens to the withdrawer.
+This method converts the withdrawal shares back into tokens using the strategy's exchange rate. The strategy's total shares are decreased to reflect the withdrawal before transferring the tokens to the `recipient`.
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
+* `DelegationManager.completeQueuedWithdrawals`
 
 *Effects*:
 * `StrategyBaseTVLLimits.totalShares` is decreased to account for the shares being withdrawn
-* `underlyingToken.safeTransfer` is called to transfer the tokens to the withdrawer
+* `underlyingToken.safeTransfer` is called to transfer the tokens to the `recipient`
 
 *Requirements*:
 * Caller MUST be the `StrategyManager`
@@ -255,6 +267,10 @@ This method converts the withdrawal shares back into tokens using the strategy's
 * The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
 
 ### System Configuration
+
+* [`StrategyManager.setStrategyWhitelister`](#setstrategywhitelister)
+* [`StrategyManager.addStrategiesToDepositWhitelist`](#addstrategiestodepositwhitelist)
+* [`StrategyManager.removeStrategiesFromDepositWhitelist`](#removestrategiesfromdepositwhitelist)
 
 #### `setStrategyWhitelister`
 
