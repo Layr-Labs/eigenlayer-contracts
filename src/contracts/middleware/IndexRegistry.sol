@@ -4,6 +4,10 @@ pragma solidity =0.8.12;
 import "./IndexRegistryStorage.sol";
 import "../libraries/BN254.sol";
 
+/**
+ * @title A `Registry` that keeps track of an ordered list of operators for each quorum
+ * @author Layr Labs, Inc.
+ */
 contract IndexRegistry is IndexRegistryStorage {
 
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
