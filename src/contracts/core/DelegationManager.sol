@@ -560,12 +560,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
-        address currentOperator = delegatedTo[msg.sender];
-
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
-        for (uint256 i = 0; i < withdrawal.strategies.length; ) {
-            if (receiveAsTokens) {
+        if (receiveAsTokens) {
+            for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
                     withdrawer: msg.sender,
@@ -573,8 +571,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     shares: withdrawal.shares[i],
                     token: tokens[i]
                 });
-            // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
-            } else {
+                unchecked { ++i; }
+            }
+        // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
+        } else {
+            address currentOperator = delegatedTo[msg.sender];
+            for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy sharescan + will be awarded to the withdrawer.
                  */
@@ -612,9 +614,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         });
                     }
                 }
+                unchecked { ++i; }
             }
-
-            unchecked { ++i; }
         }
 
         emit WithdrawalCompleted(withdrawalRoot);
