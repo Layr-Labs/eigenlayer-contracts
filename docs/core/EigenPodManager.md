@@ -59,7 +59,7 @@ Note: the functions of the `EigenPodManager` and `EigenPod` contracts are tightl
         * The calculation subtracts an offset (`RESTAKED_BALANCE_OFFSET_GWEI`) from the validator's proven balance, and round down to the nearest ETH
         * Related: `uint64 RESTAKED_BALANCE_OFFSET_GWEI`
             * As of M2, this is 0.75 ETH (in Gwei)
-        * Related: `uint64 MAX_RESTAKED_BALANCE_GWEI`
+        * Related: `uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`
             * As of M2, this is 31 ETH (in Gwei)
             * This is the maximum amount of restaked ETH a single validator can be credited with in EigenLayer
     * `_podWithdrawalCredentials() -> (bytes memory)`:
