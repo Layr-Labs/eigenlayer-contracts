@@ -40,7 +40,7 @@ contract IndexRegistry is IndexRegistryStorage {
         //add operator to operatorList
         globalOperatorList.push(operatorId);
 
-        for (uint i = 0; i < quorumNumbers.length; i++) {
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
 
             //this is the would-be index of the operator being registered, the total number of operators for that quorum (which is last index + 1)
@@ -69,12 +69,19 @@ contract IndexRegistry is IndexRegistryStorage {
      *         4) the operator is not already deregistered
      *         5) `quorumNumbers` is a subset of the quorumNumbers that the operator is registered for
      */
-    function deregisterOperator(bytes32 operatorId, bytes calldata quorumNumbers, bytes32[] memory operatorIdsToSwap) external onlyRegistryCoordinator {
-        require(quorumNumbers.length == operatorIdsToSwap.length, "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length");
+    function deregisterOperator(
+        bytes32 operatorId, 
+        bytes calldata quorumNumbers, 
+        bytes32[] memory operatorIdsToSwap
+    ) external onlyRegistryCoordinator {
+        require(
+            quorumNumbers.length == operatorIdsToSwap.length, 
+            "IndexRegistry.deregisterOperator: quorumNumbers and operatorIdsToSwap must be the same length"
+        );
 
         _beforeDeregisterOperator(operatorId, quorumNumbers);
 
-        for (uint i = 0; i < quorumNumbers.length; i++) {
+        for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
             uint32 indexOfOperatorToRemove = _operatorIdToIndexHistory[operatorId][quorumNumber][_operatorIdToIndexHistory[operatorId][quorumNumber].length - 1].index;
             _processOperatorRemoval(operatorId, quorumNumber, indexOfOperatorToRemove, operatorIdsToSwap[i]);
@@ -90,12 +97,19 @@ contract IndexRegistry is IndexRegistryStorage {
     }
 
     /// @notice Returns the _operatorIdToIndexHistory entry for the specified `operatorId` and `quorumNumber` at the specified `index`
-    function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(bytes32 operatorId, uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory){
+    function getOperatorIndexUpdateOfOperatorIdForQuorumAtIndex(
+        bytes32 operatorId, 
+        uint8 quorumNumber, 
+        uint32 index
+    ) external view returns (OperatorIndexUpdate memory) {
         return _operatorIdToIndexHistory[operatorId][quorumNumber][index];
     }
 
     /// @notice Returns the _totalOperatorsHistory entry for the specified `quorumNumber` at the specified `index`
-    function getTotalOperatorsUpdateForQuorumAtIndex(uint8 quorumNumber, uint32 index) external view returns (OperatorIndexUpdate memory){
+    function getTotalOperatorsUpdateForQuorumAtIndex(
+        uint8 quorumNumber, 
+        uint32 index
+    ) external view returns (OperatorIndexUpdate memory) {
         return _totalOperatorsHistory[quorumNumber][index];
     }
 
@@ -109,16 +123,27 @@ contract IndexRegistry is IndexRegistryStorage {
      * @dev Function will revert in the event that the specified `index` input does not identify the appropriate entry in the
      * array `_operatorIdToIndexHistory[operatorId][quorumNumber]` to pull the info from.
      */
-    function getOperatorIndexForQuorumAtBlockNumberByIndex(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
+    function getOperatorIndexForQuorumAtBlockNumberByIndex(
+        bytes32 operatorId, 
+        uint8 quorumNumber, 
+        uint32 blockNumber, 
+        uint32 index
+    ) external view returns (uint32) {
         OperatorIndexUpdate memory operatorIndexToCheck = _operatorIdToIndexHistory[operatorId][quorumNumber][index];
 
         // blocknumber must be at or after the "index'th" entry's fromBlockNumber
-        require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
+        require(
+            blockNumber >= operatorIndexToCheck.fromBlockNumber, 
+            "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number"
+        );
        
         // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
         if (index != _operatorIdToIndexHistory[operatorId][quorumNumber].length - 1) {
             OperatorIndexUpdate memory nextOperatorIndex = _operatorIdToIndexHistory[operatorId][quorumNumber][index + 1];
-            require(blockNumber < nextOperatorIndex.fromBlockNumber, "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+            require(
+                blockNumber < nextOperatorIndex.fromBlockNumber, 
+                "IndexRegistry.getOperatorIndexForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number"
+            );
         }
         return operatorIndexToCheck.index;
     }
@@ -128,17 +153,28 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param quorumNumber is the quorum number for which the total number of operators is desired
      * @param blockNumber is the block number at which the total number of operators is desired
      * @param index is the index of the entry in the dynamic array `_totalOperatorsHistory[quorumNumber]` to read data from
+     * @dev Function will revert in the event that the specified `index` input is outisde the bounds of the provided `blockNumber`
      */
-    function getTotalOperatorsForQuorumAtBlockNumberByIndex(uint8 quorumNumber, uint32 blockNumber, uint32 index) external view returns (uint32){
+    function getTotalOperatorsForQuorumAtBlockNumberByIndex(
+        uint8 quorumNumber, 
+        uint32 blockNumber, 
+        uint32 index
+    ) external view returns (uint32){
         OperatorIndexUpdate memory operatorIndexToCheck = _totalOperatorsHistory[quorumNumber][index];
 
         // blocknumber must be at or after the "index'th" entry's fromBlockNumber
-        require(blockNumber >= operatorIndexToCheck.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number");
+        require(
+            blockNumber >= operatorIndexToCheck.fromBlockNumber, 
+            "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the past for provided block number"
+        );
         
         // if there is an index update after the "index'th" update, the blocknumber must be before the next entry's fromBlockNumber
         if (index != _totalOperatorsHistory[quorumNumber].length - 1){
             OperatorIndexUpdate memory nextOperatorIndex = _totalOperatorsHistory[quorumNumber][index + 1];
-            require(blockNumber < nextOperatorIndex.fromBlockNumber, "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number");
+            require(
+                blockNumber < nextOperatorIndex.fromBlockNumber, 
+                "IndexRegistry.getTotalOperatorsForQuorumAtBlockNumberByIndex: provided index is too far in the future for provided block number"
+            );
         }
         return operatorIndexToCheck.index;
     }
@@ -146,7 +182,7 @@ contract IndexRegistry is IndexRegistryStorage {
     /// @notice Returns an ordered list of operators of the services for the given `quorumNumber` at the given `blockNumber`
     function getOperatorListForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) external view returns (bytes32[] memory){
         bytes32[] memory quorumOperatorList = new bytes32[](_getTotalOperatorsForQuorumAtBlockNumber(quorumNumber, blockNumber));
-        for (uint i = 0; i < globalOperatorList.length; i++) {
+        for (uint256 i = 0; i < globalOperatorList.length; i++) {
             bytes32 operatorId = globalOperatorList[i];
             uint32 index = _getIndexOfOperatorForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
             // if the operator was not in the quorum at the given block number, skip it
@@ -157,6 +193,7 @@ contract IndexRegistry is IndexRegistryStorage {
         return quorumOperatorList;
     }
 
+    /// @notice Returns the total number of operators for a given `quorumNumber`
     function totalOperatorsForQuorum(uint8 quorumNumber) external view returns (uint32){
         return _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index;
     }
@@ -195,9 +232,17 @@ contract IndexRegistry is IndexRegistryStorage {
      * @param quorumNumber quorum number of the operator to remove
      * @param indexOfOperatorToRemove index of the operator to remove
      */ 
-    function _processOperatorRemoval(bytes32 operatorId, uint8 quorumNumber, uint32 indexOfOperatorToRemove, bytes32 operatorIdToSwap) internal {   
+    function _processOperatorRemoval(
+        bytes32 operatorId, 
+        uint8 quorumNumber, 
+        uint32 indexOfOperatorToRemove, 
+        bytes32 operatorIdToSwap
+    ) internal {   
         uint32 operatorIdToSwapIndex = _operatorIdToIndexHistory[operatorIdToSwap][quorumNumber][_operatorIdToIndexHistory[operatorIdToSwap][quorumNumber].length - 1].index;
-        require(_totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum");
+        require(
+            _totalOperatorsHistory[quorumNumber][_totalOperatorsHistory[quorumNumber].length - 1].index - 1 == operatorIdToSwapIndex, 
+            "IndexRegistry._processOperatorRemoval: operatorIdToSwap is not the last operator in the quorum"
+        );
 
         // if the operator is not the last in the list, we must swap the last operator into their positon
         if (operatorId != operatorIdToSwap) {
@@ -239,7 +284,8 @@ contract IndexRegistry is IndexRegistryStorage {
 
     /**
      * @notice Returns the total number of operators of the service for the given `quorumNumber` at the given `blockNumber`
-     * @dev Returns zero if the @param blockNumber is from before the @param quorumNumber existed, and returns the current number of total operators if the @param blockNumber is in the future.
+     * @dev Returns zero if the @param blockNumber is from before the @param quorumNumber existed, and returns the current number 
+     * of total operators if the @param blockNumber is in the future.
      */
     function _getTotalOperatorsForQuorumAtBlockNumber(uint8 quorumNumber, uint32 blockNumber) internal view returns (uint32){
         // store list length in memory
@@ -266,12 +312,14 @@ contract IndexRegistry is IndexRegistryStorage {
         return _totalOperatorsHistory[quorumNumber][0].index;
     }
     
-
-    /// @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or `OPERATOR_DEREGISTERED_INDEX` if the operator was not registered for the `quorumNumber` at blockNumber
+    /** 
+     * @notice Returns the index of the `operatorId` at the given `blockNumber` for the given `quorumNumber`, or
+     * `OPERATOR_DEREGISTERED_INDEX` if the operator was not registered for the `quorumNumber` at blockNumber
+     */
     function _getIndexOfOperatorForQuorumAtBlockNumber(bytes32 operatorId, uint8 quorumNumber, uint32 blockNumber) internal view returns(uint32) {
         uint256 operatorIndexHistoryLength = _operatorIdToIndexHistory[operatorId][quorumNumber].length;
         // loop backward through index history to find the index of the operator at the given block number
-        for (uint i = 0; i < _operatorIdToIndexHistory[operatorId][quorumNumber].length; i++) {
+        for (uint256 i = 0; i < operatorIndexHistoryLength; i++) {
             uint256 listIndex = (operatorIndexHistoryLength - 1) - i;
             OperatorIndexUpdate memory operatorIndexUpdate = _operatorIdToIndexHistory[operatorId][quorumNumber][listIndex];
             if (operatorIndexUpdate.fromBlockNumber <= blockNumber) {
