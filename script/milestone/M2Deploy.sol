@@ -31,7 +31,7 @@ interface IDelegationManagerV0 {
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/upgrade/M2Deploy.s.sol:M2Deploy --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
+// forge script script/milestone/M2Deploy.s.sol:M2Deploy --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 contract M2Deploy is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
