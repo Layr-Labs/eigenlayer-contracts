@@ -679,7 +679,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalAmountGwei,
         ValidatorInfo memory validatorInfo
     ) internal returns (VerifiedWithdrawal memory) {
-        emit log("HELLO");
         VerifiedWithdrawal memory verifiedWithdrawal;
         uint256 withdrawalAmountWei;
 

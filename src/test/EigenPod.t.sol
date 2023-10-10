@@ -158,12 +158,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 RESTAKED_BALANCE_OFFSET_GWEI,
                 GOERLI_GENESIS_TIME
         );
-        podInternalFunctionTester = new EPInternalFunctions(ethPOSDeposit, 
-                delayedWithdrawalRouter,
-                IEigenPodManager(podManagerAddress),
-                MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-                RESTAKED_BALANCE_OFFSET_GWEI
-        );
+        
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // this contract is deployed later to keep its address the same (for these tests)
@@ -428,6 +423,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testProcessFullWithdrawalForLessThanMaxRestakedBalance(uint64 withdrawalAmount) public {
+        _deployInternalFunctionTester();
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
         IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
             validatorIndex: 0,
@@ -1475,6 +1471,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return uint64(GOERLI_GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
+    function _deployInternalFunctionTester() internal {
+        podInternalFunctionTester = new EPInternalFunctions(
+        ethPOSDeposit, 
+        delayedWithdrawalRouter,
+        IEigenPodManager(podManagerAddress),
+        MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+        RESTAKED_BALANCE_OFFSET_GWEI,
+        GOERLI_GENESIS_TIME
+);
+    }
+
 
  }
 
@@ -1496,16 +1503,16 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
+        uint64 _GENESIS_TIME
     ) EigenPod(
         _ethPOS,
         _delayedWithdrawalRouter,
         _eigenPodManager,
         _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        _RESTAKED_BALANCE_OFFSET_GWEI
-    ) {
-        emit log("CONTRUCTOR");
-    }
+        _RESTAKED_BALANCE_OFFSET_GWEI,
+        _GENESIS_TIME
+    ) {}
 
     function processFullWithdrawal(
         uint40 validatorIndex,
@@ -1515,7 +1522,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 withdrawalAmountGwei,
         ValidatorInfo memory validatorInfo
     ) public {
-        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
         _processFullWithdrawal(
             validatorIndex,
             validatorPubkeyHash,
