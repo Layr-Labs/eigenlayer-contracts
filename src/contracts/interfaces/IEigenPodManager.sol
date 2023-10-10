@@ -111,8 +111,8 @@ interface IEigenPodManager is IPausable {
     /**
      * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
      * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden from resulting in the `podOwner`
-     * incurring a "share deficit".
+     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
+     * result in the `podOwner` incurring a "share deficit".
      */
     function removeShares(address podOwner, uint256 shares) external;
 
