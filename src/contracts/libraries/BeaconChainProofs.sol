@@ -286,6 +286,11 @@ library BeaconChainProofs {
         );
 
         require(
+            withdrawalProof.historicalSummaryIndex < 2 ** HISTORICAL_SUMMARIES_TREE_HEIGHT,
+            "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
+        );
+
+        require(
             withdrawalProof.withdrawalProof.length ==
                 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT + WITHDRAWALS_TREE_HEIGHT + 1),
             "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
