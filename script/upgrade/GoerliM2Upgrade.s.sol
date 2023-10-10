@@ -171,7 +171,8 @@ contract GoerliM2Deployment is Script, Test {
     // DelegationManager: DOMAIN_SEPARATOR, strategyManager, slasher  all unchanged
     // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods, maxPods  all unchanged
     // delegationManager is now correct (added immutable)
-    function checkUpgradeCorrectness() public view {
+    // Call contracts to make sure they are still “initialized” (ensure that trying to call initializer reverts)
+    function checkUpgradeCorrectness() public {
         require(strategyManager.delegation() == delegation, "strategyManager.delegation incorrect");
         require(strategyManager.eigenPodManager() == eigenPodManager, "strategyManager.eigenPodManager incorrect");
         require(strategyManager.slasher() == slasher, "strategyManager.slasher incorrect");
@@ -190,6 +191,15 @@ contract GoerliM2Deployment is Script, Test {
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
         require(eigenPodManager.maxPods() == maxPods, "eigenPodManager.maxPods incorrect");
         require(eigenPodManager.delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
+
+        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
+        StrategyManager(address(strategyManager)).initialize(address(this), address(this), PauserRegistry(address(this)), 0, 0);
+
+        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
+        DelegationManager(address(delegation)).initialize(address(this), PauserRegistry(address(this)), 0);
+
+        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
+        EigenPodManager(address(eigenPodManager)).initialize(0, IBeaconChainOracle(address(this)), address(this), PauserRegistry(address(this)), 0);
     }
 
 // Existing LST depositor – ensure that strategy length and shares are all identical
@@ -209,6 +219,5 @@ contract GoerliM2Deployment is Script, Test {
 // Emits a ‘RestakingActivated’ event
 // EigenPod.mostRecentWithdrawalTimestamp updates correctly
 // EigenPod: ethPOS, delayedWithdrawalRouter, eigenPodManager
-// Call contracts to make sure they are still “initialized” (ensure that trying to call initializer reverts)
 
 }
