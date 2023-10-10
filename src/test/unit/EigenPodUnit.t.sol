@@ -239,6 +239,7 @@ contract EigenPodUnitTests is EigenPodTests {
         cheats.deal(address(this), amountETH);
 
         Address.sendValue(payable(address(pod)), amountETH);
+        require(address(pod).balance == amountETH, "Pod should have received ETH");
     }
 
     /**
@@ -259,12 +260,15 @@ contract EigenPodUnitTests is EigenPodTests {
         
         uint256 amount = 32 ether;
 
+         cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
         cheats.deal(address(this), amount);
         Address.sendValue(payable(address(newPod)), amount);
         require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
         //this is an M1 pod so hasRestaked should be false
         require(newPod.hasRestaked() == false, "Pod should be restaked");
-        pod.activateRestaking();
+        cheats.startPrank(podOwner);
+        newPod.activateRestaking();
+         cheats.stopPrank();
         require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
     }
 
