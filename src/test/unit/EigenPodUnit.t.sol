@@ -295,12 +295,13 @@ contract EigenPodUnitTests is EigenPodTests {
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
         BeaconChainProofs.BalanceUpdateProof memory proofs = _getBalanceUpdateProof();
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof(); 
+        proofs.balanceRoot = bytes32(uint256(0));     
 
         validatorFields[7] = bytes32(uint256(0));
         cheats.warp(GOERLI_GENESIS_TIME + 1 days);
         uint64 oracleTimestamp = uint64(block.timestamp);
-        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: balance update is being proven after a validator is withdrawable"));
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"));
         newPod.verifyBalanceUpdate(oracleTimestamp, validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 

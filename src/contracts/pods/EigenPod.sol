@@ -34,7 +34,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants{
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
 
@@ -211,14 +211,26 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
 
-        /**
+        // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
+        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(
+            BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot)
+        );
+
+        /** 
+        * Reference: 
+        * uint64 validatorWithdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+        * uint64 oracleEpoch = _computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH;
+        * require(validatorWithdrawableEpoch > oracleEpoch)
         * checks that a balance update can only be made before the validator is withdrawable.  If this is not checked
         * anyone can prove the withdrawn validator's balance as 0 before the validator is able to prove their full withdrawal
         */
-        require(Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) >
-                (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH, "EigenPod.verifyBalanceUpdate: balance update is being proven after a validator is withdrawable");
+        if (
+            Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <=
+            (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH
+        ) {
+            require(newRestakedBalanceGwei > 0, "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn");
+        }
         
-
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
@@ -263,10 +275,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // store the current restaked balance in memory, to be checked against later
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
-        // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(
-            BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot)
-        );
 
         // update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;

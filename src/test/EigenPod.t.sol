@@ -556,9 +556,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
         newPod = testFullWithdrawalFlow();
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-        emit log_named_uint("HELLOWOWOWOWO", newPod.nonBeaconChainETHBalanceWei());
         uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
-        emit log("hello");
         cheats.deal(address(newPod), leftOverBalanceWEI);
 
 
