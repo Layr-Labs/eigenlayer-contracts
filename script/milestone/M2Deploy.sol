@@ -13,17 +13,11 @@ import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 
-import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
-
 import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
 import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
-import "../../src/contracts/middleware/BLSPublicKeyCompendium.sol";
-
-import "../../src/test/mocks/EmptyContract.sol";
-import "../../src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -161,8 +155,8 @@ contract M2Deploy is Script, Test {
         cheats.stopPrank();
         cheats.prank(UpgradeableBeacon(address(eigenPodBeacon)).owner());
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodImplementation));
-        cheats.prank(Ownable(address(eigenPodManager)).owner());
-        eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(beaconChainOracleGoerli));
+        // cheats.prank(Ownable(address(eigenPodManager)).owner());
+        // eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(beaconChainOracleGoerli));
     }
 
     // Call contracts to ensure that all simple view functions return the same values (e.g. the return value of `StrategyManager.delegation()` hasn’t changed)
@@ -186,7 +180,7 @@ contract M2Deploy is Script, Test {
         require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager.eigenPodBeacon incorrect");
         require(eigenPodManager.strategyManager() == strategyManager, "eigenPodManager.strategyManager incorrect");
         require(eigenPodManager.slasher() == slasher, "eigenPodManager.slasher incorrect");
-        require(address(eigenPodManager.beaconChainOracle()) == beaconChainOracleGoerli, "eigenPodManager.beaconChainOracle incorrect");
+        // require(address(eigenPodManager.beaconChainOracle()) == beaconChainOracleGoerli, "eigenPodManager.beaconChainOracle incorrect");
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
         require(eigenPodManager.maxPods() == maxPods, "eigenPodManager.maxPods incorrect");
         require(eigenPodManager.delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
