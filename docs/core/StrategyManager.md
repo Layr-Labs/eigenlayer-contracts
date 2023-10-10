@@ -198,7 +198,9 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 
 ### Strategies
 
-`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file.
+`StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file:
+* [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
+* [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
 #### `StrategyBaseTVLLimits.deposit`
 
@@ -265,6 +267,10 @@ This method converts the withdrawal shares back into tokens using the strategy's
 * The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
 
 ### System Configuration
+
+* [`StrategyManager.setStrategyWhitelister`](#setstrategywhitelister)
+* [`StrategyManager.addStrategiesToDepositWhitelist`](#addstrategiestodepositwhitelist)
+* [`StrategyManager.removeStrategiesFromDepositWhitelist`](#removestrategiesfromdepositwhitelist)
 
 #### `setStrategyWhitelister`
 

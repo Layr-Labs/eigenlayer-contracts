@@ -63,12 +63,12 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * `address delegationApprover`: if set, this address must sign and approve new delegation from Stakers to this Operator *(optional)*
 * `uint32 stakerOptOutWindowBlocks`: the minimum delay (in blocks) between beginning and completing registration for an AVS. *(currently unused)*
 
-`registerAsOperator` cements the Operator's `OperatorDetails`, and self-delegates the Operator to themselves - permanently marking the caller as an Operator. They cannot "deregister" as an Operator - however, they can exit the system by withdrawing their funds via the `EigenPodManager` or `StrategyManager`.
+`registerAsOperator` cements the Operator's `OperatorDetails`, and self-delegates the Operator to themselves - permanently marking the caller as an Operator. They cannot "deregister" as an Operator - however, they can exit the system by withdrawing their funds via `queueWithdrawal`.
 
 *Effects*:
 * Sets `OperatorDetails` for the Operator in question
 * Delegates the Operator to itself
-* If the Operator has deposited into the `EigenPodManager` and is not in undelegation limbo, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
+* If the Operator has shares in the `EigenPodManager`, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
 * For each of the three strategies in the `StrategyManager`, if the Operator holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
 
 *Requirements*:
@@ -192,6 +192,8 @@ function undelegate(
 If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue.
 
 The withdrawal can be completed by the Staker after `withdrawalDelayBlocks`, and does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+
+Note that becoming an Operator is irreversible! Although Operators can withdraw, they cannot use this method to undelegate from themselves.
 
 *Effects*: 
 * Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.

@@ -14,27 +14,32 @@
 | [`DelayedWithdrawalRouter.sol`](../../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy |
 | [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS Proxy |
 
-The `EigenPodManager` and `EigenPod` contracts allow Stakers to restake beacon chain ETH which can then be delegated to Operators via the `DelegationManager`. 
+The `EigenPodManager` and `EigenPod` contracts allow Stakers to restake beacon chain ETH which can then be delegated to Operators via the `DelegationManager`.
 
-The `EigenPodManager` is the entry and exit point for this process, allowing Stakers to deploy an `EigenPod` and, later, queue withdrawals of their beacon chain ETH.
+The `EigenPodManager` is the entry point for this process, allowing Stakers to deploy an `EigenPod` and begin restaking. While actively restaking, a Staker uses their `EigenPod` to validate various beacon chain state proofs of validator balance and withdrawal status. When exiting, a Staker uses the `DelegationManager` to undelegate or queue a withdrawal from EigenLayer.
 
 `EigenPods` serve as the withdrawal credentials for one or more beacon chain validators controlled by a Staker. Their primary role is to validate beacon chain proofs for each of the Staker's validators. Beacon chain proofs are used to verify a validator's:
 * `EigenPod.verifyWithdrawalCredentials`: withdrawal credentials and effective balance
 * `EigenPod.verifyBalanceUpdate`: current balance
 * `EigenPod.verifyAndProcessWithdrawals`: withdrawable epoch, and processed withdrawals within historical block summary
 
-Proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
+See [`./proofs`](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
-Note: the functions of the `EigenPodManager` and `EigenPod` contracts are tightly linked. Rather than writing two separate docs pages, documentation for both contracts is included in this file. Functions are grouped together roughly according to the lifecycle of a restaked validator:
+#### High-level Concepts
 
-* [Before Verifying Withdrawal Credentials](#before-verifying-withdrawal-credentials)
-* [Actively Restaking](#actively-restaking)
-* [Withdrawing from EigenPodManager](#withdrawing-from-eigenpodmanager)
+The functions of the `EigenPodManager` and `EigenPod` contracts are tightly linked. Rather than writing two separate docs pages, documentation for both contracts is included in this file. This document organizes methods according to the following themes (click each to be taken to the relevant section):
+* [Depositing Into EigenLayer](#depositing-into-eigenlayer)
+* [Restaking Beacon Chain ETH](#restaking-beacon-chain-eth)
+* [Withdrawal Processing](#withdrawal-processing)
+* [System Configuration](#system-configuration)
 * [Other Methods](#other-methods)
 
-*Important state variables*:
-* `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
-* `mapping(address => uint256) public podOwnerShares`: Keeps track of the actively restaked beacon chain ETH for each Staker
+#### Important State Variables
+
+* `EigenPodManager`:
+    * `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
+    * `mapping(address => int256) public podOwnerShares`: Keeps track of the actively restaked beacon chain ETH for each Staker. 
+        * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
 * `EigenPod`:
     * `_validatorPubkeyHashToInfo[bytes32] -> (ValidatorInfo)`: individual validators are identified within an `EigenPod` according the their public key hash. This mapping keeps track of the following for each validator:
         * `validatorStatus`: (`INACTIVE`, `ACTIVE`, `WITHDRAWN`)
@@ -42,17 +47,12 @@ Note: the functions of the `EigenPodManager` and `EigenPod` contracts are tightl
         * `mostRecentBalanceUpdateTimestamp`: A timestamp that represents the most recent successful proof of the validator's effective balance
         * `restakedBalanceGwei`: Calculated against the validator's proven effective balance using `_calculateRestakedBalanceGwei` (see definitions below)
 
-*Helpful definitions*:
+#### Important Definitions
+
 * "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangably in this document.
     * Pod Owners can only deploy a single `EigenPod`, but can restake any number of beacon chain validators from the same `EigenPod`.
     * Pod Owners can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
     * These shares correspond to the amount of provably-restaked beacon chain ETH held by the Pod Owner via their `EigenPod`.
-* "Undelegation Limbo": A concept that describes a Pod Owner who has undelegated (or been undelegated) from an Operator (see [`DelegationManager.undelegate`](./DelegationManager.md#undelegate)).
-    * Undelegation limbo exists in case a Staker wants to undelegate from one Operator and redelegate to another without performing a full exit of all their validators.
-    * This status is initiated after `DelegationManager.undelegate` calls `EigenPodManager.forceIntoUndelegationLimbo`, placing a Staker/Pod Owner into undelegation limbo.
-    * At this point, the Staker is free to delegate to another Operator, but any changes to the Staker's beacon chain ETH shares will not affect the Operator's delegated shares.
-    * To exit undelegation limbo, the Staker must wait for a period (defined in `StrategyManager.withdrawalDelayBlocks`), then call `EigenPodManager.exitUndelegationLimbo` and choose to either withdraw their funds from EigenLayer, or stay put. 
-        * If the latter is chosen, the Staker's shares will once again affect their delegated Operator's shares
 * `EigenPod`:
     * `_calculateRestakedBalanceGwei(uint64 effectiveBalance) -> (uint64)`:
         * This method is used by an `EigenPod` to calculate a "pessimistic" view of a validator's effective balance to avoid the need for repeated balance updates when small balance fluctuations occur.
@@ -67,19 +67,14 @@ Note: the functions of the `EigenPodManager` and `EigenPod` contracts are tightl
         * These are the `0x01` withdrawal credentials of the `EigenPod`, used as a validator's withdrawal credentials on the beacon chain.
     
 
-### Before Verifying Withdrawal Credentials
+### Depositing Into EigenLayer
 
-Before a Staker begins restaking beacon chain ETH, they need to:
-1. Deploy an `EigenPod`
-2. Start a beacon chain validator and point its withdrawal credentials at the `EigenPod`
-    * In case of a validator with BLS withdrawal credentials, its withdrawal credentials need to be updated to point at the `EigenPod`
-3. Provide a beacon chain state proof that shows their validator has sufficient balance and has withdrawal credentials pointed at their `EigenPod`
-
-The following top-level methods concern these steps:
+Before a Staker begins restaking beacon chain ETH, they need to deploy an `EigenPod`, stake, and start a beacon chain validator:
 * [`EigenPodManager.createPod`](#eigenpodmanagercreatepod)
 * [`EigenPodManager.stake`](#eigenpodmanagerstake)
-* [`EigenPod.activateRestaking`](#eigenpodactivaterestaking)
-* [`EigenPod.withdrawBeforeRestaking`](#eigenpodwithdrawbeforerestaking)
+    * [`EigenPod.stake`](#eigenpodstake)
+
+To complete the deposit process, the Staker needs to prove that the validator's withdrawal credentials are pointed at the `EigenPod`:
 * [`EigenPod.verifyWithdrawalCredentials`](#eigenpodverifywithdrawalcredentials)
 
 #### `EigenPodManager.createPod`
@@ -98,7 +93,7 @@ As part of the `EigenPod` deployment process, the Staker is made the Pod Owner, 
 * Create2 deploys `EigenPodManager.beaconProxyBytecode`, appending the `eigenPodBeacon` address as a constructor argument. `bytes32(msg.sender)` is used as the salt.
     * `address eigenPodBeacon` is an [OpenZeppelin v4.7.1 `UpgradableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/UpgradeableBeacon.sol), whose implementation address points to the current `EigenPod` implementation
     * `beaconProxyBytecode` is the constructor code for an [OpenZeppelin v4.7.1 `BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/BeaconProxy.sol)
-* `EigenPod.initialize(msg.sender)`: initializes the pod, setting the caller as the Pod Owner
+* `EigenPod.initialize(msg.sender)`: initializes the pod, setting the caller as the Pod Owner and activating restaking for any validators pointed at the pod.
 * Maps the new pod to the Pod Owner (each address can only deploy a single `EigenPod`)
 
 *Requirements*:
@@ -111,10 +106,16 @@ As part of the `EigenPod` deployment process, the Staker is made the Pod Owner, 
 #### `EigenPodManager.stake`
 
 ```solidity
-function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable
+function stake(
+    bytes calldata pubkey, 
+    bytes calldata signature, 
+    bytes32 depositDataRoot
+) 
+    external 
+    payable
 ```
 
-Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, provided the credentials for the Staker's beacon chain validator. The `EigenPod.stake` method is called, which automatically calculates the correct withdrawal credentials for the pod and passes these to the deposit contract along with the 32 ETH.
+Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, providing the credentials for the Staker's beacon chain validator. The `EigenPod.stake` method is called, which automatically calculates the correct withdrawal credentials for the pod and passes these to the deposit contract along with the 32 ETH.
 
 *Effects*:
 * Deploys and initializes an `EigenPod` on behalf of Staker, if this has not been done already
@@ -131,7 +132,10 @@ function stake(
     bytes calldata pubkey,
     bytes calldata signature,
     bytes32 depositDataRoot
-) external payable onlyEigenPodManager
+) 
+    external 
+    payable 
+    onlyEigenPodManager
 ```
 
 Handles the call to the beacon chain deposit contract. Only called via `EigenPodManager.stake`.
@@ -143,54 +147,6 @@ Handles the call to the beacon chain deposit contract. Only called via `EigenPod
 * Caller MUST be the `EigenPodManager`
 * Call value MUST be 32 ETH
 * Deposit contract `deposit` method MUST succeed given the provided `pubkey`, `signature`, and `depositDataRoot`
-
-#### `EigenPod.activateRestaking`
-
-```solidity
-function activateRestaking()
-    external
-    onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-    onlyEigenPodOwner
-    hasNeverRestaked
-```
-
-This method allows a Pod Owner to designate their pod (and any future ETH sent to it) as being restaked. Calling this method first withdraws any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, and then prevents further calls to `withdrawBeforeRestaking`.
-
-Withdrawing any future ETH sent via beacon chain withdrawal to the `EigenPod` requires providing beacon chain state proofs. However, ETH sent to the pod's `receive` function should be withdrawable without proofs (see [`withdrawNonBeaconChainETHBalanceWei`](#eigenpodwithdrawnonbeaconchainethbalancewei)).
-
-*Effects*:
-* Sets `hasRestaked = true`
-* Updates the pod's most recent withdrawal timestamp to the current time
-* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
-
-*Requirements*:
-* Caller MUST be the Pod Owner
-* Pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
-* Pod MUST NOT have already activated restaking
-* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
-
-*As of M2*: restaking is automatically activated for newly-deployed `EigenPods` (`hasRestaked = true`). However, for `EigenPods` deployed *before* M2, restaking may not be active (unless the Pod Owner has called this method).
-
-#### `EigenPod.withdrawBeforeRestaking`
-
-```solidity
-function withdrawBeforeRestaking() 
-    external 
-    onlyEigenPodOwner 
-    hasNeverRestaked
-```
-
-Allows the Pod Owner to withdraw any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, assuming restaking has not yet been activated. See [`EigenPod.activateRestaking`](#eigenpodactivaterestaking) for more details.
-
-*Effects*:
-* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
-
-*Requirements*:
-* Caller MUST be the Pod Owner
-* Pod MUST NOT have already activated restaking
-* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
-
-*As of M2*: restaking is automatically activated for newly-deployed `EigenPods`, making this method uncallable for pods deployed after M2. However, for `EigenPods` deployed *before* M2, restaking may not be active, and this method may be callable.
 
 #### `EigenPod.verifyWithdrawalCredentials`
 
@@ -209,13 +165,13 @@ function verifyWithdrawalCredentials(
     hasEnabledRestaking
 ```
 
-Once a Pod Owner has deposited ETH into the beacon chain deposit contract, they can call this method to "activate" one or more validators by proving the validator's withdrawal credentials are pointed at the `EigenPod`. This activation will mean that the ETH in those validators:
+Once a Pod Owner has deposited ETH into the beacon chain deposit contract, they can call this method to "fully restake" one or more validators by proving the validator's withdrawal credentials are pointed at the `EigenPod`. This activation will mean that the ETH in those validators:
 * is awarded to the Staker/Pod Owner in `EigenPodManager.podOwnerShares`
 * is delegatable to an Operator (via the `DelegationManager`)
 
-For each successfully proven validator, that validator's status becomes `VALIDATOR_STATUS.ACTIVE`, and the sum of restakable ether across all proven validators is provided to `EigenPodManager.restakeBeaconChainETH`, where it is added to the Pod Owner's shares. If the Pod Owner is delegated to an Operator via the `DelegationManager`, this sum is also added to the Operator's delegated shares for the beacon chain ETH strategy.
+For each successfully proven validator, that validator's status becomes `VALIDATOR_STATUS.ACTIVE`, and the sum of restakable ether across all newly-proven validators is provided to [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate), where it is added to the Pod Owner's shares. If the Pod Owner is delegated to an Operator via the `DelegationManager`, this sum is also added to the Operator's delegated shares for the beacon chain ETH strategy.
 
-For each validator the Pod Owner wants to restake, they must supply:
+For each validator the Pod Owner wants to verify, the Pod Owner must supply:
 * `validatorIndices`: their validator's `ValidatorIndex` (see [consensus specs](https://eth2book.info/capella/part3/config/types/#validatorindex))
 * `validatorFields`: the fields of the `Validator` container associated with the validator (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator))
 * `stateRootProof`: a proof that will verify `stateRootProof.beaconStateRoot` against an oracle-provided beacon block root
@@ -228,7 +184,7 @@ For each validator the Pod Owner wants to restake, they must supply:
     * `validatorIndex` is recorded
     * `mostRecentBalanceUpdateTimestamp` is set to the `oracleTimestamp` used to fetch the beacon block root
     * `restakedBalanceGwei` is set to `_calculateRestakedBalanceGwei(effectiveBalance)`
-* See [`EigenPodManager.restakeBeaconChainETH`](#eigenpodmanagerrestakebeaconchaineth)
+* See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 *Requirements*:
 * Caller MUST be the Pod Owner
@@ -244,45 +200,14 @@ For each validator the Pod Owner wants to restake, they must supply:
     * The validator's status MUST initially be `VALIDATOR_STATUS.INACTIVE`
     * `BeaconChainProofs.verifyValidatorFields` MUST verify the provided `validatorFields` against the `beaconStateRoot`
     * The aforementioned proofs MUST show that the validator's withdrawal credentials are set to the `EigenPod`
-* See [`EigenPodManager.restakeBeaconChainETH`](#eigenpodmanagerrestakebeaconchaineth)
+* See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 *As of M2*:
 * Restaking is enabled by default for pods deployed after M2. See `activateRestaking` for more info.
 
-##### `EigenPodManager.restakeBeaconChainETH`
-
-```solidity
-function restakeBeaconChainETH(
-    address podOwner,
-    uint256 amountWei
-) 
-    external 
-    onlyEigenPod(podOwner) 
-    onlyNotFrozen(podOwner) 
-    nonReentrant
-```
-
-This method is only called by `EigenPod.verifyWithdrawalCredentials`, during which the `EigenPod` verifies a validator's effective balance and withdrawal credentials using a beacon chain state proof. 
-
-After verifying the balance of one or more validators, the `EigenPod` will sum the "restakable" balance of each validator and pass it to this method, which adds this balance to the Pod Owner's shares.
-
-If the Pod Owner is not in undelegation limbo, the added shares are also sent to `DelegationManager.increaseDelegatedShares`, where they will be awarded to the Staker/Pod Owner's delegated Operator.
-
-*Effects*:
-* Adds `amountWei` shares to the Pod Owner's `EigenPodManager` shares
-* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
-
-*Requirements*:
-* Caller MUST be the `EigenPod` associated with the passed-in Pod Owner
-* `amountWei` MUST NOT be zero
-* If the Pod Owner is NOT in undelegation limbo: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is a no-op
-
 ---
 
-### Actively Restaking
+### Restaking Beacon Chain ETH
 
 At this point, a Staker/Pod Owner has deployed their `EigenPod`, started their beacon chain validator, and proven that its withdrawal credentials are pointed to their `EigenPod`. They are now free to delegate to an Operator (if they have not already), or start up + verify additional beacon chain validators that also withdraw to the same `EigenPod`.
 
@@ -488,10 +413,28 @@ See *Helpful Definitions* at the top for more info on undelegation limbo.
 
 ---
 
-### Withdrawing from EigenPodManager
+### Withdrawal Processing
 
-* [`EigenPodManager.queueWithdrawal`](#eigenpodmanagerqueuewithdrawal)
-* [`EigenPodManager.completeQueuedWithdrawal`](#eigenpodmanagercompletequeuedwithdrawal)
+* [`EigenPodManager.removeShares`](#eigenpodmanagerremoveshares)
+* [`EigenPodManager.addShares`](#eigenpodmanageraddshares)
+* [`EigenPodManager.withdrawSharesAsTokens`](#eigenpodmanagerwithdrawsharesastokens)
+* [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+#### `EigenPodManager.removeShares`
+
+TODO
+
+#### `EigenPodManager.addShares`
+
+TODO
+
+#### `EigenPodManager.withdrawSharesAsTokens`
+
+TODO
+
+#### `DelayedWithdrawalRouter.createDelayedWithdrawal`
+
+TODO
 
 #### `EigenPodManager.queueWithdrawal`
 
@@ -535,31 +478,10 @@ Withdrawals can be completed after a delay via `EigenPodManager.completeQueuedWi
 *As of M2*:
 * The `onlyNotFrozen` modifier is a no-op
 
-### Other Methods
+### System Configuration
 
-#### `EigenPodManager.removeShares`
-
-TODO
-
-#### `EigenPodManager.addShares`
-
-TODO
-
-#### `EigenPodManager.withdrawSharesAsTokens`
-
-TODO
-
-#### `DelayedWithdrawalRouter.createDelayedWithdrawal`
-
-TODO
-
-#### `EigenPod.withdrawNonBeaconChainETHBalanceWei`
-
-TODO
-
-#### `EigenPod.recoverTokens`
-
-TODO
+* [`EigenPodManager.setMaxPods`](#eigenpodmanagersetmaxpods)
+* [`EigenPodManager.updateBeaconChainOracle`](#eigenpodmanagerupdatebeaconchainoracle)
 
 #### `EigenPodManager.setMaxPods`
 
@@ -584,3 +506,75 @@ function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) extern
 
 *Requirements*:
 * TODO
+
+### Other Methods
+
+This section details various methods that don't fit well into other sections.
+
+*For pods deployed prior to M2*, the following methods are callable:
+* [`EigenPod.activateRestaking`](#eigenpodactivaterestaking)
+* [`EigenPod.withdrawBeforeRestaking`](#eigenpodwithdrawbeforerestaking)
+
+`EigenPod` also includes two token recovery mechanisms:
+* [`EigenPod.withdrawNonBeaconChainETHBalanceWei`](#eigenpodwithdrawnonbeaconchainethbalancewei)
+* [`EigenPod.recoverTokens`](#eigenpodrecovertokens)
+
+#### `EigenPod.activateRestaking`
+
+```solidity
+function activateRestaking()
+    external
+    onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
+    onlyEigenPodOwner
+    hasNeverRestaked
+```
+
+Note: This method is only callable on pods deployed before M2. After M2, restaking is enabled by default. 
+
+`activateRestaking` allows a Pod Owner to designate their pod (and any future ETH sent to it) as being restaked. Calling this method first withdraws any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, and then prevents further calls to `withdrawBeforeRestaking`.
+
+Withdrawing any future ETH sent via beacon chain withdrawal to the `EigenPod` requires providing beacon chain state proofs. However, ETH sent to the pod's `receive` function should be withdrawable without proofs (see [`withdrawNonBeaconChainETHBalanceWei`](#eigenpodwithdrawnonbeaconchainethbalancewei)).
+
+*Effects*:
+* Sets `hasRestaked = true`
+* Updates the pod's most recent withdrawal timestamp to the current time
+* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+*Requirements*:
+* Caller MUST be the Pod Owner
+* Pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
+* Pod MUST NOT have already activated restaking
+* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+*As of M2*: restaking is automatically activated for newly-deployed `EigenPods` (`hasRestaked = true`). However, for `EigenPods` deployed *before* M2, restaking may not be active (unless the Pod Owner has called this method).
+
+#### `EigenPod.withdrawBeforeRestaking`
+
+```solidity
+function withdrawBeforeRestaking() 
+    external 
+    onlyEigenPodOwner 
+    hasNeverRestaked
+```
+
+Note: This method is only callable on pods deployed before M2. After M2, restaking is enabled by default. 
+
+Allows the Pod Owner to withdraw any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, assuming restaking has not yet been activated. See [`EigenPod.activateRestaking`](#eigenpodactivaterestaking) for more details.
+
+*Effects*:
+* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+*Requirements*:
+* Caller MUST be the Pod Owner
+* Pod MUST NOT have already activated restaking
+* See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+*As of M2*: restaking is automatically activated for newly-deployed `EigenPods`, making this method uncallable for pods deployed after M2. However, for `EigenPods` deployed *before* M2, restaking may not be active, and this method may be callable.
+
+#### `EigenPod.withdrawNonBeaconChainETHBalanceWei`
+
+TODO
+
+#### `EigenPod.recoverTokens`
+
+TODO
