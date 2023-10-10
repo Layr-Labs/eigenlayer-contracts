@@ -339,7 +339,6 @@ contract StrategyManager is
         uint256 shareAmount
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(staker != address(0), "StrategyManager._removeShares: staker cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares

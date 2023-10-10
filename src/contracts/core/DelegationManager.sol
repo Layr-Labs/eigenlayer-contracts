@@ -644,6 +644,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         IStrategy[] memory strategies, 
         uint256[] memory shares
     ) internal returns (bytes32) {
+        require(staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address");
 
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
