@@ -86,8 +86,9 @@ contract GoerliM2Deployment is Script, Test {
             _ethPOS: ethPOS,
             _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
-            _MAX_VALIDATOR_BALANCE_GWEI: 31 gwei, 
-            _RESTAKED_BALANCE_OFFSET_GWEI: 0.5 gwei
+            _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: 31 gwei, 
+            _RESTAKED_BALANCE_OFFSET_GWEI: 0.5 gwei,
+            _GENESIS_TIME: 1616508000
         });
 
         // write the output to a contract
