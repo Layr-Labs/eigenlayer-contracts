@@ -32,16 +32,11 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/upgrade/GoerliM2Deployment.s.sol:GoerliM2Deployment --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
-contract GoerliM2Deployment is Script, Test {
+// forge script script/upgrade/M2Deploy.s.sol:M2Deploy --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
+contract M2Deploy is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     string public deploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
-
-    address executorMultisig;
-    address operationsMultisig;
-    address pauserMultisig;
-    address beaconChainOracleGoerli = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
 
     IETHPOSDeposit public ethPOS;
 
@@ -61,16 +56,19 @@ contract GoerliM2Deployment is Script, Test {
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
 
+        if(chainId == 1) {
+            deploymentOutputPath = string(bytes("script/output/M1_deployment_mainnet_2023_6_9.json"));
+        }
+
         // READ JSON DEPLOYMENT DATA
         string memory deployment_data = vm.readFile(deploymentOutputPath);
         slasher = Slasher(stdJson.readAddress(deployment_data, ".addresses.slasher"));
         delegation = slasher.delegation();
         strategyManager = slasher.strategyManager();
         eigenPodManager = strategyManager.eigenPodManager();
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(stdJson.readAddress(deployment_data, ".addresses.delayedWithdrawalRouter"));
         eigenPodBeacon = eigenPodManager.eigenPodBeacon();
         ethPOS = eigenPodManager.ethPOS();
-
+        delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         vm.startBroadcast();
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -105,7 +103,6 @@ contract GoerliM2Deployment is Script, Test {
 
         vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManagerImplementation", address(strategyManagerImplementation));
-        vm.serializeAddress(deployed_addresses, "beaconChainOracle", address(beaconChainOracleGoerli));
         vm.serializeAddress(deployed_addresses, "eigenPodManagerImplementation", address(eigenPodManagerImplementation));
         string memory deployed_addresses_output = vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
 
