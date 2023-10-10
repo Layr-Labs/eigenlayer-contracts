@@ -31,7 +31,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant OPERATOR_CHURN_APPROVAL_TYPEHASH =
-        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator, BN254.G1Point pubkey, bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x, uint256 y)");
+        keccak256("OperatorChurnApproval(bytes32 registeringOperatorId,OperatorKickParam[] operatorKickParams)OperatorKickParam(address operator,BN254.G1Point pubkey,bytes32[] operatorIdsToSwap)BN254.G1Point(uint256 x,uint256 y)");
     /// @notice The basis point denominator
     uint16 internal constant BIPS_DENOMINATOR = 10000;
     /// @notice The maximum value of a quorum bitmap
