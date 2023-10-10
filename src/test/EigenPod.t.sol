@@ -400,10 +400,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         }
     }
 
-    function testFullWithdrawalProofWithWrongProofLengths() external {
-
-    }
-
     /// @notice This test is to ensure the full withdrawal flow works
     function testFullWithdrawalFlow() public returns (IEigenPod) {
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
