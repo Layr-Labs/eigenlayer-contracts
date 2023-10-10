@@ -243,8 +243,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.deal(address(podOwner), 5*stakeAmount);   
 
-        emit log("WHT is happ");  
-
         fuzzedAddressMapping[address(0)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
         fuzzedAddressMapping[address(strategyManager)] = true;
@@ -253,7 +251,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         fuzzedAddressMapping[address(slasher)] = true;
         fuzzedAddressMapping[address(generalServiceManager1)] = true;
         fuzzedAddressMapping[address(generalReg1)] = true;
-        emit log("WHT is happ");  
     }
 
     function testStaking() public {
@@ -420,20 +417,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         return _proveWithdrawalForPod(newPod);
-    }
-
-    function testProcessFullWithdrawalForLessThanMaxRestakedBalance(uint64 withdrawalAmount) public {
-        _deployInternalFunctionTester();
-        cheats.assume(withdrawalAmount > 0 && withdrawalAmount < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
-        IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
-            validatorIndex: 0,
-            restakedBalanceGwei: 0,
-            mostRecentBalanceUpdateTimestamp: 0,
-            status: IEigenPod.VALIDATOR_STATUS.ACTIVE
-        });
-        uint64 balanceBefore = podInternalFunctionTester.withdrawableRestakedExecutionLayerGwei();
-        podInternalFunctionTester.processFullWithdrawal(0, bytes32(0), 0, podOwner, withdrawalAmount, validatorInfo);
-        require(podInternalFunctionTester.withdrawableRestakedExecutionLayerGwei() - balanceBefore == withdrawalAmount, "withdrawableRestakedExecutionLayerGwei hasn't been updated correctly");
     }
 
     /**
