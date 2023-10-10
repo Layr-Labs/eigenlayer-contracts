@@ -44,6 +44,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
+    /// @notice The number of seconds in a slot in the beacon chain
+    uint256 internal constant SECONDS_PER_SLOT = 12;
+
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -61,6 +64,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * amount by which to underestimate the validator's effective balance.
      */
     uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
+
+    /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
+    uint64 public immutable GENESIS_TIME;
 
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
@@ -141,13 +147,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
+        uint64 _GENESIS_TIME
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
+        GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
 
@@ -202,6 +210,23 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
 
+        uint64 validatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot);
+
+        /** 
+        * Reference: 
+        * uint64 validatorWithdrawableEpoch = Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+        * uint64 oracleEpoch = _computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH;
+        * require(validatorWithdrawableEpoch > oracleEpoch)
+        * checks that a balance update can only be made before the validator is withdrawable.  If this is not checked
+        * anyone can prove the withdrawn validator's balance as 0 before the validator is able to prove their full withdrawal
+        */
+        if (
+            Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <=
+            (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH
+        ) {
+            require(validatorBalance > 0, "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn");
+        }
+        
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
 
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
@@ -247,9 +272,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
         // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(
-            BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot)
-        );
+        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
 
         // update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
@@ -757,6 +780,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _calculateSharesDelta(uint256 newAmountWei, uint256 currentAmountWei) internal pure returns (int256) {
         return (int256(newAmountWei) - int256(currentAmountWei));
     }
+
+    // reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
+    function _computeSlotAtTimestamp(uint64 timestamp) internal view returns (uint64) {
+        require(timestamp >= GENESIS_TIME, "EigenPod._computeSlotAtTimestamp: timestamp is before genesis");
+        return uint64((timestamp - GENESIS_TIME) / SECONDS_PER_SLOT);
+    }
+
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
