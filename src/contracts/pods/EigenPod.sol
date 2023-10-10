@@ -211,10 +211,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
 
-        // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(
-            BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot)
-        );
+        uint64 validatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(validatorIndex, balanceUpdateProof.balanceRoot);
 
         /** 
         * Reference: 
@@ -228,7 +225,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             Endian.fromLittleEndianUint64(validatorFields[BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]) <=
             (_computeSlotAtTimestamp(oracleTimestamp)) / BeaconChainProofs.SLOTS_PER_EPOCH
         ) {
-            require(newRestakedBalanceGwei > 0, "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn");
+            require(validatorBalance > 0, "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn");
         }
         
         bytes32 validatorPubkeyHash = validatorFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX];
@@ -275,6 +272,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // store the current restaked balance in memory, to be checked against later
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
 
+        // deserialize the balance field from the balanceRoot and calculate the effective (pessimistic) restaked balance
+        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
 
         // update the balance
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
