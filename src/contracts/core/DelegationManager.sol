@@ -661,8 +661,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // Remove active shares from EigenPodManager/StrategyManager
             if (strategies[i] == beaconChainETHStrategy) {
+                /**
+                 * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
+                 * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
+                 * shares from the operator to whom the staker is delegated.
+                 */
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
+                // this call will revert `shares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], shares[i]);
             }
 
