@@ -174,6 +174,7 @@ These methods can be called by both Stakers AND Operators, and are used to (i) u
 * [`DelegationManager.undelegate`](#undelegate)
 * [`DelegationManager.queueWithdrawal`](#queuewithdrawal)
 * [`DelegationManager.completeQueuedWithdrawal`](#completequeuedwithdrawal)
+* [`DelegationManager.completeQueuedWithdrawals`](#completequeuedwithdrawals)
 
 #### `undelegate`
 
@@ -259,6 +260,7 @@ function completeQueuedWithdrawal(
 ) 
     external 
     onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE)
+    nonReentrant
 ```
 
 After waiting `withdrawalDelayBlocks`, this allows the `withdrawer` of a `Withdrawal` to finalize a withdrawal and receive either (i) the underlying tokens of the strategies being withdrawn from, or (ii) the shares being withdrawn. This choice is dependent on the passed-in parameter `receiveAsTokens`.
@@ -307,6 +309,22 @@ For each strategy/share pair in the `Withdrawal`:
 *As of M2*:
 * `slasher.canWithdraw` is currently a no-op
 * The `middlewareTimesIndex` parameter has to do with the Slasher, which currently does nothing. As of M2, this parameter has no bearing on anything and can be ignored. It is passed into a call to the Slasher, but the call is a no-op.
+
+#### `completeQueuedWithdrawals`
+
+```solidity
+function completeQueuedWithdrawals(
+    Withdrawal[] calldata withdrawals,
+    IERC20[][] calldata tokens,
+    uint256[] calldata middlewareTimesIndexes,
+    bool[] calldata receiveAsTokens
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) 
+    nonReentrant
+```
+
+This method is the plural version of [`completeQueuedWithdrawal`](#completequeuedwithdrawal).
 
 ### Accounting
 
