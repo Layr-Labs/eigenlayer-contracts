@@ -42,6 +42,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
+    EPInternalFunctions public podInternalFunctionTester;
+
     BeaconChainOracleMock public beaconChainOracle;
     MiddlewareRegistryMock public generalReg1;
     ServiceManagerMock public generalServiceManager1;
@@ -155,6 +157,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
                 RESTAKED_BALANCE_OFFSET_GWEI
         );
+        podInternalFunctionTester = new EPInternalFunctions(ethPOSDeposit, 
+                delayedWithdrawalRouter,
+                IEigenPodManager(podManagerAddress),
+                MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+                RESTAKED_BALANCE_OFFSET_GWEI
+        );
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // this contract is deployed later to keep its address the same (for these tests)
@@ -237,7 +245,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
              strategyManager
         );
 
-        cheats.deal(address(podOwner), 5*stakeAmount);     
+        cheats.deal(address(podOwner), 5*stakeAmount);   
+
+        emit log("WHT is happ");  
 
         fuzzedAddressMapping[address(0)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
@@ -247,6 +257,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         fuzzedAddressMapping[address(slasher)] = true;
         fuzzedAddressMapping[address(generalServiceManager1)] = true;
         fuzzedAddressMapping[address(generalReg1)] = true;
+        emit log("WHT is happ");  
     }
 
     function testStaking() public {
@@ -454,6 +465,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
         require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
         return newPod;
+    }
+
+    function testProcessFullWithdrawalForLessThanMaxRestakedBalance(uint64 withdrawalAmount) public {
+        cheats.assume(withdrawalAmount > 0 && withdrawalAmount < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
+        IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
+            validatorIndex: 0,
+            restakedBalanceGwei: 0,
+            mostRecentBalanceUpdateTimestamp: 0,
+            status: IEigenPod.VALIDATOR_STATUS.ACTIVE
+        });
+        uint64 balanceBefore = podInternalFunctionTester.withdrawableRestakedExecutionLayerGwei();
+        podInternalFunctionTester.processFullWithdrawal(0, bytes32(0), 0, podOwner, withdrawalAmount, validatorInfo);
+        require(podInternalFunctionTester.withdrawableRestakedExecutionLayerGwei() - balanceBefore == withdrawalAmount, "withdrawableRestakedExecutionLayerGwei hasn't been updated correctly");
     }
 
     /**
@@ -1456,5 +1480,43 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
         BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
+    }
+ }
+
+  contract EPInternalFunctions is EigenPod {
+
+    constructor(
+        IETHPOSDeposit _ethPOS,
+        IDelayedWithdrawalRouter _delayedWithdrawalRouter,
+        IEigenPodManager _eigenPodManager,
+        uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+        uint64 _RESTAKED_BALANCE_OFFSET_GWEI
+    ) EigenPod(
+        _ethPOS,
+        _delayedWithdrawalRouter,
+        _eigenPodManager,
+        _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+        _RESTAKED_BALANCE_OFFSET_GWEI
+    ) {
+        emit log("CONTRUCTOR");
+    }
+
+    function processFullWithdrawal(
+        uint40 validatorIndex,
+        bytes32 validatorPubkeyHash,
+        uint64 withdrawalHappenedTimestamp,
+        address recipient,
+        uint64 withdrawalAmountGwei,
+        ValidatorInfo memory validatorInfo
+    ) public {
+        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
+        _processFullWithdrawal(
+            validatorIndex,
+            validatorPubkeyHash,
+            withdrawalHappenedTimestamp,
+            recipient,
+            withdrawalAmountGwei,
+            validatorInfo
+        );
     }
  }
