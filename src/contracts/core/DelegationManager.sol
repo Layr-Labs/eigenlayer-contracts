@@ -668,7 +668,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                  */
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
-                // this call will revert `shares[i]` exceeds the Staker's current shares in `strategies[i]`
+                // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], shares[i]);
             }
 
