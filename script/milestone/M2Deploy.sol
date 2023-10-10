@@ -36,7 +36,7 @@ import "forge-std/Test.sol";
 contract M2Deploy is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    string public deploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
+    string public m1DeploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
 
     IETHPOSDeposit public ethPOS;
 
@@ -57,11 +57,11 @@ contract M2Deploy is Script, Test {
         emit log_named_uint("You are deploying on ChainID", chainId);
 
         if(chainId == 1) {
-            deploymentOutputPath = string(bytes("script/output/M1_deployment_mainnet_2023_6_9.json"));
+            m1DeploymentOutputPath = string(bytes("script/output/M1_deployment_mainnet_2023_6_9.json"));
         }
 
         // READ JSON DEPLOYMENT DATA
-        string memory deployment_data = vm.readFile(deploymentOutputPath);
+        string memory deployment_data = vm.readFile(m1DeploymentOutputPath);
         slasher = Slasher(stdJson.readAddress(deployment_data, ".addresses.slasher"));
         delegation = slasher.delegation();
         strategyManager = slasher.strategyManager();
