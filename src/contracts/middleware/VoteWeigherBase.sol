@@ -111,6 +111,7 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
         require(indicesToRemoveLength > 0, "VoteWeigherBase.removeStrategiesConsideredAndMultipliers: no indices to remove provided");
         for (uint256 i = 0; i < indicesToRemoveLength;) {
             emit StrategyRemovedFromQuorum(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy);
+            emit StrategyMultiplierUpdated(quorumNumber, strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]].strategy, 0);
             // remove strategy and its associated multiplier
             strategiesConsideredAndMultipliers[quorumNumber][indicesToRemove[i]] = strategiesConsideredAndMultipliers[
                 quorumNumber
@@ -206,7 +207,12 @@ contract VoteWeigherBase is VoteWeigherBaseStorage {
                 "VoteWeigherBase._addStrategiesConsideredAndMultipliers: cannot add strategy with zero weight"
             );
             strategiesConsideredAndMultipliers[quorumNumber].push(_newStrategiesConsideredAndMultipliers[i]);
-            emit StrategyAddedToQuorum(quorumNumber, _newStrategiesConsideredAndMultipliers[i].strategy, _newStrategiesConsideredAndMultipliers[i].multiplier);
+            emit StrategyAddedToQuorum(quorumNumber, _newStrategiesConsideredAndMultipliers[i].strategy);
+            emit StrategyMultiplierUpdated(
+                quorumNumber,
+                _newStrategiesConsideredAndMultipliers[i].strategy,
+                _newStrategiesConsideredAndMultipliers[i].multiplier
+            );
             unchecked {
                 ++i;
             }
