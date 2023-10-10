@@ -15,7 +15,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
     // CONSTANTS & IMMUTABLES
 
     // gas cost of multiplying 2 pairings
-    uint256 constant PAIRING_EQUALITY_CHECK_GAS = 120000;
+    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 120000;
 
     IRegistryCoordinator public immutable registryCoordinator;
     IStakeRegistry public immutable stakeRegistry;
@@ -41,7 +41,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
      * 
      * @dev Before signature verification, the function verifies operator stake information.  This includes ensuring that the provided `referenceBlockNumber`
      * is correct, i.e., ensure that the stake returned from the specified block number is recent enough and that the stake is either the most recent update
-     * for the total stake (or the operator) or latest before the referenceBlockNumber.
+     * for the total stake (of the operator) or latest before the referenceBlockNumber.
      * @param msgHash is the hash being signed
      * @param quorumNumbers is the bytes array of quorum numbers that are being signed for
      * @param referenceBlockNumber is the block number at which the stake information is being verified
