@@ -34,4 +34,10 @@ interface IBLSPublicKeyCompendium {
      * @param pubkeyG2 is the corresponding G2 public key of the operator
      */
     function registerBLSPublicKey(BN254.G1Point memory signedMessageHash, BN254.G1Point memory pubkeyG1, BN254.G2Point memory pubkeyG2) external;
+
+    /**
+     * @notice Returns the message hash that an operator must sign to register their BLS public key.
+     * @param operator is the address of the operator registering their BLS public key
+     */
+    function getMessageHash(address operator) external view returns (BN254.G1Point memory);
 }

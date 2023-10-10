@@ -41,4 +41,6 @@ contract BLSPublicKeyCompendiumMock is IBLSPublicKeyCompendium, DSTest {
         operatorToPubkeyHash[account] = pubkeyHash;
         pubkeyHashToOperator[pubkeyHash] = account;
     }
+
+    function getMessageHash(address operator) external view returns (BN254.G1Point memory) {}
 }

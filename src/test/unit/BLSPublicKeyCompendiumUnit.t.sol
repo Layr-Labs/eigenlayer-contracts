@@ -73,7 +73,7 @@ contract BLSPublicKeyCompendiumUnitTests is Test {
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
-        BN254.G1Point memory messageHash = BN254.hashToG1(keccak256(abi.encodePacked(signer, block.chainid, "EigenLayer_BN254_Pubkey_Registration")));
+        BN254.G1Point memory messageHash = compendium.getMessageHash(signer);
         return BN254.scalar_mul(messageHash, privKey);
     }
 
