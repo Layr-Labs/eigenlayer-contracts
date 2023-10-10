@@ -588,9 +588,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     function _verifyChurnApproverSignatureOnOperatorChurnApproval(bytes32 registeringOperatorId, OperatorKickParam[] memory operatorKickParams, SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) internal {
         // make sure the salt hasn't been used already
         require(!isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt], "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover salt already used");
-        require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");        
-        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
+        require(signatureWithSaltAndExpiry.expiry >= block.timestamp, "BLSRegistryCoordinatorWithIndices._verifyChurnApproverSignatureOnOperatorChurnApproval: churnApprover signature expired");   
+
         // set salt used to true
-        isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt] = true;
+        isChurnApproverSaltUsed[signatureWithSaltAndExpiry.salt] = true;    
+
+        // check the churnApprover's signature 
+        EIP1271SignatureUtils.checkSignature_EIP1271(churnApprover, calculateOperatorChurnApprovalDigestHash(registeringOperatorId, operatorKickParams, signatureWithSaltAndExpiry.salt, signatureWithSaltAndExpiry.expiry), signatureWithSaltAndExpiry.signature);
     }
 }
