@@ -87,14 +87,15 @@ invariant strategiesNotInArrayHaveZeroShares(address staker, uint256 index)
 definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
     || f.selector == sig:depositIntoStrategyWithSignature(address,address,uint256,address,uint256,bytes).selector
-    || f.selector == sig:completeQueuedWithdrawal(IDelegationManager.Withdrawal,address[],uint256,bool).selector;
+    || f.selector == sig:withdrawSharesAsTokens(address,address,uint256,address).selector
+    || f.selector == sig:addShares(address,address,uint256).selector;
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerStrategyShares[staker][strategy]`) should only decrease when
 * `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
 */
 definition methodCanDecreaseShares(method f) returns bool =
-    f.selector == sig:queueWithdrawal(uint256[],address[],uint256[],address).selector;
+    f.selector == sig:removeShares(address,address,uint256).selector;
 
 rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, address strategy) {
     uint256 sharesBefore = stakerStrategyShares(staker, strategy);
