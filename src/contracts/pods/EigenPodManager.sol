@@ -194,6 +194,8 @@ contract EigenPodManager is
         address destination, 
         uint256 shares
     ) external onlyDelegationManager {
+        require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
+        require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
