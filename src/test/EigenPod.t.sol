@@ -711,7 +711,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
         int256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == int256(_calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI), "pod balance not updated correcty");
+        assertTrue(beaconChainETHAfter - beaconChainETHBefore == int256(_calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR())*GWEI_TO_WEI), "pod balance not updated correcty");
         assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 
