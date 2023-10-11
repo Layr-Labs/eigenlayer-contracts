@@ -59,7 +59,7 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
         * The calculation subtracts an offset (`RESTAKED_BALANCE_OFFSET_GWEI`) from the validator's proven balance, and round down to the nearest ETH
         * Related: `uint64 RESTAKED_BALANCE_OFFSET_GWEI`
             * As of M2, this is 0.75 ETH (in Gwei)
-        * Related: `uint64 MAX_VALIDATOR_BALANCE_GWEI`
+        * Related: `uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`
             * As of M2, this is 31 ETH (in Gwei)
             * This is the maximum amount of restaked ETH a single validator can be credited with in EigenLayer
     * `_podWithdrawalCredentials() -> (bytes memory)`:
@@ -437,7 +437,7 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
     * The validator in question is recorded as having a proven withdrawal at the timestamp given by `withdrawalProof.timestampRoot`
         * This is to prevent the same withdrawal from being proven twice
     * If this is a full withdrawal:
-        * Any withdrawal amount in excess of `_calculateRestakedBalanceGwei(MAX_VALIDATOR_BALANCE_GWEI)` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
+        * Any withdrawal amount in excess of `_calculateRestakedBalanceGwei(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
             * The remainder must be withdrawn through `EigenPodManager.queueWithdrawal`, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
         * If the amount being withdrawn is not equal to the current accounted-for validator balance, a `shareDelta` is calculated to be sent to ([`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)).
         * The validator's info is updated to reflect its `WITHDRAWN` status:
