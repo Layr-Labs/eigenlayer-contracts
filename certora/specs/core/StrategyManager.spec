@@ -151,10 +151,9 @@ rule safeApprovalUse(address user) {
         address recipient;
         address strategy;
         uint256 shares;
-        address token;
         // filter out case where the strategy itself calls this contract to withdraw from itself
         require(e.msg.sender != strategy);
-        withdrawSharesAsTokens(recipient, strategy, shares, token);
+        withdrawSharesAsTokens(e, recipient, strategy, shares, token);
     // otherwise just perform an arbitrary function call
     } else {
         calldataarg args;
