@@ -1473,9 +1473,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.setWithdrawalDelayBlocks(valueToSet);
     }
 
-    /**
-     * StrategyManager Withdrawals
-     */
+    /**************************************
+     * 
+     *  Withdrawals Tests with StrategyManager, using actual SM contract instead of Mock to test
+     * 
+     **************************************/
 
     
     function testQueueWithdrawalRevertsMismatchedSharesAndStrategyArrayLength() external {
@@ -2166,6 +2168,129 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "Strategy still part of staker's deposited strategies"
         );
         require(sharesAfter == 0, "staker shares is not 0");
+    }
+
+    function test_removeSharesRevertsWhenShareAmountIsZero(uint256 depositAmount) external {
+        _setUpWithdrawalTests();
+        address staker = address(this);
+        uint256 withdrawalAmount = 0;
+
+        _depositIntoStrategySuccessfully(strategyMock, staker, depositAmount);
+
+        (
+            IDelegationManager.Withdrawal memory withdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        ) = _setUpWithdrawalStructSingleStrat(
+                /*staker*/ address(this),
+                /*withdrawer*/ address(this),
+                mockToken,
+                strategyMock,
+                withdrawalAmount
+            );
+
+        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount should not be zero!"));
+        delegationManager.queueWithdrawal(
+            withdrawal.strategies,
+            withdrawal.shares,
+            staker
+        );
+    }
+
+    function test_removeSharesRevertsWhenShareAmountIsTooLarge(
+        uint256 depositAmount,
+        uint256 withdrawalAmount
+    ) external {
+        _setUpWithdrawalTests();
+        cheats.assume(depositAmount > 0 && withdrawalAmount > depositAmount);
+        address staker = address(this);
+
+        _depositIntoStrategySuccessfully(strategyMock, staker, depositAmount);
+
+        (
+            IDelegationManager.Withdrawal memory withdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        ) = _setUpWithdrawalStructSingleStrat(
+                /*staker*/ address(this),
+                /*withdrawer*/ address(this),
+                mockToken,
+                strategyMock,
+                withdrawalAmount
+            );
+
+        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
+        delegationManager.queueWithdrawal(
+            withdrawal.strategies,
+            withdrawal.shares,
+            /*withdrawer*/ address(this)
+        );
+    }
+
+    /**
+     * Testing queueWithdrawal of 3 strategies, fuzzing the deposit and withdraw amounts. if the withdrawal amounts == deposit amounts
+     * then the strategy should be removed from the staker StrategyList
+     */
+    function test_removeStrategyFromStakerStrategyList(uint256[3] memory depositAmounts, uint256[3] memory withdrawalAmounts) external {
+        _setUpWithdrawalTests();
+        // filtering of fuzzed inputs
+        cheats.assume(withdrawalAmounts[0] > 0 && withdrawalAmounts[0] <= depositAmounts[0]);
+        cheats.assume(withdrawalAmounts[1] > 0 && withdrawalAmounts[1] <= depositAmounts[1]);
+        cheats.assume(withdrawalAmounts[2] > 0 && withdrawalAmounts[2] <= depositAmounts[2]);
+        address staker = address(this);
+
+        // Setup input params
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = strategyMock;
+        strategies[1] = strategyMock2;
+        strategies[2] = strategyMock3;
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = withdrawalAmounts[0];
+        amounts[1] = withdrawalAmounts[1];
+        amounts[2] = withdrawalAmounts[2];
+
+        _depositIntoStrategySuccessfully(strategies[0], staker, depositAmounts[0]);
+        _depositIntoStrategySuccessfully(strategies[1], staker, depositAmounts[1]);
+        _depositIntoStrategySuccessfully(strategies[2], staker, depositAmounts[2]);
+
+        (
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpWithdrawalStruct_MultipleStrategies(
+                /* staker */ staker,
+                /* withdrawer */ staker,
+                strategies,
+                amounts
+            );
+        require(!delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
+        uint256[] memory sharesBefore = new uint256[](3);
+        sharesBefore[0] = strategyManager.stakerStrategyShares(staker, strategies[0]);
+        sharesBefore[1] = strategyManager.stakerStrategyShares(staker, strategies[1]);
+        sharesBefore[2] = strategyManager.stakerStrategyShares(staker, strategies[2]);
+
+        delegationManager.queueWithdrawal(
+            strategies,
+            amounts,
+            /*withdrawer*/ address(this)
+        );
+
+        uint256[] memory sharesAfter = new uint256[](3);
+        sharesAfter[0] = strategyManager.stakerStrategyShares(staker, strategies[0]);
+        sharesAfter[1] = strategyManager.stakerStrategyShares(staker, strategies[1]);
+        sharesAfter[2] = strategyManager.stakerStrategyShares(staker, strategies[2]);
+        require(sharesBefore[0] == sharesAfter[0] + withdrawalAmounts[0], "Strat1: sharesBefore != sharesAfter + withdrawalAmount");
+        if (depositAmounts[0] == withdrawalAmounts[0]) {
+            require(!_isDepositedStrategy(staker, strategies[0]), "Strategy still part of staker's deposited strategies");
+        }
+        require(sharesBefore[1] == sharesAfter[1] + withdrawalAmounts[1], "Strat2: sharesBefore != sharesAfter + withdrawalAmount");
+        if (depositAmounts[1] == withdrawalAmounts[1]) {
+            require(!_isDepositedStrategy(staker, strategies[1]), "Strategy still part of staker's deposited strategies");
+        }
+        require(sharesBefore[2] == sharesAfter[2] + withdrawalAmounts[2], "Strat3: sharesBefore != sharesAfter + withdrawalAmount");
+        if (depositAmounts[2] == withdrawalAmounts[2]) {
+            require(!_isDepositedStrategy(staker, strategies[2]), "Strategy still part of staker's deposited strategies");
+        }
     }
 
     /**
