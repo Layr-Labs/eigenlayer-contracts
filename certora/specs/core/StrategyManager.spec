@@ -36,6 +36,9 @@ methods {
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
+    // external calls to Strategy contracts
+    function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+
     // external calls to ERC20
     function _.balanceOf(address) external => DISPATCHER(true);
     function _.transfer(address, uint256) external => DISPATCHER(true);
@@ -50,6 +53,7 @@ methods {
 
     //// Harnessed Functions
     // Harnessed calls
+    function _.totalShares() external => DISPATCHER(true);
     // Harnessed getters
     function strategy_is_in_stakers_array(address, address) external returns (bool) envfree;
     function num_times_strategy_is_in_stakers_array(address, address) external returns (uint256) envfree;
