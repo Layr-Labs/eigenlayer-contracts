@@ -74,9 +74,6 @@ If the Staker is delegated to an Operator, the Operator's delegated shares are i
 * `strategy` in question MUST be whitelisted for deposits. 
 * See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 
-*As of M2*:
-* The `onlyNotFrozen` modifier is currently a no-op
-
 #### `depositIntoStrategyWithSignature`
 
 ```solidity
@@ -100,9 +97,6 @@ function depositIntoStrategyWithSignature(
 
 *Requirements*: See `depositIntoStrategy` above. Additionally:
 * Caller MUST provide a valid, unexpired signature over the correct fields
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is currently a no-op
 
 ---
 

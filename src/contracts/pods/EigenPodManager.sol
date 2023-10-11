@@ -36,29 +36,11 @@ contract EigenPodManager is
         _;
     }
 
-    modifier onlyStrategyManager() {
-        require(msg.sender == address(strategyManager), "EigenPodManager.onlyStrategyManager: not strategyManager");
-        _;
-    }
-
     modifier onlyDelegationManager() {
         require(
             msg.sender == address(delegationManager),
             "EigenPodManager.onlyDelegationManager: not the DelegationManager"
         );
-        _;
-    }
-
-    modifier onlyNotFrozen(address staker) {
-        require(
-            !slasher.isFrozen(staker),
-            "EigenPodManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
-        );
-        _;
-    }
-
-    modifier onlyFrozen(address staker) {
-        require(slasher.isFrozen(staker), "EigenPodManager.onlyFrozen: staker has not been frozen");
         _;
     }
 

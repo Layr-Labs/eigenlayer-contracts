@@ -469,9 +469,6 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
     * `BeaconChainProofs.verifyWithdrawal` MUST verify the provided `withdrawalFields` against the provided `beaconStateRoot`
     * `BeaconChainProofs.verifyValidatorFields` MUST verify the provided `validatorFields` against the `beaconStateRoot`
 
-*As of M2*:
-* The `onlyNotFrozen` modifier is currently a no-op
-
 #### `DelayedWithdrawalRouter.createDelayedWithdrawal`
 
 TODO

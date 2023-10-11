@@ -78,9 +78,6 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~180 days)
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
-*As of M2*:
-* `require(!slasher.isFrozen(operator))` is currently a no-op
-
 #### `modifyOperatorDetails`
 
 ```solidity
@@ -137,9 +134,6 @@ Allows the caller (a Staker) to delegate their shares to an Operator. Delegation
 * The `operator` MUST already be an Operator
 * If the `operator` has a `delegationApprover`, the caller MUST provide a valid `approverSignatureAndExpiry` and `approverSalt`
 
-*As of M2*:
-* `require(!slasher.isFrozen(operator))` is currently a no-op
-
 #### `delegateToBySignature`
 
 ```solidity
@@ -163,9 +157,6 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 *Requirements*: See `delegateTo` above. Additionally:
 * If caller is either the Operator's `delegationApprover` or the Operator, the `approverSignatureAndExpiry` and `approverSalt` can be empty
 * `stakerSignatureAndExpiry` MUST be a valid, unexpired signature over the correct hash and nonce
-
-*As of M2*:
-* `require(!slasher.isFrozen(operator))` is currently a no-op
 
 ---
 
@@ -311,8 +302,7 @@ For each strategy/share pair in the `Withdrawal`:
     * See [`EigenPodManager.addShares`](./EigenPodManager.md#eigenpodmanageraddshares)
 
 *As of M2*:
-* `slasher.canWithdraw` is currently a no-op
-* The `middlewareTimesIndex` parameter has to do with the Slasher, which currently does nothing. As of M2, this parameter has no bearing on anything and can be ignored. It is passed into a call to the Slasher, but the call is a no-op.
+* The `middlewareTimesIndex` parameter has to do with the Slasher, which currently does nothing. As of M2, this parameter has no bearing on anything and can be ignored.
 
 #### `completeQueuedWithdrawals`
 

@@ -99,11 +99,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    modifier onlyNotFrozen() {
-        require(!eigenPodManager.slasher().isFrozen(podOwner), "EigenPod.onlyNotFrozen: pod owner is frozen");
-        _;
-    }
-
     modifier hasNeverRestaked() {
         require(!hasRestaked, "EigenPod.hasNeverRestaked: restaking is enabled");
         _;
@@ -288,7 +283,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields
-    ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) onlyNotFrozen {
+    ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
         require(
             (validatorFields.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == withdrawalProofs.length) &&
