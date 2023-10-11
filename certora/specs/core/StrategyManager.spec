@@ -38,6 +38,7 @@ methods {
 
     // external calls to Strategy contracts
     function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+    function _.deposit(address,uint256) external => DISPATCHER(true);
 
     // external calls to ERC20
     function _.balanceOf(address) external => DISPATCHER(true);
@@ -145,8 +146,20 @@ rule safeApprovalUse(address user) {
     uint256 tokenBalanceBefore = token.balanceOf(user);
     method f;
     env e;
-    calldataarg args;
-    f(e,args);
+    // special case logic, to handle an edge case
+    if (f.selector == sig:withdrawSharesAsTokens(address,address,uint256,address).selector) {
+        address recipient;
+        address strategy;
+        uint256 shares;
+        address token;
+        // filter out case where the strategy itself calls this contract to withdraw from itself
+        require(e.msg.sender != strategy);
+        withdrawSharesAsTokens(recipient, strategy, shares, token);
+    // otherwise just perform an arbitrary function call
+    } else {
+        calldataarg args;
+        f(e,args);
+    }
     uint256 tokenBalanceAfter = token.balanceOf(user);
     if (tokenBalanceAfter < tokenBalanceBefore) {
         assert(e.msg.sender == user, "unsafeApprovalUse?");
