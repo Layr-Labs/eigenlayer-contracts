@@ -322,6 +322,7 @@ This method is not allowed to cause the `Staker's` balance to go negative. This 
 * `podOwner` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to `int256`
 * `shares` MUST NOT be greater than `podOwner's` share balance
+* `shares` MUST be a whole Gwei amount
 
 #### `EigenPodManager.addShares`
 
@@ -351,6 +352,7 @@ If the Pod Owner has a share deficit (negative shares), the deficit is repaid ou
 *Requirements*:
 * `podOwner` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to an `int256`
+* `shares` MUST be a whole Gwei amount
 
 #### `EigenPodManager.withdrawSharesAsTokens`
 
@@ -384,6 +386,7 @@ Also note that, like `addShares`, if the original Pod Owner has a share deficit 
 * `podOwner` MUST NOT be zero
 * `destination` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to an `int256`
+* `shares` MUST be a whole Gwei amount
 * See [`EigenPod.withdrawRestakedBeaconChainETH`](#eigenpodwithdrawrestakedbeaconchaineth)
 
 ##### `EigenPod.withdrawRestakedBeaconChainETH`
@@ -411,6 +414,7 @@ As such:
 * `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
 * Pod MUST have at least `amountWei` ETH balance
 * `recipient` MUST NOT revert when transferred `amountWei`
+* `amountWei` MUST be a whole Gwei amount
 
 #### `EigenPod.verifyAndProcessWithdrawals`
 
@@ -557,6 +561,7 @@ If the Pod Owner is not in undelegation limbo and is delegated to an Operator, t
 * `sharesDelta`: 
     * MUST NOT be 0
     * If negative, `sharesDelta` MUST NOT remove more shares than the Pod Owner has
+    * MUST be a whole Gwei amount
 
 #### `EigenPod.activateRestaking`
 
