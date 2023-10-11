@@ -290,7 +290,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
      * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
      * will simply be transferred to the caller directly.
-     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
+     * @dev middlewareTimesIndex is unused, but will be used in the Slasher eventually
      * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
      * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
      * any other strategies, which will be transferred to the withdrawer.
@@ -453,8 +453,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @dev Ensures that:
      *          1) the `staker` is not already delegated to an operator
      *          2) the `operator` has indeed registered as an operator in EigenLayer
-     *          3) the `operator` is not actively frozen
-     *          4) if applicable, that the approver signature is valid and non-expired
+     *          3) if applicable, that the approver signature is valid and non-expired
      */
     function _delegate(
         address staker,
@@ -464,7 +463,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         require(!isDelegated(staker), "DelegationManager._delegate: staker is already actively delegated");
         require(isOperator(operator), "DelegationManager._delegate: operator is not registered in EigenLayer");
-        require(!slasher.isFrozen(operator), "DelegationManager._delegate: cannot delegate to a frozen operator");
 
         // fetch the operator's `delegationApprover` address and store it in memory in case we need to use it multiple times
         address _delegationApprover = _operatorDetails[operator].delegationApprover;
@@ -533,11 +531,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         require(
             pendingWithdrawals[withdrawalRoot], 
             "DelegationManager.completeQueuedAction: action is not in queue"
-        );
-
-        require(
-            slasher.canWithdraw(withdrawal.delegatedTo, withdrawal.startBlock, middlewareTimesIndex),
-            "DelegationManager.completeQueuedAction: pending action is still slashable"
         );
 
         require(

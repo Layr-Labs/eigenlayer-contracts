@@ -34,19 +34,6 @@ contract StrategyManager is
     // chain id at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
-    modifier onlyNotFrozen(address staker) {
-        require(
-            !slasher.isFrozen(staker),
-            "StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"
-        );
-        _;
-    }
-
-    modifier onlyFrozen(address staker) {
-        require(slasher.isFrozen(staker), "StrategyManager.onlyFrozen: staker has not been frozen");
-        _;
-    }
-
     modifier onlyStrategyWhitelister() {
         require(
             msg.sender == strategyWhitelister,
@@ -111,7 +98,6 @@ contract StrategyManager is
      * @param amount is the amount of token to be deposited in the strategy by the staker
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
      *
      * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
@@ -120,7 +106,7 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) onlyNotFrozen(msg.sender) nonReentrant returns (uint256 shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
         shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
@@ -140,7 +126,6 @@ contract StrategyManager is
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -152,7 +137,7 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) onlyNotFrozen(staker) nonReentrant returns (uint256 shares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
         require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
