@@ -55,10 +55,12 @@ interface IEigenPodManager is IPausable {
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
 
     /**
-     * @notice Records an update in beacon chain strategy shares in the strategy manager
-     * @param podOwner is the pod owner whose shares are to be updated,
+     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
+     * to ensure that delegated shares are also tracked correctly
+     * @param podOwner is the pod owner whose balance is being updated.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
+     * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
@@ -114,18 +116,23 @@ interface IEigenPodManager is IPausable {
      * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
      * shares from the operator to whom the staker is delegated.
+     * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function removeShares(address podOwner, uint256 shares) external;
 
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]`, which will be less than the `shares` input in the event that the
-     * podOwner has an existing shares deficit
+     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
+     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
+     * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function addShares(address podOwner, uint256 shares) external returns (uint256);
 
-    /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
-    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
+    /**
+     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+     * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
+     * @dev Reverts if `shares` is not a whole Gwei amount
+     */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 }

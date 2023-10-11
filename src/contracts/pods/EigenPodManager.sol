@@ -94,16 +94,20 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager to ensure that delegated shares are also tracked correctly
+     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
+     * to ensure that delegated shares are also tracked correctly
      * @param podOwner is the pod owner whose balance is being updated.
      * @param sharesDelta is the change in podOwner's beaconChainETHStrategy shares
      * @dev Callable only by the podOwner's EigenPod contract.
+     * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
         int256 sharesDelta
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(podOwner != address(0), "EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
+        require(sharesDelta % int256(GWEI_TO_WEI) == 0,
+            "EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + sharesDelta;
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -137,6 +141,7 @@ contract EigenPodManager is
      * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
      * shares from the operator to whom the staker is delegated.
+     * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function removeShares(
         address podOwner, 
@@ -144,6 +149,7 @@ contract EigenPodManager is
     ) external onlyDelegationManager {
         require(podOwner != address(0), "EigenPodManager.removeShares: podOwner cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.removeShares: shares amount is negative");
+        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
         require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -152,8 +158,9 @@ contract EigenPodManager is
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input in the event that the
-     * podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
+     * @dev Returns the number of shares added to `podOwnerShares[podOwner]` above zero, which will be less than the `shares` input
+     * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
+     * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function addShares(
         address podOwner,
@@ -161,7 +168,7 @@ contract EigenPodManager is
     ) external onlyDelegationManager returns (uint256) {
         require(podOwner != address(0), "EigenPodManager.addShares: podOwner cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.addShares: shares cannot be negative");
-
+        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.addShares: shares must be a whole Gwei amount");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -169,8 +176,11 @@ contract EigenPodManager is
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
 
-    /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
-    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
+    /**
+     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+     * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
+     * @dev Reverts if `shares` is not a whole Gwei amount
+     */
     function withdrawSharesAsTokens(
         address podOwner, 
         address destination, 
@@ -179,6 +189,7 @@ contract EigenPodManager is
         require(podOwner != address(0), "EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
         require(destination != address(0), "EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
         require(int256(shares) >= 0, "EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
+        require(shares % GWEI_TO_WEI == 0, "EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
@@ -268,7 +279,8 @@ contract EigenPodManager is
             // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
             if (sharesAfter <= 0) {
                 return (-sharesBefore);
-            // if the shares started positive and stayed positive, then the change in delegateable shares is the difference between starting and ending amounts
+            // if the shares started positive and stayed positive, then the change in delegateable shares
+            // is the difference between starting and ending amounts
             } else {
                 return (sharesAfter - sharesBefore);
             }

@@ -40,6 +40,7 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
     * `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
     * `mapping(address => int256) public podOwnerShares`: Keeps track of the actively restaked beacon chain ETH for each Staker. 
         * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
+        * Since balances on the consensus layer are stored only in Gwei amounts, the EigenPodManager enforces the invariant that `podOwnerShares` is always a whole Gwei amount for every staker, i.e. `podOwnerShares[staker] % 1e9 == 0` always.
 * `EigenPod`:
     * `_validatorPubkeyHashToInfo[bytes32] -> (ValidatorInfo)`: individual validators are identified within an `EigenPod` according the their public key hash. This mapping keeps track of the following for each validator:
         * `validatorStatus`: (`INACTIVE`, `ACTIVE`, `WITHDRAWN`)
@@ -321,6 +322,7 @@ This method is not allowed to cause the `Staker's` balance to go negative. This 
 * `podOwner` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to `int256`
 * `shares` MUST NOT be greater than `podOwner's` share balance
+* `shares` MUST be a whole Gwei amount
 
 #### `EigenPodManager.addShares`
 
@@ -350,6 +352,7 @@ If the Pod Owner has a share deficit (negative shares), the deficit is repaid ou
 *Requirements*:
 * `podOwner` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to an `int256`
+* `shares` MUST be a whole Gwei amount
 
 #### `EigenPodManager.withdrawSharesAsTokens`
 
@@ -383,6 +386,7 @@ Also note that, like `addShares`, if the original Pod Owner has a share deficit 
 * `podOwner` MUST NOT be zero
 * `destination` MUST NOT be zero
 * `shares` MUST NOT be negative when converted to an `int256`
+* `shares` MUST be a whole Gwei amount
 * See [`EigenPod.withdrawRestakedBeaconChainETH`](#eigenpodwithdrawrestakedbeaconchaineth)
 
 ##### `EigenPod.withdrawRestakedBeaconChainETH`
@@ -410,6 +414,7 @@ As such:
 * `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
 * Pod MUST have at least `amountWei` ETH balance
 * `recipient` MUST NOT revert when transferred `amountWei`
+* `amountWei` MUST be a whole Gwei amount
 
 #### `EigenPod.verifyAndProcessWithdrawals`
 
@@ -553,6 +558,7 @@ If the Pod Owner is not in undelegation limbo and is delegated to an Operator, t
 * `sharesDelta`: 
     * MUST NOT be 0
     * If negative, `sharesDelta` MUST NOT remove more shares than the Pod Owner has
+    * MUST be a whole Gwei amount
 
 #### `EigenPod.activateRestaking`
 

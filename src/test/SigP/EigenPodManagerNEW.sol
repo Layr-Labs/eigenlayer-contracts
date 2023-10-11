@@ -129,17 +129,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external onlyEigenPod(podOwner){}
 
     /**
-     * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
-     * @param podOwner The owner of the pod whose balance must be withdrawn.
-     * @param recipient The recipient of the withdrawn ETH.
-     * @param amount The amount of ETH to withdraw.
-     * @dev Callable only by the StrategyManager contract.
-     */
-    function withdrawRestakedBeaconChainETH(address podOwner, address recipient, uint256 amount) external onlyStrategyManager {
-        getPod(podOwner).withdrawRestakedBeaconChainETH(recipient, amount);
-    }
-
-    /**
      * @notice Records receiving ETH from the `PodOwner`'s EigenPod, paid in order to fullfill the EigenPod's penalties to EigenLayer
      * @param podOwner The owner of the pod whose balance is being sent.
      * @dev Callable only by the podOwner's EigenPod contract.
