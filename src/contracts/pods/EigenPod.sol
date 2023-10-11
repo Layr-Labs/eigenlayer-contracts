@@ -484,8 +484,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
      * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
      * `amountWei` input (when converted to GWEI).
+     * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+        require(amountWei % GWEI_TO_WEI == 0, "EigenPod.withdrawRestakedBeaconChainETH: amountWei must be a whole Gwei amount");
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         withdrawableRestakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);

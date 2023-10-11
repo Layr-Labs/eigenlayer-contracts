@@ -113,8 +113,9 @@ interface IEigenPod {
     /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
-     * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * `amountWei` input (when converted to GWEI).
+     * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
