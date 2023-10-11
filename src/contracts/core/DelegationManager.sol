@@ -666,6 +666,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                  * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
                  * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
                  * shares from the operator to whom the staker is delegated.
+                 * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
                  */
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
