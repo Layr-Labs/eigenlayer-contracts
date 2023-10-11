@@ -1086,18 +1086,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // for each strategy in `strategies`, decrease delegated shares by `shares`
         {
+            cheats.startPrank(address(strategyManagerMock));
             address operatorToDecreaseSharesOf = delegationManager.delegatedTo(staker);
             if (delegationManager.isDelegated(staker)) {
                 for (uint256 i = 0; i < strategies.length;  ++i) {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
                     emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
+                    delegationManager.decreaseDelegatedShares(staker, strategies[i], sharesInputArray[i]);
                 }
             }
+            cheats.stopPrank();
         }
-
-        cheats.startPrank(address(strategyManagerMock));
-        delegationManager.decreaseDelegatedShares(staker, strategies, sharesInputArray);
-        cheats.stopPrank();
 
         // check shares after call to `decreaseDelegatedShares`
         bool isDelegated =  delegationManager.isDelegated(staker);
@@ -1126,14 +1125,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
     function testCannotCallDecreaseDelegatedSharesFromNonPermissionedAddress(
         address operator,  
-        IStrategy[] memory strategies,  
-        uint256[] memory shareAmounts
+        IStrategy strategy,  
+        uint256 shares
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
         cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
-        delegationManager.decreaseDelegatedShares(operator, strategies, shareAmounts);
+        delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
 
     // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer

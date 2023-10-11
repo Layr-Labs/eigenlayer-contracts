@@ -7,7 +7,7 @@ methods {
     function _.undelegate(address) external => DISPATCHER(true);
     function _.isDelegated(address) external => DISPATCHER(true);
     function _.delegatedTo(address) external => DISPATCHER(true);
-	function _.decreaseDelegatedShares(address,address[],uint256[]) external => DISPATCHER(true);
+	function _.decreaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
 	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
 
 	// external calls to Slasher
@@ -15,23 +15,19 @@ methods {
 	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
 
 	// external calls to StrategyManager
-    function _.getDeposits(address) external;
-    function _.slasher() external;
-	function _.deposit(address,uint256) external;
-	function _.withdraw(address,address,uint256) external;
-
-	// external calls to Strategy
-    function _.deposit(address, uint256) external => DISPATCHER(true);
-    function _.withdraw(address, address, uint256) external => DISPATCHER(true);
-    function _.totalShares() external => DISPATCHER(true);
+    function _.getDeposits(address) external => DISPATCHER(true);
+    function _.slasher() external => DISPATCHER(true);
+    function _.addShares(address,address,uint256) external => DISPATCHER(true);
+    function _.removeShares(address,address,uint256) external => DISPATCHER(true);
+    function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
 	// external calls to EigenPodManager
-	function _.withdrawRestakedBeaconChainETH(address,address,uint256) external => DISPATCHER(true);
-    // call made to EigenPodManager by DelayedWithdrawalRouter
-    function _.getPod(address) external => DISPATCHER(true);
+    function _.addShares(address,uint256) external => DISPATCHER(true);
+    function _.removeShares(address,uint256) external => DISPATCHER(true);
+    function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
 
-    // external calls to EigenPod (from EigenPodManager)
-    function _.withdrawRestakedBeaconChainETH(address, uint256) external => DISPATCHER(true);
+    // external calls to EigenPod
+	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
 	    
     // external calls to DelayedWithdrawalRouter (from EigenPod)
     function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
@@ -91,7 +87,7 @@ invariant strategiesNotInArrayHaveZeroShares(address staker, uint256 index)
 definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
     || f.selector == sig:depositIntoStrategyWithSignature(address,address,uint256,address,uint256,bytes).selector
-    || f.selector == sig:completeQueuedWithdrawal(IStrategyManager.QueuedWithdrawal,address[],uint256,bool).selector;
+    || f.selector == sig:completeQueuedWithdrawal(IDelegationManager.Withdrawal,address[],uint256,bool).selector;
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerStrategyShares[staker][strategy]`) should only decrease when

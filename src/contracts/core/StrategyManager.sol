@@ -18,9 +18,6 @@ import "../libraries/EIP1271SignatureUtils.sol";
  * functionalities are:
  * - adding and removing strategies that any delegator can deposit into
  * - enabling deposit of assets into specified strategy(s)
- * - enabling withdrawal of assets from specified strategy(s)
- * - recording deposit of ETH into settlement layer
- * - slashing of assets for permissioned strategies
  */
 contract StrategyManager is
     Initializable,
@@ -31,12 +28,8 @@ contract StrategyManager is
 {
     using SafeERC20 for IERC20;
 
-    uint256 internal constant GWEI_TO_WEI = 1e9;
-
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
-    // index for flag that pauses withdrawals when set
-    uint8 internal constant PAUSED_WITHDRAWALS = 1;
 
     // chain id at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -98,27 +91,24 @@ contract StrategyManager is
      * @param initialOwner Ownership of this contract is transferred to this address.
      * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
      * @param  initialPausedStatus The initial value of `_paused` to set.
-     * @param _withdrawalDelayBlocks The initial value of `withdrawalDelayBlocks` to set.
      */
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
         IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus,
-        uint256 _withdrawalDelayBlocks
+        uint256 initialPausedStatus
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
-        _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @return shares The amount of new shares in the `strategy` created as part of the action.
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
@@ -141,7 +131,7 @@ contract StrategyManager is
      * purely to help one address deposit 'for' another.
      * @param strategy is the specified strategy where deposit is to be made,
      * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the depositor
+     * @param amount is the amount of token to be deposited in the strategy by the staker
      * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
      * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
@@ -186,129 +176,45 @@ contract StrategyManager is
         shares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
-    /**
-     * @notice Called by the DelegationManager as part of the forced undelegation of the @param staker from their delegated operator.
-     * This function queues a withdrawal of all of the `staker`'s shares in EigenLayer to the staker themself, and then undelegates the staker.
-     * The staker will consequently be able to complete this withdrawal by calling the `completeQueuedWithdrawal` function.
-     * @param staker The staker to force-undelegate.
-     * @dev Returns: an array of strategies withdrawn from, the shares withdrawn from each strategy, and the root of the newly queued withdrawal.
-     */
-    function forceTotalWithdrawal(
-        address staker
-    )
-        external
-        onlyDelegationManager
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyNotFrozen(staker)
-        nonReentrant
-        returns (IStrategy[] memory, uint256[] memory, bytes32)
-    {
-        uint256 strategiesLength = stakerStrategyList[staker].length;
-        IStrategy[] memory strategies = new IStrategy[](strategiesLength);
-        uint256[] memory shares = new uint256[](strategiesLength);
-        uint256[] memory strategyIndexes = new uint256[](strategiesLength);
+    /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
+    function removeShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external onlyDelegationManager {
+        _removeShares(staker, strategy, shares);
+    }
 
-        for (uint256 i = 0; i < strategiesLength; ) {
-            uint256 index = (strategiesLength - 1) - i;
-            strategies[i] = stakerStrategyList[staker][index];
-            shares[i] = stakerStrategyShares[staker][strategies[i]];
-            strategyIndexes[i] = index;
-            unchecked {
-                ++i;
-            }
+    /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
+    function addShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external onlyDelegationManager {
+        _addShares(staker, strategy, shares);
+    }
+
+    /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
+    function withdrawSharesAsTokens(
+        address recipient,
+        IStrategy strategy,
+        uint256 shares,
+        IERC20 token
+    ) external onlyDelegationManager {
+        strategy.withdraw(recipient, token, shares);
+    }
+
+    /// @notice Function called by the DelegationManager as part of the process of transferring existing queued withdrawals from this contract to that contract.
+    /// @dev This function is expected to be removed in the next upgrade, after all queued withdrawals have been migrated.
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external onlyDelegationManager returns(bool, bytes32) {
+        bytes32 existingWithdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
+        bool isDeleted;
+        // Delete the withdrawal root if it exists
+        if (withdrawalRootPending[existingWithdrawalRoot]) {
+            withdrawalRootPending[existingWithdrawalRoot] = false;
+            isDeleted = true;
         }
-        bytes32 queuedWithdrawal = _queueWithdrawal(staker, strategyIndexes, strategies, shares, staker);
-        return (strategies, shares, queuedWithdrawal);
-    }
-
-    /**
-     * @notice Called by a staker to queue a withdrawal of the given amount of `shares` from each of the respective given `strategies`.
-     * @dev Stakers will complete their withdrawal by calling the 'completeQueuedWithdrawal' function.
-     * User shares are decreased in this function, but the total number of shares in each strategy remains the same.
-     * The total number of shares is decremented in the 'completeQueuedWithdrawal' function instead, which is where
-     * the funds are actually sent to the user through use of the strategies' 'withdrawal' function. This ensures
-     * that the value per share reported by each strategy will remain consistent, and that the shares will continue
-     * to accrue gains during the enforced withdrawal waiting period.
-     * @param strategyIndexes is a list of the indices in `stakerStrategyList[msg.sender]` that correspond to the strategies
-     * for which `msg.sender` is withdrawing 100% of their shares
-     * @param strategies The Strategies to withdraw from
-     * @param shares The amount of shares to withdraw from each of the respective Strategies in the `strategies` array
-     * @param withdrawer The address that can complete the withdrawal and will receive any withdrawn funds or shares upon completing the withdrawal
-     * @return The 'withdrawalRoot' of the newly created Queued Withdrawal
-     * @dev Strategies are removed from `stakerStrategyList` by swapping the last entry with the entry to be removed, then
-     * popping off the last entry in `stakerStrategyList`. The simplest way to calculate the correct `strategyIndexes` to input
-     * is to order the strategies *for which `msg.sender` is withdrawing 100% of their shares* from highest index in
-     * `stakerStrategyList` to lowest index
-     */
-    function queueWithdrawal(
-        uint256[] calldata strategyIndexes,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyNotFrozen(msg.sender) nonReentrant returns (bytes32) {
-        bytes32 queuedWithdrawal = _queueWithdrawal(msg.sender, strategyIndexes, strategies, shares, withdrawer);
-        delegation.decreaseDelegatedShares(msg.sender, strategies, shares);
-        return queuedWithdrawal;
-    }
-
-    /**
-     * @notice Used to complete the specified `queuedWithdrawal`. The function caller must match `queuedWithdrawal.withdrawer`
-     * @param queuedWithdrawal The QueuedWithdrawal to complete.
-     * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `strategies` array
-     * of the `queuedWithdrawal`. This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused)
-     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
-     * @param receiveAsTokens If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves
-     * and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
-     * will simply be transferred to the caller directly.
-     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
-     */
-    function completeQueuedWithdrawal(
-        QueuedWithdrawal calldata queuedWithdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    )
-        external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        // check that the address that the staker *was delegated to* – at the time that they queued the withdrawal – is not frozen
-        nonReentrant
-    {
-        _completeQueuedWithdrawal(queuedWithdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
-    }
-
-    /**
-     * @notice Used to complete the specified `queuedWithdrawals`. The function caller must match `queuedWithdrawals[...].withdrawer`
-     * @param queuedWithdrawals The QueuedWithdrawals to complete.
-     * @param tokens Array of tokens for each QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-     * @param middlewareTimesIndexes One index to reference per QueuedWithdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
-     * @param receiveAsTokens If true, the shares specified in the queued withdrawal will be withdrawn from the specified strategies themselves
-     * and sent to the caller, through calls to `queuedWithdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
-     * will simply be transferred to the caller directly.
-     * @dev Array-ified version of `completeQueuedWithdrawal`
-     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
-     */
-    function completeQueuedWithdrawals(
-        QueuedWithdrawal[] calldata queuedWithdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
-        bool[] calldata receiveAsTokens
-    )
-        external
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        // check that the address that the staker *was delegated to* – at the time that they queued the withdrawal – is not frozen
-        nonReentrant
-    {
-        for (uint256 i = 0; i < queuedWithdrawals.length; i++) {
-            _completeQueuedWithdrawal(queuedWithdrawals[i], tokens[i], middlewareTimesIndexes[i], receiveAsTokens[i]);
-        }
-    }
-
-    /**
-     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
-     * @param _withdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
-     */
-    function setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) external onlyOwner {
-        _setWithdrawalDelayBlocks(_withdrawalDelayBlocks);
+        return (isDeleted, existingWithdrawalRoot);
     }
 
     /**
@@ -362,46 +268,43 @@ contract StrategyManager is
     // INTERNAL FUNCTIONS
 
     /**
-     * @notice This function adds `shares` for a given `strategy` to the `depositor` and runs through the necessary update logic.
-     * @param depositor The address to add shares to
-     * @param strategy The Strategy in which the `depositor` is receiving shares
-     * @param shares The amount of shares to grant to the `depositor`
-     * @dev In particular, this function calls `delegation.increaseDelegatedShares(depositor, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[depositor][strategy]`, and adds `strategy`
-     * to the `depositor`'s list of strategies, if it is not in the list already.
+     * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
+     * @param staker The address to add shares to
+     * @param strategy The Strategy in which the `staker` is receiving shares
+     * @param shares The amount of shares to grant to the `staker`
+     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
+     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address depositor, IStrategy strategy, uint256 shares) internal {
+    function _addShares(address staker, IStrategy strategy, uint256 shares) internal {
         // sanity checks on inputs
-        require(depositor != address(0), "StrategyManager._addShares: depositor cannot be zero address");
+        require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
         require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
 
         // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[depositor][strategy] == 0) {
+        if (stakerStrategyShares[staker][strategy] == 0) {
             require(
-                stakerStrategyList[depositor].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
+                stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
                 "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
             );
-            stakerStrategyList[depositor].push(strategy);
+            stakerStrategyList[staker].push(strategy);
         }
 
         // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[depositor][strategy] += shares;
-
-        // if applicable, increase delegated shares accordingly
-        delegation.increaseDelegatedShares(depositor, strategy, shares);
+        stakerStrategyShares[staker][strategy] += shares;
     }
 
     /**
      * @notice Internal function in which `amount` of ERC20 `token` is transferred from `msg.sender` to the Strategy-type contract
-     * `strategy`, with the resulting shares credited to `depositor`.
-     * @param depositor The address that will be credited with the new shares.
+     * `strategy`, with the resulting shares credited to `staker`.
+     * @param staker The address that will be credited with the new shares.
      * @param strategy The Strategy contract to deposit into.
      * @param token The ERC20 token to deposit.
      * @param amount The amount of `token` to deposit.
-     * @return shares The amount of *new* shares in `strategy` that have been credited to the `depositor`.
+     * @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
      */
     function _depositIntoStrategy(
-        address depositor,
+        address staker,
         IStrategy strategy,
         IERC20 token,
         uint256 amount
@@ -412,35 +315,34 @@ contract StrategyManager is
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
         shares = strategy.deposit(token, amount);
 
-        // add the returned shares to the depositor's existing shares for this strategy
-        _addShares(depositor, strategy, shares);
+        // add the returned shares to the staker's existing shares for this strategy
+        _addShares(staker, strategy, shares);
 
-        emit Deposit(depositor, token, strategy, shares);
+        // Increase shares delegated to operator, if needed
+        delegation.increaseDelegatedShares(staker, strategy, shares);
+
+        emit Deposit(staker, token, strategy, shares);
         return shares;
     }
 
     /**
-     * @notice Decreases the shares that `depositor` holds in `strategy` by `shareAmount`.
-     * @param depositor The address to decrement shares from
-     * @param strategyIndex The `strategyIndex` input for the internal `_removeStrategyFromStakerStrategyList`. Used only in the case that
-     * the removal of the depositor's shares results in them having zero remaining shares in the `strategy`
-     * @param strategy The strategy for which the `depositor`'s shares are being decremented
+     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @param staker The address to decrement shares from
+     * @param strategy The strategy for which the `staker`'s shares are being decremented
      * @param shareAmount The amount of shares to decrement
-     * @dev If the amount of shares represents all of the depositor`s shares in said strategy,
-     * then the strategy is removed from stakerStrategyList[depositor] and 'true' is returned. Otherwise 'false' is returned.
+     * @dev If the amount of shares represents all of the staker`s shares in said strategy,
+     * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
     function _removeShares(
-        address depositor,
-        uint256 strategyIndex,
+        address staker,
         IStrategy strategy,
         uint256 shareAmount
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(depositor != address(0), "StrategyManager._removeShares: depositor cannot be zero address");
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[depositor][strategy];
+        uint256 userShares = stakerStrategyShares[staker][strategy];
 
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
@@ -448,224 +350,46 @@ contract StrategyManager is
             userShares = userShares - shareAmount;
         }
 
-        // subtract the shares from the depositor's existing shares for this strategy
-        stakerStrategyShares[depositor][strategy] = userShares;
+        // subtract the shares from the staker's existing shares for this strategy
+        stakerStrategyShares[staker][strategy] = userShares;
 
-        // if no existing shares, remove the strategy from the depositor's dynamic array of strategies
+        // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userShares == 0) {
-            _removeStrategyFromStakerStrategyList(depositor, strategyIndex, strategy);
+            _removeStrategyFromStakerStrategyList(staker, strategy);
 
-            // return true in the event that the strategy was removed from stakerStrategyList[depositor]
+            // return true in the event that the strategy was removed from stakerStrategyList[staker]
             return true;
         }
-        // return false in the event that the strategy was *not* removed from stakerStrategyList[depositor]
+        // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
         return false;
     }
 
     /**
-     * @notice Removes `strategy` from `depositor`'s dynamic array of strategies, i.e. from `stakerStrategyList[depositor]`
-     * @param depositor The user whose array will have an entry removed
-     * @param strategyIndex Preferably the index of `strategy` in `stakerStrategyList[depositor]`. If the input is incorrect, then a brute-force
-     * fallback routine will be used to find the correct input
-     * @param strategy The Strategy to remove from `stakerStrategyList[depositor]`
-     * @dev the provided `strategyIndex` input is optimistically used to find the strategy quickly in the list. If the specified
-     * index is incorrect, then we revert to a brute-force search.
+     * @notice Removes `strategy` from `staker`'s dynamic array of strategies, i.e. from `stakerStrategyList[staker]`
+     * @param staker The user whose array will have an entry removed
+     * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
      */
     function _removeStrategyFromStakerStrategyList(
-        address depositor,
-        uint256 strategyIndex,
+        address staker,
         IStrategy strategy
     ) internal {
-        // if the strategy matches with the strategy index provided
-        if (stakerStrategyList[depositor][strategyIndex] == strategy) {
-            // replace the strategy with the last strategy in the list
-            stakerStrategyList[depositor][strategyIndex] = stakerStrategyList[depositor][
-                stakerStrategyList[depositor].length - 1
-            ];
-        } else {
-            //loop through all of the strategies, find the right one, then replace
-            uint256 stratsLength = stakerStrategyList[depositor].length;
-            uint256 j = 0;
-            for (; j < stratsLength; ) {
-                if (stakerStrategyList[depositor][j] == strategy) {
-                    //replace the strategy with the last strategy in the list
-                    stakerStrategyList[depositor][j] = stakerStrategyList[depositor][
-                        stakerStrategyList[depositor].length - 1
-                    ];
-                    break;
-                }
-                unchecked {
-                    ++j;
-                }
+        //loop through all of the strategies, find the right one, then replace
+        uint256 stratsLength = stakerStrategyList[staker].length;
+        uint256 j = 0;
+        for (; j < stratsLength; ) {
+            if (stakerStrategyList[staker][j] == strategy) {
+                //replace the strategy with the last strategy in the list
+                stakerStrategyList[staker][j] = stakerStrategyList[staker][
+                    stakerStrategyList[staker].length - 1
+                ];
+                break;
             }
-            // if we didn't find the strategy, revert
-            require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
+            unchecked { ++j; }
         }
+        // if we didn't find the strategy, revert
+        require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
         // pop off the last entry in the list of strategies
-        stakerStrategyList[depositor].pop();
-    }
-
-    // @notice Internal function for queuing a withdrawal from `staker` to `withdrawer` of `shares` in `strategies`.
-    function _queueWithdrawal(
-        address staker,
-        uint256[] memory strategyIndexes,
-        IStrategy[] memory strategies,
-        uint256[] memory shares,
-        address withdrawer
-    ) internal returns (bytes32) {
-        require(strategies.length == shares.length, "StrategyManager.queueWithdrawal: input length mismatch");
-        require(withdrawer != address(0), "StrategyManager.queueWithdrawal: cannot withdraw to zero address");
-
-        uint96 nonce = uint96(numWithdrawalsQueued[staker]);
-
-        // keeps track of the current index in the `strategyIndexes` array
-        uint256 strategyIndexIndex;
-
-        for (uint256 i = 0; i < strategies.length; ) {
-            // the internal function will return 'true' in the event the strategy was
-            // removed from the depositor's array of strategies -- i.e. stakerStrategyList[depositor]
-            if (_removeShares(staker, strategyIndexes[strategyIndexIndex], strategies[i], shares[i])) {
-                unchecked {
-                    ++strategyIndexIndex;
-                }
-            }
-
-            emit ShareWithdrawalQueued(staker, nonce, strategies[i], shares[i]);
-
-            //increment the loop
-            unchecked {
-                ++i;
-            }
-        }
-
-        // fetch the address that the `staker` is delegated to
-        address delegatedAddress = delegation.delegatedTo(staker);
-
-        QueuedWithdrawal memory queuedWithdrawal;
-
-        {
-            WithdrawerAndNonce memory withdrawerAndNonce = WithdrawerAndNonce({withdrawer: withdrawer, nonce: nonce});
-            // increment the numWithdrawalsQueued of the sender
-            unchecked {
-                numWithdrawalsQueued[staker] = nonce + 1;
-            }
-
-            // copy arguments into struct and pull delegation info
-            queuedWithdrawal = QueuedWithdrawal({
-                strategies: strategies,
-                shares: shares,
-                depositor: staker,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: delegatedAddress
-            });
-        }
-
-        // calculate the withdrawal root
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-
-        // mark withdrawal as pending
-        withdrawalRootPending[withdrawalRoot] = true;
-
-        emit WithdrawalQueued(staker, nonce, withdrawer, delegatedAddress, withdrawalRoot);
-
-        return withdrawalRoot;
-    }
-
-    /**
-     * @notice Internal function for completing the given `queuedWithdrawal`.
-     * @param queuedWithdrawal The QueuedWithdrawal to complete
-     * @param tokens The ERC20 tokens to provide as inputs to `Strategy.withdraw`. Only relevant if `receiveAsTokens = true`
-     * @param middlewareTimesIndex Passed on as an input to the `slasher.canWithdraw` function, to ensure the withdrawal is completable.
-     * @param receiveAsTokens If marked 'true', then calls will be passed on to the `Strategy.withdraw` function for each strategy.
-     * If marked 'false', then the shares will simply be internally transferred to the `msg.sender`.
-     */
-    function _completeQueuedWithdrawal(
-        QueuedWithdrawal calldata queuedWithdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    ) internal onlyNotFrozen(queuedWithdrawal.delegatedAddress) {
-        // find the withdrawalRoot
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(queuedWithdrawal);
-
-        // verify that the queued withdrawal is pending
-        require(
-            withdrawalRootPending[withdrawalRoot],
-            "StrategyManager.completeQueuedWithdrawal: withdrawal is not pending"
-        );
-
-        // verify that the withdrawal is completable
-        require(
-            slasher.canWithdraw(
-                queuedWithdrawal.delegatedAddress,
-                queuedWithdrawal.withdrawalStartBlock,
-                middlewareTimesIndex
-            ),
-            "StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable"
-        );
-
-        // enforce minimum delay lag
-        require(
-            queuedWithdrawal.withdrawalStartBlock + withdrawalDelayBlocks <= block.number,
-            "StrategyManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed"
-        );
-
-        // verify that the caller is the specified 'withdrawer'
-        require(
-            msg.sender == queuedWithdrawal.withdrawerAndNonce.withdrawer,
-            "StrategyManager.completeQueuedWithdrawal: only specified withdrawer can complete a queued withdrawal"
-        );
-
-        // reset the storage slot in mapping of queued withdrawals
-        withdrawalRootPending[withdrawalRoot] = false;
-
-        // store length for gas savings
-        uint256 strategiesLength = queuedWithdrawal.strategies.length;
-        // if the withdrawer has flagged to receive the funds as tokens, withdraw from strategies
-
-        if (receiveAsTokens) {
-            require(
-                tokens.length == queuedWithdrawal.strategies.length,
-                "StrategyManager.completeQueuedWithdrawal: input length mismatch"
-            );
-            // actually withdraw the funds
-            for (uint256 i = 0; i < strategiesLength; ) {
-                // tell the strategy to send the appropriate amount of funds to the depositor
-                queuedWithdrawal.strategies[i].withdraw(msg.sender, tokens[i], queuedWithdrawal.shares[i]);
-
-                unchecked {
-                    ++i;
-                }
-            }
-        } else {
-            // else increase their shares
-            for (uint256 i = 0; i < strategiesLength; ) {
-                _addShares(msg.sender, queuedWithdrawal.strategies[i], queuedWithdrawal.shares[i]);
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-        emit WithdrawalCompleted(
-            queuedWithdrawal.depositor,
-            queuedWithdrawal.withdrawerAndNonce.nonce,
-            msg.sender,
-            withdrawalRoot
-        );
-    }
-
-    /**
-     * @notice internal function for changing the value of `withdrawalDelayBlocks`. Also performs sanity check and emits an event.
-     * @param _withdrawalDelayBlocks The new value for `withdrawalDelayBlocks` to take.
-     */
-    function _setWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
-        require(
-            _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "StrategyManager.setWithdrawalDelay: _withdrawalDelayBlocks too high"
-        );
-        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
-        withdrawalDelayBlocks = _withdrawalDelayBlocks;
+        stakerStrategyList[staker].pop();
     }
 
     /**
@@ -679,21 +403,21 @@ contract StrategyManager is
 
     // VIEW FUNCTIONS
     /**
-     * @notice Get all details on the depositor's deposits and corresponding shares
-     * @param depositor The staker of interest, whose deposits this function will fetch
-     * @return (depositor's strategies, shares in these strategies)
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @param staker The staker of interest, whose deposits this function will fetch
+     * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address depositor) external view returns (IStrategy[] memory, uint256[] memory) {
-        uint256 strategiesLength = stakerStrategyList[depositor].length;
+    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ) {
-            shares[i] = stakerStrategyShares[depositor][stakerStrategyList[depositor][i]];
+            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;
             }
         }
-        return (stakerStrategyList[depositor], shares);
+        return (stakerStrategyList[staker], shares);
     }
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
@@ -713,24 +437,25 @@ contract StrategyManager is
         }
     }
 
+    // @notice Internal function for calculating the current domain separator of this contract
+    function _calculateDomainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+    }
+
+// LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
     /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
+    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) public pure returns (bytes32) {
         return (
             keccak256(
                 abi.encode(
                     queuedWithdrawal.strategies,
                     queuedWithdrawal.shares,
-                    queuedWithdrawal.depositor,
+                    queuedWithdrawal.staker,
                     queuedWithdrawal.withdrawerAndNonce,
                     queuedWithdrawal.withdrawalStartBlock,
                     queuedWithdrawal.delegatedAddress
                 )
             )
         );
-    }
-
-    // @notice Internal function for calculating the current domain separator of this contract
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
     }
 }

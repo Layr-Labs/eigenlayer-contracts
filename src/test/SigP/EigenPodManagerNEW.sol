@@ -120,14 +120,6 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     }
 
     /**
-     * @notice Deposits/Restakes beacon chain ETH in EigenLayer on behalf of the owner of an EigenPod.
-     * @param podOwner The owner of the pod whose balance must be deposited.
-     * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
-     * @dev Callable only by the podOwner's EigenPod contract.
-     */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external onlyEigenPod(podOwner) {}
-
-    /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
@@ -224,26 +216,15 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         // return beaconChainOracle.getBlockRootAtTimestamp();
     }
 
-    function podOwnerShares(address podOwner) external returns (uint256){
+    function podOwnerShares(address podOwner) external view returns (int256) {
         // return podOwner[podOwner];
     }
 
-    function queueWithdrawal(uint256 amountWei, address withdrawer) external returns(bytes32){}
+    function removeShares(address podOwner, uint256 shares) external {}
 
-    function forceIntoUndelegationLimbo(address podOwner, address delegatedTo) external returns (uint256) {}
+    function addShares(address podOwner, uint256 shares) external returns (uint256) {}
 
-    function completeQueuedWithdrawal(BeaconChainQueuedWithdrawal memory queuedWithdrawal, uint256 middlewareTimesIndex) external{}
+    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
-
-    function podOwnerHasActiveShares(address staker) external view returns (bool) {}
-
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.    
-    function calculateWithdrawalRoot(BeaconChainQueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
-
-    // @notice Getter function for the internal `_podOwnerUndelegationLimboStatus` mapping.
-    function podOwnerUndelegationLimboStatus(address podOwner) external view returns (UndelegationLimboStatus memory) {}
-
-    // @notice Getter function for `_podOwnerUndelegationLimboStatus.undelegationLimboActive`.
-    function isInUndelegationLimbo(address podOwner) external view returns (bool) {}
 }

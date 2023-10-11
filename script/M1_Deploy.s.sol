@@ -209,8 +209,7 @@ contract Deployer_M1 is Script, Test {
                 executorMultisig,
                 operationsMultisig,
                 eigenLayerPauserReg,
-                STRATEGY_MANAGER_INIT_PAUSED_STATUS,
-                STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS
+                STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(

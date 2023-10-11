@@ -209,14 +209,6 @@ interface IEigenPod {
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
 
-    /// @notice called by the eigenPodManager to decrement the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a queued withdrawal from the beacon chain strategy
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
-
-    /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a completion of a queued withdrawal as shares
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
-
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;
 

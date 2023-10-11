@@ -125,71 +125,6 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
     }
 
-    function testRestakeBeaconChainETHSuccessfully(address staker, uint256 amount) public filterFuzzedAddressInputs(staker) {
-        // filter out zero case since it will revert with "EigenPodManager._addShares: shares should not be zero!"
-        cheats.assume(amount != 0);
-
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
-
-        cheats.startPrank(address(eigenPod));
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit BeaconChainETHDeposited(staker, amount);
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-
-        uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
-        require(sharesAfter == sharesBefore + amount, "sharesAfter != sharesBefore + amount");
-    }
-
-    function testRestakeBeaconChainETHFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
-        uint256 amount = 1e18;
-        address staker = address(this);
-
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        cheats.assume(improperCaller != address(eigenPod));
-
-        cheats.expectRevert(bytes("EigenPodManager.onlyEigenPod: not a pod"));
-        cheats.startPrank(address(improperCaller));
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-    }
-
-    function testRestakeBeaconChainETHFailsWhenStakerFrozen() public {
-        uint256 amount = 1e18;
-        address staker = address(this);
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        cheats.startPrank(address(eigenPod));
-        cheats.expectRevert(bytes("EigenPodManager.onlyNotFrozen: staker has been frozen and may be subject to slashing"));
-        eigenPodManager.restakeBeaconChainETH(staker, amount);
-        cheats.stopPrank();
-    }
-
-// TODO: salvage / re-implement a check for reentrancy guard on functions, as possible
-    // function testRestakeBeaconChainETHFailsWhenReentering() public {
-    //     uint256 amount = 1e18;
-    //     address staker = address(this);
-    //     IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-
-    //     _beaconChainReentrancyTestsSetup();
-
-    //     address targetToUse = address(eigenPodManager);
-    //     uint256 msgValueToUse = 0;
-    //     bytes memory calldataToUse = abi.encodeWithSelector(EigenPodManager.restakeBeaconChainETH.selector, staker, amount);
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
-
-    //     // etch the EigenPod to instead contain Reenterer code
-    //     vm.etch(address(eigenPod), address(reenterer).code);
-
-    //     cheats.startPrank(address(eigenPod));
-    //     eigenPodManager.restakeBeaconChainETH(staker, amount);
-    //     cheats.stopPrank();
-    // }
-
     function testRecordBeaconChainETHBalanceUpdateFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
         address staker = address(this);
         IEigenPod eigenPod = _deployEigenPodForStaker(staker);
@@ -227,84 +162,87 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     // queues a withdrawal of "beacon chain ETH shares" from this address to itself
     // fuzzed input amountGwei is sized-down, since it must be in GWEI and gets sized-up to be WEI
-    function testQueueWithdrawalBeaconChainETHToSelf(uint128 amountGwei)
-        public returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
-    {
-        // scale fuzzed amount up to be a whole amount of GWEI
-        uint256 amount = uint256(amountGwei) * 1e9;
-        address staker = address(this);
-        address withdrawer = staker;
+// TODO: reimplement similar test
+    // function testQueueWithdrawalBeaconChainETHToSelf(uint128 amountGwei)
+    //     public returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
+    // {
+    //     // scale fuzzed amount up to be a whole amount of GWEI
+    //     uint256 amount = uint256(amountGwei) * 1e9;
+    //     address staker = address(this);
+    //     address withdrawer = staker;
 
-        testRestakeBeaconChainETHSuccessfully(staker, amount);
+    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
 
-        (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-            _createQueuedWithdrawal(staker, amount, withdrawer);
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
+    //         _createQueuedWithdrawal(staker, amount, withdrawer);
 
-        return (queuedWithdrawal, withdrawalRoot);
-    }
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
+// TODO: reimplement similar test
+    // function testQueueWithdrawalBeaconChainETHToDifferentAddress(address withdrawer, uint128 amountGwei)
+    //     public
+    //     filterFuzzedAddressInputs(withdrawer)
+    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
+    // {
+    //     // scale fuzzed amount up to be a whole amount of GWEI
+    //     uint256 amount = uint256(amountGwei) * 1e9;
+    //     address staker = address(this);
 
-    function testQueueWithdrawalBeaconChainETHToDifferentAddress(address withdrawer, uint128 amountGwei)
-        public
-        filterFuzzedAddressInputs(withdrawer)
-        returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
-    {
-        // scale fuzzed amount up to be a whole amount of GWEI
-        uint256 amount = uint256(amountGwei) * 1e9;
-        address staker = address(this);
+    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
 
-        testRestakeBeaconChainETHSuccessfully(staker, amount);
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
+    //         _createQueuedWithdrawal(staker, amount, withdrawer);
 
-        (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-            _createQueuedWithdrawal(staker, amount, withdrawer);
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
+// TODO: reimplement similar test
 
-        return (queuedWithdrawal, withdrawalRoot);
-    }
+    // function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
+    //     // this also filters out the zero case, which will revert separately
+    //     cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
+    //     eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
+    // }
 
-    function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
-        // this also filters out the zero case, which will revert separately
-        cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
-        cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
-        eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
-    }
+    // function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
+    //     eigenPodManager.queueWithdrawal(0, address(this));
+    // }
 
-    function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
-        cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
-        eigenPodManager.queueWithdrawal(0, address(this));
-    }
+// TODO: reimplement similar test
+    // function testCompleteQueuedWithdrawal() external {
+    //     address staker = address(this);
+    //     uint256 withdrawalAmount = 1e18;
 
-    function testCompleteQueuedWithdrawal() external {
-        address staker = address(this);
-        uint256 withdrawalAmount = 1e18;
+    //     // withdrawalAmount is converted to GWEI here
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) = 
+    //         testQueueWithdrawalBeaconChainETHToSelf(uint128(withdrawalAmount / 1e9));
 
-        // withdrawalAmount is converted to GWEI here
-        (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) = 
-            testQueueWithdrawalBeaconChainETHToSelf(uint128(withdrawalAmount / 1e9));
+    //     IEigenPod eigenPod = eigenPodManager.getPod(staker);
+    //     uint256 eigenPodBalanceBefore = address(eigenPod).balance;
 
-        IEigenPod eigenPod = eigenPodManager.getPod(staker);
-        uint256 eigenPodBalanceBefore = address(eigenPod).balance;
+    //     uint256 middlewareTimesIndex = 0;
 
-        uint256 middlewareTimesIndex = 0;
+    //     // actually complete the withdrawal
+    //     cheats.startPrank(staker);
+    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+    //     emit BeaconChainETHWithdrawalCompleted(
+    //         queuedWithdrawal.podOwner,
+    //         queuedWithdrawal.shares,
+    //         queuedWithdrawal.nonce,
+    //         queuedWithdrawal.delegatedAddress,
+    //         queuedWithdrawal.withdrawer,
+    //         withdrawalRoot
+    //     );
+    //     eigenPodManager.completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
+    //     cheats.stopPrank();
 
-        // actually complete the withdrawal
-        cheats.startPrank(staker);
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit BeaconChainETHWithdrawalCompleted(
-            queuedWithdrawal.podOwner,
-            queuedWithdrawal.shares,
-            queuedWithdrawal.nonce,
-            queuedWithdrawal.delegatedAddress,
-            queuedWithdrawal.withdrawer,
-            withdrawalRoot
-        );
-        eigenPodManager.completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
-        cheats.stopPrank();
+    //     // TODO: make EigenPodMock do something so we can verify that it gets called appropriately?
+    //     uint256 eigenPodBalanceAfter = address(eigenPod).balance;
 
-        // TODO: make EigenPodMock do something so we can verify that it gets called appropriately?
-        uint256 eigenPodBalanceAfter = address(eigenPod).balance;
-
-        // verify that the withdrawal root does bit exist after queuing
-        require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-    }
+    //     // verify that the withdrawal root does bit exist after queuing
+    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+    // }
 
     // INTERNAL / HELPER FUNCTIONS
     // deploy an EigenPod for the staker and check the emitted event
@@ -318,55 +256,55 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
         return deployedPod;
     }
 
+// TODO: reimplement similar test
+    // // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`
+    // function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer)
+    //     internal
+    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
+    // {
+    //     // create the struct, for reference / to return
+    //     queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
+    //         shares: amountWei,
+    //         podOwner: staker,
+    //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
+    //         startBlock: uint32(block.number),
+    //         delegatedTo: delegationManagerMock.delegatedTo(staker),
+    //         withdrawer: withdrawer
+    //     });
 
-    // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`
-    function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer)
-        internal
-        returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
-    {
-        // create the struct, for reference / to return
-        queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
-            shares: amountWei,
-            podOwner: staker,
-            nonce: uint96(eigenPodManager.numWithdrawalsQueued(staker)),
-            withdrawalStartBlock: uint32(block.number),
-            delegatedAddress: delegationManagerMock.delegatedTo(staker),
-            withdrawer: withdrawer
-        });
+    //     // verify that the withdrawal root does not exist before queuing
+    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
 
-        // verify that the withdrawal root does not exist before queuing
-        require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+    //     // get staker nonce and shares before queuing
+    //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
+    //     int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
-        // get staker nonce and shares before queuing
-        uint256 nonceBefore = eigenPodManager.numWithdrawalsQueued(staker);
-        uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
-
-        // actually create the queued withdrawal, and check for event emission
-        cheats.startPrank(staker);
+    //     // actually create the queued withdrawal, and check for event emission
+    //     cheats.startPrank(staker);
     
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit BeaconChainETHWithdrawalQueued(
-            queuedWithdrawal.podOwner,
-            queuedWithdrawal.shares,
-            queuedWithdrawal.nonce,
-            queuedWithdrawal.delegatedAddress,
-            queuedWithdrawal.withdrawer,
-            eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
-        );
-        withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer);
-        cheats.stopPrank();
+    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+    //     emit BeaconChainETHWithdrawalQueued(
+    //         queuedWithdrawal.podOwner,
+    //         queuedWithdrawal.shares,
+    //         queuedWithdrawal.nonce,
+    //         queuedWithdrawal.delegatedAddress,
+    //         queuedWithdrawal.withdrawer,
+    //         eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
+    //     );
+    //     withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer);
+    //     cheats.stopPrank();
 
-        // verify that the withdrawal root does exist after queuing
-        require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
+    //     // verify that the withdrawal root does exist after queuing
+    //     require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
 
-        // verify that staker nonce incremented correctly and shares decremented correctly
-        uint256 nonceAfter = eigenPodManager.numWithdrawalsQueued(staker);
-        uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
-        require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
-        require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
+    //     // verify that staker nonce incremented correctly and shares decremented correctly
+    //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
+    //     int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
+    //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
+    //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
 
-        return (queuedWithdrawal, withdrawalRoot);
-    }
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
 
     function _beaconChainReentrancyTestsSetup() internal {
         // prepare EigenPodManager with StrategyManager and Delegation replaced with a Reenterer contract

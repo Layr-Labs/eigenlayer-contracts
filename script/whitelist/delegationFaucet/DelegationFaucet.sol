@@ -4,7 +4,6 @@ pragma solidity =0.8.12;
 import "src/contracts/interfaces/IStrategyManager.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
-import "src/contracts/interfaces/IWhitelister.sol";
 import "src/contracts/interfaces/IDelegationFaucet.sol";
 import "script/whitelist/delegationFaucet/DelegationFaucetStaker.sol";
 
@@ -26,7 +25,7 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
     IStrategyManager immutable strategyManager;
     ERC20PresetMinterPauser immutable stakeToken;
     IStrategy immutable stakeStrategy;
-    IDelegationManager delegation;
+    IDelegationManager immutable delegation;
 
     uint256 public constant DEFAULT_AMOUNT = 100e18;
 
@@ -43,8 +42,8 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
     }
 
     /**
-     * Deploys a Staker contract if not already deployed for operator. Staker gets minted _depositAmount or
-     * DEFAULT_AMOUNT if _depositAmount is 0. Then Staker contract deposits into the strategy and delegates to operator.
+     * Deploys a DelegationFaucetStaker contract if not already deployed for operator. DelegationFaucetStaker gets minted _depositAmount or
+     * DEFAULT_AMOUNT if _depositAmount is 0. Then DelegationFaucetStaker contract deposits into the strategy and delegates to operator.
      * @param _operator The operator to delegate to
      * @param _approverSignatureAndExpiry Verifies the operator approves of this delegation
      * @param _approverSalt A unique single use value tied to an individual signature.
@@ -121,7 +120,7 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
             _approverSignatureAndExpiry,
             _approverSalt
         );
-        return Staker(getStaker(_operator)).callAddress(address(delegation), data);
+        return DelegationFaucetStaker(getStaker(_operator)).callAddress(address(delegation), data);
     }
 
     /**
@@ -129,19 +128,17 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      */
     function queueWithdrawal(
         address staker,
-        uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
-            IStrategyManager.queueWithdrawal.selector,
-            strategyIndexes,
+            IDelegationManager.queueWithdrawal.selector,
             strategies,
             shares,
             withdrawer
         );
-        return Staker(staker).callAddress(address(strategyManager), data);
+        return DelegationFaucetStaker(staker).callAddress(address(delegation), data);
     }
 
     /**
@@ -149,19 +146,19 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      */
     function completeQueuedWithdrawal(
         address staker,
-        IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,
+        IDelegationManager.Withdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
-            IStrategyManager.completeQueuedWithdrawal.selector,
+            IDelegationManager.completeQueuedWithdrawal.selector,
             queuedWithdrawal,
             tokens,
             middlewareTimesIndex,
             receiveAsTokens
         );
-        return Staker(staker).callAddress(address(strategyManager), data);
+        return DelegationFaucetStaker(staker).callAddress(address(delegation), data);
     }
 
     /**
@@ -178,7 +175,7 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
         uint256 amount
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, to, amount);
-        return Staker(staker).callAddress(token, data);
+        return DelegationFaucetStaker(staker).callAddress(token, data);
     }
 
     function callAddress(address to, bytes memory data) public payable onlyOwner returns (bytes memory) {
@@ -218,6 +215,6 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
             _token,
             _amount
         );
-        return Staker(_staker).callAddress(address(strategyManager), data);
+        return DelegationFaucetStaker(_staker).callAddress(address(strategyManager), data);
     }
 }
