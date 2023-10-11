@@ -283,11 +283,8 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 stakeTokenStrat,
                 _withdrawAmount
             );
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
         delegationFaucet.queueWithdrawal(
             stakerContract,
-            strategyIndexes,
             queuedWithdrawal.strategies,
             queuedWithdrawal.shares,
             stakerContract

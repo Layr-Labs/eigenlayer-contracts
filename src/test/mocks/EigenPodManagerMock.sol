@@ -65,7 +65,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function unpause(uint256 /*newPausedStatus*/) external{}
 
-    function podOwnerShares(address podOwner) external view returns (uint256){}
+    function podOwnerShares(address podOwner) external view returns (int256) {}
 
     function addShares(address podOwner, uint256 shares) external returns (uint256) {}
 

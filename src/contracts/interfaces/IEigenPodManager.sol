@@ -95,15 +95,25 @@ interface IEigenPodManager is IPausable {
 
     function hasPod(address podOwner) external view returns (bool);
 
-    /// @notice returns shares of provided podOwner
-    function podOwnerShares(address podOwner) external view returns (uint256);
+    /**
+     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
+     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
+     * decrease between the pod owner queuing and completing a withdrawal.
+     * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
+     * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
+     * as the withdrawal "paying off the deficit".
+     */
+    function podOwnerShares(address podOwner) external view returns (int256);
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
     /**
      * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
-     * Simply decreases the `podOwner`'s shares by `shares`, reverting if `shares` exceeds `podOwnerShares[podOwner]`.
+     * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
+     * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
+     * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
+     * shares from the operator to whom the staker is delegated.
      */
     function removeShares(address podOwner, uint256 shares) external;
 

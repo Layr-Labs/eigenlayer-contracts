@@ -277,7 +277,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     //     // get staker nonce and shares before queuing
     //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     uint256 sharesBefore = eigenPodManager.podOwnerShares(staker);
+    //     int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
 
     //     // actually create the queued withdrawal, and check for event emission
     //     cheats.startPrank(staker);
@@ -299,7 +299,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     //     // verify that staker nonce incremented correctly and shares decremented correctly
     //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     uint256 sharesAfter = eigenPodManager.podOwnerShares(staker);
+    //     int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
     //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
     //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
 

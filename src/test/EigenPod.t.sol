@@ -628,9 +628,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _proveOverCommittedStake(newPod);
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
+        int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
-        require(beaconChainETHShares == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI,
+        require(beaconChainETHShares == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
             "eigenPodManager shares not updated correctly");
     }
 
@@ -734,7 +734,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testProveSingleWithdrawalCredential() public {
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
+        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_510257.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
@@ -742,10 +742,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
 
-        uint256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
-        emit log_named_uint("beaconChainETHBefore", beaconChainETHBefore);
-        emit log_named_uint("beaconChainETHAfter", beaconChainETHAfter);
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == _calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI, "pod balance not updated correcty");
+        int256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
+        assertTrue(beaconChainETHAfter - beaconChainETHBefore == int256(_calculateRestakedBalanceGwei(pod.MAX_VALIDATOR_BALANCE_GWEI())*GWEI_TO_WEI), "pod balance not updated correcty");
         assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 
@@ -759,7 +757,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
+        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
@@ -774,11 +772,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
+        int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
  
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI), "hysterisis not working");
         assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
-        assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");
+        assertTrue(int256(validatorRestakedBalanceBefore) - int256(validatorRestakedBalanceAfter)  == shareDiff/int256(GWEI_TO_WEI), "validator restaked balance not updated");
     }
 
     function testVerifyUndercommittedBalance() public {
@@ -786,7 +784,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
-        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
+        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
         uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
@@ -805,11 +803,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
-        uint256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
+        int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
         
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == _calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI, "hysterisis not working");
+        assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
+            "hysterisis not working");
         assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
-        assertTrue(validatorRestakedBalanceBefore - validatorRestakedBalanceAfter  == shareDiff/GWEI_TO_WEI, "validator restaked balance not updated");    
+        assertTrue(int256(uint256(validatorRestakedBalanceBefore)) - int256(uint256(validatorRestakedBalanceAfter)) == shareDiff/int256(GWEI_TO_WEI),
+            "validator restaked balance not updated");    
     }
 
     function testTooSoonBalanceUpdates() public {
@@ -1179,21 +1179,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testQueueWithdrawal(podOwner, shareAmount);
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
 
-        require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmount/GWEI_TO_WEI,
+        require(withdrawableRestakedExecutionLayerGweiBefore - pod.withdrawableRestakedExecutionLayerGwei() == shareAmount/int256(GWEI_TO_WEI),
             "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
 */
-    function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal {
-        uint256 shares = eigenPodManager.podOwnerShares(podowner);
+    function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal view {
+        int256 shares = eigenPodManager.podOwnerShares(podowner);
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
         
         EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
 
         uint64 validatorBalanceGwei = info.restakedBalanceGwei;
-        emit log_named_uint("shares", shares/GWEI_TO_WEI);
-        emit log_named_uint("validatorBalanceGwei", validatorBalanceGwei);
-        emit log_named_uint("withdrawableRestakedExecutionLayerGwei", withdrawableRestakedExecutionLayerGwei);
-        require(shares/GWEI_TO_WEI == validatorBalanceGwei + withdrawableRestakedExecutionLayerGwei,
+        require(shares/int256(GWEI_TO_WEI) == int256(uint256(validatorBalanceGwei)) + int256(uint256(withdrawableRestakedExecutionLayerGwei)),
             "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
     }
 
@@ -1304,7 +1301,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-        uint256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
+        int256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(_podOwner);
 
         cheats.startPrank(_podOwner);
         cheats.warp(timestamp);
@@ -1320,9 +1317,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
         cheats.stopPrank();
 
-        uint256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
+        int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
         uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(stakeAmount/GWEI_TO_WEI))) * GWEI_TO_WEI;
-        require((beaconChainETHSharesAfter - beaconChainETHSharesBefore) == effectiveBalance,
+        require((beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
             "eigenPodManager shares not updated correctly");
         return newPod;
     }
