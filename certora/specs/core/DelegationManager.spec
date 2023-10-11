@@ -216,6 +216,8 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
 
 rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, address strategy) {
     requireInvariant operatorsAlwaysDelegatedToSelf(operator);
+    // filter out zero address (not a valid operator)
+    require(operator != 0);
     // assume the staker begins as undelegated
     require(!isDelegated(staker));
     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
@@ -234,6 +236,8 @@ rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, 
 
 rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address staker, address strategy) {
     requireInvariant operatorsAlwaysDelegatedToSelf(operator);
+    // filter out zero address (not a valid operator)
+    require(operator != 0);
     // assume the staker begins as delegated to the operator
     require(delegatedTo(staker) == operator);
     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
