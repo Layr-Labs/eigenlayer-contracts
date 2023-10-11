@@ -65,7 +65,8 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
     * `_podWithdrawalCredentials() -> (bytes memory)`:
         * Gives `abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(EigenPod))`
         * These are the `0x01` withdrawal credentials of the `EigenPod`, used as a validator's withdrawal credentials on the beacon chain.
-    
+
+---    
 
 ### Depositing Into EigenLayer
 
@@ -178,6 +179,10 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
 * `validatorFieldsProofs`: a proof that the `Validator` container belongs to the associated validator at the given `ValidatorIndex` within `stateRootProof.beaconStateRoot`
 * `oracleTimestamp`: a timestamp used to fetch a beacon block root from `EigenPodManager.beaconChainOracle`
 
+*Beacon chain proofs used*:
+* [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)
+* [`verifyValidatorFields`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorfields)
+
 *Effects*:
 * For each validator (`_validatorPubkeyHashToInfo[pubkeyHash]`) the validator's info is set for the first time:
     * `VALIDATOR_STATUS` moves from `INACTIVE` to `ACTIVE`
@@ -211,12 +216,8 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
 
 At this point, a Staker/Pod Owner has deployed their `EigenPod`, started their beacon chain validator, and proven that its withdrawal credentials are pointed to their `EigenPod`. They are now free to delegate to an Operator (if they have not already), or start up + verify additional beacon chain validators that also withdraw to the same `EigenPod`.
 
-The following methods are the primary operations that concern actively-restaked validators:
+The primary method concerning actively restaked validators is:
 * [`EigenPod.verifyBalanceUpdate`](#eigenpodverifybalanceupdate)
-* [`EigenPod.verifyAndProcessWithdrawals`](#eigenpodverifyandprocesswithdrawals)
-* In conjunction with [`DelegationManager.undelegate`](./DelegationManager.md#undelegate):
-    * [`EigenPodManager.forceIntoUndelegationLimbo`](#eigenpodmanagerforceintoundelegationlimbo)
-    * [`EigenPodManager.exitUndelegationLimbo`](#eigenpodmanagerexitundelegationlimbo)
 
 #### `EigenPod.verifyBalanceUpdate`
 
@@ -236,12 +237,22 @@ Anyone (not just the Pod Owner) may call this method with a valid balance update
 
 A successful balance update proof updates the `EigenPod's` view of a validator's balance. If the validator's balance has changed, the difference is sent to `EigenPodManager.recordBeaconChainETHBalanceUpdate`, which updates the Pod Owner's shares. If the Pod Owner is delegated to an Operator, this delta is also sent to the `DelegationManager` to update the Operator's delegated beacon chain ETH shares.
 
+Note that if a validator's balance has decreased, this method will result in shares being removed from the Pod Owner in `EigenPodManager.recordBeaconChainETHBalanceUpdate`. This may cause the Pod Owner's balance to go negative in some cases, representing a "deficit" that must be repaid before any withdrawals can be processed. One example flow where this might occur is:
+* Pod Owner calls `DelegationManager.undelegate`, which queues a withdrawal in the `DelegationManager`. The Pod Owner's shares are set to 0 while the withdrawal is in the queue.
+* Pod Owner's beacon chain ETH balance decreases (maybe due to slashing), and someone provides a proof of this to `EigenPod.verifyBalanceUpdate`. In this case, the Pod Owner will have negative shares in the `EigenPodManager`.
+* After a delay, the Pod Owner calls `DelegationManager.completeQueuedWithdrawal`. The negative shares are then repaid out of the withdrawn assets.
+
 For the validator whose balance should be updated, the caller must supply:
 * `validatorIndex`: the validator's `ValidatorIndex` (see [consensus specs](https://eth2book.info/capella/part3/config/types/#validatorindex))
 * `stateRootProof`: a proof that will verify `stateRootProof.beaconStateRoot` against an oracle-provided beacon block root
 * `balanceUpdateProof`: contains the `validatorFieldsProof` mentioned in `verifyWithdrawalCredentials`, as well as a proof that `balanceUpdateProof.balanceRoot` contains the validator's current balance
 * `validatorFields`: the fields of the `Validator` container associated with the validator (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator))
 * `oracleTimestamp`: a timestamp used to fetch a beacon block root from `EigenPodManager.beaconChainOracle`
+
+*Beacon chain proofs used*:
+* [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)
+* [`verifyValidatorFields`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorfields)
+* [`verifyValidatorBalance`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorbalance)
 
 *Effects*:
 * Updates the validator's stored info:
@@ -260,6 +271,144 @@ For the validator whose balance should be updated, the caller must supply:
 * `BeaconChainProofs.verifyValidatorFields` MUST verify the provided `validatorFields` against the `beaconStateRoot`
 * `BeaconChainProofs.verifyValidatorBalance` MUST verify the provided `balanceRoot` against the `beaconStateRoot`
 * See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
+
+---
+
+### Withdrawal Processing
+
+The `DelegationManager` is the entry point for all undelegation and withdrawals, which must be queued for a time before being completed. When a withdrawal is initiated, the following method is used:
+* [`EigenPodManager.removeShares`](#eigenpodmanagerremoveshares)
+
+When completing a queued undelegation or withdrawal, the `DelegationManager` calls one of these two methods:
+* [`EigenPodManager.addShares`](#eigenpodmanageraddshares)
+* [`EigenPodManager.withdrawSharesAsTokens`](#eigenpodmanagerwithdrawsharesastokens)
+    * [`EigenPod.withdrawRestakedBeaconChainETH`](#eigenpodwithdrawrestakedbeaconchaineth)
+
+If a Staker wishes to fully withdraw their beacon chain ETH (via `withdrawSharesAsTokens`), they need to exit their validator and prove the withdrawal *prior to* completing the queued withdrawal. They do so using this method:
+* [`EigenPod.verifyAndProcessWithdrawals`](#eigenpodverifyandprocesswithdrawals)
+
+TODO 'splain this one:
+* [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+#### `EigenPodManager.removeShares`
+
+```solidity
+function removeShares(
+    address podOwner, 
+    uint256 shares
+) 
+    external 
+    onlyDelegationManager
+```
+
+The `DelegationManager` calls this method when a Staker queues a withdrawal (or undelegates, which also queues a withdrawal). The shares are removed while the withdrawal is in the queue, and when the queue completes, the shares will either be re-awarded or withdrawn as tokens (`addShares` and `withdrawSharesAsTokens`, respectively).
+
+The Staker's share balance is decreased by the removed `shares`. 
+
+This method is not allowed to cause the `Staker's` balance to go negative. This prevents a Staker from queueing a withdrawal for more shares than they have (or more shares than they delegated to an Operator).
+
+*Entry Points*:
+* `DelegationManager.undelegate`
+* `DelegationManager.queueWithdrawal`
+
+*Effects*:
+* Removes `shares` from `podOwner's` share balance
+
+*Requirements*:
+* `podOwner` MUST NOT be zero
+* `shares` MUST NOT be negative when converted to `int256`
+* `shares` MUST NOT be greater than `podOwner's` share balance
+
+#### `EigenPodManager.addShares`
+
+```solidity
+function addShares(
+    address podOwner,
+    uint256 shares
+) 
+    external 
+    onlyDelegationManager 
+    returns (uint256)
+```
+
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). A Pod Owner might want to do this in order to change their delegated Operator without needing to fully exit their validators.
+
+Note that typically, shares from completed withdrawals are awarded to a `withdrawer` specified when the withdrawal is initiated in `DelegationManager.queueWithdrawal`. However, because beacon chain ETH shares are linked to proofs provided to a Pod Owner's `EigenPod`, this method is used to award shares to the original Pod Owner.
+
+If the Pod Owner has a share deficit (negative shares), the deficit is repaid out of the added `shares`. If the Pod Owner's positive share count increases, this change is returned to the `DelegationManager` to be delegated to the Pod Owner's Operator (if they have one).
+
+*Entry Points*:
+* `DelegationManager.completeQueuedWithdrawal`
+* `DelegationManager.completeQueuedWithdrawals`
+
+*Effects*:
+* The `podOwner's` share balance is increased by `shares`
+
+*Requirements*:
+* `podOwner` MUST NOT be zero
+* `shares` MUST NOT be negative when converted to an `int256`
+
+#### `EigenPodManager.withdrawSharesAsTokens`
+
+```solidity
+function withdrawSharesAsTokens(
+    address podOwner, 
+    address destination, 
+    uint256 shares
+) 
+    external 
+    onlyDelegationManager
+```
+
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as tokens (rather than shares). This can be used to "fully exit" some amount of beacon chain ETH and send it to a recipient (via `EigenPod.withdrawRestakedBeaconChainETH`).
+
+Note that because this method entails withdrawing and sending beacon chain ETH, two conditions must be met for this method to succeed:
+1. The ETH being withdrawn should already be in the `EigenPod`
+2. The beacon chain withdrawals responsible for the ETH should already be proven
+
+This means that before completing their queued withdrawal, a Pod Owner needs to prove their beacon chain withdrawals via `EigenPod.verifyAndProcessWithdrawals`.
+
+Also note that, like `addShares`, if the original Pod Owner has a share deficit (negative shares), the deficit is repaid out of the withdrawn `shares` before any native ETH is withdrawn.
+
+*Entry Points*:
+* `DelegationManager.completeQueuedWithdrawal`
+* `DelegationManager.completeQueuedWithdrawals`
+
+*Effects*:
+* If `podOwner's` share balance is negative, `shares` are added until the balance hits 0
+    * Any remaining shares are withdrawn and sent to `destination` (see [`EigenPod.withdrawRestakedBeaconChainETH`](#eigenpodwithdrawrestakedbeaconchaineth))
+
+*Requirements*:
+* `podOwner` MUST NOT be zero
+* `destination` MUST NOT be zero
+* `shares` MUST NOT be negative when converted to an `int256`
+* See [`EigenPod.withdrawRestakedBeaconChainETH`](#eigenpodwithdrawrestakedbeaconchaineth)
+
+##### `EigenPod.withdrawRestakedBeaconChainETH`
+
+```solidity
+function withdrawRestakedBeaconChainETH(
+    address recipient, 
+    uint256 amountWei
+) 
+    external 
+    onlyEigenPodManager
+```
+
+The `EigenPodManager` calls this method when withdrawing a Pod Owner's shares as tokens (native ETH). The input `amountWei` is converted to Gwei and subtracted from `withdrawableRestakedExecutionLayerGwei`, which tracks Gwei that has been provably withdrawn (via `EigenPod.verifyAndProcessWithdrawals`).
+
+As such:
+* If a withdrawal has not been proven that sufficiently raises `withdrawableRestakedExecutionLayerGwei`, this method will revert.
+* If the `EigenPod` does not have `amountWei` available to transfer, this method will revert
+
+*Effects*:
+* Decreases the pod's `withdrawableRestakedExecutionLayerGwei` by `amountWei / GWEI_TO_WEI`
+* Sends `amountWei` ETH to `recipient`
+
+*Requirements*:
+* `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
+* Pod MUST have at least `amountWei` ETH balance
+* `recipient` MUST NOT revert when transferred `amountWei`
 
 #### `EigenPod.verifyAndProcessWithdrawals`
 
@@ -314,124 +463,6 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
 *As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
-##### `EigenPodManager.recordBeaconChainETHBalanceUpdate`
-
-```solidity
-function recordBeaconChainETHBalanceUpdate(
-    address podOwner,
-    int256 sharesDelta
-) 
-    external 
-    onlyEigenPod(podOwner) 
-    nonReentrant
-```
-
-This method is called by an `EigenPod` during a balance update or withdrawal. It accepts a positive or negative `sharesDelta`, which is added/subtracted against the Pod Owner's shares.
-
-If the Pod Owner is not in undelegation limbo and is delegated to an Operator, the `sharesDelta` is also sent to the `DelegationManager` to either increase or decrease the Operator's delegated shares.
-
-*Effects*:
-* Adds or removes `sharesDelta` from the Pod Owner's shares
-* If the Pod Owner is NOT in undelegation limbo:
-    * If `sharesDelta` is negative: see [`DelegationManager.decreaseDelegatedShares`](./DelegationManager.md#decreasedelegatedshares)
-    * If `sharesDelta` is positive: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
-
-*Requirements*:
-* Caller MUST be the `EigenPod` associated with the passed-in `podOwner`
-* `sharesDelta`: 
-    * MUST NOT be 0
-    * If negative, `sharesDelta` MUST NOT remove more shares than the Pod Owner has
-
-#### `EigenPodManager.forceIntoUndelegationLimbo`
-
-```solidity
-function forceIntoUndelegationLimbo(
-    address podOwner,
-    address delegatedTo
-)
-    external
-    onlyDelegationManager
-    onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH)
-    onlyNotFrozen(podOwner)
-    nonReentrant
-    returns (uint256 sharesRemovedFromDelegation)
-```
-
-This method is called by the `DelegationManager` when a Staker is undelegated from an Operator. If the Staker has `EigenPodManager` shares and isn't in undelegation limbo, the Staker is placed into undelegation limbo and their previously-active shares are returned to the `DelegationManager` to be removed from the Operator.
-
-See *Helpful Definitions* at the top for more info on undelegation limbo.
-
-*Entry Points*:
-* `DelegationManager.undelegate`
-
-*Effects*:
-* If the Staker has shares and isn't in undelegation limbo, this places them into undelegation limbo and records:
-    * `startBlock`: the current block, used to impose a delay on exiting undelegation limbo
-    * `delegatedAddress`: the Operator the Staker is being undelegated from
-
-*Requirements*:
-* Caller MUST be the `DelegationManager`
-* Pause status MUST NOT be set: `PAUSED_WITHDRAW_RESTAKED_ETH`
-
-*As of M2*:
-* The `onlyNotFrozen` modifier is a no-op
-
-#### `EigenPodManager.exitUndelegationLimbo`
-
-```solidity
-function exitUndelegationLimbo(
-    uint256 middlewareTimesIndex,
-    bool withdrawFundsFromEigenLayer
-) 
-    external 
-    onlyWhenNotPaused(PAUSED_WITHDRAW_RESTAKED_ETH) 
-    onlyNotFrozen(msg.sender) 
-    nonReentrant
-```
-
-Called by a Staker who is currently in undelegation limbo to exit undelegation limbo and either (i) withdraw beacon chain ETH from EigenLayer, or (ii) stay in EigenLayer and continue restaking.
-
-See *Helpful Definitions* at the top for more info on undelegation limbo.
-
-*Effects*:
-* Staker's undelegation limbo status is removed
-* If withdrawing funds from EigenLayer (funds must already be in `EigenPod`):
-    * Staker's `EigenPod.withdrawableRestakedExecutionLayerGwei` is decreased by their current shares
-    * `EigenPod.withdrawRestakedBeaconChainETH` directly sends `amountWei` to the Staker
-    * Staker's shares are set to 0
-* If not withdrawing funds, see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
-
-*Requirements*:
-* Pause status MUST NOT be set: `PAUSED_WITHDRAW_RESTAKED_ETH`
-* Caller MUST be a Staker currently in undelegation limbo, and the current block MUST be at least `StrategyManager.withdrawalDelayBlocks` after the limbo's `startBlock`
-* If withdrawing funds from EigenLayer, the funds MUST already be in the Caller's `EigenPod` (and any necessary withdrawals proven via `EigenPod.verifyAndProcessWithdrawals`)
-
-*As of M2*:
-* `slasher.canWithdraw` is a no-op
-* The `onlyNotFrozen` modifier is a no-op
-* The `middlewareTimesIndex` parameter is unused
-
----
-
-### Withdrawal Processing
-
-* [`EigenPodManager.removeShares`](#eigenpodmanagerremoveshares)
-* [`EigenPodManager.addShares`](#eigenpodmanageraddshares)
-* [`EigenPodManager.withdrawSharesAsTokens`](#eigenpodmanagerwithdrawsharesastokens)
-* [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
-
-#### `EigenPodManager.removeShares`
-
-TODO
-
-#### `EigenPodManager.addShares`
-
-TODO
-
-#### `EigenPodManager.withdrawSharesAsTokens`
-
-TODO
-
 #### `DelayedWithdrawalRouter.createDelayedWithdrawal`
 
 TODO
@@ -478,6 +509,8 @@ Withdrawals can be completed after a delay via `EigenPodManager.completeQueuedWi
 *As of M2*:
 * The `onlyNotFrozen` modifier is a no-op
 
+---
+
 ### System Configuration
 
 * [`EigenPodManager.setMaxPods`](#eigenpodmanagersetmaxpods)
@@ -507,17 +540,53 @@ function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) extern
 *Requirements*:
 * TODO
 
+---
+
 ### Other Methods
 
 This section details various methods that don't fit well into other sections.
+
+Stakers' balance updates are accounted for when the Staker's `EigenPod` calls this method:
+* [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 *For pods deployed prior to M2*, the following methods are callable:
 * [`EigenPod.activateRestaking`](#eigenpodactivaterestaking)
 * [`EigenPod.withdrawBeforeRestaking`](#eigenpodwithdrawbeforerestaking)
 
-`EigenPod` also includes two token recovery mechanisms:
+The `EigenPod` also includes two token recovery mechanisms:
 * [`EigenPod.withdrawNonBeaconChainETHBalanceWei`](#eigenpodwithdrawnonbeaconchainethbalancewei)
 * [`EigenPod.recoverTokens`](#eigenpodrecovertokens)
+
+#### `EigenPodManager.recordBeaconChainETHBalanceUpdate`
+
+```solidity
+function recordBeaconChainETHBalanceUpdate(
+    address podOwner,
+    int256 sharesDelta
+) 
+    external 
+    onlyEigenPod(podOwner) 
+    nonReentrant
+```
+
+This method is called by an `EigenPod` during a balance update or withdrawal. It accepts a positive or negative `sharesDelta`, which is added/subtracted against the Pod Owner's shares.
+
+If the Pod Owner is not in undelegation limbo and is delegated to an Operator, the `sharesDelta` is also sent to the `DelegationManager` to either increase or decrease the Operator's delegated shares.
+
+*Entry Points*:
+* TODO
+
+*Effects*:
+* Adds or removes `sharesDelta` from the Pod Owner's shares
+* If the Pod Owner is NOT in undelegation limbo:
+    * If `sharesDelta` is negative: see [`DelegationManager.decreaseDelegatedShares`](./DelegationManager.md#decreasedelegatedshares)
+    * If `sharesDelta` is positive: see [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
+
+*Requirements*:
+* Caller MUST be the `EigenPod` associated with the passed-in `podOwner`
+* `sharesDelta`: 
+    * MUST NOT be 0
+    * If negative, `sharesDelta` MUST NOT remove more shares than the Pod Owner has
 
 #### `EigenPod.activateRestaking`
 

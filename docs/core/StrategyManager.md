@@ -104,6 +104,8 @@ function depositIntoStrategyWithSignature(
 *As of M2*:
 * The `onlyNotFrozen` modifier is currently a no-op
 
+---
+
 ### Withdrawal Processing
 
 These methods are callable ONLY by the `DelegationManager`, and are used when processing undelegations and withdrawals:
@@ -196,6 +198,8 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 * Caller MUST be the `DelegationManager`
 * See [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
 
+---
+
 ### Strategies
 
 `StrategyBaseTVLLimits` only has two methods of note, and both can only be called by the `StrategyManager`. Documentation for these methods are included below, rather than in a separate file:
@@ -265,6 +269,8 @@ This method converts the withdrawal shares back into tokens using the strategy's
 * The passed-in `token` MUST match the strategy's `underlyingToken`
 * The `amountShares` being withdrawn MUST NOT exceed the `totalShares` in the strategy
 * The tokens represented by `amountShares` MUST NOT exceed the strategy's token balance
+
+---
 
 ### System Configuration
 

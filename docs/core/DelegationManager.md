@@ -167,6 +167,8 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 *As of M2*:
 * `require(!slasher.isFrozen(operator))` is currently a no-op
 
+---
+
 ### Undelegating and Withdrawing
 
 These methods can be called by both Stakers AND Operators, and are used to (i) undelegate a Staker from an Operator, (ii) queue a withdrawal of a Staker/Operator's shares, or (iii) complete a queued withdrawal:
@@ -328,6 +330,8 @@ function completeQueuedWithdrawals(
 
 This method is the plural version of [`completeQueuedWithdrawal`](#completequeuedwithdrawal).
 
+---
+
 ### Accounting
 
 These methods are called by the `StrategyManager` and `EigenPodManager` to update delegated share accounting when a Staker's balance changes (e.g. due to a deposit):
@@ -385,6 +389,8 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 *Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager` (although the `StrategyManager` doesn't use this method)
+
+---
 
 ### System Configuration
 
