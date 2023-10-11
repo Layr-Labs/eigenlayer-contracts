@@ -4,18 +4,6 @@
 │  │  └─ it should initialize correctly
 │  └─ when called after deployment
 │     └─ it should revert
-├─ setStakeRegistery
-│  └─ when caller is owner
-│     ├─ when stake registery is NOT set
-│     │  ├─ when input is NOT address 0
-│     │  │  └─ it should update the stake registery
-│     │  └─ when input is address 0
-│     │     └─ it should revert
-│     └─ when the stake registery is set
-│        ├─ when caller is owner
-│        │  └─ it should revert
-│        └─ when caller is NOT owner
-│           └─ it should revert
 ├─ setOperatorDetails
 │  ├─ when caller is an operator
 │  │  ├─ when operator tries to update their earningsReceiver to address 0
