@@ -33,7 +33,7 @@ interface IWhitelister {
 
     function completeQueuedWithdrawal(
         address staker,
-        IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,
+        IDelegationManager.Withdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens

@@ -200,48 +200,6 @@ contract EigenPodUnitTests is EigenPodTests {
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
     }
 
-    function testIncrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) public returns (IEigenPod) {
-        cheats.assume(amount > GWEI_TO_WEI);
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-
-        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
-
-        cheats.startPrank(address(eigenPodManager));
-        pod.incrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
-        uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
-        require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore + amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
-        return pod;
-    }
-
-    function testDecrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) external {
-        IEigenPod pod = testIncrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
-        pod.decrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
-
-        uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
-        require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore - amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
-    }
-
-    function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {
-        cheats.assume(largerAmount > GWEI_TO_WEI);
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-
-        cheats.startPrank(address(eigenPodManager));
-
-        cheats.expectRevert(bytes("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"));
-        pod.decrementWithdrawableRestakedExecutionLayerGwei(largerAmount);
-        cheats.stopPrank();
-    }
-
     function testPodReceiveFallBack(uint256 amountETH) external {
         cheats.assume(amountETH > 0);
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");

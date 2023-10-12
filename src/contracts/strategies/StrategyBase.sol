@@ -124,20 +124,20 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /**
-     * @notice Used to withdraw tokens from this Strategy, to the `depositor`'s address
-     * @param depositor is the address to receive the withdrawn funds
+     * @notice Used to withdraw tokens from this Strategy, to the `recipient`'s address
+     * @param recipient is the address to receive the withdrawn funds
      * @param token is the ERC20 token being transferred out
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
      */
     function withdraw(
-        address depositor,
+        address recipient,
         IERC20 token,
         uint256 amountShares
     ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager {
         // call hook to allow for any pre-withdrawal logic
-        _beforeWithdrawal(depositor, token, amountShares);
+        _beforeWithdrawal(recipient, token, amountShares);
 
         require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
 
@@ -162,7 +162,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
 
-        underlyingToken.safeTransfer(depositor, amountToSend);
+        underlyingToken.safeTransfer(recipient, amountToSend);
     }
 
     /**
@@ -175,12 +175,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
-     * @param depositor The address that will receive the withdrawn tokens
+     * @param recipient The address that will receive the withdrawn tokens
      * @param token The token being withdrawn
      * @param amountShares The amount of shares being withdrawn
      */
     // solhint-disable-next-line no-empty-blocks
-    function _beforeWithdrawal(address depositor, IERC20 token, uint256 amountShares) internal virtual {}
+    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {}
 
     /**
      * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex

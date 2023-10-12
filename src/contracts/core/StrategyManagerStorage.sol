@@ -20,15 +20,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
         keccak256("Deposit(address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
-    /**
-     * @notice Original EIP-712 Domain separator for this contract.
-     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
-     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
-     */
-    bytes32 internal _DOMAIN_SEPARATOR;
-    // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
-    mapping(address => uint256) public nonces;
-
     // maximum length of dynamic arrays in `stakerStrategyList` mapping, for sanity's sake
     uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
 
@@ -37,38 +28,42 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     IEigenPodManager public immutable eigenPodManager;
     ISlasher public immutable slasher;
 
+    /**
+     * @notice Original EIP-712 Domain separator for this contract.
+     * @dev The domain separator may change in the event of a fork that modifies the ChainID.
+     * Use the getter function `domainSeparator` to get the current domain separator for this contract.
+     */
+    bytes32 internal _DOMAIN_SEPARATOR;
+    // staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
+    mapping(address => uint256) public nonces;
     /// @notice Permissioned role, which can be changed by the contract owner. Has the ability to edit the strategy whitelist
     address public strategyWhitelister;
-
-    /**
-     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
-     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+    /*
+     * Reserved space previously used by the deprecated storage variable `withdrawalDelayBlocks.
+     * This variable was migrated to the DelegationManager instead.
      */
-    uint256 public withdrawalDelayBlocks;
-    // the number of 12-second blocks in one week (60 * 60 * 24 * 7 / 12 = 50,400)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
-
+    uint256 internal withdrawalDelayBlocks;
     /// @notice Mapping: staker => Strategy => number of shares which they currently hold
     mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
-    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
+    /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
+    /// @dev This mapping is preserved to allow the migration of withdrawals to the DelegationManager contract.
     mapping(bytes32 => bool) public withdrawalRootPending;
-    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
-    mapping(address => uint256) public numWithdrawalsQueued;
+    /*
+     * Reserved space previously used by the deprecated mapping(address => uint256) numWithdrawalsQueued.
+     * This mapping tracked the cumulative number of queued withdrawals initiated by a staker.
+     * Withdrawals are now initiated in the DlegationManager, so the mapping has moved to that contract.
+     */
+    mapping(address => uint256) internal numWithdrawalsQueued;
     /// @notice Mapping: strategy => whether or not stakers are allowed to deposit into it
     mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
-
     /*
      * Reserved space previously used by the deprecated mapping(address => uint256) beaconChainETHSharesToDecrementOnWithdrawal.
-     * This mapping tracked beaconChainETH "debt" in case updates were made to shares retroactively.  However, this design was
-     * replaced by a simpler design that prevents withdrawals from EigenLayer before withdrawals from the beacon chain, which
-     * makes this tracking unnecessary.
+     * This mapping tracked beaconChainETH "deficit" in cases where updates were made to shares retroactively.  However, this construction was
+     * moved into the EigenPodManager contract itself.
      */
-    // slither-disable-next-line incorrect-shift-in-assembly
-    uint256[1] internal _deprecatedStorage;
+    mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
 
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
         delegation = _delegation;
@@ -81,5 +76,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[41] private __gap;
 }

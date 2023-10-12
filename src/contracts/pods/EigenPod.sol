@@ -104,11 +104,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    modifier onlyNotFrozen() {
-        require(!eigenPodManager.slasher().isFrozen(podOwner), "EigenPod.onlyNotFrozen: pod owner is frozen");
-        _;
-    }
-
     modifier hasNeverRestaked() {
         require(!hasRestaked, "EigenPod.hasNeverRestaked: restaking is enabled");
         _;
@@ -310,7 +305,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields,
         bytes32[][] calldata withdrawalFields
-    ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) onlyNotFrozen {
+    ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
         require(
             (validatorFields.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == withdrawalProofs.length) &&
@@ -408,7 +403,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // virtually deposit for new ETH validator(s)
-        eigenPodManager.restakeBeaconChainETH(podOwner, totalAmountToBeRestakedWei);
+        require(int256(totalAmountToBeRestakedWei) > 0, "EigenPod.verifyWithdrawalCredentials: overflow in totalAmountToBeRestakedWei");
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
     }
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
@@ -479,33 +475,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /**
-     * @notice This function is called to decrement withdrawableRestakedExecutionLayerGwei when a validator queues a withdrawal.
-     * @param amountWei is the amount of ETH in wei to decrement withdrawableRestakedExecutionLayerGwei by
-     */
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        require(
-            withdrawableRestakedExecutionLayerGwei >= amountGwei,
-            "EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"
-        );
-        withdrawableRestakedExecutionLayerGwei -= amountGwei;
-    }
-
-    /**
-     * @notice This function is called to increment withdrawableRestakedExecutionLayerGwei when a validator's withdrawal is completed.
-     * @param amountWei is the amount of ETH in wei to increment withdrawableRestakedExecutionLayerGwei by
-     */
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external onlyEigenPodManager {
-        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
-        withdrawableRestakedExecutionLayerGwei += amountGwei;
-    }
-
-    /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * `amountWei` input (when converted to GWEI).
+     * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+        require(amountWei % GWEI_TO_WEI == 0, "EigenPod.withdrawRestakedBeaconChainETH: amountWei must be a whole Gwei amount");
+        uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
+        withdrawableRestakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
         _sendETH(recipient, amountWei);

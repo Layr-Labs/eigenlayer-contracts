@@ -13,7 +13,8 @@ contract WithdrawalTests is DelegationTests {
     struct DataForTestWithdrawal {
         IStrategy[] delegatorStrategies;
         uint256[] delegatorShares;
-        IStrategyManager.WithdrawerAndNonce withdrawerAndNonce;
+        address withdrawer;
+        uint96 nonce;
     }
 
     MiddlewareRegistryMock public generalReg1;
@@ -102,15 +103,9 @@ contract WithdrawalTests is DelegationTests {
                 strategyManager.getDeposits(depositor);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
-
-            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = 
-                IStrategyManager.WithdrawerAndNonce({
-                    withdrawer: withdrawer,
-                    // harcoded nonce value
-                    nonce: 0
-                }
-            );
-            dataForTestWithdrawal.withdrawerAndNonce = withdrawerAndNonce;
+            dataForTestWithdrawal.withdrawer = withdrawer;
+            // harcoded nonce value
+            dataForTestWithdrawal.nonce = 0;
         }
 
         uint256[] memory strategyIndexes = new uint256[](2);
@@ -153,7 +148,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -164,7 +160,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -216,15 +213,9 @@ contract WithdrawalTests is DelegationTests {
                 strategyManager.getDeposits(depositor);
             dataForTestWithdrawal.delegatorStrategies = delegatorStrategies;
             dataForTestWithdrawal.delegatorShares = delegatorShares;
-
-            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = 
-                IStrategyManager.WithdrawerAndNonce({
-                    withdrawer: withdrawer,
-                    // harcoded nonce value
-                    nonce: 0
-                }
-            );
-            dataForTestWithdrawal.withdrawerAndNonce = withdrawerAndNonce;
+            dataForTestWithdrawal.withdrawer = withdrawer;
+            // harcoded nonce value
+            dataForTestWithdrawal.nonce = 0;
         }
 
         uint256[] memory strategyIndexes = new uint256[](2);
@@ -245,7 +236,7 @@ contract WithdrawalTests is DelegationTests {
             strategyIndexes,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
-            dataForTestWithdrawal.withdrawerAndNonce.withdrawer
+            dataForTestWithdrawal.withdrawer
         );
         uint32 queuedWithdrawalBlock = uint32(block.number);
         
@@ -276,7 +267,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
@@ -287,7 +279,8 @@ contract WithdrawalTests is DelegationTests {
                     tokensArray,
                     dataForTestWithdrawal.delegatorShares,
                     delegatedTo,
-                    dataForTestWithdrawal.withdrawerAndNonce,
+                    dataForTestWithdrawal.withdrawer,
+                    dataForTestWithdrawal.nonce,
                     queuedWithdrawalBlock,
                     middlewareTimeIndex
                 );
