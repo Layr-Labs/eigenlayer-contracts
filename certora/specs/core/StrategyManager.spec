@@ -134,7 +134,7 @@ invariant totalSharesGeqSumOfShares(address strategy)
 
 /**
  * Verifies that ERC20 tokens are transferred out of the account only of the msg.sender.
- * Called 'safeApprovalUse' since approval-related vulnerabilites in general allow a caller to transfer tokens out of a different account.
+ * Called 'safeApprovalUse' since approval-related vulnerabilities in general allow a caller to transfer tokens out of a different account.
  * This behavior is not always unsafe, but since we don't ever use it (at present) we can do a blanket-check against it.
  */
 rule safeApprovalUse(address user) {
