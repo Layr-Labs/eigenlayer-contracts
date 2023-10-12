@@ -191,6 +191,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
         uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        // the first part of this if statement is met if the operator has never registered. 
+        // the second part is met if the operator has previously registered, but is currently deregistered
         if (quorumBitmapHistoryLength == 0 || _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
             return 0;
         }
