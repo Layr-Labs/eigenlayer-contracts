@@ -21,6 +21,8 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
     uint256 internal constant MAX_BIPS = 10000;
+    /// @notice The maximum number of quorums that the VoteWeigher is considering.
+    uint8 public constant MAX_QUORUM_COUNT = 192;
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
