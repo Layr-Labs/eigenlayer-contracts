@@ -207,7 +207,6 @@ contract StakeRegistry is StakeRegistryStorage {
      * @dev Will revert if `_totalStakeHistory[quorumNumber]` is empty.
      */
     function getCurrentTotalStakeForQuorum(uint8 quorumNumber) external view returns (uint96) {
-        // no chance of underflow / error in next line, since an empty entry is pushed in the constructor
         return _totalStakeHistory[quorumNumber][_totalStakeHistory[quorumNumber].length - 1].stake;
     }
 
@@ -384,7 +383,6 @@ contract StakeRegistry is StakeRegistryStorage {
             // evaluate the stake for the operator
             // since we don't use the first output, this will use 1 extra sload when deregistered operator's register again
             (, uint96 stake) = _updateOperatorStake(operator, operatorId, quorumNumber);
-            // @JEFF: This reverts pretty late, but i think that's fine. wdyt?
             // check if minimum requirement has been met, will be 0 if not
             require(
                 stake != 0,
