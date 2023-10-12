@@ -14,7 +14,6 @@ import "./VoteWeigherBaseStorage.sol";
  * by the middleware
  * - addition and removal of strategies and the associated weighting criteria that are assigned
  * by the middleware for each of the quorum(s)
- * @dev
  */
 contract VoteWeigherBase is VoteWeigherBaseStorage {
     /// @notice when applied to a function, ensures that the function is only callable by the current `owner` of the `serviceManager`

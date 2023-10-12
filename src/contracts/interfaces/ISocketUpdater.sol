@@ -13,7 +13,7 @@ import "./IIndexRegistry.sol";
 interface ISocketUpdater {
     // EVENTS
 
-    event OperatorSocketUpdate(bytes32 operatorId, string socket);
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     // FUNCTIONS
     
