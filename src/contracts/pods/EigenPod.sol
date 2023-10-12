@@ -493,7 +493,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
-        // Withdrawal credentials should only be performed on "INACTIVE" validators
+        // Withdrawal credential proofs should only be processed for "INACTIVE" validators
         require(
             validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"
