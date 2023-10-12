@@ -654,9 +654,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         withdrawableRestakedExecutionLayerGwei += amountToQueueGwei;
         
         /**
-         * Next, calculate the change in number of shares this validator is backing.
-         * - Anything immediately withdrawn isn't being backed
-         * - Anything that needs to go through the withdrawal queue is backed
+         * Next, calculate the change in number of shares this validator is "backing":
+         * - Anything that needs to go through the withdrawal queue IS backed
+         * - Anything immediately withdrawn IS NOT backed
          *
          * This means that this validator is currently backing `amountToQueueGwei` shares.
          */
