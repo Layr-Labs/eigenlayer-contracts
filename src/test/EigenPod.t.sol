@@ -597,7 +597,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         _proveOverCommittedStake(newPod);
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
         require(beaconChainETHShares == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
@@ -739,7 +739,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
  
         assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI), "hysterisis not working");
@@ -769,7 +769,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceFromBalanceRoot(uint40(getValidatorIndex()), getBalanceRoot());        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
         
         assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),

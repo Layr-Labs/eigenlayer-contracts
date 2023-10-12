@@ -102,7 +102,15 @@ library BeaconChainProofs {
     uint256 internal constant HISTORICALBATCH_STATEROOTS_INDEX = 1;
 
     //Misc Constants
-    uint256 internal constant SLOTS_PER_EPOCH = 32;
+
+    /// @notice The number of slots each epoch in the beacon chain
+    uint64 internal constant SLOTS_PER_EPOCH = 32;
+
+    /// @notice The number of seconds in a slot in the beacon chain
+    uint64 internal constant SECONDS_PER_SLOT = 12;
+
+    /// @notice Number of seconds per epoch: 384 == 32 slots/epoch * 12 seconds/slot 
+    uint64 internal constant SECONDS_PER_EPOCH = SLOTS_PER_EPOCH * SECONDS_PER_SLOT;
 
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
 
@@ -133,22 +141,6 @@ library BeaconChainProofs {
     struct StateRootProof {
         bytes32 beaconStateRoot;
         bytes proof;
-    }
-
-    /**
-     *
-     * @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the
-     * beacon state balance tree, four uint64 values (making 32 bytes) are grouped together and treated as a single leaf in the merkle tree. Thus the
-     * validatorIndex mod 4 is used to determine which of the four uint64 values to extract from the balanceRoot.
-     * @param validatorIndex is the index of the validator being proven for.
-     * @param balanceRoot is the combination of 4 validator balances being proven for.
-     * @return The validator's balance, in Gwei
-     */
-    function getBalanceFromBalanceRoot(uint40 validatorIndex, bytes32 balanceRoot) internal pure returns (uint64) {
-        uint256 bitShiftAmount = (validatorIndex % 4) * 64;
-        bytes32 validatorBalanceLittleEndian = bytes32((uint256(balanceRoot) << bitShiftAmount));
-        uint64 validatorBalance = Endian.fromLittleEndianUint64(validatorBalanceLittleEndian);
-        return validatorBalance;
     }
 
     /**
@@ -198,7 +190,7 @@ library BeaconChainProofs {
      * @param validatorIndex the index of the proven validator
      * @param beaconStateRoot is the beacon chain state root to be proven against.
      * @param validatorBalanceProof is the proof of the balance against the beacon chain state root
-     * @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation)
+     * @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceAtIndex` for detailed explanation)
      */
     function verifyValidatorBalance(
         bytes32 beaconStateRoot,
@@ -413,5 +405,101 @@ library BeaconChainProofs {
     function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
         require(validatorPubkey.length == 48, "Input should be 48 bytes in length");
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
+    }
+
+    /**
+     * @notice Parses a balanceRoot to get the uint64 balance of a validator.  
+     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single 
+     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to 
+     * extract from the balanceRoot.
+     * @param balanceRoot is the combination of 4 validator balances being proven for
+     * @param validatorIndex is the index of the validator being proven for
+     * @return The validator's balance, in Gwei
+     */
+    function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
+        uint256 bitShiftAmount = (validatorIndex % 4) * 64;
+        return 
+            Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
+    }
+
+    /**
+     * @dev Retrieve the withdrawal timestamp
+     */
+    function getWithdrawalTimestamp(WithdrawalProof memory withdrawalProof) internal pure returns (uint64) {
+        return
+            Endian.fromLittleEndianUint64(withdrawalProof.timestampRoot);
+    }
+
+    /**
+     * @dev Converts the withdrawal's slot to an epoch
+     */
+    function getWithdrawalEpoch(WithdrawalProof memory withdrawalProof) internal pure returns (uint64) {
+        return
+            Endian.fromLittleEndianUint64(withdrawalProof.slotRoot) / SLOTS_PER_EPOCH;
+    }
+
+    /**
+     * Indices for validator fields (refer to consensus specs):
+     * 0: pubkey
+     * 1: withdrawal credentials
+     * 2: effective balance
+     * 3: slashed?
+     * 4: activation elligibility epoch
+     * 5: activation epoch
+     * 6: exit epoch
+     * 7: withdrawable epoch
+     */
+
+    /**
+     * @dev Retrieves a validator's pubkey hash
+     */
+     function getPubkeyHash(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+        return 
+            validatorFields[VALIDATOR_PUBKEY_INDEX];
+    }
+
+    function getWithdrawalCredentials(bytes32[] memory validatorFields) internal pure returns (bytes32) {
+        return
+            validatorFields[VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX];
+    }
+
+    /**
+     * @dev Retrieves a validator's effective balance (in gwei)
+     */
+     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
+        return 
+            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
+    }
+
+    /**
+     * @dev Retrieves a validator's withdrawable epoch
+     */
+    function getWithdrawableEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+        return 
+            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+    }
+
+    /**
+     * Indices for withdrawal fields (refer to consensus specs):
+     * 0: withdrawal index
+     * 1: validator index
+     * 2: execution address
+     * 3: withdrawal amount
+     */
+
+    /**
+     * @dev Retrieves a withdrawal's validator index
+     */
+    function getValidatorIndex(bytes32[] memory withdrawalFields) internal pure returns (uint40) {
+        return 
+            uint40(Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+    }
+
+    /**
+     * @dev Retrieves a withdrawal's withdrawal amount (in gwei)
+     */
+    function getWithdrawalAmountGwei(bytes32[] memory withdrawalFields) internal pure returns (uint64) {
+        return
+            Endian.fromLittleEndianUint64(withdrawalFields[WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
     }
 }
