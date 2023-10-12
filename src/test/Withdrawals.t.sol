@@ -316,45 +316,47 @@ contract WithdrawalTests is DelegationTests {
         testDelegation(operator, depositor, ethAmount, eigenAmount);
     }
 
-    /// @notice test to see if an operator who is slashed/frozen
-    ///         cannot be undelegated from by their stakers.
-    /// @param operator is the operator being delegated to.
-    /// @param staker is the staker delegating stake to the operator.
-    function testSlashedOperatorWithdrawal(address operator, address staker, uint96 ethAmount, uint96 eigenAmount)
-        public
-        fuzzedAddress(operator)
-        fuzzedAddress(staker)
-    {
-        cheats.assume(staker != operator);
-        testDelegation(operator, staker, ethAmount, eigenAmount);
+    // onlyNotFrozen modifier is not used in current DelegationManager implementation.
+    // commented out test case for now
+    // /// @notice test to see if an operator who is slashed/frozen
+    // ///         cannot be undelegated from by their stakers.
+    // /// @param operator is the operator being delegated to.
+    // /// @param staker is the staker delegating stake to the operator.
+    // function testSlashedOperatorWithdrawal(address operator, address staker, uint96 ethAmount, uint96 eigenAmount)
+    //     public
+    //     fuzzedAddress(operator)
+    //     fuzzedAddress(staker)
+    // {
+    //     cheats.assume(staker != operator);
+    //     testDelegation(operator, staker, ethAmount, eigenAmount);
 
-        {
-            address slashingContract = slasher.owner(); 
+    //     {
+    //         address slashingContract = slasher.owner(); 
 
-            cheats.startPrank(operator);
-            slasher.optIntoSlashing(address(slashingContract));
-            cheats.stopPrank();
+    //         cheats.startPrank(operator);
+    //         slasher.optIntoSlashing(address(slashingContract));
+    //         cheats.stopPrank();
 
-            cheats.startPrank(slashingContract);
-            slasher.freezeOperator(operator);
-            cheats.stopPrank();
-        }
+    //         cheats.startPrank(slashingContract);
+    //         slasher.freezeOperator(operator);
+    //         cheats.stopPrank();
+    //     }
 
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
+    //     (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
+    //         strategyManager.getDeposits(staker);
 
-        uint256[] memory strategyIndexes = new uint256[](2);
-        strategyIndexes[0] = 0;
-        strategyIndexes[1] = 1;
+    //     uint256[] memory strategyIndexes = new uint256[](2);
+    //     strategyIndexes[0] = 0;
+    //     strategyIndexes[1] = 1;
 
-        IERC20[] memory tokensArray = new IERC20[](2);
-        tokensArray[0] = weth;
-        tokensArray[0] = eigenToken;
+    //     IERC20[] memory tokensArray = new IERC20[](2);
+    //     tokensArray[0] = weth;
+    //     tokensArray[0] = eigenToken;
 
-        //initiating queued withdrawal
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
-        );
-        _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
-    }
+    //     //initiating queued withdrawal
+    //     cheats.expectRevert(
+    //         bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
+    //     );
+    //     _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
+    // }
 }

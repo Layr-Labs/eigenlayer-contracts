@@ -242,18 +242,13 @@ contract WhitelisterTests is EigenLayerTestHelper {
             emit log_named_uint("expectedTokensOut", expectedTokensOut);
         }
 
-        uint256[] memory strategyIndexes = new uint256[](1);
         IERC20[] memory tokensArray = new IERC20[](1);
-        {
-            // hardcoded values
-            strategyIndexes[0] = 0;
-            tokensArray[0] = dummyToken;
-        }
+        // hardcoded values
+        tokensArray[0] = dummyToken;
         _testQueueWithdrawal(
             staker,
             dataForTestWithdrawal.delegatorStrategies,
-            dataForTestWithdrawal.delegatorShares,
-            strategyIndexes
+            dataForTestWithdrawal.delegatorShares
         );
         {
             uint256 balanceBeforeWithdrawal = dummyToken.balanceOf(staker);
@@ -279,15 +274,13 @@ contract WhitelisterTests is EigenLayerTestHelper {
     function _testQueueWithdrawal(
         address staker,
         IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts,
-        uint256[] memory strategyIndexes
+        uint256[] memory shareAmounts
     )
         internal
     {
         cheats.startPrank(theMultiSig);
         whiteLister.queueWithdrawal(
             staker,
-            strategyIndexes,
             strategyArray,
             shareAmounts,
             staker

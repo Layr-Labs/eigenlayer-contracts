@@ -25,7 +25,6 @@ interface IWhitelister {
 
     function queueWithdrawal(
         address staker,
-        uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer

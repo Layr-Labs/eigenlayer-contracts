@@ -19,12 +19,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     address owner = cheats.addr(1000);
 
     /// @notice Emitted when a queued withdrawal is completed
-    event WithdrawalCompleted(
-        address indexed depositor,
-        uint256 nonce,
-        address indexed withdrawer,
-        bytes32 withdrawalRoot
-    );
+    event WithdrawalCompleted(bytes32 withdrawalRoot);
 
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
@@ -346,13 +341,8 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.staker,
-            queuedWithdrawal.nonce,
-            queuedWithdrawal.withdrawer,
-            delegation.calculateWithdrawalRoot(queuedWithdrawal)
-        );
+        cheats.expectEmit(true, true, true, true, address(delegation));
+        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
         delegationFaucet.completeQueuedWithdrawal(
@@ -412,13 +402,8 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.staker,
-            queuedWithdrawal.nonce,
-            queuedWithdrawal.withdrawer,
-            delegation.calculateWithdrawalRoot(queuedWithdrawal)
-        );
+        cheats.expectEmit(true, true, true, true, address(delegation));
+        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
         delegationFaucet.completeQueuedWithdrawal(
