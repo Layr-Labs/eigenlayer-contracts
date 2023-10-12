@@ -208,7 +208,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"
         );
 
-        // 3. Balance updates should not be "stale" (older than 4.5 hrs)
+        // 3. Balance updates should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
