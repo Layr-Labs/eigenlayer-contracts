@@ -41,8 +41,8 @@ contract VoteWeigherBaseUnitTests is Test {
 
     /// @notice emitted when a new quorum is created
     event QuorumCreated(uint8 indexed quorumNumber);
-    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]` with the `multiplier`
-    event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy, uint96 multiplier);
+    /// @notice emitted when `strategy` has been added to the array at `strategiesConsideredAndMultipliers[quorumNumber]`
+    event StrategyAddedToQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has removed from the array at `strategiesConsideredAndMultipliers[quorumNumber]`
     event StrategyRemovedFromQuorum(uint8 indexed quorumNumber, IStrategy strategy);
     /// @notice emitted when `strategy` has its `multiplier` updated in the array at `strategiesConsideredAndMultipliers[quorumNumber]`
@@ -105,7 +105,7 @@ contract VoteWeigherBaseUnitTests is Test {
         // expect each strategy to be added to the quorum
         for (uint i = 0; i < strategiesAndWeightingMultipliers.length; i++) {
             cheats.expectEmit(true, true, true, true, address(voteWeigher));
-            emit StrategyAddedToQuorum(quorumCountBefore, strategiesAndWeightingMultipliers[i].strategy, strategiesAndWeightingMultipliers[i].multiplier);
+            emit StrategyAddedToQuorum(quorumCountBefore, strategiesAndWeightingMultipliers[i].strategy);
         }
         // created quorum will have quorum number of the count before it was created
         cheats.expectEmit(true, true, true, true, address(voteWeigher));
@@ -225,7 +225,7 @@ contract VoteWeigherBaseUnitTests is Test {
         // add the rest of the strategies
         for (uint i = 0; i < strategiesAndWeightingMultipliers2.length; i++) {
             cheats.expectEmit(true, true, true, true, address(voteWeigher));
-            emit StrategyAddedToQuorum(quorumNumber, strategiesAndWeightingMultipliers2[i].strategy, strategiesAndWeightingMultipliers2[i].multiplier);
+            emit StrategyAddedToQuorum(quorumNumber, strategiesAndWeightingMultipliers2[i].strategy);
         }
         voteWeigher.addStrategiesConsideredAndMultipliers(quorumNumber, strategiesAndWeightingMultipliers2);
 

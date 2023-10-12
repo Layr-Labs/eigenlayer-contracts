@@ -9,7 +9,7 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
     uint8 internal constant PAUSED_REGISTER_OPERATOR = 0;
     uint8 internal constant PAUSED_DEREGISTER_OPERATOR = 1;
 
-    event OperatorSocketUpdate(bytes32 operatorId, string socket);
+    event OperatorSocketUpdate(bytes32 indexed operatorId, string socket);
 
     /// @notice emitted whenever the stake of `operator` is updated
     event StakeUpdate(
