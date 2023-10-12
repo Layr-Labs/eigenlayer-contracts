@@ -1940,68 +1940,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
     }
 
-    function test_RevertsWhen_OperatorIsFrozen_DelegateTo() public {}
-
-    function test_RevertsWhen_DelegationIsPaused_DelegateTo() public {}
-
-    function test_RevertsWhen_InvalidApproverSignature_DelegateTo() public {}
-
-    function test_RevertsWhen_OperatorNotRegistered_DelegateTo() public {}
-
-    function test_RevertsWhen_AlreadyDelegated_DelegateTo() public {}
-
-    function test_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_SignatureExpired_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_SignatureInvalidWrongSigner_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_StakerAlreadyDelegated_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_OperatorNotRegistered_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_OperatorIsFrozen_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_SignatureInvalidWrongNonce_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_DelegateApproverSignatureExpired_DelegateToBySignature() public {}
-
-    function test_RevertsWhen_SignatureSaltPreviouslyUsed_DelegateToBySignature() public {}
-
-    function test_Undelegate() public {}
-
-    function test_RevertsWhen_OperatorUndelegatesFromSelf_Undelegate() public {}
-
-    function test_RevertsWhen_NotStrategyManager_Undelegate() public {}
-
-    function test_IncreaseDelegatedShares() public {}
-
-    function test_RevertsWhen_NotStrategyManager_IncreaseDelegatedShares() public {}
-
-    function test_StrategyMangerCallsSucceedsWithoutIncreasingShares_IncreaseDelegatedShares() public {}
-
-    function test_DereaseDelegatedShares() public {}
-
-    function test_RevertsWhen_NotStrategyManager_DecreaseDelegatedShares() public {}
-
-    function test_StrategyMangerCallsSucceedsWithoutDecreasingShares_DecreaseDelegatedShares() public {}
-
-    function test_DomainSeperator() public {}
-
-    function test_IsDelegated() public {}
-
-    function test_IsNotDelegated() public {}
-
-    function test_IsOperator() public {}
-
-    function test_IsNotOperator() public {}
-
-    function test_DelegateTo() public {}
-
-    function test_CalculateCurrentStakerDelegationDigestHash() public {}
-
-    function test_CalculateDelegationApprovalDigestHash() public {}
-
     function _createOperatorDetails(
         address earningsReceiver,
         address delegationApprover,
