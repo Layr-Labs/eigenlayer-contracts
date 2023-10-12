@@ -191,6 +191,8 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
     /// @notice Returns the current quorum bitmap for the given `operatorId` or 0 if the operator is not registered for any quorum
     function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {
         uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        // the first part of this if statement is met if the operator has never registered. 
+        // the second part is met if the operator has previously registered, but is currently deregistered
         if (quorumBitmapHistoryLength == 0 || _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber != 0) {
             return 0;
         }
@@ -465,6 +467,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // register the operator with the IndexRegistry
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
+        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        if(quorumBitmapHistoryLength != 0) {
+            // set the toBlockNumber of the previous quorum bitmap update
+            _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+        }
+
         // set the operatorId to quorum bitmap history
         _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
             updateBlockNumber: uint32(block.number),
@@ -472,18 +480,20 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             quorumBitmap: uint192(quorumBitmap)
         }));
 
-        // set the operator struct
-        _operators[operator] = Operator({
-            operatorId: operatorId,
-            status: OperatorStatus.REGISTERED
-        });
+        // if the operator is not already registered, then they are registering for the first time
+        if (_operators[operator].status != OperatorStatus.REGISTERED) {
+            _operators[operator] = Operator({
+                operatorId: operatorId,
+                status: OperatorStatus.REGISTERED
+            });
+
+            emit OperatorRegistered(operator, operatorId);
+        }
 
         _afterRegisterOperator(operator, quorumNumbers);
 
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         // serviceManager.recordFirstStakeUpdate(operator, 0);
-
-        emit OperatorRegistered(operator, operatorId);
 
         emit OperatorSocketUpdate(operatorId, socket);
 
