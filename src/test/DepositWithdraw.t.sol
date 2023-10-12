@@ -150,14 +150,14 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         
         {
         uint256 correctMiddlewareTimesIndex = 4;
-        cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
+        cheats.expectRevert("DelegationManager.completeQueuedAction: pending action is still slashable");
         delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, correctMiddlewareTimesIndex, false);
         }
 
         //When called with a stale index the call should also revert.
         {
         uint256 staleMiddlewareTimesIndex = 2;
-        cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
+        cheats.expectRevert("DelegationManager.completeQueuedAction: pending action is still slashable");
         delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, staleMiddlewareTimesIndex, false);
         }
         
