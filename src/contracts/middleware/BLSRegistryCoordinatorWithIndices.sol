@@ -478,21 +478,20 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
             quorumBitmap: uint192(quorumBitmap)
         }));
 
-        // set the operator struct
+        // if the operator is not already registered, then they are registering for the first time
         if (_operators[operator].status != OperatorStatus.REGISTERED) {
-            // if the operator is not already registered, then they are registering for the first time
             _operators[operator] = Operator({
                 operatorId: operatorId,
                 status: OperatorStatus.REGISTERED
             });
+
+            emit OperatorRegistered(operator, operatorId);
         }
 
         _afterRegisterOperator(operator, quorumNumbers);
 
         // record a stake update not bonding the operator at all (unbonded at 0), because they haven't served anything yet
         // serviceManager.recordFirstStakeUpdate(operator, 0);
-
-        emit OperatorRegistered(operator, operatorId);
 
         emit OperatorSocketUpdate(operatorId, socket);
 
