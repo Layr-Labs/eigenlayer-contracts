@@ -27,6 +27,7 @@ contract BLSPubkeyRegistry is BLSPubkeyRegistryStorage {
      * @param operator The address of the operator to register.
      * @param quorumNumbers The quorum numbers the operator is registering for, where each byte is an 8 bit integer quorumNumber.
      * @param pubkey The operator's BLS public key.
+     * @return pubkeyHash of the operator's pubkey
      * @dev access restricted to the RegistryCoordinator
      * @dev Preconditions (these are assumed, not validated in this contract):
      *         1) `quorumNumbers` has no duplicates
