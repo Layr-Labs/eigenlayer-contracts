@@ -36,5 +36,6 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     }
 
     // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
     uint256[65] private __GAP;
 }

@@ -58,5 +58,6 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
     }
 
     // storage gap for upgradeability
+    // slither-disable-next-line shadowing-state
     uint256[49] private __GAP;
 }
