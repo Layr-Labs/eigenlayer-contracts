@@ -439,7 +439,7 @@ library BeaconChainProofs {
     }
 
     /**
-     * Getters for validator fields:
+     * Indices for validator fields (refer to consensus specs):
      * 0: pubkey
      * 1: withdrawal credentials
      * 2: effective balance
@@ -480,7 +480,7 @@ library BeaconChainProofs {
     }
 
     /**
-     * Getters for withdrawal fields:
+     * Indices for withdrawal fields (refer to consensus specs):
      * 0: withdrawal index
      * 1: validator index
      * 2: execution address
