@@ -172,13 +172,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /**
-     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.  
-               It also verifies a merkle proof of the validator's current beacon chain balance.  
-     * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
+     * @notice This function records an update (either increase or decrease) in a validator's balance.
+     * @param oracleTimestamp The oracleTimestamp whose state root the proof will be proven against.
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
      * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
-     *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
+     * @param stateRootProof proves a `beaconStateRoot` against a block root fetched from the oracle
+     * @param balanceUpdateProof proves `validatorFields` and validator balance against the `beaconStateRoot`
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -271,10 +270,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /**
-     * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
+     * @notice This function records full and partial withdrawals on behalf of one or more of this EigenPod's validators
      * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
-     * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
-     * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
+     * @param stateRootProof proves a `beaconStateRoot` against a block root fetched from the oracle
+     * @param withdrawalProofs proves several withdrawal-related values against the `beaconStateRoot`
+     * @param validatorFieldsProofs proves `validatorFields` against the `beaconStateRoot`
      * @param withdrawalFields are the fields of the withdrawals being proven
      * @param validatorFields are the fields of the validators being proven
      */
@@ -293,7 +293,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyAndProcessWithdrawals: inputs must be same length"
         );
 
-        // verify that the provided state root is verified against the oracle-provided latest block header
+        // Verify passed-in beaconStateRoot against oracle-provided block root:
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
             beaconStateRoot: stateRootProof.beaconStateRoot,
@@ -309,14 +309,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 validatorFields[i],
                 withdrawalFields[i]
             );
+
             withdrawalSummary.amountToSendGwei += verifiedWithdrawal.amountToSendGwei;
             withdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
         }
-        // send ETH to the `recipient` via the DelayedWithdrawalRouter, if applicable
+
+        // If any withdrawals are eligible for immediate redemption, send to the pod owner via
+        // DelayedWithdrawalRouter
         if (withdrawalSummary.amountToSendGwei != 0) {
             _sendETH_AsDelayedWithdrawal(podOwner, withdrawalSummary.amountToSendGwei * GWEI_TO_WEI);
         }
-        //update podOwner's shares in the strategy manager
+        // If any withdrawals resulted in a change in the pod's shares, update the EigenPodManager
         if (withdrawalSummary.sharesDeltaGwei != 0) {
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, withdrawalSummary.sharesDeltaGwei * int256(GWEI_TO_WEI));
         }
@@ -331,9 +334,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * this contract. It also verifies the effective balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleTimestamp is the Beacon Chain timestamp whose state root the `proof` will be proven against.
+     * @param stateRootProof proves a `beaconStateRoot` against a block root fetched from the oracle
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs
-     * @param validatorFieldsProofs is an array of proofs, where each proof proves each ETH validator's fields, including balance and withdrawal credentials
-     * against a beacon chain state root
+     * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -352,19 +355,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // ensure that caller has previously enabled restaking by calling `activateRestaking()`
         hasEnabledRestaking
     {
-        // ensure that the timestamp being proven against is not "too stale", i.e. that the validator's effective balance *recently* changed.
-        require(
-            oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
-            "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
-        );
-
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
 
-        // verify that the provided state root is verified against the oracle-provided latest block header for all the validators being proven
+        // Withdrawal credential proof should not be "stale" (older than 4.5 hrs)
+        require(
+            oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
+            "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
+        );
+
+        // Verify passed-in beaconStateRoot against oracle-provided block root:
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
             beaconStateRoot: stateRootProof.beaconStateRoot,
@@ -382,7 +385,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             );
         }
 
-        // virtually deposit for new ETH validator(s)
+        // Update the EigenPodManager on this pod's new balance
         require(int256(totalAmountToBeRestakedWei) > 0, "EigenPod.verifyWithdrawalCredentials: overflow in totalAmountToBeRestakedWei");
         eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
     }
@@ -488,18 +491,20 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32[] calldata validatorFields
     ) internal returns (uint256) {
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
-
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
+        // Withdrawal credentials should only be performed on "INACTIVE" validators
         require(
             validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"
         );
 
+        // Ensure the `validatorFields` we're proving have the correct withdrawal credentials
         require(
             validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
             "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"
         );
+
         /**
          * Deserialize the balance field from the Validator struct.  Note that this is the "effective" balance of the validator
          * rather than the current balance.  Effective balance is generated via a hystersis function such that an effective
@@ -511,7 +516,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
         uint64 validatorEffectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
 
-        // verify the provided ValidatorFields against the provided state root, now that it has been proven against the latest block header
+        // Verify passed-in validatorFields against verified beaconStateRoot:
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
@@ -519,19 +524,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             validatorIndex: validatorIndex
         });
 
-        // set the status to active
+        // Proofs complete - update this validator's status, record its proven balance, and save in state:
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
-
-        // record validator's new restaked balance
         validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
+        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
-
-        // record validatorInfo update in storage
-        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         return validatorInfo.restakedBalanceGwei * GWEI_TO_WEI;
     }
@@ -560,14 +561,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
 
         /**
-         * If the validator status is inactive, then withdrawal credentials were never verified for the validator,
-         * and thus we cannot know that the validator is related to this EigenPod at all!
+         * Withdrawal processing should only be performed for "ACTIVE" or "WITHDRAWN" validators.
+         * (WITHDRAWN is allowed because technically you can deposit to a validator even after it exits)
          */
         require(
             _validatorPubkeyHashToInfo[validatorPubkeyHash].status != VALIDATOR_STATUS.INACTIVE,
             "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract"
         );
 
+        // Ensure we don't process the same withdrawal twice
         require(
             !provenWithdrawal[validatorPubkeyHash][withdrawalTimestamp],
             "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"
@@ -575,49 +577,47 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         provenWithdrawal[validatorPubkeyHash][withdrawalTimestamp] = true;
 
-        // Verifying the withdrawal as well as the slot
+        // Verifying the withdrawal against verified beaconStateRoot:
         BeaconChainProofs.verifyWithdrawal({
             beaconStateRoot: beaconStateRoot, 
             withdrawalFields: withdrawalFields, 
             withdrawalProof: withdrawalProof
         });
 
-        {
-            uint40 validatorIndex = withdrawalFields.getValidatorIndex();
+        uint40 validatorIndex = withdrawalFields.getValidatorIndex();
 
-            // Verifying the validator fields, specifically the withdrawable epoch
-            BeaconChainProofs.verifyValidatorFields({
-                beaconStateRoot: beaconStateRoot,
-                validatorFields: validatorFields,
-                validatorFieldsProof: validatorFieldsProof,
-                validatorIndex: validatorIndex
-            });
+        // Verify passed-in validatorFields against verified beaconStateRoot:
+        BeaconChainProofs.verifyValidatorFields({
+            beaconStateRoot: beaconStateRoot,
+            validatorFields: validatorFields,
+            validatorFieldsProof: validatorFieldsProof,
+            validatorIndex: validatorIndex
+        });
 
-            uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
+        uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
         
-            /**
-             * If the withdrawal's epoch comes after the validator's "withdrawable epoch," we know the validator
-             * has fully withdrawn, and we process this as a full withdrawal.
-             */
-            if (withdrawalProof.getWithdrawalEpoch() >= validatorFields.getWithdrawableEpoch()) {
-                return
-                    _processFullWithdrawal(
-                        validatorIndex,
-                        validatorPubkeyHash,
-                        withdrawalTimestamp,
-                        podOwner,
-                        withdrawalAmountGwei,
-                        _validatorPubkeyHashToInfo[validatorPubkeyHash]
-                    );
-            } else {
-                return
-                    _processPartialWithdrawal(
-                        validatorIndex,
-                        withdrawalTimestamp,
-                        podOwner,
-                        withdrawalAmountGwei
-                    );
-            }
+        /**
+         * If the withdrawal's epoch comes after the validator's "withdrawable epoch," we know the validator
+         * has fully withdrawn, and we process this as a full withdrawal.
+         */
+        if (withdrawalProof.getWithdrawalEpoch() >= validatorFields.getWithdrawableEpoch()) {
+            return
+                _processFullWithdrawal(
+                    validatorIndex,
+                    validatorPubkeyHash,
+                    withdrawalTimestamp,
+                    podOwner,
+                    withdrawalAmountGwei,
+                    _validatorPubkeyHashToInfo[validatorPubkeyHash]
+                );
+        } else {
+            return
+                _processPartialWithdrawal(
+                    validatorIndex,
+                    withdrawalTimestamp,
+                    podOwner,
+                    withdrawalAmountGwei
+                );
         }
     }
 
@@ -693,6 +693,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
+        // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
             VerifiedWithdrawal({
                 amountToSendGwei: uint256(partialWithdrawalAmountGwei),
