@@ -465,6 +465,12 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // register the operator with the IndexRegistry
         uint32[] memory numOperatorsPerQuorum = indexRegistry.registerOperator(operatorId, quorumNumbers);
 
+        uint256 quorumBitmapHistoryLength = _operatorIdToQuorumBitmapHistory[operatorId].length;
+        if(quorumBitmapHistoryLength != 0) {
+            // set the toBlockNumber of the previous quorum bitmap update
+            _operatorIdToQuorumBitmapHistory[operatorId][quorumBitmapHistoryLength - 1].nextUpdateBlockNumber = uint32(block.number);
+        }
+
         // set the operatorId to quorum bitmap history
         _operatorIdToQuorumBitmapHistory[operatorId].push(QuorumBitmapUpdate({
             updateBlockNumber: uint32(block.number),
@@ -473,10 +479,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         }));
 
         // set the operator struct
-        _operators[operator] = Operator({
-            operatorId: operatorId,
-            status: OperatorStatus.REGISTERED
-        });
+        if (_operators[operator].status != OperatorStatus.REGISTERED) {
+            // if the operator is not already registered, then they are registering for the first time
+            _operators[operator] = Operator({
+                operatorId: operatorId,
+                status: OperatorStatus.REGISTERED
+            });
+        }
 
         _afterRegisterOperator(operator, quorumNumbers);
 
