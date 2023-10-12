@@ -271,6 +271,14 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         );
         assertEq(registryCoordinator.getCurrentQuorumBitmapByOperatorId(defaultOperatorId), quorumBitmap);
         assertEq(
+            keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 0))), 
+            keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
+                quorumBitmap: uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers)),
+                updateBlockNumber: uint32(registrationBlockNumber),
+                nextUpdateBlockNumber: uint32(nextRegistrationBlockNumber)
+            })))
+        );
+        assertEq(
             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByOperatorIdByIndex(defaultOperatorId, 1))), 
             keccak256(abi.encode(IRegistryCoordinator.QuorumBitmapUpdate({
                 quorumBitmap: uint192(quorumBitmap),
