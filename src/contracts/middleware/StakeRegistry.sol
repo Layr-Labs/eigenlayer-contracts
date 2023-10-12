@@ -462,7 +462,8 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Finds the updated stake for `operator`, stores it and records the update.
+     * @notice Finds the updated stake for `operator` for `quorumNumber`, stores it, records the update,
+     * and returns both the previous stake then updated stake.
      * @dev **DOES NOT UPDATE `totalStake` IN ANY WAY** -- `totalStake` updates must be done elsewhere.
      */
     function _updateOperatorStake(
@@ -488,7 +489,10 @@ contract StakeRegistry is StakeRegistryStorage {
         return (stakeBeforeUpdate, operatorStakeUpdate.stake);
     }
 
-    /// @notice Records that `operatorId`'s current stake is now param @operatorStakeUpdate
+    /**
+     * @notice Records that `operatorId`'s current stake for `quorumNumber` is now param @operatorStakeUpdate
+     * and returns the previous stake.
+     */
     function _recordOperatorStakeUpdate(
         bytes32 operatorId,
         uint8 quorumNumber,
@@ -511,7 +515,7 @@ contract StakeRegistry is StakeRegistryStorage {
         return stakeBeforeUpdate;
     }
 
-    /// @notice Records that the `totalStake` is now equal to the input param @_totalStake
+    /// @notice Records that the `totalStake` for `quorumNumber` is now equal to the input param @_totalStake
     function _recordTotalStakeUpdate(uint8 quorumNumber, OperatorStakeUpdate memory _totalStake) internal {
         uint256 _totalStakeHistoryLength = _totalStakeHistory[quorumNumber].length;
         if (_totalStakeHistoryLength != 0) {
