@@ -273,7 +273,7 @@ For each strategy/share pair in the `Withdrawal`:
     * Shares are also delegated to the originator's Operator, rather than the `withdrawer's` Operator.
     * Shares received by the originator may be lower than the shares originally withdrawn if the originator has debt.
 * `EigenPodManager` withdrawals received as tokens:
-    * Before the withdrawal can be completed, the originator needs to prove that a withdrawal occured on the beacon chain (see [`EigenPod.verifyAndProcessWithdrawals`](./EigenPodManager.md#eigenpodverifyandprocesswithdrawals)).
+    * Before the withdrawal can be completed, the originator needs to prove that a withdrawal occurred on the beacon chain (see [`EigenPod.verifyAndProcessWithdrawals`](./EigenPodManager.md#eigenpodverifyandprocesswithdrawals)).
 
 *Effects*:
 * The hash of the `Withdrawal` is removed from the pending withdrawals
