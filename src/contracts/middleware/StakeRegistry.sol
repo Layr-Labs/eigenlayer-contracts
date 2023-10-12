@@ -412,7 +412,6 @@ contract StakeRegistry is StakeRegistryStorage {
      * stake updates. These operator's individual stake updates will have a 0 stake value for the latest update.
      */
     function _deregisterOperator(bytes32 operatorId, bytes memory quorumNumbers) internal {
-        // check the operator is deregistering from only valid quorums
         OperatorStakeUpdate memory _operatorStakeUpdate;
         // add the `updateBlockNumber` info
         _operatorStakeUpdate.updateBlockNumber = uint32(block.number);
