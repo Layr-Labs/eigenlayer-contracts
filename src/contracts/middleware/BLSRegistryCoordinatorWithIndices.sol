@@ -311,12 +311,13 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         // verify the churnApprover's signature
         _verifyChurnApproverSignatureOnOperatorChurnApproval(operatorIdsToSwap[0], operatorKickParams, signatureWithSaltAndExpiry);
 
+        uint256 operatorToKickParamsIndex = 0;
         // kick the operators
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             // check that the quorum has reached the max operator count
-            uint8 quorumNumber = uint8(quorumNumbers[i]);
-            OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
             {
+                uint8 quorumNumber = uint8(quorumNumbers[i]);
+                OperatorSetParam memory operatorSetParam = _quorumOperatorSetParams[quorumNumber];
                 // if the number of operators for the quorum is less than or equal to the max operator count, 
                 // then the quorum has not reached the max operator count
                 if(numOperatorsPerQuorum[i] <= operatorSetParam.maxOperatorCount) {
@@ -324,7 +325,7 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                 }
 
                 require(
-                    operatorKickParams[i].quorumNumber == quorumNumber, 
+                    operatorKickParams[operatorToKickParamsIndex].quorumNumber == quorumNumber, 
                     "BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: quorumNumber not the same as signed"
                 );
 
@@ -345,6 +346,9 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
                     operatorToKickStake < totalStakeForQuorum * operatorSetParam.kickBIPsOfTotalStake / BIPS_DENOMINATOR,
                     "BLSRegistryCoordinatorWithIndices.registerOperatorWithCoordinator: operator to kick has more than kickBIPSOfTotalStake"
                 );
+
+                // increment the operatorToKickParamsIndex
+                operatorToKickParamsIndex++;
             }
             
             // kick the operator
