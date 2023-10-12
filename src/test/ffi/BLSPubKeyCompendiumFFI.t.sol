@@ -36,7 +36,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
     function _setKeys(uint256 _privKey) internal {
         privKey = _privKey;
         pubKeyG1 = BN254.generatorG1().scalar_mul(_privKey);
-        pubKeyG2 = G2Operations.mul(_privKey);
+        pubKeyG2 = G2Operations.mulGen(_privKey);
     }
 
     function _signMessage(address signer) internal view returns(BN254.G1Point memory) {
