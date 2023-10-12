@@ -63,6 +63,13 @@ interface IStakeRegistry is IRegistry {
     /// @notice In order to register for a quorum i, an operator must have at least `minimumStakeForQuorum[i]`
     function minimumStakeForQuorum(uint256 quorumNumber) external view returns (uint96);
 
+    /**
+     * @notice Returns the entire `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
+     * @param operatorId The id of the operator of interest.
+     * @param quorumNumber The quorum number to get the stake for.
+     */
+    function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory);
+
     function getLengthOfTotalStakeHistoryForQuorum(uint8 quorumNumber) external view returns (uint256);
 
     /**

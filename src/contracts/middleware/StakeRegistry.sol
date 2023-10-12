@@ -70,6 +70,15 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
+     * @notice Returns the entire `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
+     * @param operatorId The id of the operator of interest.
+     * @param quorumNumber The quorum number to get the stake for.
+     */
+    function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {
+        return operatorIdToStakeHistory[operatorId][quorumNumber];
+    }
+
+    /**
      * @notice Returns the `index`-th entry in the `operatorIdToStakeHistory[operatorId][quorumNumber]` array.
      * @param quorumNumber The quorum number to get the stake for.
      * @param operatorId The id of the operator of interest.

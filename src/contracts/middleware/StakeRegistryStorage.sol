@@ -23,7 +23,7 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     OperatorStakeUpdate[][256] internal _totalStakeHistory;
 
     /// @notice mapping from operator's operatorId to the history of their stake updates
-    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) public operatorIdToStakeHistory;
+    mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorIdToStakeHistory;
 
     constructor(
         IRegistryCoordinator _registryCoordinator,
