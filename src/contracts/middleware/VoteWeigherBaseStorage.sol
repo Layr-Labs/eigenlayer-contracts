@@ -45,12 +45,6 @@ abstract contract VoteWeigherBaseStorage is Initializable, IVoteWeigher {
      */
     mapping(uint8 => StrategyAndWeightingMultiplier[]) public strategiesConsideredAndMultipliers;
 
-    /**
-     * @notice This defines the earnings split between different quorums. Mapping is quorumNumber => BIPS which the quorum earns, out of the total earnings.
-     * @dev The sum of all entries, i.e. sum(quorumBips[0] through quorumBips[NUMBER_OF_QUORUMS - 1]) should *always* be 10,000!
-     */
-    mapping(uint8 => uint256) public quorumBips;
-
     constructor(
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager

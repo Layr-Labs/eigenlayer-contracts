@@ -59,12 +59,6 @@ interface IVoteWeigher {
     /// @notice Number of quorums that are being used by the middleware.
     function quorumCount() external view returns (uint16);
 
-    /**
-     * @notice This defines the earnings split between different quorums. Mapping is quorumNumber => BIPS which the quorum earns, out of the total earnings.
-     * @dev The sum of all entries, i.e. sum(quorumBips[0] through quorumBips[NUMBER_OF_QUORUMS - 1]) should *always* be 10,000!
-     */
-    function quorumBips(uint8 quorumNumber) external view returns (uint256);
-
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
     function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (StrategyAndWeightingMultiplier memory);
 
