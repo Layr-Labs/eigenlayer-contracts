@@ -44,9 +44,9 @@ interface IEigenPod {
      */
     struct VerifiedWithdrawal {
         // amount to send to a podOwner from a proven withdrawal
-        uint256 amountToSend;
+        uint256 amountToSendGwei;
         // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
-        int256 sharesDelta;
+        int256 sharesDeltaGwei;
     }
 
 
