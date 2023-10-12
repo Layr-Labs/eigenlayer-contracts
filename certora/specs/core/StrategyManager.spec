@@ -36,6 +36,10 @@ methods {
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
+    // external calls to Strategy contracts
+    function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+    function _.deposit(address,uint256) external => DISPATCHER(true);
+
     // external calls to ERC20
     function _.balanceOf(address) external => DISPATCHER(true);
     function _.transfer(address, uint256) external => DISPATCHER(true);
@@ -50,6 +54,7 @@ methods {
 
     //// Harnessed Functions
     // Harnessed calls
+    function _.totalShares() external => DISPATCHER(true);
     // Harnessed getters
     function strategy_is_in_stakers_array(address, address) external returns (bool) envfree;
     function num_times_strategy_is_in_stakers_array(address, address) external returns (uint256) envfree;
@@ -141,8 +146,19 @@ rule safeApprovalUse(address user) {
     uint256 tokenBalanceBefore = token.balanceOf(user);
     method f;
     env e;
-    calldataarg args;
-    f(e,args);
+    // special case logic, to handle an edge case
+    if (f.selector == sig:withdrawSharesAsTokens(address,address,uint256,address).selector) {
+        address recipient;
+        address strategy;
+        uint256 shares;
+        // filter out case where the 'user' is the strategy itself
+        require(user != strategy);
+        withdrawSharesAsTokens(e, recipient, strategy, shares, token);
+    // otherwise just perform an arbitrary function call
+    } else {
+        calldataarg args;
+        f(e,args);
+    }
     uint256 tokenBalanceAfter = token.balanceOf(user);
     if (tokenBalanceAfter < tokenBalanceBefore) {
         assert(e.msg.sender == user, "unsafeApprovalUse?");
