@@ -266,6 +266,7 @@ For the validator whose balance should be updated, the caller must supply:
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE`
+* If the validator is withdrawable (withdrawable epoch is set), balance being proven MUST NOT be zero
 * `oracleTimestamp`:
     * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
     * MUST be newer than the validator's `mostRecentBalanceUpdateTimestamp`
@@ -451,8 +452,8 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
     * The validator in question is recorded as having a proven withdrawal at the timestamp given by `withdrawalProof.timestampRoot`
         * This is to prevent the same withdrawal from being proven twice
     * If this is a full withdrawal:
-        * Any withdrawal amount in excess of `_calculateRestakedBalanceGwei(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
-            * The remainder must be withdrawn through the `DelegationManager's` withdrawal flow, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
+        * Any withdrawal amount in excess of `MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
+            * The remainder (`MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`) must be withdrawn through the `DelegationManager's` withdrawal flow, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
         * If the amount being withdrawn is not equal to the current accounted-for validator balance, a `shareDelta` is calculated to be sent to ([`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)).
         * The validator's info is updated to reflect its `WITHDRAWN` status:
             * `restakedBalanceGwei` is set to 0
@@ -578,6 +579,7 @@ Withdrawing any future ETH sent via beacon chain withdrawal to the `EigenPod` re
 
 *Effects*:
 * Sets `hasRestaked = true`
+* Sets the pod's `nonBeaconChainETHBalanceWei` to 0 (only incremented in the fallback function)
 * Updates the pod's most recent withdrawal timestamp to the current time
 * See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
@@ -603,6 +605,8 @@ Note: This method is only callable on pods deployed before M2. After M2, restaki
 Allows the Pod Owner to withdraw any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, assuming restaking has not yet been activated. See [`EigenPod.activateRestaking`](#eigenpodactivaterestaking) for more details.
 
 *Effects*:
+* Sets the pod's `nonBeaconChainETHBalanceWei` to 0 (only incremented in the fallback function)
+* Updates the pod's most recent withdrawal timestamp to the current time
 * See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
 *Requirements*:
