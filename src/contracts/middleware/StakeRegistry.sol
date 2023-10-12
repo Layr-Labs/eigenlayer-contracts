@@ -114,7 +114,12 @@ contract StakeRegistry is StakeRegistryStorage {
         return _getStakeUpdateIndexForOperatorIdForQuorumAtBlockNumber(operatorId, quorumNumber, blockNumber);
     }
 
-    /// @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+    /**
+     * @notice Returns the indices of the total stakes for the provided `quorumNumbers` at the given `blockNumber`
+     * @param blockNumber Block number to retrieve the stake indices from.
+     * @param quorumNumbers The quorum numbers to get the stake indices for.
+     * @dev Function will revert if there are no indices for the given `blockNumber`
+     */
     function getTotalStakeIndicesByQuorumNumbersAtBlockNumber(
         uint32 blockNumber,
         bytes calldata quorumNumbers
@@ -122,6 +127,10 @@ contract StakeRegistry is StakeRegistryStorage {
         uint32[] memory indices = new uint32[](quorumNumbers.length);
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             uint8 quorumNumber = uint8(quorumNumbers[i]);
+            require(
+                _totalStakeHistory[quorumNumber][0].updateBlockNumber <= blockNumber,
+                "StakeRegistry.getTotalStakeIndicesByQuorumNumbersAtBlockNumber: quorum has no stake history at blockNumber"
+            );
             uint32 length = uint32(_totalStakeHistory[quorumNumber].length);
             for (uint32 j = 0; j < length; j++) {
                 if (_totalStakeHistory[quorumNumber][length - j - 1].updateBlockNumber <= blockNumber) {
