@@ -53,7 +53,7 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
 
 #### Important Definitions
 
-* "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangably in this document.
+* "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangeably in this document.
     * Pod Owners can only deploy a single `EigenPod`, but can restake any number of beacon chain validators from the same `EigenPod`.
     * Pod Owners can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
     * These shares correspond to the amount of provably-restaked beacon chain ETH held by the Pod Owner via their `EigenPod`.
@@ -435,7 +435,7 @@ function verifyAndProcessWithdrawals(
 Anyone (not just the Pod Owner) can call this method to prove that one or more validators associated with an `EigenPod` have performed a full or partial withdrawal from the beacon chain. 
 
 Whether each withdrawal is a full or partial withdrawal is determined by the validator's "withdrawable epoch" in the `Validator` container given by `validatorFields` (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator)). If the withdrawal proof timestamp is after this epoch, the withdrawal is a full withdrawal.
-* Partial withdrawals are performed automatically by the beacon chain when a validator has an effective balance over 32 ETH. This method can be used to prove that these withdrawals occured, allowing the Pod Owner to withdraw the excess ETH (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)).
+* Partial withdrawals are performed automatically by the beacon chain when a validator has an effective balance over 32 ETH. This method can be used to prove that these withdrawals occurred, allowing the Pod Owner to withdraw the excess ETH (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)).
 * Full withdrawals are performed when a Pod Owner decides to fully exit a validator from the beacon chain. To do this, the Pod Owner should follow these steps: 
     1. Undelegate or queue a withdrawal (via the `DelegationManager`: ["Undelegating and Withdrawing"](./DelegationManager.md#undelegating-and-withdrawing))
     2. Exit their validator from the beacon chain and provide a proof to this method

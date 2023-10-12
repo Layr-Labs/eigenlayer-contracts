@@ -241,7 +241,7 @@ abstract contract RegistryBase is VoteWeigherBase, IQuorumRegistry {
     ) external view returns (bool) {
         // fetch the `operator`'s pubkey hash
         bytes32 pubkeyHash = registry[operator].pubkeyHash;
-        // special case for `pubkeyHashToStakeHistory[pubkeyHash]` having lenght zero -- in which case we know the operator was never registered
+        // special case for `pubkeyHashToStakeHistory[pubkeyHash]` having length zero -- in which case we know the operator was never registered
         if (pubkeyHashToStakeHistory[pubkeyHash].length == 0) {
             return true;
         }
