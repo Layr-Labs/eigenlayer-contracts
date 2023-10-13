@@ -123,7 +123,7 @@ abstract contract BLSSignatureChecker {
      * calldataload - this implementation saves us one ecAdd operation, which would be performed in the i=0 iteration otherwise.
      * Within the loop, each non-signer public key is loaded from the calldata into memory.  The most recent staking-related information is retrieved and is subtracted
      * from the total stake of validators in the quorum.  Then the aggregate public key and the aggregate non-signer public key is subtracted from it.
-     * Finally  the siganture is verified by computing the elliptic curve pairing.
+     * Finally  the signature is verified by computing the elliptic curve pairing.
      */
     function checkSignatures(
         bytes calldata data

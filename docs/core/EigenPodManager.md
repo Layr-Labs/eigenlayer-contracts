@@ -53,7 +53,7 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
 
 #### Important Definitions
 
-* "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangably in this document.
+* "Pod Owner": A Staker who has deployed an `EigenPod` is a Pod Owner. The terms are used interchangeably in this document.
     * Pod Owners can only deploy a single `EigenPod`, but can restake any number of beacon chain validators from the same `EigenPod`.
     * Pod Owners can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
     * These shares correspond to the amount of provably-restaked beacon chain ETH held by the Pod Owner via their `EigenPod`.
@@ -266,6 +266,8 @@ For the validator whose balance should be updated, the caller must supply:
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE`
+* Balance updates should only be made before a validator has fully exited. If the validator has exited, any further proofs should follow the `verifyAndProcessWithdrawals` path.
+    * This is to prevent someone providing a "balance update" on an exited validator that "proves" a balance of 0, when we want to process that update as a withdrawal instead.
 * `oracleTimestamp`:
     * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
     * MUST be newer than the validator's `mostRecentBalanceUpdateTimestamp`
@@ -435,7 +437,7 @@ function verifyAndProcessWithdrawals(
 Anyone (not just the Pod Owner) can call this method to prove that one or more validators associated with an `EigenPod` have performed a full or partial withdrawal from the beacon chain. 
 
 Whether each withdrawal is a full or partial withdrawal is determined by the validator's "withdrawable epoch" in the `Validator` container given by `validatorFields` (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator)). If the withdrawal proof timestamp is after this epoch, the withdrawal is a full withdrawal.
-* Partial withdrawals are performed automatically by the beacon chain when a validator has an effective balance over 32 ETH. This method can be used to prove that these withdrawals occured, allowing the Pod Owner to withdraw the excess ETH (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)).
+* Partial withdrawals are performed automatically by the beacon chain when a validator has an effective balance over 32 ETH. This method can be used to prove that these withdrawals occurred, allowing the Pod Owner to withdraw the excess ETH (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)).
 * Full withdrawals are performed when a Pod Owner decides to fully exit a validator from the beacon chain. To do this, the Pod Owner should follow these steps: 
     1. Undelegate or queue a withdrawal (via the `DelegationManager`: ["Undelegating and Withdrawing"](./DelegationManager.md#undelegating-and-withdrawing))
     2. Exit their validator from the beacon chain and provide a proof to this method
@@ -451,8 +453,8 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
     * The validator in question is recorded as having a proven withdrawal at the timestamp given by `withdrawalProof.timestampRoot`
         * This is to prevent the same withdrawal from being proven twice
     * If this is a full withdrawal:
-        * Any withdrawal amount in excess of `_calculateRestakedBalanceGwei(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
-            * The remainder must be withdrawn through the `DelegationManager's` withdrawal flow, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
+        * Any withdrawal amount in excess of `MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
+            * The remainder (`MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`) must be withdrawn through the `DelegationManager's` withdrawal flow, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
         * If the amount being withdrawn is not equal to the current accounted-for validator balance, a `shareDelta` is calculated to be sent to ([`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)).
         * The validator's info is updated to reflect its `WITHDRAWN` status:
             * `restakedBalanceGwei` is set to 0
@@ -578,6 +580,7 @@ Withdrawing any future ETH sent via beacon chain withdrawal to the `EigenPod` re
 
 *Effects*:
 * Sets `hasRestaked = true`
+* Sets the pod's `nonBeaconChainETHBalanceWei` to 0 (only incremented in the fallback function)
 * Updates the pod's most recent withdrawal timestamp to the current time
 * See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
@@ -603,6 +606,8 @@ Note: This method is only callable on pods deployed before M2. After M2, restaki
 Allows the Pod Owner to withdraw any ETH in the `EigenPod` via the `DelayedWithdrawalRouter`, assuming restaking has not yet been activated. See [`EigenPod.activateRestaking`](#eigenpodactivaterestaking) for more details.
 
 *Effects*:
+* Sets the pod's `nonBeaconChainETHBalanceWei` to 0 (only incremented in the fallback function)
+* Updates the pod's most recent withdrawal timestamp to the current time
 * See [DelayedWithdrawalRouter.createDelayedWithdrawal](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
 *Requirements*:

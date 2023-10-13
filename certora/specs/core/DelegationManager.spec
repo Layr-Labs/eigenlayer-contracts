@@ -32,6 +32,15 @@ methods {
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
 
+    // external calls to Strategy contracts
+    function _.withdraw(address,address,uint256) external => DISPATCHER(true);
+    function _.deposit(address,uint256) external => DISPATCHER(true);
+
+    // external calls to ERC20
+    function _.balanceOf(address) external => DISPATCHER(true);
+    function _.transfer(address, uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
+
     // external calls to ERC1271 (can import OpenZeppelin mock implementation)
     // isValidSignature(bytes32 hash, bytes memory signature) returns (bytes4 magicValue) => DISPATCHER(true)
     function _.isValidSignature(bytes32, bytes) external => DISPATCHER(true);
@@ -39,6 +48,7 @@ methods {
     //// Harnessed Functions
     // Harnessed getters
     function get_operatorShares(address,address) external returns (uint256) envfree;
+    function get_stakerDelegateableShares(address,address) external returns (uint256) envfree;
 
     //envfree functions
     function delegatedTo(address staker) external returns (address) envfree;
@@ -203,6 +213,47 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
         assert (!isDelegated(staker), "staker became delegated through inappropriate function call");
     }
 }
+
+rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, address strategy) {
+    requireInvariant operatorsAlwaysDelegatedToSelf(operator);
+    // filter out zero address (not a valid operator)
+    require(operator != 0);
+    // assume the staker begins as undelegated
+    require(!isDelegated(staker));
+    mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
+    mathint operatorSharesBefore = get_operatorShares(operator, strategy);
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg arg;
+    mathint operatorSharesAfter = get_operatorShares(operator, strategy);
+    if (delegatedTo(staker) == operator) {
+        assert(operatorSharesAfter == operatorSharesBefore + stakerDelegateableSharesInStrategy, "operator shares did not increase appropriately");
+    } else {
+        assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
+    }
+}
+
+rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address staker, address strategy) {
+    requireInvariant operatorsAlwaysDelegatedToSelf(operator);
+    // filter out zero address (not a valid operator)
+    require(operator != 0);
+    // assume the staker begins as delegated to the operator
+    require(delegatedTo(staker) == operator);
+    mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
+    mathint operatorSharesBefore = get_operatorShares(operator, strategy);
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg arg;
+    mathint operatorSharesAfter = get_operatorShares(operator, strategy);
+    if (!isDelegated(staker)) {
+        assert(operatorSharesAfter == operatorSharesBefore - stakerDelegateableSharesInStrategy, "operator shares did not decrease appropriately");
+    } else {
+        assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
+    }
+}
+
 
 /*
 rule batchEquivalence {
