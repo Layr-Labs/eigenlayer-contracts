@@ -60,7 +60,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             1e3,
             IMaxDepositAmount(address(cbETHStrategy)).maxTotalDeposits() - cbETH.balanceOf(address(cbETHStrategy))
         );
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount < depositAmount);
+        withdrawalAmount = bound(withdrawalAmount, 1, cbETHStrategy.underlyingToShares(depositAmount));
 
         // Deal tokens
         deal(address(cbETH), address(this), depositAmount);

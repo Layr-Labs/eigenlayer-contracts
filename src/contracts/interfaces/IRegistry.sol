@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IRegistryCoordinator.sol";
+
 /**
  * @title Minimal interface for a `Registry`-type contract.
  * @author Layr Labs, Inc.
@@ -9,6 +11,5 @@ pragma solidity >=0.5.0;
  * because their function signatures may vary significantly.
  */
 interface IRegistry {
-    /// @notice Returns 'true' if `operator` is registered as an active operator, and 'false' otherwise.
-    function isActiveOperator(address operator) external view returns (bool);
+    function registryCoordinator() external view returns (IRegistryCoordinator);
 }
