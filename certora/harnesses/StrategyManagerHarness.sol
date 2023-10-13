@@ -49,6 +49,10 @@ contract StrategyManagerHarness is StrategyManager {
     }
 
     function totalShares(address strategy) public view returns (uint256) {
-        return  IStrategy(strategy).totalShares();
+        return IStrategy(strategy).totalShares();
+    }
+
+    function get_stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
+        return stakerStrategyShares[staker][strategy];
     }
 }

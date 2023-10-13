@@ -59,6 +59,7 @@ methods {
     function strategy_is_in_stakers_array(address, address) external returns (bool) envfree;
     function num_times_strategy_is_in_stakers_array(address, address) external returns (uint256) envfree;
     function totalShares(address) external returns (uint256) envfree;
+    function get_stakerStrategyShares(address, address) external returns (uint256) envfree;
 
 	//// Normal Functions
 	function stakerStrategyListLength(address) external returns (uint256) envfree;
@@ -113,29 +114,29 @@ rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, addre
     assert(sharesAfter < sharesBefore => methodCanDecreaseShares(f));
 }
 
-// based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
-ghost mapping(address => mathint) sumOfSharesInStrategy {
-  init_state axiom forall address strategy. sumOfSharesInStrategy[strategy] == 0;
-}
-
-hook Sstore stakerStrategyShares[KEY address staker][KEY address strategy] uint256 newValue (uint256 oldValue) STORAGE {
-    sumOfSharesInStrategy[strategy] = sumOfSharesInStrategy[strategy] + newValue - oldValue;
-}
-
 /**
-* Verifies that the `totalShares` returned by an Strategy is always greater than or equal to the sum of shares in the `stakerStrategyShares`
-* mapping -- specifically, that `strategy.totalShares() >= sum_over_all_stakers(stakerStrategyShares[staker][strategy])`
-* We cannot show strict equality here, since the withdrawal process first decreases a staker's shares (when `queueWithdrawal` is called) and
-* only later is `totalShares` decremented (when `completeQueuedWithdrawal` is called).
+* Verifies that the `totalShares` returned by an Strategy increases appropriately when new Strategy shares are issued by the StrategyManager
+* contract (specifically as a result of a call to `StrategyManager.depositIntoStrategy` or `StrategyManager.depositIntoStrategyWithSignature`).
+* This rule excludes the `addShares` and `removeShares` functions, since these are called only by the DelegationManager, and do not
+* "create new shares", but rather represent existing shares being "moved into a withdrawal".
 */
-invariant totalSharesGeqSumOfShares(address strategy)
-    to_mathint(totalShares(strategy)) >= sumOfSharesInStrategy[strategy]
-    // preserved block since does not apply for 'beaconChainETH'
-    { preserved {
-        // 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0 converted to decimal (this is the address of the virtual 'beaconChainETH' strategy)
-        // require strategy != beaconChainETHStrategy();
-        require strategy != 1088545275507480024404324736574744392984337050304;
-    } }
+rule newSharesIncreaseTotalShares(address strategy) {
+    method f;
+    env e;
+    uint256 stakerStrategySharesBefore = get_stakerStrategyShares(e.msg.sender, strategy);
+    uint256 totalSharesBefore = totalShares(strategy);
+    if (
+        f.selector == sig:addShares(address, address, uint256).selector
+        || f.selector == sig:removeShares(address, address, uint256).selector
+    ) {
+        uint256 totalSharesAfter = totalShares(strategy);
+        assert(totalSharesAfter == totalSharesBefore, "total shares changed unexpectedly");
+    } else {
+        uint256 stakerStrategySharesAfter = get_stakerStrategyShares(e.msg.sender, strategy);
+        uint256 totalSharesAfter = totalShares(strategy);
+        assert(stakerStrategySharesAfter - stakerStrategySharesBefore == totalSharesAfter - totalSharesBefore, "diffs don't match");
+    }
+}
 
 /**
  * Verifies that ERC20 tokens are transferred out of the account only of the msg.sender.
