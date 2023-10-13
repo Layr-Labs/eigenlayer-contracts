@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
-import "./IStrategyManager.sol";
 import "./IEigenPodManager.sol";
 import "./ISlasher.sol";
 
@@ -307,6 +306,10 @@ interface IDelegationManager {
         IStrategy strategy,
         uint256 shares
     ) external;
+
+    function slasher() external view returns (ISlasher);
+
+    function eigenPodManager() external view returns (IEigenPodManager);
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

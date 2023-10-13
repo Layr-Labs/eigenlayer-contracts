@@ -79,7 +79,7 @@ contract M2Deploy is Script, Test {
 
         // store pre-upgrade values to check against later
         strategyWhitelister = strategyManager.strategyWhitelister();
-        withdrawalDelayBlocks = strategyManager.withdrawalDelayBlocks();
+        // withdrawalDelayBlocks = strategyManager.withdrawalDelayBlocks();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
         maxPods = eigenPodManager.maxPods();
@@ -170,7 +170,7 @@ contract M2Deploy is Script, Test {
         require(strategyManager.eigenPodManager() == eigenPodManager, "strategyManager.eigenPodManager incorrect");
         require(strategyManager.slasher() == slasher, "strategyManager.slasher incorrect");
         require(strategyManager.strategyWhitelister() == strategyWhitelister, "strategyManager.strategyWhitelister incorrect");
-        require(strategyManager.withdrawalDelayBlocks() == withdrawalDelayBlocks, "strategyManager.withdrawalDelayBlocks incorrect");
+        // require(strategyManager.withdrawalDelayBlocks() == withdrawalDelayBlocks, "strategyManager.withdrawalDelayBlocks incorrect");
 
         require(delegation.domainSeparator() == delegationManagerDomainSeparator, "delegation.domainSeparator incorrect");
         require(delegation.slasher() == slasher, "delegation.slasher incorrect");
@@ -186,7 +186,7 @@ contract M2Deploy is Script, Test {
         require(eigenPodManager.delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        StrategyManager(address(strategyManager)).initialize(address(this), address(this), PauserRegistry(address(this)), 0, 0);
+        StrategyManager(address(strategyManager)).initialize(address(this), address(this), PauserRegistry(address(this)), 0);
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         DelegationManager(address(delegation)).initialize(address(this), PauserRegistry(address(this)), 0);

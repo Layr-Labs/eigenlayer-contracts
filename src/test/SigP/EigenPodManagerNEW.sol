@@ -60,6 +60,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
     IBeaconChainOracle public beaconChainOracle;
+
+    IDelegationManager public immutable delegationManager;
     
     /// @notice Pod owner to the amount of penalties they have paid that are still in this contract
     mapping(address => uint256) public podOwnerToUnwithdrawnPaidPenalties;
@@ -77,13 +79,13 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         _;
     }
 
-    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IStrategyManager _strategyManager, ISlasher _slasher) {
+    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IStrategyManager _strategyManager, ISlasher _slasher, IDelegationManager _delegationManager) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
         slasher = _slasher;
+        delegationManager = _delegationManager;
         _disableInitializers();
-        
     }
 
     function initialize(IBeaconChainOracle _beaconChainOracle, address initialOwner) public initializer {
@@ -216,4 +218,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 
     function beaconChainETHStrategy() external view returns (IStrategy){}
+
+    function numPods() external view returns (uint256) {}
+
+    function maxPods() external view returns (uint256) {}
 }
