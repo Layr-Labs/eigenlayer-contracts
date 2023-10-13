@@ -14,7 +14,7 @@ import "../mocks/ERC20Mock.sol";
 import "../mocks/Reenterer.sol";
 import "../Delegation.t.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "src/contracts/core/StrategyManager.sol";
+import "src/contracts/core/DelegationManager.sol";
 
 contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyManagerMock strategyManagerMock;
@@ -95,13 +95,13 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     /// @notice Emitted when a queued withdrawal is completed
     event WithdrawalCompleted(bytes32 withdrawalRoot);
 
-    /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
+    /// @notice Emitted when a queued withdrawal is *migrated* from the DelegationManager.to the DelegationManager
     event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
 
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
-    /// StrategyManager Events
+    /// DelegationManager.Events
 
     /**
      * @notice Emitted when a new deposit occurs on behalf of `depositor`.
@@ -154,7 +154,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                     address(strategyManagerImplementation),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
-                        StrategyManager.initialize.selector,
+                        DelegationManager.initialize.selector,
                         initialOwner,
                         initialOwner,
                         eigenLayerPauserReg,
@@ -1414,19 +1414,19 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
     }
 
-    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    // @notice Verifies that `DelegationManager.increaseDelegatedShares` reverts if not called by the DelegationManager.nor EigenPodManager
     function testCannotCallIncreaseDelegatedSharesFromNonPermissionedAddress(
         address operator,
         uint256 shares
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
+        cheats.expectRevert(bytes("DelegationManager: onlyDelegationManager.rEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
 
-    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the StrategyManager nor EigenPodManager
+    // @notice Verifies that `DelegationManager.decreaseDelegatedShares` reverts if not called by the DelegationManager.nor EigenPodManager
     function testCannotCallDecreaseDelegatedSharesFromNonPermissionedAddress(
         address operator,
         IStrategy strategy,
@@ -1434,7 +1434,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
+        cheats.expectRevert(bytes("DelegationManager: onlyDelegationManager.rEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
@@ -1541,7 +1541,263 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    // special event purely used in the StrategyManagerMock contract, inside of `undelegate` function to verify that the correct call is made
+    function testQueueWithdrawalFullyWithdraw(uint256 amount) external {
+        address staker = address(this);
+        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        // deposit and withdraw the same amount
+        testQueueWithdrawal_ToSelf(amount, amount);
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IERC20[] memory tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        {
+            strategyArray[0] = _tempStrategyStorage;
+            shareAmounts[0] = amount;
+            tokensArray[0] = address(420);
+            // tokensArray[0] = mockToken;
+        }
+
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
+
+        {
+            uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
+
+            queuedWithdrawal = IDelegationManager.Withdrawal({
+                strategies: strategyArray,
+                shares: shareAmounts,
+                depositor: staker,
+                nonce: nonce,
+                withdrawalStartBlock: uint32(block.number),
+                delegatedAddress: strategyManager.delegation().delegatedTo(staker)
+            });
+        }
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
+        uint256 balanceBefore = mockToken.balanceOf(address(staker));
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
+        strategyManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            /*middlewareTimesIndex*/ 0,
+            /*receiveAsTokens*/ true
+        );
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
+        uint256 balanceAfter = mockToken.balanceOf(address(staker));
+
+        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
+        require(balanceAfter == balanceBefore + amount, "balanceAfter != balanceBefore + withdrawalAmount");
+        require(
+            !_isDepositedStrategy(staker, strategyArray[0]),
+            "Strategy still part of staker's deposited strategies"
+        );
+        require(sharesAfter == 0, "staker shares is not 0");
+    }
+
+    function testQueueWithdrawalRevertsWhenStakerFrozen(uint256 depositAmount, uint256 withdrawalAmount) public {
+        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
+        address staker = address(this);
+        IStrategy strategy = strategyMock;
+        IERC20 token = mockToken;
+
+        testDepositIntoStrategySuccessfully(staker, depositAmount);
+
+        (
+            IDelegationManager.Withdrawal memory queuedWithdrawal /*IERC20[] memory tokensArray*/,
+            ,
+            bytes32 withdrawalRoot
+        ) = _setUpQueuedWithdrawalStructSingleStrat(staker, /*withdrawer*/ staker, token, strategy, withdrawalAmount);
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
+
+        require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+
+        // freeze the staker
+        slasherMock.freezeOperator(staker);
+
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+        cheats.expectRevert(
+            bytes("DelegationManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
+        );
+        strategyManager.queueWithdrawal(
+            strategyIndexes,
+            queuedWithdrawal.strategies,
+            queuedWithdrawal.shares,
+            /*withdrawer*/ staker
+        );
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
+        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(address(this));
+
+        require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is true!");
+        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
+        require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
+    }
+
+    function testCompleteQueuedWithdrawal_ReceiveAsTokensMarkedTrue(
+        uint256 depositAmount,
+        uint256 withdrawalAmount
+    ) external {
+        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
+        address staker = address(this);
+        _tempStrategyStorage = strategyMock;
+
+        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
+
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IERC20[] memory tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        {
+            strategyArray[0] = _tempStrategyStorage;
+            shareAmounts[0] = withdrawalAmount;
+            tokensArray[0] = mockToken;
+        }
+
+        uint256[] memory strategyIndexes = new uint256[](1);
+        strategyIndexes[0] = 0;
+
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
+
+        {
+            uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
+
+            queuedWithdrawal = IDelegationManager.Withdrawal({
+                strategies: strategyArray,
+                shares: shareAmounts,
+                staker: staker,
+                withdrawer: staker,
+                nonce: (nonce - 1),
+                startBlock: uint32(block.number),
+                delegatedTo: strategyManager.delegation().delegatedTo(staker)
+            });
+        }
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
+        uint256 balanceBefore = mockToken.balanceOf(address(staker));
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalCompleted(
+            queuedWithdrawal.depositor,
+            queuedWithdrawal.withdrawerAndNonce.nonce,
+            queuedWithdrawal.withdrawerAndNonce.withdrawer,
+            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
+        );
+        strategyManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            /*middlewareTimesIndex*/ 0,
+            /*receiveAsTokens*/ true
+        );
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
+        uint256 balanceAfter = mockToken.balanceOf(address(staker));
+
+        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
+        require(balanceAfter == balanceBefore + withdrawalAmount, "balanceAfter != balanceBefore + withdrawalAmount");
+        if (depositAmount == withdrawalAmount) {
+            // Since receiving tokens instead of shares, if withdrawal amount is entire deposit, then strategy will be removed
+            // with sharesAfter being 0
+            require(
+                !_isDepositedStrategy(staker, _tempStrategyStorage),
+                "Strategy still part of staker's deposited strategies"
+            );
+            require(sharesAfter == 0, "staker shares is not 0");
+        }
+    }
+
+    function testCompleteQueuedWithdrawalWithNonzeroWithdrawalDelayBlocks(
+        uint256 depositAmount,
+        uint256 withdrawalAmount,
+        uint16 valueToSet
+    ) external {
+        // filter fuzzed inputs to allowed *and nonzero* amounts
+        cheats.assume(valueToSet <= strategyManager.MAX_WITHDRAWAL_DELAY_BLOCKS() && valueToSet != 0);
+        cheats.assume(depositAmount != 0 && withdrawalAmount != 0);
+        cheats.assume(depositAmount >= withdrawalAmount);
+        address staker = address(this);
+
+        (
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
+            IERC20[] memory tokensArray /*bytes32 withdrawalRoot*/,
+
+        ) = testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
+
+        cheats.expectRevert(
+            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
+        );
+        delegationManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+
+        // set the `withdrawalDelayBlocks` variable
+        cheats.startPrank(strategyManager.owner());
+        uint256 previousValue = strategyManager.withdrawalDelayBlocks();
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit WithdrawalDelayBlocksSet(previousValue, valueToSet);
+        strategyManager.setWithdrawalDelayBlocks(valueToSet);
+        cheats.stopPrank();
+        require(
+            strategyManager.withdrawalDelayBlocks() == valueToSet,
+            "strategyManager.withdrawalDelayBlocks() != valueToSet"
+        );
+
+        cheats.expectRevert(
+            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
+        );
+        delegationManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(address(this), strategyMock);
+        uint256 balanceBefore = mockToken.balanceOf(address(staker));
+
+        // roll block number forward to one block before the withdrawal should be completeable and attempt again
+        uint256 originalBlockNumber = block.number;
+        cheats.roll(originalBlockNumber + valueToSet - 1);
+        cheats.expectRevert(
+            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
+        );
+        delegationManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+
+        // roll block number forward to the block at which the withdrawal should be completeable, and complete it
+        cheats.roll(originalBlockNumber + valueToSet);
+        delegationManager.completeQueuedWithdrawal(
+            queuedWithdrawal,
+            tokensArray,
+            middlewareTimesIndex,
+            receiveAsTokens
+        );
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategyMock);
+        uint256 balanceAfter = mockToken.balanceOf(address(staker));
+
+        require(sharesAfter == sharesBefore + withdrawalAmount, "sharesAfter != sharesBefore + withdrawalAmount");
+        require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
+    }
+
+    // special event purely used in the DelegationManager.ock contract, inside of `undelegate` function to verify that the correct call is made
     event ForceTotalWithdrawalCalled(address staker);
 
     /**
@@ -1572,7 +1828,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // call the `undelegate` function
         cheats.startPrank(caller);
-        // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
+        // check that the correct calldata is forwarded by looking for an event emitted by the DelegationManager.ock contract
         if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
             // don't check any parameters other than event type
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
@@ -1744,7 +2000,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     /**************************************
      *
-     *  Withdrawals Tests with StrategyManager, using actual SM contract instead of Mock to test
+     *  Withdrawals Tests with DelegationManager. using actual SM contract instead of Mock to test
      *
      **************************************/
 
@@ -1937,7 +2193,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256 withdrawalAmount
     ) external {
         cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-        // replace dummyStrat with Reenterer contract
+        // replace strategyMock with Reenterer contract
         reenterer = new Reenterer();
         strategyMock = StrategyBase(address(reenterer));
 
@@ -2413,7 +2669,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalAmount
             );
 
-        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount should not be zero!"));
+        cheats.expectRevert(bytes("DelegationManager._removeShares: shareAmount should not be zero!"));
         delegationManager.queueWithdrawal(withdrawal.strategies, withdrawal.shares, staker);
     }
 
@@ -2439,7 +2695,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalAmount
             );
 
-        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
+        cheats.expectRevert(bytes("DelegationManager._removeShares: shareAmount too high"));
         delegationManager.queueWithdrawal(withdrawal.strategies, withdrawal.shares, /*withdrawer*/ address(this));
     }
 
@@ -2531,7 +2787,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      */
 
     /**
-     * Setup DelegationManager and StrategyManager contracts for testing instead of using StrategyManagerMock
+     * Setup DelegationManager and DelegationManager.contracts for testing instead of using StrategyManagerMock
      * since we need to test the actual contracts together for the withdrawal queueing tests
      */
     function _setUpWithdrawalTests() internal {
@@ -2592,7 +2848,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IERC20 token = strategy.underlyingToken();
         // IStrategy strategy = strategyMock;
 
-        // filter out zero case since it will revert with "StrategyManager._addShares: shares should not be zero!"
+        // filter out zero case since it will revert with "DelegationManager._addShares: shares should not be zero!"
         cheats.assume(amount != 0);
         // filter out zero address because the mock ERC20 we are using will revert on using it
         cheats.assume(staker != address(0));
@@ -3053,5 +3309,40 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             }
         }
         return false;
+    }
+
+    function _setUpQueuedWithdrawalStructSingleStrat(
+        address staker,
+        address withdrawer,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shareAmount
+    )
+        internal
+        view
+        returns (
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        )
+    {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        strategyArray[0] = strategy;
+        tokensArray[0] = token;
+        shareAmounts[0] = shareAmount;
+        queuedWithdrawal = IDelegationManager.Withdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: strategyManager.delegation().delegatedTo(staker)
+        });
+        // calculate the withdrawal root
+        withdrawalRoot = delegationManager.calculateWithdrawalRoot(queuedWithdrawal);
+        return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 }
