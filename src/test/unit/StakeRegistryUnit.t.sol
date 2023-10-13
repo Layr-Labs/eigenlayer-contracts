@@ -11,6 +11,7 @@ import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/IStakeRegistry.sol";
 import "../../contracts/interfaces/IServiceManager.sol";
 import "../../contracts/interfaces/IVoteWeigher.sol";
+import "../../contracts/interfaces/IIndexRegistry.sol";
 
 import "../../contracts/libraries/BitmapUtils.sol";
 
@@ -22,6 +23,7 @@ import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 
 import "../harnesses/StakeRegistryHarness.sol";
+import "../harnesses/BLSRegistryCoordinatorWithIndicesHarness.sol";
 
 import "forge-std/Test.sol";
 
@@ -36,6 +38,7 @@ contract StakeRegistryUnitTests is Test {
     Slasher public slasherImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     StakeRegistryHarness public stakeRegistry;
+    BLSRegistryCoordinatorWithIndicesHarness public registryCoordinator;
 
     ServiceManagerMock public serviceManagerMock;
     StrategyManagerMock public strategyManagerMock;
@@ -43,9 +46,10 @@ contract StakeRegistryUnitTests is Test {
     EigenPodManagerMock public eigenPodManagerMock;
 
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
-    address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));
     address public unpauser = address(uint160(uint256(keccak256("unpauser"))));
+    address public pubkeyRegistry = address(uint160(uint256(keccak256("pubkeyRegistry"))));
+    address public indexRegistry = address(uint160(uint256(keccak256("indexRegistry"))));
 
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId = keccak256("defaultOperatorId");
@@ -89,14 +93,23 @@ contract StakeRegistryUnitTests is Test {
             slasher
         );
 
+        registryCoordinator = new BLSRegistryCoordinatorWithIndicesHarness(
+            slasher,
+            serviceManagerMock,
+            stakeRegistry,
+            IBLSPubkeyRegistry(pubkeyRegistry),
+            IIndexRegistry(indexRegistry)
+        );
+
         cheats.startPrank(serviceManagerOwner);
         // make the serviceManagerOwner the owner of the serviceManager contract
         serviceManagerMock = new ServiceManagerMock(slasher);
         stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(registryCoordinator),
+            IRegistryCoordinator(address(registryCoordinator)),
             strategyManagerMock,
             IServiceManager(address(serviceManagerMock))
         );
+
 
         // setup the dummy minimum stake for quorum
         uint96[] memory minimumStakeForQuorum = new uint96[](maxQuorumsToRegisterFor);
@@ -167,7 +180,7 @@ contract StakeRegistryUnitTests is Test {
 
         // expect that it reverts when you register
         cheats.expectRevert("StakeRegistry._registerOperator: greatest quorumNumber must be less than quorumCount");
-        cheats.prank(registryCoordinator);
+        cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
@@ -188,7 +201,7 @@ contract StakeRegistryUnitTests is Test {
 
         // expect that it reverts when you register
         cheats.expectRevert("StakeRegistry._registerOperator: Operator does not meet minimum stake requirement for quorum");
-        cheats.prank(registryCoordinator);
+        cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(defaultOperator, defaultOperatorId, quorumNumbers);
     }
 
@@ -497,6 +510,31 @@ contract StakeRegistryUnitTests is Test {
         }
     }
 
+    function testUpdateStakes_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
+        (uint256 quorumBitmap, uint96[] memory stakesForQuorum) = _registerOperatorRandomValid(defaultOperator, defaultOperatorId, pseudoRandomNumber);
+        registryCoordinator.setOperatorId(defaultOperator, defaultOperatorId);
+        registryCoordinator.recordOperatorQuorumBitmapUpdate(defaultOperatorId, uint192(quorumBitmap));
+
+        uint32 intialBlockNumber = 100;
+        cheats.roll(intialBlockNumber);
+
+        bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
+        for(uint i = 0; i < stakesForQuorum.length; i++) {
+            stakeRegistry.setOperatorWeight(uint8(quorumNumbers[i]), defaultOperator, stakesForQuorum[i] + 1);
+        }
+
+        address[] memory operators = new address[](1);
+        operators[0] = defaultOperator;
+        stakeRegistry.updateStakes(operators); 
+
+        for(uint i = 0; i < quorumNumbers.length; i++) {
+            StakeRegistry.OperatorStakeUpdate memory operatorStakeUpdate = stakeRegistry.getStakeUpdateForQuorumFromOperatorIdAndIndex(uint8(quorumNumbers[i]), defaultOperatorId, 1);
+            assertEq(operatorStakeUpdate.stake, stakesForQuorum[i] + 1);
+        }
+    }
+
     // utility function for registering an operator with a valid quorumBitmap and stakesForQuorum using provided randomness
     function _registerOperatorRandomValid(
         address operator,
@@ -544,7 +582,7 @@ contract StakeRegistryUnitTests is Test {
 
         // register operator
         uint256 gasleftBefore = gasleft();
-        cheats.prank(registryCoordinator);
+        cheats.prank(address(registryCoordinator));
         stakeRegistry.registerOperator(operator, operatorId, quorumNumbers);
         gasUsed = gasleftBefore - gasleft();
         
@@ -559,7 +597,7 @@ contract StakeRegistryUnitTests is Test {
         bytes memory quorumNumbers = BitmapUtils.bitmapToBytesArray(quorumBitmap);
 
         // deregister operator
-        cheats.prank(registryCoordinator);
+        cheats.prank(address(registryCoordinator));
         stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
     }
 
