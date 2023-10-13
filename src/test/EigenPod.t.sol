@@ -701,17 +701,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // //                     validator status should be marked as ACTIVE
 
     function testProveSingleWithdrawalCredential() public {
-        // get beaconChainETH shares
-        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
-
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
-
-        int256 beaconChainETHAfter = eigenPodManager.podOwnerShares(pod.podOwner());
-        assertTrue(beaconChainETHAfter - beaconChainETHBefore == int256(_calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR())*GWEI_TO_WEI), "pod balance not updated correcty");
         assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
     }
 

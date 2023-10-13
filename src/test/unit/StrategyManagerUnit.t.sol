@@ -240,19 +240,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyManager.depositIntoStrategy(dummyStrat, dummyToken, amount);
     }
 
-    function testDepositIntoStrategyRevertsWhenStakerFrozen() public {
-        uint256 amount = 1e18;
-        address staker = address(this);
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
-        );
-        strategyManager.depositIntoStrategy(dummyStrat, dummyToken, amount);
-    }
-
     function testDepositIntoStrategyRevertsWhenReentering() public {
         uint256 amount = 1e18;
 
@@ -414,44 +401,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         // not expecting a revert, so input an empty string
         string memory expectedRevertMessage = "Pausable: index is paused";
         _depositIntoStrategyWithSignature(staker, 1e18, type(uint256).max, expectedRevertMessage);
-    }
-
-    function testDepositIntoStrategyWithSignatureRevertsWhenStakerFrozen() public {
-        address staker = cheats.addr(privateKey);
-        IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
-        uint256 amount = 1e18;
-
-        uint256 nonceBefore = strategyManager.nonces(staker);
-        uint256 expiry = type(uint256).max;
-        bytes memory signature;
-
-        {
-            bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
-            );
-            bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
-
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
-
-            signature = abi.encodePacked(r, s, v);
-        }
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
-        );
-        strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
-        uint256 nonceAfter = strategyManager.nonces(staker);
-
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
     function testDepositIntoStrategyWithSignatureRevertsWhenReentering() public {

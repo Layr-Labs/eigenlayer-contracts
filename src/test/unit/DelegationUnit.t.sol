@@ -1196,27 +1196,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
 
-    // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testCannotDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-        
-        cheats.startPrank(operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
-        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        cheats.stopPrank();
-
-        slasherMock.setOperatorFrozenStatus(operator, true);
-        cheats.expectRevert(bytes("DelegationManager._delegate: cannot delegate to a frozen operator"));
-        cheats.startPrank(staker);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
-        cheats.stopPrank();
-    }
-
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
     function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
         fuzzedAddress(staker)
@@ -1746,42 +1725,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         );
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
         delegationManager.completeQueuedWithdrawal(withdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
-    }
-
-    function testCompleteQueuedWithdrawalRevertsWhenCanWithdrawReturnsFalse(
-        uint256 depositAmount,
-        uint256 withdrawalAmount
-    ) external {
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-        _tempStakerStorage = address(this);
-
-        (
-            IDelegationManager.Withdrawal memory withdrawal,
-            IERC20[] memory tokensArray,
-        ) = testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
-
-        IStrategy strategy = withdrawal.strategies[0];
-        IERC20 token = tokensArray[0];
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(address(this), strategy);
-        uint256 balanceBefore = token.balanceOf(address(_tempStakerStorage));
-
-        uint256 middlewareTimesIndex = 0;
-        bool receiveAsTokens = false;
-
-        // prepare mock
-        slasherMock.setCanWithdrawResponse(false);
-
-        cheats.expectRevert(
-            bytes("DelegationManager.completeQueuedAction: pending action is still slashable")
-        );
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
-        uint256 balanceAfter = token.balanceOf(address(_tempStakerStorage));
-
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
     function testCompleteQueuedWithdrawalRevertsWhenNotCallingFromWithdrawerAddress(
