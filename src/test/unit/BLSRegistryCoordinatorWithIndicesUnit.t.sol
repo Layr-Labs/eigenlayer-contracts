@@ -375,22 +375,6 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, incorrectPubKey, new bytes32[](0));
     }
 
-    function testDeregisterOperatorWithCoordinator_InvalidQuorums_Reverts() public {
-        bytes memory quorumNumbers = new bytes(1);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        uint256 quorumBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-
-        _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
-
-        quorumNumbers = new bytes(2);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        quorumNumbers[1] = bytes1(uint8(192));
-
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
-        cheats.prank(defaultOperator);
-        registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
-    }
-
     function testDeregisterOperatorWithCoordinator_IncorrectQuorums_Reverts() public {
         bytes memory quorumNumbers = new bytes(1);
         quorumNumbers[0] = bytes1(defaultQuorumNumber);
@@ -399,10 +383,10 @@ contract BLSRegistryCoordinatorWithIndicesUnit is MockAVSDeployer {
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmap, defaultPubKey);
 
         quorumNumbers = new bytes(2);
-        quorumNumbers[0] = bytes1(defaultQuorumNumber);
-        quorumNumbers[1] = bytes1(defaultQuorumNumber + 1);
+        quorumNumbers[0] = bytes1(defaultQuorumNumber + 1);
+        quorumNumbers[1] = bytes1(defaultQuorumNumber + 2);
 
-        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: cannot deregister operator for quorums that it is not a part of");
+        cheats.expectRevert("BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered for any of the provided quorums");
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperatorWithCoordinator(quorumNumbers, defaultPubKey, new bytes32[](0));
     }

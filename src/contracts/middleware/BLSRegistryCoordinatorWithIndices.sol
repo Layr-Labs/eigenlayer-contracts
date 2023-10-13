@@ -524,31 +524,35 @@ contract BLSRegistryCoordinatorWithIndices is EIP712, Initializable, IBLSRegistr
         bytes32 operatorId = _operators[operator].operatorId;
         require(operatorId == pubkey.hashG1Point(), "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operatorId does not match pubkey hash");
 
-        // get the quorumNumbers of the operator
+        // get the bitmap of quorums to remove the operator from
         uint256 quorumsToRemoveBitmap = BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers);
-        require(quorumsToRemoveBitmap <= MAX_QUORUM_BITMAP, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: quorumsToRemoveBitmap exceeds of max bitmap size");
+
+        // get the quorum bitmap before the update
         uint256 operatorQuorumBitmapHistoryLengthMinusOne = _operatorIdToQuorumBitmapHistory[operatorId].length - 1;
         uint192 quorumBitmapBeforeUpdate = _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].quorumBitmap;
-        // check that the quorumNumbers of the operator matches the quorumNumbers passed in
-        require(
-            quorumBitmapBeforeUpdate & quorumsToRemoveBitmap == quorumsToRemoveBitmap,
-            "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: cannot deregister operator for quorums that it is not a part of"
-        );
+
+        // and out quorums that the operator is not a part of 
+        quorumsToRemoveBitmap = quorumBitmapBeforeUpdate & quorumsToRemoveBitmap;
+        bytes memory quorumNumbersToRemove = BitmapUtils.bitmapToBytesArray(quorumsToRemoveBitmap);
+
+        // make sure the operator is registered for at least one of the provided quorums
+        require(quorumNumbersToRemove.length != 0, "BLSRegistryCoordinatorWithIndices._deregisterOperatorWithCoordinator: operator is not registered for any of the provided quorums");
+
         // check if the operator is completely deregistering
         bool completeDeregistration = quorumBitmapBeforeUpdate == quorumsToRemoveBitmap;
         
-        _beforeDeregisterOperator(operator, quorumNumbers);
+        _beforeDeregisterOperator(operator, quorumNumbersToRemove);
 
         // deregister the operator from the BLSPubkeyRegistry
-        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbers, pubkey);
+        blsPubkeyRegistry.deregisterOperator(operator, quorumNumbersToRemove, pubkey);
 
         // deregister the operator from the StakeRegistry
-        stakeRegistry.deregisterOperator(operatorId, quorumNumbers);
+        stakeRegistry.deregisterOperator(operatorId, quorumNumbersToRemove);
 
         // deregister the operator from the IndexRegistry
-        indexRegistry.deregisterOperator(operatorId, quorumNumbers, operatorIdsToSwap);
+        indexRegistry.deregisterOperator(operatorId, quorumNumbersToRemove, operatorIdsToSwap);
 
-        _afterDeregisterOperator(operator, quorumNumbers);
+        _afterDeregisterOperator(operator, quorumNumbersToRemove);
 
         // set the toBlockNumber of the operator's quorum bitmap update
         _operatorIdToQuorumBitmapHistory[operatorId][operatorQuorumBitmapHistoryLengthMinusOne].nextUpdateBlockNumber = uint32(block.number);
