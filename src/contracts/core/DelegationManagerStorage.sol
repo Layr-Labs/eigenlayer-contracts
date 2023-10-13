@@ -41,9 +41,17 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
+<<<<<<< HEAD
+=======
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+
+>>>>>>> master
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @dev By design, the following invariant should hold for each Strategy:
+     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
+     * = sum (delegateable shares of all stakers delegated to the operator)
      */
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
 
@@ -69,6 +77,21 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
+    /**
+     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    uint256 public withdrawalDelayBlocks;
+
+    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
+    mapping(bytes32 => bool) public pendingWithdrawals;
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
+
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
@@ -80,5 +103,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[41] private __gap;
 }

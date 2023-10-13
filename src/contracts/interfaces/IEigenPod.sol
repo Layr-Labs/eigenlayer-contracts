@@ -44,9 +44,9 @@ interface IEigenPod {
      */
     struct VerifiedWithdrawal {
         // amount to send to a podOwner from a proven withdrawal
-        uint256 amountToSend;
+        uint256 amountToSendGwei;
         // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
-        int256 sharesDelta;
+        int256 sharesDeltaGwei;
     }
 
 
@@ -113,8 +113,9 @@ interface IEigenPod {
     /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
-     * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * `amountWei` input (when converted to GWEI).
+     * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
@@ -208,14 +209,6 @@ interface IEigenPod {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
-
-    /// @notice called by the eigenPodManager to decrement the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a queued withdrawal from the beacon chain strategy
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
-
-    /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a completion of a queued withdrawal as shares
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;

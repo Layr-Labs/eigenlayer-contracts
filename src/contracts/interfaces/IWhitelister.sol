@@ -25,7 +25,6 @@ interface IWhitelister {
 
     function queueWithdrawal(
         address staker,
-        uint256[] calldata strategyIndexes,
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
         address withdrawer
@@ -33,7 +32,7 @@ interface IWhitelister {
 
     function completeQueuedWithdrawal(
         address staker,
-        IStrategyManager.QueuedWithdrawal calldata queuedWithdrawal,
+        IDelegationManager.Withdrawal calldata queuedWithdrawal,
         IERC20[] calldata tokens,
         uint256 middlewareTimesIndex,
         bool receiveAsTokens

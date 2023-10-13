@@ -55,10 +55,6 @@ contract EigenPodUnitTests is EigenPodTests {
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        // get beaconChainETH shares
-        uint256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
-        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
-        uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
 
          // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
@@ -202,48 +198,6 @@ contract EigenPodUnitTests is EigenPodTests {
 
         cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
-    }
-
-    function testIncrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) public returns (IEigenPod) {
-        cheats.assume(amount > GWEI_TO_WEI);
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-
-        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
-
-        cheats.startPrank(address(eigenPodManager));
-        pod.incrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
-        uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
-        require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore + amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
-        return pod;
-    }
-
-    function testDecrementWithdrawableRestakedExecutionLayerGwei(uint256 amount) external {
-        IEigenPod pod = testIncrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
-        pod.decrementWithdrawableRestakedExecutionLayerGwei(amount);
-
-        uint256 withdrawableRestakedExecutionLayerGweiAfter = pod.withdrawableRestakedExecutionLayerGwei();
-
-        uint64 amountGwei = uint64(amount / GWEI_TO_WEI);
-        require(withdrawableRestakedExecutionLayerGweiAfter == withdrawableRestakedExecutionLayerGweiBefore - amountGwei, "WithdrawableRestakedExecutionLayerGwei should have been incremented by amount");
-    }
-
-    function testDecrementMoreThanRestakedExecutionLayerGwei(uint256 largerAmount) external {
-        cheats.assume(largerAmount > GWEI_TO_WEI);
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-
-        cheats.startPrank(address(eigenPodManager));
-
-        cheats.expectRevert(bytes("EigenPod.decrementWithdrawableRestakedExecutionLayerGwei: amount to decrement is greater than current withdrawableRestakedRxecutionLayerGwei balance"));
-        pod.decrementWithdrawableRestakedExecutionLayerGwei(largerAmount);
-        cheats.stopPrank();
     }
 
     function testPodReceiveFallBack(uint256 amountETH) external {

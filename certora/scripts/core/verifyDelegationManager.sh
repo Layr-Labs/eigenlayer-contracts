@@ -14,6 +14,6 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     --prover_args '-optimisticFallback true' \
     --optimistic_hashing \
     $RULE \
-    --loop_iter 3 \
+    --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --msg "DelegationManager $1 $2" \

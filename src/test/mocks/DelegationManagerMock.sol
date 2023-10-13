@@ -39,7 +39,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function increaseDelegatedShares(address /*staker*/, IStrategy /*strategy*/, uint256 /*shares*/) external pure {}
 
-    function decreaseDelegatedShares(address /*staker*/, IStrategy[] calldata /*strategies*/, uint256[] calldata /*shares*/) external pure {}
+    function decreaseDelegatedShares(
+        address /*staker*/,
+        IStrategy /*strategy*/,
+        uint256 /*shares*/
+    ) external pure {}
 
     function operatorDetails(address operator) external pure returns (OperatorDetails memory) {
         OperatorDetails memory returnValue = OperatorDetails({
@@ -101,8 +105,27 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function domainSeparator() external view returns (bytes32) {}
 
-    function eigenPodManager() external view returns (IEigenPodManager) {}
-    function slasher() external view returns (ISlasher) {}
-    function strategyManager() external view returns (IStrategyManager) {}
+    function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
+
+    function queueWithdrawal(
+        IStrategy[] calldata strategies,
+        uint256[] calldata shares,
+        address withdrawer
+    ) external returns (bytes32) {}
+
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external {}
+
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
+    ) external {}
 }

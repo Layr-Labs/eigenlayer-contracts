@@ -19,12 +19,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
     address owner = cheats.addr(1000);
 
     /// @notice Emitted when a queued withdrawal is completed
-    event WithdrawalCompleted(
-        address indexed depositor,
-        uint96 nonce,
-        address indexed withdrawer,
-        bytes32 withdrawalRoot
-    );
+    event WithdrawalCompleted(bytes32 withdrawalRoot);
 
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
@@ -269,11 +264,11 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
 
         uint256 operatorSharesBefore = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceBefore = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceBefore = delegation.cumulativeWithdrawalsQueued(/*staker*/ stakerContract);
 
         // Queue withdrawal
         (
-            IStrategyManager.QueuedWithdrawal memory queuedWithdrawal,
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
             , /*tokensArray is unused in this test*/
              /*withdrawalRoot is unused in this test*/
         ) = _setUpQueuedWithdrawalStructSingleStrat(
@@ -283,18 +278,15 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 stakeTokenStrat,
                 _withdrawAmount
             );
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
         delegationFaucet.queueWithdrawal(
             stakerContract,
-            strategyIndexes,
             queuedWithdrawal.strategies,
             queuedWithdrawal.shares,
             stakerContract
         );
         uint256 operatorSharesAfter = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
-        uint256 nonceAfter = strategyManager.numWithdrawalsQueued(/*staker*/ stakerContract);
+        uint256 nonceAfter = delegation.cumulativeWithdrawalsQueued(/*staker*/ stakerContract);
 
         assertEq(
             operatorSharesBefore,
@@ -335,30 +327,22 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             tokensArray[0] = stakeToken;
         }
 
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
-            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+            uint256 nonce = delegation.cumulativeWithdrawalsQueued(stakerContract);
 
-            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-                withdrawer: stakerContract,
-                nonce: (uint96(nonce) - 1)
-            });
-            queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+            queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
-                depositor: stakerContract,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: strategyManager.delegation().delegatedTo(stakerContract)
+                staker: stakerContract,
+                withdrawer: stakerContract,
+                nonce: (nonce - 1),
+                startBlock: uint32(block.number),
+                delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.depositor,
-            queuedWithdrawal.withdrawerAndNonce.nonce,
-            queuedWithdrawal.withdrawerAndNonce.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
-        );
+        cheats.expectEmit(true, true, true, true, address(delegation));
+        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
         delegationFaucet.completeQueuedWithdrawal(
@@ -404,30 +388,22 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             tokensArray[0] = stakeToken;
         }
 
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
+        IDelegationManager.Withdrawal memory queuedWithdrawal;
         {
-            uint256 nonce = strategyManager.numWithdrawalsQueued(stakerContract);
+            uint256 nonce = delegation.cumulativeWithdrawalsQueued(stakerContract);
 
-            IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-                withdrawer: stakerContract,
-                nonce: (uint96(nonce) - 1)
-            });
-            queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+            queuedWithdrawal = IDelegationManager.Withdrawal({
                 strategies: strategyArray,
                 shares: shareAmounts,
-                depositor: stakerContract,
-                withdrawerAndNonce: withdrawerAndNonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: strategyManager.delegation().delegatedTo(stakerContract)
+                staker: stakerContract,
+                withdrawer: stakerContract,
+                nonce: (nonce - 1),
+                startBlock: uint32(block.number),
+                delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.depositor,
-            queuedWithdrawal.withdrawerAndNonce.nonce,
-            queuedWithdrawal.withdrawerAndNonce.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
-        );
+        cheats.expectEmit(true, true, true, true, address(delegation));
+        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
         delegationFaucet.completeQueuedWithdrawal(
@@ -502,7 +478,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         internal
         view
         returns (
-            IStrategyManager.QueuedWithdrawal memory queuedWithdrawal,
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
             IERC20[] memory tokensArray,
             bytes32 withdrawalRoot
         )
@@ -513,20 +489,17 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
         strategyArray[0] = strategy;
         tokensArray[0] = token;
         shareAmounts[0] = shareAmount;
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-            withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker))
-        });
-        queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: staker,
-            withdrawerAndNonce: withdrawerAndNonce,
-            withdrawalStartBlock: uint32(block.number),
-            delegatedAddress: strategyManager.delegation().delegatedTo(staker)
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegation.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: strategyManager.delegation().delegatedTo(staker)
         });
         // calculate the withdrawal root
-        withdrawalRoot = strategyManager.calculateWithdrawalRoot(queuedWithdrawal);
+        withdrawalRoot = delegation.calculateWithdrawalRoot(queuedWithdrawal);
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 }

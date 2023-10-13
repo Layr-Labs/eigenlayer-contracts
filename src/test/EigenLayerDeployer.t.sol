@@ -280,8 +280,7 @@ contract EigenLayerDeployer is Operators {
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/,
-                0/*withdrawalDelayBlocks*/
+                0/*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
