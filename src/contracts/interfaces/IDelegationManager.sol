@@ -72,7 +72,29 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when the StakeRegistry is set
     event StakeRegistrySet(IStakeRegistry stakeRegistry);
 
-    /// @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
+    /**
+     * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
+     * In functions that operate on existing queued withdrawals -- e.g. completeQueuedWithdrawal`, the data is resubmitted and the hash of the submitted
+     * data is computed by `calculateWithdrawalRoot` and checked against the stored hash in order to confirm the integrity of the submitted data.
+     */
+    struct Withdrawal {
+        // The address that originated the Withdrawal
+        address staker;
+        // The address that the staker was delegated to at the time that the Withdrawal was created
+        address delegatedTo;
+        // The address that can complete the Withdrawal + will receive funds when completing the withdrawal
+        address withdrawer;
+        // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
+        uint256 nonce;
+        // Block number when the Withdrawal was created
+        uint32 startBlock;
+        // Array of strategies that the Withdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+    }
+
+    // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
     /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
@@ -100,11 +122,20 @@ interface IDelegationManager is ISignatureUtils {
     event StakerForceUndelegated(address indexed staker, address indexed operator);
 
     /**
-     * @notice Sets the address of the stakeRegistry
-     * @param _stakeRegistry is the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-     * @dev Only callable once
+     * @notice Emitted when a new withdrawal is queued.
+     * @param withdrawalRoot Is the hash of the `withdrawal`.
+     * @param withdrawal Is the withdrawal itself.
      */
-    function setStakeRegistry(IStakeRegistry _stakeRegistry) external;
+    event WithdrawalQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
+
+    /// @notice Emitted when a queued withdrawal is completed
+    event WithdrawalCompleted(bytes32 withdrawalRoot);
+
+    /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
+    event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
+
+    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -192,29 +223,83 @@ interface IDelegationManager is ISignatureUtils {
     function undelegate(address staker) external returns (bytes32 withdrawalRoot);
 
     /**
+     * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
+     * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
+     * their operator.
+     *
+     * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
+     */
+    function queueWithdrawal(
+        IStrategy[] calldata strategies,
+        uint256[] calldata shares,
+        address withdrawer
+    ) external returns (bytes32);
+
+    /**
+     * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
+     * @param withdrawal The Withdrawal to complete.
+     * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
+     * This input can be provided with zero length if `receiveAsTokens` is set to 'false' (since in that case, this input will be unused)
+     * @param middlewareTimesIndex is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     * @param receiveAsTokens If true, the shares specified in the withdrawal will be withdrawn from the specified strategies themselves
+     * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
+     * will simply be transferred to the caller directly.
+     * @dev middlewareTimesIndex should be calculated off chain before calling this function by finding the first index that satisfies `slasher.canWithdraw`
+     * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
+     * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
+     * any other strategies, which will be transferred to the withdrawer.
+     */
+    function completeQueuedWithdrawal(
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
+        uint256 middlewareTimesIndex,
+        bool receiveAsTokens
+    ) external;
+
+    /**
+     * @notice Array-ified version of `completeQueuedWithdrawal`.
+     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+     * @param withdrawals The Withdrawals to complete.
+     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
+     * @param middlewareTimesIndexes One index to reference per Withdrawal. See `completeQueuedWithdrawal` for the usage of a single index.
+     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
+     * @dev See `completeQueuedWithdrawal` for relevant dev tags
+     */
+    function completeQueuedWithdrawals(
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        uint256[] calldata middlewareTimesIndexes,
+        bool[] calldata receiveAsTokens
+    ) external;
+
+    /**
      * @notice Increases a staker's delegated share balance in a strategy.
      * @param staker The address to increase the delegated shares for their operator.
      * @param strategy The strategy in which to increase the delegated shares.
      * @param shares The number of shares to increase.
      *
      * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
-     * @dev Callable only by the StrategyManager.
+     * @dev Callable only by the StrategyManager or EigenPodManager.
      */
-    function increaseDelegatedShares(address staker, IStrategy strategy, uint256 shares) external;
+    function increaseDelegatedShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external;
 
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
-     * @param staker The address to decrease the delegated shares for their operator.
-     * @param strategies An array of strategies to crease the delegated shares.
-     * @param shares An array of the number of shares to decrease for a operator and strategy.
+     * @param staker The address to increase the delegated shares for their operator.
+     * @param strategy The strategy in which to decrease the delegated shares.
+     * @param shares The number of shares to decrease.
      *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in each entry of `strategies` by its respective `shares[i]`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function decreaseDelegatedShares(
         address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares
+        IStrategy strategy,
+        uint256 shares
     ) external;
 
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
@@ -250,6 +335,9 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
+     * @dev By design, the following invariant should hold for each Strategy:
+     * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
+     * = sum (delegateable shares of all stakers delegated to the operator)
      */
     function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
 
@@ -332,4 +420,11 @@ interface IDelegationManager is ISignatureUtils {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+
+    /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
+    /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
+    function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
+
+    /// @notice Returns the keccak256 hash of `withdrawal`.
+    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 }

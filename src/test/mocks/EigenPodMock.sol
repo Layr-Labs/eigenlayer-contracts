@@ -6,7 +6,9 @@ import "../../contracts/interfaces/IEigenPod.sol";
 
 contract EigenPodMock is IEigenPod, Test {
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_VALIDATOR_BALANCE_GWEI() external view returns(uint64) {}
+    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns(uint64) {}
+
+    function nonBeaconChainETHBalanceWei() external view returns(uint256) {}
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
     function withdrawableRestakedExecutionLayerGwei() external view returns(uint64) {}
@@ -108,14 +110,6 @@ contract EigenPodMock is IEigenPod, Test {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external {}
-    
-    /// @notice called by the eigenPodManager to decrement the withdrawableRestakedExecutionLayerGwei 
-    /// in the pod, to reflect a queued withdrawal from the beacon chain strategy
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external {}
-
-    /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei 
-    /// in the pod, to reflect a completion of a queued withdrawal as shares
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external {}
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external {}

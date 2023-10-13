@@ -428,7 +428,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
     /**
      * @notice records the most recent updateBlock for the currently updating middleware and appends an entry to the operator's list of
-     *         MiddlewareTimes if relavent information has updated
+     *         MiddlewareTimes if relevant information has updated
      * @param operator the entity whose stake update is being recorded
      * @param updateBlock the block number for which the currently updating middleware is updating the serveUntilBlock for
      * @param serveUntilBlock the block until which the operator's stake at updateBlock is slashable

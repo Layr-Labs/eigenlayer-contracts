@@ -44,9 +44,9 @@ interface IEigenPod {
      */
     struct VerifiedWithdrawal {
         // amount to send to a podOwner from a proven withdrawal
-        uint256 amountToSend;
+        uint256 amountToSendGwei;
         // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
-        int256 sharesDelta;
+        int256 sharesDeltaGwei;
     }
 
 
@@ -96,10 +96,13 @@ interface IEigenPod {
 
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_VALIDATOR_BALANCE_GWEI() external view returns (uint64);
+    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
+
+    /// @notice any ETH deposited into the EigenPod contract via the `receive` fallback function
+    function nonBeaconChainETHBalanceWei() external view returns (uint256);
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external;
@@ -110,8 +113,9 @@ interface IEigenPod {
     /**
      * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
-     * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
+     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `withdrawableRestakedExecutionLayerGwei` exceeds the
+     * `amountWei` input (when converted to GWEI).
+     * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
@@ -205,14 +209,6 @@ interface IEigenPod {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
-
-    /// @notice called by the eigenPodManager to decrement the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a queued withdrawal from the beacon chain strategy
-    function decrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
-
-    /// @notice called by the eigenPodManager to increment the withdrawableRestakedExecutionLayerGwei
-    /// in the pod, to reflect a completion of a queued withdrawal as shares
-    function incrementWithdrawableRestakedExecutionLayerGwei(uint256 amountWei) external;
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
     function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;

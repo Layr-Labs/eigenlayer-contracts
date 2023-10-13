@@ -31,7 +31,7 @@ contract StrategyManagerMock is
     uint256[] public sharesToReturn;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
-    mapping(address => uint256) public numWithdrawalsQueued;
+    mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -97,57 +97,22 @@ contract StrategyManagerMock is
         stakerStrategyListLengthReturnValue = valueToSet;
     }
 
+    function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function queueWithdrawal(
-        uint256[] calldata strategyIndexes,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    )
-        external returns(bytes32) {}
-
-
-    function completeQueuedWithdrawal(
-        QueuedWithdrawal calldata queuedWithdrawal,
-        IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
-        bool receiveAsTokens
-    )
-        external{}
-
-    function completeQueuedWithdrawals(
-        QueuedWithdrawal[] calldata queuedWithdrawals,
-        IERC20[][] calldata tokens,
-        uint256[] calldata middlewareTimesIndexes,
-        bool[] calldata receiveAsTokens
-    )
-        external{}
-
-    /// @notice Returns the keccak256 hash of `queuedWithdrawal`.
-    function calculateWithdrawalRoot(
-        QueuedWithdrawal memory queuedWithdrawal
-    )
-        external
-        pure
-        returns (bytes32) {}
+    function addShares(address staker, IStrategy strategy, uint256 shares) external {}
+    
+    function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
 
-    function withdrawalDelayBlocks() external view returns (uint256) {}
+    // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
 
-    event ForceTotalWithdrawalCalled(address staker);
+    function migrateQueuedWithdrawal(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external returns (bool, bytes32) {}
 
-    function forceTotalWithdrawal(address staker) external returns (IStrategy[] memory, uint256[] memory, bytes32) {
-        IStrategy[] memory emptyStrategyArray;
-        uint256[] memory emptyShareArray;
-        bytes32 emptyReturnValue;
-        emit ForceTotalWithdrawalCalled(staker);
-        return (emptyStrategyArray, emptyShareArray, emptyReturnValue);
-    }
-
+    function calculateWithdrawalRoot(DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal) external pure returns (bytes32) {}
 }
