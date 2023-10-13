@@ -41,11 +41,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-<<<<<<< HEAD
-=======
     uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
 
->>>>>>> master
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
      * @notice Mapping: operator => strategy => total number of shares in the strategy delegated to the operator.
