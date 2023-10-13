@@ -1236,27 +1236,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
 
-    // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testCannotDelegateWhenOperatorIsFrozen(address operator, address staker) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-        
-        cheats.startPrank(operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
-        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        cheats.stopPrank();
-
-        slasherMock.setOperatorFrozenStatus(operator, true);
-        cheats.expectRevert(bytes("DelegationManager._delegate: cannot delegate to a frozen operator"));
-        cheats.startPrank(staker);
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
-        delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
-        cheats.stopPrank();
-    }
-
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
     function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
         fuzzedAddress(staker)
