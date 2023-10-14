@@ -349,7 +349,6 @@ contract EigenPodUnitTests is EigenPodTests {
 
         if(withdrawalAmount > podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()){
             require(vw.amountToSendGwei == withdrawalAmount - podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(), "newAmount should be MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR");
-            require(vw.)
         }
         else{
             require(vw.amountToSendGwei == 0, "newAmount should be withdrawalAmount");
