@@ -1488,8 +1488,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         address recipient,
         uint64 withdrawalAmountGwei,
         ValidatorInfo memory validatorInfo
-    ) public {
-        _processFullWithdrawal(
+    ) public returns(IEigenPod.VerifiedWithdrawal memory) {
+        return _processFullWithdrawal(
             validatorIndex,
             validatorPubkeyHash,
             withdrawalHappenedTimestamp,
