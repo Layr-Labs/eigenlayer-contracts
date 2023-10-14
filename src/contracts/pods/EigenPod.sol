@@ -20,7 +20,6 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
-import "forge-std/Test.sol";
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -35,7 +34,7 @@ import "forge-std/Test.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
@@ -679,8 +678,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         * if the withdrawals are proven out of order. A validator may have to make multiple full withdrawals if 
         * they redeposit into their exited validator.
         */
-        emit log_named_uint("withdrawalTimestamp", withdrawalTimestamp);
-        emit log_named_uint("validatorInfo.mostRecentBalanceUpdateTimestamp", validatorInfo.mostRecentBalanceUpdateTimestamp);
         if (validatorInfo.mostRecentBalanceUpdateTimestamp < withdrawalTimestamp){
             validatorInfo.mostRecentBalanceUpdateTimestamp = withdrawalTimestamp;   
         }
