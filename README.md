@@ -1,5 +1,9 @@
 <a name="introduction"/></a>
+
 # EigenLayer
+<p align="center"><b><font size="+1">
+🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
+</font></b><p>
 EigenLayer (formerly 'EigenLayr') is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services.
 At present, this repository contains *both* the contracts for EigenLayer *and* a set of general "middleware" contracts, designed to be reusable across different applications built on top of EigenLayer.
 
