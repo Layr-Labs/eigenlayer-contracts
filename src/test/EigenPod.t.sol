@@ -113,7 +113,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
 
-
     modifier fuzzedAddress(address addr) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);
         _;
@@ -1496,6 +1495,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             recipient,
             withdrawalAmountGwei,
             validatorInfo
+        );
+    }
+
+    function processPartialWithdrawal(
+        uint40 validatorIndex,
+        uint64 withdrawalHappenedTimestamp,
+        address recipient,
+        uint64 withdrawalAmountGwei
+    ) public returns(IEigenPod.VerifiedWithdrawal memory) {
+        return _processPartialWithdrawal(
+            validatorIndex,
+            withdrawalHappenedTimestamp,
+            recipient,
+            withdrawalAmountGwei
         );
     }
  }

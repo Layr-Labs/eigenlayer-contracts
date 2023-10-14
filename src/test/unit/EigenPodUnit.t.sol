@@ -354,4 +354,23 @@ contract EigenPodUnitTests is EigenPodTests {
             require(vw.amountToSendGwei == 0, "newAmount should be withdrawalAmount");
         }
     }
+
+    function testProcessPartialWithdrawal(
+        uint40 validatorIndex,
+        uint64 withdrawalTimestamp,
+        address recipient,
+        uint64 partialWithdrawalAmountGwei
+    ) external {
+        _deployInternalFunctionTester();
+        cheats.expectEmit(true, true, true, true, address(podInternalFunctionTester));
+        emit PartialWithdrawalRedeemed(
+            validatorIndex,
+            withdrawalTimestamp,
+            recipient,
+            partialWithdrawalAmountGwei
+        );
+        IEigenPod.VerifiedWithdrawal memory vw = podInternalFunctionTester.processPartialWithdrawal(validatorIndex, withdrawalTimestamp, recipient, partialWithdrawalAmountGwei);
+
+        require(vw.amountToSendGwei == partialWithdrawalAmountGwei, "newAmount should be partialWithdrawalAmountGwei");
+    }
 }
