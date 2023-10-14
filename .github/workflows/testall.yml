@@ -27,6 +27,17 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Install forge dependencies
+      run: forge install
 
     - name: Run forge test for the file
       run: forge test --match-path ${{ matrix.file }}
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
