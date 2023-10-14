@@ -1,0 +1,50 @@
+name: Run Solidity Tests
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  prepare:  
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install jq
+      run: sudo apt-get install jq
+
+    - name: Get list of test files
+      id: get-files
+      run: echo "::set-output name=files::$(find src/test -name '*.t.sol' | jq -R -s -c 'split("\n")[:-1]')"
+
+    - name: Set matrix for next job
+      id: set-matrix
+      run: echo "::set-output name=matrix::${{ steps.get-files.outputs.files }}"
+
+  test:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        testfile: ${{fromJson(needs.prepare.outputs.matrix)}}
+      fail-fast: false
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16' # or another version if you prefer
+
+    - name: Install Foundry and Forge
+      run: |
+        npm install -g @foundry/forge # Assuming this is how you install Forge
+
+    - name: Run solidity test
+      run: forge test --match-path ${{ matrix.testfile }}
