@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../test/EigenLayerDeployer.t.sol";
-
+import "../contracts/interfaces/ISignatureUtils.sol";
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
 
@@ -195,7 +195,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         cheats.startPrank(staker);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
 
@@ -343,10 +343,16 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     ///         and checks that the operator's voteWeights increase properly
     /// @param operator is the operator being delegated to.
     /// @param staker is the staker delegating stake to the operator.
-    /// @param voteWeigher is the VoteWeigher-type contract to consult for stake weight changes
-    function _testDelegation(address operator, address staker, uint256 ethAmount, uint256 eigenAmount, IVoteWeigher voteWeigher)
-        internal
-    {
+    /// @param ethAmount is the amount of ETH to deposit into the operator's strategy.
+    /// @param eigenAmount is the amount of EIGEN to deposit into the operator's strategy.
+    /// @param stakeRegistry is the stakeRegistry-type contract to consult for registering to an AVS
+    function _testDelegation(
+        address operator,
+        address staker,
+        uint256 ethAmount,
+        uint256 eigenAmount,
+        StakeRegistry stakeRegistry
+    ) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
                 earningsReceiver: operator,
@@ -357,8 +363,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         uint256[3] memory amountsBefore;
-        amountsBefore[0] = voteWeigher.weightOfOperator(operator, 0);
-        amountsBefore[1] = voteWeigher.weightOfOperator(operator, 1);
+        amountsBefore[0] = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
+        amountsBefore[1] = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
@@ -375,8 +381,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
             uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
-            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
+            uint256 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
+            uint256 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,

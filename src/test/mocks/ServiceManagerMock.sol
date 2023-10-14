@@ -8,10 +8,13 @@ import "../../contracts/interfaces/ISlasher.sol";
 import "forge-std/Test.sol";
 
 contract ServiceManagerMock is IServiceManager, DSTest {
+    address public owner;
     ISlasher public slasher;
 
     constructor(ISlasher _slasher) {
+        owner = msg.sender;
         slasher = _slasher;
+
     }
 
     /// @notice Returns the current 'taskNumber' for the middleware
@@ -38,17 +41,8 @@ contract ServiceManagerMock is IServiceManager, DSTest {
         return IERC20(address(0));
     }
 
-    /// @notice The Delegation contract of EigenLayer.
-    function delegationManager() external pure returns (IDelegationManager) {
-        return IDelegationManager(address(0));
-    }
-
     /// @notice Returns the `latestServeUntilBlock` until which operators must serve.
     function latestServeUntilBlock() external pure returns (uint32) {
         return type(uint32).max;
-    }
-
-    function owner() external pure returns (address) {
-        return address(0);
     }
 }

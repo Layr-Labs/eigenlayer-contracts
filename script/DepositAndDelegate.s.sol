@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import "./EigenLayerParser.sol";
+import "../src/contracts/interfaces/ISignatureUtils.sol";
 
 contract DepositAndDelegate is Script, DSTest, EigenLayerParser {
 
@@ -29,7 +30,7 @@ contract DepositAndDelegate is Script, DSTest, EigenLayerParser {
         strategyManager.depositIntoStrategy(eigenStrat, eigen, wethAmount);
         weth.approve(address(strategyManager), wethAmount);
         strategyManager.depositIntoStrategy(wethStrat, weth, wethAmount);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(dlnAddr, signatureWithExpiry, bytes32(0));
         vm.stopBroadcast();
     }

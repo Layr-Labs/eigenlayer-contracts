@@ -178,9 +178,9 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     // perform arbitrary function call
     method f;
     env e;
-    if (f.selector == sig:delegateTo(address, IDelegationManager.SignatureWithExpiry, bytes32).selector) {
+    if (f.selector == sig:delegateTo(address, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address operator;
-        IDelegationManager.SignatureWithExpiry approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
         delegateTo(e, operator, approverSignatureAndExpiry, salt);
         // we check against operator being the zero address here, since we view being delegated to the zero address as *not* being delegated
@@ -189,11 +189,11 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
         } else {
             assert (!isDelegated(staker), "staker delegated to inappropriate address?");
         }
-    } else if (f.selector == sig:delegateToBySignature(address, address, IDelegationManager.SignatureWithExpiry, IDelegationManager.SignatureWithExpiry, bytes32).selector) {
+    } else if (f.selector == sig:delegateToBySignature(address, address, ISignatureUtils.SignatureWithExpiry, ISignatureUtils.SignatureWithExpiry, bytes32).selector) {
         address toDelegateFrom;
         address operator;
-        IDelegationManager.SignatureWithExpiry stakerSignatureAndExpiry;
-        IDelegationManager.SignatureWithExpiry approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry stakerSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry approverSignatureAndExpiry;
         bytes32 salt;
         delegateToBySignature(e, toDelegateFrom, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, salt);
         // TODO: this check could be stricter! need to filter when the block timestamp is appropriate for expiry and signature is valid

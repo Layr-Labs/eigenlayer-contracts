@@ -89,6 +89,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
+    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
+    IStakeRegistry public stakeRegistry;
+
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
@@ -100,5 +103,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[41] private __gap;
+    uint256[40] private __gap;
 }

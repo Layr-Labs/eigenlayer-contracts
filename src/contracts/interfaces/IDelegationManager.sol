@@ -4,6 +4,8 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./IEigenPodManager.sol";
 import "./ISlasher.sol";
+import "./ISignatureUtils.sol";
+import "./IStakeRegistry.sol";
 
 /**
  * @title DelegationManager
@@ -15,7 +17,7 @@ import "./ISlasher.sol";
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager {
+interface IDelegationManager is ISignatureUtils {
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         // @notice address to receive the rewards that the operator earns via serving applications built on EigenLayer.
@@ -69,13 +71,8 @@ interface IDelegationManager {
         uint256 expiry;
     }
 
-    // @notice Struct that bundles together a signature and an expiration time for the signature. Used primarily for stack management.
-    struct SignatureWithExpiry {
-        // the signature itself, formatted as a single bytes object
-        bytes signature;
-        // the expiration timestamp (UTC) of the signature
-        uint256 expiry;
-    }
+    /// @notice Emitted when the StakeRegistry is set
+    event StakeRegistrySet(IStakeRegistry stakeRegistry);
 
     /**
      * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
@@ -102,7 +99,7 @@ interface IDelegationManager {
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
-    // @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
+    /// @notice Emitted when an operator updates their OperatorDetails to @param newOperatorDetails
     event OperatorDetailsModified(address indexed operator, OperatorDetails newOperatorDetails);
 
     /**
@@ -123,7 +120,7 @@ interface IDelegationManager {
     /// @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
 
-    // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
+    /// @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
     event StakerForceUndelegated(address indexed staker, address indexed operator);
 
     /**
@@ -307,9 +304,14 @@ interface IDelegationManager {
         uint256 shares
     ) external;
 
+<<<<<<< HEAD
     function slasher() external view returns (ISlasher);
 
     function eigenPodManager() external view returns (IEigenPodManager);
+=======
+    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
+    function stakeRegistry() external view returns (IStakeRegistry);
+>>>>>>> master
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
