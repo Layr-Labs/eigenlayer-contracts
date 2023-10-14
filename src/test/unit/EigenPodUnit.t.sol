@@ -275,4 +275,45 @@ contract EigenPodUnitTests is EigenPodTests {
         newPod.verifyBalanceUpdate(oracleTimestamp, validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 
+    function testWithdrawlBeforeRestakingFromNonPodOwnerAddress(uint256 amount, address nonPodOwner) external {
+        cheats.assume(nonPodOwner != podOwner);
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        
+        uint256 amount = 32 ether;
+
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
+
+        cheats.startPrank(nonPodOwner);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
+        newPod.withdrawBeforeRestaking();
+        cheats.stopPrank();  
+    }
+
+    function testDelayedWithdrawalIsCreatedByWithdrawBeforeRestaking(uint256 amount) external {
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        
+        uint256 amount = 32 ether;
+
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
+        cheats.deal(address(this), amount);
+        // simulate a withdrawal processed on the beacon chain, pod balance goes to 32 ETH
+        Address.sendValue(payable(address(newPod)), amount);
+        require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
+
+        cheats.startPrank(podOwner);
+        newPod.withdrawBeforeRestaking();
+        cheats.stopPrank();
+
+        require(_getLatestDelayedWithdrawalAmount(podOwner) == amount, "Payment amount should be stake amount");
+    }
 }
