@@ -316,4 +316,24 @@ contract EigenPodUnitTests is EigenPodTests {
 
         require(_getLatestDelayedWithdrawalAmount(podOwner) == amount, "Payment amount should be stake amount");
     }
+
+    function testFullWithdrawalsProvenOutOfOrder(bytes32 pubkeyHash, uint64 withdrawalAmount) external {
+        uint64 timestamp = 5;
+        uint64 lesserTimestamp = 3;
+        _deployInternalFunctionTester();
+        IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
+            validatorIndex: 0,
+            restakedBalanceGwei: 0,
+            mostRecentBalanceUpdateTimestamp: 0,
+            status: IEigenPod.VALIDATOR_STATUS.ACTIVE
+        });
+        podInternalFunctionTester.processFullWithdrawal(0, pubkeyHash, timestamp += 5 , podOwner, withdrawalAmount, validatorInfo);
+        IEigenPod.ValidatorInfo memory info = podInternalFunctionTester.validatorPubkeyHashToInfo(pubkeyHash);
+
+        podInternalFunctionTester.processFullWithdrawal(0, pubkeyHash, lesserTimestamp , podOwner, withdrawalAmount, podInternalFunctionTester.validatorPubkeyHashToInfo(pubkeyHash));
+
+        IEigenPod.ValidatorInfo memory info2 = podInternalFunctionTester.validatorPubkeyHashToInfo(pubkeyHash);
+
+        require(info2.mostRecentBalanceUpdateTimestamp == timestamp, "mostRecentBalanceUpdateTimestamp should not have been updated");
+    }
 }
