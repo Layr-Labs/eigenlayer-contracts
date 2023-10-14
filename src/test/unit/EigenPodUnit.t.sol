@@ -337,8 +337,7 @@ contract EigenPodUnitTests is EigenPodTests {
         require(info2.mostRecentBalanceUpdateTimestamp == timestamp, "mostRecentBalanceUpdateTimestamp should not have been updated");
     }
 
-    function testWithdrawalAmounts(bytes32 pubkeyHash, uint64 withdrawalAmount) external {
-
+    function testFullWithdrawalAmounts(bytes32 pubkeyHash, uint64 withdrawalAmount) external {
         _deployInternalFunctionTester();
         IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
             validatorIndex: 0,
@@ -350,6 +349,7 @@ contract EigenPodUnitTests is EigenPodTests {
 
         if(withdrawalAmount > podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()){
             require(vw.amountToSendGwei == withdrawalAmount - podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(), "newAmount should be MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR");
+            require(vw.)
         }
         else{
             require(vw.amountToSendGwei == 0, "newAmount should be withdrawalAmount");
