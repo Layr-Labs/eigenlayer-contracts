@@ -79,7 +79,7 @@ contract M2Deploy is Script, Test {
 
         // store pre-upgrade values to check against later
         strategyWhitelister = strategyManager.strategyWhitelister();
-        // withdrawalDelayBlocks = strategyManager.withdrawalDelayBlocks();
+        withdrawalDelayBlocks = WithdrawalDelayBlocks(address(strategyManager)).withdrawalDelayBlocks();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
         maxPods = eigenPodManager.maxPods();
@@ -170,7 +170,7 @@ contract M2Deploy is Script, Test {
         require(strategyManager.eigenPodManager() == eigenPodManager, "strategyManager.eigenPodManager incorrect");
         require(strategyManager.slasher() == slasher, "strategyManager.slasher incorrect");
         require(strategyManager.strategyWhitelister() == strategyWhitelister, "strategyManager.strategyWhitelister incorrect");
-        // require(strategyManager.withdrawalDelayBlocks() == withdrawalDelayBlocks, "strategyManager.withdrawalDelayBlocks incorrect");
+        require(WithdrawalDelayBlocks(address(strategyManager)).withdrawalDelayBlocks() == withdrawalDelayBlocks, "strategyManager.withdrawalDelayBlocks incorrect");
 
         require(delegation.domainSeparator() == delegationManagerDomainSeparator, "delegation.domainSeparator incorrect");
         require(delegation.slasher() == slasher, "delegation.slasher incorrect");
@@ -213,4 +213,8 @@ contract M2Deploy is Script, Test {
 // EigenPod.mostRecentWithdrawalTimestamp updates correctly
 // EigenPod: ethPOS, delayedWithdrawalRouter, eigenPodManager
 
+}
+
+interface WithdrawalDelayBlocks {
+    function withdrawalDelayBlocks() external view returns (uint256);
 }

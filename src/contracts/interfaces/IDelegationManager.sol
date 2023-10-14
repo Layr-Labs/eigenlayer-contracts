@@ -304,14 +304,14 @@ interface IDelegationManager is ISignatureUtils {
         uint256 shares
     ) external;
 
-<<<<<<< HEAD
+    /// @notice Address of slasher
     function slasher() external view returns (ISlasher);
 
+    /// @notice Address of the EigenPodManager
     function eigenPodManager() external view returns (IEigenPodManager);
-=======
+
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
     function stakeRegistry() external view returns (IStakeRegistry);
->>>>>>> master
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
