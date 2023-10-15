@@ -92,6 +92,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
     uint256 public nonBeaconChainETHBalanceWei;
 
+    /// @notice This variable tracks the total amoutn of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
+    uint256 public totalPartialWithdrawalAmountClaimed;
+
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
