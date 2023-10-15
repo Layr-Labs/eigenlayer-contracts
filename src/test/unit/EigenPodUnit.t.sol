@@ -373,4 +373,45 @@ contract EigenPodUnitTests is EigenPodTests {
 
         require(vw.amountToSendGwei == partialWithdrawalAmountGwei, "newAmount should be partialWithdrawalAmountGwei");
     }
+
+    function testRecoverTokens(uint256 amount, address recipient) external {
+        cheats.assume(amount > 0 && amount < 1e30);  
+        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+        IERC20 randomToken = new ERC20PresetFixedSupply(
+            "rand",
+            "RAND",
+            1e30,
+            address(this)
+        );
+
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = randomToken;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+
+        randomToken.transfer(address(pod), amount);
+        require(randomToken.balanceOf(address(pod)) == amount, "randomToken balance should be amount");
+
+        uint256 recipientBalanceBefore = randomToken.balanceOf(recipient);
+        
+        cheats.startPrank(podOwner);
+        pod.recoverTokens(tokens, amounts, recipient);
+        cheats.stopPrank();
+        require(randomToken.balanceOf(address(recipient)) - recipientBalanceBefore == amount, "recipient should have received amount");
+    }
+
+    function testRecoverTokensMismatchedInputs() external {
+        uint256 tokenListLen = 5;
+        uint256 amountsToWithdrawLen = 2;
+        
+        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+
+        IERC20[] memory tokens = new IERC20[](tokenListLen);
+        uint256[] memory amounts = new uint256[](amountsToWithdrawLen);
+
+        cheats.expectRevert(bytes("EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length"));
+        cheats.startPrank(podOwner);
+        pod.recoverTokens(tokens, amounts, address(this));
+        cheats.stopPrank();
+    }
 }
