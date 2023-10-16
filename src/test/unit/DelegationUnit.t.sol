@@ -162,7 +162,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                     address(strategyManagerImplementation),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
-                        DelegationManager.initialize.selector,
+                        StrategyManager.initialize.selector,
                         initialOwner,
                         initialOwner,
                         eigenLayerPauserReg,
@@ -234,7 +234,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      * Reverts appropriately if operator was already delegated to someone (including themselves, i.e. they were already an operator)
      * @param operator and @param operatorDetails are fuzzed inputs
      */
-    function testRegisterAsOperator(
+    function testFuzz_RegisterAsOperator(
         address operator,
         IDelegationManager.OperatorDetails memory operatorDetails,
         string memory metadataURI
@@ -319,7 +319,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address operator,
         IDelegationManager.OperatorDetails memory operatorDetails
     ) public filterFuzzedAddressInputs(operator) {
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
         cheats.startPrank(operator);
         cheats.expectRevert(bytes("DelegationManager.registerAsOperator: operator has already registered"));
         delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -342,7 +342,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, _operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
@@ -368,7 +368,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IDelegationManager.OperatorDetails memory initialOperatorDetails,
         IDelegationManager.OperatorDetails memory modifiedOperatorDetails
     ) public {
-        testRegisterAsOperator(_operator, initialOperatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, initialOperatorDetails, emptyStringForMetadataURI);
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         cheats.assume(modifiedOperatorDetails.earningsReceiver != address(0));
 
@@ -423,7 +423,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // call `updateOperatorMetadataURI` and check for event
         cheats.startPrank(_operator);
@@ -454,7 +454,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         operatorDetails.earningsReceiver = address(0);
         cheats.expectRevert(
@@ -498,7 +498,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -557,7 +557,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         // try to delegate again and check that the call reverts
         cheats.startPrank(staker);
@@ -610,7 +610,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -674,7 +674,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -725,7 +725,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
@@ -779,7 +779,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -850,7 +850,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // create the signature struct
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -895,7 +895,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -971,7 +971,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -1069,7 +1069,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(_operator, operatorDetails, emptyStringForMetadataURI);
 
         // verify that the salt hasn't been used before
         require(
@@ -1172,7 +1172,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
@@ -1227,7 +1227,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
@@ -1310,7 +1310,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -1378,7 +1378,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
@@ -1655,7 +1655,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             delegationApprover: delegationApprover,
             stakerOptOutWindowBlocks: 100
         });
-        testRegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+        testFuzz_RegisterAsOperator(operator, _operatorDetails, emptyStringForMetadataURI);
 
         address caller;
         if (callFromOperatorOrApprover) {
