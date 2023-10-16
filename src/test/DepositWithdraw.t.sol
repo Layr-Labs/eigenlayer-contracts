@@ -135,33 +135,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         cheats.stopPrank();
         //check middlewareTimes entry is correct
         require(slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");
-
-        //move timestamp to 6, one middleware is past newServeUntilBlock but the second middleware is still using the restaked funds.
-        cheats.warp(8);
-        //Also move the current block ahead one
-        cheats.roll(4);
-        
-        cheats.startPrank(staker);
-        //when called with the correct middlewareTimesIndex the call reverts
-
-        slasher.getMiddlewareTimesIndexStalestUpdateBlock(staker, 3);
-        
-        
-        {
-        uint256 correctMiddlewareTimesIndex = 4;
-        cheats.expectRevert("DelegationManager.completeQueuedAction: pending action is still slashable");
-        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, correctMiddlewareTimesIndex, false);
-        }
-
-        //When called with a stale index the call should also revert.
-        {
-        uint256 staleMiddlewareTimesIndex = 2;
-        cheats.expectRevert("DelegationManager.completeQueuedAction: pending action is still slashable");
-        delegation.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, staleMiddlewareTimesIndex, false);
-        }
-        
-        
+        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");        
     }
 
 

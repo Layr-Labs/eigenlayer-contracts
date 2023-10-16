@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "../../src/contracts/interfaces/IStrategyManager.sol";
 import "../../src/contracts/interfaces/IStrategy.sol";
 import "../../src/contracts/interfaces/IDelegationManager.sol";
+import "../../src/contracts/interfaces/ISignatureUtils.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -21,7 +22,7 @@ contract Staker is Ownable {
     ) Ownable() {
         token.approve(address(strategyManager), type(uint256).max);
         strategyManager.depositIntoStrategy(strategy, token, amount);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(operator, signatureWithExpiry, bytes32(0));
     }
     

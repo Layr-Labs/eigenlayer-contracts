@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+import "src/contracts/interfaces/ISignatureUtils.sol";
 
 import "../test/EigenLayerTestHelper.t.sol";
 
 import "./mocks/MiddlewareRegistryMock.sol";
-import "./mocks/MiddlewareVoteWeigherMock.sol";
 import "./mocks/ServiceManagerMock.sol";
+
+import "./harnesses/StakeRegistryHarness.sol";
 
 contract DelegationTests is EigenLayerTestHelper {
     using Math for uint256;
@@ -18,9 +18,12 @@ contract DelegationTests is EigenLayerTestHelper {
 
     uint32 serveUntil = 100;
 
+    address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
     ServiceManagerMock public serviceManager;
-    MiddlewareVoteWeigherMock public voteWeigher;
-    MiddlewareVoteWeigherMock public voteWeigherImplementation;
+    StakeRegistryHarness public stakeRegistry;
+    StakeRegistryHarness public stakeRegistryImplementation;
+    uint8 defaultQuorumNumber = 0;
+    bytes32 defaultOperatorId = bytes32(uint256(0));
 
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
         cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
@@ -37,45 +40,66 @@ contract DelegationTests is EigenLayerTestHelper {
     function initializeMiddlewares() public {
         serviceManager = new ServiceManagerMock(slasher);
 
-
-        voteWeigher = MiddlewareVoteWeigherMock(
+        stakeRegistry = StakeRegistryHarness(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-
-        voteWeigherImplementation = new MiddlewareVoteWeigherMock(delegation, strategyManager, serviceManager);
-
+        stakeRegistryImplementation = new StakeRegistryHarness(
+            IRegistryCoordinator(registryCoordinator),
+            strategyManager,
+            serviceManager
+        );
 
         {
             uint96 multiplier = 1e18;
             uint8 _NUMBER_OF_QUORUMS = 2;
-            uint256[] memory _quorumBips = new uint256[](_NUMBER_OF_QUORUMS);
-            // split 60% ETH quorum, 40% EIGEN quorum
-            _quorumBips[0] = 6000;
-            _quorumBips[1] = 4000;
-            VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
-                new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
-            ethStratsAndMultipliers[0].strategy = wethStrat; 
-            ethStratsAndMultipliers[0].multiplier = multiplier;
-            VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
-                new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](1);
-            eigenStratsAndMultipliers[0].strategy = eigenStrat;
-            eigenStratsAndMultipliers[0].multiplier = multiplier;
+            // uint256[] memory _quorumBips = new uint256[](_NUMBER_OF_QUORUMS);
+            // // split 60% ETH quorum, 40% EIGEN quorum
+            // _quorumBips[0] = 6000;
+            // _quorumBips[1] = 4000;
+            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
+            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            // ethStratsAndMultipliers[0].strategy = wethStrat; 
+            // ethStratsAndMultipliers[0].multiplier = multiplier;
+            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
+            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            // eigenStratsAndMultipliers[0].strategy = eigenStrat;
+            // eigenStratsAndMultipliers[0].multiplier = multiplier;
 
             cheats.startPrank(eigenLayerProxyAdmin.owner());
+
+            // setup the dummy minimum stake for quorum
+            uint96[] memory minimumStakeForQuorum = new uint96[](_NUMBER_OF_QUORUMS);
+            for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
+                minimumStakeForQuorum[i] = uint96(i+1);
+            }
+
+            // setup the dummy quorum strategies
+            IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
+                new IVoteWeigher.StrategyAndWeightingMultiplier[][](2);
+            quorumStrategiesConsideredAndMultipliers[0] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            quorumStrategiesConsideredAndMultipliers[0][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                wethStrat,
+                multiplier
+            );
+            quorumStrategiesConsideredAndMultipliers[1] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            quorumStrategiesConsideredAndMultipliers[1][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                eigenStrat,
+                multiplier
+            );
+
             eigenLayerProxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(voteWeigher))),
-                address(voteWeigherImplementation),
-                abi.encodeWithSelector(MiddlewareVoteWeigherMock.initialize.selector, _quorumBips, ethStratsAndMultipliers, eigenStratsAndMultipliers) 
+                TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+                address(stakeRegistryImplementation),
+                abi.encodeWithSelector(StakeRegistry.initialize.selector, minimumStakeForQuorum, quorumStrategiesConsideredAndMultipliers) 
             );
             cheats.stopPrank();
-            
+        
         }
     }
 
     /// @notice testing if an operator can register to themselves.
     function testSelfOperatorRegister() public {
-        _testRegisterAdditionalOperator(0, serveUntil);
+        _testRegisterAdditionalOperator(0);
     }
 
     /// @notice testing if an operator can delegate to themselves.
@@ -92,8 +116,8 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     function testTwoSelfOperatorsRegister() public {
-        _testRegisterAdditionalOperator(0, serveUntil);
-        _testRegisterAdditionalOperator(1, serveUntil);
+        _testRegisterAdditionalOperator(0);
+        _testRegisterAdditionalOperator(1);
     }
 
     /// @notice registers a fixed address as a delegate, delegates to it from a second address,
@@ -109,9 +133,16 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(staker != operator);
         // base strategy will revert if these amounts are too small on first deposit
         cheats.assume(ethAmount >= 1);
-        cheats.assume(eigenAmount >= 1);
+        cheats.assume(eigenAmount >= 2);
         
-        _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
+        // Set weights ahead of the helper function call
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(uint8(0));
+        quorumNumbers[0] = bytes1(uint8(1));
+        stakeRegistry.setOperatorWeight(0, operator, ethAmount);
+        stakeRegistry.setOperatorWeight(1, operator, eigenAmount);
+        stakeRegistry.registerOperatorNonCoordinator(operator, defaultOperatorId, quorumNumbers);
+        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
     }
 
     /// @notice tests that a when an operator is delegated to, that delegation is properly accounted for.
@@ -123,11 +154,11 @@ contract DelegationTests is EigenLayerTestHelper {
     {
         cheats.assume(staker != _operator);
         cheats.assume(ethAmount >= 1);
-        cheats.assume(eigenAmount >= 1);
+        cheats.assume(eigenAmount >= 2);
 
         // use storage to solve stack-too-deep
         operator = _operator;
-        
+    
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: address(0),
@@ -138,8 +169,8 @@ contract DelegationTests is EigenLayerTestHelper {
         }
 
         uint256[3] memory amountsBefore;
-        amountsBefore[0] = voteWeigher.weightOfOperator(operator, 0);
-        amountsBefore[1] = voteWeigher.weightOfOperator(operator, 1);
+        amountsBefore[0] = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+        amountsBefore[1] = stakeRegistry.weightOfOperatorForQuorum(1, operator);
         amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the  strategies
@@ -147,6 +178,8 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);
+        stakeRegistry.setOperatorWeight(0, operator, ethAmount);
+        stakeRegistry.setOperatorWeight(1, operator, eigenAmount);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
         (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
@@ -156,8 +189,8 @@ contract DelegationTests is EigenLayerTestHelper {
             uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
             uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
-            uint256 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
+            uint256 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+            uint256 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorum(1, operator);
 
             assertTrue(
                 operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
@@ -197,8 +230,7 @@ contract DelegationTests is EigenLayerTestHelper {
         // base strategy will revert if these amounts are too small on first deposit
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 1);
-
-        _testDelegation(operator, staker, ethAmount, eigenAmount, voteWeigher);
+        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
 
         (IStrategy[] memory strategyArray, uint256[] memory shareAmounts) = strategyManager.getDeposits(staker);
         uint256[] memory strategyIndexes = new uint256[](strategyArray.length);
@@ -237,11 +269,11 @@ contract DelegationTests is EigenLayerTestHelper {
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
             signature = abi.encodePacked(r, s, v);
         }
-        
+    
         if (expiry < block.timestamp) {
             cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
         }
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
         });
@@ -267,7 +299,7 @@ contract DelegationTests is EigenLayerTestHelper {
         staker = address(wallet);
 
         _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
-        
+    
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
         bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
@@ -278,8 +310,8 @@ contract DelegationTests is EigenLayerTestHelper {
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(PRIVATE_KEY, digestHash);
             signature = abi.encodePacked(r, s, v);
         }
-                
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+            
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
         });
@@ -303,7 +335,7 @@ contract DelegationTests is EigenLayerTestHelper {
         staker = address(wallet);
 
         _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
-        
+    
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
         bytes32 structHash = keccak256(abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max));
@@ -316,9 +348,9 @@ contract DelegationTests is EigenLayerTestHelper {
             v = (v == 27 ? 28 : 27);
             signature = abi.encodePacked(r, s, v);
         }
-        
+    
         cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
         });
@@ -345,7 +377,7 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         cheats.expectRevert();
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
         });
@@ -370,9 +402,9 @@ contract DelegationTests is EigenLayerTestHelper {
         _registerOperatorAndDepositFromStaker(operator, staker, ethAmount, eigenAmount); 
 
         bytes memory signature = abi.encodePacked(r, s, v);
-        
+    
         cheats.expectRevert();
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: type(uint256).max
         });
@@ -384,48 +416,48 @@ contract DelegationTests is EigenLayerTestHelper {
     /// @param operator is the operator being delegated to.
     /// @param staker is the staker delegating stake to the operator.
     function testDelegationMultipleStrategies(uint8 numStratsToAdd, address operator, address staker)
-        public
+    public
         fuzzedAddress(operator)
         fuzzedAddress(staker)
     {
         cheats.assume(staker != operator);
 
         cheats.assume(numStratsToAdd > 0 && numStratsToAdd <= 20);
-        uint96 operatorEthWeightBefore = voteWeigher.weightOfOperator(operator, 0);
-        uint96 operatorEigenWeightBefore = voteWeigher.weightOfOperator(operator, 1);
+        uint256 amountToDeposit = 1e18;
+        uint96 operatorEthWeightBefore = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+        uint96 operatorEigenWeightBefore = stakeRegistry.weightOfOperatorForQuorum(1, operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
         _testRegisterAsOperator(operator, operatorDetails);
-        _testDepositStrategies(staker, 1e18, numStratsToAdd);
+        _testDepositStrategies(staker, amountToDeposit, numStratsToAdd);
 
         // add strategies to voteWeigher
         uint96 multiplier = 1e18;
         for (uint16 i = 0; i < numStratsToAdd; ++i) {
-            VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
-            new VoteWeigherBaseStorage.StrategyAndWeightingMultiplier[](
-                    1
-                );
+            IVoteWeigher.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
+            new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
             ethStratsAndMultipliers[0].strategy = strategies[i];
             ethStratsAndMultipliers[0].multiplier = multiplier;
-            cheats.startPrank(voteWeigher.serviceManager().owner());
-            voteWeigher.addStrategiesConsideredAndMultipliers(0, ethStratsAndMultipliers);
+            cheats.startPrank(stakeRegistry.serviceManager().owner());
+            stakeRegistry.addStrategiesConsideredAndMultipliers(0, ethStratsAndMultipliers);
             cheats.stopPrank();
         }
-
-        _testDepositEigen(staker, 1e18);
+        _testDepositEigen(staker, amountToDeposit);
         _testDelegateToOperator(staker, operator);
-        uint96 operatorEthWeightAfter = voteWeigher.weightOfOperator(operator, 0);
-        uint96 operatorEigenWeightAfter = voteWeigher.weightOfOperator(operator, 1);
+        stakeRegistry.setOperatorWeight(0, operator, uint96(amountToDeposit));
+        stakeRegistry.setOperatorWeight(1, operator, uint96(amountToDeposit));
+        uint96 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorum(0, operator);
+        uint96 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorum(1, operator);
         assertTrue(
             operatorEthWeightAfter > operatorEthWeightBefore, "testDelegation: operatorEthWeight did not increase!"
         );
         assertTrue(
             operatorEigenWeightAfter > operatorEigenWeightBefore, "testDelegation: operatorEthWeight did not increase!"
         );
-    }
+}
 
     /// @notice This function tests to ensure that a delegation contract
     ///         cannot be intitialized multiple times
@@ -456,7 +488,7 @@ contract DelegationTests is EigenLayerTestHelper {
 
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         cheats.startPrank(getOperatorAddress(1));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(delegate, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
     }
@@ -500,16 +532,15 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.stopPrank();
     }
 
-    /// @notice This function checks that you can only delegate to an address that is already registered.
-    function testDelegateToInvalidOperator(address _staker, address _unregisteredOperator) public fuzzedAddress(_staker) {
+    /// @notice this function checks that you can only delegate to an address that is already registered.
+    function testDelegateToInvalidOperator(address _staker, address _unregisteredoperator) public fuzzedAddress(_staker) {
         vm.startPrank(_staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegation.delegateTo(_unregisteredOperator, signatureWithExpiry, bytes32(0));
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
+        delegation.delegateTo(_unregisteredoperator, signatureWithExpiry, bytes32(0));
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
         delegation.delegateTo(_staker, signatureWithExpiry, bytes32(0));
         cheats.stopPrank();
-        
     }
 
     function testUndelegate_SigP_Version(address _operator,address _staker,address _dt) public {
@@ -531,7 +562,7 @@ contract DelegationTests is EigenLayerTestHelper {
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.prank(_staker);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegation.delegateTo(_operator, signatureWithExpiry, bytes32(0));
 
         // operators cannot undelegate from themselves
@@ -552,7 +583,7 @@ contract DelegationTests is EigenLayerTestHelper {
         assertTrue(delegation.isOperator(_operator));
     }
 
-    function _testRegisterAdditionalOperator(uint256 index, uint32 _serveUntil) internal {
+    function _testRegisterAdditionalOperator(uint256 index) internal {
         address sender = getOperatorAddress(index);
 
         //register as both ETH and EIGEN operator
@@ -570,8 +601,6 @@ contract DelegationTests is EigenLayerTestHelper {
 
         //whitelist the serviceManager to slash the operator
         slasher.optIntoSlashing(address(serviceManager));
-
-        voteWeigher.registerOperator(sender, _serveUntil);
 
         cheats.stopPrank();
     }

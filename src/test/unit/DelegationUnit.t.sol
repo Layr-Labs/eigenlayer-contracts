@@ -9,6 +9,7 @@ import "forge-std/Test.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
+import "../mocks/StakeRegistryMock.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../mocks/Reenterer.sol";
@@ -28,6 +29,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyMock3;
     IERC20 mockToken;
     EigenPodManagerMock eigenPodManagerMock;
+    StakeRegistryMock stakeRegistryMock;
 
     Reenterer public reenterer;
 
@@ -58,6 +60,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
+    /// @notice Emitted when the StakeRegistry is set
+    event StakeRegistrySet(IStakeRegistry stakeRegistry);
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
 
@@ -82,6 +87,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
 
+    // STAKE REGISTRY EVENT
+    /// @notice emitted whenever the stake of `operator` is updated
+    event StakeUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint96 stake);
     // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
     event StakerForceUndelegated(address indexed staker, address indexed operator);
 
@@ -164,6 +172,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             )
         );
 
+        stakeRegistryMock = new StakeRegistryMock();
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakeRegistrySet(stakeRegistryMock);
+
+        delegationManager.setStakeRegistry(stakeRegistryMock);
+
         strategyImplementation = new StrategyBase(strategyManagerMock);
         strategyMock = StrategyBase(
             address(
@@ -205,6 +219,12 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.initialize(address(this), eigenLayerPauserReg, 0);
     }
 
+    /// @notice Verifies that the stakeRegistry cannot be set after it has already been set
+    function testCannotSetStakeRegistryTwice() public {
+        cheats.expectRevert(bytes("DelegationManager.setStakeRegistry: stakeRegistry already set"));
+        delegationManager.setStakeRegistry(stakeRegistryMock);
+    }
+
     /**
      * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails, metadataURI)`
      * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
@@ -232,6 +252,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // don't check any parameters other than event type
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(operator, operator);
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorRegistered(operator, operatorDetails);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -323,7 +346,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, emptySalt);
 
         cheats.expectRevert(bytes("DelegationManager._delegate: staker is already actively delegated"));
@@ -463,7 +486,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      */
     function testDelegateToOperatorWhoAcceptsAllStakers(
         address staker,
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 salt
     ) public filterFuzzedAddressInputs(staker) {
         // register *this contract* as an operator
@@ -494,6 +517,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit StakerDelegated(staker, _operator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);
         cheats.stopPrank();
 
@@ -514,7 +540,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     function testCannotDelegateWhileDelegated(
         address staker,
         address operator,
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry,
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 salt
     ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
         // filter out input since if the staker tries to delegate again after registering as an operator, we will revert earlier than this test is designed to check
@@ -550,7 +576,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // try to delegate and check that the call reverts
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -592,7 +618,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -651,7 +677,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         approverSignatureAndExpiry.expiry = expiry;
         {
             bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
@@ -702,7 +728,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -761,7 +787,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -827,7 +853,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // create the signature struct
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         approverSignatureAndExpiry.expiry = expiry;
 
         // try to delegate from the `staker` to the operator, and check reversion
@@ -879,7 +905,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
             stakerPrivateKey,
             operator,
             expiry
@@ -890,7 +916,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(staker, operator);
         // use an empty approver signature input since none is needed / the input is unchecked
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         delegationManager.delegateToBySignature(
             staker,
             operator,
@@ -953,7 +979,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -964,7 +990,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
             stakerPrivateKey,
             operator,
             expiry
@@ -1051,7 +1077,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             "salt somehow spent too early?"
         );
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             _operator,
@@ -1062,7 +1088,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // fetch the staker's current nonce
         uint256 currentStakerNonce = delegationManager.stakerNonce(staker);
         // calculate the staker signature
-        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
             stakerPrivateKey,
             _operator,
             expiry
@@ -1113,7 +1139,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     ) public {
         cheats.assume(expiry < block.timestamp);
         cheats.expectRevert(bytes("DelegationManager.delegateToBySignature: staker signature expired"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry = IDelegationManager.SignatureWithExpiry({
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
             expiry: expiry
         });
@@ -1149,7 +1175,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -1158,7 +1184,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         );
 
         // calculate the staker signature
-        IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(
             stakerPrivateKey,
             operator,
             stakerExpiry
@@ -1204,7 +1230,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testRegisterAsOperator(operator, operatorDetails, emptyStringForMetadataURI);
 
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker,
             operator,
@@ -1228,13 +1254,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
      */
     function testUndelegateFromOperator(address staker) public {
         // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
 
         cheats.startPrank(staker);
         // don't check any parameters other than event type
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
+        // don't check any parameters other than event type
+        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+        emit StakeUpdate(bytes32(0), 0, 0);
         delegationManager.undelegate(staker);
         cheats.stopPrank();
 
@@ -1272,7 +1301,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         // register *this contract* as an operator
         address operator = address(this);
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
         cheats.assume(staker != operator);
 
@@ -1301,6 +1330,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorSharesIncreased(operator, staker, strategy, shares);
             // don't check any parameters other than event type
+            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+            emit StakeUpdate(bytes32(0), 0, 0);
         }
 
         cheats.startPrank(address(strategyManagerMock));
@@ -1338,7 +1369,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(strategies.length <= 32);
         // register *this contract* as an operator
         address operator = address(this);
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
         cheats.assume(staker != operator);
 
@@ -1387,6 +1418,9 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                         strategies[i],
                         sharesInputArray[i]
                     );
+                    // don't check any parameters other than event type
+                    cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+                    emit StakeUpdate(bytes32(0), 0, 0);
                     delegationManager.decreaseDelegatedShares(staker, strategies[i], sharesInputArray[i]);
                 }
             }
@@ -1439,30 +1473,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
 
-    // @notice Verifies that it is not possible for a staker to delegate to an operator when the operator is frozen in EigenLayer
-    function testCannotDelegateWhenOperatorIsFrozen(
-        address operator,
-        address staker
-    ) public fuzzedAddress(operator) fuzzedAddress(staker) {
-        cheats.assume(operator != staker);
-
-        cheats.startPrank(operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
-        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        cheats.stopPrank();
-
-        slasherMock.setOperatorFrozenStatus(operator, true);
-        cheats.expectRevert(bytes("DelegationManager._delegate: cannot delegate to a frozen operator"));
-        cheats.startPrank(staker);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
-        cheats.stopPrank();
-    }
-
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
     function testCannotDelegateWhenStakerHasExistingDelegation(
         address staker,
@@ -1487,7 +1497,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.stopPrank();
 
         cheats.startPrank(staker);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
         cheats.stopPrank();
 
@@ -1500,7 +1510,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     // @notice Verifies that it is not possible to delegate to an unregistered operator
     function testCannotDelegateToUnregisteredOperator(address operator) public {
         cheats.expectRevert(bytes("DelegationManager._delegate: operator is not registered in EigenLayer"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
     }
 
@@ -1516,7 +1526,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("Pausable: index is paused"));
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
         cheats.stopPrank();
     }
@@ -1539,262 +1549,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.expectRevert(bytes("Pausable: index is paused"));
         delegationManager.undelegate(staker);
         cheats.stopPrank();
-    }
-
-    function testQueueWithdrawalFullyWithdraw(uint256 amount) external {
-        address staker = address(this);
-        IDelegationManager.SignatureWithExpiry memory signatureWithExpiry;
-        // deposit and withdraw the same amount
-        testQueueWithdrawal_ToSelf(amount, amount);
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        IERC20[] memory tokensArray = new IERC20[](1);
-        uint256[] memory shareAmounts = new uint256[](1);
-        {
-            strategyArray[0] = _tempStrategyStorage;
-            shareAmounts[0] = amount;
-            tokensArray[0] = address(420);
-            // tokensArray[0] = mockToken;
-        }
-
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-
-        IDelegationManager.Withdrawal memory queuedWithdrawal;
-
-        {
-            uint256 nonce = strategyManager.numWithdrawalsQueued(staker);
-
-            queuedWithdrawal = IDelegationManager.Withdrawal({
-                strategies: strategyArray,
-                shares: shareAmounts,
-                depositor: staker,
-                nonce: nonce,
-                withdrawalStartBlock: uint32(block.number),
-                delegatedAddress: strategyManager.delegation().delegatedTo(staker)
-            });
-        }
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-        uint256 balanceBefore = mockToken.balanceOf(address(staker));
-
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.depositor,
-            queuedWithdrawal.withdrawerAndNonce.nonce,
-            queuedWithdrawal.withdrawerAndNonce.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
-        );
-        strategyManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            /*middlewareTimesIndex*/ 0,
-            /*receiveAsTokens*/ true
-        );
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-        uint256 balanceAfter = mockToken.balanceOf(address(staker));
-
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(balanceAfter == balanceBefore + amount, "balanceAfter != balanceBefore + withdrawalAmount");
-        require(
-            !_isDepositedStrategy(staker, strategyArray[0]),
-            "Strategy still part of staker's deposited strategies"
-        );
-        require(sharesAfter == 0, "staker shares is not 0");
-    }
-
-    function testQueueWithdrawalRevertsWhenStakerFrozen(uint256 depositAmount, uint256 withdrawalAmount) public {
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-        address staker = address(this);
-        IStrategy strategy = strategyMock;
-        IERC20 token = mockToken;
-
-        testDepositIntoStrategySuccessfully(staker, depositAmount);
-
-        (
-            IDelegationManager.Withdrawal memory queuedWithdrawal /*IERC20[] memory tokensArray*/,
-            ,
-            bytes32 withdrawalRoot
-        ) = _setUpQueuedWithdrawalStructSingleStrat(staker, /*withdrawer*/ staker, token, strategy, withdrawalAmount);
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
-        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
-
-        require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-
-        // freeze the staker
-        slasherMock.freezeOperator(staker);
-
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        cheats.expectRevert(
-            bytes("DelegationManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
-        );
-        strategyManager.queueWithdrawal(
-            strategyIndexes,
-            queuedWithdrawal.strategies,
-            queuedWithdrawal.shares,
-            /*withdrawer*/ staker
-        );
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
-        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(address(this));
-
-        require(!strategyManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingAfter is true!");
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
-    }
-
-    function testCompleteQueuedWithdrawal_ReceiveAsTokensMarkedTrue(
-        uint256 depositAmount,
-        uint256 withdrawalAmount
-    ) external {
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-        address staker = address(this);
-        _tempStrategyStorage = strategyMock;
-
-        testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
-
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        IERC20[] memory tokensArray = new IERC20[](1);
-        uint256[] memory shareAmounts = new uint256[](1);
-        {
-            strategyArray[0] = _tempStrategyStorage;
-            shareAmounts[0] = withdrawalAmount;
-            tokensArray[0] = mockToken;
-        }
-
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-
-        IDelegationManager.Withdrawal memory queuedWithdrawal;
-
-        {
-            uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
-
-            queuedWithdrawal = IDelegationManager.Withdrawal({
-                strategies: strategyArray,
-                shares: shareAmounts,
-                staker: staker,
-                withdrawer: staker,
-                nonce: (nonce - 1),
-                startBlock: uint32(block.number),
-                delegatedTo: strategyManager.delegation().delegatedTo(staker)
-            });
-        }
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-        uint256 balanceBefore = mockToken.balanceOf(address(staker));
-
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalCompleted(
-            queuedWithdrawal.depositor,
-            queuedWithdrawal.withdrawerAndNonce.nonce,
-            queuedWithdrawal.withdrawerAndNonce.withdrawer,
-            strategyManager.calculateWithdrawalRoot(queuedWithdrawal)
-        );
-        strategyManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            /*middlewareTimesIndex*/ 0,
-            /*receiveAsTokens*/ true
-        );
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, _tempStrategyStorage);
-        uint256 balanceAfter = mockToken.balanceOf(address(staker));
-
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(balanceAfter == balanceBefore + withdrawalAmount, "balanceAfter != balanceBefore + withdrawalAmount");
-        if (depositAmount == withdrawalAmount) {
-            // Since receiving tokens instead of shares, if withdrawal amount is entire deposit, then strategy will be removed
-            // with sharesAfter being 0
-            require(
-                !_isDepositedStrategy(staker, _tempStrategyStorage),
-                "Strategy still part of staker's deposited strategies"
-            );
-            require(sharesAfter == 0, "staker shares is not 0");
-        }
-    }
-
-    function testCompleteQueuedWithdrawalWithNonzeroWithdrawalDelayBlocks(
-        uint256 depositAmount,
-        uint256 withdrawalAmount,
-        uint16 valueToSet
-    ) external {
-        // filter fuzzed inputs to allowed *and nonzero* amounts
-        cheats.assume(valueToSet <= strategyManager.MAX_WITHDRAWAL_DELAY_BLOCKS() && valueToSet != 0);
-        cheats.assume(depositAmount != 0 && withdrawalAmount != 0);
-        cheats.assume(depositAmount >= withdrawalAmount);
-        address staker = address(this);
-
-        (
-            IDelegationManager.Withdrawal memory queuedWithdrawal,
-            IERC20[] memory tokensArray /*bytes32 withdrawalRoot*/,
-
-        ) = testQueueWithdrawal_ToSelf(depositAmount, withdrawalAmount);
-
-        cheats.expectRevert(
-            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
-        );
-        delegationManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
-        );
-
-        // set the `withdrawalDelayBlocks` variable
-        cheats.startPrank(strategyManager.owner());
-        uint256 previousValue = strategyManager.withdrawalDelayBlocks();
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit WithdrawalDelayBlocksSet(previousValue, valueToSet);
-        strategyManager.setWithdrawalDelayBlocks(valueToSet);
-        cheats.stopPrank();
-        require(
-            strategyManager.withdrawalDelayBlocks() == valueToSet,
-            "strategyManager.withdrawalDelayBlocks() != valueToSet"
-        );
-
-        cheats.expectRevert(
-            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
-        );
-        delegationManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
-        );
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(address(this), strategyMock);
-        uint256 balanceBefore = mockToken.balanceOf(address(staker));
-
-        // roll block number forward to one block before the withdrawal should be completeable and attempt again
-        uint256 originalBlockNumber = block.number;
-        cheats.roll(originalBlockNumber + valueToSet - 1);
-        cheats.expectRevert(
-            bytes("DelegationManager.completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed")
-        );
-        delegationManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
-        );
-
-        // roll block number forward to the block at which the withdrawal should be completeable, and complete it
-        cheats.roll(originalBlockNumber + valueToSet);
-        delegationManager.completeQueuedWithdrawal(
-            queuedWithdrawal,
-            tokensArray,
-            middlewareTimesIndex,
-            receiveAsTokens
-        );
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategyMock);
-        uint256 balanceAfter = mockToken.balanceOf(address(staker));
-
-        require(sharesAfter == sharesBefore + withdrawalAmount, "sharesAfter != sharesBefore + withdrawalAmount");
-        require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
     // special event purely used in the DelegationManager.ock contract, inside of `undelegate` function to verify that the correct call is made
@@ -1831,6 +1585,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         // check that the correct calldata is forwarded by looking for an event emitted by the DelegationManager.ock contract
         if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
             // don't check any parameters other than event type
+            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
+            emit StakeUpdate(bytes32(0), 0, 0);
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
             emit ForceTotalWithdrawalCalled(staker);
         }
@@ -1943,7 +1699,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         testDelegateToOperatorWhoRequiresECDSASignature(staker_one, salt, expiry);
 
         // calculate the delegationSigner's signature
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
             staker_two,
             operator,
@@ -2238,40 +1994,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         );
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
         delegationManager.completeQueuedWithdrawal(withdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
-    }
-
-    function testCompleteQueuedWithdrawalRevertsWhenCanWithdrawReturnsFalse(
-        uint256 depositAmount,
-        uint256 withdrawalAmount
-    ) external {
-        cheats.assume(withdrawalAmount != 0 && withdrawalAmount <= depositAmount);
-        _tempStakerStorage = address(this);
-
-        (IDelegationManager.Withdrawal memory withdrawal, IERC20[] memory tokensArray, ) = testQueueWithdrawal_ToSelf(
-            depositAmount,
-            withdrawalAmount
-        );
-
-        IStrategy strategy = withdrawal.strategies[0];
-        IERC20 token = tokensArray[0];
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(address(this), strategy);
-        uint256 balanceBefore = token.balanceOf(address(_tempStakerStorage));
-
-        uint256 middlewareTimesIndex = 0;
-        bool receiveAsTokens = false;
-
-        // prepare mock
-        slasherMock.setCanWithdrawResponse(false);
-
-        cheats.expectRevert(bytes("DelegationManager.completeQueuedAction: pending action is still slashable"));
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokensArray, middlewareTimesIndex, receiveAsTokens);
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(address(this), strategy);
-        uint256 balanceAfter = token.balanceOf(address(_tempStakerStorage));
-
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(balanceAfter == balanceBefore, "balanceAfter != balanceBefore");
     }
 
     function testCompleteQueuedWithdrawalRevertsWhenNotCallingFromWithdrawerAddress(
@@ -2971,7 +2693,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address operator,
         bytes32 salt,
         uint256 expiry
-    ) internal view returns (IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry) {
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry) {
         approverSignatureAndExpiry.expiry = expiry;
         {
             bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
@@ -2995,7 +2717,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         uint256 _stakerPrivateKey,
         address operator,
         uint256 expiry
-    ) internal view returns (IDelegationManager.SignatureWithExpiry memory stakerSignatureAndExpiry) {
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry) {
         address staker = cheats.addr(stakerPrivateKey);
         stakerSignatureAndExpiry.expiry = expiry;
         {

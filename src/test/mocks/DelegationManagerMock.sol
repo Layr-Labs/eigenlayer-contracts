@@ -7,12 +7,21 @@ import "../../contracts/interfaces/IDelegationManager.sol";
 
 contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
+    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    IStakeRegistry public stakeRegistry;
+
+    function setStakeRegistry(IStakeRegistry _stakeRegistry) external {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
     }
 
-    mapping(address => address) public delegatedTo;
+    /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.
+    function setOperatorShares(address operator, IStrategy strategy, uint256 shares) external {
+        operatorShares[operator][strategy] = shares;
+    }
+
+    mapping (address => address) public delegatedTo;
 
     function registerAsOperator(OperatorDetails calldata /*registeringOperatorDetails*/, string calldata /*metadataURI*/) external pure {}
     
@@ -65,8 +74,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function stakerOptOutWindowBlocks(address /*operator*/) external pure returns (uint256) {
         return 0;
     }
-
-    function operatorShares(address /*operator*/, IStrategy /*strategy*/) external pure returns (uint256) {}
 
     function isDelegated(address staker) external view returns (bool) {
         return (delegatedTo[staker] != address(0));
