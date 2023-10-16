@@ -37,7 +37,7 @@ jobs:
       run: forge install
 
     - name: Run forge test for the file
-      run: forge test --match-path ${{ matrix.file }}
+      run: forge test --match-path src/test/${{ matrix.file }}
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
