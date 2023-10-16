@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IStrategyManager.sol";
 
 
 contract DelegationManagerMock is IDelegationManager, Test {
@@ -137,4 +138,33 @@ contract DelegationManagerMock is IDelegationManager, Test {
     ) external {}
 
     function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
+    
+    // onlyDelegationManager functions in StrategyManager
+    function addShares(
+        IStrategyManager strategyManager,
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external {
+        strategyManager.addShares(staker, strategy, shares);
+    }
+
+    function removeShares(
+        IStrategyManager strategyManager,
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external {
+        strategyManager.removeShares(staker, strategy, shares);
+    }
+
+    function withdrawSharesAsTokens(
+        IStrategyManager strategyManager,
+        address recipient,
+        IStrategy strategy,
+        uint256 shares,
+        IERC20 token
+    ) external {
+        strategyManager.withdrawSharesAsTokens(recipient, strategy, shares, token);
+    }
 }
