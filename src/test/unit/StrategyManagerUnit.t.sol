@@ -140,7 +140,7 @@ contract StrategyManagerUnitTests is Test, Utils {
                         initialOwner,
                         initialOwner,
                         pauserRegistry,
-                        0/*initialPausedStatus*/
+                        0 /*initialPausedStatus*/
                     )
                 )
             )
@@ -832,24 +832,18 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     function testAddSharesRevertsDelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyDelegationManager: not the DelegationManager")
-        );
+        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.addShares(strategyManager, address(this), dummyStrat, 1);
     }
 
     function testAddSharesRevertsStakerZeroAddress(uint256 amount) external {
-        cheats.expectRevert(
-            bytes("StrategyManager._addShares: staker cannot be zero address")
-        );
+        cheats.expectRevert(bytes("StrategyManager._addShares: staker cannot be zero address"));
         delegationManagerMock.addShares(strategyManager, address(0), dummyStrat, amount);
     }
 
     function testAddSharesRevertsZeroShares(address staker) external {
         cheats.assume(staker != address(0));
-        cheats.expectRevert(
-            bytes("StrategyManager._addShares: shares should not be zero!")
-        );
+        cheats.expectRevert(bytes("StrategyManager._addShares: shares should not be zero!"));
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, 0);
     }
 
@@ -894,21 +888,21 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     function testRemoveSharesRevertsDelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyDelegationManager: not the DelegationManager")
-        );
+        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    function testRemoveSharesRevertsShareAmountTooHigh(address staker, uint256 depositAmount, uint256 removeSharesAmount) external {
+    function testRemoveSharesRevertsShareAmountTooHigh(
+        address staker,
+        uint256 depositAmount,
+        uint256 removeSharesAmount
+    ) external {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply());
         cheats.assume(removeSharesAmount > depositAmount);
         IStrategy strategy = dummyStrat;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-        cheats.expectRevert(
-            bytes("StrategyManager._removeShares: shareAmount too high")
-        );
+        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
         delegationManagerMock.removeShares(strategyManager, staker, strategy, removeSharesAmount);
     }
 
@@ -934,7 +928,11 @@ contract StrategyManagerUnitTests is Test, Utils {
     }
 
     // Remove Strategy from staker strategy list with multiple strategies deposited
-    function testRemoveSharesRemovesStakerStrategyListMultipleStrat(address staker, uint256[3] memory amounts, uint8 randStrategy) external {
+    function testRemoveSharesRemovesStakerStrategyListMultipleStrat(
+        address staker,
+        uint256[3] memory amounts,
+        uint8 randStrategy
+    ) external {
         cheats.assume(staker != address(0));
         cheats.assume(amounts[0] > 0 && amounts[0] < dummyToken.totalSupply());
         cheats.assume(amounts[1] > 0 && amounts[1] < dummyToken.totalSupply());
@@ -1000,11 +998,17 @@ contract StrategyManagerUnitTests is Test, Utils {
             sharesAfter[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
-                require(!_isDepositedStrategy(staker, strategies[i]), "strategy should not be part of staker strategy list");
+                require(
+                    !_isDepositedStrategy(staker, strategies[i]),
+                    "strategy should not be part of staker strategy list"
+                );
                 require(sharesAfter[i] == 0, "sharesAfter != 0");
             } else {
                 require(_isDepositedStrategy(staker, strategies[i]), "strategy should be part of staker strategy list");
-                require(sharesAfter[i] == sharesBefore[i] - sharesAmounts[i], "sharesAfter != sharesBefore - sharesAmounts");
+                require(
+                    sharesAfter[i] == sharesBefore[i] - sharesAmounts[i],
+                    "sharesAfter != sharesBefore - sharesAmounts"
+                );
             }
         }
         require(
@@ -1015,25 +1019,29 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     function testWithdrawSharesAsTokensRevertsDelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(
-            bytes("StrategyManager.onlyDelegationManager: not the DelegationManager")
-        );
+        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    function testWithdrawSharesAsTokensRevertsShareAmountTooHigh(address staker, uint256 depositAmount, uint256 sharesAmount) external {
+    function testWithdrawSharesAsTokensRevertsShareAmountTooHigh(
+        address staker,
+        uint256 depositAmount,
+        uint256 sharesAmount
+    ) external {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-        cheats.expectRevert(
-            bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares")
-        );
+        cheats.expectRevert(bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares"));
         delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
     }
 
-    function testWithdrawSharesAsTokensSingleStrategyDeposited(address staker, uint256 depositAmount, uint256 sharesAmount) external {
+    function testWithdrawSharesAsTokensSingleStrategyDeposited(
+        address staker,
+        uint256 depositAmount,
+        uint256 sharesAmount
+    ) external {
         cheats.assume(staker != address(0));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply() && depositAmount >= sharesAmount);
         IStrategy strategy = dummyStrat;
@@ -1046,8 +1054,20 @@ contract StrategyManagerUnitTests is Test, Utils {
     }
 
     // INTERNAL / HELPER FUNCTIONS
-    function _setUpQueuedWithdrawalStructSingleStrat(address staker, address withdrawer, IERC20 token, IStrategy strategy, uint256 shareAmount)
-        internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, IERC20[] memory tokensArray, bytes32 withdrawalRoot)
+    function _setUpQueuedWithdrawalStructSingleStrat(
+        address staker,
+        address withdrawer,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shareAmount
+    )
+        internal
+        view
+        returns (
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        )
     {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         tokensArray = new IERC20[](1);
@@ -1055,17 +1075,15 @@ contract StrategyManagerUnitTests is Test, Utils {
         strategyArray[0] = strategy;
         tokensArray[0] = token;
         shareAmounts[0] = shareAmount;
-        queuedWithdrawal = 
-            IDelegationManager.Withdrawal({
-                strategies: strategyArray,
-                shares: shareAmounts,
-                staker: staker,
-                withdrawer: withdrawer,
-                nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
-                startBlock: uint32(block.number),
-                delegatedTo: strategyManager.delegation().delegatedTo(staker)
-            }
-        );
+        queuedWithdrawal = IDelegationManager.Withdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: strategyManager.delegation().delegatedTo(staker)
+        });
         // calculate the withdrawal root
         withdrawalRoot = delegationManagerMock.calculateWithdrawalRoot(queuedWithdrawal);
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
@@ -1118,20 +1136,16 @@ contract StrategyManagerUnitTests is Test, Utils {
         address withdrawer,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts
-    )
-        internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
-    {
-        queuedWithdrawal = 
-            IDelegationManager.Withdrawal({
-                strategies: strategyArray,
-                shares: shareAmounts,
-                staker: staker,
-                withdrawer: withdrawer,
-                nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
-                startBlock: uint32(block.number),
-                delegatedTo: strategyManager.delegation().delegatedTo(staker)
-            }
-        );
+    ) internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) {
+        queuedWithdrawal = IDelegationManager.Withdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: strategyManager.delegation().delegatedTo(staker)
+        });
         // calculate the withdrawal root
         withdrawalRoot = delegationManagerMock.calculateWithdrawalRoot(queuedWithdrawal);
         return (queuedWithdrawal, withdrawalRoot);
