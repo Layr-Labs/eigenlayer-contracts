@@ -295,13 +295,13 @@ contract M2Deploy is Script, Test {
             "strategyManager.withdrawalDelayBlocks incorrect"
         );
         // DelegationManager: Check view functions return pre-upgraded values
-        require(delegation.strategyManager() == strategyManager, "delegation.strategyManager incorrect");
+        require(DelegationManagerStorage(address(delegation)).strategyManager() == strategyManager, "delegation.strategyManager incorrect");
         require(
             delegation.domainSeparator() == delegationManagerDomainSeparator,
             "delegation.domainSeparator incorrect"
         );
-        require(delegation.slasher() == slasher, "delegation.slasher incorrect");
-        require(delegation.eigenPodManager() == eigenPodManager, "delegation.eigenPodManager incorrect");
+        require(DelegationManagerStorage(address(delegation)).slasher() == slasher, "delegation.slasher incorrect");
+        require(DelegationManagerStorage(address(delegation)).eigenPodManager() == eigenPodManager, "delegation.eigenPodManager incorrect");
         // EigenPodManager: check view functions return pre-upgraded values
         require(eigenPodManager.ethPOS() == ethPOS, "eigenPodManager.ethPOS incorrect");
         require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager.eigenPodBeacon incorrect");
@@ -313,7 +313,7 @@ contract M2Deploy is Script, Test {
         );
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
         require(eigenPodManager.maxPods() == maxPods, "eigenPodManager.maxPods incorrect");
-        require(eigenPodManager.delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
+        require(EigenPodManagerStorage(address(eigenPodManager)).delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
     }
 
     function _verifyContractsInitialized() internal {

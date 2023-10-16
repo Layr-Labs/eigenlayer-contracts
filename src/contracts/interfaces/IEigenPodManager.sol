@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "./IETHPOSDeposit.sol";
 import "./IStrategyManager.sol";
-import "./IDelegationManager.sol";
 import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
@@ -95,9 +94,6 @@ interface IEigenPodManager is IPausable {
 
     /// @notice EigenLayer's Slasher contract
     function slasher() external view returns (ISlasher);
-
-    /// @notice EigenLayer's DelegationManager contract
-    function delegationManager() external view returns (IDelegationManager);
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(address podOwner) external view returns (bool);

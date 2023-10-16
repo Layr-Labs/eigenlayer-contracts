@@ -8,7 +8,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IBeacon public eigenPodBeacon;
     IETHPOSDeposit public ethPOS;
-    IDelegationManager public delegationManager;
 
     function slasher() external view returns(ISlasher) {}
 

@@ -116,12 +116,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 
-    function slasher() external view returns (ISlasher) {}
-
-    function eigenPodManager() external view returns (IEigenPodManager) {}
-
-    function strategyManager() external view returns (IStrategyManager) {}
-
     function queueWithdrawal(
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
