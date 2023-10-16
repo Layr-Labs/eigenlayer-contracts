@@ -275,4 +275,125 @@ contract EigenPodUnitTests is EigenPodTests {
         newPod.verifyBalanceUpdate(oracleTimestamp, validatorIndex, stateRootProofStruct, proofs, validatorFields);
     }
 
+    function testWithdrawlBeforeRestakingFromNonPodOwnerAddress(uint256 amount, address nonPodOwner) external {
+        cheats.assume(nonPodOwner != podOwner);
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        
+        uint256 amount = 32 ether;
+
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
+
+        cheats.startPrank(nonPodOwner);
+        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
+        newPod.withdrawBeforeRestaking();
+        cheats.stopPrank();  
+    }
+
+    function testDelayedWithdrawalIsCreatedByWithdrawBeforeRestaking(uint256 amount) external {
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+        
+        uint256 amount = 32 ether;
+
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
+        cheats.deal(address(this), amount);
+        // simulate a withdrawal processed on the beacon chain, pod balance goes to 32 ETH
+        Address.sendValue(payable(address(newPod)), amount);
+        require(newPod.nonBeaconChainETHBalanceWei() == amount, "nonBeaconChainETHBalanceWei should be 32 ETH");
+
+        cheats.startPrank(podOwner);
+        newPod.withdrawBeforeRestaking();
+        cheats.stopPrank();
+
+        require(_getLatestDelayedWithdrawalAmount(podOwner) == amount, "Payment amount should be stake amount");
+        require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
+
+    }
+
+    function testFullWithdrawalAmounts(bytes32 pubkeyHash, uint64 withdrawalAmount) external {
+        _deployInternalFunctionTester();
+        IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
+            validatorIndex: 0,
+            restakedBalanceGwei: 0,
+            mostRecentBalanceUpdateTimestamp: 0,
+            status: IEigenPod.VALIDATOR_STATUS.ACTIVE
+        });
+        IEigenPod.VerifiedWithdrawal memory vw = podInternalFunctionTester.processFullWithdrawal(0, pubkeyHash, 0, podOwner, withdrawalAmount, validatorInfo);
+
+        if(withdrawalAmount > podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()){
+            require(vw.amountToSendGwei == withdrawalAmount - podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(), "newAmount should be MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR");
+        }
+        else{
+            require(vw.amountToSendGwei == 0, "newAmount should be withdrawalAmount");
+        }
+    }
+
+    function testProcessPartialWithdrawal(
+        uint40 validatorIndex,
+        uint64 withdrawalTimestamp,
+        address recipient,
+        uint64 partialWithdrawalAmountGwei
+    ) external {
+        _deployInternalFunctionTester();
+        cheats.expectEmit(true, true, true, true, address(podInternalFunctionTester));
+        emit PartialWithdrawalRedeemed(
+            validatorIndex,
+            withdrawalTimestamp,
+            recipient,
+            partialWithdrawalAmountGwei
+        );
+        IEigenPod.VerifiedWithdrawal memory vw = podInternalFunctionTester.processPartialWithdrawal(validatorIndex, withdrawalTimestamp, recipient, partialWithdrawalAmountGwei);
+
+        require(vw.amountToSendGwei == partialWithdrawalAmountGwei, "newAmount should be partialWithdrawalAmountGwei");
+    }
+
+    function testRecoverTokens(uint256 amount, address recipient) external {
+        cheats.assume(amount > 0 && amount < 1e30);  
+        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+        IERC20 randomToken = new ERC20PresetFixedSupply(
+            "rand",
+            "RAND",
+            1e30,
+            address(this)
+        );
+
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = randomToken;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+
+        randomToken.transfer(address(pod), amount);
+        require(randomToken.balanceOf(address(pod)) == amount, "randomToken balance should be amount");
+
+        uint256 recipientBalanceBefore = randomToken.balanceOf(recipient);
+        
+        cheats.startPrank(podOwner);
+        pod.recoverTokens(tokens, amounts, recipient);
+        cheats.stopPrank();
+        require(randomToken.balanceOf(address(recipient)) - recipientBalanceBefore == amount, "recipient should have received amount");
+    }
+
+    function testRecoverTokensMismatchedInputs() external {
+        uint256 tokenListLen = 5;
+        uint256 amountsToWithdrawLen = 2;
+        
+        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+
+        IERC20[] memory tokens = new IERC20[](tokenListLen);
+        uint256[] memory amounts = new uint256[](amountsToWithdrawLen);
+
+        cheats.expectRevert(bytes("EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length"));
+        cheats.startPrank(podOwner);
+        pod.recoverTokens(tokens, amounts, address(this));
+        cheats.stopPrank();
+    }
 }
