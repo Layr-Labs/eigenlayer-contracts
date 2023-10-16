@@ -102,7 +102,7 @@ contract EigenPodUnitTests is EigenPodTests {
     }
 
     //post M2, all new pods deployed will have "hasRestaked = true".  THis tests that
-    function testDeployedPodIsRestaked(address podOwner) public {
+    function testDeployedPodIsRestaked(address podOwner) public fuzzedAddress(podOwner) {
         cheats.startPrank(podOwner);
         eigenPodManager.createPod();
         cheats.stopPrank();
