@@ -6,6 +6,9 @@ methods {
     function decreaseDelegatedShares(address,address,uint256) external;
 	function increaseDelegatedShares(address,address,uint256) external;
 
+    // external calls from DelegationManager to ServiceManager
+    function _.updateStakes(address[]) external => NONDET;
+
 	// external calls to Slasher
     function _.isFrozen(address) external => DISPATCHER(true);
 	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
