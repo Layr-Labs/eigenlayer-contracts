@@ -315,6 +315,8 @@ contract EigenPodUnitTests is EigenPodTests {
         cheats.stopPrank();
 
         require(_getLatestDelayedWithdrawalAmount(podOwner) == amount, "Payment amount should be stake amount");
+        require(newPod.nonBeaconChainETHBalanceWei() == 0, "nonBeaconChainETHBalanceWei should be 32 ETH");
+
     }
 
     function testFullWithdrawalAmounts(bytes32 pubkeyHash, uint64 withdrawalAmount) external {
