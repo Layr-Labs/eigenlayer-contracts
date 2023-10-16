@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./IEigenPodManager.sol";
+import "./IStrategyManager.sol";
 import "./ISlasher.sol";
 import "./ISignatureUtils.sol";
 import "./IStakeRegistry.sol";
@@ -310,6 +311,9 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Address of the EigenPodManager
     function eigenPodManager() external view returns (IEigenPodManager);
 
+    /// @notice Address of the StrategyManager
+    function strategyManager() external view returns (IStrategyManager);
+
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
     function stakeRegistry() external view returns (IStakeRegistry);
 
@@ -428,6 +432,9 @@ interface IDelegationManager is ISignatureUtils {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
+    
+    /// @notice Function that migrates queued withdrawal from strategyManger to delegationManager
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.

@@ -120,6 +120,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function eigenPodManager() external view returns (IEigenPodManager) {}
 
+    function strategyManager() external view returns (IStrategyManager) {}
+
     function queueWithdrawal(
         IStrategy[] calldata strategies,
         uint256[] calldata shares,
@@ -139,4 +141,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
         uint256[] calldata middlewareTimesIndexes,
         bool[] calldata receiveAsTokens
     ) external {}
+
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
 }
