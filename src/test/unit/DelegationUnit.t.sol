@@ -2279,6 +2279,99 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
     }
 
+    // ensures that when the staker and withdrawer are different and a withdrawal is completed as shares (i.e. not as tokens)
+    // that the shares get added back to the right operator
+    function test_completingWithdrawalAsSharesAddsSharesToCorrectOperator() external {
+        address staker = address(this);
+        address withdrawer = address(1000);
+        address operator_for_staker = address(1001);
+        address operator_for_withdrawer = address(1002);
+
+        // register operators
+        bytes32 salt;
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator_for_staker,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        testRegisterAsOperator(operator_for_staker, operatorDetails, emptyStringForMetadataURI);
+        testRegisterAsOperator(operator_for_withdrawer, operatorDetails, emptyStringForMetadataURI);
+
+        // delegate from the `staker` and withdrawer to the operators
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        cheats.startPrank(staker);
+        delegationManager.delegateTo(operator_for_staker, approverSignatureAndExpiry, salt);        
+        cheats.stopPrank();
+        cheats.startPrank(withdrawer);
+        delegationManager.delegateTo(operator_for_withdrawer, approverSignatureAndExpiry, salt);        
+        cheats.stopPrank();
+
+        // Setup input params
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = strategyMock;
+        strategies[1] = delegationManager.beaconChainETHStrategy();
+        strategies[2] = strategyMock3;
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = 1e18;
+        amounts[1] = 2e18;
+        amounts[2] = 3e18;
+
+        (
+            IDelegationManager.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpWithdrawalStruct_MultipleStrategies({
+                staker: staker,
+                withdrawer: withdrawer,
+                strategyArray: strategies,
+                shareAmounts: amounts
+            });
+
+        // give both the operators a bunch of delegated shares, so we can decrement them when queuing the withdrawal
+        cheats.startPrank(address(delegationManager.strategyManager()));
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            delegationManager.increaseDelegatedShares(staker, strategies[i], amounts[i]);
+            delegationManager.increaseDelegatedShares(withdrawer, strategies[i], amounts[i]);
+        }
+        cheats.stopPrank();
+
+        // queue the withdrawal
+        cheats.startPrank(staker);
+        delegationManager.queueWithdrawal(strategies, amounts, withdrawer);        
+        cheats.stopPrank();
+
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            require(delegationManager.operatorShares(operator_for_staker, strategies[i]) == 0,
+                "staker operator shares incorrect after queueing");
+            require(delegationManager.operatorShares(operator_for_withdrawer, strategies[i]) == amounts[i],
+                "withdrawer operator shares incorrect after queuing");
+        }
+
+        // complete the withdrawal
+        cheats.startPrank(withdrawer);
+        IERC20[] memory tokens;
+        delegationManager.completeQueuedWithdrawal(
+            withdrawal,
+            tokens,
+            0 /*middlewareTimesIndex*/,
+            false /*receiveAsTokens*/
+        );
+        cheats.stopPrank();
+
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] != delegationManager.beaconChainETHStrategy()) {
+                require(delegationManager.operatorShares(operator_for_staker, strategies[i]) == 0,
+                    "staker operator shares incorrect after completing withdrawal");
+                require(delegationManager.operatorShares(operator_for_withdrawer, strategies[i]) == 2 * amounts[i],
+                    "withdrawer operator shares incorrect after completing withdrawal");
+            } else {
+                require(delegationManager.operatorShares(operator_for_staker, strategies[i]) == amounts[i],
+                    "staker operator beaconChainETHStrategy shares incorrect after completing withdrawal");
+                require(delegationManager.operatorShares(operator_for_withdrawer, strategies[i]) == amounts[i],
+                    "withdrawer operator beaconChainETHStrategy shares incorrect after completing withdrawal");
+            }
+        }
+    }
+
     /**
     * INTERNAL / HELPER FUNCTIONS
     */
