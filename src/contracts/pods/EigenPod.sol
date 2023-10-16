@@ -17,6 +17,7 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IEigenPod.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
+import "../interfaces/IFunctionGateway.sol";
 
 import "./EigenPodPausingConstants.sol";
 
@@ -94,7 +95,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public nonBeaconChainETHBalanceWei;
 
     /// @notice This variable tracks the total amoutn of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint256 public totalPartialWithdrawalAmountClaimed;
+    uint64 public totalPartialWithdrawalAmountClaimedGwei;
+
+    /// @notice address of the succinct proof fullfilment contract
+    address public constant functionGatewayContractAddress;
+
+    /// @notice The function id of the consensus oracle.
+    bytes32 public constant FUNCTION_ID;
+
+    /// @notice The nonce of the oracle.
+    uint256 public nonce;
+
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -327,6 +338,24 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if (withdrawalSummary.sharesDeltaGwei != 0) {
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, withdrawalSummary.sharesDeltaGwei * int256(GWEI_TO_WEI));
         }
+    }
+
+    function submitPartialWithdrawalsBatchForVerification(
+        uint64 oracleTimestamp,
+        uint256 startBlock,
+        uint256 endBlock
+    ) external {
+        bytes32 oracleBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
+
+        IFunctionGateway(functionGatewayContractAddress).request{value: msg.value}(
+            FUNCTION_ID,
+            abi.encodePacked(
+                beaconBlockRoot, startBlock, endBlock
+            ),
+            this.handleCallback.selector,
+            abi.encode(nonce)
+        );
+        nonce++;
     }
 
     /*******************************************************************************
@@ -696,6 +725,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             recipient,
             partialWithdrawalAmountGwei
         );
+
+        //update the running total of partial withdrawals claimed via a merkle proof
+        totalPartialWithdrawalAmountClaimedGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
