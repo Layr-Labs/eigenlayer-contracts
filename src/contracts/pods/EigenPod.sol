@@ -673,14 +673,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         validatorInfo.restakedBalanceGwei = 0;
         validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
-        /**
-        * if multiple full withdrawals are proven for the same validator, we ensure the latest timestamp is recorded
-        * if the withdrawals are proven out of order. A validator may have to make multiple full withdrawals if 
-        * they redeposit into their exited validator.
-        */
-        if (validatorInfo.mostRecentBalanceUpdateTimestamp < withdrawalTimestamp){
-            validatorInfo.mostRecentBalanceUpdateTimestamp = withdrawalTimestamp;   
-        }
+
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, recipient, withdrawalAmountGwei);
