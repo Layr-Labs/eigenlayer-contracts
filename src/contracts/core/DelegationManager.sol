@@ -245,9 +245,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         (IStrategy[] memory strategies, uint256[] memory shares)
             = getDelegatableShares(staker);
 
-        // push the operator's new stake to the StakeRegistry
-        _pushOperatorStakeUpdate(operator);
-
         // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
             emit StakerForceUndelegated(staker, operator);
@@ -607,16 +604,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         podOwner: staker,
                         shares: withdrawal.shares[i]
                     });
-                    currentOperator = delegatedTo[staker];
+                    address podOwnerOperator = delegatedTo[staker];
                     // Similar to `isDelegated` logic
-                    if (currentOperator != address(0)) {
+                    if (podOwnerOperator != address(0)) {
                         _increaseOperatorShares({
-                            operator: currentOperator,
+                            operator: podOwnerOperator,
                             // the 'staker' here is the address receiving new shares
                             staker: staker,
                             strategy: withdrawal.strategies[i],
                             shares: increaseInDelegateableShares
                         });
+
+                        // push the operator's new stake to the StakeRegistry
+                        _pushOperatorStakeUpdate(podOwnerOperator);
                     }
                 } else {
                     strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
@@ -687,9 +687,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     strategy: strategies[i],
                     shares: shares[i]
                 });
-
-                // push the operator's new stake to the StakeRegistry
-                _pushOperatorStakeUpdate(operator);
             }
 
             // Remove active shares from EigenPodManager/StrategyManager
@@ -707,6 +704,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
 
             unchecked { ++i; }
+        }
+
+        // Push the operator's new stake to the StakeRegistry
+        if (operator != address(0)) {
+            _pushOperatorStakeUpdate(operator);
         }
 
         // Create queue entry and increment withdrawal nonce
