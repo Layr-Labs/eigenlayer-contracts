@@ -934,23 +934,20 @@ contract StrategyManagerUnitTests is Test, Utils {
         uint8 randStrategy
     ) external {
         cheats.assume(staker != address(0));
-        cheats.assume(amounts[0] > 0 && amounts[0] < dummyToken.totalSupply());
-        cheats.assume(amounts[1] > 0 && amounts[1] < dummyToken.totalSupply());
-        cheats.assume(amounts[2] > 0 && amounts[2] < dummyToken.totalSupply());
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
+        for (uint256 i = 0; i < 3; ++i) {
+            cheats.assume(amounts[i] > 0 && amounts[i] < dummyToken.totalSupply());
+            _depositIntoStrategySuccessfully(strategies[i], staker, amounts[i]);
+        }
         IStrategy removeStrategy = strategies[randStrategy % 3];
         uint256 removeAmount = amounts[randStrategy % 3];
-        _depositIntoStrategySuccessfully(strategies[0], staker, amounts[0]);
-        _depositIntoStrategySuccessfully(strategies[1], staker, amounts[1]);
-        _depositIntoStrategySuccessfully(strategies[2], staker, amounts[2]);
 
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256[] memory sharesBefore = new uint256[](3);
-        uint256 i;
-        for (i = 0; i < 3; ++i) {
+        for (uint256 i = 0; i < 3; ++i) {
             sharesBefore[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             require(sharesBefore[i] == amounts[i], "Staker has not deposited amount into strategy");
             require(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
@@ -969,32 +966,25 @@ contract StrategyManagerUnitTests is Test, Utils {
 
     // removeShares() from staker strategy list with multiple strategies deposited. Only callable by DelegationManager
     function testRemoveShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {
-        cheats.assume(sharesAmounts[0] > 0 && sharesAmounts[0] <= depositAmounts[0]);
-        cheats.assume(sharesAmounts[1] > 0 && sharesAmounts[1] <= depositAmounts[1]);
-        cheats.assume(sharesAmounts[2] > 0 && sharesAmounts[2] <= depositAmounts[2]);
         address staker = address(this);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
-        _depositIntoStrategySuccessfully(strategies[0], staker, depositAmounts[0]);
-        _depositIntoStrategySuccessfully(strategies[1], staker, depositAmounts[1]);
-        _depositIntoStrategySuccessfully(strategies[2], staker, depositAmounts[2]);
-        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256[] memory sharesBefore = new uint256[](3);
-        uint256 i;
-        for (i = 0; i < 3; ++i) {
+        for (uint256 i = 0; i < 3; ++i) {
+            cheats.assume(sharesAmounts[i] > 0 && sharesAmounts[i] <= depositAmounts[i]);
+            _depositIntoStrategySuccessfully(strategies[i], staker, depositAmounts[i]);
             sharesBefore[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             require(sharesBefore[i] == depositAmounts[i], "Staker has not deposited amount into strategy");
             require(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
         }
+        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
-        delegationManagerMock.removeShares(strategyManager, staker, strategies[0], sharesAmounts[0]);
-        delegationManagerMock.removeShares(strategyManager, staker, strategies[1], sharesAmounts[1]);
-        delegationManagerMock.removeShares(strategyManager, staker, strategies[2], sharesAmounts[2]);
         uint256 numPoppedStrategies = 0;
         uint256[] memory sharesAfter = new uint256[](3);
-        for (i = 0; i < 3; ++i) {
+        for (uint256 i = 0; i < 3; ++i) {
+            delegationManagerMock.removeShares(strategyManager, staker, strategies[i], sharesAmounts[i]);
             sharesAfter[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
