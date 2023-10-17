@@ -150,6 +150,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
+    modifier onlyFunctionGateway() {
+        require(msg.sender == functionGatewayContractAddress, "EigenPod.onlyFunctionGateway: not functionGateway");
+        _;
+    }
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
@@ -350,12 +355,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IFunctionGateway(functionGatewayContractAddress).request{value: msg.value}(
             FUNCTION_ID,
             abi.encodePacked(
-                beaconBlockRoot, startBlock, endBlock
+                beaconBlockRoot, address(this), startBlock, endBlock
             ),
             this.handleCallback.selector,
             abi.encode(nonce)
         );
         nonce++;
+    }
+
+    /// @notice The callback function for the ZK proof fulfiller.
+    function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
+        uint256 partialWithdrawalSumWei;
+        assembly {
+            value := mload(add(output, 0x20))
+        }
+        uint256 requestNonce = abi.decode(context, (uint256));
+        emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
     }
 
     /*******************************************************************************

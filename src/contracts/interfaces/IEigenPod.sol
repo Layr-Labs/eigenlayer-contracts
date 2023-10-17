@@ -94,6 +94,9 @@ interface IEigenPod {
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
+    /// @notice Emitted when partial withdrawal proof is fulfilled
+    event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
+
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
