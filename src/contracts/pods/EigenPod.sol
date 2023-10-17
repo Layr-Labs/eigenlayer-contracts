@@ -172,6 +172,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit NonBeaconChainETHReceived(msg.value);
     }
 
+//     BeaconState(epochToTimestamp(validator.withdrawableEpoch))
+//     .next_withdrawal_validator_index 
+// <= validator.Index 
+// < BeaconState(oracleTimestamp).next_withdrawal_validator_index
+
     /**
      * @notice This function records an update (either increase or decrease) in a validator's balance.
      * @param oracleTimestamp The oracleTimestamp whose state root the proof will be proven against.
@@ -189,7 +194,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
         bytes32[][] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
-
         require(
             (validatorIndices.length == balanceUpdateProofs.length) && (balanceUpdateProofs.length == validatorFields.length),
             "EigenPod.verifyBalanceUpdate: validatorIndices and proofs must be same length"
