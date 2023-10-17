@@ -19,6 +19,7 @@ import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -163,6 +164,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * initialized with hasRestaked set to true.
          */
         hasRestaked = true;
+        emit RestakingActivated(podOwner);
     }
 
     /// @notice payable fallback function that receives ether deposited to the eigenpods contract
@@ -672,7 +674,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         validatorInfo.restakedBalanceGwei = 0;
         validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
-        validatorInfo.mostRecentBalanceUpdateTimestamp = withdrawalTimestamp;
+
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, recipient, withdrawalAmountGwei);

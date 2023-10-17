@@ -11,6 +11,7 @@ import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/ServiceManagerMock.sol";
 import "../contracts/libraries/BeaconChainProofs.sol";
 import "./mocks/BeaconChainOracleMock.sol";
+import "./utils/EigenPodHarness.sol";
 
 
 contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
@@ -112,7 +113,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
-
 
     modifier fuzzedAddress(address addr) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);
@@ -1460,42 +1460,5 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
         BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
-    }
- }
-
-  contract EPInternalFunctions is EigenPod {
-
-    constructor(
-        IETHPOSDeposit _ethPOS,
-        IDelayedWithdrawalRouter _delayedWithdrawalRouter,
-        IEigenPodManager _eigenPodManager,
-        uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
-        uint64 _GENESIS_TIME
-    ) EigenPod(
-        _ethPOS,
-        _delayedWithdrawalRouter,
-        _eigenPodManager,
-        _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        _RESTAKED_BALANCE_OFFSET_GWEI,
-        _GENESIS_TIME
-    ) {}
-
-    function processFullWithdrawal(
-        uint40 validatorIndex,
-        bytes32 validatorPubkeyHash,
-        uint64 withdrawalHappenedTimestamp,
-        address recipient,
-        uint64 withdrawalAmountGwei,
-        ValidatorInfo memory validatorInfo
-    ) public {
-        _processFullWithdrawal(
-            validatorIndex,
-            validatorPubkeyHash,
-            withdrawalHappenedTimestamp,
-            recipient,
-            withdrawalAmountGwei,
-            validatorInfo
-        );
     }
  }
