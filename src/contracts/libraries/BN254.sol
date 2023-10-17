@@ -141,7 +141,7 @@ library BN254 {
         uint8 i = 0;
 
         //loop until we reach the most significant bit
-        while(s > m){
+        while(s >= m){
             unchecked {
                 // if the  current bit is 1, add the 2^n*p to the accumulated product
                 if ((s >> i) & 1 == 1) {
