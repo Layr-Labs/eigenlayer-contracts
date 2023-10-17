@@ -100,7 +100,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     address public functionGatewayContractAddress;
 
     /// @notice The function id of the consensus oracle.
-    bytes32 public FUNCTION_ID;
+    bytes32 public functionID;
 
     /// @notice The nonce of the oracle.
     uint256 public nonce;
