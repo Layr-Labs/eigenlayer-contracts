@@ -1,7 +1,7 @@
 import "../../contracts/pods/EigenPod.sol";
 
 
-contract EPInternalFunctions is EigenPod {
+abstract contract EPInternalFunctions is EigenPod {
 
     constructor(
         IETHPOSDeposit _ethPOS,

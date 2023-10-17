@@ -184,29 +184,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     function verifyBalanceUpdate(
         uint64 oracleTimestamp,
-        uint40 validatorIndex,
+        uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
-        bytes32[] calldata validatorFields
+        BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+        bytes32[][] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
-        
-        uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
-        bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
-
-        // Verify balance update timing:
-
-        // 1. Balance updates should only be performed on "ACTIVE" validators
         require(
-            validatorInfo.status == VALIDATOR_STATUS.ACTIVE, 
-            "EigenPod.verifyBalanceUpdate: Validator not active"
-        );
-
-        // 2. Balance updates should be more recent than the most recent update
-        require(
-            validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
-            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"
+            (validatorIndices.length == balanceUpdateProofs.length) && (balanceUpdateProofs.length == validatorFields.length),
+            "EigenPod.verifyBalanceUpdate: validatorIndices and proofs must be same length"
         );
 
         // 3. Balance updates should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
@@ -215,16 +201,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
         );
 
-        // 4. Balance updates should only be made before a validator is fully withdrawn. 
-        // -- A withdrawable validator may not have withdrawn yet, so we require their balance is nonzero
-        // -- A fully withdrawn validator should withdraw via verifyAndProcessWithdrawals
-        if (validatorFields.getWithdrawableEpoch() <= _timestampToEpoch(oracleTimestamp)) {
-            require(
-                validatorBalance > 0,
-                "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"
-            );
-        }
-
         // Verify passed-in beaconStateRoot against oracle-provided block root:
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
             latestBlockRoot: eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp),
@@ -232,41 +208,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             stateRootProof: stateRootProof.proof
         });
 
-        // Verify passed-in validatorFields against verified beaconStateRoot:
-        BeaconChainProofs.verifyValidatorFields({
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            validatorFields: validatorFields,
-            validatorFieldsProof: balanceUpdateProof.validatorFieldsProof,
-            validatorIndex: validatorIndex
-        });
-
-        // Verify passed-in validator balanceRoot against verified beaconStateRoot:
-        BeaconChainProofs.verifyValidatorBalance({
-            beaconStateRoot: stateRootProof.beaconStateRoot,
-            balanceRoot: balanceUpdateProof.balanceRoot,
-            validatorBalanceProof: balanceUpdateProof.validatorBalanceProof,
-            validatorIndex: validatorIndex
-        });
-
-        // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
-
-        uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
-        
-        // Update validator balance and timestamp, and save to state:
-        validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
-        validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
-        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
-
-        // If our new and old balances differ, calculate the delta and send to the EigenPodManager
-        if (newRestakedBalanceGwei != currentRestakedBalanceGwei) {
-            emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
-
-            int256 sharesDeltaGwei = _calculateSharesDelta({
-                newAmountGwei: newRestakedBalanceGwei,
-                previousAmountGwei: currentRestakedBalanceGwei
-            });
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDeltaGwei * int256(GWEI_TO_WEI));
+        for (uint256 i = 0; i < validatorIndices.length; i++) {
+            _verifyBalanceUpdate(
+                oracleTimestamp,
+                validatorIndices[i],
+                stateRootProof.beaconStateRoot,
+                balanceUpdateProofs[i],
+                validatorFields[i]
+            );
         }
     }
 
@@ -536,6 +485,81 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
 
         return validatorInfo.restakedBalanceGwei * GWEI_TO_WEI;
+    }
+
+    function _verifyBalanceUpdate(
+        uint64 oracleTimestamp,
+        uint40 validatorIndex,
+        bytes32 beaconStateRoot,
+        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
+        bytes32[] calldata validatorFields
+    ) internal {
+        
+        uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
+        bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+
+
+        // Verify balance update timing:
+
+        // 1. Balance updates should only be performed on "ACTIVE" validators
+        require(
+            validatorInfo.status == VALIDATOR_STATUS.ACTIVE, 
+            "EigenPod.verifyBalanceUpdate: Validator not active"
+        );
+
+        // 2. Balance updates should be more recent than the most recent update
+        require(
+            validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
+            "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"
+        );
+
+        // 4. Balance updates should only be made before a validator is fully withdrawn. 
+        // -- A withdrawable validator may not have withdrawn yet, so we require their balance is nonzero
+        // -- A fully withdrawn validator should withdraw via verifyAndProcessWithdrawals
+        if (validatorFields.getWithdrawableEpoch() <= _timestampToEpoch(oracleTimestamp)) {
+            require(
+                validatorBalance > 0,
+                "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"
+            );
+        }
+
+        // Verify passed-in validatorFields against verified beaconStateRoot:
+        BeaconChainProofs.verifyValidatorFields({
+            beaconStateRoot: beaconStateRoot,
+            validatorFields: validatorFields,
+            validatorFieldsProof: balanceUpdateProof.validatorFieldsProof,
+            validatorIndex: validatorIndex
+        });
+
+        // Verify passed-in validator balanceRoot against verified beaconStateRoot:
+        BeaconChainProofs.verifyValidatorBalance({
+            beaconStateRoot: beaconStateRoot,
+            balanceRoot: balanceUpdateProof.balanceRoot,
+            validatorBalanceProof: balanceUpdateProof.validatorBalanceProof,
+            validatorIndex: validatorIndex
+        });
+
+        // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
+
+        uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
+        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
+        
+        // Update validator balance and timestamp, and save to state:
+        validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
+        validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
+        _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
+
+        // If our new and old balances differ, calculate the delta and send to the EigenPodManager
+        if (newRestakedBalanceGwei != currentRestakedBalanceGwei) {
+            emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
+
+            int256 sharesDeltaGwei = _calculateSharesDelta({
+                newAmountGwei: newRestakedBalanceGwei,
+                previousAmountGwei: currentRestakedBalanceGwei
+            });
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDeltaGwei * int256(GWEI_TO_WEI));
+        }
     }
 
     function _verifyAndProcessWithdrawal(
