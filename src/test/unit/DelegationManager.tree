@@ -51,7 +51,7 @@
 │     │  └─ it should revert
 │     └─ when staker is an operator themselves
 │        └─ it should revert
-├─ delegateToWithSignature
+├─ delegateToBySignature
 │  ├─ when staker delegation signature is valid
 │  │  └─ it should delegate staker to operator
 │  └─ when staker delegation signature is invalid
@@ -68,5 +68,81 @@
 │  │  └─ it should revert
 │  └─ when caller isnt delegated to an operator
 │     └─ it should revert
+├─ queueWithdrawal
+│  ├─ when PAUSED_ENTER_WITHDRAWAL_QUEUE
+│  │  └─ it should revert 
+│  ├─ when input params are invalid
+│  │  ├─ when strategies length != shares length
+│  │  │  └─ it should revert 
+│  │  ├─ when withdrawer address is zero address
+│  │  │  └─ it should revert
+│  │  └─ when staker address is zero address
+│  │     └─ it should revert
+│  ├─ when multiple withdrawals queued with exact same params 
+│  │  ├─ should have different withdrawal roots set to true for pendingWithdrawals
+│  │  └─ nonce increments properly
+│  ├─ when staker has deposited a single strategy
+│  │  ├─ when staker has deposited through StrategyManager
+│  │  │  └─ should return withdrawalRoot successfully with proper shares updates
+│  │  └─ when staker has deposited beaconChainETHStrategy
+│  │     └─ should return withdrawalRoot successfully with proper shares updates
+│  ├─ when staker has deposited a single strategy w/ delegation
+│  │  ├─ when staker has deposited through StrategyManager
+│  │  │  └─ should return withdrawalRoot successfully with proper shares updates
+│  │  └─ when staker has deposited beaconChainETHStrategy
+│  │     └─ should return withdrawalRoot successfully with proper shares updates
+│  │
+│  ├─ when staker has deposited multiple strategies
+│  │  ├─ when staker has deposited only through StrategyManager
+│  │  │  └─ should return withdrawalRoot successfully with proper shares updates
+│  │  └─ when staker has deposited beaconChainETHStrategy and through StrategyManager
+│  │     └─ should return withdrawalRoot successfully with proper shares updates
+│  └─ when staker has deposited multiple strategies w/ delegation
+│     ├─ when staker has deposited only through StrategyManager
+│     │  └─ should return withdrawalRoot successfully with proper shares updates
+│     └─ when staker has deposited beaconChainETHStrategy and through StrategyManager
+│        └─ should return withdrawalRoot successfully with proper shares updates
+├─ completeQueuedWithdrawal
+│  ├─ when PAUSED_EXIT_WITHDRAWAL_QUEUE
+│  │  └─ it should revert 
+│  ├─ when input params are invalid
+│  │  ├─ when withdrawal root is not queued
+│  │  │  └─ it should revert 
+│  │  ├─ when delay period has not passed
+│  │  │  └─ it should revert
+│  │  ├─ when caller is not withdrawer address
+│  │  │  └─ it should revert
+│  │  └─ when receiveAsTokens is true
+|  │     ├─ tokens length != strategies length
+│  │     |  └─ it should revert
+│  │     └─ tokens array doesn't match with withdrawal.strategies
+│  │        └─ it should revert
+│  ├─ when receiveAsTokens is True
+|  │  ├─ when staker has queueWithdraw a single strategy
+|  │  │  └─ should call withdrawSharesAsTokens for single strategy
+|  │  └─ when staker has queueWithdraw multiple strategies
+|  │     └─ should call withdrawSharesAsTokens for all strategies
+│  └─ when receiveAsTokens is False (award shares back)
+|     ├─ when staker has queueWithdraw a single strategy
+|     │  ├─ when staker has queueWithdraw through StrategyManager
+|     │  │  └─ should increase staker shares
+|     │  └─ when staker has queueWithdraw beaconChainETHStrategy
+|     │     └─ should increase staker shares
+|     ├─ when staker has queueWithdraw a single strategy w/ delegation
+|     │  ├─ when staker has queueWithdraw through StrategyManager
+|     │  │  └─ should increase staker and operator shares
+|     │  └─ when staker has queueWithdraw beaconChainETHStrategy
+|     │     └─ should increase staker and operator shares
+|     │
+|     ├─ when staker has queueWithdraw multiple strategies
+|     │  ├─ when staker has queueWithdraw only through StrategyManager
+|     │  │  └─ should increase staker shares for all strategies
+|     │  └─ when staker has queueWithdraw beaconChainETHStrategy and through StrategyManager
+|     │     └─ should increase staker shares for all strategies including in EigenPodManager
+|     └─ when staker has queueWithdraw multiple strategies w/ delegation
+|        ├─ when staker has queueWithdraw only through StrategyManager
+|        │  └─ should increase staker/operator shares for all strategies
+|        └─ when staker has queueWithdraw beaconChainETHStrategy and through StrategyManager
+|           └─ should increase staker/operator shares for all strategies including in EigenPodManager
 ├─ increaseDelegatedShares
 └─ decreaseDelegatedShares
