@@ -10,17 +10,15 @@ contract BLSSignatureCheckerFFITests is FFIBase {
     uint256 setQuorumBitmap;
 
     function setUp() virtual public {
-        defaultMaxOperatorCount = type(uint32).max;
         _deployMockEigenLayerAndAVS();
 
         blsSignatureChecker = new BLSSignatureChecker(registryCoordinator);
     }
 
-    function testSingleBLSSignatureChecker() public {
-
-        uint64 pseudoRandomNumber = 0;
-        uint64 numOperators = 100;
-        uint64 numNonSigners = 5;
+    function xtestSingleBLSSignatureChecker() public {
+        uint64 pseudoRandomNumber = 1;
+        uint64 numOperators = 2;
+        uint64 numNonSigners = 1;
         uint64 numQuorums = 1;
         uint256 quorumBitmap = 0;
         

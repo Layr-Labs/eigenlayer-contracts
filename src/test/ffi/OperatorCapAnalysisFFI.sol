@@ -4,18 +4,39 @@ pragma solidity =0.8.12;
 import "./FFIBase.sol";
 import "./util/BLSSigCheckerExperimental.sol";
 
+//memory_limit = 1073741824
+//gas_limit = "18446744073709551615"
 contract OperatorCapAnalysisFFI is FFIBase {
     using BN254 for BN254.G1Point;
 
     BLSSigCheckerExperimental blsSignatureChecker;
 
-    function testOneQuorumLinearNonSigningCost() public { 
-        for(uint64 i = 0; i < 10; i++) {
-            _deployMockEigenLayerAndAVS();
-            defaultMaxOperatorCount = type(uint32).max;
-            blsSignatureChecker = new BLSSigCheckerExperimental(registryCoordinator);
-            _compareScalarMuls(i, 10, i, 1, 1);
-        }        
+    function xtestLoopedScalarMulComparison() public {
+        for(uint64 i = 1; i < 193; i++) {
+            _compareScalarMuls(
+                1, 
+                2, 
+                1, 
+                i,
+                (1 << i) - 1
+            );
+        }
+    }
+    
+    function testSingleScalarMulComparison() public {
+        uint64 pseudoRandomNumber = 1;
+        uint64 numOperators = 100;
+        uint64 numNonSigners = 99;
+        uint64 numQuorums = 2;
+        uint256 quorumBitmap = (1 << numQuorums) - 1;
+
+        _compareScalarMuls(
+            pseudoRandomNumber, 
+            numOperators, 
+            numNonSigners, 
+            numQuorums,
+            quorumBitmap
+        );
     }
 
     function _compareScalarMuls(
@@ -24,8 +45,13 @@ contract OperatorCapAnalysisFFI is FFIBase {
         uint64 numNonSigners, 
         uint64 numQuorums,
         uint256 setQuorumBitmap
-    ) internal {
+    ) internal returns (uint256) {
+        _deployMockEigenLayerAndAVS();
+        blsSignatureChecker = new BLSSigCheckerExperimental(registryCoordinator);
+
+        vm.pauseGasMetering();
         _setNonSignerPrivKeys(numNonSigners, pseudoRandomNumber);
+        vm.resumeGasMetering();
 
         (
             bytes32 msgHash, 
@@ -68,8 +94,10 @@ contract OperatorCapAnalysisFFI is FFIBase {
         
         if(tinyCost < regCost){
             emit log_named_uint("-", regCost - tinyCost);
+            return(tinyCost);
         } else {
             emit log_named_uint("+", tinyCost - regCost);
+            return(regCost);
         }
     }
 

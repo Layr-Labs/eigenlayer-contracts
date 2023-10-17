@@ -22,6 +22,7 @@ contract FFIBase is MockAVSDeployer, G2Operations {
         uint32 referenceBlockNumber, 
         BLSSignatureChecker.NonSignerStakesAndSignature memory nonSignerStakesAndSignature
     ) {
+        vm.pauseGasMetering();
 
         nonSignerStakesAndSignature.quorumApks = new BN254.G1Point[](numQuorums);
         nonSignerStakesAndSignature.nonSignerPubkeys = new BN254.G1Point[](numNonSigners);
@@ -49,7 +50,7 @@ contract FFIBase is MockAVSDeployer, G2Operations {
             if(setQuorumBitmap > 0){
                 quorumBitmap = setQuorumBitmap;
             } else {
-                quorumBitmap = privKey & (1 << numQuorums - 1) | 1;
+                quorumBitmap = privKey & ((1 << numQuorums) - 1) | 1;
                 if(i < numQuorums) {
                     quorumBitmap = quorumBitmap | (1 << i);
                 }
@@ -95,11 +96,13 @@ contract FFIBase is MockAVSDeployer, G2Operations {
         nonSignerStakesAndSignature.totalStakeIndices = checkSignaturesIndices.totalStakeIndices;
         nonSignerStakesAndSignature.nonSignerStakeIndices = checkSignaturesIndices.nonSignerStakeIndices;
 
+        vm.resumeGasMetering();
         return (msgHash, allQuorums, referenceBlockNumber, nonSignerStakesAndSignature);
     }
 
     function _setNonSignerPrivKeys(uint256 numNonSigners, uint256 pseudoRandomNumber) internal {
         nonSignerPrivateKeys = new uint256[](numNonSigners);
+
         for (uint256 i = 0; i < numNonSigners; i++) {
             nonSignerPrivateKeys[i] = uint256(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
             uint256 j = 0;

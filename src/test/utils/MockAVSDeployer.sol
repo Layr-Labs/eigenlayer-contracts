@@ -82,7 +82,7 @@ contract MockAVSDeployer is Test {
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
 
-    uint32 defaultMaxOperatorCount = 10;
+    uint32 defaultMaxOperatorCount = type(uint32).max;
     uint16 defaultKickBIPsOfOperatorStake = 15000;
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;

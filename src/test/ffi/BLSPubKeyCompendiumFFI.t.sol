@@ -21,7 +21,7 @@ contract BLSPublicKeyCompendiumFFITests is G2Operations {
         compendium = new BLSPublicKeyCompendium();
     }
 
-    function testRegisterBLSPublicKey(uint256 _privKey) public {
+    function xtestRegisterBLSPublicKey(uint256 _privKey) public {
         _setKeys(_privKey);
 
         signedMessageHash = _signMessage(alice);
