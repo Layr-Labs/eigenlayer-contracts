@@ -851,7 +851,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
         pod.withdrawBeforeRestaking();
     }
-    
+
     /* test deprecated since this is checked on the EigenPodManager level, rather than the EigenPod level
     TODO: @Sidu28 - check whether we have adequate coverage of the correct function
     function testWithdrawRestakedBeaconChainETHRevertsWhenPaused() external {
@@ -1373,6 +1373,23 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return proofs;
     }
 
+    function testCallArray1000() public {
+        uint64[] memory vi = new uint64[](1000);
+        Relayer relay = new Relayer();
+        uint gas = gasleft();
+        relay.callArray(vi);
+        emit log_named_uint("gas", gas - gasleft());
+    }
+
+    function testCallArray() public {
+        uint64[] memory vi = new uint64[](1);
+        Relayer relay = new Relayer();
+
+        uint gas = gasleft();
+        relay.callArray(vi);
+        emit log_named_uint("gas", gas - gasleft());
+    }
+
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
     function _getWithdrawalProof() internal returns(BeaconChainProofs.WithdrawalProof memory) {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
@@ -1460,5 +1477,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
         BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
+    }
+
+    function callArray(
+        uint64[] calldata vi
+    ) external {
     }
  }

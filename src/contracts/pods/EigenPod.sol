@@ -98,10 +98,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint64 public totalPartialWithdrawalAmountClaimedGwei;
 
     /// @notice address of the succinct proof fullfilment contract
-    address public constant functionGatewayContractAddress;
+    address public functionGatewayContractAddress;
 
     /// @notice The function id of the consensus oracle.
-    bytes32 public constant FUNCTION_ID;
+    bytes32 public functionID;
 
     /// @notice The nonce of the oracle.
     uint256 public nonce;
@@ -820,5 +820,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[42] private __gap;
 }
