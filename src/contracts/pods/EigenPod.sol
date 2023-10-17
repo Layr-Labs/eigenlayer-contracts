@@ -96,15 +96,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amoutn of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public totalPartialWithdrawalAmountClaimedGwei;
 
-    /// @notice address of the succinct proof fullfilment contract
-    address public functionGatewayContractAddress;
-
-    /// @notice The function id of the consensus oracle.
-    bytes32 public functionID;
-
-    /// @notice The nonce of the oracle.
-    uint256 public nonce;
-
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
@@ -705,6 +696,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             recipient,
             partialWithdrawalAmountGwei
         );
+
+        totalPartialWithdrawalAmountClaimedGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
