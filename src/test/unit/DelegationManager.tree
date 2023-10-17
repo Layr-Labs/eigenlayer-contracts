@@ -10,13 +10,13 @@
 │  │  │  └─ it should revert
 │  │  ├─ when operator tries to decrease their stakerOptOutWindowBlocks
 │  │  │  └─ it should revert
-│  │  └─ when operator tries to incrase their stakerOptOutWindowBlocks more than maxStakerOptOutWindowBlocks
+│  │  └─ when operator tries to increase their stakerOptOutWindowBlocks more than maxStakerOptOutWindowBlocks
 │  │     └─ it should revert
 │  └─ when caller is not an operator
 │     └─ it should revert
 ├─ updateOperatorMetadata
 │  ├─ when caller is an operator
-│  │  └─ it should update the operators metadataURI
+│  │  └─ it should emit the operators metadataURI
 │  └─ when caller is not an operator
 │     └─ it should revert
 ├─ registerAsOperator
