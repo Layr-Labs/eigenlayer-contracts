@@ -293,8 +293,9 @@ When completing a queued undelegation or withdrawal, the `DelegationManager` cal
 If a Staker wishes to fully withdraw their beacon chain ETH (via `withdrawSharesAsTokens`), they need to exit their validator and prove the withdrawal *prior to* completing the queued withdrawal. They do so using this method:
 * [`EigenPod.verifyAndProcessWithdrawals`](#eigenpodverifyandprocesswithdrawals)
 
-TODO 'splain this one:
+Some withdrawals are sent to their destination via the `DelayedWithdrawalRouter`:
 * [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
+* [`DelayedWithdrawalRouter.claimDelayedWithdrawals`](#delayedwithdrawalrouterclaimdelayedwithdrawals)
 
 #### `EigenPodManager.removeShares`
 
@@ -456,9 +457,7 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
         * Any withdrawal amount in excess of `MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR` is immediately withdrawn (see [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
             * The remainder (`MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`) must be withdrawn through the `DelegationManager's` withdrawal flow, but in the meantime is added to `EigenPod.withdrawableRestakedExecutionLayerGwei`
         * If the amount being withdrawn is not equal to the current accounted-for validator balance, a `shareDelta` is calculated to be sent to ([`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)).
-        * The validator's info is updated to reflect its `WITHDRAWN` status:
-            * `restakedBalanceGwei` is set to 0
-            * `mostRecentBalanceUpdateTimestamp` is updated to the timestamp given by `withdrawalProof.timestampRoot`
+        * The validator's info is updated to reflect its `WITHDRAWN` status, and `restakedBalanceGwei` is set to 0
     * If this is a partial withdrawal:
         * The withdrawal amount is withdrawn (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
 
@@ -478,7 +477,57 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
 
 #### `DelayedWithdrawalRouter.createDelayedWithdrawal`
 
-TODO
+```solidity
+function createDelayedWithdrawal(
+    address podOwner,
+    address recipient
+) 
+    external 
+    payable 
+    onlyEigenPod(podOwner) 
+    onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
+```
+
+Used by `EigenPods` to queue a withdrawal of beacon chain ETH that can be claimed by a `recipient` after `withdrawalDelayBlocks` have passed.
+
+*Effects*:
+* Creates a `DelayedWithdrawal` for the `recipient` in the amount of `msg.value`, starting at the current block
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_DELAYED_WITHDRAWAL_CLAIMS`
+* Caller MUST be the `EigenPod` associated with the `podOwner`
+* `recipient` MUST NOT be zero
+
+#### `DelayedWithdrawalRouter.claimDelayedWithdrawals`
+
+```solidity
+function claimDelayedWithdrawals(
+    address recipient,
+    uint256 maxNumberOfDelayedWithdrawalsToClaim
+) 
+    external 
+    nonReentrant 
+    onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
+
+// (Uses `msg.sender` as `recipient`)
+function claimDelayedWithdrawals(
+    uint256 maxNumberOfDelayedWithdrawalsToClaim
+) 
+    external 
+    nonReentrant 
+    onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS)
+```
+
+After `withdrawalDelayBlocks`, withdrawals can be claimed using these methods. Claims may be processed on behalf of someone else by passing their address in as the `recipient`. Otherwise, claims are processed on behalf of `msg.sender`.
+
+This method loops over up to `maxNumberOfDelayedWithdrawalsToClaim` withdrawals, tallys each withdrawal amount, and sends the total to the `recipient`.
+
+*Effects*:
+* Updates the `recipient's` `delayedWithdrawalsCompleted`
+* Sends ETH from completed withdrawals to the `recipient`
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_DELAYED_WITHDRAWAL_CLAIMS`
 
 ---
 
@@ -486,6 +535,7 @@ TODO
 
 * [`EigenPodManager.setMaxPods`](#eigenpodmanagersetmaxpods)
 * [`EigenPodManager.updateBeaconChainOracle`](#eigenpodmanagerupdatebeaconchainoracle)
+* [`DelayedWithdrawalRouter.setWithdrawalDelayBlocks`](#delayedwithdrawalroutersetwithdrawaldelayblocks)
 
 #### `EigenPodManager.setMaxPods`
 
@@ -493,11 +543,13 @@ TODO
 function setMaxPods(uint256 newMaxPods) external onlyUnpauser
 ```
 
+Allows the unpauser to update the maximum number of `EigenPods` that the `EigenPodManager` can create.
+
 *Effects*:
-* TODO
+* Updates `EigenPodManager.maxPods`
 
 *Requirements*:
-* TODO
+* Caller MUST be the unpauser
 
 #### `EigenPodManager.updateBeaconChainOracle`
 
@@ -505,11 +557,30 @@ function setMaxPods(uint256 newMaxPods) external onlyUnpauser
 function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external onlyOwner
 ```
 
+Allows the owner to update the address of the oracle used by `EigenPods` to retrieve beacon chain state roots (used when verifying beacon chain state proofs).
+
 *Effects*:
-* TODO
+* Updates `EigenPodManager.beaconChainOracle`
 
 *Requirements*:
-* TODO
+* Caller MUST be the owner
+
+#### `DelayedWithdrawalRouter.setWithdrawalDelayBlocks`
+
+```solidity
+function setWithdrawalDelayBlocks(uint256 newValue) external onlyOwner
+```
+
+Allows the `DelayedWithdrawalRouter` to update the delay between withdrawal creation and claimability.
+
+The new delay can't exceed `MAX_WITHDRAWAL_DELAY_BLOCKS`.
+
+*Effects*:
+* Updates `DelayedWithdrawalRouter.withdrawalDelayBlocks`
+
+*Requirements*:
+* Caller MUST be the owner
+* `newValue` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS`
 
 ---
 
@@ -619,8 +690,47 @@ Allows the Pod Owner to withdraw any ETH in the `EigenPod` via the `DelayedWithd
 
 #### `EigenPod.withdrawNonBeaconChainETHBalanceWei`
 
-TODO
+```solidity
+function withdrawNonBeaconChainETHBalanceWei(
+    address recipient,
+    uint256 amountToWithdraw
+) 
+    external 
+    onlyEigenPodOwner
+```
+
+Allows the Pod Owner to withdraw ETH accidentally sent to the contract's `receive` function.
+
+The `receive` function updates `nonBeaconChainETHBalanceWei`, which this function uses to calculate how much can be withdrawn.
+
+Withdrawals from this function are sent via the `DelayedWithdrawalRouter`, and can be claimed by the passed-in `recipient`.
+
+*Effects:*
+* Decrements `nonBeaconChainETHBalanceWei`
+* Sends `amountToWithdraw` wei to [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
+
+*Requirements:*
+* Caller MUST be the Pod Owner
+* `amountToWithdraw` MUST NOT be greater than the amount sent to the contract's `receive` function
+* See [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
 #### `EigenPod.recoverTokens`
 
-TODO
+```solidity
+function recoverTokens(
+    IERC20[] memory tokenList,
+    uint256[] memory amountsToWithdraw,
+    address recipient
+) 
+    external 
+    onlyEigenPodOwner
+```
+
+Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
+
+*Effects:*
+* Calls `transfer` on each of the ERC20's in `tokenList`, sending the corresponding `amountsToWithdraw` to the `recipient`
+
+*Requirements:*
+* `tokenList` and `amountsToWithdraw` MUST have equal lengths
+* Caller MUST be the Pod Owner

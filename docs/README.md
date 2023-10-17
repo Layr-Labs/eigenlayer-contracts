@@ -25,8 +25,8 @@ M2 adds several features, the most important of which is the basic support neede
 
 These contracts work together to enable native ETH restaking:
 * Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
-* The `EigenPodManager` handles `EigenPod` creation, validator withdrawal, and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
-* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds.
+* The `EigenPodManager` handles `EigenPod` creation and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
+* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing certain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that most withdrawals are processed via the `DelegationManager`, not the `DelayedWithdrawalRouter`).
 * The `EigenLayerBeaconOracle` provides beacon chain block roots for use in various proofs. The oracle is supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
 See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md).
@@ -39,7 +39,7 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 | [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy | TODO |
 
 These contracts work together to enable restaking for LSTs:
-* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits and withdrawals from each of the 3 LST-specific strategies, and manages interactions between users with restaked LSTs and the `DelegationManager`.
+* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each of the 3 LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
 * `StrategyBaseTVLLimits` is deployed as three separate instances, one for each supported LST (cbETH, rETH, and stETH). When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
@@ -50,7 +50,7 @@ See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md
 | -------- | -------- | -------- | -------- |
 | [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy | TODO |
 
-The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), and to keep track of shares being delegated to Operators across different strategies.
+The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
 
@@ -60,12 +60,4 @@ See full documentation in [`/core/DelegationManager.md`](./core/DelegationManage
 | -------- | -------- | -------- | -------- |
 | [`Slasher.sol`](../src/contracts/core/Slasher.sol) | Singleton | Transparent proxy | TODO |
 
-The `Slasher` is deployed, but will remain completely paused during M2. Though some contracts make calls to the `Slasher`, they are all currently no-ops.
-
-#### Supporting Components
-
-**PauserRegistry and MSig**: TODO
-
-**ExecutorMsig and Comm/Ops/Timelock Msigs**
-
-**Proxies and ProxyAdmin**
+The `Slasher` is deployed, but will remain completely paused during M2. Its design is not finalized.
