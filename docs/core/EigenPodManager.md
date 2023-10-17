@@ -459,6 +459,7 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
         * If the amount being withdrawn is not equal to the current accounted-for validator balance, a `shareDelta` is calculated to be sent to ([`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)).
         * The validator's info is updated to reflect its `WITHDRAWN` status, and `restakedBalanceGwei` is set to 0
     * If this is a partial withdrawal:
+        * The withdrawal amount is added to `sumOfPartialWithdrawalsClaimedGwei`
         * The withdrawal amount is withdrawn (via [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal))
 
 *Requirements*:
