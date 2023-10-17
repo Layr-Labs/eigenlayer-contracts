@@ -7,6 +7,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../interfaces/IBeaconChainOracle.sol";
+import "../interfaces/IFunctionGateway.sol";
 
 import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
@@ -57,12 +58,14 @@ contract EigenPodManager is
     function initialize(
         uint256 _maxPods,
         IBeaconChainOracle _beaconChainOracle,
+        IFunctionGateway _functionGateway,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
         _setMaxPods(_maxPods);
         _updateBeaconChainOracle(_beaconChainOracle);
+        _updateFunctionGateway(_functionGateway);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
@@ -228,6 +231,14 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
+    /**
+    * @notice Updates the FunctionGateway contract that is used to request partial withdrawal proofs
+    * @param newFunctionGateway is the new FunctionGateway contract being pointed to
+    */
+    function updateFunctionGateway(IFunctionGateway newFunctionGateway) external onlyOwner {
+        _updateFunctionGateway(newFunctionGateway);
+    }
+
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
@@ -254,6 +265,11 @@ contract EigenPodManager is
     function _updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) internal {
         beaconChainOracle = newBeaconChainOracle;
         emit BeaconOracleUpdated(address(newBeaconChainOracle));
+    }
+
+    function _updateFunctionGateway(IFunctionGateway newFunctionGateway) internal {
+        functionGateway = newFunctionGateway;
+        emit FunctionGatewayUpdated(address(newFunctionGateway));
     }
 
     /// @notice Internal setter for `maxPods` that also emits an event
@@ -309,12 +325,32 @@ contract EigenPodManager is
     }
 
     /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32) {
+    function getBlockRootAtTimestamp(uint64 timestamp) public view returns (bytes32) {
         bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
         require(
             stateRoot != bytes32(0),
             "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
         );
         return stateRoot;
+    }
+
+
+    function requestProofViaFunctionGateway(
+        bytes32 FUNCTION_ID,
+        uint256 startBlock,
+        uint256 endBlock,
+        address podAddress,
+        uint64 oracleTimestamp,
+        uint256 nonce,
+        bytes4 callbackSelector
+    ) external payable {
+        functionGateway.request{value: msg.value}(
+            FUNCTION_ID,
+            abi.encodePacked(
+                getBlockRootAtTimestamp(oracleTimestamp), podAddress, startBlock, endBlock
+            ),
+            callbackSelector,
+            abi.encode(nonce)
+        );
     }
 }

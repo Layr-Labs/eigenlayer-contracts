@@ -9,6 +9,7 @@ import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
+import "./IFunctionGateway.sol";
 
 /**
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
@@ -38,6 +39,8 @@ interface IEigenPodManager is IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+
+    event FunctionGatewayUpdated(address indexed newFunctionGateway);
 
     /**
      * @notice Creates an EigenPod for the sender.
@@ -135,4 +138,17 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+    function requestProofViaFunctionGateway(
+        bytes32 FUNCTION_ID,
+        uint256 startBlock,
+        uint256 endBlock,
+        address podAddress,
+        uint64 oracleTimestamp,
+        uint256 nonce,
+        bytes4 callbackSelector
+    ) external payable;
+
+
+    function functionGateway() external view returns (IFunctionGateway);
 }

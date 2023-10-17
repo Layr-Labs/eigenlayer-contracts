@@ -9,6 +9,7 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
+import "../interfaces/IFunctionGateway.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice The ETH2 Deposit Contract
@@ -69,6 +70,9 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public withdrawalRootPending;
+
+    /// @notice Succinct's function gateway to request proofs for partial withdrawals
+    IFunctionGateway public functionGateway;
 
     constructor(
         IETHPOSDeposit _ethPOS,

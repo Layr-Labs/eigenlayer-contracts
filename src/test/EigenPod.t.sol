@@ -1373,23 +1373,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return proofs;
     }
 
-    function testCallArray1000() public {
-        uint64[] memory vi = new uint64[](1000);
-        Relayer relay = new Relayer();
-        uint gas = gasleft();
-        relay.callArray(vi);
-        emit log_named_uint("gas", gas - gasleft());
-    }
-
-    function testCallArray() public {
-        uint64[] memory vi = new uint64[](1);
-        Relayer relay = new Relayer();
-
-        uint gas = gasleft();
-        relay.callArray(vi);
-        emit log_named_uint("gas", gas - gasleft());
-    }
-
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
     function _getWithdrawalProof() internal returns(BeaconChainProofs.WithdrawalProof memory) {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);

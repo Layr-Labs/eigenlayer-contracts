@@ -94,12 +94,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
     uint256 public nonBeaconChainETHBalanceWei;
 
-    /// @notice This variable tracks the total amoutn of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint64 public totalPartialWithdrawalAmountClaimedGwei;
+     /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
+    uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
-    /// @notice The nonce of the oracle.
+    /// @notice prover nonce for the function gateway contract
     uint256 public nonce;
-
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -145,7 +144,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     modifier onlyFunctionGateway() {
-        require(msg.sender == functionGatewayContractAddress, "EigenPod.onlyFunctionGateway: not functionGateway");
+        require(msg.sender == address(eigenPodManager.functionGateway()), "EigenPod.onlyFunctionGateway: not functionGateway");
         _;
     }
 
@@ -177,6 +176,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * initialized with hasRestaked set to true.
          */
         hasRestaked = true;
+        emit RestakingActivated(podOwner);
     }
 
     /// @notice payable fallback function that receives ether deposited to the eigenpods contract
@@ -342,18 +342,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
         uint256 startBlock,
-        uint256 endBlock
+        uint256 endBlock,
+        bytes32 FUNCTION_ID
     ) external {
-        bytes32 oracleBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
-
-        IFunctionGateway(functionGatewayContractAddress).request{value: msg.value}(
-            FUNCTION_ID,
-            abi.encodePacked(
-                beaconBlockRoot, address(this), startBlock, endBlock
-            ),
-            this.handleCallback.selector,
-            abi.encode(nonce)
+        eigenPodManager.requestProofViaFunctionGateway(
+            FUNCTION_ID, 
+            startBlock,
+            endBlock,
+            address(this),
+            oracleTimestamp,
+            nonce,
+            this.handleCallback.selector
         );
+
         nonce++;
     }
 
@@ -361,7 +362,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
         uint256 partialWithdrawalSumWei;
         assembly {
-            value := mload(add(output, 0x20))
+            partialWithdrawalSumWei := mload(add(output, 0x20))
         }
         uint256 requestNonce = abi.decode(context, (uint256));
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
@@ -735,8 +736,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
-        //update the running total of partial withdrawals claimed via a merkle proof
-        totalPartialWithdrawalAmountClaimedGwei += partialWithdrawalAmountGwei;
+        sumOfPartialWithdrawalsClaimedGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
