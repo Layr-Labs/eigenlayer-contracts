@@ -164,6 +164,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * initialized with hasRestaked set to true.
          */
         hasRestaked = true;
+        emit RestakingActivated(podOwner);
     }
 
     /// @notice payable fallback function that receives ether deposited to the eigenpods contract
