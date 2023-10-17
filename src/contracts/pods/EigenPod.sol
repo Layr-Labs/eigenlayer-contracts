@@ -94,7 +94,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public nonBeaconChainETHBalanceWei;
 
      /// @notice This variable tracks the total amoutn of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint64 public totalPartialWithdrawalAmountClaimedGwei;
+    uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -697,7 +697,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
-        totalPartialWithdrawalAmountClaimedGwei += partialWithdrawalAmountGwei;
+        sumOfPartialWithdrawalsClaimedGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
