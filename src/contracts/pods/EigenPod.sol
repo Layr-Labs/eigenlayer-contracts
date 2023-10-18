@@ -212,8 +212,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             stateRootProof: stateRootProof.proof
         });
 
+        int256 sharesDeltaGwei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
-            _verifyBalanceUpdate(
+            sharesDeltaGwei += _verifyBalanceUpdate(
                 oracleTimestamp,
                 validatorIndices[i],
                 stateRootProof.beaconStateRoot,
@@ -221,6 +222,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 validatorFields[i]
             );
         }
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDeltaGwei);
     }
 
     /**
@@ -497,7 +499,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 beaconStateRoot,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
-    ) internal {
+    ) internal returns(int256){
         
         uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
@@ -559,7 +561,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 newAmountGwei: newRestakedBalanceGwei,
                 previousAmountGwei: currentRestakedBalanceGwei
             });
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, sharesDeltaGwei * int256(GWEI_TO_WEI));
+
+            return sharesDeltaGwei * int256(GWEI_TO_WEI);
         }
     }
 
