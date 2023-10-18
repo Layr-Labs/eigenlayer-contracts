@@ -264,6 +264,34 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         });
     }
 
+    function queueWithdrawals(
+         IStrategy[][] calldata strategies,
+        uint256[][] calldata shares,
+        address[] calldata withdrawers
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
+        require(strategies.length == shares.length && shares.length == withdrawers.length, "DelegationManager.queueWithdrawals: input length mismatch");
+        bytes32[] memory withdrawalRoots = new bytes32[](strategies.length);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            require(strategies[i].length == shares[i].length, "DelegationManager.queueWithdrawal: input length mismatch");
+            require(withdrawers[i] != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+
+            address operator = delegatedTo[msg.sender];
+
+            // Remove shares from staker's strategies and place strategies/shares in queue.
+            // If the staker is delegated to an operator, the operator's delegated shares are also reduced
+            // NOTE: This will fail if the staker doesn't have the shares implied by the input parameters
+            withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                staker: msg.sender,
+                operator: operator,
+                withdrawer: withdrawers[i],
+                strategies: strategies[i],
+                shares: shares[i]
+            });
+        }
+        return withdrawalRoots;
+    }
+
     /**
      * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
      * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
