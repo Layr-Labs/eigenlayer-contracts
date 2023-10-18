@@ -3,7 +3,7 @@
 source .env 
 
 # Parse command-line arguments using getopt
-while getopts ":n:c:a:" opt; do
+while getopts ":n:c:a:k:" opt; do
   case $opt in
     n) NETWORK="$OPTARG";;
     c) CONTRACT="$OPTARG";;
@@ -14,7 +14,7 @@ done
 
 # Validate that network and contract inputs are provided
 if [ -z "$NETWORK" ] || [ -z "$CONTRACT" ] || [ -z "$ADDRESS" ]; then
-  echo "Usage: $0 -n <network> -c <contract> -a <address>"
+  echo "Usage: $0 -n <network> -c <contract> -a <address> -k"
   exit 1
 fi
 
@@ -44,8 +44,6 @@ else
     RPC_URL="$RPC_MAINNET"
 fi
 
-# Build contracts
-
 # Print the selected network and contract
 echo "Checking storage layouts for contract on: $NETWORK"
 echo "Contract to validate upgrade: $CONTRACT"
@@ -67,4 +65,11 @@ echo "Local storage saved to localLayout.csv"
 
 # Compare the two storage layouts via typescript script
 echo "Comparing storage layouts..."
-eval "npx ts-node script/validateUpgrade.ts --old onChainLayout.csv --new localLayout.csv"
+
+# Add -k operator if present
+if [ ! -k "$1" ]; then
+  echo "Keeping old storage layout files"
+  eval "npx ts-node script/upgrade/validateStorage.ts --old onChainLayout.csv --new localLayout.csv --keep"
+else
+  eval "npx ts-node script/upgrade/validateStorage.ts --old onChainLayout.csv --new localLayout.csv"
+fi

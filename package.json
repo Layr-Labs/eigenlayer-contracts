@@ -22,6 +22,7 @@
   "homepage": "https://github.com/Layr-Labs/eigenlayer-contracts#readme",
   "devDependencies": {
     "@types/yargs": "^17.0.28",
+    "chalk": "^4.1.0",
     "dotenv": "^16.3.1",
     "fs": "^0.0.1-security",
     "hardhat": "^2.12.4",
