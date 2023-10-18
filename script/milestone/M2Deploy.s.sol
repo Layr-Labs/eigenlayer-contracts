@@ -361,7 +361,7 @@ contract M2Deploy is Script, Test {
         // Check that withdrawal root resolves to prev root
         require(
             withdrawalRootBeforeUpgrade == strategyManager.calculateWithdrawalRoot(queuedWithdrawalLst),
-            "strategyManager.calculateWithdrawalRoot doesn't resolve to previous root"
+            "strategyManager.calculateWithdrawalRoot does not resolve to previous root"
         );
         require(
             StrategyManagerStorage(address(strategyManager)).withdrawalRootPending(withdrawalRootBeforeUpgrade),
@@ -385,13 +385,13 @@ contract M2Deploy is Script, Test {
         IPausable(address(delegation)).unpause(paused ^ (1 << 2)); // Withdrawal queue on 2nd bit
 
         // Migrate queued withdrawal to delegationManger
-        // Migrating the withdrawal root also verifies that the root hasn't been erroneously set to false
+        // Migrating the withdrawal root also verifies that the root has not been erroneously set to false
         IStrategyManager.DeprecatedStruct_QueuedWithdrawal[]
             memory queuedWithdrawals = new IStrategyManager.DeprecatedStruct_QueuedWithdrawal[](1);
         queuedWithdrawals[0] = queuedWithdrawalLst;
         delegation.migrateQueuedWithdrawals(queuedWithdrawals);
 
-        // If successful, confirms that queuedWithdrawal root hasn't been corrupted between upgrades
+        // If successful, confirms that queuedWithdrawal root has not been corrupted between upgrades
         // Queue withdrawal on delegationManager
         IDelegationManager.Withdrawal memory delegationManagerWithdrawal = IDelegationManager.Withdrawal({
             staker: queuedWithdrawalLst.staker,
