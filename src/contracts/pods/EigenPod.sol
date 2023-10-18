@@ -181,13 +181,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * @notice This function records an update (either increase or decrease) in a validator's balance.
      * @param oracleTimestamp The oracleTimestamp whose state root the proof will be proven against.
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
+     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
      * @param stateRootProof proves a `beaconStateRoot` against a block root fetched from the oracle
-     * @param balanceUpdateProof proves `validatorFields` and validator balance against the `beaconStateRoot`
+     * @param balanceUpdateProofs is a list of proofs that prove `validatorFields` and validator balance against the `beaconStateRoot` for each balance update being made
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyBalanceUpdate(
+    function verifyBalanceUpdates(
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
