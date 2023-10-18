@@ -773,35 +773,32 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             "validator restaked balance not updated");    
     }
 
-    function testTooSoonBalanceUpdates() public {
-        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+    function testTooSoonBalanceUpdate(uint64 oracleTimestamp, uint64 mostRecentBalanceUpdateTimestamp) external {
+        cheats.assume(oracleTimestamp < mostRecentBalanceUpdateTimestamp);
+        _deployInternalFunctionTester();
+        
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-
-        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-        setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-        // prove overcommitted balance
-        cheats.warp(GOERLI_GENESIS_TIME);
-        _proveOverCommittedStake(newPod);
-
-        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        validatorFieldsArray[0] = getValidatorFields();
+        bytes32[] memory validatorFields = getValidatorFields();
 
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
-
-        BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-        proofs[0] = _getBalanceUpdateProof();
+         BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
 
 
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
+        emit log_named_bytes32("newBeaconStateRoot", newBeaconStateRoot);
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-        newPod.verifyBalanceUpdates(uint64(block.timestamp), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+        podInternalFunctionTester.verifyBalanceUpdate(
+            oracleTimestamp,
+            0,
+            bytes32(0),
+            proof,
+            validatorFields,
+            mostRecentBalanceUpdateTimestamp
+        );
+
     }
 
     function testDeployingEigenPodRevertsWhenPaused() external {
@@ -1470,7 +1467,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
         RESTAKED_BALANCE_OFFSET_GWEI,
         GOERLI_GENESIS_TIME
-);
+        );
     }
 
 

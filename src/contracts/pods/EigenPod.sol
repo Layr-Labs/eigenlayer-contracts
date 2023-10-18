@@ -503,19 +503,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
-
-        // Verify balance update timing:
-
-        // 1. Balance updates should only be performed on "ACTIVE" validators
-        require(
-            validatorInfo.status == VALIDATOR_STATUS.ACTIVE, 
-            "EigenPod.verifyBalanceUpdate: Validator not active"
-        );
-
-        // 2. Balance updates should be more recent than the most recent update
+        // 1. Balance updates should be more recent than the most recent update
         require(
             validatorInfo.mostRecentBalanceUpdateTimestamp < oracleTimestamp,
             "EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"
+        );
+
+        // 2. Balance updates should only be performed on "ACTIVE" validators
+        require(
+            validatorInfo.status == VALIDATOR_STATUS.ACTIVE, 
+            "EigenPod.verifyBalanceUpdate: Validator not active"
         );
 
         // 4. Balance updates should only be made before a validator is fully withdrawn. 

@@ -49,4 +49,25 @@ contract EPInternalFunctions is EigenPod {
             withdrawalAmountGwei
         );
     }
+
+    function verifyBalanceUpdate(
+        uint64 oracleTimestamp,
+        uint40 validatorIndex,
+        bytes32 beaconStateRoot,
+        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
+        bytes32[] calldata validatorFields,
+        uint64 mostRecentBalanceUpdateTimestamp
+    )
+        public
+    {
+        bytes32 pkhash = validatorFields[0];
+        _validatorPubkeyHashToInfo[pkhash].mostRecentBalanceUpdateTimestamp = mostRecentBalanceUpdateTimestamp;
+        _verifyBalanceUpdate(
+            oracleTimestamp,
+            validatorIndex,
+            beaconStateRoot,
+            balanceUpdateProof,
+            validatorFields
+        );
+    }
  }
