@@ -117,6 +117,9 @@ interface IStrategyManager {
     /// @notice Returns the EigenPodManager contract of EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);
 
+    /// @notice Returns the address of the `strategyWhitelister`
+    function strategyWhitelister() external view returns (address);
+
 // LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
     // packed struct for queued withdrawals; helps deal with stack-too-deep errors
     struct DeprecatedStruct_WithdrawerAndNonce {

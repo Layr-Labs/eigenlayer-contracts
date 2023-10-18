@@ -95,7 +95,14 @@ interface IEigenPodManager is IPausable {
     /// @notice EigenLayer's Slasher contract
     function slasher() external view returns (ISlasher);
 
+    /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
     function hasPod(address podOwner) external view returns (bool);
+
+    /// @notice Returns the number of EigenPods that have been created
+    function numPods() external view returns (uint256);
+
+    /// @notice Returns the maximum number of EigenPods that can be created
+    function maxPods() external view returns (uint256);
 
     /**
      * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.

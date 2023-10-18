@@ -1,0 +1,19 @@
+{
+  "addresses": {
+    "delayedWithdrawalRouter": "0x89581561f1F98584F88b0d57c2180fb89225388f",
+    "delegation": "0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8",
+    "delegationImplementation": "0x34A1D3fff3958843C43aD80F30b94c510645C316",
+    "eigenPodBeacon": "0x3093F3B560352F896F0e9567019902C9Aff8C9a5",
+    "eigenPodImplementation": "0xBb2180ebd78ce97360503434eD37fcf4a1Df61c3",
+    "eigenPodManager": "0xa286b84C96aF280a49Fe1F40B9627C2A2827df41",
+    "eigenPodManagerImplementation": "0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496",
+    "ethPOS": "0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b",
+    "slasher": "0xD11d60b669Ecf7bE10329726043B3ac07B380C22",
+    "strategyManager": "0x779d1b5315df083e3F9E94cB495983500bA8E907",
+    "strategyManagerImplementation": "0x90193C961A926261B756D1E5bb255e67ff9498A1"
+  },
+  "chainInfo": {
+    "chainId": 5,
+    "deploymentBlock": 9878481
+  }
+}
