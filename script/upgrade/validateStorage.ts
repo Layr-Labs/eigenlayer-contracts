@@ -4,12 +4,6 @@ import "dotenv/config";
 import chalk from 'chalk';
 
 // This function does basic validation of storage
-// It does not validate proper retyping, and throws when slots have different types or when struct names in mappings change
-// Doesn't support non uint256 gaps
-// Doesn't support non-contiguous gaps (StorageUpgrade_CustomGap_V1
-// Supports consume and add gaps
-// Note: this could also be hit if the gap has been moved down very many slots from a parent contract
-
 async function validateStorageSlots() {
   const args = await yargs
     .option('old', {
