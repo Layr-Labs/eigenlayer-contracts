@@ -534,12 +534,17 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     {
         cheats.startPrank(depositor);
 
-        bytes32 withdrawalRoot = delegation.queueWithdrawal(
-            strategyArray,
-            shareAmounts,
-            withdrawer
-        );
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+
+        bytes32[] memory withdrawalRoots = new bytes32[](1);
+        withdrawalRoots = delegation.queueWithdrawals(params);
         cheats.stopPrank();
-        return withdrawalRoot;
+        return withdrawalRoots[0];
     }
 }

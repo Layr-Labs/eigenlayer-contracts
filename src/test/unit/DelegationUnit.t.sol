@@ -1512,16 +1512,32 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             shareAmounts[1] = 1;
         }
 
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: address(this)
+        });
+
         cheats.expectRevert(bytes("DelegationManager.queueWithdrawal: input length mismatch"));
-        delegationManager.queueWithdrawal(strategyArray, shareAmounts, address(this));
+        delegationManager.queueWithdrawals(params);
     }
 
     function testQueueWithdrawalRevertsWithZeroAddressWithdrawer() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](1);
 
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: address(0)
+        });
+
         cheats.expectRevert(bytes("DelegationManager.queueWithdrawal: must provide valid withdrawal address"));
-        delegationManager.queueWithdrawal(strategyArray, shareAmounts, address(0));
+        delegationManager.queueWithdrawals(params);
     }
 
     function testQueueWithdrawal_ToSelf(
@@ -1569,11 +1585,15 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalRoot,
                 withdrawal
             );
-            delegationManager.queueWithdrawal(
-                withdrawal.strategies,
-                withdrawal.shares,
-                /*withdrawer*/ address(this)
-            );
+
+            IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+            
+            params[0] = IDelegationManager.QueuedWithdrawalParams({
+                strategies: withdrawal.strategies,
+                shares: withdrawal.shares,
+                withdrawer: address(this)
+            });
+            delegationManager.queueWithdrawals(params);
         }
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(/*staker*/ address(this), _tempStrategyStorage);
@@ -1640,10 +1660,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalRoot,
                 withdrawal
             );
-            delegationManager.queueWithdrawal(
-                withdrawal.strategies,
-                withdrawal.shares,
-                /*withdrawer*/ staker
+
+            IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+            params[0] = IDelegationManager.QueuedWithdrawalParams({
+                strategies: withdrawal.strategies,
+                shares: withdrawal.shares,
+                withdrawer: staker
+            });
+
+            delegationManager.queueWithdrawals(
+                params
             );
         }
 
@@ -1703,10 +1730,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             withdrawalRoot,
             withdrawal
         );
-        delegationManager.queueWithdrawal(
-            withdrawal.strategies,
-            withdrawal.shares,
-            withdrawer
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: withdrawal.strategies,
+            shares: withdrawal.shares,
+            withdrawer: withdrawer
+        });
+
+        delegationManager.queueWithdrawals(
+            params
         );
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategyMock);
@@ -2175,11 +2209,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalAmount
             );
 
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: withdrawal.strategies,
+            shares: withdrawal.shares,
+            withdrawer: staker
+        });
+
         cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount should not be zero!"));
-        delegationManager.queueWithdrawal(
-            withdrawal.strategies,
-            withdrawal.shares,
-            staker
+        delegationManager.queueWithdrawals(
+            params
         );
     }
 
@@ -2205,11 +2245,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 withdrawalAmount
             );
 
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: withdrawal.strategies,
+            shares: withdrawal.shares,
+            withdrawer: address(this)
+        });
+
         cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
-        delegationManager.queueWithdrawal(
-            withdrawal.strategies,
-            withdrawal.shares,
-            /*withdrawer*/ address(this)
+        delegationManager.queueWithdrawals(
+            params
         );
     }
 
@@ -2255,10 +2301,16 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         sharesBefore[1] = strategyManager.stakerStrategyShares(staker, strategies[1]);
         sharesBefore[2] = strategyManager.stakerStrategyShares(staker, strategies[2]);
 
-        delegationManager.queueWithdrawal(
-            strategies,
-            amounts,
-            /*withdrawer*/ address(this)
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: amounts,
+            withdrawer: address(this)
+        });
+
+        delegationManager.queueWithdrawals(
+            params
         );
 
         uint256[] memory sharesAfter = new uint256[](3);
@@ -2334,9 +2386,17 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
         cheats.stopPrank();
 
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: amounts,
+            withdrawer: withdrawer
+        });
+
         // queue the withdrawal
         cheats.startPrank(staker);
-        delegationManager.queueWithdrawal(strategies, amounts, withdrawer);        
+        delegationManager.queueWithdrawals(params);        
         cheats.stopPrank();
 
         for (uint256 i = 0; i < strategies.length; ++i) {

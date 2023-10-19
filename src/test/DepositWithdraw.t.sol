@@ -262,13 +262,22 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             startBlock: uint32(block.number)
         });
 
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+
+        bytes32[] memory withdrawalRoots = new bytes32[](1);
 
         //queue the withdrawal
         cheats.startPrank(staker);
-        withdrawalRoot = delegation.queueWithdrawal(strategyArray, shareAmounts, withdrawer);
+        withdrawalRoots = delegation.queueWithdrawals(params);
         cheats.stopPrank();
-        return (withdrawalRoot, queuedWithdrawal);
+        return (withdrawalRoots[0], queuedWithdrawal);
      }
         
         
