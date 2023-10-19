@@ -3,19 +3,19 @@ This script uses cast and forge inspect to get the layouts of the local and on-c
 
 ## Run validation
 To validate the storage of an upgradeable deployed contract against a local one, run the script:
-'''console
+```bash
 bash script/upgrade/validateUpgrade.sh -n <network> -c <contract> -a <implementation address>
-'''
+```
 
-The supported networks are `goerli` and `mainnet`. The supported contracts are `strategyManager`, `delegation`, `eigenPod`, `eigenPodManager`, and `slasher.
-`
+The supported networks are `goerli` and `mainnet`. The supported contracts are `strategyManager`, `delegation`, `eigenPod`, `eigenPodManager`, and `slasher`.
+
 The above script generates two csv files, `localLayout.csv` and `onChainLayout.csv`. To keep these csv files after validating storage, add a `-k` flag to the above command
 
 Additionally, one can validate the storage of two csv files outputted by the `forge inspect` command by running 
 
-'''js
+```js
 npx ts-node script/upgrade/validateStorage.ts --old <path_to_old_layout_csv> --new <path_to_new_layout_csv> --keep
-'''
+```
 
 ## Limitations
 Storage slot validation is NOT comprehensive, and errs on the side of caution. We recommend using this script as a tool along with manual storage slot verification. The validation is opinionated on storage for each contract consuming 50 slots and gaps being sized accordingly.
