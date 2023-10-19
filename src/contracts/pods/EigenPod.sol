@@ -172,11 +172,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit NonBeaconChainETHReceived(msg.value);
     }
 
-//     BeaconState(epochToTimestamp(validator.withdrawableEpoch))
-//     .next_withdrawal_validator_index 
-// <= validator.Index 
-// < BeaconState(oracleTimestamp).next_withdrawal_validator_index
-
     /**
      * @notice This function records an update (either increase or decrease) in a validator's balance.
      * @param oracleTimestamp The oracleTimestamp whose state root the proof will be proven against.
@@ -199,7 +194,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: validatorIndices and proofs must be same length"
         );
 
-        // 3. Balance updates should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
+        // Balance updates should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
@@ -499,7 +494,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 beaconStateRoot,
         BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
         bytes32[] calldata validatorFields
-    ) internal returns(int256){
+    ) internal returns(int256 sharesDeltaWei){
         
         uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
@@ -517,7 +512,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyBalanceUpdate: Validator not active"
         );
 
-        // 4. Balance updates should only be made before a validator is fully withdrawn. 
+        // 3. Balance updates should only be made before a validator is fully withdrawn. 
         // -- A withdrawable validator may not have withdrawn yet, so we require their balance is nonzero
         // -- A fully withdrawn validator should withdraw via verifyAndProcessWithdrawals
         if (validatorFields.getWithdrawableEpoch() <= _timestampToEpoch(oracleTimestamp)) {
@@ -557,7 +552,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if (newRestakedBalanceGwei != currentRestakedBalanceGwei) {
             emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, newRestakedBalanceGwei);
 
-            int256 sharesDeltaGwei = _calculateSharesDelta({
+            sharesDeltaGwei = _calculateSharesDelta({
                 newAmountGwei: newRestakedBalanceGwei,
                 previousAmountGwei: currentRestakedBalanceGwei
             });
