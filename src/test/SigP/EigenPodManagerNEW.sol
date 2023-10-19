@@ -228,4 +228,8 @@ contract EigenPodManagerNEW is Initializable, OwnableUpgradeable, IEigenPodManag
         uint256 nonce,
         bytes4 callbackSelector
     ) external payable {}
+
+    function numPods() external view returns (uint256) {}
+
+    function maxPods() external view returns (uint256) {}
 }

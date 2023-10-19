@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 import "./IStakeRegistry.sol";
+import "./IStrategyManager.sol";
 
 /**
  * @title DelegationManager
@@ -420,11 +421,13 @@ interface IDelegationManager is ISignatureUtils {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
-
+    
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
+
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external;
 }

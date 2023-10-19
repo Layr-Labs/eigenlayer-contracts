@@ -26,6 +26,7 @@ contract StrategyManagerMock is
     IDelegationManager public delegation;
     IEigenPodManager public eigenPodManager;
     ISlasher public slasher;
+    address public strategyWhitelister;
 
     IStrategy[] public strategiesToReturn;
     uint256[] public sharesToReturn;

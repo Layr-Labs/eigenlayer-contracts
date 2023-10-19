@@ -85,4 +85,8 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         uint256 nonce,
         bytes4 callbackSelector
     ) external payable {}
+    
+    function numPods() external view returns (uint256) {}
+
+    function maxPods() external view returns (uint256) {}
 }
