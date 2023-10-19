@@ -66,24 +66,27 @@ contract DelayedWithdrawalRouter is
      */
     function createDelayedWithdrawal(
         address podOwner,
-        address recipient
+        address recipient,
+        bool isPartialWithdrawal
     ) external payable onlyEigenPod(podOwner) onlyWhenNotPaused(PAUSED_DELAYED_WITHDRAWAL_CLAIMS) {
         require(
             recipient != address(0),
             "DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"
         );
-        uint224 withdrawalAmount = uint224(msg.value);
+        uint216 withdrawalAmount = uint216(msg.value);
         if (withdrawalAmount != 0) {
             DelayedWithdrawal memory delayedWithdrawal = DelayedWithdrawal({
                 amount: withdrawalAmount,
-                blockCreated: uint32(block.number)
+                blockCreated: uint32(block.number),
+                isPartialWithdrawal: isPartialWithdrawal
             });
             _userWithdrawals[recipient].delayedWithdrawals.push(delayedWithdrawal);
             emit DelayedWithdrawalCreated(
                 podOwner,
                 recipient,
                 withdrawalAmount,
-                _userWithdrawals[recipient].delayedWithdrawals.length - 1
+                _userWithdrawals[recipient].delayedWithdrawals.length - 1,
+                isPartialWithdrawal
             );
         }
     }

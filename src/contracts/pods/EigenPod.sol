@@ -305,6 +305,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             stateRootProof: stateRootProof.proof
         });
 
+        VerifiedWithdrawal memory fullWithdrawalSummary;
         VerifiedWithdrawal memory withdrawalSummary;
         for (uint256 i = 0; i < withdrawalFields.length; i++) {
             VerifiedWithdrawal memory verifiedWithdrawal = _verifyAndProcessWithdrawal(
@@ -315,18 +316,28 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 withdrawalFields[i]
             );
 
-            withdrawalSummary.amountToSendGwei += verifiedWithdrawal.amountToSendGwei;
-            withdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
+            if (verifiedWithdrawal.isPartialWithdrawal) {
+                withdrawalSummary.amountToSendGwei += verifiedWithdrawal.amountToSendGwei;
+                withdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
+            }
+            else {
+                fullWithdrawalSummary.amountToSendGwei += verifiedWithdrawal.amountToSendGwei;
+                fullWithdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
+            }
         }
 
         // If any withdrawals are eligible for immediate redemption, send to the pod owner via
         // DelayedWithdrawalRouter
         if (withdrawalSummary.amountToSendGwei != 0) {
-            _sendETH_AsDelayedWithdrawal(podOwner, withdrawalSummary.amountToSendGwei * GWEI_TO_WEI);
+            _sendETH_AsDelayedWithdrawal(podOwner, withdrawalSummary.amountToSendGwei * GWEI_TO_WEI, true);
+        }
+
+        if (fullWithdrawalSummary.amountToSendGwei != 0) {
+            _sendETH_AsDelayedWithdrawal(podOwner, fullWithdrawalSummary.amountToSendGwei * GWEI_TO_WEI, false);
         }
         // If any withdrawals resulted in a change in the pod's shares, update the EigenPodManager
         if (withdrawalSummary.sharesDeltaGwei != 0) {
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, withdrawalSummary.sharesDeltaGwei * int256(GWEI_TO_WEI));
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, (fullWithdrawalSummary.sharesDeltaGwei + withdrawalSummary.sharesDeltaGwei) * int256(GWEI_TO_WEI));
         }
     }
 
@@ -406,7 +417,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
         nonBeaconChainETHBalanceWei -= amountToWithdraw;
         emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
-        _sendETH_AsDelayedWithdrawal(recipient, amountToWithdraw);
+        _sendETH_AsDelayedWithdrawal(recipient, amountToWithdraw, true);
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
@@ -655,7 +666,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
 
         VerifiedWithdrawal memory verifiedWithdrawal;
-        verifiedWithdrawal.amountToSendGwei = uint256(withdrawalAmountGwei - amountToQueueGwei);
+        verifiedWithdrawal.amountToSendGwei = uint248(withdrawalAmountGwei - amountToQueueGwei);
         withdrawableRestakedExecutionLayerGwei += amountToQueueGwei;
         
         /**
@@ -670,6 +681,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             newAmountGwei: amountToQueueGwei,
             previousAmountGwei: validatorInfo.restakedBalanceGwei
         });
+
+        verifiedWithdrawal.isPartialWithdrawal = true;
 
         /**
          * Finally, the validator is fully withdrawn. Update their status and place in state:
@@ -703,23 +716,24 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
             VerifiedWithdrawal({
-                amountToSendGwei: uint256(partialWithdrawalAmountGwei),
-                sharesDeltaGwei: 0
+                amountToSendGwei: uint248(partialWithdrawalAmountGwei),
+                sharesDeltaGwei: 0,
+                isPartialWithdrawal: true
             });
     }
 
     function _processWithdrawalBeforeRestaking(address _podOwner) internal {
         mostRecentWithdrawalTimestamp = uint32(block.timestamp);
         nonBeaconChainETHBalanceWei = 0;
-        _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
+        _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance, true);
     }
 
     function _sendETH(address recipient, uint256 amountWei) internal {
         Address.sendValue(payable(recipient), amountWei);
     }
 
-    function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei) internal {
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
+    function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei, bool isPartialWithdrawal) internal {
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient, isPartialWithdrawal);
     }
 
     function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64) {

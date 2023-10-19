@@ -50,7 +50,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
     /// @notice event for delayedWithdrawal creation
-    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
+    event DelayedWithdrawalCreated(address podOwner, address recipient, uint216 amount, uint256 index, bool isPartialWithdrawal);
 
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
@@ -93,7 +93,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         delayedWithdrawalRouter.initialize(initialOwner, pauserRegistry, initPausedStatus, withdrawalDelayBlocks);
     }
 
-    function testCreateDelayedWithdrawalNonzeroAmount(uint224 delayedWithdrawalAmount, address podOwner, address recipient) public filterFuzzedAddressInputs(podOwner) {
+    function testCreateDelayedWithdrawalNonzeroAmount(uint216 delayedWithdrawalAmount, address podOwner, address recipient, bool isPartialWithdrawal) public filterFuzzedAddressInputs(podOwner) {
         cheats.assume(delayedWithdrawalAmount != 0);
         cheats.assume(recipient != address(0));
 
@@ -104,8 +104,8 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         cheats.startPrank(podAddress);
         uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(recipient);
         cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(podOwner, recipient, delayedWithdrawalAmount, userWithdrawalsLength);
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, recipient);
+        emit DelayedWithdrawalCreated(podOwner, recipient, delayedWithdrawalAmount, userWithdrawalsLength, isPartialWithdrawal);
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, recipient, isPartialWithdrawal);
         cheats.stopPrank();
 
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsAfter = delayedWithdrawalRouter.userWithdrawals(recipient);
@@ -119,7 +119,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     }
 
 
-    function testCreateDelayedWithdrawalZeroAmount(address podOwner, address recipient) public filterFuzzedAddressInputs(podOwner) {
+    function testCreateDelayedWithdrawalZeroAmount(address podOwner, address recipient, bool isPartialWithdrawal) public filterFuzzedAddressInputs(podOwner) {
         cheats.assume(recipient != address(0));
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsBefore = delayedWithdrawalRouter.userWithdrawals(recipient);
         uint224 delayedWithdrawalAmount = 0;
@@ -127,7 +127,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.deal(podAddress, delayedWithdrawalAmount);
         cheats.startPrank(podAddress);
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, recipient);
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, recipient, isPartialWithdrawal);
         cheats.stopPrank();
 
         IDelayedWithdrawalRouter.UserDelayedWithdrawals memory userWithdrawalsAfter = delayedWithdrawalRouter.userWithdrawals(recipient);
@@ -137,16 +137,16 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userWithdrawalsAfter.delayedWithdrawals.length != userWithdrawalsBefore.delayedWithdrawals.length");
     }
 
-    function testCreateDelayedWithdrawalZeroAddress(address podOwner) external filterFuzzedAddressInputs(podOwner) {
+    function testCreateDelayedWithdrawalZeroAddress(address podOwner, bool isPartialWithdrawal) external filterFuzzedAddressInputs(podOwner) {
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.assume(podAddress != address(proxyAdmin));
         cheats.startPrank(podAddress);
         cheats.expectRevert(bytes("DelayedWithdrawalRouter.createDelayedWithdrawal: recipient cannot be zero address"));
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0), isPartialWithdrawal);
     }
 
-    function testCreateDelayedWithdrawalFromNonPodAddress(address podOwner, address nonPodAddress) external filterFuzzedAddressInputs(podOwner) filterFuzzedAddressInputs(nonPodAddress) {
+    function testCreateDelayedWithdrawalFromNonPodAddress(address podOwner, address nonPodAddress,  bool isPartialWithdrawal) external filterFuzzedAddressInputs(podOwner) filterFuzzedAddressInputs(nonPodAddress) {
         uint224 delayedWithdrawalAmount = 0;
         address podAddress = address(eigenPodManagerMock.getPod(podOwner));
         cheats.assume(nonPodAddress != podAddress);
@@ -154,7 +154,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
 
         cheats.startPrank(nonPodAddress);
         cheats.expectRevert(bytes("DelayedWithdrawalRouter.onlyEigenPod: not podOwner's EigenPod"));
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0));
+        delayedWithdrawalRouter.createDelayedWithdrawal{value: delayedWithdrawalAmount}(podOwner, address(0), isPartialWithdrawal);
     }
 
     function testClaimDelayedWithdrawals(
@@ -162,7 +162,8 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         uint8 maxNumberOfDelayedWithdrawalsToClaim,
         uint256 pseudorandomNumber_,
         address recipient,
-        bool useOverloadedFunction
+        bool useOverloadedFunction,
+        bool isPartialWithdrawal
     )
         public filterFuzzedAddressInputs(recipient)
     {
@@ -179,9 +180,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         _pseudorandomNumber = pseudorandomNumber_;
         uint8 delayedWithdrawalsCreated;
         for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {
-            uint224 delayedWithdrawalAmount = uint224(_getPseudorandomNumber());
+            uint216 delayedWithdrawalAmount = uint216(_getPseudorandomNumber());
             if (delayedWithdrawalAmount != 0) {
-                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient, isPartialWithdrawal);
                 delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
                 delayedWithdrawalsCreated += 1;
             }
@@ -230,7 +231,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
     }
 
     /// @notice This function is used to test the getter function 'getClaimableDelayedWithdrawals'
-    function testDelayedWithdrawalsGetterFunctions(uint8 delayedWithdrawalsToCreate, uint224 delayedWithdrawalAmount, address recipient)
+    function testDelayedWithdrawalsGetterFunctions(uint8 delayedWithdrawalsToCreate, uint216 delayedWithdrawalAmount, address recipient, bool isPartialWithdrawal)
         public filterFuzzedAddressInputs(recipient)
     {
         cheats.assume(delayedWithdrawalAmount != 0);
@@ -247,7 +248,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         // create the delayedWithdrawals
         uint8 delayedWithdrawalsCreated;
         for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {   
-            testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+            testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient, isPartialWithdrawal);
             delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
             delayedWithdrawalsCreated += 1;
             cheats.roll(block.number + 1); // make sure each delayedWithdrawal has a unique block number
@@ -271,7 +272,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
      * where only the first half is claimable, claims using `maxNumberOfDelayedWithdrawalsToClaim` input,
      * and checks that only appropriate delayedWithdrawals were claimed.
      */
-    function testClaimDelayedWithdrawalsSomeUnclaimable(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, bool useOverloadedFunction)
+    function testClaimDelayedWithdrawalsSomeUnclaimable(uint8 delayedWithdrawalsToCreate, uint8 maxNumberOfDelayedWithdrawalsToClaim, bool useOverloadedFunction, bool isPartialWithdrawal)
         external
     {
         // filter fuzzed inputs to avoid running out of gas & excessive test run-time
@@ -284,9 +285,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         _pseudorandomNumber = 1554;
         uint256 delayedWithdrawalsCreated_1;
         for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {
-            uint224 delayedWithdrawalAmount = uint224(_getPseudorandomNumber());
+            uint216 delayedWithdrawalAmount = uint216(_getPseudorandomNumber());
             if (delayedWithdrawalAmount != 0) {
-                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient, isPartialWithdrawal);
                 delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
                 delayedWithdrawalsCreated_1 += 1;
             }
@@ -298,9 +299,9 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         // create the second set of delayedWithdrawals
         uint256 delayedWithdrawalsCreated_2;
         for (uint256 i = 0; i < delayedWithdrawalsToCreate; ++i) {
-            uint224 delayedWithdrawalAmount = uint224(_getPseudorandomNumber());
+            uint216 delayedWithdrawalAmount = uint216(_getPseudorandomNumber());
             if (delayedWithdrawalAmount != 0) {
-                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+                testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient, isPartialWithdrawal);
                 delayedWithdrawalAmounts.push(delayedWithdrawalAmount);
                 delayedWithdrawalsCreated_2 += 1;
             }
@@ -349,43 +350,44 @@ contract DelayedWithdrawalRouterUnitTests is Test {
             "userBalanceAfter != userBalanceBefore + totalDelayedWithdrawalAmount");
     }
 
-    function testClaimDelayedWithdrawals_NoneToClaim_AttemptToClaimZero(uint256 pseudorandomNumber_, bool useOverloadedFunction) external {
+    function testClaimDelayedWithdrawals_NoneToClaim_AttemptToClaimZero(uint256 pseudorandomNumber_, bool useOverloadedFunction, bool isPartialWithdrawal) external {
         uint8 delayedWithdrawalsToCreate = 0;
         uint8 maxNumberOfDelayedWithdrawalsToClaim = 0;
         address recipient = address(22222);
-        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
+        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction, isPartialWithdrawal);
     }
 
-    function testClaimDelayedWithdrawals_NoneToClaim_AttemptToClaimNonzero(uint256 pseudorandomNumber_, bool useOverloadedFunction) external {
+    function testClaimDelayedWithdrawals_NoneToClaim_AttemptToClaimNonzero(uint256 pseudorandomNumber_, bool useOverloadedFunction, bool isPartialWithdrawal) external {
         uint8 delayedWithdrawalsToCreate = 0;
         uint8 maxNumberOfDelayedWithdrawalsToClaim = 2;
         address recipient = address(22222);
-        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
+        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction, isPartialWithdrawal);
     }
 
-    function testClaimDelayedWithdrawals_NonzeroToClaim_AttemptToClaimZero(uint256 pseudorandomNumber_, bool useOverloadedFunction) external {
+    function testClaimDelayedWithdrawals_NonzeroToClaim_AttemptToClaimZero(uint256 pseudorandomNumber_, bool useOverloadedFunction, bool isPartialWithdrawal) external {
         uint8 delayedWithdrawalsToCreate = 2;
         uint8 maxNumberOfDelayedWithdrawalsToClaim = 0;
         address recipient = address(22222);
-        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
+        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction, isPartialWithdrawal);
     }
 
     function testClaimDelayedWithdrawals_NonzeroToClaim_AttemptToClaimNonzero(
-        uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, bool useOverloadedFunction
+        uint8 maxNumberOfDelayedWithdrawalsToClaim, uint256 pseudorandomNumber_, bool useOverloadedFunction, bool isPartialWithdrawal
     )external {
         uint8 delayedWithdrawalsToCreate = 2;
         address recipient = address(22222);
-        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction);
+        testClaimDelayedWithdrawals(delayedWithdrawalsToCreate, maxNumberOfDelayedWithdrawalsToClaim, pseudorandomNumber_, recipient, useOverloadedFunction, isPartialWithdrawal);
     }
 
     function testClaimDelayedWithdrawals_RevertsOnAttemptingReentrancy(bool useOverloadedFunction) external {
         uint8 maxNumberOfDelayedWithdrawalsToClaim = 1;
         address recipient = address(reenterer);
         address podOwner = address(reenterer);
+        bool isPartialWithdrawal = true;
 
         // create the delayedWithdrawal
-        uint224 delayedWithdrawalAmount = 123;
-        testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient);
+        uint216 delayedWithdrawalAmount = 123;
+        testCreateDelayedWithdrawalNonzeroAmount(delayedWithdrawalAmount, podOwner, recipient, isPartialWithdrawal);
 
         // roll forward the block number enough to make the delayedWithdrawal claimable
         cheats.roll(block.number + delayedWithdrawalRouter.withdrawalDelayBlocks());

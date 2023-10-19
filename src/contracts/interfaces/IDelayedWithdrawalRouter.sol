@@ -4,8 +4,9 @@ pragma solidity >=0.5.0;
 interface IDelayedWithdrawalRouter {
     // struct used to pack data into a single storage slot
     struct DelayedWithdrawal {
-        uint224 amount;
+        uint216 amount;
         uint32 blockCreated;
+        bool isPartialWithdrawal;
     }
 
     // struct used to store a single users delayedWithdrawal data
@@ -15,7 +16,7 @@ interface IDelayedWithdrawalRouter {
     }
 
      /// @notice event for delayedWithdrawal creation
-    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
+    event DelayedWithdrawalCreated(address podOwner, address recipient, uint216 amount, uint256 index, bool isPartialWithdrawal);
 
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
@@ -27,7 +28,7 @@ interface IDelayedWithdrawalRouter {
      * @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.
      * @dev Only callable by the `podOwner`'s EigenPod contract.
      */
-    function createDelayedWithdrawal(address podOwner, address recipient) external payable;
+    function createDelayedWithdrawal(address podOwner, address recipient, bool isPartialWithdrawal) external payable;
 
     /**
      * @notice Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.

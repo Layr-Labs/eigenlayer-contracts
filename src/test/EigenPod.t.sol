@@ -109,7 +109,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
     /// @notice event for delayedWithdrawal creation
-    event DelayedWithdrawalCreated(address podOwner, address recipient, uint256 amount, uint256 index);
+    event DelayedWithdrawalCreated(address podOwner, address recipient, uint216 amount, uint256 index, bool isPartialWithdrawal);
 
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
@@ -268,12 +268,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
         cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
         require(pod.hasRestaked() == false, "Pod should not be restaked");
+        bool isPartialWithdrawal = true;
 
         // simulate a withdrawal
         cheats.deal(address(pod), stakeAmount);
         cheats.startPrank(podOwner);
         cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, delayedWithdrawalRouter.userWithdrawalsLength(podOwner));
+        emit DelayedWithdrawalCreated(podOwner, podOwner, uint216(stakeAmount), delayedWithdrawalRouter.userWithdrawalsLength(podOwner), isPartialWithdrawal);
         pod.withdrawBeforeRestaking();
         require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
         require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
@@ -344,11 +345,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
         cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
 
+        bool isPartialWithdrawal = true;
+
         cheats.startPrank(podOwner);
         uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
         // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
         //cheats.expectEmit(true, true, true, true);
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
+        emit DelayedWithdrawalCreated(podOwner, podOwner, uint216(stakeAmount), userWithdrawalsLength, isPartialWithdrawal);
         pod.withdrawBeforeRestaking();
         cheats.stopPrank();
         require(address(pod).balance == 0, "Pod balance should be 0");
