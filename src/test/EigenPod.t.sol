@@ -134,6 +134,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pausers[0] = pauser;
         pauserReg = new PauserRegistry(pausers, unpauser);
 
+        /// weird workaround: check commit before this
+        /// either related to foundry bug or emptty contract below this one
+        EmptyContract emptyContract2 = new EmptyContract();
+
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
