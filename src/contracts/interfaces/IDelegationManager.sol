@@ -95,6 +95,15 @@ interface IDelegationManager is ISignatureUtils {
         uint256[] shares;
     }
 
+    struct QueuedWithdrawalParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -230,11 +239,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawal(
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external returns (bytes32);
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
