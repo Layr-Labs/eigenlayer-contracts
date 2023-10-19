@@ -169,18 +169,18 @@ interface IEigenPod {
                It also verifies a merkle proof of the validator's current beacon chain balance.  
      * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
-     * @param balanceUpdateProof is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
+     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
+     * @param balanceUpdateProofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
      *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
-    function verifyBalanceUpdate(
+    function verifyBalanceUpdates(
         uint64 oracleTimestamp,
-        uint40 validatorIndex,
+        uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
-        bytes32[] calldata validatorFields
+        BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+        bytes32[][] calldata validatorFields
     ) external;
 
     /**
