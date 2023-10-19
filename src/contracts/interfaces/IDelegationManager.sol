@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
 import "./IStakeRegistry.sol";
+import "./IStrategyManager.sol";
 
 /**
  * @title DelegationManager
@@ -92,6 +93,15 @@ interface IDelegationManager is ISignatureUtils {
         IStrategy[] strategies;
         // Array containing the amount of shares in each Strategy in the `strategies` array
         uint256[] shares;
+    }
+
+    struct QueuedWithdrawalParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
@@ -229,11 +239,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawal(
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external returns (bytes32);
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -420,11 +428,13 @@ interface IDelegationManager is ISignatureUtils {
      * for more detailed information please read EIP-712.
      */
     function domainSeparator() external view returns (bytes32);
-
+    
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
+
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external;
 }

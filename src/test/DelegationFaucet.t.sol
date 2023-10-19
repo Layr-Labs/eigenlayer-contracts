@@ -278,11 +278,17 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 stakeTokenStrat,
                 _withdrawAmount
             );
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: queuedWithdrawal.strategies,
+            shares: queuedWithdrawal.shares,
+            withdrawer: stakerContract
+        });
+
         delegationFaucet.queueWithdrawal(
             stakerContract,
-            queuedWithdrawal.strategies,
-            queuedWithdrawal.shares,
-            stakerContract
+            params
         );
         uint256 operatorSharesAfter = delegation.operatorShares(operator, stakeTokenStrat);
         uint256 stakerSharesAfter = strategyManager.stakerStrategyShares(stakerContract, stakeTokenStrat);
