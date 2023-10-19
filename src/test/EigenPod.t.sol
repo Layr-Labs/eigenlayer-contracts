@@ -1707,4 +1707,3 @@ contract Relayer is Test {
         BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
 }
-
