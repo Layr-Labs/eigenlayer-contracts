@@ -73,4 +73,16 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external {}
 
     function removeShares(address podOwner, uint256 shares) external {}
+
+    function functionGateway() external view returns (IFunctionGateway) {}
+
+    function requestProofViaFunctionGateway(
+        bytes32 FUNCTION_ID,
+        uint256 startBlock,
+        uint256 endBlock,
+        address podAddress,
+        uint64 oracleTimestamp,
+        uint256 nonce,
+        bytes4 callbackSelector
+    ) external payable {}
 }
