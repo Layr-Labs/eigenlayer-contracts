@@ -4,14 +4,13 @@ pragma solidity =0.8.12;
 import "../interfaces/IServiceManager.sol";
 import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
-import "./VoteWeigherBase.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.
  * @author Layr Labs, Inc.
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
-abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
+abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice the coordinator contract that this registry is associated with
     IRegistryCoordinator public immutable registryCoordinator;
 
@@ -25,13 +24,7 @@ abstract contract StakeRegistryStorage is VoteWeigherBase, IStakeRegistry {
     /// @notice mapping from operator's operatorId to the history of their stake updates
     mapping(bytes32 => mapping(uint8 => OperatorStakeUpdate[])) internal operatorIdToStakeHistory;
 
-    constructor(
-        IRegistryCoordinator _registryCoordinator,
-        IStrategyManager _strategyManager,
-        IServiceManager _serviceManager
-    ) VoteWeigherBase(_strategyManager, _serviceManager)
-    // solhint-disable-next-line no-empty-blocks
-    {
+    constructor(IRegistryCoordinator _registryCoordinator) {
         registryCoordinator = _registryCoordinator;
     }
 

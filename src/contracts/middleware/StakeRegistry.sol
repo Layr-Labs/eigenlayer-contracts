@@ -7,6 +7,7 @@ import "../interfaces/IStakeRegistry.sol";
 import "../interfaces/IRegistryCoordinator.sol";
 import "../libraries/BitmapUtils.sol";
 import "./StakeRegistryStorage.sol";
+import "./VoteWeigherBase.sol";
 
 /**
  * @title A `Registry` that keeps track of stakes of operators for up to 256 quorums.
@@ -17,7 +18,7 @@ import "./StakeRegistryStorage.sol";
  * It allows an additional functionality (in addition to registering and deregistering) to update the stake of an operator.
  * @author Layr Labs, Inc.
  */
-contract StakeRegistry is StakeRegistryStorage {
+contract StakeRegistry is VoteWeigherBase, StakeRegistryStorage {
     /// @notice requires that the caller is the RegistryCoordinator
     modifier onlyRegistryCoordinator() {
         require(
@@ -31,12 +32,7 @@ contract StakeRegistry is StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IStrategyManager _strategyManager,
         IServiceManager _serviceManager
-    )
-        StakeRegistryStorage(_registryCoordinator, _strategyManager, _serviceManager)
-    // solhint-disable-next-line no-empty-blocks
-    {
-
-    }
+    ) VoteWeigherBase(_strategyManager, _serviceManager) StakeRegistryStorage(_registryCoordinator) {}
 
     /**
      * @notice Sets the minimum stake for each quorum and adds `_quorumStrategiesConsideredAndMultipliers` for each
@@ -74,7 +70,10 @@ contract StakeRegistry is StakeRegistryStorage {
      * @param operatorId The id of the operator of interest.
      * @param quorumNumber The quorum number to get the stake for.
      */
-    function getOperatorIdToStakeHistory(bytes32 operatorId, uint8 quorumNumber) external view returns (OperatorStakeUpdate[] memory) {
+    function getOperatorIdToStakeHistory(
+        bytes32 operatorId,
+        uint8 quorumNumber
+    ) external view returns (OperatorStakeUpdate[] memory) {
         return operatorIdToStakeHistory[operatorId][quorumNumber];
     }
 
