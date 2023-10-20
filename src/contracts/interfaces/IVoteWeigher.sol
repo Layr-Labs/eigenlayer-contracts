@@ -36,10 +36,13 @@ interface IVoteWeigher {
 
     /// @notice Returns the EigenLayer strategy manager contract.
     function strategyManager() external view returns (IStrategyManager);
+
     /// @notice Returns the EigenLayer slasher contract.
     function slasher() external view returns (ISlasher);
+
     /// @notice Returns the EigenLayer delegation manager contract.
     function delegation() external view returns (IDelegationManager);
+
     /// @notice Returns the AVS service manager contract.
     function serviceManager() external view returns (IServiceManager);
 
@@ -47,25 +50,19 @@ interface IVoteWeigher {
      * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
      * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
      */
-    function weightOfOperatorForQuorumView(uint8 quorumNumber, address operator) external view returns (uint96);
-
-    /**
-     * @notice This function computes the total weight of the @param operator in the quorum @param quorumNumber.
-     * @dev reverts in the case that `quorumNumber` is greater than or equal to `quorumCount`
-     * @dev a version of weightOfOperatorForQuorumView that can change state if needed
-     */
-    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) external returns (uint96);
+    function weightOfOperatorForQuorum(uint8 quorumNumber, address operator) external view returns (uint96);
 
     /// @notice Number of quorums that are being used by the middleware.
     function quorumCount() external view returns (uint16);
 
     /// @notice Returns the strategy and weight multiplier for the `index`'th strategy in the quorum `quorumNumber`
-    function strategyAndWeightingMultiplierForQuorumByIndex(uint8 quorumNumber, uint256 index) external view returns (StrategyAndWeightingMultiplier memory);
+    function strategyAndWeightingMultiplierForQuorumByIndex(
+        uint8 quorumNumber,
+        uint256 index
+    ) external view returns (StrategyAndWeightingMultiplier memory);
 
     /// @notice Create a new quorum and add the strategies and their associated weights to the quorum.
-    function createQuorum(
-        StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers
-    ) external;
+    function createQuorum(StrategyAndWeightingMultiplier[] memory _strategiesConsideredAndMultipliers) external;
 
     /// @notice Adds new strategies and the associated multipliers to the @param quorumNumber.
     function addStrategiesConsideredAndMultipliers(
@@ -79,10 +76,7 @@ interface IVoteWeigher {
      * @dev higher indices should be *first* in the list of @param indicesToRemove, since otherwise
      * the removal of lower index entries will cause a shift in the indices of the other strategiesToRemove
      */
-    function removeStrategiesConsideredAndMultipliers(
-        uint8 quorumNumber,
-        uint256[] calldata indicesToRemove
-    ) external;
+    function removeStrategiesConsideredAndMultipliers(uint8 quorumNumber, uint256[] calldata indicesToRemove) external;
 
     /**
      * @notice This function is used for modifying the weights of strategies that are already in the
