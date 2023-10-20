@@ -607,4 +607,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         cheats.stopPrank();
         return withdrawalRoot;
     }
+
+    function _isDepositedStrategy(address staker, IStrategy strategy) internal view returns (bool) {
+        uint256 stakerStrategyListLength = strategyManager.stakerStrategyListLength(staker);
+        for (uint256 i = 0; i < stakerStrategyListLength; ++i) {
+            if (strategyManager.stakerStrategyList(staker, i) == strategy) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

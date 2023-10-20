@@ -2582,18 +2582,4 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
         return stakerSignatureAndExpiry;
     }
-
-    /**
-     * @notice internal function to help check if a strategy is part of list of deposited strategies for a staker
-     * Used to check if removed correctly after withdrawing all shares for a given strategy
-     */
-    function _isDepositedStrategy(address staker, IStrategy strategy) internal view returns (bool) {
-        uint256 stakerStrategyListLength = strategyManager.stakerStrategyListLength(staker);
-        for (uint256 i = 0; i < stakerStrategyListLength; ++i) {
-            if (strategyManager.stakerStrategyList(staker, i) == strategy) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

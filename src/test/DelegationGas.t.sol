@@ -94,12 +94,6 @@ contract DelegationTests is EigenLayerTestHelper {
                 multiplier
             );
 
-            // quorumStrategiesConsideredAndMultipliers[1] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            // quorumStrategiesConsideredAndMultipliers[1][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
-            //     eigenStrat,
-            //     multiplier
-            // );
-
             eigenLayerProxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(payable(address(stakeRegistry))),
                 address(stakeRegistryImplementation),
