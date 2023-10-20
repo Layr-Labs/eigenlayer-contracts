@@ -2,12 +2,10 @@
 pragma solidity =0.8.12;
 
 import "../contracts/interfaces/IEigenPod.sol";
-import "../contracts/interfaces/IBLSPublicKeyCompendium.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
 import "./utils/ProofParsing.sol";
 import "./EigenLayerDeployer.t.sol";
 import "./mocks/MiddlewareRegistryMock.sol";
-import "./mocks/ServiceManagerMock.sol";
 import "../contracts/libraries/BeaconChainProofs.sol";
 import "./mocks/BeaconChainOracleMock.sol";
 import "./utils/EigenPodHarness.sol";
@@ -44,8 +42,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     EPInternalFunctions public podInternalFunctionTester;
 
     BeaconChainOracleMock public beaconChainOracle;
-    MiddlewareRegistryMock public generalReg1;
-    ServiceManagerMock public generalServiceManager1;
     address[] public slashingContracts;
     address pauser = address(69);
     address unpauser = address(489);
@@ -253,9 +249,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 withdrawalDelayBlocks
             )
         );
-        generalServiceManager1 = new ServiceManagerMock(slasher);
-
-        generalReg1 = new MiddlewareRegistryMock(generalServiceManager1, strategyManager);
 
         cheats.deal(address(podOwner), 5 * stakeAmount);
 
@@ -265,8 +258,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         fuzzedAddressMapping[address(eigenPodManager)] = true;
         fuzzedAddressMapping[address(delegation)] = true;
         fuzzedAddressMapping[address(slasher)] = true;
-        fuzzedAddressMapping[address(generalServiceManager1)] = true;
-        fuzzedAddressMapping[address(generalReg1)] = true;
     }
 
     function testStaking() public {

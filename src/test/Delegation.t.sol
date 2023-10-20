@@ -6,7 +6,6 @@ import "src/contracts/interfaces/ISignatureUtils.sol";
 
 import "../test/EigenLayerTestHelper.t.sol";
 
-import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/ServiceManagerMock.sol";
 
 contract DelegationTests is EigenLayerTestHelper {
