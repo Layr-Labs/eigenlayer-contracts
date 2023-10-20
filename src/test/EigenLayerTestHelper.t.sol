@@ -4,9 +4,7 @@ pragma solidity =0.8.12;
 import "../test/EigenLayerDeployer.t.sol";
 import "../contracts/interfaces/ISignatureUtils.sol";
 
-contract StakeRegistryStub {
-    function updateStakes(address[] memory) external {}
-}
+import "./mocks/StakeRegistryStub.sol";
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
     uint8 durationToInit = 2;
