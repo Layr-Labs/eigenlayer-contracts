@@ -55,6 +55,14 @@ contract EigenLayerDeployer is Operators {
     // testing/mock contracts
     IERC20 public eigenToken;
     IERC20 public weth;
+
+    IERC20 public stETH;
+    IERC20 public rETH;
+    IERC20 public cETH;
+    StrategyBase public stETHStrat;
+    StrategyBase public rETHStrat;
+    StrategyBase public cETHStrat;
+
     StrategyBase public wethStrat;
     StrategyBase public eigenStrat;
     StrategyBase public baseStrategyImplementation;
@@ -318,43 +326,15 @@ contract EigenLayerDeployer is Operators {
             withdrawalDelayBlocks)
         );
 
-        //simple ERC20 (**NOT** WETH-like!), used in a test strategy
-        weth = new ERC20PresetFixedSupply(
-            "weth",
-            "WETH",
-            wethInitialSupply,
-            address(this)
-        );
-
         // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
         baseStrategyImplementation = new StrategyBase(strategyManager);
-        wethStrat = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, weth, eigenLayerPauserReg)
-                )
-            )
-        );
 
-        eigenToken = new ERC20PresetFixedSupply(
-            "eigen",
-            "EIGEN",
-            wethInitialSupply,
-            address(this)
-        );
-
-        // deploy upgradeable proxy that points to StrategyBase implementation and initialize it
-        eigenStrat = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken, eigenLayerPauserReg)
-                )
-            )
-        );
+        //simple ERC20 (**NOT** WETH-like!), used in a test strategy
+        (weth, wethStrat) = _deployStrat(baseStrategyImplementation, "weth", "WETH", wethInitialSupply);
+        (eigenToken, eigenStrat) = _deployStrat(baseStrategyImplementation, "eigen", "EIGEN", eigenTotalSupply);
+        (stETH, stETHStrat) = _deployStrat(baseStrategyImplementation, "stETH", "stETH", 1000e18);
+        (rETH, rETHStrat) = _deployStrat(baseStrategyImplementation, "rETH", "rETH", 1000e18);
+        (cETH, cETHStrat) = _deployStrat(baseStrategyImplementation, "cETH", "cETH", 1000e18);
 
         stakers = [acct_0, acct_1];
     }
@@ -371,5 +351,22 @@ contract EigenLayerDeployer is Operators {
         operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");
         executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
     }
-    
+
+    function _deployStrat(StrategyBase implementation, string memory name, string memory symbol, uint256 supply) internal returns (IERC20 token, StrategyBase newStrat) {
+        token = new ERC20PresetFixedSupply(
+            name,
+            symbol,
+            supply,
+            address(this)
+        );
+        newStrat = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(implementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, token, eigenLayerPauserReg)
+                )
+            )
+        );
+    }
 }

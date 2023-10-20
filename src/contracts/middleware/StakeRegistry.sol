@@ -316,9 +316,17 @@ contract StakeRegistry is StakeRegistryStorage {
                 if (BitmapUtils.numberIsInBitmap(quorumBitmap, quorumNumber)) {
                     // if the total stake has not been loaded yet, load it
                     if (totalStakeUpdate.updateBlockNumber == 0) {
-                        totalStakeUpdate = _totalStakeHistory[quorumNumber][
-                            _totalStakeHistory[quorumNumber].length - 1
-                        ];
+                        uint256 stakeHistoryLength = _totalStakeHistory[quorumNumber].length;
+                        if (stakeHistoryLength == 0) {
+                            // if there is no total stake history, create a new entry
+                            totalStakeUpdate.updateBlockNumber = uint32(block.number);
+                            totalStakeUpdate.stake = 0;
+                        } else {
+                            // otherwise, get the most recent entry
+                            totalStakeUpdate = _totalStakeHistory[quorumNumber][
+                                stakeHistoryLength - 1
+                            ];
+                        }
                     }
                     // update the operator's stake based on current state
                     (uint96 stakeBeforeUpdate, uint96 stakeAfterUpdate) = _updateOperatorStake(
@@ -327,7 +335,7 @@ contract StakeRegistry is StakeRegistryStorage {
                         quorumNumber
                     );
                     // calculate the new total stake for the quorum
-                    totalStakeUpdate.stake = totalStakeUpdate.stake - stakeBeforeUpdate + stakeAfterUpdate;
+                    totalStakeUpdate.stake = totalStakeUpdate.stake + stakeAfterUpdate - stakeBeforeUpdate;
                 }
                 unchecked {
                     ++i;

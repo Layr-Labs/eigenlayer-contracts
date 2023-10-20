@@ -107,7 +107,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     function _testDepositEigen(address sender, uint256 amountToDeposit) internal returns (uint256 amountDeposited) {
         cheats.assume(amountToDeposit <= eigenTotalSupply);
         amountDeposited = _testDepositToStrategy(sender, amountToDeposit, eigenToken, eigenStrat);
-    }
+    }    
 
     /**
      * @notice Deposits `amountToDeposit` of `underlyingToken` from address `sender` into `stratToDepositTo`.
@@ -228,7 +228,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      */
     function _testDepositStrategies(address sender, uint256 amountToDeposit, uint8 numStratsToAdd) internal {
         // hard-coded input
-        IERC20 underlyingToken = weth;
+        IERC20 underlyingToken = new ERC20PresetFixedSupply(
+            "name",
+            "symbol",
+            1000e18,
+            address(this)
+        );
 
         cheats.assume(numStratsToAdd > 0 && numStratsToAdd <= 20);
         IStrategy[] memory stratsToDepositTo = new IStrategy[](
@@ -244,7 +249,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                     )
                 )
             );
-            _testDepositToStrategy(sender, amountToDeposit, weth, StrategyBase(address(stratsToDepositTo[i])));
+            _testDepositToStrategy(sender, amountToDeposit, underlyingToken, StrategyBase(address(stratsToDepositTo[i])));
         }
         for (uint8 i = 0; i < numStratsToAdd; ++i) {
             // check that strategy is appropriately added to dynamic array of all of sender's strategies
@@ -402,6 +407,66 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 delegation.operatorShares(operator, _strat) - updatedShares[0] == amountsBefore[2],
                 "ETH operatorShares not updated correctly"
             );
+        }
+    }
+
+    /// @notice registers a fixed address as an operator, delegates to it from a second address,
+    ///         and checks that the operator's voteWeights increase properly
+    function _testDelegationDA(
+        address operator,
+        address staker,
+        uint256[] memory lstAmounts,
+        StakeRegistry stakeRegistry
+    ) internal {
+        if (!delegation.isOperator(operator)) {
+            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+                earningsReceiver: operator,
+                delegationApprover: address(0),
+                stakerOptOutWindowBlocks: 0
+            });
+            _testRegisterAsOperator(operator, operatorDetails);
+        }
+
+        uint256 stETHAmount = lstAmounts[0];
+        uint256 rETHAmount = lstAmounts[1];
+        uint256 cETHAmount = lstAmounts[2];
+
+        uint256 operatorQuorumWeightBefore = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
+
+
+        //making additional deposits to the strategies
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        _testDepositToStrategy(staker, stETHAmount, stETH, stETHStrat);
+        _testDepositToStrategy(staker, rETHAmount, rETH, rETHStrat);
+        _testDepositToStrategy(staker, cETHAmount, cETH, cETHStrat);
+        _testDelegateToOperator(staker, operator);
+        assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+
+        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
+            strategyManager.getDeposits(staker);
+
+        {
+            // uint256 staker_stETHWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
+            // uint256 staker_rETHWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
+            // uint256 staker_cETHWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[2]);
+            // uint256 staker_totalWeight = staker_stETHWeight + staker_rETHWeight + staker_cETHWeight;
+
+            uint256 operatorQuorumWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
+
+            assertTrue(
+                operatorQuorumWeightAfter - (
+                    strategyManager.stakerStrategyShares(staker, updatedStrategies[0]) +
+                    strategyManager.stakerStrategyShares(staker, updatedStrategies[1]) +
+                    strategyManager.stakerStrategyShares(staker, updatedStrategies[2])
+                ) 
+                == operatorQuorumWeightBefore,
+                "testDelegation: operatorQuorumWeightAfter did not increment by the right amount"
+            );
+        }
+        {
+            assertTrue(_isDepositedStrategy(staker, stETHStrat) == true, "stakerStrategyList not updated correctly");
+            assertTrue(_isDepositedStrategy(staker, rETHStrat) == true, "stakerStrategyList not updated correctly");
+            assertTrue(_isDepositedStrategy(staker, cETHStrat) == true, "stakerStrategyList not updated correctly");
         }
     }
 

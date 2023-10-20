@@ -3,7 +3,8 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
-gas_reports = ["*"]
+# gas_reports = ["*"]
+gas_reports = ["DelegationManager", "StakeRegistryHarness"]
 
 # A list of ignored solc error codes
 

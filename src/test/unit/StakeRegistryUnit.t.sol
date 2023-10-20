@@ -5,6 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import "../../contracts/core/DelegationManager.sol";
+import "../../contracts/core/StrategyManager.sol";
+import "../../contracts/pods/EigenPodManager.sol";
+import "../../contracts/pods/DelayedWithdrawalRouter.sol";
+
 import "../../contracts/core/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/interfaces/IStrategyManager.sol";
@@ -44,6 +49,13 @@ contract StakeRegistryUnitTests is Test {
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationMock;
     EigenPodManagerMock public eigenPodManagerMock;
+
+    DelegationManager public delegationManager;
+    DelegationManager public delegationManagerImplementation;
+    StrategyManager public strategyManager;
+    StrategyManager public strategyManagerImplementation;
+    EigenPodManager eigenPodManager;
+    EigenPodManager eigenPodManagerImplementation;
 
     address public serviceManagerOwner = address(uint160(uint256(keccak256("serviceManagerOwner"))));
     address public pauser = address(uint160(uint256(keccak256("pauser"))));

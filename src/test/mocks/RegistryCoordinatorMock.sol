@@ -32,7 +32,10 @@ contract RegistryCoordinatorMock is IRegistryCoordinator {
     function getQuorumBitmapUpdateByOperatorIdByIndex(bytes32 operatorId, uint256 index) external view returns (QuorumBitmapUpdate memory) {}
 
     /// @notice Returns the current quorum bitmap for the given `operatorId`
-    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192) {}
+    /// Default always return operator is registered for quorum 0
+    function getCurrentQuorumBitmapByOperatorId(bytes32 operatorId) external view returns (uint192 quorumBitmap) {
+        quorumBitmap = uint192(1);
+    }
 
     /// @notice Returns the length of the quorum bitmap history for the given `operatorId`
     function getQuorumBitmapUpdateByOperatorIdLength(bytes32 operatorId) external view returns (uint256) {}
