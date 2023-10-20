@@ -97,6 +97,10 @@ interface IEigenPod {
     /// @notice Emitted when partial withdrawal proof is fulfilled
     event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
 
+    /// @notice Emitted when a partial withdrawal zk proof is requested from succinct
+    event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint64 requestNonce);
+
+
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);

@@ -98,7 +98,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
     /// @notice prover nonce for the function gateway contract
-    uint256 public nonce;
+    uint256 public requestNonce;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -291,21 +291,27 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
-        uint256 startBlock,
-        uint256 endBlock,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
         bytes32 FUNCTION_ID
     ) external {
         eigenPodManager.requestProofViaFunctionGateway(
             FUNCTION_ID, 
-            startBlock,
-            endBlock,
+            startTimestamp,
+            endTimestamp,
             address(this),
             oracleTimestamp,
-            nonce,
+            requestNonce,
             this.handleCallback.selector
         );
+        /**
+        * Zero out the running total of partial withdrawals claimed.  Once another merkle proof for partial withdrawals is proven
+        * this running total wil once again start accumulating.
+        */
+        sumOfPartialWithdrawalsClaimedGwei = 0;
+        requestNonce++;
 
-        nonce++;
+        emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
