@@ -252,12 +252,25 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         fuzzedAddressMapping[address(generalReg1)] = true;
     }
 
+    function testSendETHWithValidAmount() public {
+        cheats.startPrank(podOwner);
+        eigenPodManager.receive(){value: 1ether};
+        cheats.stopPrank();
+    }
+
     function testStaking() public {
         cheats.startPrank(podOwner);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    function testStakingWithInvalidAmount () public {
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.stake: must initially stake for any validator with 32 ether"));
+        eigenPodManager.stake{value: 10e18}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
     }
 
