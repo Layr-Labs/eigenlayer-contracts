@@ -70,4 +70,16 @@ contract EPInternalFunctions is EigenPod {
             validatorFields
         );
     }
+
+    function calculateRestakedBalanceGwei(
+        uint64 amountGwei
+    )
+        public
+        view
+        returns(uint64)
+    {
+        return _calculateRestakedBalanceGwei(
+            amountGwei
+        );
+    }
  }
