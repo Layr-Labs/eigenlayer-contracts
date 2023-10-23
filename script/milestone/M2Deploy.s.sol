@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../src/contracts/interfaces/IETHPOSDeposit.sol";
 import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
+import "../../src/contracts/interfaces/IFunctionGateway.sol";
 
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
@@ -333,6 +334,7 @@ contract M2Deploy is Script, Test {
         EigenPodManager(address(eigenPodManager)).initialize(
             0,
             IBeaconChainOracle(address(this)),
+            IFunctionGateway(address(this)),
             address(this),
             PauserRegistry(address(this)),
             0

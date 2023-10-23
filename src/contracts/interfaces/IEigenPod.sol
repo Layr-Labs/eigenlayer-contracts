@@ -98,7 +98,7 @@ interface IEigenPod {
     event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
 
     /// @notice Emitted when a partial withdrawal zk proof is requested from succinct
-    event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint64 requestNonce);
+    event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint256 requestNonce);
 
 
 

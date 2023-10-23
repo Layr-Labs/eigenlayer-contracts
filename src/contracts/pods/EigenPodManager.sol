@@ -65,7 +65,7 @@ contract EigenPodManager is
     ) external initializer {
         _setMaxPods(_maxPods);
         _updateBeaconChainOracle(_beaconChainOracle);
-        _updateFunctionGateway(_functionGateway);
+        _setFunctionGateway(_functionGateway);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
@@ -236,7 +236,7 @@ contract EigenPodManager is
     * @param newFunctionGateway is the new FunctionGateway contract being pointed to
     */
     function updateFunctionGateway(IFunctionGateway newFunctionGateway) external onlyOwner {
-        _updateFunctionGateway(newFunctionGateway);
+        _setFunctionGateway(newFunctionGateway);
     }
 
     // INTERNAL FUNCTIONS
@@ -267,7 +267,7 @@ contract EigenPodManager is
         emit BeaconOracleUpdated(address(newBeaconChainOracle));
     }
 
-    function _updateFunctionGateway(IFunctionGateway newFunctionGateway) internal {
+    function _setFunctionGateway(IFunctionGateway newFunctionGateway) internal {
         functionGateway = newFunctionGateway;
         emit FunctionGatewayUpdated(address(newFunctionGateway));
     }

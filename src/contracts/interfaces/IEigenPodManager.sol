@@ -148,8 +148,8 @@ interface IEigenPodManager is IPausable {
 
     function requestProofViaFunctionGateway(
         bytes32 FUNCTION_ID,
-        uint256 startBlock,
-        uint256 endBlock,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
         address podAddress,
         uint64 oracleTimestamp,
         uint256 nonce,
