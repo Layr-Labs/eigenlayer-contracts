@@ -74,9 +74,7 @@
 │  ├─ when input params are invalid
 │  │  ├─ when strategies length != shares length
 │  │  │  └─ it should revert 
-│  │  ├─ when withdrawer address is zero address
-│  │  │  └─ it should revert
-│  │  └─ when staker address is zero address
+│  │  └─ when withdrawer address is zero address
 │  │     └─ it should revert
 │  ├─ when multiple withdrawals queued with exact same params 
 │  │  ├─ should have different withdrawal roots set to true for pendingWithdrawals

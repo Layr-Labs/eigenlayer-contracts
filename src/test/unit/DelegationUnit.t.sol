@@ -1455,7 +1455,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("DelegationManager: onlyDelegationManager.rEigenPodManager"));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.increaseDelegatedShares(operator, strategyMock, shares);
     }
@@ -1468,7 +1468,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     ) public fuzzedAddress(operator) {
         cheats.assume(operator != address(strategyManagerMock));
         cheats.assume(operator != address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("DelegationManager: onlyDelegationManager.rEigenPodManager"));
+        cheats.expectRevert(bytes("DelegationManager: onlyStrategyManagerOrEigenPodManager"));
         cheats.startPrank(operator);
         delegationManager.decreaseDelegatedShares(operator, strategy, shares);
     }
@@ -1754,16 +1754,11 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.setWithdrawalDelayBlocks(valueToSet);
     }
 
-    /**************************************
-     *
-     *  Withdrawals Tests with DelegationManager. using actual SM contract instead of Mock to test
-     *
-     **************************************/
+    // queueWithdrawal Tests
 
     function testQueueWithdrawalRevertsMismatchedSharesAndStrategyArrayLength() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         uint256[] memory shareAmounts = new uint256[](2);
-
         {
             strategyArray[0] = eigenPodManagerMock.beaconChainETHStrategy();
             shareAmounts[0] = 1;
@@ -1798,6 +1793,63 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         delegationManager.queueWithdrawals(params);
     }
 
+    function testQueueWithdrawalRevertsWhenPaused() external {
+        cheats.startPrank(pauser);
+        delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
+        cheats.stopPrank();
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = _setUpQueueWithdrawalParamsSingleStrat(
+            strategyMock,
+            1e18,
+            address(this)
+        );
+
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        delegationManager.queueWithdrawals(params);
+    }
+
+    function testQueueWithdrawalWithdrawTwice(uint256 amount) external {
+        cheats.assume(amount < weth.totalSupply());
+        (
+            IDelegationManager.Withdrawal memory withdrawal1 /* tokensArray */ /* withdrawalRoot */,
+            ,
+            bytes32 withdrawRoot1
+        ) = testQueueWithdrawal_ToSelf(amount, amount);
+        (
+            IDelegationManager.Withdrawal memory withdrawal2 /* tokensArray */ /* withdrawalRoot */,
+            ,
+            bytes32 withdrawRoot2
+        ) = testQueueWithdrawal_ToSelf(amount, amount);
+
+        require(withdrawRoot1 != withdrawRoot2, "withdrawRoot1 == withdrawRoot2");
+        // Checking withdraw root is pending
+        require(delegationManager.pendingWithdrawals(withdrawRoot1), "withdrawRoot1 is not pending");
+        require(delegationManager.pendingWithdrawals(withdrawRoot2), "withdrawRoot2 is not pending");
+    }
+
+    // queueWithdrawal single strategy tests
+
+    function testQueueWithdrawal_SingleStratStrategyManager() external {
+
+    }
+
+    function testQueueWithdrawal_SingleStratBeaconChainStrategy() external {
+
+    }
+
+    function testQueueWithdrawal_SingleStratStrategyManagerWithDelegation() external {
+
+    }
+
+    function testQueueWithdrawal_SingleStratBeaconChainStrategyWithDelegation() external {
+
+    }
+
+    /**************************************
+     *
+     *  Withdrawals Tests with DelegationManager. using actual SM contract instead of Mock to test
+     *
+     **************************************/
     function testQueueWithdrawal_ToSelf(
         uint256 depositAmount,
         uint256 withdrawalAmount
@@ -2598,16 +2650,21 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         address operator_for_withdrawer = address(1002);
 
         // register operators
-        bytes32 salt;
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator_for_staker,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
-        testRegisterAsOperator(operator_for_staker, operatorDetails, emptyStringForMetadataURI);
-        testRegisterAsOperator(operator_for_withdrawer, operatorDetails, emptyStringForMetadataURI);
+        _testRegisterAsOperator(operator_for_staker, operatorDetails);
+        operatorDetails = IDelegationManager.OperatorDetails({
+           earningsReceiver: operator_for_withdrawer,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0 
+        });
+        _testRegisterAsOperator(operator_for_withdrawer, operatorDetails);
 
         // delegate from the `staker` and withdrawer to the operators
+        bytes32 salt;
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.startPrank(staker);
         delegationManager.delegateTo(operator_for_staker, approverSignatureAndExpiry, salt);        
@@ -2690,230 +2747,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         }
     }
 
-    /**
-     * INTERNAL / HELPER FUNCTIONS
-     */
-
-    /**
-     * Setup DelegationManager and DelegationManager.contracts for testing instead of using StrategyManagerMock
-     * since we need to test the actual contracts together for the withdrawal queueing tests
-     */
-    function _setUpWithdrawalTests() internal {
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasherMock, eigenPodManagerMock);
-        cheats.startPrank(eigenLayerProxyAdmin.owner());
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation)
-        );
-        cheats.stopPrank();
-
-        strategyImplementation = new StrategyBase(strategyManager);
-        mockToken = new ERC20Mock();
-        strategyMock = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
-                )
-            )
-        );
-        strategyMock2 = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
-                )
-            )
-        );
-        strategyMock3 = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
-                )
-            )
-        );
-
-        // whitelist the strategy for deposit
-        cheats.startPrank(strategyManager.owner());
-        IStrategy[] memory _strategies = new IStrategy[](3);
-        _strategies[0] = strategyMock;
-        _strategies[1] = strategyMock2;
-        _strategies[2] = strategyMock3;
-        strategyManager.addStrategiesToDepositWhitelist(_strategies);
-        cheats.stopPrank();
-
-        require(
-            delegationManager.strategyManager() == strategyManager,
-            "constructor / initializer incorrect, strategyManager set wrong"
-        );
-    }
-
-    function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) internal {
-        IERC20 token = strategy.underlyingToken();
-        // IStrategy strategy = strategyMock;
-
-        // filter out zero case since it will revert with "DelegationManager._addShares: shares should not be zero!"
-        cheats.assume(amount != 0);
-        // filter out zero address because the mock ERC20 we are using will revert on using it
-        cheats.assume(staker != address(0));
-        // filter out the strategy itself from fuzzed inputs
-        cheats.assume(staker != address(strategy));
-        // sanity check / filter
-        cheats.assume(amount <= token.balanceOf(address(this)));
-        cheats.assume(amount >= 1);
-
-        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
-        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
-
-        // needed for expecting an event with the right parameters
-        uint256 expectedShares = strategy.underlyingToShares(amount);
-
-        cheats.startPrank(staker);
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit Deposit(staker, token, strategy, expectedShares);
-        uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
-        cheats.stopPrank();
-
-        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
-        uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
-
-        require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
-        if (sharesBefore == 0) {
-            require(
-                stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1,
-                "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
-            );
-            require(
-                strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) == strategy,
-                "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy"
-            );
-        }
-    }
-
-    function _setUpWithdrawalStructSingleStrat(
-        address staker,
-        address withdrawer,
-        IERC20 token,
-        IStrategy strategy,
-        uint256 shareAmount
-    )
-        internal
-        view
-        returns (
-            IDelegationManager.Withdrawal memory queuedWithdrawal,
-            IERC20[] memory tokensArray,
-            bytes32 withdrawalRoot
-        )
-    {
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        tokensArray = new IERC20[](1);
-        uint256[] memory shareAmounts = new uint256[](1);
-        strategyArray[0] = strategy;
-        tokensArray[0] = token;
-        shareAmounts[0] = shareAmount;
-        queuedWithdrawal = IDelegationManager.Withdrawal({
-            strategies: strategyArray,
-            shares: shareAmounts,
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            delegatedTo: delegationManager.delegatedTo(staker)
-        });
-        // calculate the withdrawal root
-        withdrawalRoot = delegationManager.calculateWithdrawalRoot(queuedWithdrawal);
-        return (queuedWithdrawal, tokensArray, withdrawalRoot);
-    }
-
-    function _setUpWithdrawalStruct_MultipleStrategies(
-        address staker,
-        address withdrawer,
-        IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts
-    ) internal view returns (IDelegationManager.Withdrawal memory withdrawal, bytes32 withdrawalRoot) {
-        withdrawal = IDelegationManager.Withdrawal({
-            strategies: strategyArray,
-            shares: shareAmounts,
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            delegatedTo: delegationManager.delegatedTo(staker)
-        });
-        // calculate the withdrawal root
-        withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
-        return (withdrawal, withdrawalRoot);
-    }
-
-    function _setUpWithdrawalStructSingleStrat_MultipleStrategies(
-        address staker,
-        address withdrawer,
-        IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts
-    ) internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) {
-        queuedWithdrawal = IDelegationManager.Withdrawal({
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            delegatedTo: delegationManager.delegatedTo(staker),
-            strategies: strategyArray,
-            shares: shareAmounts
-        });
-        // calculate the withdrawal root
-        withdrawalRoot = delegationManager.calculateWithdrawalRoot(queuedWithdrawal);
-        return (queuedWithdrawal, withdrawalRoot);
-    }
-
-    /**
-     * @notice internal function for calculating a signature from the delegationSigner corresponding to `_delegationSignerPrivateKey`, approving
-     * the `staker` to delegate to `operator`, with the specified `salt`, and expiring at `expiry`.
-     */
-    function _getApproverSignature(
-        uint256 _delegationSignerPrivateKey,
-        address staker,
-        address operator,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry) {
-        approverSignatureAndExpiry.expiry = expiry;
-        {
-            bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
-                staker,
-                operator,
-                delegationManager.delegationApprover(operator),
-                salt,
-                expiry
-            );
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
-            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
-        return approverSignatureAndExpiry;
-    }
-
-    /**
-     * @notice internal function for calculating a signature from the staker corresponding to `_stakerPrivateKey`, delegating them to
-     * the `operator`, and expiring at `expiry`.
-     */
-    function _getStakerSignature(
-        uint256 _stakerPrivateKey,
-        address operator,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry) {
-        address staker = cheats.addr(stakerPrivateKey);
-        stakerSignatureAndExpiry.expiry = expiry;
-        {
-            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(staker, operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
-            stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
-        }
-        return stakerSignatureAndExpiry;
-    }
-
     function test_RegisterAsOperator() public {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
@@ -2926,6 +2759,21 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             metadataURI: emptyStringForMetadataURI
         });
         assertTrue(delegationManager.isOperator(address(this)), "not register operator");
+    }
+
+    function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal override {
+        cheats.startPrank(sender);
+        string memory emptyStringForMetadataURI;
+        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        assertTrue(delegationManager.isOperator(sender), "_testRegisterAsOperator: sender is not a operator");
+
+        assertTrue(
+            keccak256(abi.encode(delegationManager.operatorDetails(sender))) == keccak256(abi.encode(operatorDetails)),
+            "_testRegisterAsOperator: operatorDetails not set appropriately"
+        );
+
+        assertTrue(delegationManager.isDelegated(sender), "_testRegisterAsOperator: sender not marked as actively delegated");
+        cheats.stopPrank();
     }
 
     function test_RevertsWhen_AlreadyOperator_RegisterAsOperator() public {
@@ -3174,6 +3022,249 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         );
         vm.expectRevert();
         delegationManager.delegateTo(address(this), approverSignatureAndExpiry, salt);
+    }
+
+    /**
+     * INTERNAL / HELPER FUNCTIONS
+     */
+
+    /**
+     * Setup DelegationManager and DelegationManager.contracts for testing instead of using StrategyManagerMock
+     * since we need to test the actual contracts together for the withdrawal queueing tests
+     */
+    function _setUpWithdrawalTests() internal {
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasherMock, eigenPodManagerMock);
+        cheats.startPrank(eigenLayerProxyAdmin.owner());
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation)
+        );
+        cheats.stopPrank();
+
+        strategyImplementation = new StrategyBase(strategyManager);
+        mockToken = new ERC20Mock();
+        strategyMock = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
+                )
+            )
+        );
+        strategyMock2 = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
+                )
+            )
+        );
+        strategyMock3 = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, mockToken, eigenLayerPauserReg)
+                )
+            )
+        );
+
+        // whitelist the strategy for deposit
+        cheats.startPrank(strategyManager.owner());
+        IStrategy[] memory _strategies = new IStrategy[](3);
+        _strategies[0] = strategyMock;
+        _strategies[1] = strategyMock2;
+        _strategies[2] = strategyMock3;
+        strategyManager.addStrategiesToDepositWhitelist(_strategies);
+        cheats.stopPrank();
+
+        require(
+            delegationManager.strategyManager() == strategyManager,
+            "constructor / initializer incorrect, strategyManager set wrong"
+        );
+    }
+
+    function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint256 amount) internal {
+        IERC20 token = strategy.underlyingToken();
+        // IStrategy strategy = strategyMock;
+
+        // filter out zero case since it will revert with "DelegationManager._addShares: shares should not be zero!"
+        cheats.assume(amount != 0);
+        // filter out zero address because the mock ERC20 we are using will revert on using it
+        cheats.assume(staker != address(0));
+        // filter out the strategy itself from fuzzed inputs
+        cheats.assume(staker != address(strategy));
+        // sanity check / filter
+        cheats.assume(amount <= token.balanceOf(address(this)));
+        cheats.assume(amount >= 1);
+
+        uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
+
+        // needed for expecting an event with the right parameters
+        uint256 expectedShares = strategy.underlyingToShares(amount);
+
+        cheats.startPrank(staker);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit Deposit(staker, token, strategy, expectedShares);
+        uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
+        cheats.stopPrank();
+
+        uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
+        uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
+
+        require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+        if (sharesBefore == 0) {
+            require(
+                stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1,
+                "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
+            );
+            require(
+                strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) == strategy,
+                "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy"
+            );
+        }
+    }
+
+    // Setup the struct params for queueWithdrawals() for a single strategy
+    function _setUpQueueWithdrawalParamsSingleStrat(
+        IStrategy strategy,
+        uint256 amount,
+        address withdrawer
+    ) internal view returns (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams) {
+        queuedWithdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategy;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+        queuedWithdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: amounts,
+            withdrawer: withdrawer
+        });
+        return queuedWithdrawalParams;
+    }
+
+    function _setUpWithdrawalStructSingleStrat(
+        address staker,
+        address withdrawer,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shareAmount
+    )
+        internal
+        view
+        returns (
+            IDelegationManager.Withdrawal memory queuedWithdrawal,
+            IERC20[] memory tokensArray,
+            bytes32 withdrawalRoot
+        )
+    {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        tokensArray = new IERC20[](1);
+        uint256[] memory shareAmounts = new uint256[](1);
+        strategyArray[0] = strategy;
+        tokensArray[0] = token;
+        shareAmounts[0] = shareAmount;
+        queuedWithdrawal = IDelegationManager.Withdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: delegationManager.delegatedTo(staker)
+        });
+        // calculate the withdrawal root
+        withdrawalRoot = delegationManager.calculateWithdrawalRoot(queuedWithdrawal);
+        return (queuedWithdrawal, tokensArray, withdrawalRoot);
+    }
+
+    function _setUpWithdrawalStruct_MultipleStrategies(
+        address staker,
+        address withdrawer,
+        IStrategy[] memory strategyArray,
+        uint256[] memory shareAmounts
+    ) internal view returns (IDelegationManager.Withdrawal memory withdrawal, bytes32 withdrawalRoot) {
+        withdrawal = IDelegationManager.Withdrawal({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: delegationManager.delegatedTo(staker)
+        });
+        // calculate the withdrawal root
+        withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
+        return (withdrawal, withdrawalRoot);
+    }
+
+    function _setUpWithdrawalStructSingleStrat_MultipleStrategies(
+        address staker,
+        address withdrawer,
+        IStrategy[] memory strategyArray,
+        uint256[] memory shareAmounts
+    ) internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) {
+        queuedWithdrawal = IDelegationManager.Withdrawal({
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
+            startBlock: uint32(block.number),
+            delegatedTo: delegationManager.delegatedTo(staker),
+            strategies: strategyArray,
+            shares: shareAmounts
+        });
+        // calculate the withdrawal root
+        withdrawalRoot = delegationManager.calculateWithdrawalRoot(queuedWithdrawal);
+        return (queuedWithdrawal, withdrawalRoot);
+    }
+
+    /**
+     * @notice internal function for calculating a signature from the delegationSigner corresponding to `_delegationSignerPrivateKey`, approving
+     * the `staker` to delegate to `operator`, with the specified `salt`, and expiring at `expiry`.
+     */
+    function _getApproverSignature(
+        uint256 _delegationSignerPrivateKey,
+        address staker,
+        address operator,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry) {
+        approverSignatureAndExpiry.expiry = expiry;
+        {
+            bytes32 digestHash = delegationManager.calculateDelegationApprovalDigestHash(
+                staker,
+                operator,
+                delegationManager.delegationApprover(operator),
+                salt,
+                expiry
+            );
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_delegationSignerPrivateKey, digestHash);
+            approverSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+        return approverSignatureAndExpiry;
+    }
+
+    /**
+     * @notice internal function for calculating a signature from the staker corresponding to `_stakerPrivateKey`, delegating them to
+     * the `operator`, and expiring at `expiry`.
+     */
+    function _getStakerSignature(
+        uint256 _stakerPrivateKey,
+        address operator,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry) {
+        address staker = cheats.addr(stakerPrivateKey);
+        stakerSignatureAndExpiry.expiry = expiry;
+        {
+            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(staker, operator, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_stakerPrivateKey, digestHash);
+            stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+        }
+        return stakerSignatureAndExpiry;
     }
 
     function _createOperatorDetails(

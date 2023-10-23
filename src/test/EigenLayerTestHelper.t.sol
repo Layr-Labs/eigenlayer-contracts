@@ -74,7 +74,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @param sender is the address being registered as an operator
      * @param operatorDetails is the `sender`'s OperatorDetails struct
      */
-    function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
+    function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal virtual {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
