@@ -34,8 +34,7 @@ This will either be implemented by Succinct Labs or eventually by Ethereum nativ
 
 We want to understimate validator balances on EigenLayer to be tolerant to small slashing events that occur on the beacon chain.
 
-We underestimate validator stake on EigenLayer through the following equation: $\text{eigenlayerBalance} = \text{min}(32, \text{floor}(x-0.75))$. Since a validator's effective balance on the beacon chain can at most 0.25 ETH more than its actual balance on the beacon chain, we subtract 0.75 and floor it for simplicity.
-
+We underestimate validator stake on EigenLayer through the following equation: $\text{eigenlayerBalance} = \text{min}(32, \text{floor}(x-C))$ where $C$ is some offset which we can assume is equal to 0.75. Since a validator's effective balance on the beacon chain can at most 0.25 ETH more than its actual balance on the beacon chain, we subtract 0.75 and floor it for simplicity.
 
 ### Creating EigenPods
 
@@ -43,7 +42,7 @@ Any user that wants to participate in native restaking first deploys an EigenPod
 
 ### Repointing Withdrawan Credentials: BLS to Execution Changes and Deposits
 
-The precise method by which native restaking occurs. Once an EigenPod is created, a user can make deposits for new validators or switch the withdrawal credentials of their existing validators to their EigenPod address. This makes it so that all funds that are ever withdrawn from the beacon chain on behalf of their validators will be sent to their EigenPod. Since the EigenPod is a contract that runs code as part of the EigenLayer protocol, we engineer it in such a way that the funds that can/will flow through it are restaked on EigenLayer.
+The precise method by which native restaking occurs is a user repointing their validator's withdrawal credentials. Once an EigenPod is created, a user can make deposits for new validators or switch the withdrawal credentials of their existing validators to their EigenPod address. This makes it so that all funds that are ever withdrawn from the beacon chain on behalf of their validators will be sent to their EigenPod. Since the EigenPod is a contract that runs code as part of the EigenLayer protocol, we engineer it in such a way that the funds that can/will flow through it are restaked on EigenLayer.
 
 Note that each EigenPod may have multiple validator instances pointed to it.
 
@@ -55,11 +54,12 @@ Once the proof has been verified against the oracle provided block root, the Eig
 
 ### Proofs of Partial Withdrawals
 
-We will take a brief aside to explain a simpler part of the protocol, partial withdrawals. Partial withdrawals are small withdrawals of validator yield that occur approximately once every 5 days. Anyone can submit a proof to an EigenPod that one of its validators had a partial withdrawal to the pod (note that this proof completely guarantees that the withdrawal was a partial withdrawal since it is more than the simple balance check done in Rocket Pool, for example). Once the partial withdrawal is proven, it is sent directly to the DelayedWithdrawalRouter to be sent to the EigenPod owner.
+We will take a brief aside to explain a simpler part of the protocol, partial withdrawals. Partial withdrawals are small withdrawals of validator yield that occur approximately once every 6 days. Anyone can submit a proof to an EigenPod that one of its validators had a partial withdrawal to the pod (note that this proof completely guarantees that the withdrawal was a partial withdrawal since it is more than the simple balance check done in Rocket Pool, for example). Once the partial withdrawal is proven, it is sent directly to the DelayedWithdrawalRouter to be sent to the EigenPod owner.
 
 Note that partial withdrawals can be withdrawn immediately from the system because they are not staked on EigenLayer, unlike the base validator stake that is restaked on EigenLayer
 
-These proofs are fairly expensive to execute, so we would ideally like to lower the gas cost. We have an optimistic fraudproof-based design that could lower gas costs, but have chosen to avoid the added complexity of implementing this design, because it is merely desirable but not necessary.
+Currently, users can submit partial withdrawal proofs one at a time, at a cost of around 30-40k gas per proof.  This is highly inefficient as partial withdrawals are often nominal amounts for which an expensive proof transaction each time is not feasible for our users.  The solution is to use succinct zk proving solution generate a single proof for multiple withdrawals, which can be verified for a fixed cost of around 300k gas.  This system and associated integration are currently under development.  
+
 
 ### Proofs of Validator Balance Updates
 
@@ -67,13 +67,13 @@ EigenLayer pessimistically assumes the validator has less ETH that they actually
 
 In the case that a validator's balance drops close to or below what is noted in EigenLayer, AVSs need to be notified of that ASAP, in order to get an accurate view of their security.
 
-In the case that a validator's balance, when run through the hysteresis function, is lower or higher than what is restaked on EigenLayer, anyone is allowed to permissionlessly prove that the balance of a certain validator. If the proof is valid, the StrategyManager decrements the pod owners beacon chain ETH shares by however much is staked on EigenLayer and adds the new proven stake.
+In the case that a validator's balance, when run through the hysteresis function, is lower or higher than what is restaked on EigenLayer, anyone is allowed to permissionlessly prove that the balance of a certain validator. 
 
 ### Proofs of Full Withdrawals
 
-Full withdrawals occur when a validator completely exits and withdraws from the beacon chain. The EigenPod is then credited with the validators balance at exit. A proof of a full withdrawal can be submitted by anyone to an EigenPod. The EigenPod then notes the new withdrawal and increases the "restaked balance" variable of the pod by the amount of the withdrawal.
+Full withdrawals occur when a validator completely exits and withdraws from the beacon chain. The EigenPod is then credited with the validators balance at exit. A proof of a full withdrawal can be submitted by anyone to an EigenPod to claim the freshly withdrawn ETH in the pod. The EigenPod then notes the new withdrawal and increases the "restaked balance" (but not staked on the consensus layer) variable of the pod by the amount of the withdrawal.
 
-If the amount of the withdrawal was greater than what the validator has reestaked on EigenLayer (which most often will be), then the excess is immediately sent to the DelayedWithdrawalRouter to be sent to the pod owner.
+If the amount of the withdrawal was greater than what the validator has reestaked on EigenLayer (which most often will be), then the excess is immediately sent to the DelayedWithdrawalRouter to be sent to the pod owner, as this excess balance is not restaked.
 
 Once the "restaked balance" of the pod is incremented, the pod owner is able to queue withdrawals for up to the "restaked balance", decrementing the "restaked balance" by the withdrawal amount. When the withdrawal is completed the pod simply sends a payment to the pod owner for the queued funds. Note that if the withdrawer chooses to recieve the withdrawal as shares, the StrategyManager will increase the "restaked balance" by the withdrawal amount.
 
