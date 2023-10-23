@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../src/contracts/interfaces/IETHPOSDeposit.sol";
 import "../src/contracts/interfaces/IBeaconChainOracle.sol";
+import "../src/contracts/interfaces/IFunctionGateway.sol";
 
 import "../src/contracts/core/StrategyManager.sol";
 import "../src/contracts/core/Slasher.sol";
@@ -299,6 +300,7 @@ contract EigenLayerDeploy is Script, Test {
                 EigenPodManager.initialize.selector,
                 EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
+                IFunctionGateway(address(0)),
                 alphaMultisig,
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS

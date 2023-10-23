@@ -522,6 +522,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 EigenPodManager.initialize.selector,
                 type(uint256).max,
                 beaconChainOracleAddress,
+                IFunctionGateway(address(0)),
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/

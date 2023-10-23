@@ -109,6 +109,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
                         EigenPodManager.initialize.selector,
                         type(uint256).max /*maxPods*/,
                         IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+                        IFunctionGateway(address(0)),
                         initialOwner,
                         pauserRegistry,
                         0 /*initialPausedStatus*/
@@ -325,6 +326,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
                         EigenPodManager.initialize.selector,
                         type(uint256).max /*maxPods*/,
                         IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+                        IFunctionGateway(address(0)),
                         initialOwner,
                         pauserRegistry,
                         0 /*initialPausedStatus*/

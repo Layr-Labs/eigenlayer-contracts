@@ -14,6 +14,7 @@ import "../contracts/middleware/StakeRegistry.sol";
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 import "../contracts/interfaces/IBeaconChainOracle.sol";
 import "../contracts/interfaces/IVoteWeigher.sol";
+import "../contracts/interfaces/IFunctionGateway.sol";
 
 import "../contracts/core/StrategyManager.sol";
 import "../contracts/strategies/StrategyBase.sol";
@@ -301,6 +302,7 @@ contract EigenLayerDeployer is Operators {
                 EigenPodManager.initialize.selector,
                 type(uint256).max, // maxPods
                 beaconChainOracleAddress,
+                IFunctionGateway(address(0)),
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/
