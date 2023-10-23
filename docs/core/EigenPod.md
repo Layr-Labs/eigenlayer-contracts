@@ -24,6 +24,19 @@ Aside from the broad protocol goals of security and simplicity, we also want the
 
 ## Current Protocol Overview
 
+### Beacon Chain Oracle
+
+Since the execution layer cannot yet synchronously read arbitrary state from the consensus layer, we require a Beacon Chain Oracle to bring in block roots from the consensus layer and put them in execution layer storage. 
+
+This will either be implemented by Succinct Labs or eventually by Ethereum natively in EIP-4788 ([read here](https://eips.ethereum.org/EIPS/eip-4788)). The interface will have requests be for a block number and responses be the block roots corresponding to the provided block numbers.
+
+### Hysteresis
+
+We want to understimate validator balances on EigenLayer to be tolerant to small slashing events that occur on the beacon chain.
+
+We underestimate validator stake on EigenLayer through the following equation: $\text{eigenlayerBalance} = \text{min}(32, \text{floor}(x-0.75))$. Since a validator's effective balance on the beacon chain can at most 0.25 ETH more than its actual balance on the beacon chain, we subtract 0.75 and floor it for simplicity.
+
+
 ### Creating EigenPods
 
 Any user that wants to participate in native restaking first deploys an EigenPod contract by calling `createPod()` on the EigenPodManager. This deploys an EigenPod contract which is a BeaconProxy in the Beacon Proxy pattern. The user is called the *pod owner* of the EigenPod they deploy.
@@ -32,27 +45,13 @@ Any user that wants to participate in native restaking first deploys an EigenPod
 
 The precise method by which native restaking occurs. Once an EigenPod is created, a user can make deposits for new validators or switch the withdrawal credentials of their existing validators to their EigenPod address. This makes it so that all funds that are ever withdrawn from the beacon chain on behalf of their validators will be sent to their EigenPod. Since the EigenPod is a contract that runs code as part of the EigenLayer protocol, we engineer it in such a way that the funds that can/will flow through it are restaked on EigenLayer.
 
-The ability to create new validators and repoint existing validators withdrawal credentials to EigenPods is live on Mainnet.
+Note that each EigenPod may have multiple validator instances pointed to it.
 
-### Beacon Chain Oracle
-
-Since the execution layer cannot synchronously read arbitrary state from the consensus layer, we require a Beacon Chain Oracle to bring in block roots from the consensus layer and put them in consensus layer storage. 
-
-This will either be implemented by Succinct Labs or eventually by Ethereum natively in EIP-4788. The interface will have requests be for a block number and responses be block roots.
-
-### Hysteresis
-
-We want to understimate validator balances on EigenLayer to be tolerant to small slashing events that occur on the beacon chain.
-
-We underestimate validator stake on EigenLayer through the following equation: $\text{eigenlayerBalance} = \text{min}(32, \text{floor}(x-0.75))$. Since a validator's effective balance on the beacon chain can at most 0.25 ETH more than its actual balance on the beacon chain, we subtract 0.75 and floor it for simplicity.
-
-### Proofs of Staked Validators
+### Proofs of Repointed Validators
 
 To convey to EigenLayer that an EigenPod has validator's restaked on it, anyone can submit a proof against a beacon chain state root the proves that a validator has their withdrawal credentials pointed to the pod.
 
-The proof is verified and the EigenPod calls the EigenPodMananger that calls the StrategyManager which records the validators proven balance run through the hysteresis function worth of ETH in the "beaconChainETH" strategy.
-
-Each EigenPod keeps track of all of the validators by the hash of their public key. For each validator, their validator index and current balance in EigenLayer is kept track of.
+Once the proof has been verified against the oracle provided block root, the EigenPod records the validators proven balance, run through the hysteresis function.  Each EigenPod keeps track of all of the validators by the hash of their public key. For each validator, their validator index and current balance in EigenLayer is kept track of.
 
 ### Proofs of Partial Withdrawals
 
