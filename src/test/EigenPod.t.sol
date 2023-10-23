@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "../contracts/interfaces/IEigenPod.sol";
 import "../contracts/interfaces/IBLSPublicKeyCompendium.sol";
 import "../contracts/middleware/BLSPublicKeyCompendium.sol";
+import "../contracts/interfaces/IFunctionGateway.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
 import "./utils/ProofParsing.sol";
 import "./EigenLayerDeployer.t.sol";
@@ -44,6 +45,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
     EPInternalFunctions public podInternalFunctionTester;
+
+    IFunctionGateway public functionGateway;
 
     BeaconChainOracleMock public beaconChainOracle;
     MiddlewareRegistryMock public generalReg1;
@@ -221,6 +224,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 EigenPodManager.initialize.selector,
                 type(uint256).max, // maxPods
                 beaconChainOracle,
+                functionGateway,
                 initialOwner,
                 pauserReg,
                 0/*initialPausedStatus*/
@@ -510,7 +514,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             //cheats.expectEmit(true, true, true, true, address(newPod));
             emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei);
+            uint gas = gasleft();
             newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            emit log_named_uint("gas used for partial withdrawal", gas - gasleft());
             require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
             withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
             require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
