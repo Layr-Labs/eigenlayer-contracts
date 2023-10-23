@@ -145,7 +145,7 @@ contract StakeRegistryMock is IStakeRegistry {
         }
     }
 
-    function getMockOperatorId(address operator) external returns(bytes32) {
+    function getMockOperatorId(address operator) external pure returns(bytes32) {
         return bytes32(uint256(keccak256(abi.encodePacked(operator, "operatorId"))));
     }
 }
