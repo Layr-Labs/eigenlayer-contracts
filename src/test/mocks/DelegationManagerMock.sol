@@ -117,11 +117,9 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 
-    function queueWithdrawal(
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external returns (bytes32) {}
+   function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory) {}
 
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
@@ -137,6 +135,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
         bool[] calldata receiveAsTokens
     ) external {}
 
+    function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external {}
+    
     // onlyDelegationManager functions in StrategyManager
     function addShares(
         IStrategyManager strategyManager,

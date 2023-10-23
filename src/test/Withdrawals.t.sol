@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../test/EigenLayerTestHelper.t.sol";
 
 import "./mocks/MiddlewareRegistryMock.sol";
 import "./mocks/ServiceManagerMock.sol";
-import "./Delegation.t.sol";
 
-contract WithdrawalTests is DelegationTests {
+import "./harnesses/StakeRegistryHarness.sol";
+
+contract WithdrawalTests is EigenLayerTestHelper {
 
     // packed info used to help handle stack-too-deep errors
     struct DataForTestWithdrawal {
@@ -17,11 +18,84 @@ contract WithdrawalTests is DelegationTests {
         uint96 nonce;
     }
 
+    address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
+    ServiceManagerMock public serviceManager;
+    StakeRegistryHarness public stakeRegistry;
+    StakeRegistryHarness public stakeRegistryImplementation;
+
     MiddlewareRegistryMock public generalReg1;
     ServiceManagerMock public generalServiceManager1;
 
     MiddlewareRegistryMock public generalReg2;
     ServiceManagerMock public generalServiceManager2;
+
+    bytes32 defaultOperatorId = bytes32(uint256(0));
+
+    function setUp() public virtual override {
+        EigenLayerDeployer.setUp();
+
+        initializeMiddlewares();
+    }
+
+    function initializeMiddlewares() public {
+        serviceManager = new ServiceManagerMock(slasher);
+
+        stakeRegistry = StakeRegistryHarness(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        stakeRegistryImplementation = new StakeRegistryHarness(
+            IRegistryCoordinator(registryCoordinator),
+            strategyManager,
+            serviceManager
+        );
+
+        {
+            uint96 multiplier = 1e18;
+            uint8 _NUMBER_OF_QUORUMS = 2;
+            // uint256[] memory _quorumBips = new uint256[](_NUMBER_OF_QUORUMS);
+            // // split 60% ETH quorum, 40% EIGEN quorum
+            // _quorumBips[0] = 6000;
+            // _quorumBips[1] = 4000;
+            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
+            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            // ethStratsAndMultipliers[0].strategy = wethStrat; 
+            // ethStratsAndMultipliers[0].multiplier = multiplier;
+            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
+            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            // eigenStratsAndMultipliers[0].strategy = eigenStrat;
+            // eigenStratsAndMultipliers[0].multiplier = multiplier;
+
+            cheats.startPrank(eigenLayerProxyAdmin.owner());
+
+            // setup the dummy minimum stake for quorum
+            uint96[] memory minimumStakeForQuorum = new uint96[](_NUMBER_OF_QUORUMS);
+            for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
+                minimumStakeForQuorum[i] = uint96(i+1);
+            }
+
+            // setup the dummy quorum strategies
+            IVoteWeigher.StrategyAndWeightingMultiplier[][] memory quorumStrategiesConsideredAndMultipliers =
+                new IVoteWeigher.StrategyAndWeightingMultiplier[][](2);
+            quorumStrategiesConsideredAndMultipliers[0] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            quorumStrategiesConsideredAndMultipliers[0][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                wethStrat,
+                multiplier
+            );
+            quorumStrategiesConsideredAndMultipliers[1] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
+            quorumStrategiesConsideredAndMultipliers[1][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
+                eigenStrat,
+                multiplier
+            );
+
+            eigenLayerProxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(stakeRegistry))),
+                address(stakeRegistryImplementation),
+                abi.encodeWithSelector(StakeRegistry.initialize.selector, minimumStakeForQuorum, quorumStrategiesConsideredAndMultipliers) 
+            );
+            cheats.stopPrank();
+        
+        }
+    }
 
     function initializeGeneralMiddlewares() public {
         generalServiceManager1 = new ServiceManagerMock(slasher);
@@ -83,7 +157,7 @@ contract WithdrawalTests is DelegationTests {
             internal 
         {
 
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        _initiateDelegation(operator, depositor, ethAmount, eigenAmount);
 
         cheats.startPrank(operator);
         slasher.optIntoSlashing(address(generalServiceManager1));
@@ -182,7 +256,7 @@ contract WithdrawalTests is DelegationTests {
         ) 
             public 
         {
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        _initiateDelegation(operator, depositor, ethAmount, eigenAmount);
 
         cheats.startPrank(operator);
         slasher.optIntoSlashing(address(generalServiceManager1));
@@ -313,7 +387,7 @@ contract WithdrawalTests is DelegationTests {
 
         //warps past fraudproof time interval
         cheats.warp(block.timestamp + 7 days + 1);
-        testDelegation(operator, depositor, ethAmount, eigenAmount);
+        _initiateDelegation(operator, depositor, ethAmount, eigenAmount);
     }
 
     // onlyNotFrozen modifier is not used in current DelegationManager implementation.
@@ -359,4 +433,34 @@ contract WithdrawalTests is DelegationTests {
     //     );
     //     _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
     // }
+
+
+    // Helper function to begin a delegation
+    function _initiateDelegation(address operator, address staker, uint96 ethAmount, uint96 eigenAmount)
+        internal
+        fuzzedAddress(operator)
+        fuzzedAddress(staker)
+        fuzzedAmounts(ethAmount, eigenAmount)
+    {
+        cheats.assume(staker != operator);
+        // base strategy will revert if these amounts are too small on first deposit
+        cheats.assume(ethAmount >= 1);
+        cheats.assume(eigenAmount >= 2);
+        
+        // Set weights ahead of the helper function call
+        bytes memory quorumNumbers = new bytes(2);
+        quorumNumbers[0] = bytes1(uint8(0));
+        quorumNumbers[0] = bytes1(uint8(1));
+        stakeRegistry.setOperatorWeight(0, operator, ethAmount);
+        stakeRegistry.setOperatorWeight(1, operator, eigenAmount);
+        stakeRegistry.registerOperatorNonCoordinator(operator, defaultOperatorId, quorumNumbers);
+        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
+    }
+
+
+    modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
+        cheats.assume(ethAmount >= 0 && ethAmount <= 1e18);
+        cheats.assume(eigenAmount >= 0 && eigenAmount <= 1e18);
+        _;
+    }
 }

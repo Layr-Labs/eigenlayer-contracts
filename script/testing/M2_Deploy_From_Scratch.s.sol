@@ -20,7 +20,6 @@ import "../../src/contracts/pods/EigenPodManager.sol";
 import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
-import "../../src/contracts/middleware/BLSPublicKeyCompendium.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
 import "../../src/test/mocks/ETHDepositMock.sol";
@@ -62,7 +61,6 @@ contract Deployer_M2 is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
-    BLSPublicKeyCompendium public blsPublicKeyCompendium;
 
     EmptyContract public emptyContract;
 
@@ -110,7 +108,7 @@ contract Deployer_M2 is Script, Test {
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delayedWithdrawalRouter.init_paused_status");
 
-        STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
+	STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
         DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS = uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
 
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = uint64(stdJson.readUint(config_data, ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR"));
@@ -259,8 +257,6 @@ contract Deployer_M2 is Script, Test {
             );
         }
 
-        blsPublicKeyCompendium = new BLSPublicKeyCompendium();
-
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);
 
@@ -317,7 +313,6 @@ contract Deployer_M2 is Script, Test {
         vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
-        vm.serializeAddress(deployed_addresses, "blsPublicKeyCompendium", address(blsPublicKeyCompendium));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
         string memory deployed_addresses_output = vm.serializeString(deployed_addresses, "strategies", deployed_strategies_output);
 

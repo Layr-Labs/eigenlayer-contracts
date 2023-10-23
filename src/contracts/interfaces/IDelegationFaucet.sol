@@ -25,9 +25,7 @@ interface IDelegationFaucet {
 
     function queueWithdrawal(
         address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
+         IDelegationManager.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) external returns (bytes memory);
 
     function completeQueuedWithdrawal(
