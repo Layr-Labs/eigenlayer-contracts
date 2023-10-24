@@ -3,6 +3,9 @@ pragma solidity =0.8.12;
 
 import "./../EigenPod.t.sol";
 import "./../utils/ProofParsing.sol";
+import "./../mocks/StrategyManagerMock.sol";
+import "./../mocks/SlasherMock.sol";
+import "./../mocks/DelegationManagerMock.sol";
 
 import "forge-std/Test.sol";
 
@@ -28,6 +31,11 @@ contract EigenPodUnitTests is Test, ProofParsing {
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
     EPInternalFunctions public podInternalFunctionTester;
+
+    IDelegationManager public delegation;
+    IStrategyManager public strategyManager;
+    Slasher public slasher;
+    PauserRegistry public pauserReg;
 
     BeaconChainOracleMock public beaconChainOracle;
     address[] public slashingContracts;
@@ -84,6 +92,19 @@ contract EigenPodUnitTests is Test, ProofParsing {
 
     function setUp() public {
         test = new EigenPodTests();
+        eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
+
+        strategyManager = new StrategyManagerMock();
+        slasher = new SlasherMock();
+        delegation = new DelegationManagerMock();
+
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            new ETHPOSDepositMock(),
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegation
+        );
     }
 
     function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
@@ -195,7 +216,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
         cheats.stopPrank();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
         require(pod.hasRestaked() == true, "Pod should be restaked");
-        
     }
     function testTryToActivateRestakingAfterHasRestakedIsSet() public {
        cheats.startPrank(podOwner);
