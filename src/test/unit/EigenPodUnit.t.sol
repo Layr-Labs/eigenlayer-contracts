@@ -170,15 +170,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
     }
 
     function testCheckThatHasRestakedIsSetToTrue() public returns (IEigenPod){
-        cheats.deal(podOwner, stakeAmount);
-        cheats.startPrank(podOwner);
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        cheats.expectEmit(true, true, true, true, address(newPod));
-        emit EigenPodStaked(pubkey);
-        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
-
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
         require(pod.hasRestaked() == true, "Pod should not be restaked");
         return pod;
     }
@@ -200,7 +191,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
     }
 
     function testAttemptedWithdrawalAfterVerifyingWithdrawalCredentials() public {
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.hasNeverRestaked: restaking is enabled"));
         IEigenPod(pod).withdrawBeforeRestaking();
