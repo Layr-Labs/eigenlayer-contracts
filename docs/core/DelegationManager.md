@@ -375,7 +375,7 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's delegated balance for the `strategy` is decreased by `shares`
-* This method is a no-op if the Staker is not delegated an an Operator.
+* This method is a no-op if the Staker is not delegated as an Operator.
 
 *Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager` (although the `StrategyManager` doesn't use this method)
