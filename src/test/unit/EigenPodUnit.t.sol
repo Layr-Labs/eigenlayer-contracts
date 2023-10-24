@@ -195,6 +195,7 @@ contract EigenPodUnitTests is Test, ProofParsing {
         cheats.stopPrank();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
         require(pod.hasRestaked() == true, "Pod should be restaked");
+        
     }
     function testTryToActivateRestakingAfterHasRestakedIsSet() public {
        cheats.startPrank(podOwner);
