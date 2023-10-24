@@ -293,6 +293,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -322,6 +324,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -341,11 +345,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testWithdrawFromPod() public {
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.deal(address(pod), stakeAmount);
 
         // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
@@ -353,7 +359,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
-        // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
         //cheats.expectEmit(true, true, true, true);
         emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
         pod.withdrawBeforeRestaking();
@@ -516,7 +522,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-            //cheats.expectEmit(true, true, true, true, address(newPod));
+            // cheats.expectEmit(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei, address(newPod));
             emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei);
             newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
             require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
