@@ -1925,11 +1925,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         IStrategy strategy = strategyMock;
         IERC20 token = strategy.underlyingToken();
 
-        (
-            IDelegationManager.Withdrawal memory withdrawal,
-            IERC20[] memory tokensArray,
-            bytes32 withdrawalRoot
-        ) = _setUpWithdrawalStructSingleStrat(
+        (IDelegationManager.Withdrawal memory withdrawal, IERC20[] memory tokensArray, ) = _setUpWithdrawalStructSingleStrat(
                 /*staker*/ address(this),
                 /*withdrawer*/ address(this),
                 token,
@@ -2197,11 +2193,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         _depositIntoStrategySuccessfully(strategyMock, staker, depositAmount);
 
-        (
-            IDelegationManager.Withdrawal memory withdrawal,
-            IERC20[] memory tokensArray,
-            bytes32 withdrawalRoot
-        ) = _setUpWithdrawalStructSingleStrat(
+        (IDelegationManager.Withdrawal memory withdrawal, , ) = _setUpWithdrawalStructSingleStrat(
                 /*staker*/ address(this),
                 /*withdrawer*/ address(this),
                 mockToken,
@@ -2233,11 +2225,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         _depositIntoStrategySuccessfully(strategyMock, staker, depositAmount);
 
-        (
-            IDelegationManager.Withdrawal memory withdrawal,
-            IERC20[] memory tokensArray,
-            bytes32 withdrawalRoot
-        ) = _setUpWithdrawalStructSingleStrat(
+        (IDelegationManager.Withdrawal memory withdrawal, ,  ) = _setUpWithdrawalStructSingleStrat(
                 /*staker*/ address(this),
                 /*withdrawer*/ address(this),
                 mockToken,
@@ -2285,17 +2273,14 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         _depositIntoStrategySuccessfully(strategies[1], staker, depositAmounts[1]);
         _depositIntoStrategySuccessfully(strategies[2], staker, depositAmounts[2]);
 
-        (
-            IDelegationManager.Withdrawal memory queuedWithdrawal,
-            bytes32 withdrawalRoot
-        ) = _setUpWithdrawalStruct_MultipleStrategies(
+        ( ,bytes32 withdrawalRoot) = _setUpWithdrawalStruct_MultipleStrategies(
                 /* staker */ staker,
                 /* withdrawer */ staker,
                 strategies,
                 amounts
             );
         require(!delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
+        delegationManager.cumulativeWithdrawalsQueued(staker);
         uint256[] memory sharesBefore = new uint256[](3);
         sharesBefore[0] = strategyManager.stakerStrategyShares(staker, strategies[0]);
         sharesBefore[1] = strategyManager.stakerStrategyShares(staker, strategies[1]);
@@ -2368,10 +2353,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         amounts[1] = 2e18;
         amounts[2] = 3e18;
 
-        (
-            IDelegationManager.Withdrawal memory withdrawal,
-            bytes32 withdrawalRoot
-        ) = _setUpWithdrawalStruct_MultipleStrategies({
+        (IDelegationManager.Withdrawal memory withdrawal, ) = _setUpWithdrawalStruct_MultipleStrategies({
                 staker: staker,
                 withdrawer: withdrawer,
                 strategyArray: strategies,

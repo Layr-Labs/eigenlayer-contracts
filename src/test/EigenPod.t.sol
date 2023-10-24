@@ -939,7 +939,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _deployInternalFunctionTester();
 
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        bytes32[] memory validatorFields = getValidatorFields();
+        validatorFields = getValidatorFields();
 
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
@@ -1220,7 +1220,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     //post M2, all new pods deployed will have "hasRestaked = true".  THis tests that
-    function testDeployedPodIsRestaked(address podOwner) public fuzzedAddress(podOwner) {
+    function testDeployedPodIsRestaked() public fuzzedAddress(podOwner) {
         cheats.startPrank(podOwner);
         eigenPodManager.createPod();
         cheats.stopPrank();
@@ -1420,7 +1420,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         );
     }
 
-    function testWithdrawlBeforeRestakingFromNonPodOwnerAddress(uint256 amount, address nonPodOwner) external {
+    function testWithdrawlBeforeRestakingFromNonPodOwnerAddress(address nonPodOwner) external {
         cheats.assume(nonPodOwner != podOwner);
         cheats.startPrank(podOwner);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
@@ -1428,18 +1428,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-
-        uint256 amount = 32 ether;
-
-        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(0));
-
         cheats.startPrank(nonPodOwner);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
         newPod.withdrawBeforeRestaking();
         cheats.stopPrank();
     }
 
-    function testDelayedWithdrawalIsCreatedByWithdrawBeforeRestaking(uint256 amount) external {
+    function testDelayedWithdrawalIsCreatedByWithdrawBeforeRestaking() external {
         cheats.startPrank(podOwner);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
         cheats.expectEmit(true, true, true, true, address(newPod));
