@@ -1,0 +1,62 @@
+EigenPodManager Tree
+# when contract is deployed and initialized
+## it should properly set storage
+# when initialize called again
+## it should revert
+# when createPod called
+## given the user has already created a pod
+### it should revert
+## given that the max number of pods has been deployed
+### it should revert
+## given the user has not created a pod
+### it should deploy a pod
+# when stake is called
+## given the user has not created a pod
+### it should deploy a pod
+## given the user has already created a pod
+### it should call stake on the eigenPod
+# when setMaxPods is called
+## given the user is not the pauser
+### it should revert
+## given the user is the pauser
+### it should set the max pods
+# when updateBeaconChainOracle is called
+## given the user is not the owner
+### it should revert
+## given the user is the owner
+### it should set the beacon chain oracle
+# when addShares is called
+## given that the caller is not the delegationManager
+### it should revert
+## given that the podOwne address is 0
+### it should revert
+## given that the shares amount is negative
+### it should revert
+## given that the shares is not a whole gwei amount
+### it should revert
+## given that too many shares are withdrawn
+### it should revert
+## given that all of the above conditions are satisfied
+### it should update the podOwnerShares
+# when shares are successfully added
+## given that sharesBefore is negative or 0
+### given that sharesAfter is negative or zero
+#### change in delegateable shares should be 0
+### given that sharesAfter is positive
+#### change in delegateable shares should be positive
+## given that sharesBefore is positive
+### given that sharesAfter is negative or zero
+#### change in delegateable shares is negative sharesBefore
+### given that sharesAfter is positive
+#### change in delegateable shares is the difference between sharesAfter and sharesBefore
+# when removeShares is called
+## given that the caller is not the delegationManager
+### it should revert
+## given that the shares amount is negative
+### it should revert
+## given that the shares is not a whole gwei amount
+### it should revert
+## given that too many shares are removed
+### it should revert
+## given that all of the above conditions are satisfied
+### it should update the podOwnerShares
