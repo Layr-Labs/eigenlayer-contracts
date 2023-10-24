@@ -20,7 +20,6 @@ import "../../src/contracts/pods/EigenPodManager.sol";
 import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
-import "../../src/contracts/middleware/BLSPublicKeyCompendium.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
 import "../../src/test/mocks/ETHDepositMock.sol";
@@ -69,7 +68,12 @@ contract DeployOpenEigenLayer is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
-    function _deployEigenLayer(address executorMultisig, address operationsMultisig, address pauserMultisig, StrategyConfig[] memory strategyConfigs) internal {
+    function _deployEigenLayer(
+        address executorMultisig,
+        address operationsMultisig,
+        address pauserMultisig,
+        StrategyConfig[] memory strategyConfigs
+    ) internal {
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
@@ -124,19 +128,20 @@ contract DeployOpenEigenLayer is Script, Test {
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
+        eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit,
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegation
+        );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
-            abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                0
-            )
+            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),
@@ -153,12 +158,7 @@ contract DeployOpenEigenLayer is Script, Test {
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                0
-            )
+            abi.encodeWithSelector(Slasher.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
@@ -175,7 +175,8 @@ contract DeployOpenEigenLayer is Script, Test {
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(DelayedWithdrawalRouter.initialize.selector,
+            abi.encodeWithSelector(
+                DelayedWithdrawalRouter.initialize.selector,
                 executorMultisig,
                 eigenLayerPauserReg,
                 0,
@@ -188,13 +189,21 @@ contract DeployOpenEigenLayer is Script, Test {
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             deployedStrategyArray.push(
-                StrategyBaseTVLLimits(address(
-                    new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
-                        abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, strategyConfigs[i].maxPerDeposit, strategyConfigs[i].maxDeposits, IERC20(strategyConfigs[i].tokenAddress), eigenLayerPauserReg)
+                StrategyBaseTVLLimits(
+                    address(
+                        new TransparentUpgradeableProxy(
+                            address(baseStrategyImplementation),
+                            address(eigenLayerProxyAdmin),
+                            abi.encodeWithSelector(
+                                StrategyBaseTVLLimits.initialize.selector,
+                                strategyConfigs[i].maxPerDeposit,
+                                strategyConfigs[i].maxDeposits,
+                                IERC20(strategyConfigs[i].tokenAddress),
+                                eigenLayerPauserReg
+                            )
+                        )
                     )
-                ))
+                )
             );
         }
 

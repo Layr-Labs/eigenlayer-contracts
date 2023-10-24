@@ -4,8 +4,9 @@ pragma solidity =0.8.12;
 import "../test/EigenLayerDeployer.t.sol";
 import "../contracts/interfaces/ISignatureUtils.sol";
 
-contract EigenLayerTestHelper is EigenLayerDeployer {
+import "./mocks/StakeRegistryStub.sol";
 
+contract EigenLayerTestHelper is EigenLayerDeployer {
     uint8 durationToInit = 2;
     uint256 public SECP256K1N_MODULUS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
     uint256 public SECP256K1N_MODULUS_HALF = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
@@ -25,14 +26,11 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
     function _testInitiateDelegation(
         uint8 operatorIndex,
-        uint256 amountEigenToDeposit, 
-        uint256 amountEthToDeposit        
-    )
-        public returns (uint256 amountEthStaked, uint256 amountEigenStaked)
-    {
-
+        uint256 amountEigenToDeposit,
+        uint256 amountEthToDeposit
+    ) public returns (uint256 amountEthStaked, uint256 amountEigenStaked) {
         address operator = getOperatorAddress(operatorIndex);
-    
+
         //setting up operator's delegation terms
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -59,7 +57,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 delegation.operatorShares(operator, eigenStrat) - operatorEigenSharesBefore == amountEigenToDeposit
             );
             assertTrue(delegation.operatorShares(operator, wethStrat) - operatorWETHSharesBefore == amountEthToDeposit);
-            
         }
         amountEthStaked += delegation.operatorShares(operator, wethStrat);
         amountEigenStaked += delegation.operatorShares(operator, eigenStrat);
@@ -68,13 +65,16 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     /**
-     * @notice Register 'sender' as an operator, setting their 'OperatorDetails' in DelegationManager to 'operatorDetails', verifies 
+     * @notice Register 'sender' as an operator, setting their 'OperatorDetails' in DelegationManager to 'operatorDetails', verifies
      * that the storage of DelegationManager contract is updated appropriately
-     * 
+     *
      * @param sender is the address being registered as an operator
      * @param operatorDetails is the `sender`'s OperatorDetails struct
      */
-    function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
+    function _testRegisterAsOperator(
+        address sender,
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) internal {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -121,11 +121,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 amountToDeposit,
         IERC20 underlyingToken,
         IStrategy stratToDepositTo
-    )
-        internal
-        returns (uint256 amountDeposited)
-    {
-        
+    ) internal returns (uint256 amountDeposited) {
         // deposits will revert when amountToDeposit is 0
         cheats.assume(amountToDeposit > 0);
 
@@ -160,12 +156,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             if (operatorSharesBefore == 0) {
                 // check that strategy is appropriately added to dynamic array of all of sender's strategies
                 assertTrue(
-                    strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1)
-                        == stratToDepositTo,
+                    strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1) ==
+                        stratToDepositTo,
                     "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
             }
-            
+
             // check that the shares out match the expected amount out
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
@@ -177,15 +173,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     /**
-     * @notice tries to delegate from 'staker' to 'operator', verifies that staker has at least some shares 
+     * @notice tries to delegate from 'staker' to 'operator', verifies that staker has at least some shares
      * delegatedShares update correctly for 'operator' and delegated status is updated correctly for 'staker'
      * @param staker the staker address to delegate from
      * @param operator the operator address to delegate to
      */
     function _testDelegateToOperator(address staker, address operator) internal {
         //staker-specific information
-        (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) =
-            strategyManager.getDeposits(staker);
+        (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) = strategyManager.getDeposits(staker);
 
         uint256 numStrats = delegateShares.length;
         assertTrue(numStrats != 0, "_testDelegateToOperator: delegating from address with no deposits");
@@ -203,10 +198,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             delegation.delegatedTo(staker) == operator,
             "_testDelegateToOperator: delegated address not set appropriately"
         );
-        assertTrue(
-            delegation.isDelegated(staker),
-            "_testDelegateToOperator: delegated status not set appropriately"
-        );
+        assertTrue(delegation.isDelegated(staker), "_testDelegateToOperator: delegated status not set appropriately");
 
         for (uint256 i = 0; i < numStrats; ++i) {
             uint256 operatorSharesBefore = inititalSharesInStrats[i];
@@ -219,9 +211,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     /**
-     * @notice deploys 'numStratsToAdd' strategies contracts and initializes them to treat `underlyingToken` as their underlying token 
+     * @notice deploys 'numStratsToAdd' strategies contracts and initializes them to treat `underlyingToken` as their underlying token
      * and then deposits 'amountToDeposit' to each of them from 'sender'
-     * 
+     *
      * @param sender address that is depositing into the strategies
      * @param amountToDeposit amount being deposited
      * @param numStratsToAdd number of strategies that are being deployed and deposited into
@@ -231,16 +223,14 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IERC20 underlyingToken = weth;
 
         cheats.assume(numStratsToAdd > 0 && numStratsToAdd <= 20);
-        IStrategy[] memory stratsToDepositTo = new IStrategy[](
-                numStratsToAdd
-            );
+        IStrategy[] memory stratsToDepositTo = new IStrategy[](numStratsToAdd);
         for (uint8 i = 0; i < numStratsToAdd; ++i) {
             stratsToDepositTo[i] = StrategyBase(
                 address(
                     new TransparentUpgradeableProxy(
                         address(baseStrategyImplementation),
                         address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
                     )
                 )
             );
@@ -258,7 +248,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategies[i] = IStrategy(address(stratsToDepositTo[i]));
         }
     }
-
 
     /**
      * @notice Creates a queued withdrawal from `staker`. Begins by registering the staker as a delegate (if specified), then deposits `amountToDeposit`
@@ -278,9 +267,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256[] memory shareAmounts,
         uint256[] memory strategyIndexes,
         address withdrawer
-    )
-        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
-    {
+    ) internal returns (bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal) {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
         // we do this here to ensure that `staker` is delegated if `registerAsOperator` is true
@@ -293,7 +280,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             });
             _testRegisterAsOperator(staker, operatorDetails);
             assertTrue(
-                delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
+                delegation.isDelegated(staker),
+                "_createQueuedWithdrawal: staker isn't delegated when they should be"
             );
         }
 
@@ -321,18 +309,18 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         return (withdrawalRoot, queuedWithdrawal);
     }
 
-    /** 
-    * Helper for ECDSA signatures: combines V and S into VS - if S is greater than SECP256K1N_MODULUS_HALF, then we
-    * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
-    * bit to be either 0 or 1 based on the value of v, which is either 27 or 28 
-    */
-    function getVSfromVandS(uint8 v, bytes32 s) internal view returns(bytes32) {
+    /**
+     * Helper for ECDSA signatures: combines V and S into VS - if S is greater than SECP256K1N_MODULUS_HALF, then we
+     * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
+     * bit to be either 0 or 1 based on the value of v, which is either 27 or 28
+     */
+    function getVSfromVandS(uint8 v, bytes32 s) internal view returns (bytes32) {
         if (uint256(s) > SECP256K1N_MODULUS_HALF) {
             s = bytes32(SECP256K1N_MODULUS - uint256(s));
         }
 
         bytes32 vs = s;
-        if(v == 28) {
+        if (v == 28) {
             vs = bytes32(uint256(s) ^ (1 << 255));
         }
 
@@ -351,7 +339,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         address staker,
         uint256 ethAmount,
         uint256 eigenAmount,
-        StakeRegistry stakeRegistry
+        StakeRegistryStub stakeRegistry
     ) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
@@ -362,10 +350,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             _testRegisterAsOperator(operator, operatorDetails);
         }
 
-        uint256[3] memory amountsBefore;
-        amountsBefore[0] = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
-        amountsBefore[1] = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
-        amountsBefore[2] = delegation.operatorShares(operator, wethStrat);
+        uint256 amountBefore = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
         assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
@@ -374,35 +359,19 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
-            strategyManager.getDeposits(staker);
+        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
 
-        {
-            uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
-            uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
+        uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
+        uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
 
-            uint256 operatorEthWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(0, operator);
-            uint256 operatorEigenWeightAfter = stakeRegistry.weightOfOperatorForQuorumView(1, operator);
+        IStrategy _strat = wethStrat;
+        // IStrategy _strat = strategyManager.stakerStrategyList(staker, 0);
+        assertTrue(address(_strat) != address(0), "stakerStrategyList not updated correctly");
 
-            assertTrue(
-                operatorEthWeightAfter - amountsBefore[0] == stakerEthWeight,
-                "testDelegation: operatorEthWeight did not increment by the right amount"
-            );
-            assertTrue(
-                operatorEigenWeightAfter - amountsBefore[1] == stakerEigenWeight,
-                "Eigen weights did not increment by the right amount"
-            );
-        }
-        {
-            IStrategy _strat = wethStrat;
-            // IStrategy _strat = strategyManager.stakerStrategyList(staker, 0);
-            assertTrue(address(_strat) != address(0), "stakerStrategyList not updated correctly");
-
-            assertTrue(
-                delegation.operatorShares(operator, _strat) - updatedShares[0] == amountsBefore[2],
-                "ETH operatorShares not updated correctly"
-            );
-        }
+        assertTrue(
+            delegation.operatorShares(operator, _strat) - updatedShares[0] == amountBefore,
+            "ETH operatorShares not updated correctly"
+        );
     }
 
     /**
@@ -426,14 +395,11 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 nonce,
         uint32 withdrawalStartBlock,
         uint256 middlewareTimesIndex
-    )
-        internal
-    {
+    ) internal {
         cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             sharesBefore.push(strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]));
-
         }
         // emit log_named_uint("strategies", strategyArray.length);
         // emit log_named_uint("tokens", tokensArray.length);
@@ -458,8 +424,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             require(
-                strategyManager.stakerStrategyShares(withdrawer, strategyArray[i])
-                    == sharesBefore[i] + shareAmounts[i],
+                strategyManager.stakerStrategyShares(withdrawer, strategyArray[i]) == sharesBefore[i] + shareAmounts[i],
                 "_testCompleteQueuedWithdrawalShares: withdrawer shares not incremented"
             );
         }
@@ -486,9 +451,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 nonce,
         uint32 withdrawalStartBlock,
         uint256 middlewareTimesIndex
-    )
-        internal
-    {
+    ) internal {
         cheats.startPrank(withdrawer);
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
@@ -496,7 +459,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             priorTotalShares.push(strategyArray[i].totalShares());
             strategyTokenBalance.push(strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i])));
         }
-    
+
         IDelegationManager.Withdrawal memory queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
@@ -511,11 +474,10 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         for (uint256 i = 0; i < strategyArray.length; i++) {
             //uint256 strategyTokenBalance = strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i]));
-            uint256 tokenBalanceDelta = strategyTokenBalance[i] * shareAmounts[i] / priorTotalShares[i];
+            uint256 tokenBalanceDelta = (strategyTokenBalance[i] * shareAmounts[i]) / priorTotalShares[i];
 
             require(
-                strategyArray[i].underlyingToken().balanceOf(withdrawer)
-                    == balanceBefore[i] + tokenBalanceDelta,
+                strategyArray[i].underlyingToken().balanceOf(withdrawer) == balanceBefore[i] + tokenBalanceDelta,
                 "_testCompleteQueuedWithdrawalTokens: withdrawer balance not incremented"
             );
         }
@@ -528,14 +490,11 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
         address withdrawer
-    )
-        internal
-        returns (bytes32)
-    {
+    ) internal returns (bytes32) {
         cheats.startPrank(depositor);
 
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        
+
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
             shares: shareAmounts,

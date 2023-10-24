@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import "../../contracts/interfaces/IStrategyManager.sol";
 import "../../contracts/interfaces/IStrategy.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
-import "../../contracts/interfaces/IBLSRegistry.sol";
 import "../../../script/whitelist/Staker.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
