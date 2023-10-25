@@ -28,13 +28,11 @@
 ├── when addShares is called
 │   ├── given that the caller is not the delegationManager
 │   │   └── it should revert
-│   ├── given that the podOwne address is 0
+│   ├── given that the podOwner address is 0
 │   │   └── it should revert
 │   ├── given that the shares amount is negative
 │   │   └── it should revert
 │   ├── given that the shares is not a whole gwei amount
-│   │   └── it should revert
-│   ├── given that too many shares are withdrawn
 │   │   └── it should revert
 │   └── given that all of the above conditions are satisfied
 │       └── it should update the podOwnerShares
@@ -45,11 +43,11 @@
 │   │   └── it should revert
 │   ├── given that the shares is not a whole gwei amount
 │   │   └── it should revert
-│   ├── given that too many shares are removed
+│   ├── given that removing shares results in the pod owner having negative shares
 │   │   └── it should revert
 │   └── given that all of the above conditions are satisfied
 │       └── it should update the podOwnerShares
-├── when shares are withdrawn as tokens
+├── when withdrawSharesAsTokens is called
 │   ├── given that the podOwner is address 0
 │   │   └── it should revert
 │   ├── given that the destination is address 0
@@ -59,9 +57,9 @@
 │   ├── given that the shares is not a whole gwei amount
 │   │   └── it should revert
 │   ├── given that the current podOwner shares are negative
-│   │   ├── given that the shares to withdraw are greater than the negative shares of the podOwner
-│   │   │   └── it should set the podOwnerShares to 0 and decrement shares to withdraw by the share defecit
-│   │   └── given that the shares to withdraw are less than the negative shares of the podOwner
+│   │   ├── given that the shares to withdraw are larger in magnitude than the shares of the podOwner
+│   │   │   └── it should set the podOwnerShares to 0 and decrement shares to withdraw by the share deficit
+│   │   └── given that the shares to withdraw are smaller in magnitude than shares of the podOwner
 │   │       └── it should increment the podOwner shares by the shares to withdraw
 │   └── given that the pod owner shares are positive
 │       └── it should withdraw restaked ETH from the eigenPod
@@ -77,7 +75,7 @@
 │       └── given that sharesAfter is positive
 │           └── the change in delegateable shares is the difference between sharesAfter and sharesBefore
 └── when recordBeaconChainETHBalanceUpdate is called
-    ├── given that the podOwner is not the caller
+    ├── given that the podOwner's eigenPod is not the caller
     │   └── it should revert
     ├── given that the podOwner is a zero address
     │   └── it should revert
