@@ -100,6 +100,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice prover nonce for the function gateway contract
     uint256 public requestNonce;
 
+    /// @notice The address that will receive the gas refunds from partial withdrawal proof callbacks
+    address public gasRefundReceiver;
+
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
@@ -169,6 +172,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), "EigenPod.initialize: podOwner cannot be zero address");
         podOwner = _podOwner;
+        gasRefundReceiver = _podOwner;
         /**
          * From the M2 deployment onwards, we are requiring that pods deployed are by default enabled with restaking
          * In prior deployments without proofs, EigenPods could be deployed with restaking disabled so as to allow
@@ -315,12 +319,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
+    function handleCallback(bytes memory output, bytes memory context) external payable onlyFunctionGateway {
         uint256 partialWithdrawalSumWei;
         assembly {
             partialWithdrawalSumWei := mload(add(output, 0x20))
         }
         uint256 requestNonce = abi.decode(context, (uint256));
+        if(msg.value > 0){
+            Address.sendValue(payable(gasRefundReceiver), msg.value);
+        }
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
     }
 
@@ -438,6 +445,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
         _processWithdrawalBeforeRestaking(podOwner);
+    }
+
+    function setGasRefundReceiver(address newRefundReceiver) external onlyEigenPodOwner {
+        gasRefundReceiver = newRefundReceiver;  
     }
 
     /*******************************************************************************
@@ -841,5 +852,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[42] private __gap;
 }

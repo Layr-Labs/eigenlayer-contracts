@@ -222,4 +222,7 @@ interface IEigenPod {
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+
+    /// @notice Called by the pod owner to set gas refund receiver
+    function setGasRefundReceiver(address newRefundReceiver) external; 
 }
