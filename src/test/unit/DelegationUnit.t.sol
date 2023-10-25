@@ -1360,6 +1360,10 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
         (bytes32 returnValue) = delegationManager.undelegate(staker);
 
+        if (strategies.length == 0) {
+            withdrawalRoot = bytes32(0);
+        }
+
         // check that the return value is the withdrawal root
         require(returnValue == withdrawalRoot, "contract returned wrong return value");
         cheats.stopPrank();

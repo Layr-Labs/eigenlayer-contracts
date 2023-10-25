@@ -191,6 +191,7 @@ Note that becoming an Operator is irreversible! Although Operators can withdraw,
 *Effects*: 
 * Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.
 * The Staker is undelegated from the Operator
+* If the Staker has no delegatable shares, there is no withdrawal queued or further effects
 * A `Withdrawal` is queued for the Staker, tracking the strategies and shares being withdrawn
     * The Staker's withdrawal nonce is increased
     * The hash of the `Withdrawal` is marked as "pending"
@@ -240,6 +241,7 @@ The withdrawal can be completed by the `withdrawer` after `withdrawalDelayBlocks
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_ENTER_WITHDRAWAL_QUEUE`
 * `strategies.length` MUST equal `shares.length`
+* `strategies.length` MUST NOT be equal to 0
 * The `withdrawer` MUST NOT be 0
 * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
 * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
