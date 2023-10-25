@@ -124,8 +124,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     }
 
     function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal {
-        assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod);
-        assertEq(eigenPodManager.numPods(), numPodsBefore + 1);
+        assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod, "Expected pod not deployed");
+        assertEq(eigenPodManager.numPods(), numPodsBefore + 1, "Num pods not incremented");
     }
 }
 
@@ -137,18 +137,18 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialization() public {
         // Check max pods, beacon chain, owner, and pauser
-        assertEq(eigenPodManager.maxPods(), type(uint256).max);
-        assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))));
-        assertEq(eigenPodManager.owner(), initialOwner);
-        assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry));
-        assertEq(eigenPodManager.paused(), 0);
+        assertEq(eigenPodManager.maxPods(), type(uint256).max, "Initialization: max pods incorrect");
+        assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))), "Initialization: beacon chain oracle incorrect");
+        assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
+        assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
+        assertEq(eigenPodManager.paused(), 0, "Initialization: paused value not 0");
 
         // Check storage variables
-        assertEq(address(eigenPodManager.ethPOS()), address(ethPOSMock));
-        assertEq(address(eigenPodManager.eigenPodBeacon()), address(eigenPodBeacon));
-        assertEq(address(eigenPodManager.strategyManager()), address(strategyManagerMock));
-        assertEq(address(eigenPodManager.slasher()), address(slasherMock));
-        assertEq(address(eigenPodManager.delegationManager()), address(delegationManagerMock));
+        assertEq(address(eigenPodManager.ethPOS()), address(ethPOSMock), "Initialization: ethPOS incorrect");
+        assertEq(address(eigenPodManager.eigenPodBeacon()), address(eigenPodBeacon), "Initialization: eigenPodBeacon incorrect");
+        assertEq(address(eigenPodManager.strategyManager()), address(strategyManagerMock), "Initialization: strategyManager incorrect");
+        assertEq(address(eigenPodManager.slasher()), address(slasherMock), "Initialization: slasher incorrect");
+        assertEq(address(eigenPodManager.delegationManager()), address(delegationManagerMock), "Initialization: delegationManager incorrect");
     }
 
     function test_initialize_revert_alreadyInitialized() public {
@@ -180,7 +180,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         eigenPodManager.setMaxPods(newMaxPods);
 
         // Check storage update
-        assertEq(eigenPodManager.maxPods(), newMaxPods);
+        assertEq(eigenPodManager.maxPods(), newMaxPods, "Max pods not updated");
     }
 
     function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public {
@@ -199,7 +199,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         eigenPodManager.updateBeaconChainOracle(newBeaconChainOracle);
 
         // Check storage update
-        assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle));
+        assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
     }
 }
 
@@ -258,7 +258,7 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
         eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
 
         // Expect pod has 32 ether
-        assertEq(address(defaultPod).balance, 32 ether);
+        assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
     }
 
     function test_stake_newPodDeployed() public {
@@ -274,7 +274,7 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
         _checkPodDeployed(defaultStaker, address(defaultPod), 0); // staker, defaultPod, numPodsBefore
         
         // Expect pod has 32 ether
-        assertEq(address(defaultPod).balance, 32 ether);
+        assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
     }
 }
 
@@ -323,7 +323,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.addShares(defaultStaker, shares);
 
         // Check storage update
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(shares));
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(shares), "Incorrect number of shares added");
     }
 
     /*******************************************************************************
@@ -381,7 +381,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeShares(defaultStaker, sharesRemoved);
 
         // Check storage
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved));
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved), "Incorrect number of shares removed");
     }
 
     function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public {
@@ -397,7 +397,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeShares(podOwner, shares);
 
         // Check storage update
-        assertEq(eigenPodManager.podOwnerShares(podOwner), 0);
+        assertEq(eigenPodManager.podOwnerShares(podOwner), 0, "Shares not reset to zero");
     }
 
     /*******************************************************************************
@@ -449,7 +449,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, sharesToWithdraw);
 
         // Check storage update
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(0));
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(0), "Shares not reduced to 0");
     }
 
     function test_withdrawSharesAsTokens_partialDefecitReduction() public {
@@ -466,7 +466,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Check storage update
         int256 expectedShares = sharesBeginning + int256(sharesToWithdraw);
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), expectedShares);
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), expectedShares, "Shares not reduced to expected amount");
     }
 
     function test_withdrawSharesAsTokens_withdrawPositive() public {
@@ -482,7 +482,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, sharesToWithdraw);
 
         // Check storage remains the same
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), sharesBeginning);
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), sharesBeginning, "Shares should not be adjusted");
     }
 }
 
@@ -522,6 +522,6 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 
         // Check storage
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), scaledSharesBefore + scaledSharesDelta);
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), scaledSharesBefore + scaledSharesDelta, "Shares not updated correctly");
     }
 }
