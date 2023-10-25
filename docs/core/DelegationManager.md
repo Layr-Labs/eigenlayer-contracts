@@ -241,7 +241,7 @@ The withdrawal can be completed by the `withdrawer` after `withdrawalDelayBlocks
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_ENTER_WITHDRAWAL_QUEUE`
 * `strategies.length` MUST equal `shares.length`
-* `strategies.length` MUST be not equal to 0
+* `strategies.length` MUST NOT be equal to 0
 * The `withdrawer` MUST NOT be 0
 * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
 * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
