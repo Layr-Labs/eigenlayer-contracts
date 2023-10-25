@@ -223,20 +223,24 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEi
         eigenPodManager.createPod();
     }
 
-    function test_createPod_revert_maxPodsCreated() public {
+    function test_createPod_revert_maxPodsUint256() public {
         // Write numPods into storage. Num pods is at slot 153
         bytes32 slot = bytes32(uint256(153)); 
         bytes32 value = bytes32(eigenPodManager.maxPods());
         cheats.store(address(eigenPodManager), slot, value);
 
-        //Create pod & expect revert based on maxPods size
-        if (eigenPodManager.maxPods() == type(uint256).max) {
-            // Arithmetic over/underflow not working with foundry
-            cheats.expectRevert();
-        } else {
-            cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
-        }
+        // Expect revert on pod creation
+        cheats.expectRevert(); // Arithmetic overflow/underflow  
+        eigenPodManager.createPod();
+    }
 
+    function test_createPod_revert_maxPodsNontUint256() public {
+        // Set max pods to a small value - 0
+        cheats.prank(unpauser);
+        eigenPodManager.setMaxPods(0);
+
+        // Expect revert on pod creation
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
         eigenPodManager.createPod();
     }
 }
