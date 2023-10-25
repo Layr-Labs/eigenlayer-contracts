@@ -351,46 +351,49 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeShares(defaultStaker, shares);
     }
 
-    // Fuzzer rejects too many inputs, unit testsing
-    function test_removeShares_revert_tooManySharesRemoved() public {
-        uint256 sharesToRemove = GWEI_TO_WEI;
+    function testFuzz_removeShares_revert_tooManySharesRemoved(uint224 sharesToAdd, uint224 sharesToRemove) public {
+        // Constrain inputs
+        cheats.assume(sharesToRemove > sharesToAdd);
+        uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
+        uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;
+
+        // Initialize pod with shares
+        _initializePodWithShares(defaultStaker, int256(sharesAdded));
 
         // Remove shares
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert("EigenPodManager.removeShares: cannot result in pod owner having negative shares");
-        eigenPodManager.removeShares(defaultStaker, sharesToRemove);
+        eigenPodManager.removeShares(defaultStaker, sharesRemoved);
     }
 
-    // Fuzzer rejects too many inputs, unit testing
-    function test_removeShares() public {
-        uint256 sharesToAdd = GWEI_TO_WEI * 2;
-        uint256 sharesToRemove = GWEI_TO_WEI;
+    function testFuzz_removeShares(uint224 sharesToAdd, uint224 sharesToRemove) public {
+        // Constain inputs
+        cheats.assume(sharesToRemove <= sharesToAdd);
+        uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
+        uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;
 
-        // Add shares
-        cheats.startPrank(address(delegationManagerMock));
-        eigenPodManager.addShares(defaultStaker, sharesToAdd);
+        // Initialize pod with shares
+        _initializePodWithShares(defaultStaker, int256(sharesAdded));
 
         // Remove shares
-        eigenPodManager.removeShares(defaultStaker, sharesToRemove);
-        cheats.stopPrank();
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.removeShares(defaultStaker, sharesRemoved);
 
         // Check storage
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesToAdd - sharesToRemove));
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved));
     }
 
     function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
         cheats.assume(shares % GWEI_TO_WEI == 0);
-        cheats.assume(int256(shares) >= 0);
 
-        // Add shares for user
-        cheats.startPrank(address(delegationManagerMock));
-        eigenPodManager.addShares(podOwner, shares);
+        // Initialize pod with shares
+        _initializePodWithShares(podOwner, int256(shares));
 
         // Remove shares
+        cheats.prank(address(delegationManagerMock));
         eigenPodManager.removeShares(podOwner, shares);
-        cheats.stopPrank();
 
         // Check storage update
         assertEq(eigenPodManager.podOwnerShares(podOwner), 0);
