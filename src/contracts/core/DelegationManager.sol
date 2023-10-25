@@ -254,14 +254,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
-        // Remove all strategies/shares from staker and operator and place into queue
-        return _removeSharesAndQueueWithdrawal({
-            staker: staker,
-            operator: operator,
-            withdrawer: staker,
-            strategies: strategies,
-            shares: shares
-        });
+        // if no delegatable shares, return zero root, and don't queue a withdrawal
+        if (strategies.length == 0) {
+            return bytes32(0);
+        } else {
+            // Remove all strategies/shares from staker and operator and place into queue
+            return _removeSharesAndQueueWithdrawal({
+                staker: staker,
+                operator: operator,
+                withdrawer: staker,
+                strategies: strategies,
+                shares: shares
+            });
+        }
     }
 
      /**
@@ -678,7 +683,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256[] memory shares
     ) internal returns (bytes32) {
         require(staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address");
-
+        require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+    
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
         for (uint256 i = 0; i < strategies.length;) {
