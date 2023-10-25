@@ -758,6 +758,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         );
         cheats.stopPrank();
     }
+    //ensures that a validator proving WC after they have exited the beacon chain is allowed to
+    //prove their WC and process a withdrawal
+    function testProveWithdrawalCredentialsAfterValidatorExit() public {
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
+        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _proveWithdrawalForPod(newPod);
+    }
 
     function testVerifyWithdrawalCredsFromNonPodOwnerAddress(address nonPodOwnerAddress) public {
         // nonPodOwnerAddress must be different from podOwner
@@ -1944,12 +1955,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes memory _signature,
         bytes32 _depositDataRoot
     ) internal returns (IEigenPod) {
-        // (beaconStateRoot, beaconStateMerkleProofForValidators, validatorContainerFields, validatorMerkleProof, validatorTreeRoot, validatorRoot) =
-        //     getInitialDepositProof(validatorIndex);
-
-        // bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        // BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-
         IEigenPod newPod = eigenPodManager.getPod(_podOwner);
 
         cheats.startPrank(_podOwner);
@@ -2003,7 +2008,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
 
         int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
-        uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(stakeAmount / GWEI_TO_WEI))) *
+        uint256 valBalance = Endian.fromLittleEndianUint64(getValidatorFields()[2]);
+        uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(valBalance))) *
             GWEI_TO_WEI;
         require(
             (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
