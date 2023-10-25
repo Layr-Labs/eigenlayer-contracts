@@ -180,6 +180,8 @@ contract EigenPodManager is
      * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
      * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
      * @dev Reverts if `shares` is not a whole Gwei amount
+     * @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
+     *      we do not need to update the podOwnerShares if `currentPodOwnerShares` is positive
      */
     function withdrawSharesAsTokens(
         address podOwner, 
