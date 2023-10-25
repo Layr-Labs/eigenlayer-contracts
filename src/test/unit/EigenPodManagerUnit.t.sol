@@ -102,11 +102,12 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     *******************************************************************************/
 
     function _initializePodWithShares(address podOwner, int256 shares) internal {
-        _deployAndReturnEigenPodForStaker(podOwner);
-        // Signature of `podOwnerShares(address)
-        bytes4 signature = 0x60f4062b;
-        bytes32 sharesToSet = bytes32(uint256(shares));
-        stdstore.target(address(eigenPodManager)).sig(signature).with_key(podOwner).checked_write(sharesToSet);
+        // Deploy pod
+        IEigenPod deployedPod = _deployAndReturnEigenPodForStaker(podOwner);
+        
+        // Set shares
+        cheats.prank(address(deployedPod));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, shares);
     }
 
 
@@ -508,19 +509,19 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta);
     }
 
-    function testFuzz_recordBalanceUpdate(int256 sharesBefore, int256 sharesDelta) public {
+    function testFuzz_recordBalanceUpdateX(int224 sharesBefore, int224 sharesDelta) public {
         // Constrain inputs
-        cheats.assume(sharesDelta % int256(GWEI_TO_WEI) == 0);
-        cheats.assume(sharesBefore + sharesDelta <= type(int256).max);
+        int256 scaledSharesBefore = sharesBefore * int256(GWEI_TO_WEI);
+        int256 scaledSharesDelta = sharesDelta * int256(GWEI_TO_WEI);
 
         // Initialize shares
-        _initializePodWithShares(defaultStaker, sharesBefore);
+        _initializePodWithShares(defaultStaker, scaledSharesBefore);
 
         // Update balance
         cheats.prank(address(defaultPod));
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta);
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 
         // Check storage
-        assertEq(eigenPodManager.podOwnerShares(defaultStaker), sharesBefore + sharesDelta);
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), scaledSharesBefore + scaledSharesDelta);
     }
 }
