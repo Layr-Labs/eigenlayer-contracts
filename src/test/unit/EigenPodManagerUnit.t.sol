@@ -122,11 +122,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
         return deployedPod;
     }
 
-    function _checkPodDeployed(address staker, uint256 numPodsBefore) internal {
-        // Get expected pod address
-        IEigenPod expectedPod = eigenPodManager.getPod(staker);
-
-        assertEq(address(eigenPodManager.ownerToPod(staker)), address(expectedPod));
+    function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal {
+        assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod);
         assertEq(eigenPodManager.numPods(), numPodsBefore + 1);
     }
 }
@@ -218,7 +215,7 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEi
         eigenPodManager.createPod();
 
         // Check pod deployed
-        _checkPodDeployed(defaultStaker, numPodsBefore);
+        _checkPodDeployed(defaultStaker, address(defaultPod), numPodsBefore);
     }
 
     function test_createPod_revert_alreadyCreated() public deployPodForStaker(defaultStaker) {
@@ -269,7 +266,7 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
         eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
 
         // Check pod deployed
-        _checkPodDeployed(defaultStaker, 0); // staker, numPodsBefore
+        _checkPodDeployed(defaultStaker, address(defaultPod), 0); // staker, defaultPod, numPodsBefore
         
         // Expect pod has 32 ether
         assertEq(address(defaultPod).balance, 32 ether);
