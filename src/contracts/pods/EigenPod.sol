@@ -475,7 +475,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
-        validatorInfo.restakedBalanceGwei = validatorEffectiveBalanceGwei;
+
+        if (validatorEffectiveBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+            validatorInfo.restakedBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        } else {
+            validatorInfo.restakedBalanceGwei = validatorEffectiveBalanceGwei;
+        }
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit ValidatorRestaked(validatorIndex);
