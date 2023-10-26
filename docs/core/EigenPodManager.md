@@ -184,7 +184,7 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
     * `VALIDATOR_STATUS` moves from `INACTIVE` to `ACTIVE`
     * `validatorIndex` is recorded
     * `mostRecentBalanceUpdateTimestamp` is set to the `oracleTimestamp` used to fetch the beacon block root
-    * `restakedBalanceGwei` is set to the validator's balance
+    * `restakedBalanceGwei` is set to the validator's effective balance
 * See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 *Requirements*:
