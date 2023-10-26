@@ -2,24 +2,16 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/SlasherMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/StakeRegistryMock.sol";
-import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/Utils.sol";
+import "src/test/utils/EigenLayerUnitTestBase.sol";
 
-
-import "forge-std/Test.sol";
-
-abstract contract EigenLayerUnitTestSetup is Test, Utils {
-    Vm cheats = Vm(HEVM_ADDRESS);
-
+abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase, Utils {
     // Declare Mocks
     StrategyManagerMock strategyManagerMock;
     DelegationManagerMock public delegationManagerMock;
@@ -32,34 +24,15 @@ abstract contract EigenLayerUnitTestSetup is Test, Utils {
     StrategyBase public wethStrat;
     StrategyBase public eigenStrat;
     StrategyBase public baseStrategyImplementation;
-
-    PauserRegistry public pauserRegistry;
-    ProxyAdmin public eigenLayerProxyAdmin;
-    Reenterer public reenterer;
-
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
-
-    address public constant pauser = address(555);
-    address public constant unpauser = address(556);
     uint256 wethInitialSupply = 10e50;
     uint256 public constant eigenTotalSupply = 1e50;
 
-    // Helper Functions/Modifiers
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
-        cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
-        _;
-    }
-
-    function setUp() public virtual {
+    function setUp() public virtual override {
+        EigenLayerUnitTestBase.setUp();
         strategyManagerMock = new StrategyManagerMock();
         delegationManagerMock = new DelegationManagerMock();
         slasherMock = new SlasherMock();
         eigenPodManagerMock = new EigenPodManagerMock();
-        eigenLayerProxyAdmin = new ProxyAdmin();
-        //deploy pauser registry
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
 
         // deploy upgradeable proxy that points to StrategyBase implementation and initialize it
         baseStrategyImplementation = new StrategyBase(strategyManagerMock);
@@ -83,13 +56,11 @@ abstract contract EigenLayerUnitTestSetup is Test, Utils {
                 )
             )
         );
-        
 
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(strategyManagerMock)] = true;
         addressIsExcludedFromFuzzedInputs[address(delegationManagerMock)] = true;
         addressIsExcludedFromFuzzedInputs[address(slasherMock)] = true;
         addressIsExcludedFromFuzzedInputs[address(eigenPodManagerMock)] = true;
-        addressIsExcludedFromFuzzedInputs[address(eigenLayerProxyAdmin)] = true;
     }
 }

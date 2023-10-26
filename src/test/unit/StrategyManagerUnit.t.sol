@@ -90,7 +90,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
     function setUp() public override {
-        super.setUp();
+        EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
         strategyManager = StrategyManager(
             address(
