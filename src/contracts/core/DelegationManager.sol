@@ -549,10 +549,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _pushOperatorStakeUpdate(operator);
     }
 
+    /**
+     * @dev commented-out param (middlewareTimesIndex) is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     * This param is intended to be passed on to the Slasher contract, but is unused in the M2 release of these contracts, and is thus commented-out.
+     */
     function _completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
+        uint256 /*middlewareTimesIndex*/,
         bool receiveAsTokens
     ) internal {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);

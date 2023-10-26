@@ -333,13 +333,11 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     /// @param staker is the staker delegating stake to the operator.
     /// @param ethAmount is the amount of ETH to deposit into the operator's strategy.
     /// @param eigenAmount is the amount of EIGEN to deposit into the operator's strategy.
-    /// @param stakeRegistry is the stakeRegistry-type contract to consult for registering to an AVS
     function _testDelegation(
         address operator,
         address staker,
         uint256 ethAmount,
-        uint256 eigenAmount,
-        StakeRegistryStub stakeRegistry
+        uint256 eigenAmount
     ) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
@@ -359,10 +357,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
-
-        uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
-        uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
+        (/*IStrategy[] memory updatedStrategies*/, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
 
         IStrategy _strat = wethStrat;
         // IStrategy _strat = strategyManager.stakerStrategyList(staker, 0);
