@@ -50,7 +50,7 @@ function verifyStateRootAgainstLatestBlockRoot(
         bytes calldata stateRootProof
     ) internal
 ```
-Verifies the proof of a beacon state root against the oracle provded block root.  Every [beacon block](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock) in the beacon state contains the state root corresponding with that block.  Thus to prove anything against a state root, we must first prove the state root against the corresponding oracle block root.
+Verifies the proof of a beacon state root against the oracle provided block root.  Every [beacon block](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock) in the beacon state contains the state root corresponding with that block.  Thus to prove anything against a state root, we must first prove the state root against the corresponding oracle block root.
 
 ![Verify State Root Proof Structure](../../images/staterootproof.png)
 
