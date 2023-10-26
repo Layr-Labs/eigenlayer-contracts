@@ -58,7 +58,7 @@ We will take a brief aside to explain a simpler part of the protocol, partial wi
 
 Note that partial withdrawals can be withdrawn immediately from the system because they are not staked on EigenLayer, unlike the base validator stake that is restaked on EigenLayer
 
-Currently, users can submit partial withdrawal proofs one at a time, at a cost of around 30-40k gas per proof.  This is highly inefficient as partial withdrawals are often nominal amounts for which an expensive proof transaction each time is not feasible for our users.  The solution is to use a succinct zk proving solution to generate a single proof for multiple withdrawals, which can be verified for a fixed cost of around 300k gas.  This system and associated integration are currently under development.  
+Currently, users can submit partial withdrawal proofs one at a time, at a cost of around 30-40k gas per proof.  This is highly inefficient as partial withdrawals are often nominal amounts for which an expensive proof transaction each time is not feasible for our users.  The solution is to use succinct zk proving solution to generate a single proof for multiple withdrawals, which can be verified for a fixed cost of around 300k gas.  This system and associated integration are currently under development.  
 
 
 ### Proofs of Validator Balance Updates
