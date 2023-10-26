@@ -471,7 +471,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
         );
         uint64 leftOverBalanceWEI = uint64(
-            withdrawalAmountGwei - _calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR())
+            withdrawalAmountGwei - (pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR())
         ) * uint64(GWEI_TO_WEI);
         cheats.deal(address(pod), leftOverBalanceWEI);
         {
@@ -708,7 +708,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
         require(
-            beaconChainETHShares == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
+            beaconChainETHShares == int256((newValidatorBalance) * GWEI_TO_WEI),
             "eigenPodManager shares not updated correctly"
         );
     }
@@ -886,7 +886,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         assertTrue(
             eigenPodManager.podOwnerShares(podOwner) ==
-                int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
+                int256((newValidatorBalance) * GWEI_TO_WEI),
             "hysterisis not working"
         );
         assertTrue(
@@ -931,7 +931,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         assertTrue(
             eigenPodManager.podOwnerShares(podOwner) ==
-                int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
+                int256((newValidatorBalance) * GWEI_TO_WEI),
             "hysterisis not working"
         );
         assertTrue(
@@ -1786,7 +1786,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
         
-        uint256 shareAmount = _calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * GWEI_TO_WEI;
+        uint256 shareAmount = (pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * GWEI_TO_WEI;
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
         _testQueueWithdrawal(podOwner, shareAmount);
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
@@ -2009,7 +2009,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
         uint256 valBalance = Endian.fromLittleEndianUint64(getValidatorFields()[2]);
-        uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(valBalance))) *
+        uint256 effectiveBalance = uint256((uint64(valBalance))) *
             GWEI_TO_WEI;
         require(
             (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
@@ -2101,21 +2101,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testEffectiveRestakedBalance() public {
         uint64 amountGwei = 29134000000;
-        uint64 effectiveBalance = _calculateRestakedBalanceGwei(amountGwei);
+        uint64 effectiveBalance = (amountGwei);
         emit log_named_uint("effectiveBalance", effectiveBalance);
-    }
-
-    function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64) {
-        if (amountGwei <= RESTAKED_BALANCE_OFFSET_GWEI) {
-            return 0;
-        }
-        /**
-         * calculates the "floor" of amountGwei - RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division
-         * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to
-         * the nearest ETH, effectively calculating the floor of amountGwei.
-         */
-        uint64 effectiveBalanceGwei = uint64(((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI) * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, effectiveBalanceGwei));
     }
 
     function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
