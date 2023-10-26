@@ -56,7 +56,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] validatorFields;
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31e9;
+    uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 internal constant GOERLI_GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
