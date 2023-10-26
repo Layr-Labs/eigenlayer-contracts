@@ -142,13 +142,13 @@ contract EigenPodManager is
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
      * shares from the operator to whom the staker is delegated.
      * @dev Reverts if `shares` is not a whole Gwei amount
+     * @dev The delegation manager validates that the podOwner is not address(0)
      */
     function removeShares(
         address podOwner, 
         uint256 shares
     ) external onlyDelegationManager {
-        require(podOwner != address(0), "EigenPodManager.removeShares: podOwner cannot be zero address");
-        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares amount is negative");
+        require(int256(shares) >= 0, "EigenPodManager.removeShares: shares cannot be negative");
         require(shares % GWEI_TO_WEI == 0, "EigenPodManager.removeShares: shares must be a whole Gwei amount");
         int256 updatedPodOwnerShares = podOwnerShares[podOwner] - int256(shares);
         require(updatedPodOwnerShares >= 0, "EigenPodManager.removeShares: cannot result in pod owner having negative shares");
@@ -180,6 +180,8 @@ contract EigenPodManager is
      * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
      * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
      * @dev Reverts if `shares` is not a whole Gwei amount
+     * @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
+     *      we do not need to update the podOwnerShares if `currentPodOwnerShares` is positive
      */
     function withdrawSharesAsTokens(
         address podOwner, 

@@ -1,98 +1,66 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-
 import "forge-std/Test.sol";
 
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
+
+import "../events/IEigenPodManagerEvents.sol";
+import "../utils/EigenLayerUnitTestSetup.sol";
 import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodMock.sol";
 import "../mocks/ETHDepositMock.sol";
-import "../mocks/Reenterer.sol";
-import "../mocks/Reverter.sol";
 
-contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
-
-    Vm cheats = Vm(HEVM_ADDRESS);
-
-    uint256 public REQUIRED_BALANCE_WEI = 31 ether;
-
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
-
+contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
+    // Contracts Under Test: EigenPodManager
     EigenPodManager public eigenPodManagerImplementation;
     EigenPodManager public eigenPodManager;
 
+    using stdStorage for StdStorage;
+
+    // Proxy Admin & Pauser Registry
+    ProxyAdmin public proxyAdmin;
+    PauserRegistry public pauserRegistry;
+
+    // Mocks
     StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     IETHPOSDeposit public ethPOSMock;
-    IEigenPod public eigenPodImplementation;
-    IBeacon public eigenPodBeacon;
-
+    IEigenPod public eigenPodMockImplementation;
+    IBeacon public eigenPodBeacon; // Proxy for eigenPodMockImplementation
     IStrategy public beaconChainETHStrategy;
-
-    Reenterer public reenterer;
-
-    uint256 GWEI_TO_WEI = 1e9;
-
-    address public pauser = address(555);
-    address public unpauser = address(999);
-
-    address initialOwner = address(this);
-
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
-
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
-        cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
-        _;
-    }
-
-    /// @notice Emitted to notify the update of the beaconChainOracle address
-    event BeaconOracleUpdated(address indexed newOracleAddress);
-
-    /// @notice Emitted to notify the deployment of an EigenPod
-    event PodDeployed(address indexed eigenPod, address indexed podOwner);
-
-    /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
-    event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
-
-    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
-    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when a withdrawal of beacon chain ETH is queued
-    event BeaconChainETHWithdrawalQueued(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
     
-    /// @notice Emitted when a withdrawal of beacon chain ETH is completed
-    event BeaconChainETHWithdrawalCompleted(address indexed podOwner, uint256 shares, uint96 nonce, address delegatedAddress, address withdrawer, bytes32 withdrawalRoot);
-
-    // @notice Emitted when `podOwner` enters the "undelegation limbo" mode
-    event UndelegationLimboEntered(address indexed podOwner);
-
-    // @notice Emitted when `podOwner` exits the "undelegation limbo" mode
-    event UndelegationLimboExited(address indexed podOwner);
+    // Constants
+    uint256 public constant GWEI_TO_WEI = 1e9;
+    uint256 public constant REQUIRED_BALANCE_WEI = 31 ether;
+    address public defaultStaker = address(this);
+    IEigenPod public defaultPod;
+    address public initialOwner = address(this);
 
     function setUp() virtual public {
+        // Deploy ProxyAdmin
         proxyAdmin = new ProxyAdmin();
 
+        // Initialize PauserRegistry
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
 
+        // Deploy Mocks
         slasherMock = new SlasherMock();
         delegationManagerMock = new DelegationManagerMock();
         strategyManagerMock = new StrategyManagerMock();
         ethPOSMock = new ETHPOSDepositMock();
-        eigenPodImplementation = new EigenPodMock();
-        eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
+        eigenPodMockImplementation = new EigenPodMock();
+        eigenPodBeacon = new UpgradeableBeacon(address(eigenPodMockImplementation));
 
+        // Deploy EPM Implementation & Proxy
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSMock,
             eigenPodBeacon,
@@ -117,220 +85,443 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
             )
         );
 
+        // Set beaconChainETHStrategy
         beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
 
-        // excude the zero address, the proxyAdmin and the eigenPodManager itself from fuzzed inputs
+        // Set defaultPod
+        defaultPod = eigenPodManager.getPod(defaultStaker);
+
+        // Exclude the zero address, the proxyAdmin and the eigenPodManager itself from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
         addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
     }
 
-    function testRecordBeaconChainETHBalanceUpdateFailsWhenNotCalledByEigenPod(address improperCaller) public filterFuzzedAddressInputs(improperCaller) {
-        address staker = address(this);
-        IEigenPod eigenPod = _deployEigenPodForStaker(staker);
-        cheats.assume(improperCaller != address(eigenPod));
+    /*******************************************************************************
+                            Helper Functions/Modifiers
+    *******************************************************************************/
 
-        cheats.expectRevert(bytes("EigenPodManager.onlyEigenPod: not a pod"));
-        cheats.startPrank(address(improperCaller));
-        eigenPodManager.recordBeaconChainETHBalanceUpdate(staker, int256(0));
-        cheats.stopPrank();
+    function _initializePodWithShares(address podOwner, int256 shares) internal {
+        // Deploy pod
+        IEigenPod deployedPod = _deployAndReturnEigenPodForStaker(podOwner);
+        
+        // Set shares
+        cheats.prank(address(deployedPod));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, shares);
     }
 
-// TODO: salvage / re-implement a check for reentrancy guard on functions, as possible
-    // function testRecordBeaconChainETHBalanceUpdateFailsWhenReentering() public {
-    //     uint256 amount = 1e18;
-    //     uint256 amount2 = 2e18;
-    //     address staker = address(this);
-    //     uint256 beaconChainETHStrategyIndex = 0;
 
-    //     _beaconChainReentrancyTestsSetup();
+    modifier deployPodForStaker(address staker) {
+        _deployAndReturnEigenPodForStaker(staker);
+        _;
+    }
 
-    //     testRestakeBeaconChainETHSuccessfully(staker, amount);        
-
-    //     address targetToUse = address(strategyManager);
-    //     uint256 msgValueToUse = 0;
-
-    //     int256 amountDelta = int256(amount2 - amount);
-    //     // reference: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
-    //     bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amountDelta);
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
-
-    //     cheats.startPrank(address(reenterer));
-    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(staker, amountDelta);
-    //     cheats.stopPrank();
-    // }
-
-    // queues a withdrawal of "beacon chain ETH shares" from this address to itself
-    // fuzzed input amountGwei is sized-down, since it must be in GWEI and gets sized-up to be WEI
-// TODO: reimplement similar test
-    // function testQueueWithdrawalBeaconChainETHToSelf(uint128 amountGwei)
-    //     public returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
-    // {
-    //     // scale fuzzed amount up to be a whole amount of GWEI
-    //     uint256 amount = uint256(amountGwei) * 1e9;
-    //     address staker = address(this);
-    //     address withdrawer = staker;
-
-    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
-
-    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-    //         _createQueuedWithdrawal(staker, amount, withdrawer);
-
-    //     return (queuedWithdrawal, withdrawalRoot);
-    // }
-// TODO: reimplement similar test
-    // function testQueueWithdrawalBeaconChainETHToDifferentAddress(address withdrawer, uint128 amountGwei)
-    //     public
-    //     filterFuzzedAddressInputs(withdrawer)
-    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
-    // {
-    //     // scale fuzzed amount up to be a whole amount of GWEI
-    //     uint256 amount = uint256(amountGwei) * 1e9;
-    //     address staker = address(this);
-
-    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
-
-    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
-    //         _createQueuedWithdrawal(staker, amount, withdrawer);
-
-    //     return (queuedWithdrawal, withdrawalRoot);
-    // }
-// TODO: reimplement similar test
-
-    // function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
-    //     // this also filters out the zero case, which will revert separately
-    //     cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
-    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
-    //     eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
-    // }
-
-    // function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
-    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
-    //     eigenPodManager.queueWithdrawal(0, address(this));
-    // }
-
-// TODO: reimplement similar test
-    // function testCompleteQueuedWithdrawal() external {
-    //     address staker = address(this);
-    //     uint256 withdrawalAmount = 1e18;
-
-    //     // withdrawalAmount is converted to GWEI here
-    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) = 
-    //         testQueueWithdrawalBeaconChainETHToSelf(uint128(withdrawalAmount / 1e9));
-
-    //     IEigenPod eigenPod = eigenPodManager.getPod(staker);
-    //     uint256 eigenPodBalanceBefore = address(eigenPod).balance;
-
-    //     uint256 middlewareTimesIndex = 0;
-
-    //     // actually complete the withdrawal
-    //     cheats.startPrank(staker);
-    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-    //     emit BeaconChainETHWithdrawalCompleted(
-    //         queuedWithdrawal.podOwner,
-    //         queuedWithdrawal.shares,
-    //         queuedWithdrawal.nonce,
-    //         queuedWithdrawal.delegatedAddress,
-    //         queuedWithdrawal.withdrawer,
-    //         withdrawalRoot
-    //     );
-    //     eigenPodManager.completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
-    //     cheats.stopPrank();
-
-    //     // TODO: make EigenPodMock do something so we can verify that it gets called appropriately?
-    //     uint256 eigenPodBalanceAfter = address(eigenPod).balance;
-
-    //     // verify that the withdrawal root does bit exist after queuing
-    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
-    // }
-
-    // INTERNAL / HELPER FUNCTIONS
-    // deploy an EigenPod for the staker and check the emitted event
-    function _deployEigenPodForStaker(address staker) internal returns (IEigenPod deployedPod) {
+    function _deployAndReturnEigenPodForStaker(address staker) internal returns (IEigenPod deployedPod) {
         deployedPod = eigenPodManager.getPod(staker);
-        cheats.startPrank(staker);
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit PodDeployed(address(deployedPod), staker);
+        cheats.prank(staker);
         eigenPodManager.createPod();
-        cheats.stopPrank();
         return deployedPod;
     }
 
-// TODO: reimplement similar test
-    // // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`
-    // function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer)
-    //     internal
-    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
-    // {
-    //     // create the struct, for reference / to return
-    //     queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
-    //         shares: amountWei,
-    //         podOwner: staker,
-    //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
-    //         startBlock: uint32(block.number),
-    //         delegatedTo: delegationManagerMock.delegatedTo(staker),
-    //         withdrawer: withdrawer
-    //     });
+    function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal {
+        assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod, "Expected pod not deployed");
+        assertEq(eigenPodManager.numPods(), numPodsBefore + 1, "Num pods not incremented");
+    }
+}
 
-    //     // verify that the withdrawal root does not exist before queuing
-    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitTests, IEigenPodManagerEvents {
 
-    //     // get staker nonce and shares before queuing
-    //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
+    /*******************************************************************************
+                                Initialization Tests
+    *******************************************************************************/
 
-    //     // actually create the queued withdrawal, and check for event emission
-    //     cheats.startPrank(staker);
+    function test_initialization() public {
+        // Check max pods, beacon chain, owner, and pauser
+        assertEq(eigenPodManager.maxPods(), type(uint256).max, "Initialization: max pods incorrect");
+        assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))), "Initialization: beacon chain oracle incorrect");
+        assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
+        assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
+        assertEq(eigenPodManager.paused(), 0, "Initialization: paused value not 0");
+
+        // Check storage variables
+        assertEq(address(eigenPodManager.ethPOS()), address(ethPOSMock), "Initialization: ethPOS incorrect");
+        assertEq(address(eigenPodManager.eigenPodBeacon()), address(eigenPodBeacon), "Initialization: eigenPodBeacon incorrect");
+        assertEq(address(eigenPodManager.strategyManager()), address(strategyManagerMock), "Initialization: strategyManager incorrect");
+        assertEq(address(eigenPodManager.slasher()), address(slasherMock), "Initialization: slasher incorrect");
+        assertEq(address(eigenPodManager.delegationManager()), address(delegationManagerMock), "Initialization: delegationManager incorrect");
+    }
+
+    function test_initialize_revert_alreadyInitialized() public {
+        cheats.expectRevert("Initializable: contract is already initialized");
+        eigenPodManager.initialize(type(uint256).max /*maxPods*/,
+            IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+            initialOwner,
+            pauserRegistry,
+            0 /*initialPausedStatus*/);
+    }
+
+    function testFuzz_setMaxPods_revert_notUnpauser(address notUnpauser) public {
+        cheats.assume(notUnpauser != unpauser);
+        cheats.prank(notUnpauser);
+        cheats.expectRevert("msg.sender is not permissioned as unpauser");
+        eigenPodManager.setMaxPods(0);
+    }
+
+    /*******************************************************************************
+                                     Setters
+    *******************************************************************************/
+
+    function test_setMaxPods() public {
+        // Set max pods
+        uint256 newMaxPods = 0;
+        cheats.expectEmit(true, true, true, true);
+        emit MaxPodsUpdated(eigenPodManager.maxPods(), newMaxPods);
+        cheats.prank(unpauser);
+        eigenPodManager.setMaxPods(newMaxPods);
+
+        // Check storage update
+        assertEq(eigenPodManager.maxPods(), newMaxPods, "Max pods not updated");
+    }
+
+    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public {
+        cheats.assume(notOwner != initialOwner);
+        cheats.prank(notOwner);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(address(1)));
+    }
+
+    function test_updateBeaconChainOracle() public {
+        // Set new beacon chain oracle
+        IBeaconChainOracle newBeaconChainOracle = IBeaconChainOracle(address(1));
+        cheats.prank(initialOwner);
+        cheats.expectEmit(true, true, true, true);
+        emit BeaconOracleUpdated(address(newBeaconChainOracle));
+        eigenPodManager.updateBeaconChainOracle(newBeaconChainOracle);
+
+        // Check storage update
+        assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
+    }
+}
+
+contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {
+
+    function test_createPod() public {
+        // Get expected pod address and pods before
+        IEigenPod expectedPod = eigenPodManager.getPod(defaultStaker);
+        uint256 numPodsBefore = eigenPodManager.numPods();
+
+        // Create pod
+        cheats.expectEmit(true, true, true, true);
+        emit PodDeployed(address(expectedPod), defaultStaker);
+        eigenPodManager.createPod();
+
+        // Check pod deployed
+        _checkPodDeployed(defaultStaker, address(defaultPod), numPodsBefore);
+    }
+
+    function test_createPod_revert_alreadyCreated() public deployPodForStaker(defaultStaker) {
+        cheats.expectRevert("EigenPodManager.createPod: Sender already has a pod");
+        eigenPodManager.createPod();
+    }
+
+    function test_createPod_revert_maxPodsUint256() public {
+        // Write numPods into storage. Num pods is at slot 153
+        bytes32 slot = bytes32(uint256(153)); 
+        bytes32 value = bytes32(eigenPodManager.maxPods());
+        cheats.store(address(eigenPodManager), slot, value);
+
+        // Expect revert on pod creation
+        cheats.expectRevert(); // Arithmetic overflow/underflow  
+        eigenPodManager.createPod();
+    }
+
+    function test_createPod_revert_maxPodsNontUint256() public {
+        // Set max pods to a small value - 0
+        cheats.prank(unpauser);
+        eigenPodManager.setMaxPods(0);
+
+        // Expect revert on pod creation
+        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
+        eigenPodManager.createPod();
+    }
+}
+
+contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
+
+    function test_stake_podAlreadyDeployed() deployPodForStaker(defaultStaker) public {
+        // Declare dummy variables
+        bytes memory pubkey = bytes("pubkey");
+        bytes memory sig = bytes("sig");
+        bytes32 depositDataRoot = bytes32("depositDataRoot");
+
+        // Stake
+        eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
+
+        // Expect pod has 32 ether
+        assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
+    }
+
+    function test_stake_newPodDeployed() public {
+        // Declare dummy variables
+        bytes memory pubkey = bytes("pubkey");
+        bytes memory sig = bytes("sig");
+        bytes32 depositDataRoot = bytes32("depositDataRoot");
+
+        // Stake
+        eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
+
+        // Check pod deployed
+        _checkPodDeployed(defaultStaker, address(defaultPod), 0); // staker, defaultPod, numPodsBefore
+        
+        // Expect pod has 32 ether
+        assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
+    }
+}
+
+contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
+
+    /*******************************************************************************
+                                Add Shares Tests
+    *******************************************************************************/
+
+    function testFuzz_addShares_revert_notDelegationManager(address notDelegationManager) public {
+        cheats.assume(notDelegationManager != address(delegationManagerMock));
+        cheats.prank(notDelegationManager);
+        cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
+        eigenPodManager.addShares(defaultStaker, 0);
+    }
     
-    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-    //     emit BeaconChainETHWithdrawalQueued(
-    //         queuedWithdrawal.podOwner,
-    //         queuedWithdrawal.shares,
-    //         queuedWithdrawal.nonce,
-    //         queuedWithdrawal.delegatedAddress,
-    //         queuedWithdrawal.withdrawer,
-    //         eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
-    //     );
-    //     withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer);
-    //     cheats.stopPrank();
+    function test_addShares_revert_podOwnerZeroAddress() public {
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.addShares: podOwner cannot be zero address");
+        eigenPodManager.addShares(address(0), 0);
+    }
 
-    //     // verify that the withdrawal root does exist after queuing
-    //     require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
+    function testFuzz_addShares_revert_sharesNegative(int256 shares) public {
+        cheats.assume(shares < 0);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.addShares: shares cannot be negative");
+        eigenPodManager.addShares(defaultStaker, uint256(shares));
+    }
 
-    //     // verify that staker nonce incremented correctly and shares decremented correctly
-    //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
-    //     int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
-    //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
-    //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
+    function testFuzz_addShares_revert_sharesNotWholeGwei(uint256 shares) public {
+        cheats.assume(int256(shares) >= 0);
+        cheats.assume(shares % GWEI_TO_WEI != 0);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.addShares: shares must be a whole Gwei amount");
+        eigenPodManager.addShares(defaultStaker, shares);
+    }
 
-    //     return (queuedWithdrawal, withdrawalRoot);
-    // }
+    function testFuzz_addShares(uint256 shares) public {
+        // Fuzz inputs
+        cheats.assume(defaultStaker != address(0));
+        cheats.assume(shares % GWEI_TO_WEI == 0);
+        cheats.assume(int256(shares) >= 0);
 
-    function _beaconChainReentrancyTestsSetup() internal {
-        // prepare EigenPodManager with StrategyManager and Delegation replaced with a Reenterer contract
-        reenterer = new Reenterer();
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSMock,
-            eigenPodBeacon,
-            IStrategyManager(address(reenterer)),
-            slasherMock,
-            IDelegationManager(address(reenterer))
-        );
-        eigenPodManager = EigenPodManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(eigenPodManagerImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        EigenPodManager.initialize.selector,
-                        type(uint256).max /*maxPods*/,
-                        IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
-                        initialOwner,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
-                    )
-                )
-            )
-        );
+        // Add shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.addShares(defaultStaker, shares);
+
+        // Check storage update
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(shares), "Incorrect number of shares added");
+    }
+
+    /*******************************************************************************
+                                Remove Shares Tests
+    ******************************************************************************/
+
+    function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public {
+        cheats.assume(notDelegationManager != address(delegationManagerMock));
+        cheats.prank(notDelegationManager);
+        cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
+        eigenPodManager.removeShares(defaultStaker, 0);
+    }
+
+    function testFuzz_removeShares_revert_sharesNegative(int256 shares) public {
+        cheats.assume(shares < 0);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.removeShares: shares cannot be negative");
+        eigenPodManager.removeShares(defaultStaker, uint256(shares));
+    }
+    
+    function testFuzz_removeShares_revert_sharesNotWholeGwei(uint256 shares) public {
+        cheats.assume(int256(shares) >= 0);
+        cheats.assume(shares % GWEI_TO_WEI != 0);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.removeShares: shares must be a whole Gwei amount");
+        eigenPodManager.removeShares(defaultStaker, shares);
+    }
+
+    function testFuzz_removeShares_revert_tooManySharesRemoved(uint224 sharesToAdd, uint224 sharesToRemove) public {
+        // Constrain inputs
+        cheats.assume(sharesToRemove > sharesToAdd);
+        uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
+        uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;
+
+        // Initialize pod with shares
+        _initializePodWithShares(defaultStaker, int256(sharesAdded));
+
+        // Remove shares
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.removeShares: cannot result in pod owner having negative shares");
+        eigenPodManager.removeShares(defaultStaker, sharesRemoved);
+    }
+
+    function testFuzz_removeShares(uint224 sharesToAdd, uint224 sharesToRemove) public {
+        // Constain inputs
+        cheats.assume(sharesToRemove <= sharesToAdd);
+        uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
+        uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;
+
+        // Initialize pod with shares
+        _initializePodWithShares(defaultStaker, int256(sharesAdded));
+
+        // Remove shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.removeShares(defaultStaker, sharesRemoved);
+
+        // Check storage
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved), "Incorrect number of shares removed");
+    }
+
+    function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public {
+        // Constrain inputs
+        cheats.assume(podOwner != address(0));
+        cheats.assume(shares % GWEI_TO_WEI == 0);
+
+        // Initialize pod with shares
+        _initializePodWithShares(podOwner, int256(shares));
+
+        // Remove shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.removeShares(podOwner, shares);
+
+        // Check storage update
+        assertEq(eigenPodManager.podOwnerShares(podOwner), 0, "Shares not reset to zero");
+    }
+
+    /*******************************************************************************
+                        WithdrawSharesAsTokens Tests
+    ******************************************************************************/
+
+    function test_withdrawSharesAsTokens_revert_podOwnerZeroAddress() public {
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: podOwner cannot be zero address");
+        eigenPodManager.withdrawSharesAsTokens(address(0), address(0), 0);
+    }
+
+    function test_withdrawSharesAsTokens_revert_destinationZeroAddress() public {
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: destination cannot be zero address");
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, address(0), 0);  
+    }
+
+    function testFuzz_withdrawSharesAsTokens_revert_sharesNegative(int256 shares) public {
+        cheats.assume(shares < 0);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: shares cannot be negative");
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, uint256(shares));
+    }
+
+    function testFuzz_withdrawSharesAsTokens_revert_sharesNotWholeGwei(uint256 shares) public {
+        cheats.assume(int256(shares) >= 0);
+        cheats.assume(shares % GWEI_TO_WEI != 0);
+
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert("EigenPodManager.withdrawSharesAsTokens: shares must be a whole Gwei amount");
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, shares);
+    }
+
+    /**
+     * @notice The `withdrawSharesAsTokens` is called in the `completeQueuedWithdrawal` function from the 
+     *         delegationManager. When a withdrawal is queued in the delegationManager, `removeShares is called`
+     */
+    function test_withdrawSharesAsTokens_reduceEntireDeficit() public {
+        // Shares to initialize & withdraw
+        int256 sharesBeginning = -100e18;
+        uint256 sharesToWithdraw = 101e18;
+        
+        // Deploy Pod And initialize with negative shares
+        _initializePodWithShares(defaultStaker, sharesBeginning);
+
+        // Withdraw shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, sharesToWithdraw);
+
+        // Check storage update
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(0), "Shares not reduced to 0");
+    }
+
+    function test_withdrawSharesAsTokens_partialDefecitReduction() public {
+        // Shares to initialize & withdraw
+        int256 sharesBeginning = -100e18;
+        uint256 sharesToWithdraw = 50e18;
+
+        // Deploy Pod And initialize with negative shares
+        _initializePodWithShares(defaultStaker, sharesBeginning);
+
+        // Withdraw shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, sharesToWithdraw);
+
+        // Check storage update
+        int256 expectedShares = sharesBeginning + int256(sharesToWithdraw);
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), expectedShares, "Shares not reduced to expected amount");
+    }
+
+    function test_withdrawSharesAsTokens_withdrawPositive() public {
+        // Shares to initialize & withdraw
+        int256 sharesBeginning = 100e18;
+        uint256 sharesToWithdraw = 50e18;
+
+        // Deploy Pod And initialize with negative shares
+        _initializePodWithShares(defaultStaker, sharesBeginning);
+
+        // Withdraw shares
+        cheats.prank(address(delegationManagerMock));
+        eigenPodManager.withdrawSharesAsTokens(defaultStaker, defaultStaker, sharesToWithdraw);
+
+        // Check storage remains the same
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), sharesBeginning, "Shares should not be adjusted");
+    }
+}
+
+contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
+
+    function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public deployPodForStaker(defaultStaker) {
+        cheats.assume(invalidCaller != defaultStaker);
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("EigenPodManager.onlyEigenPod: not a pod");
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0);
+    }
+
+    function test_recordBalanceUpdate_revert_zeroAddress() public {
+        IEigenPod zeroAddressPod = _deployAndReturnEigenPodForStaker(address(0));
+        cheats.prank(address(zeroAddressPod));
+        cheats.expectRevert("EigenPodManager.recordBeaconChainETHBalanceUpdate: podOwner cannot be zero address");
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(address(0), 0);
+    }
+
+    function testFuzz_recordBalanceUpdate_revert_nonWholeGweiAmount(int256 sharesDelta) public deployPodForStaker(defaultStaker) {
+        cheats.assume(sharesDelta % int256(GWEI_TO_WEI) != 0);
+        cheats.prank(address(defaultPod));
+        cheats.expectRevert("EigenPodManager.recordBeaconChainETHBalanceUpdate: sharesDelta must be a whole Gwei amount");
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, sharesDelta);
+    }
+
+    function testFuzz_recordBalanceUpdateX(int224 sharesBefore, int224 sharesDelta) public {
+        // Constrain inputs
+        int256 scaledSharesBefore = sharesBefore * int256(GWEI_TO_WEI);
+        int256 scaledSharesDelta = sharesDelta * int256(GWEI_TO_WEI);
+
+        // Initialize shares
+        _initializePodWithShares(defaultStaker, scaledSharesBefore);
+
+        // Update balance
+        cheats.prank(address(defaultPod));
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
+
+        // Check storage
+        assertEq(eigenPodManager.podOwnerShares(defaultStaker), scaledSharesBefore + scaledSharesDelta, "Shares not updated correctly");
     }
 }
