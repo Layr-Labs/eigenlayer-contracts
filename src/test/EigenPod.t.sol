@@ -5,7 +5,6 @@ import "../contracts/interfaces/IEigenPod.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
 import "./utils/ProofParsing.sol";
 import "./EigenLayerDeployer.t.sol";
-import "./mocks/MiddlewareRegistryMock.sol";
 import "../contracts/libraries/BeaconChainProofs.sol";
 import "./mocks/BeaconChainOracleMock.sol";
 import "./harnesses/EigenPodHarness.sol";
