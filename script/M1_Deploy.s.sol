@@ -77,7 +77,6 @@ contract Deployer_M1 is Script, Test {
     // IMMUTABLES TO SET
     uint256 REQUIRED_BALANCE_WEI;
     uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-    uint256 EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI;
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
@@ -122,10 +121,6 @@ contract Deployer_M1 is Script, Test {
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = stdJson.readUint(
             config_data,
             ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR"
-        );
-        EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI = stdJson.readUint(
-            config_data,
-            ".eigenPod.EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI"
         );
 
         // tokens to deploy strategies for
@@ -189,7 +184,6 @@ contract Deployer_M1 is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             uint64(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
-            uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI),
             GOERLI_GENESIS_TIME
         );
 

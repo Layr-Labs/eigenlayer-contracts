@@ -30,12 +30,6 @@ Since the execution layer cannot yet synchronously read arbitrary state from the
 
 This will either be implemented by Succinct Labs or eventually by Ethereum natively in EIP-4788 ([read here](https://eips.ethereum.org/EIPS/eip-4788)). The interface will have requests be for a block number and responses be the block roots corresponding to the provided block numbers.
 
-### Hysteresis
-
-We want to understimate validator balances on EigenLayer to be tolerant to small slashing events that occur on the beacon chain.
-
-We underestimate validator stake on EigenLayer through the following equation: $\text{eigenlayerBalance} = \text{min}(32, \text{floor}(x-C))$ where $C$ is some offset which we can assume is equal to 0.75. Since a validator's effective balance on the beacon chain can at most 0.25 ETH more than its actual balance on the beacon chain, we subtract 0.75 and floor it for simplicity.
-
 ### Creating EigenPods
 
 Any user that wants to participate in native restaking first deploys an EigenPod contract by calling `createPod()` on the EigenPodManager. This deploys an EigenPod contract which is a BeaconProxy in the Beacon Proxy pattern. The user is called the *pod owner* of the EigenPod they deploy.

@@ -10,14 +10,12 @@ contract EPInternalFunctions is EigenPod {
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
         uint64 _GENESIS_TIME
     ) EigenPod(
         _ethPOS,
         _delayedWithdrawalRouter,
         _eigenPodManager,
         _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        _RESTAKED_BALANCE_OFFSET_GWEI,
         _GENESIS_TIME
     ) {}
 

@@ -158,7 +158,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             delayedWithdrawalRouter,
             IEigenPodManager(podManagerAddress),
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            RESTAKED_BALANCE_OFFSET_GWEI,
             GOERLI_GENESIS_TIME
         );
 
@@ -883,10 +882,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
-
         assertTrue(
             eigenPodManager.podOwnerShares(podOwner) ==
-                int256((newValidatorBalance) * GWEI_TO_WEI),
+                int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
             "hysterisis not working"
         );
         assertTrue(
@@ -2115,7 +2113,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             delayedWithdrawalRouter,
             IEigenPodManager(podManagerAddress),
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            RESTAKED_BALANCE_OFFSET_GWEI,
             GOERLI_GENESIS_TIME
         );
     }
