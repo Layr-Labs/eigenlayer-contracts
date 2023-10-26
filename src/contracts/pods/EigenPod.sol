@@ -458,8 +458,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * balance, always a multiple of 1 ETH, will only lower to the next multiple of 1 ETH if the current balance is less
          * than 0.25 ETH below their current effective balance.  For example, if the effective balance is 31ETH, it only falls to
          * 30ETH when the true balance falls below 30.75ETH.  Thus in the worst case, the effective balance is overestimating the
-         * actual validator balance by 0.25 ETH.  In EigenLayer, we calculate our own "restaked balance" which is a further pessimistic
-         * view of the validator's effective balance.
+         * actual validator balance by 0.25 ETH. 
          */
         uint64 validatorEffectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
 
