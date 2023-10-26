@@ -18,7 +18,7 @@ import "../mocks/Reverter.sol";
 
 import "../mocks/ERC20Mock.sol";
 
-import "./Utils.sol";
+import "src/test/utils/Utils.sol";
 
 contract SlasherUnitTests is Test, Utils {
 

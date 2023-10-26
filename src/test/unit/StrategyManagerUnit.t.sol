@@ -1,53 +1,30 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+import "src/contracts/core/StrategyManager.sol";
+import "src/contracts/strategies/StrategyBase.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
+import "src/test/mocks/ERC20Mock.sol";
+import "src/test/mocks/Reverter.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-import "forge-std/Test.sol";
-
-import "../../contracts/core/StrategyManager.sol";
-import "../../contracts/strategies/StrategyBase.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
-import "../mocks/DelegationManagerMock.sol";
-import "../mocks/SlasherMock.sol";
-import "../mocks/EigenPodManagerMock.sol";
-import "../mocks/Reenterer.sol";
-import "../mocks/Reverter.sol";
-
-import "../mocks/ERC20Mock.sol";
-
-import "./Utils.sol";
-
-contract StrategyManagerUnitTests is Test, Utils {
-    Vm cheats = Vm(HEVM_ADDRESS);
-
+contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
     uint256 public REQUIRED_BALANCE_WEI = 31 ether;
-
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
 
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
-    DelegationManagerMock public delegationManagerMock;
-    SlasherMock public slasherMock;
-    EigenPodManagerMock public eigenPodManagerMock;
 
     StrategyBase public dummyStrat;
     StrategyBase public dummyStrat2;
     StrategyBase public dummyStrat3;
-
     IStrategy public beaconChainETHStrategy;
 
     IERC20 public dummyToken;
 
-    Reenterer public reenterer;
+    // Reenterer public reenterer;
 
     uint256 GWEI_TO_WEI = 1e9;
-
-    address public pauser = address(555);
-    address public unpauser = address(999);
 
     address initialOwner = address(this);
 
@@ -57,13 +34,6 @@ contract StrategyManagerUnitTests is Test, Utils {
     IStrategy public _tempStrategyStorage;
     address public _tempStakerStorage;
     uint256 public privateKey = 111111;
-
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
-
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
-        cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
-        _;
-    }
 
     /**
      * @notice Emitted when a new deposit occurs on behalf of `depositor`.
@@ -119,22 +89,14 @@ contract StrategyManagerUnitTests is Test, Utils {
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
-    function setUp() public virtual {
-        proxyAdmin = new ProxyAdmin();
-
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
-
-        slasherMock = new SlasherMock();
-        delegationManagerMock = new DelegationManagerMock();
-        eigenPodManagerMock = new EigenPodManagerMock();
+    function setUp() public override {
+        super.setUp();
         strategyManagerImplementation = new StrategyManager(delegationManagerMock, eigenPodManagerMock, slasherMock);
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyManagerImplementation),
-                    address(proxyAdmin),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         StrategyManager.initialize.selector,
                         initialOwner,
@@ -164,11 +126,6 @@ contract StrategyManagerUnitTests is Test, Utils {
         cheats.stopPrank();
 
         beaconChainETHStrategy = eigenPodManagerMock.beaconChainETHStrategy();
-
-        // excude the zero address, the proxyAdmin and the eigenPodManagerMock from fuzzed inputs
-        addressIsExcludedFromFuzzedInputs[address(0)] = true;
-        addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
-        addressIsExcludedFromFuzzedInputs[address(eigenPodManagerMock)] = true;
     }
 
     // INTERNAL / HELPER FUNCTIONS

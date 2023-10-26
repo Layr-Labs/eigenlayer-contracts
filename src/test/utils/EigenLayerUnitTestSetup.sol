@@ -12,11 +12,12 @@ import "src/test/mocks/SlasherMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/StakeRegistryMock.sol";
 import "src/test/mocks/Reenterer.sol";
+import "src/test/utils/Utils.sol";
 
 
 import "forge-std/Test.sol";
 
-abstract contract EigenLayerUnitTestSetup is Test {
+abstract contract EigenLayerUnitTestSetup is Test, Utils {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // Declare Mocks
