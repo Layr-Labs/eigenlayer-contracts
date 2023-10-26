@@ -272,25 +272,17 @@ contract EigenPodUnitTests is Test, ProofParsing {
         for (uint256 index = 0; index < numValidators; index++) {
             validatorFieldsProofArray[index] = abi.encodePacked(getValidatorProof());
         }
-                emit log("hello");
-
         bytes32[][] memory validatorFieldsArray = new bytes32[][](numValidators);
         for (uint256 index = 0; index < validatorFieldsArray.length; index++) {
              validatorFieldsArray[index] = getValidatorFields();
         }
-        emit log("hello");
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
-                        emit log("hello");
-
         BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
-                        emit log("hello");
 
         withdrawalProofsArray[0] = _getWithdrawalProof();
-                emit log("hello");
 
         bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
         withdrawalFieldsArray[0] = withdrawalFields;
-                emit log("hello");
 
         cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawals: inputs must be same length"));
         pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
