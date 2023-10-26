@@ -9,30 +9,22 @@ import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/Reverter.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
+/**
+ * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the 
+ * DelegationManager are not tested here but callable functions by the DelegationManager are mocked and tested here.
+ * Contracts tested: StrategyManager.sol
+ * Contracts not mocked: StrategyBase, PauserRegistry
+ */
 contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
-    uint256 public REQUIRED_BALANCE_WEI = 31 ether;
-
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
 
+    IERC20 public dummyToken;
     StrategyBase public dummyStrat;
     StrategyBase public dummyStrat2;
     StrategyBase public dummyStrat3;
-    IStrategy public beaconChainETHStrategy;
-
-    IERC20 public dummyToken;
-
-    // Reenterer public reenterer;
-
-    uint256 GWEI_TO_WEI = 1e9;
 
     address initialOwner = address(this);
-
-    uint256[] public emptyUintArray;
-
-    // used as transient storage to fix stack-too-deep errors
-    IStrategy public _tempStrategyStorage;
-    address public _tempStakerStorage;
     uint256 public privateKey = 111111;
 
     /**
@@ -124,8 +116,6 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
-
-        beaconChainETHStrategy = eigenPodManagerMock.beaconChainETHStrategy();
     }
 
     // INTERNAL / HELPER FUNCTIONS
@@ -348,14 +338,14 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
 }
 
 contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
-    function testCannotReinitialize() public {
+    function test_CannotReinitialize() public {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0);
     }
 }
 
 contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTests {
-    function testDepositIntoStrategySuccessfully(
+    function testFuzz_depositIntoStrategySuccessfully(
         address staker,
         uint256 amount
     ) public filterFuzzedAddressInputs(staker) {
@@ -400,14 +390,14 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         }
     }
 
-    function testDepositIntoStrategySuccessfullyTwice() public {
+    function test_depositIntoStrategySuccessfullyTwice() public {
         address staker = address(this);
         uint256 amount = 1e18;
-        testDepositIntoStrategySuccessfully(staker, amount);
-        testDepositIntoStrategySuccessfully(staker, amount);
+        testFuzz_depositIntoStrategySuccessfully(staker, amount);
+        testFuzz_depositIntoStrategySuccessfully(staker, amount);
     }
 
-    function testDepositIntoStrategyRevertsWhenDepositsPaused() public {
+    function test_Revert_WhenDepositsPaused() public {
         uint256 amount = 1e18;
 
         // pause deposits
@@ -419,7 +409,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         strategyManager.depositIntoStrategy(dummyStrat, dummyToken, amount);
     }
 
-    function testDepositIntoStrategyRevertsWhenReentering() public {
+    function test_Revert_WhenReentering() public {
         uint256 amount = 1e18;
 
         reenterer = new Reenterer();
@@ -450,7 +440,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         strategyManager.depositIntoStrategy(IStrategy(address(reenterer)), dummyToken, amount);
     }
 
-    function test_depositIntoStrategyRevertsWhenTokenSafeTransferFromReverts() external {
+    function test_Revert_WhenTokenSafeTransferFromReverts() external {
         // replace 'dummyStrat' with one that uses a reverting token
         dummyToken = IERC20(address(new Reverter()));
         dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
@@ -475,7 +465,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_depositIntoStrategyRevertsWhenTokenDoesNotExist() external {
+    function test_Revert_WhenTokenDoesNotExist() external {
         // replace 'dummyStrat' with one that uses a non-existent token
         dummyToken = IERC20(address(5678));
         dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
@@ -500,7 +490,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_depositIntoStrategyRevertsWhenStrategyDepositFunctionReverts() external {
+    function test_Revert_WhenStrategyDepositFunctionReverts() external {
         // replace 'dummyStrat' with one that always reverts
         dummyStrat = StrategyBase(address(new Reverter()));
 
@@ -524,7 +514,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_depositIntoStrategyRevertsWhenStrategyDoesNotExist() external {
+    function test_Revert_WhenStrategyDoesNotExist() external {
         // replace 'dummyStrat' with one that does not exist
         dummyStrat = StrategyBase(address(5678));
 
@@ -548,7 +538,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_depositIntoStrategyRevertsWhenStrategyNotWhitelisted() external {
+    function test_Revert_WhenStrategyNotWhitelisted() external {
         // replace 'dummyStrat' with one that is not whitelisted
         dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
@@ -563,7 +553,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_addSharesRevertsWhenSharesIsZero() external {
+    function test_addShares_Revert_WhenSharesIsZero() external {
         // replace dummyStrat with Reenterer contract
         reenterer = new Reenterer();
         dummyStrat = StrategyBase(address(reenterer));
@@ -590,7 +580,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.stopPrank();
     }
 
-    function test_addSharesRevertsWhenDepositWouldExeedMaxArrayLength() external {
+    function test_addShares_Revert_WhenDepositWouldExeedMaxArrayLength() external {
         address staker = address(this);
         IERC20 token = dummyToken;
         uint256 amount = 1e18;
@@ -631,7 +621,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
 }
 
 contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyManagerUnitTests {
-    function testDepositIntoStrategyWithSignatureSuccessfully(uint256 amount, uint256 expiry) public {
+    function testFuzz_DepositSuccessfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
 
@@ -641,7 +631,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         _depositIntoStrategyWithSignature(staker, amount, expiry, expectedRevertMessage);
     }
 
-    function testDepositIntoStrategyWithSignatureReplay(uint256 amount, uint256 expiry) public {
+    function testFuzz_Revert_SignatureReplay(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
         cheats.assume(expiry > block.timestamp);
@@ -655,10 +645,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
     }
 
     // tries depositing using a signature and an EIP 1271 compliant wallet
-    function testDepositIntoStrategyWithSignature_WithContractWallet_Successfully(
-        uint256 amount,
-        uint256 expiry
-    ) public {
+    function testFuzz_WithContractWallet_Successfully(uint256 amount, uint256 expiry) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
 
@@ -676,7 +663,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
     }
 
     // tries depositing using a signature and an EIP 1271 compliant wallet, *but* providing a bad signature
-    function testDepositIntoStrategyWithSignature_WithContractWallet_BadSignature(uint256 amount) public {
+    function testFuzz_Revert_WithContractWallet_BadSignature(uint256 amount) public {
         // min shares must be minted on strategy
         cheats.assume(amount >= 1);
 
@@ -719,7 +706,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
     }
 
     // tries depositing using a wallet that does not comply with EIP 1271
-    function testDepositIntoStrategyWithSignature_WithContractWallet_NonconformingWallet(
+    function testFuzz_Revert_WithContractWallet_NonconformingWallet(
         uint256 amount,
         uint8 v,
         bytes32 r,
@@ -750,7 +737,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
     }
 
-    function testDepositIntoStrategyWithSignatureRevertsWhenDepositsPaused() public {
+    function test_Revert_WhenDepositsPaused() public {
         address staker = cheats.addr(privateKey);
 
         // pause deposits
@@ -763,7 +750,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         _depositIntoStrategyWithSignature(staker, 1e18, type(uint256).max, expectedRevertMessage);
     }
 
-    function testDepositIntoStrategyWithSignatureRevertsWhenReentering() public {
+    function test_Revert_WhenReentering() public {
         reenterer = new Reenterer();
 
         // whitelist the strategy for deposit
@@ -823,7 +810,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
     }
 
-    function testDepositIntoStrategyWithSignatureRevertsWhenSignatureExpired() public {
+    function test_Revert_WhenSignatureExpired() public {
         address staker = cheats.addr(privateKey);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
@@ -858,7 +845,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
     }
 
-    function testDepositIntoStrategyWithSignatureRevertsWhenSignatureInvalid() public {
+    function test_Revert_WhenSignatureInvalid() public {
         address staker = cheats.addr(privateKey);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
@@ -895,13 +882,17 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 }
 
 contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
-    function testRemoveSharesRevertsDelegationManagerModifier() external {
+    function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    function testRemoveSharesRevertsShareAmountTooHigh(
+    /**
+     * @notice deposits a single strategy and tests removeShares() function reverts when sharesAmount is
+     * higher than depositAmount
+     */
+    function testFuzz_Revert_ShareAmountTooHigh(
         address staker,
         uint256 depositAmount,
         uint256 removeSharesAmount
@@ -915,7 +906,11 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         delegationManagerMock.removeShares(strategyManager, staker, strategy, removeSharesAmount);
     }
 
-    function testRemoveSharesRemovesStakerStrategyListSingleStrat(address staker, uint256 sharesAmount) external {
+    /**
+     * @notice testing removeShares()
+     * deposits 1 strategy and tests it is removed from staker strategy list after removing all shares
+     */
+    function testFuzz_RemovesStakerStrategyListSingleStrat(address staker, uint256 sharesAmount) external {
         cheats.assume(staker != address(0));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply());
         IStrategy strategy = dummyStrat;
@@ -936,8 +931,12 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         require(!_isDepositedStrategy(staker, strategy), "strategy should not be part of staker strategy list");
     }
 
-    // Remove Strategy from staker strategy list with multiple strategies deposited
-    function testRemoveSharesRemovesStakerStrategyListMultipleStrat(
+    /**
+     * @notice testing removeShares() function with 3 strategies deposited.
+     * Randomly selects one of the 3 strategies to be fully removed from staker strategy list.
+     * Only callable by DelegationManager
+     */
+    function testFuzz_RemovesStakerStrategyListMultipleStrat(
         address staker,
         uint256[3] memory amounts,
         uint8 randStrategy
@@ -973,8 +972,12 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         require(!_isDepositedStrategy(staker, removeStrategy), "strategy should not be part of staker strategy list");
     }
 
-    // removeShares() from staker strategy list with multiple strategies deposited. Only callable by DelegationManager
-    function testRemoveShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {
+    /**
+     * @notice testing removeShares() function with 3 strategies deposited.
+     * Removing Shares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
+     * Only callable by DelegationManager
+     */
+    function testFuzz_RemoveShares(uint256[3] memory depositAmounts, uint256[3] memory sharesAmounts) external {
         address staker = address(this);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
@@ -1018,24 +1021,24 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 }
 
 contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
-    function testAddSharesRevertsDelegationManagerModifier() external {
+    function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.addShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    function testAddSharesRevertsStakerZeroAddress(uint256 amount) external {
+    function testFuzz_Revert_StakerZeroAddress(uint256 amount) external {
         cheats.expectRevert(bytes("StrategyManager._addShares: staker cannot be zero address"));
         delegationManagerMock.addShares(strategyManager, address(0), dummyStrat, amount);
     }
 
-    function testAddSharesRevertsZeroShares(address staker) external {
+    function testFuzz_Revert_ZeroShares(address staker) external {
         cheats.assume(staker != address(0));
         cheats.expectRevert(bytes("StrategyManager._addShares: shares should not be zero!"));
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, 0);
     }
 
-    function testAddSharesAppendsStakerStrategyList(address staker, uint256 amount) external {
+    function testFuzz_AppendsStakerStrategyList(address staker, uint256 amount) external {
         cheats.assume(staker != address(0) && amount != 0);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
@@ -1053,7 +1056,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         require(_isDepositedStrategy(staker, dummyStrat), "strategy should be deposited");
     }
 
-    function testAddSharesExistingShares(address staker, uint256 sharesAmount) external {
+    function testFuzz_AddSharesToExistingShares(address staker, uint256 sharesAmount) external {
         cheats.assume(staker != address(0) && 0 < sharesAmount && sharesAmount <= dummyToken.totalSupply());
         uint256 initialAmount = 1e18;
         IStrategy strategy = dummyStrat;
@@ -1076,17 +1079,17 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
 }
 
 contract StrategyManagerUnitTests_withdrawShares is StrategyManagerUnitTests {
-    function testWithdrawSharesAsTokensRevertsDelegationManagerModifier() external {
+    function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    function testWithdrawSharesAsTokensRevertsShareAmountTooHigh(
-        address staker,
-        uint256 depositAmount,
-        uint256 sharesAmount
-    ) external {
+    /**
+     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
+     * higher than depositAmount
+     */
+    function testFuzz_Revert_ShareAmountTooHigh(address staker, uint256 depositAmount, uint256 sharesAmount) external {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
@@ -1096,11 +1099,7 @@ contract StrategyManagerUnitTests_withdrawShares is StrategyManagerUnitTests {
         delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
     }
 
-    function testWithdrawSharesAsTokensSingleStrategyDeposited(
-        address staker,
-        uint256 depositAmount,
-        uint256 sharesAmount
-    ) external {
+    function testFuzz_SingleStrategyDeposited(address staker, uint256 depositAmount, uint256 sharesAmount) external {
         cheats.assume(staker != address(0));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply() && depositAmount >= sharesAmount);
         IStrategy strategy = dummyStrat;
@@ -1114,7 +1113,7 @@ contract StrategyManagerUnitTests_withdrawShares is StrategyManagerUnitTests {
 }
 
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
-    function testSetStrategyWhitelister(address newWhitelister) external {
+    function testFuzz_SetStrategyWhitelister(address newWhitelister) external {
         address previousStrategyWhitelister = strategyManager.strategyWhitelister();
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyWhitelisterChanged(previousStrategyWhitelister, newWhitelister);
@@ -1125,9 +1124,7 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
         );
     }
 
-    function testSetStrategyWhitelisterRevertsWhenCalledByNotOwner(
-        address notOwner
-    ) external filterFuzzedAddressInputs(notOwner) {
+    function testFuzz_Revert_WhenCalledByNotOwner(address notOwner) external filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != strategyManager.owner());
         address newWhitelister = address(this);
         cheats.startPrank(notOwner);
@@ -1138,13 +1135,13 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
 }
 
 contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyManagerUnitTests {
-    function testAddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) external {
+    function testFuzz_AddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) external {
         // sanity filtering on fuzzed input
         cheats.assume(numberOfStrategiesToAdd <= 16);
         _addStrategiesToWhitelist(numberOfStrategiesToAdd);
     }
 
-    function testAddStrategiesToDepositWhitelistRevertsWhenCalledByNotStrategyWhitelister(
+    function testFuzz_Revert_WhenCalledByNotStrategyWhitelister(
         address notStrategyWhitelister
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
         cheats.assume(notStrategyWhitelister != strategyManager.strategyWhitelister());
@@ -1160,7 +1157,7 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
 }
 
 contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is StrategyManagerUnitTests {
-    function testRemoveStrategiesFromDepositWhitelist(
+    function testFuzz_RemoveStrategiesFromDepositWhitelist(
         uint8 numberOfStrategiesToAdd,
         uint8 numberOfStrategiesToRemove
     ) external {
@@ -1200,7 +1197,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         }
     }
 
-    function testRemoveStrategiesFromDepositWhitelistRevertsWhenCalledByNotStrategyWhitelister(
+    function testFuzz_Revert_WhenCalledByNotStrategyWhitelister(
         address notStrategyWhitelister
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
         cheats.assume(notStrategyWhitelister != strategyManager.strategyWhitelister());
