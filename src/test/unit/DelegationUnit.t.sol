@@ -86,17 +86,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
 
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
-
-
-    // STAKE REGISTRY EVENT
-    /// @notice emitted whenever the stake of `operator` is updated
-    event StakeUpdate(
-        bytes32 indexed operatorId,
-        uint8 quorumNumber,
-        uint96 stake
-    );
-    // @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
-    event StakerForceUndelegated(address indexed staker, address indexed operator);
     
     /**
      * @notice Emitted when a new withdrawal is queued.
@@ -244,9 +233,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit OperatorDetailsModified(operator, operatorDetails);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(operator, operator);
-        // don't check any parameters other than event type
-        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-        emit StakeUpdate(bytes32(0), 0, 0);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorRegistered(operator, operatorDetails);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
@@ -463,9 +449,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         emit StakerDelegated(staker, _operator);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesIncreased(_operator, staker, strategyMock, 1);
-        // don't check any parameters other than event type
-        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-        emit StakeUpdate(bytes32(0), 0, 0);
         delegationManager.delegateTo(_operator, approverSignatureAndExpiry, salt);        
         cheats.stopPrank();
 
@@ -1055,9 +1038,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
-        // don't check any parameters other than event type
-        cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-        emit StakeUpdate(bytes32(0), 0, 0);
         delegationManager.undelegate(staker);
         cheats.stopPrank();
 
@@ -1117,9 +1097,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         if(delegationManager.isDelegated(staker)) {
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorSharesIncreased(operator, staker, strategy, shares);
-            // don't check any parameters other than event type
-            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-            emit StakeUpdate(bytes32(0), 0, 0);     
         }
 
         cheats.startPrank(address(strategyManagerMock));
@@ -1190,9 +1167,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
                 for (uint256 i = 0; i < strategies.length;  ++i) {
                     cheats.expectEmit(true, true, true, true, address(delegationManager));
                     emit OperatorSharesDecreased(operatorToDecreaseSharesOf, staker, strategies[i], sharesInputArray[i]);
-                    // don't check any parameters other than event type
-                    cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-                    emit StakeUpdate(bytes32(0), 0, 0);
                     delegationManager.decreaseDelegatedShares(staker, strategies[i], sharesInputArray[i]);
                 }
             }
@@ -1339,9 +1313,6 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.startPrank(caller);
         // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
         if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
-            // don't check any parameters other than event type
-            cheats.expectEmit(false, false, false, false, address(stakeRegistryMock));
-            emit StakeUpdate(bytes32(0), 0, 0);
             cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
             emit ForceTotalWithdrawalCalled(staker);
         }
