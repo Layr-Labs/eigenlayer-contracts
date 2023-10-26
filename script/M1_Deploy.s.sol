@@ -541,7 +541,7 @@ contract Deployer_M1 is Script, Test {
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
-        // uint256 REQUIRED_BALANCE_WEI = 31 ether;
+        // uint256 REQUIRED_BALANCE_WEI = 32 ether;
 
         require(
             strategyManager.strategyWhitelister() == operationsMultisig,

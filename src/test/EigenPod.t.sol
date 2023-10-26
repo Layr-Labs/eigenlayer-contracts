@@ -1773,7 +1773,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        uint256 shareAmount = 31e18;
+        uint256 shareAmount = 32e18;
         // expect revert from underflow
         cheats.expectRevert();
         _testQueueWithdrawal(podOwner, shareAmount);

@@ -540,9 +540,9 @@ contract Deployer_M2 is Script, Test {
         //     "strategyManager: withdrawalDelayBlocks initialized incorrectly");
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
-        // uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31 ether;
+        // uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32 ether;
         require(
-            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 31 gwei,
+            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
             "eigenPod: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR initialized incorrectly"
         );
 

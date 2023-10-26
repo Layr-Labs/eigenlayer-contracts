@@ -22,7 +22,7 @@ contract EigenPodManagerUnitTests is Test, EigenPodPausingConstants {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    uint256 public REQUIRED_BALANCE_WEI = 31 ether;
+    uint256 public REQUIRED_BALANCE_WEI = 32 ether;
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;

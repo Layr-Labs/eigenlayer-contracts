@@ -116,7 +116,7 @@ contract DeployOpenEigenLayer is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             // uint64(MAX_VALIDATOR_BALANCE_GWEI),
-            uint64(31 gwei),
+            uint64(32 gwei),
             // uint64(EFFECTIVE_RESTAKED_BALANCE_OFFSET_GWEI)
             uint64(0.75 gwei),
             1000 // temp genesis time
