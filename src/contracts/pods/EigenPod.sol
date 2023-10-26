@@ -483,7 +483,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
-        validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
+        validatorInfo.restakedBalanceGwei = validatorEffectiveBalanceGwei;
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit ValidatorRestaked(validatorIndex);
@@ -545,7 +545,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
+        uint64 newRestakedBalanceGwei = validatorBalance;
         
         // Update validator balance and timestamp, and save to state:
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
@@ -741,20 +741,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei) internal {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
-    }
-
-    function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64) {
-        if (amountGwei <= RESTAKED_BALANCE_OFFSET_GWEI) {
-            return 0;
-        }
-        /**
-         * calculates the "floor" of amountGwei - RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division
-         * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to
-         * the nearest ETH, effectively calculating the floor of amountGwei.
-         */
-        // slither-disable-next-line divide-before-multiply
-        uint64 effectiveBalanceGwei = uint64(((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI) * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, effectiveBalanceGwei));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
