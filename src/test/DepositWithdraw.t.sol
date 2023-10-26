@@ -483,7 +483,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         );
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, EFFECTIVE_RESTAKED_BALANCE_OFFSET, GOERLI_GENESIS_TIME);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 

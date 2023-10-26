@@ -76,7 +76,6 @@ contract Deployer_M2 is Script, Test {
 
     // IMMUTABLES TO SET
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-    uint64 RESTAKED_BALANCE_OFFSET_GWEI;
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
@@ -121,7 +120,6 @@ contract Deployer_M2 is Script, Test {
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = uint64(
             stdJson.readUint(config_data, ".eigenPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR")
         );
-        RESTAKED_BALANCE_OFFSET_GWEI = uint64(stdJson.readUint(config_data, ".eigenPod.RESTAKED_BALANCE_OFFSET_GWEI"));
 
         // tokens to deploy strategies for
         StrategyConfig[] memory strategyConfigs;
@@ -184,7 +182,6 @@ contract Deployer_M2 is Script, Test {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            RESTAKED_BALANCE_OFFSET_GWEI,
             GOERLI_GENESIS_TIME
         );
 
