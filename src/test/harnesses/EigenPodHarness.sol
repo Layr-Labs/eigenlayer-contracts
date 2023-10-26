@@ -75,4 +75,16 @@ contract EPInternalFunctions is EigenPod {
     function setValidatorStatus(bytes32 pkhash, VALIDATOR_STATUS status) public {
         _validatorPubkeyHashToInfo[pkhash].status = status;
     }
+
+    function calculateRestakedBalanceGwei(
+        uint64 amountGwei
+    )
+        public
+        view
+        returns(uint64)
+    {
+        return _calculateRestakedBalanceGwei(
+            amountGwei
+        );
+    }
  }
