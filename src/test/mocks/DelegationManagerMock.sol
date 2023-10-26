@@ -9,9 +9,9 @@ import "../../contracts/interfaces/IStrategyManager.sol";
 contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
-    IStakeRegistry public stakeRegistry;
+    IStakeRegistryStub public stakeRegistry;
 
-    function setStakeRegistry(IStakeRegistry _stakeRegistry) external {}
+    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;

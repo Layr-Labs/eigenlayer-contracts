@@ -85,7 +85,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param _stakeRegistry is the address of the StakeRegistry contract to call for stake updates when operator shares are changed
      * @dev Only callable once
      */
-    function setStakeRegistry(IStakeRegistry _stakeRegistry) external onlyOwner {
+    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external onlyOwner {
         require(address(stakeRegistry) == address(0), "DelegationManager.setStakeRegistry: stakeRegistry already set");
         require(address(_stakeRegistry) != address(0), "DelegationManager.setStakeRegistry: stakeRegistry cannot be zero address");
         stakeRegistry = _stakeRegistry;

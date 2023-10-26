@@ -6,15 +6,12 @@ import "src/contracts/interfaces/ISignatureUtils.sol";
 
 import "../test/EigenLayerTestHelper.t.sol";
 
-import "./mocks/ServiceManagerMock.sol";
-
 contract DelegationTests is EigenLayerTestHelper {
     uint256 public PRIVATE_KEY = 420;
 
     uint32 serveUntil = 100;
 
     address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
-    ServiceManagerMock public serviceManager;
     StakeRegistryStub public stakeRegistry;
     uint8 defaultQuorumNumber = 0;
     bytes32 defaultOperatorId = bytes32(uint256(0));
@@ -32,52 +29,7 @@ contract DelegationTests is EigenLayerTestHelper {
     }
 
     function initializeMiddlewares() public {
-        serviceManager = new ServiceManagerMock(slasher);
-
         stakeRegistry = new StakeRegistryStub();
-
-        {
-            uint96 multiplier = 1e18;
-            uint8 _NUMBER_OF_QUORUMS = 2;
-            // uint256[] memory _quorumBips = new uint256[](_NUMBER_OF_QUORUMS);
-            // // split 60% ETH quorum, 40% EIGEN quorum
-            // _quorumBips[0] = 6000;
-            // _quorumBips[1] = 4000;
-            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory ethStratsAndMultipliers =
-            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            // ethStratsAndMultipliers[0].strategy = wethStrat;
-            // ethStratsAndMultipliers[0].multiplier = multiplier;
-            // IVoteWeigher.StrategyAndWeightingMultiplier[] memory eigenStratsAndMultipliers =
-            //     new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            // eigenStratsAndMultipliers[0].strategy = eigenStrat;
-            // eigenStratsAndMultipliers[0].multiplier = multiplier;
-
-            cheats.startPrank(eigenLayerProxyAdmin.owner());
-
-            // setup the dummy minimum stake for quorum
-            uint96[] memory minimumStakeForQuorum = new uint96[](_NUMBER_OF_QUORUMS);
-            for (uint256 i = 0; i < minimumStakeForQuorum.length; i++) {
-                minimumStakeForQuorum[i] = uint96(i + 1);
-            }
-
-            // setup the dummy quorum strategies
-            IVoteWeigher.StrategyAndWeightingMultiplier[][]
-                memory quorumStrategiesConsideredAndMultipliers = new IVoteWeigher.StrategyAndWeightingMultiplier[][](
-                    2
-                );
-            quorumStrategiesConsideredAndMultipliers[0] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            quorumStrategiesConsideredAndMultipliers[0][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
-                wethStrat,
-                multiplier
-            );
-            quorumStrategiesConsideredAndMultipliers[1] = new IVoteWeigher.StrategyAndWeightingMultiplier[](1);
-            quorumStrategiesConsideredAndMultipliers[1][0] = IVoteWeigher.StrategyAndWeightingMultiplier(
-                eigenStrat,
-                multiplier
-            );
-
-            cheats.stopPrank();
-        }
     }
 
     /// @notice testing if an operator can register to themselves.
@@ -524,9 +476,6 @@ contract DelegationTests is EigenLayerTestHelper {
         });
         _testRegisterAsOperator(sender, operatorDetails);
         cheats.startPrank(sender);
-
-        //whitelist the serviceManager to slash the operator
-        slasher.optIntoSlashing(address(serviceManager));
 
         cheats.stopPrank();
     }

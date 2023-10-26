@@ -12,7 +12,6 @@ import "../contracts/core/DelegationManager.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 import "../contracts/interfaces/IBeaconChainOracle.sol";
-import "../contracts/interfaces/IVoteWeigher.sol";
 
 import "../contracts/core/StrategyManager.sol";
 import "../contracts/strategies/StrategyBase.sol";
