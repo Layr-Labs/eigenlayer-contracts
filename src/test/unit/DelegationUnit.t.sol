@@ -9,7 +9,7 @@ import "forge-std/Test.sol";
 import "../mocks/StrategyManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/EigenPodManagerMock.sol";
-import "../mocks/StakeRegistryMock.sol";
+import "../mocks/StakeRegistryStub.sol";
 import "../EigenLayerTestHelper.t.sol";
 import "../mocks/ERC20Mock.sol";
 import "../mocks/Reenterer.sol";
@@ -29,7 +29,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     StrategyBase strategyMock3;
     IERC20 mockToken;
     EigenPodManagerMock eigenPodManagerMock;
-    StakeRegistryMock stakeRegistryMock;
+    StakeRegistryStub stakeRegistryMock;
 
     Reenterer public reenterer;
 
@@ -61,7 +61,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
     /// @notice Emitted when the StakeRegistry is set
-    event StakeRegistrySet(IStakeRegistry stakeRegistry);
+    event StakeRegistrySet(IStakeRegistryStub stakeRegistry);
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
@@ -171,7 +171,7 @@ contract DelegationUnitTests is EigenLayerTestHelper {
             )
         );
 
-        stakeRegistryMock = new StakeRegistryMock();
+        stakeRegistryMock = new StakeRegistryStub();
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakeRegistrySet(stakeRegistryMock);
 
