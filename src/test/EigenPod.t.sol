@@ -705,6 +705,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
+        emit log_named_int("beaconChainETHShares", beaconChainETHShares);
+        emit log_named_uint("MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI", MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI);
+
         require(
             beaconChainETHShares == int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
             "eigenPodManager shares not updated correctly"
@@ -2017,13 +2020,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 valBalance = Endian.fromLittleEndianUint64(getValidatorFields()[2]);
         uint256 effectiveBalance = valBalance *
             GWEI_TO_WEI;
+        emit log_named_int("beaconChainETHSharesAfter", beaconChainETHSharesAfter);
+        emit log_named_int("beaconChainETHShares", beaconChainETHSharesBefore);
+        emit log_named_uint("MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI", MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI);
         emit log_named_uint("effectiveBalance", effectiveBalance);
-        emit log_named_uint("beaconChainETHSharesBefore", uint256(beaconChainETHSharesBefore));
-        emit log_named_uint("beaconChainETHSharesAfter", uint256(beaconChainETHSharesAfter));
-        require(
-            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
-            "eigenPodManager shares not updated correctly"
-        );
+        if(effectiveBalance < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI){
+            require(
+                (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
+                "eigenPodManager shares not updated correctly"
+             );
+        } else {
+            require(
+                (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI)),
+                "eigenPodManager shares not updated correctly"
+            );
+
+        }
         return newPod;
     }
 
