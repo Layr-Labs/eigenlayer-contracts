@@ -39,7 +39,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     
     // Constants
     uint256 public constant GWEI_TO_WEI = 1e9;
-    uint256 public constant REQUIRED_BALANCE_WEI = 31 ether;
     address public defaultStaker = address(this);
     IEigenPod public defaultPod;
     address public initialOwner = address(this);
