@@ -994,6 +994,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function testCreatePodIfItReturnsPodAddress() external {
+        cheats.startPrank(podOwner);
+        address podAddress = eigenPodManager.createPod();
+        cheats.stopPrank();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(podAddress == address(pod), "invalid pod address");
+    }
+
     function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager) {
         cheats.assume(nonPodManager != address(eigenPodManager));
 

@@ -70,11 +70,14 @@ contract EigenPodManager is
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
+     * @dev Returns EigenPod address 
      */
-    function createPod() external {
+    function createPod() external returns (address) {
         require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
         // deploy a pod if the sender doesn't have one already
-        _deployPod();
+        IEigenPod pod = _deployPod();
+
+        return address(pod);
     }
 
     /**
