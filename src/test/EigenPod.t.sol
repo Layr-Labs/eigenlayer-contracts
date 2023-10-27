@@ -2022,7 +2022,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit log_named_uint("beaconChainETHSharesBefore", uint256(beaconChainETHSharesBefore));
         emit log_named_uint("beaconChainETHSharesAfter", uint256(beaconChainETHSharesAfter));
         require(
-            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
+            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)),
             "eigenPodManager shares not updated correctly"
         );
         return newPod;
