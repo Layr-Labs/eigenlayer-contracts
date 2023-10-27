@@ -10,6 +10,7 @@ import "../../contracts/permissions/PauserRegistry.sol";
 
 import "../events/IEigenPodManagerEvents.sol";
 import "../utils/EigenLayerUnitTestSetup.sol";
+import "../harnesses/EigenPodManagerWrapper.sol";
 import "../mocks/DelegationManagerMock.sol";
 import "../mocks/SlasherMock.sol";
 import "../mocks/StrategyManagerMock.sol";
@@ -523,5 +524,56 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
         // Check storage
         assertEq(eigenPodManager.podOwnerShares(defaultStaker), scaledSharesBefore + scaledSharesDelta, "Shares not updated correctly");
+    }
+}
+
+contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodManagerUnitTests {
+    // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
+    EigenPodManagerWrapper public eigenPodManagerWrapper;
+
+    function setUp() virtual override public {
+        super.setUp();
+
+        // Upgrade eigenPodManager to wrapper
+        eigenPodManagerWrapper = new EigenPodManagerWrapper(
+            ethPOSMock,
+            eigenPodBeacon,
+            strategyManagerMock,
+            slasherMock,
+            delegationManagerMock
+        );
+        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+    }
+
+    function testFuzz_shareAdjustment_negativeToNegative(int256 sharesBefore, int256 sharesAfter) public {
+        cheats.assume(sharesBefore <= 0);
+        cheats.assume(sharesAfter <= 0);
+        
+        int256 sharesDelta = eigenPodManagerWrapper.calculateChangeInDelegatableShares(sharesBefore, sharesAfter);
+        assertEq(sharesDelta, 0, "Shares delta must be 0");
+    }
+
+    function testFuzz_shareAdjustment_negativeToPositive(int256 sharesBefore, int256 sharesAfter) public {
+        cheats.assume(sharesBefore <= 0);
+        cheats.assume(sharesAfter > 0);
+        
+        int256 sharesDelta = eigenPodManagerWrapper.calculateChangeInDelegatableShares(sharesBefore, sharesAfter);
+        assertEq(sharesDelta, sharesAfter, "Shares delta must be equal to sharesAfter");
+    }
+
+    function testFuzz_shareAdjustment_positiveToNegative(int256 sharesBefore, int256 sharesAfter) public {
+        cheats.assume(sharesBefore > 0);
+        cheats.assume(sharesAfter <= 0);
+        
+        int256 sharesDelta = eigenPodManagerWrapper.calculateChangeInDelegatableShares(sharesBefore, sharesAfter);
+        assertEq(sharesDelta, -sharesBefore, "Shares delta must be equal to the negative of sharesBefore");
+    }
+
+    function testFuzz_shareAdjustment_positiveToPositive(int256 sharesBefore, int256 sharesAfter) public {
+        cheats.assume(sharesBefore > 0);
+        cheats.assume(sharesAfter > 0);
+        
+        int256 sharesDelta = eigenPodManagerWrapper.calculateChangeInDelegatableShares(sharesBefore, sharesAfter);
+        assertEq(sharesDelta, sharesAfter - sharesBefore, "Shares delta must be equal to the difference between sharesAfter and sharesBefore");
     }
 }

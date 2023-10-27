@@ -63,7 +63,7 @@
 │   │       └── it should increment the podOwner shares by the shares to withdraw
 │   └── given that the pod owner shares are positive
 │       └── it should withdraw restaked ETH from the eigenPod
-├── when shares are adjusted ***
+├── when shares are adjusted
 │   ├── given that sharesBefore is negative or 0
 │   │   ├── given that sharesAfter is negative or zero
 │   │   │   └── the change in delegateable shares should be 0
