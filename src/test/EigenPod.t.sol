@@ -1526,6 +1526,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testRecoverTokens(uint256 amount, address recipient) external {
+        cheats.assume(recipient != address(0));
         cheats.assume(amount > 0 && amount < 1e30);
         IEigenPod pod = testDeployAndVerifyNewEigenPod();
         IERC20 randomToken = new ERC20PresetFixedSupply("rand", "RAND", 1e30, address(this));
