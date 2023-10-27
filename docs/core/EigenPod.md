@@ -57,11 +57,11 @@ Currently, users can submit partial withdrawal proofs one at a time, at a cost o
 
 ### Proofs of Validator Balance Updates
 
-EigenLayer pessimistically assumes the validator has less ETH that they actually have restaked in order for the protocol to have an accurate view of the validator's restaked assets even in the case of an uncorrelated slashing event, for which the penalty is >=1 ETH.
+EigenLayer employs a precautionary approach towards validator balances, typically assuming that a validator has slightly less ETH than their true holdings. This is a safeguard to accommodate potential slashing events on the beacon chain, which might lead to penalties of 1 ETH or even more.
 
-In the case that a validator's balance drops close to or below what is noted in EigenLayer, AVSs need to be notified of that ASAP, in order to get an accurate view of their security.
+To ensure that AVSs always maintain an accurate perception of their security, it is essential that when a validator's balance drops near or below the figures noted in EigenLayer, updates are communicated promptly.
 
-In the case that a validator's balance, when run through the hysteresis function, is lower or higher than what is restaked on EigenLayer, anyone is allowed to permissionlessly prove that the balance of a certain validator. 
+The hysteresis function plays a pivotal role in this balance verification process. If, after applying the hysteresis function, a validator's balance shows a discrepancy (either higher or lower) compared to what is restaked on EigenLayer, the protocol has been enhanced to allow anyone to submit proofs updating the balances of multiple validators simultaneously. This multi-validator balance update streamlines the process, offering greater efficiency and ensuring that validator balances in EigenLayer are always up-to-date and accurate.
 
 ### Proofs of Full Withdrawals
 
