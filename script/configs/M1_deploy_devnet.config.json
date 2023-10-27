@@ -26,7 +26,7 @@
      "eigenPod":
           {
                "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
-               "REQUIRED_BALANCE_WEI": "31000000000000000000"
+               "REQUIRED_BALANCE_WEI": "32000000000000000000"
           },
      "eigenPodManager":
           {
