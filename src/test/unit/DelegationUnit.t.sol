@@ -294,6 +294,8 @@ contract DelegationUnitTests is EigenLayerTestHelper {
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
         // filter out zero address since people can't set their earningsReceiver address to the zero address (special test case to verify)
         cheats.assume(operatorDetails.earningsReceiver != address(0));
+        // filter out case where staker *is* the operator
+        cheats.assume(staker != _operator);
 
         // register *this contract* as an operator
         IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
