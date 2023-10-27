@@ -155,6 +155,13 @@ contract EigenPodUnitTests is Test, ProofParsing {
         pod = eigenPodManager.getPod(podOwner);
     }
 
+    function testStakingWithInvalidAmount () public {
+        cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.stake: must initially stake for any validator with 32 ether"));
+        pod.stake{value: 10e18}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
+
     function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
         Relayer relay = new Relayer();
         uint256  WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
