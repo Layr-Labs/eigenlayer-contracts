@@ -305,6 +305,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -340,6 +342,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        
+
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -728,11 +734,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
+        IEigenPod newPod;
+        newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod newPod;
-        newPod = eigenPodManager.getPod(podOwner);
+
         // make sure that wrongWithdrawalAddress is not set to actual pod address
         cheats.assume(wrongWithdrawalAddress != address(newPod));
 
@@ -775,10 +784,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
+
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         uint64 timestamp = 1;
 
@@ -1004,9 +1017,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.assume(nonPodManager != address(eigenPodManager));
 
         cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.deal(nonPodManager, stakeAmount);
 
