@@ -2016,13 +2016,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
         uint256 valBalance = Endian.fromLittleEndianUint64(getValidatorFields()[2]);
-        uint256 effectiveBalance = valBalance *
-            GWEI_TO_WEI;
+        uint256 effectiveBalance = valBalance * GWEI_TO_WEI;
         emit log_named_uint("effectiveBalance", effectiveBalance);
         emit log_named_uint("beaconChainETHSharesBefore", uint256(beaconChainETHSharesBefore));
         emit log_named_uint("beaconChainETHSharesAfter", uint256(beaconChainETHSharesAfter));
+        int256 correctRestakedAmount = effectiveBalance > (MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI) ? 
+            int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI) : int256(effectiveBalance);
         require(
-            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
+            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == correctRestakedAmount,
             "eigenPodManager shares not updated correctly"
         );
         return newPod;
