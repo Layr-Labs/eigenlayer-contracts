@@ -156,7 +156,8 @@ contract EigenPodUnitTests is Test, ProofParsing {
     }
 
     function testStakingWithInvalidAmount () public {
-        cheats.startPrank(podOwner);
+        cheats.deal(address(eigenPodManager), 10e18);
+        cheats.startPrank(address(eigenPodManager));
         cheats.expectRevert(bytes("EigenPod.stake: must initially stake for any validator with 32 ether"));
         pod.stake{value: 10e18}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
