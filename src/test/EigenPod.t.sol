@@ -2129,30 +2129,6 @@ contract Relayer is Test {
 
 
 //TODO: Integration Tests from old EPM unit tests:
-// TODO: salvage / re-implement a check for reentrancy guard on functions, as possible
-    // function testRecordBeaconChainETHBalanceUpdateFailsWhenReentering() public {
-    //     uint256 amount = 1e18;
-    //     uint256 amount2 = 2e18;
-    //     address staker = address(this);
-    //     uint256 beaconChainETHStrategyIndex = 0;
-
-    //     _beaconChainReentrancyTestsSetup();
-
-    //     testRestakeBeaconChainETHSuccessfully(staker, amount);        
-
-    //     address targetToUse = address(strategyManager);
-    //     uint256 msgValueToUse = 0;
-
-    //     int256 amountDelta = int256(amount2 - amount);
-    //     // reference: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 sharesDelta, bool isNegative)
-    //     bytes memory calldataToUse = abi.encodeWithSelector(StrategyManager.recordBeaconChainETHBalanceUpdate.selector, staker, beaconChainETHStrategyIndex, amountDelta);
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
-
-    //     cheats.startPrank(address(reenterer));
-    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(staker, amountDelta);
-    //     cheats.stopPrank();
-    // }
-
     // queues a withdrawal of "beacon chain ETH shares" from this address to itself
     // fuzzed input amountGwei is sized-down, since it must be in GWEI and gets sized-up to be WEI
 // TODO: reimplement similar test
@@ -2287,30 +2263,3 @@ contract Relayer is Test {
     //     return (queuedWithdrawal, withdrawalRoot);
     // }
 
-    // function _beaconChainReentrancyTestsSetup() internal {
-    //     // prepare EigenPodManager with StrategyManager and Delegation replaced with a Reenterer contract
-    //     reenterer = new Reenterer();
-    //     eigenPodManagerImplementation = new EigenPodManager(
-    //         ethPOSMock,
-    //         eigenPodBeacon,
-    //         IStrategyManager(address(reenterer)),
-    //         slasherMock,
-    //         IDelegationManager(address(reenterer))
-    //     );
-    //     eigenPodManager = EigenPodManager(
-    //         address(
-    //             new TransparentUpgradeableProxy(
-    //                 address(eigenPodManagerImplementation),
-    //                 address(proxyAdmin),
-    //                 abi.encodeWithSelector(
-    //                     EigenPodManager.initialize.selector,
-    //                     type(uint256).max /*maxPods*/,
-    //                     IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
-    //                     initialOwner,
-    //                     pauserRegistry,
-    //                     0 /*initialPausedStatus*/
-    //                 )
-    //             )
-    //         )
-    //     );
-    // }
