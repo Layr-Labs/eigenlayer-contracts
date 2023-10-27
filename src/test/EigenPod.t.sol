@@ -707,7 +707,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
         require(
-            beaconChainETHShares == int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+            beaconChainETHShares == int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
             "eigenPodManager shares not updated correctly"
         );
     }
@@ -885,7 +885,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
         assertTrue(
             eigenPodManager.podOwnerShares(podOwner) ==
-                int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+                int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
             "hysterisis not working"
         );
         assertTrue(
@@ -930,7 +930,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         assertTrue(
             eigenPodManager.podOwnerShares(podOwner) ==
-                int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+                int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
             "hysterisis not working"
         );
         assertTrue(
@@ -2022,7 +2022,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit log_named_uint("beaconChainETHSharesBefore", uint256(beaconChainETHSharesBefore));
         emit log_named_uint("beaconChainETHSharesAfter", uint256(beaconChainETHSharesAfter));
         require(
-            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)),
+            (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
             "eigenPodManager shares not updated correctly"
         );
         return newPod;
