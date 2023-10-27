@@ -74,7 +74,7 @@ contract DelegationTests is EigenLayerTestHelper {
         bytes memory quorumNumbers = new bytes(2);
         quorumNumbers[0] = bytes1(uint8(0));
         quorumNumbers[0] = bytes1(uint8(1));
-        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
+        _testDelegation(operator, staker, ethAmount, eigenAmount);
     }
 
     /// @notice tests that a when an operator is delegated to, that delegation is properly accounted for.
@@ -109,10 +109,8 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegateToOperator(staker, operator);
         assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
 
-        (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
+        (/*IStrategy[] memory updatedStrategies*/, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
 
-        uint256 stakerEthWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[0]);
-        uint256 stakerEigenWeight = strategyManager.stakerStrategyShares(staker, updatedStrategies[1]);
         {
             IStrategy _strat = wethStrat;
             // IStrategy _strat = strategyManager.stakerStrats(staker, 0);
@@ -144,7 +142,7 @@ contract DelegationTests is EigenLayerTestHelper {
         // base strategy will revert if these amounts are too small on first deposit
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 1);
-        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
+        _testDelegation(operator, staker, ethAmount, eigenAmount);
 
         (IStrategy[] memory strategyArray, uint256[] memory shareAmounts) = strategyManager.getDeposits(staker);
         uint256[] memory strategyIndexes = new uint256[](strategyArray.length);
