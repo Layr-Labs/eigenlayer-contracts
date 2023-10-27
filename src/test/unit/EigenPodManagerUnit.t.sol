@@ -284,7 +284,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
                                 Add Shares Tests
     *******************************************************************************/
 
-    function testFuzz_addShares_revert_notDelegationManager(address notDelegationManager) public {
+    function testFuzz_addShares_revert_notDelegationManager(address notDelegationManager) public filterFuzzedAddressInputs(notDelegationManager){
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
         cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
