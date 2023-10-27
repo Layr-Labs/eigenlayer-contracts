@@ -129,15 +129,16 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         pausers[0] = pauser;
         pauserReg = new PauserRegistry(pausers, unpauser);
 
-        /// weird workaround: check commit before this
-        /// either related to foundry bug or emptty contract below this one
-        EmptyContract emptyContract2 = new EmptyContract();
+        /// weird workaround: check commit before this -- the call to `upgradeAndCall` the DelegationManager breaks without performing this step!
+        /// seems to be foundry bug. the revert is ultimately for 'TransparentUpgradeableProxy: admin cannot fallback to proxy target', i.e.
+        /// the simulated caller is somehow the ProxyAdmin itself.
+        EmptyContract emptyContract = new EmptyContract();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        EmptyContract emptyContract = new EmptyContract();
+        emptyContract = new EmptyContract();
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -2021,10 +2022,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint256 valBalance = Endian.fromLittleEndianUint64(getValidatorFields()[2]);
         uint256 effectiveBalance = valBalance *
             GWEI_TO_WEI;
-        emit log_named_int("beaconChainETHSharesAfter", beaconChainETHSharesAfter);
-        emit log_named_int("beaconChainETHShares", beaconChainETHSharesBefore);
-        emit log_named_uint("MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI", MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI);
-        emit log_named_uint("effectiveBalance", effectiveBalance);
+
         if(effectiveBalance < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI){
             require(
                 (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),

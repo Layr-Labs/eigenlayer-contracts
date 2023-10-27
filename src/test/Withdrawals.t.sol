@@ -328,7 +328,7 @@ contract WithdrawalTests is EigenLayerTestHelper {
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 2);
 
-        _testDelegation(operator, staker, ethAmount, eigenAmount, stakeRegistry);
+        _testDelegation(operator, staker, ethAmount, eigenAmount);
     }
 
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
