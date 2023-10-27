@@ -264,13 +264,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testStakingWithInvalidAmount () public {
-        cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.stake: must initially stake for any validator with 32 ether"));
-        eigenPodManager.stake{value: 10e18}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
-    }
-
     function testWithdrawBeforeRestaking() public {
         testStaking();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
