@@ -11,7 +11,7 @@ import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
- * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the 
+ * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the
  * DelegationManager are not tested here but callable functions by the DelegationManager are mocked and tested here.
  * Contracts tested: StrategyManager.sol
  * Contracts not mocked: StrategyBase, PauserRegistry
@@ -125,17 +125,14 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
     }
 
     // INTERNAL / HELPER FUNCTIONS
-    function _deployNewStrategy(IERC20 token, IStrategyManager strategyManager, IPauserRegistry pauserRegistry, address admin) public returns (StrategyBase) {
+    function _deployNewStrategy(
+        IERC20 token,
+        IStrategyManager strategyManager,
+        IPauserRegistry pauserRegistry,
+        address admin
+    ) public returns (StrategyBase) {
         StrategyBase newStrategy = new StrategyBase(strategyManager);
-        newStrategy = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(newStrategy),
-                    address(admin),
-                    ""
-                )
-            )
-        );
+        newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), "")));
         newStrategy.initialize(token, pauserRegistry);
         return newStrategy;
     }
