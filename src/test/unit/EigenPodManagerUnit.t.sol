@@ -2,7 +2,6 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "forge-std/Test.sol";
 
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";

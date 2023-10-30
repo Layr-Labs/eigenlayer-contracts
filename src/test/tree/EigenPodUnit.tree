@@ -1,0 +1,14 @@
+# EigenPod Tree (*** denotes that integrationt tests are needed to validate path)
+# when contract is deployed and initialized
+## it should properly set storage
+# when initialize called again
+## it should revert
+# when verifyBalanceUpdates is called
+# when verifyAndProcessWithdrawals is called
+# when stake is called
+## given the caller is not the EigenPodManager
+### it should revert
+## given the value staked is not 32 ETH
+### it should revert
+## given that all of the above conditions are satisfied
+### it should stake ETH in the beacon chain deposit contract
