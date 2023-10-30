@@ -9,6 +9,7 @@ import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/Reverter.sol";
 import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
+import "src/test/utils/Utils.sol";
 
 /**
  * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the 
@@ -16,7 +17,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts tested: StrategyManager.sol
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
-contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
+contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
 
