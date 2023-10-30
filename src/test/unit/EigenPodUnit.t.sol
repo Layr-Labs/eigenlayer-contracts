@@ -111,7 +111,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            RESTAKED_BALANCE_OFFSET_GWEI,
             GOERLI_GENESIS_TIME
         );
 
@@ -153,6 +152,14 @@ contract EigenPodUnitTests is Test, ProofParsing {
         eigenPodManager.createPod();
         cheats.stopPrank();
         pod = eigenPodManager.getPod(podOwner);
+    }
+
+    function testStakingWithInvalidAmount () public {
+        cheats.deal(address(eigenPodManager), 10e18);
+        cheats.startPrank(address(eigenPodManager));
+        cheats.expectRevert(bytes("EigenPod.stake: must initially stake for any validator with 32 ether"));
+        pod.stake{value: 10e18}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
     }
 
     function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
@@ -471,7 +478,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
             delayedWithdrawalRouter,
             IEigenPodManager(podManagerAddress),
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            RESTAKED_BALANCE_OFFSET_GWEI,
             GOERLI_GENESIS_TIME
         );
     }

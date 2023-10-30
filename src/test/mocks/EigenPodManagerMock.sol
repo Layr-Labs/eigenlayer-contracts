@@ -11,7 +11,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function slasher() external view returns(ISlasher) {}
 
-    function createPod() external pure {}
+    function createPod() external returns(address) {}
 
     function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}
 

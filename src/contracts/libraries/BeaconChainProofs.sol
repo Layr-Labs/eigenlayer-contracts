@@ -59,28 +59,28 @@ library BeaconChainProofs {
     // MAX_WITHDRAWALS_PER_PAYLOAD = 2**4, making tree height = 4
     uint256 internal constant WITHDRAWALS_TREE_HEIGHT = 4;
 
-    //in beacon block body
+    //in beacon block body https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconblockbody
     uint256 internal constant EXECUTION_PAYLOAD_INDEX = 9;
 
-    // in beacon block header
-    uint256 internal constant STATE_ROOT_INDEX = 3;
-    uint256 internal constant PROPOSER_INDEX_INDEX = 1;
+    // in beacon block header https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
     uint256 internal constant SLOT_INDEX = 0;
+    uint256 internal constant PROPOSER_INDEX_INDEX = 1;
+    uint256 internal constant STATE_ROOT_INDEX = 3;
     uint256 internal constant BODY_ROOT_INDEX = 4;
-    // in beacon state
-    uint256 internal constant STATE_ROOTS_INDEX = 6;
+    // in beacon state https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate
+    uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
+    uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
+    uint256 internal constant LATEST_BLOCK_HEADER_ROOT_INDEX = 4;
     uint256 internal constant BLOCK_ROOTS_INDEX = 5;
+    uint256 internal constant STATE_ROOTS_INDEX = 6;
     uint256 internal constant HISTORICAL_ROOTS_INDEX = 7;
     uint256 internal constant ETH_1_ROOT_INDEX = 8;
     uint256 internal constant VALIDATOR_TREE_ROOT_INDEX = 11;
     uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
     uint256 internal constant HISTORICAL_SUMMARIES_INDEX = 27;
-    uint256 internal constant HISTORICAL_BATCH_STATE_ROOT_INDEX = 1;
-    uint256 internal constant BEACON_STATE_SLOT_INDEX = 2;
-    uint256 internal constant LATEST_BLOCK_HEADER_ROOT_INDEX = 4;
 
-    // in validator
+    // in validator https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;

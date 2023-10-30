@@ -85,7 +85,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param _stakeRegistry is the address of the StakeRegistry contract to call for stake updates when operator shares are changed
      * @dev Only callable once
      */
-    function setStakeRegistry(IStakeRegistry _stakeRegistry) external onlyOwner {
+    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external onlyOwner {
         require(address(stakeRegistry) == address(0), "DelegationManager.setStakeRegistry: stakeRegistry already set");
         require(address(_stakeRegistry) != address(0), "DelegationManager.setStakeRegistry: stakeRegistry cannot be zero address");
         stakeRegistry = _stakeRegistry;
@@ -254,14 +254,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
-        // Remove all strategies/shares from staker and operator and place into queue
-        return _removeSharesAndQueueWithdrawal({
-            staker: staker,
-            operator: operator,
-            withdrawer: staker,
-            strategies: strategies,
-            shares: shares
-        });
+        // if no delegatable shares, return zero root, and don't queue a withdrawal
+        if (strategies.length == 0) {
+            return bytes32(0);
+        } else {
+            // Remove all strategies/shares from staker and operator and place into queue
+            return _removeSharesAndQueueWithdrawal({
+                staker: staker,
+                operator: operator,
+                withdrawer: staker,
+                strategies: strategies,
+                shares: shares
+            });
+        }
     }
 
      /**
@@ -544,10 +549,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _pushOperatorStakeUpdate(operator);
     }
 
+    /**
+     * @dev commented-out param (middlewareTimesIndex) is the index in the operator that the staker who triggered the withdrawal was delegated to's middleware times array
+     * This param is intended to be passed on to the Slasher contract, but is unused in the M2 release of these contracts, and is thus commented-out.
+     */
     function _completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
-        uint256 middlewareTimesIndex,
+        uint256 /*middlewareTimesIndex*/,
         bool receiveAsTokens
     ) internal {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
@@ -678,7 +687,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256[] memory shares
     ) internal returns (bytes32) {
         require(staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address");
-
+        require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+    
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
         for (uint256 i = 0; i < strategies.length;) {

@@ -46,7 +46,7 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
         * `validatorStatus`: (`INACTIVE`, `ACTIVE`, `WITHDRAWN`)
         * `validatorIndex`: A `uint40` that is unique for each validator making a successful deposit via the deposit contract
         * `mostRecentBalanceUpdateTimestamp`: A timestamp that represents the most recent successful proof of the validator's effective balance
-        * `restakedBalanceGwei`: Calculated against the validator's proven effective balance using `_calculateRestakedBalanceGwei` (see definitions below)
+        * `restakedBalanceGwei`: set to the validator's balance.
     * `withdrawableRestakedExecutionLayerGwei`: When a Staker proves that a validator has exited from the beacon chain, the withdrawal amount is added to this variable. When completing a withdrawal of beacon chain ETH, the withdrawal amount is subtracted from this variable. See also:
         * [`DelegationManager`: "Undelegating and Withdrawing"](./DelegationManager.md#undelegating-and-withdrawing)
         * [`EigenPodManager`: "Withdrawal Processing"](#withdrawal-processing)
@@ -58,14 +58,6 @@ The functions of the `EigenPodManager` and `EigenPod` contracts are tightly link
     * Pod Owners can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
     * These shares correspond to the amount of provably-restaked beacon chain ETH held by the Pod Owner via their `EigenPod`.
 * `EigenPod`:
-    * `_calculateRestakedBalanceGwei(uint64 effectiveBalance) -> (uint64)`:
-        * This method is used by an `EigenPod` to calculate a "pessimistic" view of a validator's effective balance to avoid the need for repeated balance updates when small balance fluctuations occur.
-        * The calculation subtracts an offset (`RESTAKED_BALANCE_OFFSET_GWEI`) from the validator's proven balance, and round down to the nearest ETH
-        * Related: `uint64 RESTAKED_BALANCE_OFFSET_GWEI`
-            * As of M2, this is 0.75 ETH (in Gwei)
-        * Related: `uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR`
-            * As of M2, this is 31 ETH (in Gwei)
-            * This is the maximum amount of restaked ETH a single validator can be credited with in EigenLayer
     * `_podWithdrawalCredentials() -> (bytes memory)`:
         * Gives `abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(EigenPod))`
         * These are the `0x01` withdrawal credentials of the `EigenPod`, used as a validator's withdrawal credentials on the beacon chain.
@@ -192,7 +184,7 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
     * `VALIDATOR_STATUS` moves from `INACTIVE` to `ACTIVE`
     * `validatorIndex` is recorded
     * `mostRecentBalanceUpdateTimestamp` is set to the `oracleTimestamp` used to fetch the beacon block root
-    * `restakedBalanceGwei` is set to `_calculateRestakedBalanceGwei(effectiveBalance)`
+    * `restakedBalanceGwei` is set to the validator's effective balance
 * See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 *Requirements*:
