@@ -44,7 +44,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // @notice Internal constant used in calculations, since the beacon chain stores balances in Gwei rather than wei
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
+    /**
+     * @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
+     * We can't allow "stale" roots to be used for restaking as the validator may have been slashed in a more updated beacon state root. 
+     */
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
     /// @notice This is the beacon chain deposit contract
@@ -310,11 +313,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
 
         /**
-         * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
-         * The validator container persists as the state evolves and even after the validator exits so we can use a more "fresh" credential proof within
+         * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS) as we are doing a balance check here
+         * The validator container persists as the state evolves and even after the validator exits. So we can use a more "fresh" credential proof within
          * the VERIFY_BALANCE_UPDATE_WINDOW_SECONDS window, not just the first proof where the validator container is registered in the state.
-         * Since we are doing a balance update check here, we can't allow "stale" roots to be used for restaking as the validator may have been slashed 
-         * in a more updated beacon state root.
          */
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
