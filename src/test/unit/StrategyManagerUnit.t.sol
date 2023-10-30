@@ -9,7 +9,6 @@ import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/Reverter.sol";
 import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
-import "src/test/utils/Utils.sol";
 
 /**
  * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the 
@@ -17,7 +16,7 @@ import "src/test/utils/Utils.sol";
  * Contracts tested: StrategyManager.sol
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
-contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
+contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
 
@@ -30,6 +29,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
 
     address initialOwner = address(this);
     uint256 public privateKey = 111111;
+    address constant dummyAdmin = address(uint160(uint256(keccak256("DummyAdmin"))));
 
     /**
      * @notice Emitted when a new deposit occurs on behalf of `depositor`.
@@ -104,9 +104,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
             )
         );
         dummyToken = new ERC20Mock();
-        dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
-        dummyStrat2 = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
-        dummyStrat3 = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat2 = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat3 = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -125,6 +125,21 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
     }
 
     // INTERNAL / HELPER FUNCTIONS
+    function _deployNewStrategy(IERC20 token, IStrategyManager strategyManager, IPauserRegistry pauserRegistry, address admin) public returns (StrategyBase) {
+        StrategyBase newStrategy = new StrategyBase(strategyManager);
+        newStrategy = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(newStrategy),
+                    address(admin),
+                    ""
+                )
+            )
+        );
+        newStrategy.initialize(token, pauserRegistry);
+        return newStrategy;
+    }
+
     function _setUpQueuedWithdrawalStructSingleStrat(
         address staker,
         address withdrawer,
@@ -319,7 +334,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, Utils {
         IStrategy[] memory strategyArray = new IStrategy[](numberOfStrategiesToAdd);
         // loop that deploys a new strategy and adds it to the array
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
-            IStrategy _strategy = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+            IStrategy _strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
             strategyArray[i] = _strategy;
             require(!strategyManager.strategyIsWhitelistedForDeposit(_strategy), "strategy improperly whitelisted?");
         }
@@ -449,7 +464,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     function test_Revert_WhenTokenSafeTransferFromReverts() external {
         // replace 'dummyStrat' with one that uses a reverting token
         dummyToken = IERC20(address(new Reverter()));
-        dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -474,7 +489,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     function test_Revert_WhenTokenDoesNotExist() external {
         // replace 'dummyStrat' with one that uses a non-existent token
         dummyToken = IERC20(address(5678));
-        dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.owner());
@@ -546,7 +561,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
 
     function test_Revert_WhenStrategyNotWhitelisted() external {
         // replace 'dummyStrat' with one that is not whitelisted
-        dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -601,7 +616,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
             strategyManager.depositIntoStrategy(strategy, token, amount);
             cheats.stopPrank();
 
-            dummyStrat = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+            dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
             strategy = dummyStrat;
 
             // whitelist the strategy for deposit
@@ -1152,7 +1167,7 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
         cheats.assume(notStrategyWhitelister != strategyManager.strategyWhitelister());
         IStrategy[] memory strategyArray = new IStrategy[](1);
-        IStrategy _strategy = deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        IStrategy _strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
         strategyArray[0] = _strategy;
 
         cheats.startPrank(notStrategyWhitelister);
