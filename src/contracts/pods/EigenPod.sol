@@ -31,6 +31,7 @@ import "./EigenPodPausingConstants.sol";
  *   pointed to this contract
  * - updating aggregate balances in the EigenPodManager
  * - withdrawing eth when withdrawals are initiated
+ * @notice This EigenPod Beacon Proxy implementation adheres to the current Capella consensus specs
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
@@ -308,7 +309,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
 
-        // Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
+        /**
+         * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
+         * The validator container persists as the state evolves and even after the validator exits so we can use a more "fresh" credential proof within
+         * the VERIFY_BALANCE_UPDATE_WINDOW_SECONDS window, not just the first proof where the validator container is registered in the state.
+         * Since we are doing a balance update check here, we can't allow "stale" roots to be used for restaking as the validator may have been slashed 
+         * in a more updated beacon state root.
+         */
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
