@@ -191,13 +191,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
         require(
             (validatorIndices.length == balanceUpdateProofs.length) && (balanceUpdateProofs.length == validatorFields.length),
-            "EigenPod.verifyBalanceUpdate: validatorIndices and proofs must be same length"
+            "EigenPod.verifyBalanceUpdates: validatorIndices and proofs must be same length"
         );
 
         // Balance updates should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
-            "EigenPod.verifyBalanceUpdate: specified timestamp is too far in past"
+            "EigenPod.verifyBalanceUpdates: specified timestamp is too far in past"
         );
 
         // Verify passed-in beaconStateRoot against oracle-provided block root:

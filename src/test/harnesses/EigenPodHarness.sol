@@ -71,4 +71,8 @@ contract EPInternalFunctions is EigenPod {
             validatorFields
         );
     }
+
+    function setValidatorStatus(bytes32 pkhash, VALIDATOR_STATUS status) public {
+        _validatorPubkeyHashToInfo[pkhash].status = status;
+    }
  }
