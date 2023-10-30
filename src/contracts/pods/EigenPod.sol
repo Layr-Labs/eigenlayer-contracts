@@ -31,6 +31,7 @@ import "./EigenPodPausingConstants.sol";
  *   pointed to this contract
  * - updating aggregate balances in the EigenPodManager
  * - withdrawing eth when withdrawals are initiated
+ * @notice This EigenPod Beacon Proxy implementation adheres to the current Capella consensus specs
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
@@ -43,7 +44,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     // @notice Internal constant used in calculations, since the beacon chain stores balances in Gwei rather than wei
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    /// @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
+    /**
+     * @notice Maximum "staleness" of a Beacon Chain state root against which `verifyBalanceUpdate` or `verifyWithdrawalCredentials` may be proven.
+     * We can't allow "stale" roots to be used for restaking as the validator may have been slashed in a more updated beacon state root. 
+     */
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
     /// @notice This is the beacon chain deposit contract
@@ -57,12 +61,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     ///@notice The maximum amount of ETH, in gwei, a validator can have restaked in the eigenlayer
     uint64 public immutable MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-
-    /**
-     * @notice The value used in our effective restaked balance calculation, to set the
-     * amount by which to underestimate the validator's effective balance.
-     */
-    uint64 public immutable RESTAKED_BALANCE_OFFSET_GWEI;
 
     /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
     uint64 public immutable GENESIS_TIME;
@@ -144,14 +142,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IDelayedWithdrawalRouter _delayedWithdrawalRouter,
         IEigenPodManager _eigenPodManager,
         uint64 _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        uint64 _RESTAKED_BALANCE_OFFSET_GWEI,
         uint64 _GENESIS_TIME
     ) {
         ethPOS = _ethPOS;
         delayedWithdrawalRouter = _delayedWithdrawalRouter;
         eigenPodManager = _eigenPodManager;
         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-        RESTAKED_BALANCE_OFFSET_GWEI = _RESTAKED_BALANCE_OFFSET_GWEI;
         GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
@@ -316,7 +312,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
 
-        // Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS)
+        /**
+         * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS) as we are doing a balance check here
+         * The validator container persists as the state evolves and even after the validator exits. So we can use a more "fresh" credential proof within
+         * the VERIFY_BALANCE_UPDATE_WINDOW_SECONDS window, not just the first proof where the validator container is registered in the state.
+         */
         require(
             oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
@@ -341,7 +341,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // Update the EigenPodManager on this pod's new balance
-        require(int256(totalAmountToBeRestakedWei) > 0, "EigenPod.verifyWithdrawalCredentials: overflow in totalAmountToBeRestakedWei");
         eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, int256(totalAmountToBeRestakedWei));
     }
 
@@ -467,8 +466,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * balance, always a multiple of 1 ETH, will only lower to the next multiple of 1 ETH if the current balance is less
          * than 0.25 ETH below their current effective balance.  For example, if the effective balance is 31ETH, it only falls to
          * 30ETH when the true balance falls below 30.75ETH.  Thus in the worst case, the effective balance is overestimating the
-         * actual validator balance by 0.25 ETH.  In EigenLayer, we calculate our own "restaked balance" which is a further pessimistic
-         * view of the validator's effective balance.
+         * actual validator balance by 0.25 ETH. 
          */
         uint64 validatorEffectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
 
@@ -484,7 +482,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
-        validatorInfo.restakedBalanceGwei = _calculateRestakedBalanceGwei(validatorEffectiveBalanceGwei);
+
+        if (validatorEffectiveBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+            validatorInfo.restakedBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        } else {
+            validatorInfo.restakedBalanceGwei = validatorEffectiveBalanceGwei;
+        }
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit ValidatorRestaked(validatorIndex);
@@ -546,7 +549,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
-        uint64 newRestakedBalanceGwei = _calculateRestakedBalanceGwei(validatorBalance);
+         uint64 newRestakedBalanceGwei;
+        if (validatorBalance > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+            newRestakedBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        } else {
+            newRestakedBalanceGwei = validatorBalance;
+        }
         
         // Update validator balance and timestamp, and save to state:
         validatorInfo.restakedBalanceGwei = newRestakedBalanceGwei;
@@ -742,20 +750,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei) internal {
         delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
-    }
-
-    function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64) {
-        if (amountGwei <= RESTAKED_BALANCE_OFFSET_GWEI) {
-            return 0;
-        }
-        /**
-         * calculates the "floor" of amountGwei - RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division
-         * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to
-         * the nearest ETH, effectively calculating the floor of amountGwei.
-         */
-        // slither-disable-next-line divide-before-multiply
-        uint64 effectiveBalanceGwei = uint64(((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI) * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, effectiveBalanceGwei));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {

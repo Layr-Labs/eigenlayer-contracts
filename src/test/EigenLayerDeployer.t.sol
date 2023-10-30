@@ -12,7 +12,6 @@ import "../contracts/core/DelegationManager.sol";
 
 import "../contracts/interfaces/IETHPOSDeposit.sol";
 import "../contracts/interfaces/IBeaconChainOracle.sol";
-import "../contracts/interfaces/IVoteWeigher.sol";
 
 import "../contracts/core/StrategyManager.sol";
 import "../contracts/strategies/StrategyBase.sol";
@@ -75,10 +74,9 @@ contract EigenLayerDeployer is Operators {
     uint256 nonce = 69;
     uint256 public gasLimit = 750000;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
-    uint256 REQUIRED_BALANCE_WEI = 31 ether;
+    uint256 REQUIRED_BALANCE_WEI = 32 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
-    uint64 EFFECTIVE_RESTAKED_BALANCE_OFFSET = 75e7;
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     address pauser;
@@ -170,7 +168,6 @@ contract EigenLayerDeployer is Operators {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            EFFECTIVE_RESTAKED_BALANCE_OFFSET,
             GOERLI_GENESIS_TIME
         );
 
@@ -245,7 +242,6 @@ contract EigenLayerDeployer is Operators {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            EFFECTIVE_RESTAKED_BALANCE_OFFSET,
             GOERLI_GENESIS_TIME
         );
 

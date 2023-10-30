@@ -192,7 +192,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
         // Setup payload
         (
             IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory queuedWithdrawal,
-            IERC20[] memory tokensArray,
+            /*IERC20[] memory tokensArray*/,
             bytes32 withdrawalRootSM
         ) = _setUpQueuedWithdrawalStructSingleStrat(
                 /*staker*/ address(this),
