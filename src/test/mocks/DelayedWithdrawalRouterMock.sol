@@ -49,8 +49,4 @@ contract DelayedWithdrawalRouterMock is IDelayedWithdrawalRouter {
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
     function withdrawalDelayBlocks() external view returns (uint256){}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d9c79d79 (base)
