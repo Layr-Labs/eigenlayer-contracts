@@ -160,7 +160,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
             0 /*initialPausedStatus*/);
     }
 
-    function testFuzz_setMaxPods_revert_notUnpauser(address notUnpauser) public {
+    function testFuzz_setMaxPods_revert_notUnpauser(address notUnpauser) public filterFuzzedAddressInputs(notUnpauser) {
         cheats.assume(notUnpauser != unpauser);
         cheats.prank(notUnpauser);
         cheats.expectRevert("msg.sender is not permissioned as unpauser");
