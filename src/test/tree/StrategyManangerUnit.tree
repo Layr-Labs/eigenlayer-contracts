@@ -1,0 +1,89 @@
+StrategyManagerUnit.t.sol
+├── initialize
+│   └── when initialize called again
+│       └── it should revert
+├── depositIntoStrategy()
+│   ├── when deposit successfully
+│   │   └── shares should increase and stakerStrategyListLength should increase (deposit new strategy)
+│   ├── when deposit successfully twice
+│   │   └── shares should increase and stakerStrategyListLength should increase (deposit new strategy)
+│   ├── when deposits paused
+│   │   └── it should revert
+│   ├── when re-entering
+│   │   └── it should revert
+│   ├── when safeTransferFrom() function reverts
+│   │   └── it should revert
+│   ├── when IERC20 token does not exist
+│   │   └── it should revert
+│   ├── when strategy.deposit() function reverts
+│   │   └── it should revert
+│   ├── when strategy does not exist
+│   │   └── it should revert
+│   ├── when strategy is not whitelisted
+│   │   └── it should revert
+│   └── _addShares()
+│       ├── when shares is 0
+│       │   └── it should revert
+│       └── when deposit would exceed max array length
+│           └── it should revert
+├── depositIntoStrategyWithSignature()
+│   ├── when deposit with signature successfully
+│   │   └── staker nonce should increase and shares should increase
+│   ├── when deposit with signature successfully and replay same deposit signature
+│   │   └── it should revert the second time
+│   ├── when deposit with signature with EIP1271 compliant contract signature
+│   │   └── it should deposit successfully with shares and nonce increase
+│   ├── when deposit with signature with EIP1271 compliant contract but with bad signature
+│   │   └── it should revert
+│   ├── when deposit with signature with non-compliant EIP1271 contract
+│   │   └── it should revert
+│   ├── when deposits paused
+│   │   └── it should revert
+│   ├── when re-entering
+│   │   └── it should revert
+│   ├── when signature expired
+│   │   └── it should revert
+│   └── when bad signature
+│       └── it should revert
+├── removeShares()
+│   ├── when not called by DelegationManager
+│   │   └── it should revert
+│   ├── when share amount is too high, higher than deposited amount
+│   │   └── it should revert
+│   ├── when deposit single strategy and remove all shares
+│   │   └── it should remove all shares and decrease stakerStrategyListLength (set to 0)
+│   ├── when deposited 3 strategies and randomly select one to remove all shares
+│   │   └── it should remove all shares and decrease stakerStrategyListLength (set to 2)
+│   └── when deposited 3 strategies and removeShares() from all 3 strategies with fuzzed inputs
+│       └── for each strategy, decrease shares properly but if sharesAfter is 0, then should decrement stakerStrategyListLength
+├── addShares()
+│   ├── when not called by DelegationManager
+│   │   └── it should revert
+│   ├── when staker is 0 address
+│   │   └── it should revert
+│   ├── when adding shares back with 0 existing shares
+│   │   └── it should increase shares and append to stakerStrategyListLength
+│   └── when adding shares back with > 0 existing shares
+│       └── it should increase shares without increasing stakerStrategyListLength
+├── withdrawSharesAsTokens()
+│   ├── when not called by DelegationManager
+│   │   └── it should revert
+│   ├── when shares amount is too high, higher than deposited amount
+│   │   └── it should revert
+│   └── when deposit single strategy and withdraw shares <= deposited amount
+│       └── it should withdraw shares with token.balanceOf() increasing
+├── setStrategyWhitelister()
+│   ├── when called by owner address
+│   │   └── it should update strategyWhitelister address
+│   └── when not called by owner but by fuzzed address
+│       └── it should revert
+├── addStrategiesToDepositWhitelist()
+│   ├── when fuzz test number of strategies to add <= 16
+│   │   └── it should add all new strategies to deposit whitelist up to 16
+│   └── when called by non-strategyWhitelister address
+│       └── it should revert
+└── removeStrategiesFromDepositWhitelist()
+    ├── when called by non-strategyWhitelister address
+    │   └── it should revert
+    └── when fuzz test numStrats to add <= 16 and numStrats to remove <= 16
+        └── it should first add all new strategies to deposit whitelist up to 16, then remove all strategies from deposit whitelist up to numStrats to add

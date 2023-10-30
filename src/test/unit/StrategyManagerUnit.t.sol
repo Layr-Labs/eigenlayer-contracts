@@ -1096,7 +1096,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
     }
 }
 
-contract StrategyManagerUnitTests_withdrawShares is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
