@@ -36,26 +36,6 @@ abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase, Utils {
 
         // deploy upgradeable proxy that points to StrategyBase implementation and initialize it
         baseStrategyImplementation = new StrategyBase(strategyManagerMock);
-        weth = new ERC20PresetFixedSupply("weth", "WETH", wethInitialSupply, address(this));
-        wethStrat = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, weth, pauserRegistry)
-                )
-            )
-        );
-        eigenToken = new ERC20PresetFixedSupply("eigen", "EIGEN", eigenTotalSupply, address(this));
-        eigenStrat = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken, pauserRegistry)
-                )
-            )
-        );
 
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
         addressIsExcludedFromFuzzedInputs[address(strategyManagerMock)] = true;
