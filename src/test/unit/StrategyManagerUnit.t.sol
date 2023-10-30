@@ -7,6 +7,7 @@ import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/Reverter.sol";
+import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
@@ -23,6 +24,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
     StrategyBase public dummyStrat;
     StrategyBase public dummyStrat2;
     StrategyBase public dummyStrat3;
+
+    Reenterer public reenterer;
 
     address initialOwner = address(this);
     uint256 public privateKey = 111111;
@@ -116,6 +119,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         }
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
+
+        addressIsExcludedFromFuzzedInputs[address(reenterer)] = true;
     }
 
     // INTERNAL / HELPER FUNCTIONS
