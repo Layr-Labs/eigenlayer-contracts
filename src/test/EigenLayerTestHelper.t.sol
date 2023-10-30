@@ -471,6 +471,8 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             //uint256 strategyTokenBalance = strategyArray[i].underlyingToken().balanceOf(address(strategyArray[i]));
             uint256 tokenBalanceDelta = (strategyTokenBalance[i] * shareAmounts[i]) / priorTotalShares[i];
 
+            // filter out unrealistic case, where the withdrawer is the strategy contract itself
+            cheats.assume(withdrawer != address(strategyArray[i]));
             require(
                 strategyArray[i].underlyingToken().balanceOf(withdrawer) == balanceBefore[i] + tokenBalanceDelta,
                 "_testCompleteQueuedWithdrawalTokens: withdrawer balance not incremented"
