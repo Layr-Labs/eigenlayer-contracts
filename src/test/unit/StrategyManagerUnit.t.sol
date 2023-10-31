@@ -406,7 +406,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert();
+        cheats.expectRevert(bytes("Reverter: I am a contract that always reverts"));
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -430,7 +430,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert();
+        cheats.expectRevert(bytes("Address: call to non-contract"));
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -453,7 +453,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert();
+        cheats.expectRevert(bytes("Reverter: I am a contract that always reverts"));
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
