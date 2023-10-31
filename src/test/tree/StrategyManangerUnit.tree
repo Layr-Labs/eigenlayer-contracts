@@ -3,87 +3,99 @@ StrategyManagerUnit.t.sol
 │   └── when initialize called again
 │       └── it should revert
 ├── depositIntoStrategy()
-│   ├── when deposit successfully
-│   │   └── shares should increase and stakerStrategyListLength should increase (deposit new strategy)
-│   ├── when deposit successfully twice
-│   │   └── shares should increase and stakerStrategyListLength should increase (deposit new strategy)
 │   ├── when deposits paused
 │   │   └── it should revert
 │   ├── when re-entering
 │   │   └── it should revert
-│   ├── when safeTransferFrom() function reverts
-│   │   └── it should revert
-│   ├── when IERC20 token does not exist
-│   │   └── it should revert
-│   ├── when strategy.deposit() function reverts
-│   │   └── it should revert
-│   ├── when strategy does not exist
-│   │   └── it should revert
 │   ├── when strategy is not whitelisted
 │   │   └── it should revert
-│   └── _addShares()
-│       ├── when shares is 0
-│       │   └── it should revert
-│       └── when deposit would exceed max array length
-│           └── it should revert
+│   ├── when token safeTransferFrom() reverts
+│   │   └── it should revert
+│   └── when token safeTransferFrom() succeeds
+│       ├── when staker has existing shares in strategy (not first deposit)
+│       │   └── stakerStrategyListLength is unchanged and shares, nonce increase
+│       ├── when staker has no existing shares in strategy (first deposit)
+│       │   └── stakerStrategyListLength increases by 1 and shares, nonce increase
+│       ├── when delegated to a operator ***
+│       │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│       └── when staker is not delegated
+│           └── it should deposit successfully with shares and nonce increase
 ├── depositIntoStrategyWithSignature()
-│   ├── when deposit with signature successfully
-│   │   └── staker nonce should increase and shares should increase
-│   ├── when deposit with signature successfully and replay same deposit signature
-│   │   └── it should revert the second time
-│   ├── when deposit with signature with EIP1271 compliant contract signature
-│   │   └── it should deposit successfully with shares and nonce increase
-│   ├── when deposit with signature with EIP1271 compliant contract but with bad signature
-│   │   └── it should revert
-│   ├── when deposit with signature with non-compliant EIP1271 contract
-│   │   └── it should revert
 │   ├── when deposits paused
 │   │   └── it should revert
 │   ├── when re-entering
 │   │   └── it should revert
 │   ├── when signature expired
 │   │   └── it should revert
-│   └── when bad signature
-│       └── it should revert
+│   ├── when deposits paused and strategy not whitelisted
+│   │   └── it should revert
+│   ├── when staker is a EOA
+│   │   ├── when signature verification fails
+│   │   │   └── it should revert
+│   │   └── when signature verification succeeds
+│   │       ├── when token safeTransferFrom reverts
+│   │       │   └── it should revert
+│   │       └── when token safeTransferFrom succeeds
+│   │           ├── when delegated to a operator
+│   │           │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│   │           └── when staker is not delegated
+│   │               └── it should deposit successfully with shares and nonce increase
+│   └── when staker is a contract
+│       ├── when contract isn't EIP1271 compliant
+│       │   └── it should revert
+│       ├── when signature verification fails, isValidSignature() return != EIP1271_MAGICVALUE
+│       │   └── it should revert
+│       └── when signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+│           ├── when token safeTransferFrom reverts
+│           │   └── it should revert
+│           └── when token safeTransferFrom succeeds
+│               ├── when delegated to a operator ***
+│               │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│               └── when staker is not delegated
+│                   └── it should deposit successfully with shares and nonce increase
 ├── removeShares()
 │   ├── when not called by DelegationManager
 │   │   └── it should revert
+│   ├── when share amount is 0
+│   │   └── it should revert
 │   ├── when share amount is too high, higher than deposited amount
 │   │   └── it should revert
-│   ├── when deposit single strategy and remove all shares
-│   │   └── it should remove all shares and decrease stakerStrategyListLength (set to 0)
-│   ├── when deposited 3 strategies and randomly select one to remove all shares
-│   │   └── it should remove all shares and decrease stakerStrategyListLength (set to 2)
-│   └── when deposited 3 strategies and removeShares() from all 3 strategies with fuzzed inputs
-│       └── for each strategy, decrease shares properly but if sharesAfter is 0, then should decrement stakerStrategyListLength
+│   ├── when the share amount is equal to the deposited amount
+│   │   └── staker shares should be 0 with decremented stakerStrategyListLength
+│   └── when the share amount is less than the deposited amount
+│       └── staker shares should now be deposited - shares amount, unchanged stakerStrategyListLength
 ├── addShares()
 │   ├── when not called by DelegationManager
 │   │   └── it should revert
+│   ├── when share amount is 0
+│   │   └── it should revert
 │   ├── when staker is 0 address
 │   │   └── it should revert
-│   ├── when adding shares back with 0 existing shares
-│   │   └── it should increase shares and append to stakerStrategyListLength
-│   └── when adding shares back with > 0 existing shares
-│       └── it should increase shares without increasing stakerStrategyListLength
+│   ├── when adding shares with 0 existing shares
+│   │   └── it should increase shares and increment stakerStrategyListLength
+│   └── when adding shares with > 0 existing shares
+│       └── it should increase shares, unchanged stakerStrategyListLength
 ├── withdrawSharesAsTokens()
 │   ├── when not called by DelegationManager
 │   │   └── it should revert
-│   ├── when shares amount is too high, higher than deposited amount
-│   │   └── it should revert
-│   └── when deposit single strategy and withdraw shares <= deposited amount
-│       └── it should withdraw shares with token.balanceOf() increasing
+│   └── when calling a deposited strategy
+│   │   └── it should withdraw tokens from strategy with token balanceOf() update
 ├── setStrategyWhitelister()
-│   ├── when called by owner address
-│   │   └── it should update strategyWhitelister address
-│   └── when not called by owner but by fuzzed address
-│       └── it should revert
+│   ├── when not called by owner
+│   │   └── it should revert
+│   └── when called by owner address
+│       └── it should update strategyWhitelister address
 ├── addStrategiesToDepositWhitelist()
-│   ├── when fuzz test number of strategies to add <= 16
-│   │   └── it should add all new strategies to deposit whitelist up to 16
-│   └── when called by non-strategyWhitelister address
-│       └── it should revert
+│   ├── when not called by strategyWhitelister address
+│   │   └── it should revert
+│   ├── when adding one single strategy
+│   │   └── it should whitelist the new strategy with mapping set to true
+│   └── when adding multiple strategies to whitelist
+│       └── it should whitelist all new strategies with mappings set to true
 └── removeStrategiesFromDepositWhitelist()
-    ├── when called by non-strategyWhitelister address
+    ├── when not called by strategyWhitelister address
     │   └── it should revert
-    └── when fuzz test numStrats to add <= 16 and numStrats to remove <= 16
-        └── it should first add all new strategies to deposit whitelist up to 16, then remove all strategies from deposit whitelist up to numStrats to add
+    ├── when removing one single strategy
+    │   └── it should de-whitelist the new strategy with mapping set to false
+    └── when adding multiple strategies to whitelist
+        └── it should de-whitelist all specified strategies with mappings set to false
