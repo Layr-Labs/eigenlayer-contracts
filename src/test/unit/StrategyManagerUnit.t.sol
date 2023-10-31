@@ -126,50 +126,15 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
 
     // INTERNAL / HELPER FUNCTIONS
     function _deployNewStrategy(
-        IERC20 token,
-        IStrategyManager strategyManager,
-        IPauserRegistry pauserRegistry,
+        IERC20 _token,
+        IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry,
         address admin
     ) public returns (StrategyBase) {
-        StrategyBase newStrategy = new StrategyBase(strategyManager);
+        StrategyBase newStrategy = new StrategyBase(_strategyManager);
         newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategy), address(admin), "")));
-        newStrategy.initialize(token, pauserRegistry);
+        newStrategy.initialize(_token, _pauserRegistry);
         return newStrategy;
-    }
-
-    function _setUpQueuedWithdrawalStructSingleStrat(
-        address staker,
-        address withdrawer,
-        IERC20 token,
-        IStrategy strategy,
-        uint256 shareAmount
-    )
-        internal
-        view
-        returns (
-            IDelegationManager.Withdrawal memory queuedWithdrawal,
-            IERC20[] memory tokensArray,
-            bytes32 withdrawalRoot
-        )
-    {
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        tokensArray = new IERC20[](1);
-        uint256[] memory shareAmounts = new uint256[](1);
-        strategyArray[0] = strategy;
-        tokensArray[0] = token;
-        shareAmounts[0] = shareAmount;
-        queuedWithdrawal = IDelegationManager.Withdrawal({
-            strategies: strategyArray,
-            shares: shareAmounts,
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            delegatedTo: strategyManager.delegation().delegatedTo(staker)
-        });
-        // calculate the withdrawal root
-        withdrawalRoot = delegationManagerMock.calculateWithdrawalRoot(queuedWithdrawal);
-        return (queuedWithdrawal, tokensArray, withdrawalRoot);
     }
 
     function _depositIntoStrategySuccessfully(
@@ -212,39 +177,6 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
                 "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy"
             );
         }
-    }
-
-    function _setUpQueuedWithdrawalStructSingleStrat_MultipleStrategies(
-        address staker,
-        address withdrawer,
-        IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts
-    ) internal view returns (IDelegationManager.Withdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) {
-        queuedWithdrawal = IDelegationManager.Withdrawal({
-            strategies: strategyArray,
-            shares: shareAmounts,
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegationManagerMock.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            delegatedTo: strategyManager.delegation().delegatedTo(staker)
-        });
-        // calculate the withdrawal root
-        withdrawalRoot = delegationManagerMock.calculateWithdrawalRoot(queuedWithdrawal);
-        return (queuedWithdrawal, withdrawalRoot);
-    }
-
-    function _arrayWithJustDummyToken() internal view returns (IERC20[] memory) {
-        IERC20[] memory array = new IERC20[](1);
-        array[0] = dummyToken;
-        return array;
-    }
-
-    function _arrayWithJustTwoDummyTokens() internal view returns (IERC20[] memory) {
-        IERC20[] memory array = new IERC20[](2);
-        array[0] = dummyToken;
-        array[1] = dummyToken;
-        return array;
     }
 
     // internal function for de-duping code. expects success if `expectedRevertMessage` is empty and expiry is valid.
