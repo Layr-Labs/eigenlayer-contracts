@@ -88,18 +88,20 @@ StrategyManagerUnit.t.sol
 ├── addStrategiesToDepositWhitelist()
 │   ├── when not called by strategyWhitelister address
 │   │   └── it should revert
-│   ├── when adding one single strategy that is already whitelisted
-│   │   └── it should not emit StrategyAddedToDepositWhitelist with mapping still true
-│   ├── when adding one single strategy
-│   │   └── it should whitelist the new strategy with mapping set to true
-│   └── when adding multiple strategies to whitelist
-│       └── it should whitelist all new strategies with mappings set to true
+│   └── when called by strategyWhitelister address
+│       ├── when adding one single strategy that is already whitelisted
+│       │   └── it should not emit StrategyAddedToDepositWhitelist with mapping still true
+│       ├── when adding one single strategy
+│       │   └── it should whitelist the new strategy with mapping set to true
+│       └── when adding multiple strategies to whitelist
+│           └── it should whitelist all new strategies with mappings set to true
 └── removeStrategiesFromDepositWhitelist()
     ├── when not called by strategyWhitelister address
     │   └── it should revert
-    ├── when removing one single strategy that is not whitelisted
-    │   └── it shouldn't emit StrategyRemovedFromDepositWhitelist with mapping still false
-    ├── when removing one single strategy
-    │   └── it should de-whitelist the new strategy with mapping set to false
-    └── when adding multiple strategies to whitelist
-        └── it should de-whitelist all specified strategies with mappings set to false
+    └── when called by strategyWhitelister address
+        ├── when removing one single strategy that is not whitelisted
+        │   └── it shouldn't emit StrategyRemovedFromDepositWhitelist with mapping still false
+        ├── when removing one single strategy
+        │   └── it should de-whitelist the new strategy with mapping set to false
+        └── when removing multiple strategies to whitelist
+            └── it should de-whitelist all specified strategies with mappings set to false
