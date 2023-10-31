@@ -166,14 +166,16 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
 
-        require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+        assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
         if (sharesBefore == 0) {
-            require(
-                stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1,
+            assertEq(
+                stakerStrategyListLengthAfter,
+                stakerStrategyListLengthBefore + 1,
                 "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
             );
-            require(
-                strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) == strategy,
+            assertEq(
+                address(strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1)),
+                address(strategy),
                 "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy"
             );
         }
@@ -236,8 +238,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         uint256 nonceAfter = strategyManager.nonces(staker);
 
         if (expiry >= block.timestamp && expectedRevertMessageIsempty) {
-            require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
-            require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
+            assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+            assertEq(nonceAfter, nonceBefore + 1, "nonceAfter != nonceBefore + 1");
         }
         return signature;
     }
@@ -265,7 +267,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
             IStrategy _strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
             strategyArray[i] = _strategy;
-            require(!strategyManager.strategyIsWhitelistedForDeposit(_strategy), "strategy improperly whitelisted?");
+            assertFalse(strategyManager.strategyIsWhitelistedForDeposit(_strategy), "strategy improperly whitelisted?");
         }
 
         cheats.startPrank(strategyManager.strategyWhitelister());
@@ -277,10 +279,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
         cheats.stopPrank();
 
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
-            require(
-                strategyManager.strategyIsWhitelistedForDeposit(strategyArray[i]),
-                "strategy not properly whitelisted"
-            );
+            assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategyArray[i]), "strategy not whitelisted");
         }
 
         return strategyArray;
@@ -327,14 +326,16 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
 
-        require(sharesAfter == sharesBefore + shares, "sharesAfter != sharesBefore + shares");
+        assertEq(sharesAfter, sharesBefore + shares, "sharesAfter != sharesBefore + shares");
         if (sharesBefore == 0) {
-            require(
-                stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1,
+            assertEq(
+                stakerStrategyListLengthAfter,
+                stakerStrategyListLengthBefore + 1,
                 "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
             );
-            require(
-                strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) == strategy,
+            assertEq(
+                address(strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1)),
+                address(strategy),
                 "strategyManager.stakerStrategyList(staker, stakerStrategyListLengthAfter - 1) != strategy"
             );
         }
@@ -558,9 +559,10 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
             cheats.stopPrank();
         }
 
-        require(
-            strategyManager.stakerStrategyListLength(staker) == MAX_STAKER_STRATEGY_LIST_LENGTH,
-            "strategyManager.stakerStrategyListLength(staker) != MAX_STAKER_STRATEGY_LIST_LENGTH"
+        assertEq(
+            strategyManager.stakerStrategyListLength(staker),
+            MAX_STAKER_STRATEGY_LIST_LENGTH,
+            "strategyMananger.stakerStrategyListLength(staker) != MAX_STAKER_STRATEGY_LIST_LENGTH"
         );
 
         cheats.startPrank(staker);
@@ -756,8 +758,8 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
-        require(sharesAfter == sharesBefore + shareAmountToReturn, "sharesAfter != sharesBefore + shareAmountToReturn");
-        require(nonceAfter == nonceBefore + 1, "nonceAfter != nonceBefore + 1");
+        assertEq(sharesAfter, sharesBefore + shareAmountToReturn, "sharesAfter != sharesBefore + shareAmountToReturn");
+        assertEq(nonceAfter, nonceBefore + 1, "nonceAfter != nonceBefore + 1");
     }
 
     function test_Revert_WhenSignatureExpired() public {
@@ -791,8 +793,8 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
+        assertEq(sharesAfter, sharesBefore, "sharesAfter != sharesBefore");
+        assertEq(nonceAfter, nonceBefore, "nonceAfter != nonceBefore");
     }
 
     function test_Revert_WhenSignatureInvalid() public {
@@ -826,8 +828,8 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
         uint256 nonceAfter = strategyManager.nonces(staker);
 
-        require(sharesAfter == sharesBefore, "sharesAfter != sharesBefore");
-        require(nonceAfter == nonceBefore, "nonceAfter != nonceBefore");
+        assertEq(sharesAfter, sharesBefore, "sharesAfter != sharesBefore");
+        assertEq(nonceAfter, nonceBefore, "nonceAfter != nonceBefore");
     }
 }
 
@@ -868,17 +870,18 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
-        require(sharesBefore == sharesAmount, "Staker has not deposited amount into strategy");
+        assertEq(sharesBefore, sharesAmount, "Staker has not deposited amount into strategy");
 
         delegationManagerMock.removeShares(strategyManager, staker, strategy, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
-        require(
-            stakerStrategyListLengthAfter == stakerStrategyListLengthBefore - 1,
+        assertEq(
+            stakerStrategyListLengthAfter,
+            stakerStrategyListLengthBefore - 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore - 1"
         );
-        require(sharesAfter == 0, "sharesAfter != 0");
-        require(!_isDepositedStrategy(staker, strategy), "strategy should not be part of staker strategy list");
+        assertEq(sharesAfter, 0, "sharesAfter != 0");
+        assertFalse(_isDepositedStrategy(staker, strategy), "strategy should not be part of staker strategy list");
     }
 
     /**
@@ -907,19 +910,23 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         uint256[] memory sharesBefore = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
             sharesBefore[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
-            require(sharesBefore[i] == amounts[i], "Staker has not deposited amount into strategy");
-            require(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
+            assertEq(sharesBefore[i], amounts[i], "Staker has not deposited amount into strategy");
+            assertTrue(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
         }
 
         delegationManagerMock.removeShares(strategyManager, staker, removeStrategy, removeAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, removeStrategy);
-        require(
-            stakerStrategyListLengthAfter == stakerStrategyListLengthBefore - 1,
+        assertEq(
+            stakerStrategyListLengthAfter,
+            stakerStrategyListLengthBefore - 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore - 1"
         );
-        require(sharesAfter == 0, "sharesAfter != 0");
-        require(!_isDepositedStrategy(staker, removeStrategy), "strategy should not be part of staker strategy list");
+        assertEq(sharesAfter, 0, "sharesAfter != 0");
+        assertFalse(
+            _isDepositedStrategy(staker, removeStrategy),
+            "strategy should not be part of staker strategy list"
+        );
     }
 
     /**
@@ -938,8 +945,8 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
             cheats.assume(sharesAmounts[i] > 0 && sharesAmounts[i] <= depositAmounts[i]);
             _depositIntoStrategySuccessfully(strategies[i], staker, depositAmounts[i]);
             sharesBefore[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
-            require(sharesBefore[i] == depositAmounts[i], "Staker has not deposited amount into strategy");
-            require(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
+            assertEq(sharesBefore[i], depositAmounts[i], "Staker has not deposited amount into strategy");
+            assertTrue(_isDepositedStrategy(staker, strategies[i]), "strategy should be deposited");
         }
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
 
@@ -953,21 +960,26 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
             sharesAfter[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
-                require(
-                    !_isDepositedStrategy(staker, strategies[i]),
+                assertFalse(
+                    _isDepositedStrategy(staker, strategies[i]),
                     "strategy should not be part of staker strategy list"
                 );
-                require(sharesAfter[i] == 0, "sharesAfter != 0");
+                assertEq(sharesAfter[i], 0, "sharesAfter != 0");
             } else {
-                require(_isDepositedStrategy(staker, strategies[i]), "strategy should be part of staker strategy list");
-                require(
-                    sharesAfter[i] == sharesBefore[i] - sharesAmounts[i],
+                assertTrue(
+                    _isDepositedStrategy(staker, strategies[i]),
+                    "strategy should be part of staker strategy list"
+                );
+                assertEq(
+                    sharesAfter[i],
+                    sharesBefore[i] - sharesAmounts[i],
                     "sharesAfter != sharesBefore - sharesAmounts"
                 );
             }
         }
-        require(
-            stakerStrategyListLengthBefore - numPoppedStrategies == strategyManager.stakerStrategyListLength(staker),
+        assertEq(
+            stakerStrategyListLengthBefore - numPoppedStrategies,
+            strategyManager.stakerStrategyListLength(staker),
             "stakerStrategyListLengthBefore - numPoppedStrategies != strategyManager.stakerStrategyListLength(staker)"
         );
     }
@@ -995,18 +1007,19 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         cheats.assume(staker != address(0) && amount != 0);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
-        require(sharesBefore == 0, "Staker has already deposited into this strategy");
-        require(!_isDepositedStrategy(staker, dummyStrat), "strategy shouldn't be deposited");
+        assertEq(sharesBefore, 0, "Staker has already deposited into this strategy");
+        assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy shouldn't be deposited");
 
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, amount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
-        require(
-            stakerStrategyListLengthAfter == stakerStrategyListLengthBefore + 1,
+        assertEq(
+            stakerStrategyListLengthAfter,
+            stakerStrategyListLengthBefore + 1,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore + 1"
         );
-        require(sharesAfter == amount, "sharesAfter != amount");
-        require(_isDepositedStrategy(staker, dummyStrat), "strategy should be deposited");
+        assertEq(sharesAfter, amount, "sharesAfter != amount");
+        assertTrue(_isDepositedStrategy(staker, dummyStrat), "strategy should be deposited");
     }
 
     function testFuzz_AddSharesToExistingShares(address staker, uint256 sharesAmount) external {
@@ -1016,18 +1029,19 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         _depositIntoStrategySuccessfully(strategy, staker, initialAmount);
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
-        require(sharesBefore == initialAmount, "Staker has not deposited into strategy");
-        require(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
+        assertEq(sharesBefore, initialAmount, "Staker has not deposited amount into strategy");
+        assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
 
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, sharesAmount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, dummyStrat);
-        require(
-            stakerStrategyListLengthAfter == stakerStrategyListLengthBefore,
+        assertEq(
+            stakerStrategyListLengthAfter,
+            stakerStrategyListLengthBefore,
             "stakerStrategyListLengthAfter != stakerStrategyListLengthBefore"
         );
-        require(sharesAfter == sharesBefore + sharesAmount, "sharesAfter != sharesBefore + amount");
-        require(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
+        assertEq(sharesAfter, sharesBefore + sharesAmount, "sharesAfter != sharesBefore + sharesAmount");
+        assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
     }
 }
 
@@ -1061,7 +1075,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint256 balanceBefore = token.balanceOf(staker);
         delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
         uint256 balanceAfter = token.balanceOf(staker);
-        require(balanceAfter == balanceBefore + sharesAmount, "balanceAfter != balanceBefore + sharesAmount");
+        assertEq(balanceAfter, balanceBefore + sharesAmount, "balanceAfter != balanceBefore + sharesAmount");
     }
 }
 
@@ -1071,8 +1085,9 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit StrategyWhitelisterChanged(previousStrategyWhitelister, newWhitelister);
         strategyManager.setStrategyWhitelister(newWhitelister);
-        require(
-            strategyManager.strategyWhitelister() == newWhitelister,
+        assertEq(
+            strategyManager.strategyWhitelister(),
+            newWhitelister,
             "strategyManager.strategyWhitelister() != newWhitelister"
         );
     }
@@ -1137,12 +1152,12 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
 
         for (uint256 i = 0; i < numberOfStrategiesToAdd; ++i) {
             if (i < numberOfStrategiesToRemove) {
-                require(
-                    !strategyManager.strategyIsWhitelistedForDeposit(strategiesToRemove[i]),
+                assertFalse(
+                    strategyManager.strategyIsWhitelistedForDeposit(strategiesToRemove[i]),
                     "strategy not properly removed from whitelist"
                 );
             } else {
-                require(
+                assertTrue(
                     strategyManager.strategyIsWhitelistedForDeposit(strategiesAdded[i]),
                     "strategy improperly removed from whitelist?"
                 );
