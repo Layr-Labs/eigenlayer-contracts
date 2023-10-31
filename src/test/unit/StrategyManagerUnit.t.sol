@@ -947,6 +947,9 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         uint256[] memory sharesAfter = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
             delegationManagerMock.removeShares(strategyManager, staker, strategies[i], sharesAmounts[i]);
+        }
+
+        for (uint256 i = 0; i < 3; ++i) {
             sharesAfter[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             if (sharesAmounts[i] == depositAmounts[i]) {
                 ++numPoppedStrategies;
