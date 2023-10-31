@@ -155,6 +155,15 @@ contract EigenPodUnitTests is Test, ProofParsing {
         pod = eigenPodManager.getPod(podOwner);
     }
 
+    function testDeployPodWithStateChecks() external {
+        IEigenPod pod = eigenPodManager.getPod(address(42000094992494));
+        eigenPodManager.createPod();
+        cheats.startPrank(address(42000094992494));
+        
+        require(pod.hasRestaked() == true, "hasRestaked is not true");
+        cheats.stopPrank();
+    }
+
     function testStakingWithInvalidAmount () public {
         cheats.deal(address(eigenPodManager), 10e18);
         cheats.startPrank(address(eigenPodManager));
@@ -406,6 +415,7 @@ contract EigenPodUnitTests is Test, ProofParsing {
             mostRecentBalanceUpdateTimestamp: 0,
             status: IEigenPod.VALIDATOR_STATUS.ACTIVE
         });
+
         IEigenPod.VerifiedWithdrawal memory vw = podInternalFunctionTester.processFullWithdrawal(0, pubkeyHash, 0, podOwner, withdrawalAmount, validatorInfo);
 
         if(withdrawalAmount > podInternalFunctionTester.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()){
@@ -530,5 +540,12 @@ contract EigenPodUnitTests is Test, ProofParsing {
         cheats.startPrank(podOwner);
         eigenPodManager.createPod();
         cheats.stopPrank();
+    }
+
+    function _getLatestDelayedWithdrawalAmount(address recipient) internal view returns (uint256) {
+        return
+            delayedWithdrawalRouter
+                .userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1)
+                .amount;
     }
 }
