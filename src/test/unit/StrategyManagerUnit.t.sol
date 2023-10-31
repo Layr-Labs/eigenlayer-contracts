@@ -350,7 +350,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         // pause deposits
         cheats.prank(pauser);
         strategyManager.pause(1);
-        cheats.stopPrank();
 
         cheats.expectRevert(bytes("Pausable: index is paused"));
         strategyManager.depositIntoStrategy(dummyStrat, dummyToken, amount);
