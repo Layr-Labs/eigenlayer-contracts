@@ -110,15 +110,15 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
 
         // whitelist the strategy for deposit
         cheats.prank(strategyManager.owner());
-        IStrategy[] memory _strategy = new IStrategy[](3);
-        _strategy[0] = dummyStrat;
-        _strategy[1] = dummyStrat2;
-        _strategy[2] = dummyStrat3;
-        for (uint256 i = 0; i < _strategy.length; ++i) {
+        IStrategy[] memory _strategies = new IStrategy[](3);
+        _strategies[0] = dummyStrat;
+        _strategies[1] = dummyStrat2;
+        _strategies[2] = dummyStrat3;
+        for (uint256 i = 0; i < _strategies.length; ++i) {
             cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit StrategyAddedToDepositWhitelist(_strategy[i]);
+            emit StrategyAddedToDepositWhitelist(_strategies[i]);
         }
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        strategyManager.addStrategiesToDepositWhitelist(_strategies);
 
         addressIsExcludedFromFuzzedInputs[address(reenterer)] = true;
     }
@@ -395,8 +395,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -419,8 +417,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -442,8 +438,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -465,8 +459,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -503,8 +495,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.startPrank(strategyManager.owner());
         IStrategy[] memory _strategy = new IStrategy[](1);
         _strategy[0] = dummyStrat;
-        cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit StrategyAddedToDepositWhitelist(dummyStrat);
         strategyManager.addStrategiesToDepositWhitelist(_strategy);
         cheats.stopPrank();
 
@@ -542,8 +532,6 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
             cheats.startPrank(strategyManager.owner());
             IStrategy[] memory _strategy = new IStrategy[](1);
             _strategy[0] = dummyStrat;
-            cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit StrategyAddedToDepositWhitelist(dummyStrat);
             strategyManager.addStrategiesToDepositWhitelist(_strategy);
             cheats.stopPrank();
         }
@@ -1086,12 +1074,6 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
 }
 
 contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyManagerUnitTests {
-    function testFuzz_AddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) external {
-        // sanity filtering on fuzzed input
-        cheats.assume(numberOfStrategiesToAdd <= 16);
-        _addStrategiesToWhitelist(numberOfStrategiesToAdd);
-    }
-
     function testFuzz_Revert_WhenCalledByNotStrategyWhitelister(
         address notStrategyWhitelister
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
@@ -1103,6 +1085,41 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
         cheats.prank(notStrategyWhitelister);
         cheats.expectRevert(bytes("StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"));
         strategyManager.addStrategiesToDepositWhitelist(strategyArray);
+    }
+
+    function test_AddSingleStrategyToWhitelist() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        strategyArray[0] = strategy;
+        assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should not be whitelisted");
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(strategy);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
+        assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should be whitelisted");
+    }
+
+    function test_AddAlreadyWhitelistedStrategy() external {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
+        strategyArray[0] = strategy;
+        assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should not be whitelisted");
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit StrategyAddedToDepositWhitelist(strategy);
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
+        assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should be whitelisted");
+        // Make sure event not emitted by checking logs length
+        cheats.recordLogs();
+        uint256 numLogsBefore = cheats.getRecordedLogs().length;
+        strategyManager.addStrategiesToDepositWhitelist(strategyArray);
+        uint256 numLogsAfter = cheats.getRecordedLogs().length;
+        assertEq(numLogsBefore, numLogsAfter, "event emitted when strategy already whitelisted");
+        assertTrue(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy should still be whitelisted");
+    }
+
+    function testFuzz_AddStrategiesToDepositWhitelist(uint8 numberOfStrategiesToAdd) external {
+        // sanity filtering on fuzzed input
+        cheats.assume(numberOfStrategiesToAdd <= 16);
+        _addStrategiesToWhitelist(numberOfStrategiesToAdd);
     }
 }
 
