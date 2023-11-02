@@ -213,7 +213,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 oracleTimestamp,
                 validatorIndices[i],
                 stateRootProof.beaconStateRoot,
-                validatorFieldsProofs[i],
+                validatorFieldsProofs[i], // Use validator fields proof because contains the effective balance
                 validatorFields[i]
             );
         }
