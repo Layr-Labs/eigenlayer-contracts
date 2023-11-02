@@ -87,7 +87,7 @@ contract EPInternalFunctions is EigenPod {
         uint64 oracleTimestamp,
         uint40 validatorIndex,
         bytes32 beaconStateRoot,
-        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
+        bytes calldata validatorFieldsProofs,
         bytes32[] calldata validatorFields,
         uint64 mostRecentBalanceUpdateTimestamp
     )
@@ -99,7 +99,7 @@ contract EPInternalFunctions is EigenPod {
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
-            balanceUpdateProof,
+            validatorFieldsProofs,
             validatorFields
         );
     }
