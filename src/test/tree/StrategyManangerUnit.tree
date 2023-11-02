@@ -1,107 +1,107 @@
-StrategyManagerUnit.t.sol
+├── StrategyManagerUnit.t.sol
 ├── initialize
-│   └── when initialize called again
+│   └── given that initialize is called again
 │       └── it should revert
 ├── depositIntoStrategy()
-│   ├── when deposits paused
+│   ├── given that deposits paused
 │   │   └── it should revert
-│   ├── when re-entering
+│   ├── given the function is re-entered
 │   │   └── it should revert
-│   ├── when strategy is not whitelisted
+│   ├── given that the strategy is not whitelisted
 │   │   └── it should revert
-│   ├── when token safeTransferFrom() reverts
+│   ├── given the token safeTransferFrom() reverts
 │   │   └── it should revert
-│   └── when token safeTransferFrom() succeeds
-│       ├── when staker has existing shares in strategy (not first deposit)
-│       │   └── stakerStrategyListLength is unchanged and shares, nonce increase
-│       ├── when staker has no existing shares in strategy (first deposit)
+│   └── given that token safeTransferFrom() succeeds
+│       ├── given the staker has existing shares in strategy (not first deposit)
+│       │   └── it should increase shares, nonce. while stakerStrategyListLength is unchanged
+│       ├── given the staker has no existing shares in strategy (first deposit)
 │       │   └── stakerStrategyListLength increases by 1 and shares, nonce increase
-│       ├── when delegated to a operator ***
+│       ├── given the staker has delegated to a operator ***
 │       │   └── it should deposit successfully with shares and nonce increase, including delegated shares
-│       └── when staker is not delegated
+│       └── given the staker is not delegated
 │           └── it should deposit successfully with shares and nonce increase
 ├── depositIntoStrategyWithSignature()
-│   ├── when deposits paused
+│   ├── given that deposits paused
 │   │   └── it should revert
-│   ├── when re-entering
+│   ├── given the function is re-entered
 │   │   └── it should revert
-│   ├── when signature expired
+│   ├── given the signature expired
 │   │   └── it should revert
-│   ├── when deposits paused and strategy not whitelisted
+│   ├── given that deposits paused and strategy not whitelisted
 │   │   └── it should revert
-│   ├── when staker is a EOA
-│   │   ├── when signature verification fails
+│   ├── given the staker is a EOA
+│   │   ├── given the signature verification fails
 │   │   │   └── it should revert
-│   │   └── when signature verification succeeds
-│   │       ├── when token safeTransferFrom reverts
+│   │   └── given the signature verification succeeds
+│   │       ├── given the token safeTransferFrom reverts
 │   │       │   └── it should revert
-│   │       └── when token safeTransferFrom succeeds
-│   │           ├── when delegated to a operator
+│   │       └── given the token safeTransferFrom succeeds
+│   │           ├── given that the staker has delegated to a operator
 │   │           │   └── it should deposit successfully with shares and nonce increase, including delegated shares
-│   │           └── when staker is not delegated
+│   │           └── given that the staker is not delegated
 │   │               └── it should deposit successfully with shares and nonce increase
-│   └── when staker is a contract
-│       ├── when contract isn't EIP1271 compliant
+│   └── given the staker is a contract
+│       ├── given the contract isn't EIP1271 compliant
 │       │   └── it should revert
-│       ├── when signature verification fails, isValidSignature() return != EIP1271_MAGICVALUE
+│       ├── given the signature verification fails, isValidSignature() return != EIP1271_MAGICVALUE
 │       │   └── it should revert
-│       └── when signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
-│           ├── when token safeTransferFrom reverts
+│       └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+│           ├── given the token safeTransferFrom reverts
 │           │   └── it should revert
-│           └── when token safeTransferFrom succeeds
-│               ├── when delegated to a operator ***
+│           └── given the token safeTransferFrom succeeds
+│               ├── given the staker has delegated to a operator ***
 │               │   └── it should deposit successfully with shares and nonce increase, including delegated shares
-│               └── when staker is not delegated
+│               └── given the staker is not delegated
 │                   └── it should deposit successfully with shares and nonce increase
 ├── removeShares()
-│   ├── when not called by DelegationManager
+│   ├── given not called by DelegationManager
 │   │   └── it should revert
-│   ├── when share amount is 0
+│   ├── given the share amount is 0
 │   │   └── it should revert
-│   ├── when share amount is too high, higher than deposited amount
+│   ├── given the share amount is too high, higher than deposited amount
 │   │   └── it should revert
-│   ├── when the share amount is equal to the deposited amount
+│   ├── given the share amount is equal to the deposited amount
 │   │   └── staker shares should be 0 with decremented stakerStrategyListLength
-│   └── when the share amount is less than the deposited amount
+│   └── given the share amount is less than the deposited amount
 │       └── staker shares should now be deposited - shares amount, unchanged stakerStrategyListLength
 ├── addShares()
-│   ├── when not called by DelegationManager
+│   ├── given not called by DelegationManager
 │   │   └── it should revert
-│   ├── when share amount is 0
+│   ├── given the share amount is 0
 │   │   └── it should revert
-│   ├── when staker is 0 address
+│   ├── given the staker is 0 address
 │   │   └── it should revert
-│   ├── when adding shares with 0 existing shares
+│   ├── given adding shares with 0 existing shares
 │   │   └── it should increase shares and increment stakerStrategyListLength
-│   └── when adding shares with > 0 existing shares
+│   └── given the adding shares with > 0 existing shares
 │       └── it should increase shares, unchanged stakerStrategyListLength
 ├── withdrawSharesAsTokens()
-│   ├── when not called by DelegationManager
+│   ├── given not called by DelegationManager
 │   │   └── it should revert
-│   └── when calling a deposited strategy
+│   └── given that deposited strategy is called
 │   │   └── it should withdraw tokens from strategy with token balanceOf() update
 ├── setStrategyWhitelister()
-│   ├── when not called by owner
+│   ├── given not called by owner
 │   │   └── it should revert
-│   └── when called by owner address
+│   └── given called by owner address
 │       └── it should update strategyWhitelister address
 ├── addStrategiesToDepositWhitelist()
-│   ├── when not called by strategyWhitelister address
+│   ├── given not called by strategyWhitelister address
 │   │   └── it should revert
-│   └── when called by strategyWhitelister address
-│       ├── when adding one single strategy that is already whitelisted
+│   └── given the strategyWhitelister address is called
+│       ├── given adding one single strategy that is already whitelisted
 │       │   └── it should not emit StrategyAddedToDepositWhitelist with mapping still true
-│       ├── when adding one single strategy
+│       ├── given adding one single strategy
 │       │   └── it should whitelist the new strategy with mapping set to true
-│       └── when adding multiple strategies to whitelist
+│       └── given adding multiple strategies to whitelist
 │           └── it should whitelist all new strategies with mappings set to true
 └── removeStrategiesFromDepositWhitelist()
-    ├── when not called by strategyWhitelister address
+    ├── given not called by strategyWhitelister address
     │   └── it should revert
-    └── when called by strategyWhitelister address
-        ├── when removing one single strategy that is not whitelisted
+    └── given called by strategyWhitelister address
+        ├── given removing one single strategy that is not whitelisted
         │   └── it shouldn't emit StrategyRemovedFromDepositWhitelist with mapping still false
-        ├── when removing one single strategy
+        ├── given removing one single strategy
         │   └── it should de-whitelist the new strategy with mapping set to false
-        └── when removing multiple strategies to whitelist
+        └── given removing multiple strategies to whitelist
             └── it should de-whitelist all specified strategies with mappings set to false

@@ -980,7 +980,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         uint256 stakerStrategyListLengthBefore = strategyManager.stakerStrategyListLength(staker);
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, dummyStrat);
         assertEq(sharesBefore, 0, "Staker has already deposited into this strategy");
-        assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy shouldn't be deposited");
+        assertFalse(_isDepositedStrategy(staker, dummyStrat), "strategy should not be deposited");
 
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, amount);
         uint256 stakerStrategyListLengthAfter = strategyManager.stakerStrategyListLength(staker);
