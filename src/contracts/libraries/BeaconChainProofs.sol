@@ -53,8 +53,6 @@ library BeaconChainProofs {
     uint256 internal constant WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
 
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
-    //refer to the eigenlayer-cli proof library.  Despite being the same dimensions as the validator tree, the balance tree is merkleized differently
-    uint256 internal constant BALANCE_TREE_HEIGHT = 38;
 
     // MAX_WITHDRAWALS_PER_PAYLOAD = 2**4, making tree height = 4
     uint256 internal constant WITHDRAWALS_TREE_HEIGHT = 4;
@@ -76,7 +74,6 @@ library BeaconChainProofs {
     uint256 internal constant HISTORICAL_ROOTS_INDEX = 7;
     uint256 internal constant ETH_1_ROOT_INDEX = 8;
     uint256 internal constant VALIDATOR_TREE_ROOT_INDEX = 11;
-    uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant EXECUTION_PAYLOAD_HEADER_INDEX = 24;
     uint256 internal constant HISTORICAL_SUMMARIES_INDEX = 27;
 
@@ -130,13 +127,6 @@ library BeaconChainProofs {
         bytes32 executionPayloadRoot;
     }
 
-    /// @notice This struct contains the merkle proofs and leaves needed to verify a balance update
-    struct BalanceUpdateProof {
-        bytes validatorBalanceProof;
-        bytes validatorFieldsProof;
-        bytes32 balanceRoot;
-    }
-
     /// @notice This struct contains the root and proof for verifying the state root against the oracle block root
     struct StateRootProof {
         bytes32 beaconStateRoot;
@@ -182,46 +172,6 @@ library BeaconChainProofs {
                 index: index
             }),
             "BeaconChainProofs.verifyValidatorFields: Invalid merkle proof"
-        );
-    }
-
-    /**
-     * @notice This function verifies merkle proofs of the balance of a certain validator against a beacon chain state root
-     * @param validatorIndex the index of the proven validator
-     * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param validatorBalanceProof is the proof of the balance against the beacon chain state root
-     * @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceAtIndex` for detailed explanation)
-     */
-    function verifyValidatorBalance(
-        bytes32 beaconStateRoot,
-        bytes32 balanceRoot,
-        bytes calldata validatorBalanceProof,
-        uint40 validatorIndex
-    ) internal view {
-        require(
-            validatorBalanceProof.length == 32 * ((BALANCE_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT),
-            "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length"
-        );
-
-        /**
-         * the beacon state's balance list is a list of uint64 values, and these are grouped together in 4s when merkleized.
-         * Therefore, the index of the balance of a validator is validatorIndex/4
-         */
-        uint256 balanceIndex = uint256(validatorIndex / 4);
-        /**
-         * Note: Merkleization of the balance root tree uses MerkleizeWithMixin, i.e., the length of the array is hashed with the root of
-         * the array.  Thus we shift the BALANCE_INDEX over by BALANCE_TREE_HEIGHT + 1 and not just BALANCE_TREE_HEIGHT.
-         */
-        balanceIndex = (BALANCE_INDEX << (BALANCE_TREE_HEIGHT + 1)) | balanceIndex;
-
-        require(
-            Merkle.verifyInclusionSha256({
-                proof: validatorBalanceProof,
-                root: beaconStateRoot,
-                leaf: balanceRoot,
-                index: balanceIndex
-            }),
-            "BeaconChainProofs.verifyValidatorBalance: Invalid merkle proof"
         );
     }
 
@@ -405,21 +355,6 @@ library BeaconChainProofs {
     function hashValidatorBLSPubkey(bytes memory validatorPubkey) internal pure returns (bytes32 pubkeyHash) {
         require(validatorPubkey.length == 48, "Input should be 48 bytes in length");
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
-    }
-
-    /**
-     * @notice Parses a balanceRoot to get the uint64 balance of a validator.  
-     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single 
-     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to 
-     * extract from the balanceRoot.
-     * @param balanceRoot is the combination of 4 validator balances being proven for
-     * @param validatorIndex is the index of the validator being proven for
-     * @return The validator's balance, in Gwei
-     */
-    function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
-        uint256 bitShiftAmount = (validatorIndex % 4) * 64;
-        return 
-            Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
     }
 
     /**
