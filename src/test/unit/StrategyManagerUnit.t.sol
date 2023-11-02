@@ -288,6 +288,12 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
         cheats.expectRevert("Initializable: contract is already initialized");
         strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0);
     }
+
+    function test_InitializedStorageProperly() public {
+        assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
+        assertEq(strategyManager.strategyWhitelister(), initialOwner, "strategyManager.strategyWhitelister() != initialOwner");
+        assertEq(address(strategyManager.pauserRegistry()), address(pauserRegistry), "strategyManager.pauserRegistry() != pauserRegistry");
+    }
 }
 
 contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTests {
