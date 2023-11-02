@@ -84,6 +84,16 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
         // Initialize pod
         eigenPod.initialize(address(this));
     }
+
+
+    /// @notice Post-M2, all new deployed eigen pods will have restaked set to true
+    modifier hasNotRestaked() {
+        // Write hasRestaked as false. hasRestaked in slot 52
+        bytes32 slot = bytes32(uint256(52)); 
+        bytes32 value = bytes32(0); // 0 == false
+        cheats.store(address(eigenPod), slot, value);
+        _;
+    }
 }
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests, IEigenPodEvents {
@@ -312,15 +322,6 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
         cheats.deal(address(this), ethAmount);
         address(eigenPod).call{value: ethAmount}("");
     }
-
-    /// @notice Post-M2, all new deployed eigen pods will have restaked set to true
-    modifier hasNotRestaked() {
-        // Write hasRestaked as false. hasRestaked in slot 52
-        bytes32 slot = bytes32(uint256(52)); 
-        bytes32 value = bytes32(0); // 0 == false
-        cheats.store(address(eigenPod), slot, value);
-        _;
-    }
 }
 
 contract EigenPodHarnessSetup is EigenPodUnitTests {
@@ -445,7 +446,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         // Set beacon state root, validatorIndex
         beaconStateRoot = getBeaconStateRoot();
         validatorIndex = uint40(getValidatorIndex());
-        validatorFieldsProof = abi.encodePacked(getWithdrawalCredentialProof());
+        validatorFieldsProof = abi.encodePacked(getWithdrawalCredentialProof()); // Validator fields are proven here
         validatorFields = getValidatorFields();
 
         // Get an oracle timestamp
@@ -616,5 +617,57 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             balanceRoot
         );
         return proofs;
+    }
+}
+
+contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing, IEigenPodEvents {
+    
+    // Params to process withdrawal 
+    bytes32 beaconStateRoot;
+    BeaconChainProofs.WithdrawalProof withdrawalToProve;
+    bytes validatorFieldsProof;
+    bytes32[] validatorFields;
+    bytes32[] withdrawalFields;
+
+    // Most recent withdrawal timestamp incremented either when withdrawal processed before restaking
+    function test_verifyAndProcessWithdrawal_revert_staleProof() public hasNotRestaked {
+        // Set JSON
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        
+    }
+
+    function _getWithdrawalProofParams() internal {
+        // Set validator index, beacon state root, balance update proof, and validator fields
+        beaconStateRoot = getBeaconStateRoot();
+        validatorFields = getValidatorFields();
+        validatorFieldsProof = abi.encodePacked(getValidatorProof());
+        withdrawalToProve = _getWithdrawalProof();  
+        withdrawalFields = getWithdrawalFields();
+    }
+
+    /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
+    function _getWithdrawalProof() internal returns (BeaconChainProofs.WithdrawalProof memory) {
+        {
+            bytes32 blockRoot = getBlockRoot();
+            bytes32 slotRoot = getSlotRoot();
+            bytes32 timestampRoot = getTimestampRoot();
+            bytes32 executionPayloadRoot = getExecutionPayloadRoot();
+
+            return
+                BeaconChainProofs.WithdrawalProof(
+                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(getSlotProof()),
+                    abi.encodePacked(getExecutionPayloadProof()),
+                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(getHistoricalSummaryProof()),
+                    uint64(getBlockRootIndex()),
+                    uint64(getHistoricalSummaryIndex()),
+                    uint64(getWithdrawalIndex()),
+                    blockRoot,
+                    slotRoot,
+                    timestampRoot,
+                    executionPayloadRoot
+                );
+        }
     }
 }
