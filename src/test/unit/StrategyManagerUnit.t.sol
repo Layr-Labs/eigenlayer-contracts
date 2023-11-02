@@ -285,7 +285,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup {
 
 contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     function test_CannotReinitialize() public {
-        cheats.expectRevert(bytes("Initializable: contract is already initialized"));
+        cheats.expectRevert("Initializable: contract is already initialized");
         strategyManager.initialize(initialOwner, initialOwner, pauserRegistry, 0);
     }
 }
@@ -351,7 +351,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.prank(pauser);
         strategyManager.pause(1);
 
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert("Pausable: index is paused");
         strategyManager.depositIntoStrategy(dummyStrat, dummyToken, amount);
     }
 
@@ -404,7 +404,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("Reverter: I am a contract that always reverts"));
+        cheats.expectRevert("Reverter: I am a contract that always reverts");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -426,7 +426,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("Address: call to non-contract"));
+        cheats.expectRevert("Address: call to non-contract");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -447,7 +447,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("Reverter: I am a contract that always reverts"));
+        cheats.expectRevert("Reverter: I am a contract that always reverts");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -506,7 +506,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         reenterer.prepareReturnData(abi.encode(uint256(0)));
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("StrategyManager._addShares: shares should not be zero!"));
+        cheats.expectRevert("StrategyManager._addShares: shares should not be zero!");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 
@@ -543,7 +543,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         );
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"));
+        cheats.expectRevert("StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 }
@@ -568,7 +568,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         // not expecting a revert, so input an empty string
         bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
 
-        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
+        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
         strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
     }
 
@@ -626,7 +626,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         }
 
         cheats.expectRevert(
-            bytes("EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed")
+            "EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"
         );
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
     }
@@ -759,7 +759,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
 
-        cheats.expectRevert(bytes("StrategyManager.depositIntoStrategyWithSignature: signature expired"));
+        cheats.expectRevert("StrategyManager.depositIntoStrategyWithSignature: signature expired");
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
 
         uint256 sharesAfter = strategyManager.stakerStrategyShares(staker, strategy);
@@ -792,7 +792,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 sharesBefore = strategyManager.stakerStrategyShares(staker, strategy);
 
-        cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
+        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
         // call with `notStaker` as input instead of `staker` address
         address notStaker = address(3333);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, notStaker, expiry, signature);
@@ -808,7 +808,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
+        cheats.expectRevert("StrategyManager.onlyDelegationManager: not the DelegationManager");
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
@@ -826,7 +826,7 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         cheats.assume(removeSharesAmount > depositAmount);
         IStrategy strategy = dummyStrat;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-        cheats.expectRevert(bytes("StrategyManager._removeShares: shareAmount too high"));
+        cheats.expectRevert("StrategyManager._removeShares: shareAmount too high");
         delegationManagerMock.removeShares(strategyManager, staker, strategy, removeSharesAmount);
     }
 
@@ -960,18 +960,18 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
 contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
+        cheats.expectRevert("StrategyManager.onlyDelegationManager: not the DelegationManager");
         invalidDelegationManager.addShares(strategyManager, address(this), dummyStrat, 1);
     }
 
     function testFuzz_Revert_StakerZeroAddress(uint256 amount) external {
-        cheats.expectRevert(bytes("StrategyManager._addShares: staker cannot be zero address"));
+        cheats.expectRevert("StrategyManager._addShares: staker cannot be zero address");
         delegationManagerMock.addShares(strategyManager, address(0), dummyStrat, amount);
     }
 
     function testFuzz_Revert_ZeroShares(address staker) external {
         cheats.assume(staker != address(0));
-        cheats.expectRevert(bytes("StrategyManager._addShares: shares should not be zero!"));
+        cheats.expectRevert("StrategyManager._addShares: shares should not be zero!");
         delegationManagerMock.addShares(strategyManager, staker, dummyStrat, 0);
     }
 
@@ -1020,7 +1020,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
 contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
-        cheats.expectRevert(bytes("StrategyManager.onlyDelegationManager: not the DelegationManager"));
+        cheats.expectRevert("StrategyManager.onlyDelegationManager: not the DelegationManager");
         invalidDelegationManager.removeShares(strategyManager, address(this), dummyStrat, 1);
     }
 
@@ -1034,7 +1034,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-        cheats.expectRevert(bytes("StrategyBase.withdraw: amountShares must be less than or equal to totalShares"));
+        cheats.expectRevert("StrategyBase.withdraw: amountShares must be less than or equal to totalShares");
         delegationManagerMock.withdrawSharesAsTokens(strategyManager, staker, strategy, sharesAmount, token);
     }
 
@@ -1068,7 +1068,7 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
         cheats.assume(notOwner != strategyManager.owner());
         address newWhitelister = address(this);
         cheats.prank(notOwner);
-        cheats.expectRevert(bytes("Ownable: caller is not the owner"));
+        cheats.expectRevert("Ownable: caller is not the owner");
         strategyManager.setStrategyWhitelister(newWhitelister);
     }
 }
@@ -1083,7 +1083,7 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
         strategyArray[0] = _strategy;
 
         cheats.prank(notStrategyWhitelister);
-        cheats.expectRevert(bytes("StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"));
+        cheats.expectRevert("StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
         strategyManager.addStrategiesToDepositWhitelist(strategyArray);
     }
 
@@ -1170,7 +1170,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         IStrategy[] memory strategyArray = _addStrategiesToWhitelist(1);
 
         cheats.prank(notStrategyWhitelister);
-        cheats.expectRevert(bytes("StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"));
+        cheats.expectRevert("StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister");
         strategyManager.removeStrategiesFromDepositWhitelist(strategyArray);
     }
 }
