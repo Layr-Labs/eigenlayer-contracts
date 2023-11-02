@@ -261,6 +261,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testStaking() public {
         cheats.startPrank(podOwner);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        emit log_named_address("newPod", address(newPod));
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
@@ -770,7 +771,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             "eigenPodManager shares not updated correctly"
         );
     }
-
+    
+    /// @notice Similar test done in EP unit test
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
     function testDeployNewEigenPodWithWrongWithdrawalCreds(address wrongWithdrawalAddress) public {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
@@ -901,40 +903,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
         newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
-    }
-
-    //test that when withdrawal credentials are verified more than once, it reverts
-    function testDeployNewEigenPodWithActiveValidator() public {
-        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-
-        uint64 timestamp = 1;
-
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        validatorFieldsArray[0] = getValidatorFields();
-        bytes[] memory proofsArray = new bytes[](1);
-        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
-
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
-
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
-
-        cheats.startPrank(podOwner);
-        cheats.expectRevert(
-            bytes(
-                "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"
-            )
-        );
-        pod.verifyWithdrawalCredentials(
-            timestamp,
-            stateRootProofStruct,
-            validatorIndices,
-            proofsArray,
-            validatorFieldsArray
-        );
-        cheats.stopPrank();
     }
 
     // // 3. Single withdrawal credential
