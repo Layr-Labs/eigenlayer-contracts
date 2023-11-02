@@ -244,7 +244,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
     * nonBeaconChainETHBalanceWei was never zeroed out in _processWithdrawalBeforeRestaking
      */
     function testValidatorBalanceCannotBeRemovedFromPodViaNonBeaconChainETHBalanceWei() external {
-        
         uint256 amount = 32 ether;
          cheats.store(address(pod), bytes32(uint256(52)), bytes32(0));
         cheats.deal(address(this), amount);
