@@ -41,5 +41,6 @@ methods {
     function get_podOwnerShares(address) external returns (int256) envfree;
 }
 
+// verifies that podOwnerShares[podOwner] is never a non-whole Gwei amount
 invariant podOwnerSharesAlwaysWholeGweiAmount(address podOwner)
     get_podOwnerShares(podOwner) % 1000000000 == 0;
