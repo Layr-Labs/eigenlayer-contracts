@@ -1,4 +1,4 @@
-├── StrategyManagerUnit.t.sol
+├── StrategyManagerUnit.t.sol (*** denotes that integration tests are needed to validate path)
 ├── initialize
 │   └── given that initialize is called again
 │       └── it should revert
@@ -15,11 +15,11 @@
 │       ├── given the staker has existing shares in strategy (not first deposit)
 │       │   └── it should increase shares, nonce. while stakerStrategyListLength is unchanged
 │       ├── given the staker has no existing shares in strategy (first deposit)
-│       │   └── stakerStrategyListLength increases by 1 and shares, nonce increase
+│       │   └── stakerStrategyListLength increases by 1 and shares increase
 │       ├── given the staker has delegated to a operator ***
-│       │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│       │   └── it should deposit successfully with shares increase, including delegated shares
 │       └── given the staker is not delegated
-│           └── it should deposit successfully with shares and nonce increase
+│           └── it should deposit successfully with shares increase
 ├── depositIntoStrategyWithSignature()
 │   ├── given that deposits paused
 │   │   └── it should revert
