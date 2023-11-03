@@ -1,5 +1,7 @@
 ├── StrategyManagerUnit.t.sol (*** denotes that integration tests are needed to validate path)
 ├── initialize
+|   ├── given that initialized is only called once
+│   │   └── it should set the storage variables correctly (owner, strategyWhitelister, pauserRegistry)
 │   └── given that initialize is called again
 │       └── it should revert
 ├── depositIntoStrategy()
@@ -36,7 +38,7 @@
 │   │       ├── given the token safeTransferFrom reverts
 │   │       │   └── it should revert
 │   │       └── given the token safeTransferFrom succeeds
-│   │           ├── given that the staker has delegated to a operator
+│   │           ├── given that the staker has delegated to a operator ***
 │   │           │   └── it should deposit successfully with shares and nonce increase, including delegated shares
 │   │           └── given that the staker is not delegated
 │   │               └── it should deposit successfully with shares and nonce increase
@@ -73,6 +75,8 @@
 │   │   └── it should revert
 │   ├── given adding shares with 0 existing shares
 │   │   └── it should increase shares and increment stakerStrategyListLength
+│   ├── given adding shares with 0 existing shares and staker has MAX_STAKER_STRATEGY_LIST_LENGTH 
+│   │   └── it should revert
 │   └── given the adding shares with > 0 existing shares
 │       └── it should increase shares, unchanged stakerStrategyListLength
 ├── withdrawSharesAsTokens()
