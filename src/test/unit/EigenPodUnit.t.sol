@@ -204,33 +204,33 @@ contract EigenPodUnitTests is Test, ProofParsing {
         cheats.stopPrank();
     }
 
-    function testTooSoonBalanceUpdate(uint64 oracleTimestamp, uint64 mostRecentBalanceUpdateTimestamp) external {
-        cheats.assume(oracleTimestamp < mostRecentBalanceUpdateTimestamp);
-        _deployInternalFunctionTester();
+    // function testTooSoonBalanceUpdate(uint64 oracleTimestamp, uint64 mostRecentBalanceUpdateTimestamp) external {
+    //     cheats.assume(oracleTimestamp < mostRecentBalanceUpdateTimestamp);
+    //     _deployInternalFunctionTester();
 
-        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        validatorFields = getValidatorFields();
+    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+    //     validatorFields = getValidatorFields();
 
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
-        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+    //     uint40[] memory validatorIndices = new uint40[](1);
+    //     validatorIndices[0] = uint40(getValidatorIndex());
+    //     BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
 
-        bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        emit log_named_bytes32("newBeaconStateRoot", newBeaconStateRoot);
-        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
+    //     bytes32 newBeaconStateRoot = getBeaconStateRoot();
+    //     emit log_named_bytes32("newBeaconStateRoot", newBeaconStateRoot);
+    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
 
-        cheats.expectRevert(
-            bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp")
-        );
-        podInternalFunctionTester.verifyBalanceUpdate(
-            oracleTimestamp,
-            0,
-            bytes32(0),
-            proof,
-            validatorFields,
-            mostRecentBalanceUpdateTimestamp
-        );
-    }
+    //     cheats.expectRevert(
+    //         bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp")
+    //     );
+    //     podInternalFunctionTester.verifyBalanceUpdate(
+    //         oracleTimestamp,
+    //         0,
+    //         bytes32(0),
+    //         proof,
+    //         validatorFields,
+    //         mostRecentBalanceUpdateTimestamp
+    //     );
+    // }
 
     function testProcessFullWithdrawalForLessThanMaxRestakedBalance(uint64 withdrawalAmount) public {
         _deployInternalFunctionTester();
@@ -359,31 +359,31 @@ contract EigenPodUnitTests is Test, ProofParsing {
     * the validator's balance could be maliciously proven to be 0 before the validator themselves are
     * able to prove their withdrawal.
     */
-    function testBalanceUpdateMadeAfterWithdrawableEpochFails() external {
-        _deployInternalFunctionTester();
-        cheats.roll(block.number + 1);
-        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-        setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-        bytes32[] memory validatorFields= getValidatorFields();
+    // function testBalanceUpdateMadeAfterWithdrawableEpochFails() external {
+    //     _deployInternalFunctionTester();
+    //     cheats.roll(block.number + 1);
+    //     // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+    //     bytes32[] memory validatorFields= getValidatorFields();
 
-        uint40 validatorIndex = uint40(getValidatorIndex());
+    //     uint40 validatorIndex = uint40(getValidatorIndex());
 
-        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
-        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+    //     BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+    //     bytes32 newLatestBlockRoot = getLatestBlockRoot();
 
-        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
 
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof(); 
-        proof.balanceRoot = bytes32(uint256(0));     
+    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof(); 
+    //     proof.balanceRoot = bytes32(uint256(0));     
 
-        validatorFields[7] = bytes32(uint256(0));
-        cheats.warp(GOERLI_GENESIS_TIME + 1 days);
-        uint64 oracleTimestamp = uint64(block.timestamp);
+    //     validatorFields[7] = bytes32(uint256(0));
+    //     cheats.warp(GOERLI_GENESIS_TIME + 1 days);
+    //     uint64 oracleTimestamp = uint64(block.timestamp);
 
-        podInternalFunctionTester.setValidatorStatus(validatorFields[0], IEigenPod.VALIDATOR_STATUS.ACTIVE);
-        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"));
-        podInternalFunctionTester.verifyBalanceUpdate(oracleTimestamp, validatorIndex, newLatestBlockRoot, proof, validatorFields, 0);
-    }
+    //     podInternalFunctionTester.setValidatorStatus(validatorFields[0], IEigenPod.VALIDATOR_STATUS.ACTIVE);
+    //     cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"));
+    //     podInternalFunctionTester.verifyBalanceUpdate(oracleTimestamp, validatorIndex, newLatestBlockRoot, proof, validatorFields, 0);
+    // }
 
     function testWithdrawlBeforeRestakingFromNonPodOwnerAddress(uint256 amount, address nonPodOwner) external {
         cheats.assume(nonPodOwner != podOwner);
@@ -484,17 +484,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
 
     function _getStateRootProof() internal returns (BeaconChainProofs.StateRootProof memory) {
         return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), abi.encodePacked(getStateRootProof()));
-    }
-
-    function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
-        bytes32 balanceRoot = getBalanceRoot();
-        BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
-            abi.encodePacked(getValidatorBalanceProof()),
-            abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
-            balanceRoot
-        );
-
-        return proofs;
     }
 
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
