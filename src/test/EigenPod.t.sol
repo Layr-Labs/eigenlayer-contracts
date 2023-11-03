@@ -1899,3 +1899,41 @@ contract Relayer is Test {
     //     return (queuedWithdrawal, withdrawalRoot);
     // }
 
+    //Integration Test 
+    // function testFullWithdrawalProofWithWrongWithdrawalFields(bytes32[] memory wrongWithdrawalFields) public {
+    //     Relayer relay = new Relayer();
+    //     uint256  WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
+
+    //     setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+    //     BeaconChainProofs.WithdrawalProof memory proofs = _getWithdrawalProof();
+    //     bytes32 beaconStateRoot = getBeaconStateRoot();
+    //     cheats.assume(wrongWithdrawalFields.length !=  2 ** WITHDRAWAL_FIELD_TREE_HEIGHT);
+    //     validatorFields = getValidatorFields();
+
+    //     cheats.expectRevert(bytes("BeaconChainProofs.verifyWithdrawal: withdrawalFields has incorrect length"));
+    //     relay.verifyWithdrawal(beaconStateRoot, wrongWithdrawalFields, proofs);
+    // }
+
+    // // Integration Test
+    // function testMismatchedWithdrawalProofInputs(uint64 numValidators, uint64 numValidatorProofs) external {
+    //     cheats.assume(numValidators < numValidatorProofs && numValidatorProofs < 5);
+    //     setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+    //     bytes[] memory validatorFieldsProofArray = new bytes[](numValidatorProofs);
+    //     for (uint256 index = 0; index < numValidators; index++) {
+    //         validatorFieldsProofArray[index] = abi.encodePacked(getValidatorProof());
+    //     }
+    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](numValidators);
+    //     for (uint256 index = 0; index < validatorFieldsArray.length; index++) {
+    //          validatorFieldsArray[index] = getValidatorFields();
+    //     }
+    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+    //     BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+
+    //     withdrawalProofsArray[0] = _getWithdrawalProof();
+
+    //     bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+    //     withdrawalFieldsArray[0] = withdrawalFields;
+
+    //     cheats.expectRevert(bytes("EigenPod.verifyAndProcessWithdrawals: inputs must be same length"));
+    //     pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+    // }
