@@ -35,6 +35,22 @@ contract EPInternalFunctions is EigenPod {
         );
     }
 
+    function verifyAndProcessWithdrawal(
+        bytes32 beaconStateRoot,
+        BeaconChainProofs.WithdrawalProof calldata withdrawalProof,
+        bytes calldata validatorFieldsProof,
+        bytes32[] calldata validatorFields,
+        bytes32[] calldata withdrawalFields
+    ) public returns (IEigenPod.VerifiedWithdrawal memory) {
+        return _verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalProof,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+    }
+
     function processFullWithdrawal(
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
