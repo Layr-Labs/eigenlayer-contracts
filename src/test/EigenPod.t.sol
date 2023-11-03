@@ -716,7 +716,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     //     int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
     //     require(
-    //         beaconChainETHShares == int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+    //         beaconChainETHShares == int256((newValidatorBalance) * GWEI_TO_WEI),
     //         "eigenPodManager shares not updated correctly"
     //     );
     // }
@@ -935,7 +935,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     //     int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
     //     assertTrue(
     //         eigenPodManager.podOwnerShares(podOwner) ==
-    //             int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
+    //             int256(newValidatorBalance * GWEI_TO_WEI),
     //         "hysterisis not working"
     //     );
     //     assertTrue(
