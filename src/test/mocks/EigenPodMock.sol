@@ -63,7 +63,7 @@ contract EigenPodMock is IEigenPod, Test {
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+        bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
     ) external {}
 
