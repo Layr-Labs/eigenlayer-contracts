@@ -1,7 +1,7 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../../contracts/strategies/StrategyBase.sol";
+import "src/contracts/strategies/StrategyBase.sol";
 
 contract Utils {
     address constant dummyAdmin = address(uint160(uint256(keccak256("DummyAdmin"))));
