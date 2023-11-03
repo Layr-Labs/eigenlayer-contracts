@@ -162,7 +162,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         assertEq(eigenPodManager.maxPods(), newMaxPods, "Max pods not updated");
     }
 
-    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public {
+    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != initialOwner);
         cheats.prank(notOwner);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -309,7 +309,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
                                 Remove Shares Tests
     ******************************************************************************/
 
-    function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public {
+    function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public filterFuzzedAddressInputs(notDelegationManager) {
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
         cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
@@ -363,7 +363,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved), "Incorrect number of shares removed");
     }
 
-    function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public {
+    function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public filterFuzzedAddressInputs(podOwner) {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
         cheats.assume(shares % GWEI_TO_WEI == 0);
@@ -467,7 +467,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
 contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
 
-    function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public deployPodForStaker(defaultStaker) {
+    function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
         cheats.assume(invalidCaller != defaultStaker);
         cheats.prank(invalidCaller);
         cheats.expectRevert("EigenPodManager.onlyEigenPod: not a pod");
