@@ -110,9 +110,9 @@
 ### it should revert
 ## given that the withdrawalTimestamp has already been proven
 ### it should revert
-## given that the withdrawal proof is invalid
+## given that the withdrawal proof is invalid - tested in beaconChain proofs tests
 ### it should revert
-## given that the validator fields proof is invalid
+## given that the validator fields proof is invalid - tested in beaconChain proofs tests
 ### it should revert
 ## given that the above conditions are satisfied
 ### it should set the withdrawal timestamp as proven for the validator pubKey 

@@ -905,6 +905,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
     }
 
+    using BeaconChainProofs for *;
+
+    function test_get_balance_print() public {
+        // setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        // setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
+        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+        uint64 validatorBalance = proof.balanceRoot.getBalanceAtIndex(uint40(getValidatorIndex()));
+        emit log_named_uint("validatorBalance", validatorBalance);
+    }
+
     // // 3. Single withdrawal credential
     // // Test: Owner proves an withdrawal credential.
     // //                     validator status should be marked as ACTIVE

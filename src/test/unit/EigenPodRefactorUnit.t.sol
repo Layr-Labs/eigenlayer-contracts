@@ -29,7 +29,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     
     // Constants
     // uint32 public constant WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint64 public constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31e9;
+    uint64 public constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     // uint64 public constant RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 public constant GOERLI_GENESIS_TIME = 1616508000;
     // uint64 public constant SECONDS_PER_SLOT = 12;
@@ -282,12 +282,48 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
         assertTrue(eigenPod.hasRestaked(), "hasRestaked incorrectly set");
         _assertWithdrawalProcessed(ethAmount);
     }
+
+    /**
+     * This is a regression test for a bug (EIG-14) found by Hexens.  Lets say podOwner sends 32 ETH to the EigenPod, 
+     * the nonBeaconChainETHBalanceWei increases by 32 ETH. podOwner calls withdrawBeforeRestaking, which 
+     * will simply send the entire ETH balance (32 ETH) to the owner. The owner activates restaking, 
+     * creates a validator and verifies the withdrawal credentials, receiving 32 ETH in shares.  
+     * They can exit the validator, the pod gets the 32ETH and they can call withdrawNonBeaconChainETHBalanceWei
+     * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.  This was an issue because 
+     * nonBeaconChainETHBalanceWei was never zeroed out in _processWithdrawalBeforeRestaking
+     */
+    function test_regression_ValidatorBalanceCannotBeRemovedFromPodViaNonBeaconChainETHBalanceWei() external hasNotRestaked {
+        // Assert that the pod has not restaked
+        assertFalse(eigenPod.hasRestaked(), "hasRestaked should be false");
+
+        // Simulate podOwner sending 32 ETH to eigenPod
+        _seedPodWithETH(32 ether);
+        assertEq(eigenPod.nonBeaconChainETHBalanceWei(), 32 ether, "nonBeaconChainETHBalanceWei should be 32 ETH");
+
+        // Pod owner calls withdrawBeforeRestaking, sending 32 ETH to owner
+        eigenPod.withdrawBeforeRestaking();
+        assertEq(address(eigenPod).balance, 0, "eigenPod balance should be 0");
+        assertEq(address(delayedWithdrawalRouterMock).balance, 32 ether, "withdrawal router balance should be 32 ETH");
+
+        // Upgrade from m1 to m2
+
+        // Activate restaking on the pod
+        eigenPod.activateRestaking();
+
+        // Simulate a withdrawal by increasing eth balance without code execution
+        cheats.deal(address(eigenPod), 32 ether);
+
+        // Try calling withdrawNonBeaconChainETHBalanceWei, should fail since `nonBeaconChainETHBalanceWei` 
+        // was set to 0 when calling `_processWithdrawalBeforeRestaking` from `activateRestaking` 
+        cheats.expectRevert("EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
+        eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, 32 ether);
+    }
     
     /*******************************************************************************
                         Withdraw Before Restaking Tests
     *******************************************************************************/
 
-    function testFuzz_withdrawBeforeRestaking_revert_notPodOwner(address invalidCaller) public {
+    function testFuzz_withdrawBeforeRestaking_revert_notPodOwner(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) {
         cheats.assume(invalidCaller != podOwner);
 
         cheats.prank(invalidCaller);
@@ -359,10 +395,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
     bytes32[] validatorFields;
 
     function test_revert_validatorActive() public {
-        // Set JSON
+        // Set JSON & params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        // Set params
         _setWithdrawalCredentialParams();
 
         // Set validator status to active
@@ -382,9 +416,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
     }
 
     function testFuzz_revert_invalidValidatorFields(address wrongWithdrawalAddress) public {
+        // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        // Set params
         _setWithdrawalCredentialParams();
 
         // Change the withdrawal credentials in validatorFields, which is at index 1
@@ -405,9 +438,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
 
     ///@notice Effective balance is > 32 ETH
     function test_largeEffectiveBalance() public {
+        // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        // Set params
         _setWithdrawalCredentialParams();
 
         // Verify withdrawal credentials
@@ -424,7 +456,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         );
 
         // Checks
-        assertEq(restakedBalanceGwei, 31e18, "Returned restaked balance gwei should be max");
+        assertEq(restakedBalanceGwei, 32e18, "Returned restaked balance gwei should be max");
         _assertWithdrawalCredentialsSet(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
     }
 
@@ -621,7 +653,8 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
 }
 
 contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing, IEigenPodEvents {
-    
+    using BeaconChainProofs for *;
+
     // Params to process withdrawal 
     bytes32 beaconStateRoot;
     BeaconChainProofs.WithdrawalProof withdrawalToProve;
@@ -673,7 +706,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         );
     }
 
-    function test_verifyAndProcessWithdrawal_withdrawalAlreadyProcessed() public {
+    function test_verifyAndProcessWithdrawal_withdrawalAlreadyProcessed() public setWithdrawalCredentialsExcess {
         // Set JSON & params
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         _setWithdrawalProofParams();
@@ -696,6 +729,169 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
             validatorFields,
             withdrawalFields
         );
+    }
+
+    function test_verifyAndProcessWithdrawal_excess() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        // Process withdrawal
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Verify storage
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+    }
+
+    /// @notice Tests processing a full withdrawal > MAX_RESTAKED_GWEI_PER_VALIDATOR
+    function test_processFullWithdrawal_excess32ETH() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        // Get params to check against
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
+        assertGt(withdrawalAmountGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Withdrawal amount should be greater than max restaked balance for this test");
+
+        // Process full withdrawal
+        vm.expectEmit(true, true, true, true);
+        emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, podOwner, withdrawalAmountGwei);
+        IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Storage checks in _verifyAndProcessWithdrawal
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+
+        // Checks from  _processFullWithdrawal
+        assertEq(eigenPod.withdrawableRestakedExecutionLayerGwei(), MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Incorrect withdrawable restaked execution layer gwei");
+        // Excess withdrawal amount is diff between restaked balance and total withdrawal amount
+        uint64 excessWithdrawalAmount = withdrawalAmountGwei - MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        assertEq(vw.amountToSendGwei, excessWithdrawalAmount, "Amount to send via router is not correct");
+        assertEq(vw.sharesDeltaGwei, 0, "Shares delta not correct"); // Shares delta is 0 since restaked balance and amount to withdraw were max
+        
+        // ValidatorInfo storage update checks
+        IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
+        assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.WITHDRAWN), "Validator status should be withdrawn");
+        assertEq(validatorInfo.restakedBalanceGwei, 0, "Restaked balance gwei should be 0");
+    }
+
+    /// @notice Tests processing a full withdrawal < 32 ETH
+    function test_processFullWithdrawal_lessThan32ETH() public {
+        //TODO
+    }
+
+    function test_processPartialWithdrawal() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        // Get params to check against
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
+        
+        // Assert that partial withdrawal code path will be tested
+        assertLt(withdrawalToProve.getWithdrawalEpoch(), validatorFields.getWithdrawableEpoch(), "Withdrawal epoch should be less than the withdrawable epoch");
+
+        // Process partial withdrawal
+        vm.expectEmit(true, true, true, true);
+        emit PartialWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, podOwner, withdrawalAmountGwei);
+        IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Storage checks in _verifyAndProcessWithdrawal
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+
+        // Checks from  _processPartialWithdrawal
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), withdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(vw.amountToSendGwei, withdrawalAmountGwei, "Amount to send via router is not correct");
+        assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
+
+        // Assert validator still has same restaked balance and status
+        IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
+        assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
+        assertEq(validatorInfo.restakedBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Restaked balance gwei should be max");
+    }
+
+    function testFuzz_processFullWithdrawal(bytes32 pubkeyHash, uint64 restakedAmount, uint64 withdrawalAmount) public {
+        // Format validatorInfo struct
+        IEigenPod.ValidatorInfo memory validatorInfo = IEigenPod.ValidatorInfo({
+            validatorIndex: 0,
+            restakedBalanceGwei: restakedAmount,
+            mostRecentBalanceUpdateTimestamp: 0,
+            status: IEigenPod.VALIDATOR_STATUS.ACTIVE
+        });
+        
+        // Process full withdrawal
+        IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.processFullWithdrawal(0, pubkeyHash, 0, podOwner, withdrawalAmount, validatorInfo);
+
+        // Get expected amounts based on withdrawalAmount
+        uint64 amountETHToQueue;
+        uint64 amountETHToSend;
+        if (withdrawalAmount > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR){
+            amountETHToQueue = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+            amountETHToSend = withdrawalAmount - MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        } else {
+            amountETHToQueue = withdrawalAmount;
+            amountETHToSend = 0;
+        }
+
+        // Check invariant-> amountToQueue + amountToSend = withdrawalAmount
+        assertEq(vw.amountToSendGwei + eigenPod.withdrawableRestakedExecutionLayerGwei(), withdrawalAmount, "Amount to queue and send must add up to total withdrawal amount");
+
+        // Check amount to queue and send
+        assertEq(vw.amountToSendGwei, amountETHToSend, "Amount to queue is not correct");
+        assertEq(eigenPod.withdrawableRestakedExecutionLayerGwei(), amountETHToQueue, "Incorrect withdrawable restaked execution layer gwei");
+
+        // Check shares delta
+        int256 expectedSharesDelta = int256(uint256(amountETHToQueue)) - int256(uint256(restakedAmount));
+        assertEq(vw.sharesDeltaGwei, expectedSharesDelta, "Shares delta not correct");
+
+        // Storage checks
+        IEigenPod.ValidatorInfo memory validatorInfoAfter = eigenPodHarness.validatorPubkeyHashToInfo(pubkeyHash);
+        assertEq(uint8(validatorInfoAfter.status), uint8(IEigenPod.VALIDATOR_STATUS.WITHDRAWN), "Validator status should be withdrawn");
+        assertEq(validatorInfoAfter.restakedBalanceGwei, 0, "Restaked balance gwei should be 0");
+    }
+
+    function testFuzz_processFullWithdrawal_lessMaxRestakedBalance(bytes32 pubkeyHash, uint64 restakedAmount, uint64 withdrawalAmount) public {
+        withdrawalAmount = uint64(bound(withdrawalAmount, 0, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR));
+        testFuzz_processFullWithdrawal(pubkeyHash, restakedAmount, withdrawalAmount);
+    }
+    
+    function testFuzz_processPartialWithdrawal(        
+        uint40 validatorIndex,
+        uint64 withdrawalTimestamp,
+        address recipient,
+        uint64 partialWithdrawalAmountGwei
+    ) public {
+        IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.processPartialWithdrawal(validatorIndex, withdrawalTimestamp, recipient, partialWithdrawalAmountGwei);
+
+        // Checks
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), partialWithdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(vw.amountToSendGwei, partialWithdrawalAmountGwei, "Amount to send via router is not correct");
+        assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
     }
 
     function _setWithdrawalProofParams() internal {
@@ -733,5 +929,27 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         }
     }
 
-    
+    ///@notice Effective balance is > 32 ETH
+    modifier setWithdrawalCredentialsExcess() {
+        // Set JSON and params
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // Set beacon state root, validatorIndex
+        beaconStateRoot = getBeaconStateRoot();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        validatorFieldsProof = abi.encodePacked(getWithdrawalCredentialProof()); // Validator fields are proven here
+        validatorFields = getValidatorFields();
+
+        // Get an oracle timestamp
+        cheats.warp(GOERLI_GENESIS_TIME + 1 days);
+        uint64 oracleTimestamp = uint64(block.timestamp);
+
+        eigenPodHarness.verifyWithdrawalCredentials(
+            oracleTimestamp,
+            beaconStateRoot,
+            validatorIndex,
+            validatorFieldsProof,
+            validatorFields
+        );
+        _;
+    }
 }
