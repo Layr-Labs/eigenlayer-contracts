@@ -293,8 +293,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external {
         eigenPodManager.requestProofViaFunctionGateway(
             FUNCTION_ID, 
-            startTimestamp,
-            endTimestamp,
+            _timestampToSlot(startTimestamp),
+            _timestampToSlot(endTimestamp),
             address(this),
             oracleTimestamp,
             requestNonce,
@@ -549,6 +549,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) internal returns(int256 sharesDeltaGwei){
         
         uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
+        emit log_named_uint("VALIDATOR BALANCE", validatorBalance);
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 

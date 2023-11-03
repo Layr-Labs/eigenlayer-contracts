@@ -717,6 +717,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _proveOverCommittedStake(newPod);
 
         uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
+        emit log_named_uint("newValidatorBalance", newValidatorBalance);
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
         require(
