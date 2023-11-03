@@ -629,14 +629,76 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
     bytes32[] validatorFields;
     bytes32[] withdrawalFields;
 
-    // Most recent withdrawal timestamp incremented either when withdrawal processed before restaking
+    // Most recent withdrawal timestamp incremented when withdrawal processed before restaking OR when staking activated
     function test_verifyAndProcessWithdrawal_revert_staleProof() public hasNotRestaked {
-        // Set JSON
+        // Set JSON & params
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
-        
+        _setWithdrawalProofParams();
+
+        // Set timestamp to after withdrawal timestamp
+        uint64 timestampOfWithdrawal = Endian.fromLittleEndianUint64(withdrawalToProve.timestampRoot);
+        uint256 newTimestamp = timestampOfWithdrawal + 2500;
+        cheats.warp(newTimestamp);
+
+        // Activate restaking, setting `mostRecentWithdrawalTimestamp` 
+        eigenPodHarness.activateRestaking();
+
+        // Expect revert
+        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp");
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
     }
 
-    function _getWithdrawalProofParams() internal {
+    function test_verifyAndProcessWithdrawal_revert_statusInactive() public {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        // Set status to inactive
+        eigenPodHarness.setValidatorStatus(validatorFields[0], IEigenPod.VALIDATOR_STATUS.INACTIVE);
+
+        // Expect revert
+        cheats.expectRevert("EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract");
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+    }
+
+    function test_verifyAndProcessWithdrawal_withdrawalAlreadyProcessed() public {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        // Process withdrawal
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Attempt to process again
+        cheats.expectRevert("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp");
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+    }
+
+    function _setWithdrawalProofParams() internal {
         // Set validator index, beacon state root, balance update proof, and validator fields
         beaconStateRoot = getBeaconStateRoot();
         validatorFields = getValidatorFields();
@@ -670,4 +732,6 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
                 );
         }
     }
+
+    
 }
