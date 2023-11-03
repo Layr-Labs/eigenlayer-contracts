@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
-import "./IStakeRegistry.sol";
+import "./IStakeRegistryStub.sol";
 import "./IStrategyManager.sol";
 
 /**
@@ -71,7 +71,7 @@ interface IDelegationManager is ISignatureUtils {
     }
 
     /// @notice Emitted when the StakeRegistry is set
-    event StakeRegistrySet(IStakeRegistry stakeRegistry);
+    event StakeRegistrySet(IStakeRegistryStub stakeRegistry);
 
     /**
      * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
@@ -93,6 +93,15 @@ interface IDelegationManager is ISignatureUtils {
         IStrategy[] strategies;
         // Array containing the amount of shares in each Strategy in the `strategies` array
         uint256[] shares;
+    }
+
+    struct QueuedWithdrawalParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
     }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
@@ -230,11 +239,9 @@ interface IDelegationManager is ISignatureUtils {
      *
      * All withdrawn shares/strategies are placed in a queue and can be fully withdrawn after a delay.
      */
-    function queueWithdrawal(
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external returns (bytes32);
+    function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory);
 
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
@@ -304,7 +311,7 @@ interface IDelegationManager is ISignatureUtils {
     ) external;
 
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    function stakeRegistry() external view returns (IStakeRegistry);
+    function stakeRegistry() external view returns (IStakeRegistryStub);
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.

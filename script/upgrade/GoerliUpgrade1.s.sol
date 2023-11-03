@@ -73,7 +73,6 @@ contract GoerliUpgrade1 is Script, Test {
                 delayedWithdrawalRouter,
                 eigenPodManager,
                 32e9,
-                75e7,
                 1616508000
             )
         );

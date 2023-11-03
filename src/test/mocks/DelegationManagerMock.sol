@@ -9,9 +9,9 @@ import "../../contracts/interfaces/IStrategyManager.sol";
 contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
-    IStakeRegistry public stakeRegistry;
+    IStakeRegistryStub public stakeRegistry;
 
-    function setStakeRegistry(IStakeRegistry _stakeRegistry) external {}
+    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
@@ -117,11 +117,9 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 
-    function queueWithdrawal(
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
-    ) external returns (bytes32) {}
+   function queueWithdrawals(
+        QueuedWithdrawalParams[] calldata queuedWithdrawalParams
+    ) external returns (bytes32[] memory) {}
 
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,

@@ -128,15 +128,11 @@ contract DelegationFaucet is IDelegationFaucet, Ownable {
      */
     function queueWithdrawal(
         address staker,
-        IStrategy[] calldata strategies,
-        uint256[] calldata shares,
-        address withdrawer
+         IDelegationManager.QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) public onlyOwner returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(
-            IDelegationManager.queueWithdrawal.selector,
-            strategies,
-            shares,
-            withdrawer
+            IDelegationManager.queueWithdrawals.selector, 
+            queuedWithdrawalParams
         );
         return DelegationFaucetStaker(staker).callAddress(address(delegation), data);
     }

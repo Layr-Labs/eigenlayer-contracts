@@ -2,32 +2,24 @@
 pragma solidity =0.8.12;
 
 import "../contracts/interfaces/IEigenPod.sol";
-import "../contracts/interfaces/IBLSPublicKeyCompendium.sol";
-import "../contracts/middleware/BLSPublicKeyCompendium.sol";
-import "../contracts/interfaces/IFunctionGateway.sol";
 import "../contracts/pods/DelayedWithdrawalRouter.sol";
+import "../contracts/interfaces/IFunctionGateway.sol";
 import "./utils/ProofParsing.sol";
 import "./EigenLayerDeployer.t.sol";
-import "./mocks/MiddlewareRegistryMock.sol";
-import "./mocks/ServiceManagerMock.sol";
 import "../contracts/libraries/BeaconChainProofs.sol";
 import "./mocks/BeaconChainOracleMock.sol";
-import "./utils/EigenPodHarness.sol";
-
+import "./harnesses/EigenPodHarness.sol";
 
 contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     using BytesLib for bytes;
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
-    bytes pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
+    bytes pubkey =
+        hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     uint40 validatorIndex0 = 0;
     uint40 validatorIndex1 = 1;
-    //hash tree root of list of validators
-    bytes32 validatorTreeRoot;
 
-    //hash tree root of individual validator container
-    bytes32 validatorRoot;
 
     address podOwner = address(42000094993494);
 
@@ -38,7 +30,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     PauserRegistry public pauserReg;
 
     ProxyAdmin public eigenLayerProxyAdmin;
-    IBLSPublicKeyCompendium public blsPkCompendium;
     IEigenPodManager public eigenPodManager;
     IEigenPod public podImplementation;
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -49,15 +40,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IFunctionGateway public functionGateway;
 
     BeaconChainOracleMock public beaconChainOracle;
-    MiddlewareRegistryMock public generalReg1;
-    ServiceManagerMock public generalServiceManager1;
     address[] public slashingContracts;
     address pauser = address(69);
     address unpauser = address(489);
     address podManagerAddress = 0x212224D2F2d262cd093eE13240ca4873fcCBbA3C;
     address podAddress = address(123);
     uint256 stakeAmount = 32e18;
-    mapping (address => bool) fuzzedAddressMapping;
+    mapping(address => bool) fuzzedAddressMapping;
     bytes signature;
     bytes32 depositDataRoot;
 
@@ -65,13 +54,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] validatorFields;
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
-    uint64  MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 31e9;
-    uint64  RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
+    uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
+    uint64 RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 internal constant GOERLI_GENESIS_TIME = 1616508000;
     uint64 internal constant SECONDS_PER_SLOT = 12;
 
     // bytes validatorPubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
-
 
     // EIGENPODMANAGER EVENTS
     /// @notice Emitted to notify the update of the beaconChainOracle address
@@ -86,7 +74,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
-
     // EIGENPOD EVENTS
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
@@ -97,12 +84,21 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice Emitted when an ETH validator's balance is updated in EigenLayer
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newBalanceGwei);
 
-    
     /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 withdrawalAmountGwei);
+    event FullWithdrawalRedeemed(
+        uint40 validatorIndex,
+        uint64 withdrawalTimestamp,
+        address indexed recipient,
+        uint64 withdrawalAmountGwei
+    );
 
     /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(uint40 validatorIndex, uint64 withdrawalTimestamp, address indexed recipient, uint64 partialWithdrawalAmountGwei);
+    event PartialWithdrawalRedeemed(
+        uint40 validatorIndex,
+        uint64 withdrawalTimestamp,
+        address indexed recipient,
+        uint64 partialWithdrawalAmountGwei
+    );
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -130,15 +126,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // deploy pauser registry
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
-        pauserReg= new PauserRegistry(pausers, unpauser);
+        pauserReg = new PauserRegistry(pausers, unpauser);
 
-        blsPkCompendium = new BLSPublicKeyCompendium();
+        /// weird workaround: check commit before this -- the call to `upgradeAndCall` the DelegationManager breaks without performing this step!
+        /// seems to be foundry bug. the revert is ultimately for 'TransparentUpgradeableProxy: admin cannot fallback to proxy target', i.e.
+        /// the simulated caller is somehow the ProxyAdmin itself.
+        EmptyContract emptyContract = new EmptyContract();
 
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        EmptyContract emptyContract = new EmptyContract();
+        emptyContract = new EmptyContract();
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -154,14 +153,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         ethPOSDeposit = new ETHPOSDepositMock();
         podImplementation = new EigenPod(
-                ethPOSDeposit, 
-                delayedWithdrawalRouter,
-                IEigenPodManager(podManagerAddress),
-                MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-                RESTAKED_BALANCE_OFFSET_GWEI,
-                GOERLI_GENESIS_TIME
+            ethPOSDeposit,
+            delayedWithdrawalRouter,
+            IEigenPodManager(podManagerAddress),
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            GOERLI_GENESIS_TIME
         );
-        
+
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // this contract is deployed later to keep its address the same (for these tests)
@@ -171,9 +169,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegation, IEigenPodManager(podManagerAddress), slasher);
+        StrategyManager strategyManagerImplementation = new StrategyManager(
+            delegation,
+            IEigenPodManager(podManagerAddress),
+            slasher
+        );
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit,
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegation
+        );
 
         //ensuring that the address of eigenpodmanager doesn't change
         bytes memory code = address(eigenPodManager).code;
@@ -181,7 +189,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager = IEigenPodManager(podManagerAddress);
 
         beaconChainOracle = new BeaconChainOracleMock();
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(IEigenPodManager(podManagerAddress));
+        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(
+            IEigenPodManager(podManagerAddress)
+        );
 
         address initialOwner = address(this);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -192,7 +202,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 DelegationManager.initialize.selector,
                 initialOwner,
                 pauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -203,18 +213,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 initialOwner,
                 initialOwner,
                 pauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
-            abi.encodeWithSelector(
-                Slasher.initialize.selector,
-                initialOwner,
-                pauserReg,
-                0/*initialPausedStatus*/
-            )
+            abi.encodeWithSelector(Slasher.initialize.selector, initialOwner, pauserReg, 0 /*initialPausedStatus*/)
         );
         // TODO: add `cheats.expectEmit` calls for initialization events
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -227,7 +232,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 functionGateway,
                 initialOwner,
                 pauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/
             )
         );
         uint256 initPausedStatus = 0;
@@ -235,16 +240,16 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
-            abi.encodeWithSelector(DelayedWithdrawalRouter.initialize.selector, initialOwner, pauserReg, initPausedStatus, withdrawalDelayBlocks)
+            abi.encodeWithSelector(
+                DelayedWithdrawalRouter.initialize.selector,
+                initialOwner,
+                pauserReg,
+                initPausedStatus,
+                withdrawalDelayBlocks
+            )
         );
-        generalServiceManager1 = new ServiceManagerMock(slasher);
 
-        generalReg1 = new MiddlewareRegistryMock(
-             generalServiceManager1,
-             strategyManager
-        );
-
-        cheats.deal(address(podOwner), 5*stakeAmount);   
+        cheats.deal(address(podOwner), 5 * stakeAmount);
 
         fuzzedAddressMapping[address(0)] = true;
         fuzzedAddressMapping[address(eigenLayerProxyAdmin)] = true;
@@ -252,8 +257,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         fuzzedAddressMapping[address(eigenPodManager)] = true;
         fuzzedAddressMapping[address(delegation)] = true;
         fuzzedAddressMapping[address(slasher)] = true;
-        fuzzedAddressMapping[address(generalServiceManager1)] = true;
-        fuzzedAddressMapping[address(generalReg1)] = true;
     }
 
     function testStaking() public {
@@ -277,19 +280,29 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.deal(address(pod), stakeAmount);
         cheats.startPrank(podOwner);
         cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, delayedWithdrawalRouter.userWithdrawalsLength(podOwner));
+        emit DelayedWithdrawalCreated(
+            podOwner,
+            podOwner,
+            stakeAmount,
+            delayedWithdrawalRouter.userWithdrawalsLength(podOwner)
+        );
         pod.withdrawBeforeRestaking();
         require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
-        require(pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp), "Most recent withdrawal block number not updated");
+        require(
+            pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp),
+            "Most recent withdrawal block number not updated"
+        );
     }
 
     function testDeployEigenPodWithoutActivateRestaking() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
 
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -304,21 +317,31 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
         cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(0)));
-        
+
         cheats.startPrank(podOwner);
         cheats.warp(GOERLI_GENESIS_TIME);
         cheats.expectRevert(bytes("EigenPod.hasEnabledRestaking: restaking is not enabled"));
-        newPod.verifyWithdrawalCredentials(GOERLI_GENESIS_TIME, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(
+            GOERLI_GENESIS_TIME,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
     }
 
     function testDeployEigenPodTooSoon() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
 
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         cheats.startPrank(podOwner);
+        
+
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
@@ -332,17 +355,31 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorIndices[0] = uint40(getValidatorIndex());
 
         cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"));
-        newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        cheats.expectRevert(
+            bytes(
+                "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"
+            )
+        );
+        newPod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
     }
 
     function testWithdrawFromPod() public {
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.startPrank(podOwner);
+
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit EigenPodStaked(pubkey);
+
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.deal(address(pod), stakeAmount);
 
         // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
@@ -362,7 +399,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         BeaconChainProofs.WithdrawalProof memory proofs = _getWithdrawalProof();
         bytes32 beaconStateRoot = getBeaconStateRoot();
-        withdrawalFields = getWithdrawalFields();   
+        withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();
 
         Relayer relay = new Relayer();
@@ -370,9 +407,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         relay.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
 
-    function testFullWithdrawalProofWithWrongIndices(uint64 wrongBlockRootIndex, uint64 wrongWithdrawalIndex, uint64 wrongHistoricalSummariesIndex) public {
-        uint256  BLOCK_ROOTS_TREE_HEIGHT = 13;
-        uint256  WITHDRAWALS_TREE_HEIGHT = 4;
+    function testFullWithdrawalProofWithWrongIndices(
+        uint64 wrongBlockRootIndex,
+        uint64 wrongWithdrawalIndex,
+        uint64 wrongHistoricalSummariesIndex
+    ) public {
+        uint256 BLOCK_ROOTS_TREE_HEIGHT = 13;
+        uint256 WITHDRAWALS_TREE_HEIGHT = 4;
         uint256 HISTORICAL_SUMMARIES_TREE_HEIGHT = 24;
         cheats.assume(wrongBlockRootIndex > 2 ** BLOCK_ROOTS_TREE_HEIGHT);
         cheats.assume(wrongWithdrawalIndex > 2 ** WITHDRAWALS_TREE_HEIGHT);
@@ -383,7 +424,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         bytes32 beaconStateRoot = getBeaconStateRoot();
         validatorFields = getValidatorFields();
-        withdrawalFields = getWithdrawalFields();  
+        withdrawalFields = getWithdrawalFields();
 
         {
             BeaconChainProofs.WithdrawalProof memory wrongProofs = _getWithdrawalProof();
@@ -410,7 +451,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice This test is to ensure the full withdrawal flow works
     function testFullWithdrawalFlow() public returns (IEigenPod) {
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
@@ -423,23 +464,30 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /**
-    * @notice this test is to ensure that a full withdrawal can be made once a validator has processed their first full withrawal
-    * This is specifically for the case where a validator has redeposited into their exited validator and needs to prove another withdrawal
-    * to get their funds out
-    */
+     * @notice this test is to ensure that a full withdrawal can be made once a validator has processed their first full withrawal
+     * This is specifically for the case where a validator has redeposited into their exited validator and needs to prove another withdrawal
+     * to get their funds out
+     */
     function testWithdrawAfterFullWithdrawal() external {
+        _deployInternalFunctionTester();
         IEigenPod pod = testFullWithdrawalFlow();
 
         // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest_1SlotAdvanced.json" true
         setJSON("./src/test/test-data/fullWithdrawalProof_Latest_1SlotAdvanced.json");
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
-        
+
         withdrawalFields = getWithdrawalFields();
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - _calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR())) * uint64(GWEI_TO_WEI);
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(
+            withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
+        );
+        uint64 leftOverBalanceWEI = uint64(
+            withdrawalAmountGwei - pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()
+        ) * uint64(GWEI_TO_WEI);
         cheats.deal(address(pod), leftOverBalanceWEI);
-         {
-            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+        {
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](
+                1
+            );
             withdrawalProofsArray[0] = _getWithdrawalProof();
             bytes[] memory validatorFieldsProofArray = new bytes[](1);
             validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
@@ -450,16 +498,24 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-
-            pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            pod.verifyAndProcessWithdrawals(
+                0,
+                stateRootProofStruct,
+                withdrawalProofsArray,
+                validatorFieldsProofArray,
+                validatorFieldsArray,
+                withdrawalFieldsArray
+            );
         }
     }
 
     function testProvingFullWithdrawalForTheSameSlotFails() external {
         IEigenPod pod = testFullWithdrawalFlow();
-        
-         {
-            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+
+        {
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](
+                1
+            );
             withdrawalProofsArray[0] = _getWithdrawalProof();
             bytes[] memory validatorFieldsProofArray = new bytes[](1);
             validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
@@ -470,22 +526,29 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-            cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
-            pod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            cheats.expectRevert(
+                bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp")
+            );
+            pod.verifyAndProcessWithdrawals(
+                0,
+                stateRootProofStruct,
+                withdrawalProofsArray,
+                validatorFieldsProofArray,
+                validatorFieldsArray,
+                withdrawalFieldsArray
+            );
         }
-
     }
 
     /// @notice This test is to ensure that the partial withdrawal flow works correctly
-    function testPartialWithdrawalFlow() public returns(IEigenPod) {
+    function testPartialWithdrawalFlow() public returns (IEigenPod) {
         //this call is to ensure that validator 61068 has proven their withdrawalcreds
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        
 
-        //generate partialWithdrawalProofs.json with: 
+        //generate partialWithdrawalProofs.json with:
         // ./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "partialWithdrawalProof_Latest.json" false
         setJSON("./src/test/test-data/partialWithdrawalProof_Latest.json");
         withdrawalFields = getWithdrawalFields();
@@ -494,12 +557,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
 
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-        uint40 validatorIndex = uint40(Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX]));
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(
+            withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
+        );
+        uint40 validatorIndex = uint40(
+            Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX])
+        );
 
-        cheats.deal(address(newPod), stakeAmount);    
+        cheats.deal(address(newPod), stakeAmount);
         {
-            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](
+                1
+            );
             withdrawalProofsArray[0] = withdrawalProofs;
             bytes[] memory validatorFieldsProofArray = new bytes[](1);
             validatorFieldsProofArray[0] = validatorFieldsProof;
@@ -513,30 +582,53 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
             //cheats.expectEmit(true, true, true, true, address(newPod));
-            emit PartialWithdrawalRedeemed(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei);
-            uint gas = gasleft();
-            newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
-            emit log_named_uint("gas used for partial withdrawal", gas - gasleft());
-            require(newPod.provenWithdrawal(validatorFields[0], _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))), "provenPartialWithdrawal should be true");
-            withdrawalAmountGwei = uint64(withdrawalAmountGwei*GWEI_TO_WEI);
-            require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == withdrawalAmountGwei,
-                "pod delayed withdrawal balance hasn't been updated correctly");
+            // cheats.expectEmit(validatorIndex, _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)), podOwner, withdrawalAmountGwei, address(newPod));
+            emit PartialWithdrawalRedeemed(
+                validatorIndex,
+                _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot)),
+                podOwner,
+                withdrawalAmountGwei
+            );
+            newPod.verifyAndProcessWithdrawals(
+                0,
+                stateRootProofStruct,
+                withdrawalProofsArray,
+                validatorFieldsProofArray,
+                validatorFieldsArray,
+                withdrawalFieldsArray
+            );
+            require(
+                newPod.provenWithdrawal(
+                    validatorFields[0],
+                    _computeTimestampAtSlot(Endian.fromLittleEndianUint64(withdrawalProofs.slotRoot))
+                ),
+                "provenPartialWithdrawal should be true"
+            );
+            withdrawalAmountGwei = uint64(withdrawalAmountGwei * GWEI_TO_WEI);
+            require(
+                address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore ==
+                    withdrawalAmountGwei,
+                "pod delayed withdrawal balance hasn't been updated correctly"
+            );
         }
 
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
         uint256 podOwnerBalanceBefore = address(podOwner).balance;
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
-        require(address(podOwner).balance - podOwnerBalanceBefore == withdrawalAmountGwei, "Pod owner balance hasn't been updated correctly");
+        require(
+            address(podOwner).balance - podOwnerBalanceBefore == withdrawalAmountGwei,
+            "Pod owner balance hasn't been updated correctly"
+        );
         return newPod;
     }
 
     /// @notice verifies that multiple partial withdrawals can be made before a full withdrawal
-    function testProvingMultiplePartialWithdrawalsForSameSlot(/*uint256 numPartialWithdrawals*/) public {
+    function testProvingMultiplePartialWithdrawalsForSameSlot() public /*uint256 numPartialWithdrawals*/ {
         IEigenPod newPod = testPartialWithdrawalFlow();
 
         BeaconChainProofs.WithdrawalProof memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
-        withdrawalFields = getWithdrawalFields();   
+        withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();
 
         BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
@@ -550,21 +642,32 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
-        newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+        cheats.expectRevert(
+            bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp")
+        );
+        newPod.verifyAndProcessWithdrawals(
+            0,
+            stateRootProofStruct,
+            withdrawalProofsArray,
+            validatorFieldsProofArray,
+            validatorFieldsArray,
+            withdrawalFieldsArray
+        );
     }
 
     /// @notice verifies that multiple full withdrawals for a single validator fail
-    function testDoubleFullWithdrawal() public returns(IEigenPod newPod) {
+    function testDoubleFullWithdrawal() public returns (IEigenPod newPod) {
         newPod = testFullWithdrawalFlow();
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(
+            withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
+        );
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) *
+            uint64(GWEI_TO_WEI);
         cheats.deal(address(newPod), leftOverBalanceWEI);
-
 
         BeaconChainProofs.WithdrawalProof memory withdrawalProofs = _getWithdrawalProof();
         bytes memory validatorFieldsProof = abi.encodePacked(getValidatorProof());
-        withdrawalFields = getWithdrawalFields();   
+        withdrawalFields = getWithdrawalFields();
         validatorFields = getValidatorFields();
 
         BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
@@ -578,20 +681,30 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-        cheats.expectRevert(bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"));
-        newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
-        
+        cheats.expectRevert(
+            bytes("EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp")
+        );
+        newPod.verifyAndProcessWithdrawals(
+            0,
+            stateRootProofStruct,
+            withdrawalProofsArray,
+            validatorFieldsProofArray,
+            validatorFieldsArray,
+            withdrawalFieldsArray
+        );
+
         return newPod;
     }
 
-    function testDeployAndVerifyNewEigenPod() public returns(IEigenPod) {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+    function testDeployAndVerifyNewEigenPod() public returns (IEigenPod) {
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         return _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
     }
 
     // //test freezing operator after a beacon chain slashing event
     function testUpdateSlashedBeaconBalance() public {
+        _deployInternalFunctionTester();
         //make initial deposit
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
@@ -603,23 +716,28 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         _proveOverCommittedStake(newPod);
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
         int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
-        require(beaconChainETHShares == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
-            "eigenPodManager shares not updated correctly");
+        require(
+            beaconChainETHShares == int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+            "eigenPodManager shares not updated correctly"
+        );
     }
 
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
     function testDeployNewEigenPodWithWrongWithdrawalCreds(address wrongWithdrawalAddress) public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
+        IEigenPod newPod;
+        newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod newPod;
-        newPod = eigenPodManager.getPod(podOwner);
+
         // make sure that wrongWithdrawalAddress is not set to actual pod address
         cheats.assume(wrongWithdrawalAddress != address(newPod));
 
@@ -636,8 +754,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.warp(timestamp);
-        if(!newPod.hasRestaked()){
-             newPod.activateRestaking();
+        if (!newPod.hasRestaked()) {
+            newPod.activateRestaking();
         }
         // set oracle block root
         _setOracleBlockRoot();
@@ -646,21 +764,46 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.warp(timestamp += 1);
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
-        newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
+    }
+    //ensures that a validator proving WC after they have exited the beacon chain is allowed to
+    //prove their WC and process a withdrawal
+    function testProveWithdrawalCredentialsAfterValidatorExit() public {
+        // ./solidityProofGen  -newBalance=0 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913_exited.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
+               emit log("hello");
+
+        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        emit log("hello");
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _proveWithdrawalForPod(newPod);
     }
 
     function testVerifyWithdrawalCredsFromNonPodOwnerAddress(address nonPodOwnerAddress) public {
         // nonPodOwnerAddress must be different from podOwner
         cheats.assume(nonPodOwnerAddress != podOwner);
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         cheats.startPrank(podOwner);
+
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
- 
+
         uint64 timestamp = 1;
 
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
@@ -674,14 +817,50 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
+    }
+
+        function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
+        cheats.assume(timestamp > GOERLI_GENESIS_TIME);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        IEigenPod newPod = testDeployAndVerifyNewEigenPod();
+
+         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        // prove overcommitted balance
+        cheats.warp(timestamp);
+        _proveOverCommittedStake(newPod);
+
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
+        BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
+        proofs[0] = _getBalanceUpdateProof();
+
+        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
+
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
+        newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
     }
 
     //test that when withdrawal credentials are verified more than once, it reverts
     function testDeployNewEigenPodWithActiveValidator() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
 
         uint64 timestamp = 1;
@@ -697,8 +876,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
         cheats.startPrank(podOwner);
-        cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"));
-        pod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        cheats.expectRevert(
+            bytes(
+                "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"
+            )
+        );
+        pod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
     }
 
@@ -707,20 +896,24 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     // //                     validator status should be marked as ACTIVE
 
     function testProveSingleWithdrawalCredential() public {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
 
-        assertTrue(pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE, "wrong validator status");
+        assertTrue(
+            pod.validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE,
+            "wrong validator status"
+        );
     }
 
     // // 5. Prove overcommitted balance
-    // // Setup: Run (3). 
+    // // Setup: Run (3).
     // // Test: Watcher proves an overcommitted balance for validator from (3).
     // //                     validator status should be marked as OVERCOMMITTED
 
     function testProveOverCommittedBalance() public {
+        _deployInternalFunctionTester();
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
@@ -728,8 +921,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
-        uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
-        
+        uint256 validatorRestakedBalanceBefore = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
@@ -737,24 +931,39 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.warp(GOERLI_GENESIS_TIME);
         _proveOverCommittedStake(newPod);
 
-        uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
+        uint256 validatorRestakedBalanceAfter = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
- 
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI), "hysterisis not working");
-        assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
-        assertTrue(int256(validatorRestakedBalanceBefore) - int256(validatorRestakedBalanceAfter)  == shareDiff/int256(GWEI_TO_WEI), "validator restaked balance not updated");
+        assertTrue(
+            eigenPodManager.podOwnerShares(podOwner) ==
+                int256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI),
+            "hysterisis not working"
+        );
+        assertTrue(
+            beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
+            "BeaconChainETHShares not updated"
+        );
+        assertTrue(
+            int256(validatorRestakedBalanceBefore) - int256(validatorRestakedBalanceAfter) ==
+                shareDiff / int256(GWEI_TO_WEI),
+            "validator restaked balance not updated"
+        );
     }
 
     function testVerifyUndercommittedBalance() public {
+        _deployInternalFunctionTester();
         // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         // get beaconChainETH shares
         int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
         bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
-        uint256 validatorRestakedBalanceBefore = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
+        uint256 validatorRestakedBalanceBefore = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
@@ -767,44 +976,27 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
         _proveUnderCommittedStake(newPod);
 
-        uint256 validatorRestakedBalanceAfter = newPod.validatorPubkeyHashToInfo(validatorPubkeyHash).restakedBalanceGwei;
+        uint256 validatorRestakedBalanceAfter = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));        
+        uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
-        
-        assertTrue(eigenPodManager.podOwnerShares(podOwner) == int256(_calculateRestakedBalanceGwei(newValidatorBalance) * GWEI_TO_WEI),
-            "hysterisis not working");
-        assertTrue(beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff, "BeaconChainETHShares not updated");
-        assertTrue(int256(uint256(validatorRestakedBalanceBefore)) - int256(uint256(validatorRestakedBalanceAfter)) == shareDiff/int256(GWEI_TO_WEI),
-            "validator restaked balance not updated");    
-    }
 
-    function testTooSoonBalanceUpdate(uint64 oracleTimestamp, uint64 mostRecentBalanceUpdateTimestamp) external {
-        cheats.assume(oracleTimestamp < mostRecentBalanceUpdateTimestamp);
-        _deployInternalFunctionTester();
-        
-        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-        bytes32[] memory validatorFields = getValidatorFields();
-
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
-         BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
-
-
-        bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        emit log_named_bytes32("newBeaconStateRoot", newBeaconStateRoot);
-        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-
-        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-        podInternalFunctionTester.verifyBalanceUpdate(
-            oracleTimestamp,
-            0,
-            bytes32(0),
-            proof,
-            validatorFields,
-            mostRecentBalanceUpdateTimestamp
+        assertTrue(
+            eigenPodManager.podOwnerShares(podOwner) ==
+                int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+            "hysterisis not working"
         );
-
+        assertTrue(
+            beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
+            "BeaconChainETHShares not updated"
+        );
+        assertTrue(
+            int256(uint256(validatorRestakedBalanceBefore)) - int256(uint256(validatorRestakedBalanceAfter)) ==
+                shareDiff / int256(GWEI_TO_WEI),
+            "validator restaked balance not updated"
+        );
     }
 
     function testDeployingEigenPodRevertsWhenPaused() external {
@@ -831,15 +1023,25 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function testCreatePodIfItReturnsPodAddress() external {
+        cheats.startPrank(podOwner);
+        address podAddress = eigenPodManager.createPod();
+        cheats.stopPrank();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+        require(podAddress == address(pod), "invalid pod address");
+    }
+
     function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager) {
         cheats.assume(nonPodManager != address(eigenPodManager));
 
         cheats.startPrank(podOwner);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        cheats.deal(nonPodManager, stakeAmount);     
+        cheats.deal(nonPodManager, stakeAmount);
 
         cheats.startPrank(nonPodManager);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodManager: not eigenPodManager"));
@@ -881,8 +1083,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     */
 
     function testVerifyCorrectWithdrawalCredentialsRevertsWhenPaused() external {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
 
@@ -900,7 +1102,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
         cheats.stopPrank();
 
-
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = getValidatorFields();
 
@@ -914,7 +1115,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
     }
 
@@ -923,7 +1130,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
 
-         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = getValidatorFields();
@@ -936,7 +1143,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
         // pause the contract
         cheats.startPrank(pauser);
@@ -944,9 +1151,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        newPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);    
+        newPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
     }
-
 
     function _proveOverCommittedStake(IEigenPod newPod) internal {
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
@@ -958,11 +1164,16 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
         proofs[0] = _getBalanceUpdateProof();
 
-
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
-        newPod.verifyBalanceUpdates(uint64(block.timestamp), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        newPod.verifyBalanceUpdates(
+            uint64(block.timestamp),
+            validatorIndices,
+            stateRootProofStruct,
+            proofs,
+            validatorFieldsArray
+        );
     }
 
     function _proveUnderCommittedStake(IEigenPod newPod) internal {
@@ -977,13 +1188,17 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
-        
-        newPod.verifyBalanceUpdates(uint64(block.timestamp), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+        newPod.verifyBalanceUpdates(
+            uint64(block.timestamp),
+            validatorIndices,
+            stateRootProofStruct,
+            proofs,
+            validatorFieldsArray
+        );
         require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
     }
-
-
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
         // should fail if no/wrong value is provided
@@ -1003,13 +1218,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice Test that the Merkle proof verification fails when the proof length is 0
-    function testVerifyInclusionSha256FailsForEmptyProof(
-        bytes32 root,
-        bytes32 leaf,
-        uint256 index
-    ) public {
+    function testVerifyInclusionSha256FailsForEmptyProof(bytes32 root, bytes32 leaf, uint256 index) public {
         bytes memory emptyProof = new bytes(0);
-        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        cheats.expectRevert(
+            bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32")
+        );
         Merkle.verifyInclusionSha256(emptyProof, root, leaf, index);
     }
 
@@ -1021,21 +1234,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes memory proof
     ) public {
         cheats.assume(proof.length % 32 != 0);
-        cheats.expectRevert(bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"));
+        cheats.expectRevert(
+            bytes("Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32")
+        );
         Merkle.verifyInclusionSha256(proof, root, leaf, index);
     }
 
     /// @notice Test that the Merkle proof verification fails when the proof length is empty
-    function testVerifyInclusionKeccakFailsForEmptyProof(
-        bytes32 root,
-        bytes32 leaf,
-        uint256 index
-    ) public {
+    function testVerifyInclusionKeccakFailsForEmptyProof(bytes32 root, bytes32 leaf, uint256 index) public {
         bytes memory emptyProof = new bytes(0);
-        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        cheats.expectRevert(
+            bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32")
+        );
         Merkle.verifyInclusionKeccak(emptyProof, root, leaf, index);
     }
-
 
     /// @notice Test that the Merkle proof verification fails when the proof length is not a multiple of 32
     function testVerifyInclusionKeccakFailsForNonMultipleOf32ProofLength(
@@ -1045,12 +1257,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         bytes memory proof
     ) public {
         cheats.assume(proof.length % 32 != 0);
-        cheats.expectRevert(bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"));
+        cheats.expectRevert(
+            bytes("Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32")
+        );
         Merkle.verifyInclusionKeccak(proof, root, leaf, index);
     }
 
     // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.stake` function
-    function test_incrementNumPodsOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+    function test_incrementNumPodsOnStake(
+        bytes calldata _pubkey,
+        bytes calldata _signature,
+        bytes32 _depositDataRoot
+    ) public {
         uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
         testStake(_pubkey, _signature, _depositDataRoot);
         uint256 numPodsAfter = EigenPodManager(address(eigenPodManager)).numPods();
@@ -1058,7 +1276,11 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     // verifies that the `maxPods` variable is enforced on the `EigenPod.stake` function
-    function test_maxPodsEnforcementOnStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
+    function test_maxPodsEnforcementOnStake(
+        bytes calldata _pubkey,
+        bytes calldata _signature,
+        bytes32 _depositDataRoot
+    ) public {
         // set pod limit to current number of pods
         cheats.startPrank(unpauser);
         EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
@@ -1145,12 +1367,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-/* TODO: reimplement similar tests
+    /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
-        // ./solidityProofGen "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
          setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        uint256 shareAmount = 31e18;
+        uint256 shareAmount = 32e18;
         // expect revert from underflow
         cheats.expectRevert();
         _testQueueWithdrawal(podOwner, shareAmount);
@@ -1163,7 +1385,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 withdrawableRestakedExecutionLayerGweiBefore = pod.withdrawableRestakedExecutionLayerGwei();
         
-        uint256 shareAmount = _calculateRestakedBalanceGwei(pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * GWEI_TO_WEI;
+        uint256 shareAmount = (pod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * GWEI_TO_WEI;
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
         _testQueueWithdrawal(podOwner, shareAmount);
         _verifyEigenPodBalanceSharesInvariant(podOwner, pod, validatorPubkeyHash);
@@ -1172,33 +1394,45 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             "withdrawableRestakedExecutionLayerGwei not decremented correctly");
     }
 */
-    function _verifyEigenPodBalanceSharesInvariant(address podowner, IEigenPod pod, bytes32 validatorPubkeyHash) internal view {
+    function _verifyEigenPodBalanceSharesInvariant(
+        address podowner,
+        IEigenPod pod,
+        bytes32 validatorPubkeyHash
+    ) internal view {
         int256 shares = eigenPodManager.podOwnerShares(podowner);
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
-        
+
         EigenPod.ValidatorInfo memory info = pod.validatorPubkeyHashToInfo(validatorPubkeyHash);
 
         uint64 validatorBalanceGwei = info.restakedBalanceGwei;
-        require(shares/int256(GWEI_TO_WEI) == int256(uint256(validatorBalanceGwei)) + int256(uint256(withdrawableRestakedExecutionLayerGwei)),
-            "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei");
+        require(
+            shares / int256(GWEI_TO_WEI) ==
+                int256(uint256(validatorBalanceGwei)) + int256(uint256(withdrawableRestakedExecutionLayerGwei)),
+            "EigenPod invariant violated: sharesInSM != withdrawableRestakedExecutionLayerGwei"
+        );
     }
 
-    function _proveWithdrawalForPod(IEigenPod newPod) internal returns(IEigenPod) {
+    function _proveWithdrawalForPod(IEigenPod newPod) internal returns (IEigenPod) {
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
         uint64 restakedExecutionLayerGweiBefore = newPod.withdrawableRestakedExecutionLayerGwei();
-       
-        withdrawalFields = getWithdrawalFields();
-        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]);
 
-        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) * uint64(GWEI_TO_WEI);
+        withdrawalFields = getWithdrawalFields();
+        uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(
+            withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
+        );
+
+        uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) *
+            uint64(GWEI_TO_WEI);
         cheats.deal(address(newPod), leftOverBalanceWEI);
         emit log_named_uint("leftOverBalanceWEI", leftOverBalanceWEI);
         emit log_named_uint("address(newPod)", address(newPod).balance);
         emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
-        
+
         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
         {
-            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](1);
+            BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray = new BeaconChainProofs.WithdrawalProof[](
+                1
+            );
             withdrawalProofsArray[0] = _getWithdrawalProof();
             bytes[] memory validatorFieldsProofArray = new bytes[](1);
             validatorFieldsProofArray[0] = abi.encodePacked(getValidatorProof());
@@ -1209,24 +1443,46 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
             BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-            newPod.verifyAndProcessWithdrawals(0, stateRootProofStruct, withdrawalProofsArray, validatorFieldsProofArray, validatorFieldsArray, withdrawalFieldsArray);
+            newPod.verifyAndProcessWithdrawals(
+                0,
+                stateRootProofStruct,
+                withdrawalProofsArray,
+                validatorFieldsProofArray,
+                validatorFieldsArray,
+                withdrawalFieldsArray
+            );
         }
-        require(newPod.withdrawableRestakedExecutionLayerGwei() -  restakedExecutionLayerGweiBefore == newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
-            "restakedExecutionLayerGwei has not been incremented correctly");
-        require(address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == leftOverBalanceWEI,
-            "pod delayed withdrawal balance hasn't been updated correctly");
-        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0, "balance not reset correctly");
-    
+        require(
+            newPod.withdrawableRestakedExecutionLayerGwei() - restakedExecutionLayerGweiBefore ==
+                newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
+            "restakedExecutionLayerGwei has not been incremented correctly"
+        );
+        require(
+            address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore ==
+                leftOverBalanceWEI,
+            "pod delayed withdrawal balance hasn't been updated correctly"
+        );
+        require(
+            newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).restakedBalanceGwei == 0,
+            "balance not reset correctly"
+        );
+
         cheats.roll(block.number + WITHDRAWAL_DELAY_BLOCKS + 1);
         uint256 podOwnerBalanceBefore = address(podOwner).balance;
         delayedWithdrawalRouter.claimDelayedWithdrawals(podOwner, 1);
-        require(address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI, "Pod owner balance hasn't been updated correctly");
+        require(
+            address(podOwner).balance - podOwnerBalanceBefore == leftOverBalanceWEI,
+            "Pod owner balance hasn't been updated correctly"
+        );
         return newPod;
     }
 
     // simply tries to register 'sender' as a delegate, setting their 'DelegationTerms' contract in DelegationManager to 'dt'
     // verifies that the storage of DelegationManager contract is updated appropriately
-    function _testRegisterAsOperator(address sender, IDelegationManager.OperatorDetails memory operatorDetails) internal {
+    function _testRegisterAsOperator(
+        address sender,
+        IDelegationManager.OperatorDetails memory operatorDetails
+    ) internal {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -1243,8 +1499,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function _testDelegateToOperator(address sender, address operator) internal {
         //delegator-specific information
-        (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) =
-            strategyManager.getDeposits(sender);
+        (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) = strategyManager.getDeposits(sender);
 
         uint256 numStrats = delegateShares.length;
         assertTrue(numStrats > 0, "_testDelegateToOperator: delegating from address with no deposits");
@@ -1262,10 +1517,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             delegation.delegatedTo(sender) == operator,
             "_testDelegateToOperator: delegated address not set appropriately"
         );
-        assertTrue(
-            delegation.isDelegated(sender),
-            "_testDelegateToOperator: delegated status not set appropriately"
-        );
+        assertTrue(delegation.isDelegated(sender), "_testDelegateToOperator: delegated status not set appropriately");
 
         for (uint256 i = 0; i < numStrats; ++i) {
             uint256 operatorSharesBefore = inititalSharesInStrats[i];
@@ -1276,9 +1528,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             );
         }
     }
-    function _testDelegation(address operator, address staker)
-        internal
-    {   
+
+    function _testDelegation(address operator, address staker) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
                 earningsReceiver: operator,
@@ -1295,19 +1546,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         IStrategy[] memory updatedStrategies;
         uint256[] memory updatedShares;
-        (updatedStrategies, updatedShares) =
-            strategyManager.getDeposits(staker);
+        (updatedStrategies, updatedShares) = strategyManager.getDeposits(staker);
     }
 
-    function _testDeployAndVerifyNewEigenPod(address _podOwner, bytes memory _signature, bytes32 _depositDataRoot)
-        internal returns (IEigenPod)
-    {
-        // (beaconStateRoot, beaconStateMerkleProofForValidators, validatorContainerFields, validatorMerkleProof, validatorTreeRoot, validatorRoot) =
-        //     getInitialDepositProof(validatorIndex);
-
-        // bytes32 newBeaconStateRoot = getBeaconStateRoot();
-        // BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-
+    function _testDeployAndVerifyNewEigenPod(
+        address _podOwner,
+        bytes memory _signature,
+        bytes32 _depositDataRoot
+    ) internal returns (IEigenPod) {
         IEigenPod newPod = eigenPodManager.getPod(_podOwner);
 
         cheats.startPrank(_podOwner);
@@ -1319,7 +1565,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return _verifyWithdrawalCredentials(newPod, _podOwner);
     }
 
-    function _verifyWithdrawalCredentials(IEigenPod newPod, address _podOwner) internal returns(IEigenPod) {
+    function _verifyWithdrawalCredentials(IEigenPod newPod, address _podOwner) internal returns (IEigenPod) {
+        _deployInternalFunctionTester();
         uint64 timestamp = 0;
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
@@ -1339,26 +1586,53 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         cheats.startPrank(_podOwner);
         cheats.warp(timestamp);
-        if(newPod.hasRestaked() == false){
+        if (newPod.hasRestaked() == false) {
             newPod.activateRestaking();
         }
         //set the oracle block root
         _setOracleBlockRoot();
 
-        emit log_named_bytes32("restaking activated", BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot());
+        emit log_named_bytes32(
+            "restaking activated",
+            BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot()
+        );
 
         cheats.warp(timestamp += 1);
-        newPod.verifyWithdrawalCredentials(timestamp, stateRootProofStruct, validatorIndices, proofsArray, validatorFieldsArray);
+        newPod.verifyWithdrawalCredentials(
+            timestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
         cheats.stopPrank();
 
         int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(_podOwner);
-        uint256 effectiveBalance = uint256(_calculateRestakedBalanceGwei(uint64(stakeAmount/GWEI_TO_WEI))) * GWEI_TO_WEI;
-        require((beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
-            "eigenPodManager shares not updated correctly");
+        uint256 effectiveBalance = uint256(Endian.fromLittleEndianUint64(validatorFieldsArray[0][2]) * GWEI_TO_WEI);
+
+        emit log_named_uint("effectiveBalance", effectiveBalance);
+        emit log_named_uint("MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR", MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI);
+        emit log_named_uint("beaconChainETHSharesAfter", uint256(beaconChainETHSharesAfter));
+        emit log_named_uint("beaconChainETHSharesBefore", uint256(beaconChainETHSharesBefore));
+
+        if(effectiveBalance < MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI){
+            require(
+                (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(effectiveBalance),
+                "eigenPodManager shares not updated correctly"
+             );
+        } else {
+            emit log("here)");
+            require(
+                (beaconChainETHSharesAfter - beaconChainETHSharesBefore) == int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR * GWEI_TO_WEI)),
+                "eigenPodManager shares not updated correctly"
+            );
+            emit log("here)");
+
+        }
         return newPod;
     }
 
-/* TODO: reimplement similar tests
+    /* TODO: reimplement similar tests
     function _testQueueWithdrawal(
         address _podOwner,
         uint256 amountWei
@@ -1377,23 +1651,21 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 */
     function _getLatestDelayedWithdrawalAmount(address recipient) internal view returns (uint256) {
-        return delayedWithdrawalRouter.userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1).amount;
+        return
+            delayedWithdrawalRouter
+                .userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1)
+                .amount;
     }
 
     function _getStateRootProof() internal returns (BeaconChainProofs.StateRootProof memory) {
-
-        return BeaconChainProofs.StateRootProof(
-            getBeaconStateRoot(),
-            abi.encodePacked(getStateRootProof())
-        );
+        return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), abi.encodePacked(getStateRootProof()));
     }
 
     function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
-
         bytes32 balanceRoot = getBalanceRoot();
         BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
             abi.encodePacked(getValidatorBalanceProof()),
-            abi.encodePacked(getWithdrawalCredentialProof()),  //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
+            abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
             balanceRoot
         );
 
@@ -1401,7 +1673,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
-    function _getWithdrawalProof() internal returns(BeaconChainProofs.WithdrawalProof memory) {
+    function _getWithdrawalProof() internal returns (BeaconChainProofs.WithdrawalProof memory) {
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
         //make initial deposit
@@ -1411,28 +1683,27 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-        
         {
             bytes32 blockRoot = getBlockRoot();
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
 
-            return BeaconChainProofs.WithdrawalProof(
-                abi.encodePacked(getWithdrawalProof()),
-                abi.encodePacked(getSlotProof()),
-                abi.encodePacked(getExecutionPayloadProof()),
-                abi.encodePacked(getTimestampProof()),
-                abi.encodePacked(getHistoricalSummaryProof()),
-                uint64(getBlockRootIndex()),
-                uint64(getHistoricalSummaryIndex()),
-                uint64(getWithdrawalIndex()),
-                blockRoot,
-                slotRoot,
-                timestampRoot,
-                executionPayloadRoot
-            );
-
+            return
+                BeaconChainProofs.WithdrawalProof(
+                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(getSlotProof()),
+                    abi.encodePacked(getExecutionPayloadProof()),
+                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(getHistoricalSummaryProof()),
+                    uint64(getBlockRootIndex()),
+                    uint64(getHistoricalSummaryIndex()),
+                    uint64(getWithdrawalIndex()),
+                    blockRoot,
+                    slotRoot,
+                    timestampRoot,
+                    executionPayloadRoot
+                );
         }
     }
 
@@ -1442,45 +1713,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockRoot);
     }
 
-    function testEffectiveRestakedBalance() public {
-        uint64 amountGwei = 29134000000;
-        uint64 effectiveBalance = _calculateRestakedBalanceGwei(amountGwei);
-        emit log_named_uint("effectiveBalance", effectiveBalance);
-    }
-
-    function _calculateRestakedBalanceGwei(uint64 amountGwei) internal view returns (uint64){
-        if (amountGwei <= RESTAKED_BALANCE_OFFSET_GWEI) {
-            return 0;
-        }
-        /**
-        * calculates the "floor" of amountGwei - RESTAKED_BALANCE_OFFSET_GWEI.  By using integer division 
-        * (dividing by GWEI_TO_WEI = 1e9) and then multiplying by 1e9, we effectively "round down" amountGwei to 
-        * the nearest ETH, effectively calculating the floor of amountGwei.
-        */
-        uint64 effectiveBalanceGwei = uint64((amountGwei - RESTAKED_BALANCE_OFFSET_GWEI) / GWEI_TO_WEI * GWEI_TO_WEI);
-        return uint64(MathUpgradeable.min(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, effectiveBalanceGwei));
-    }
-
     function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
         return uint64(GOERLI_GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
     function _deployInternalFunctionTester() internal {
         podInternalFunctionTester = new EPInternalFunctions(
-        ethPOSDeposit, 
-        delayedWithdrawalRouter,
-        IEigenPodManager(podManagerAddress),
-        MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-        RESTAKED_BALANCE_OFFSET_GWEI,
-        GOERLI_GENESIS_TIME
+            ethPOSDeposit,
+            delayedWithdrawalRouter,
+            IEigenPodManager(podManagerAddress),
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            GOERLI_GENESIS_TIME
         );
     }
+}
 
-
- }
-
-
- contract Relayer is Test {
+contract Relayer is Test {
     function verifyWithdrawal(
         bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
@@ -1488,9 +1736,141 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     ) public view {
         BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
     }
+}
 
-    function callArray(
-        uint64[] calldata vi
-    ) external {
-    }
- }
+
+//TODO: Integration Tests from old EPM unit tests:
+    // queues a withdrawal of "beacon chain ETH shares" from this address to itself
+    // fuzzed input amountGwei is sized-down, since it must be in GWEI and gets sized-up to be WEI
+// TODO: reimplement similar test
+    // function testQueueWithdrawalBeaconChainETHToSelf(uint128 amountGwei)
+    //     public returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
+    // {
+    //     // scale fuzzed amount up to be a whole amount of GWEI
+    //     uint256 amount = uint256(amountGwei) * 1e9;
+    //     address staker = address(this);
+    //     address withdrawer = staker;
+
+    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
+
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
+    //         _createQueuedWithdrawal(staker, amount, withdrawer);
+
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
+// TODO: reimplement similar test
+    // function testQueueWithdrawalBeaconChainETHToDifferentAddress(address withdrawer, uint128 amountGwei)
+    //     public
+    //     filterFuzzedAddressInputs(withdrawer)
+    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory, bytes32 /*withdrawalRoot*/) 
+    // {
+    //     // scale fuzzed amount up to be a whole amount of GWEI
+    //     uint256 amount = uint256(amountGwei) * 1e9;
+    //     address staker = address(this);
+
+    //     testRestakeBeaconChainETHSuccessfully(staker, amount);
+
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) =
+    //         _createQueuedWithdrawal(staker, amount, withdrawer);
+
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
+// TODO: reimplement similar test
+
+    // function testQueueWithdrawalBeaconChainETHFailsNonWholeAmountGwei(uint256 nonWholeAmount) external {
+    //     // this also filters out the zero case, which will revert separately
+    //     cheats.assume(nonWholeAmount % GWEI_TO_WEI != 0);
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: cannot queue a withdrawal of Beacon Chain ETH for an non-whole amount of gwei"));
+    //     eigenPodManager.queueWithdrawal(nonWholeAmount, address(this));
+    // }
+
+    // function testQueueWithdrawalBeaconChainETHFailsZeroAmount() external {
+    //     cheats.expectRevert(bytes("EigenPodManager._queueWithdrawal: amount must be greater than zero"));
+    //     eigenPodManager.queueWithdrawal(0, address(this));
+    // }
+
+// TODO: reimplement similar test
+    // function testCompleteQueuedWithdrawal() external {
+    //     address staker = address(this);
+    //     uint256 withdrawalAmount = 1e18;
+
+    //     // withdrawalAmount is converted to GWEI here
+    //     (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot) = 
+    //         testQueueWithdrawalBeaconChainETHToSelf(uint128(withdrawalAmount / 1e9));
+
+    //     IEigenPod eigenPod = eigenPodManager.getPod(staker);
+    //     uint256 eigenPodBalanceBefore = address(eigenPod).balance;
+
+    //     uint256 middlewareTimesIndex = 0;
+
+    //     // actually complete the withdrawal
+    //     cheats.startPrank(staker);
+    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+    //     emit BeaconChainETHWithdrawalCompleted(
+    //         queuedWithdrawal.podOwner,
+    //         queuedWithdrawal.shares,
+    //         queuedWithdrawal.nonce,
+    //         queuedWithdrawal.delegatedAddress,
+    //         queuedWithdrawal.withdrawer,
+    //         withdrawalRoot
+    //     );
+    //     eigenPodManager.completeQueuedWithdrawal(queuedWithdrawal, middlewareTimesIndex);
+    //     cheats.stopPrank();
+
+    //     // TODO: make EigenPodMock do something so we can verify that it gets called appropriately?
+    //     uint256 eigenPodBalanceAfter = address(eigenPod).balance;
+
+    //     // verify that the withdrawal root does bit exist after queuing
+    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+    // }
+
+// TODO: reimplement similar test
+    // // creates a queued withdrawal of "beacon chain ETH shares", from `staker`, of `amountWei`, "to" the `withdrawer`
+    // function _createQueuedWithdrawal(address staker, uint256 amountWei, address withdrawer)
+    //     internal
+    //     returns (IEigenPodManager.BeaconChainQueuedWithdrawal memory queuedWithdrawal, bytes32 withdrawalRoot)
+    // {
+    //     // create the struct, for reference / to return
+    //     queuedWithdrawal = IEigenPodManager.BeaconChainQueuedWithdrawal({
+    //         shares: amountWei,
+    //         podOwner: staker,
+    //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
+    //         startBlock: uint32(block.number),
+    //         delegatedTo: delegationManagerMock.delegatedTo(staker),
+    //         withdrawer: withdrawer
+    //     });
+
+    //     // verify that the withdrawal root does not exist before queuing
+    //     require(!eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is true!");
+
+    //     // get staker nonce and shares before queuing
+    //     uint256 nonceBefore = eigenPodManager.cumulativeWithdrawalsQueued(staker);
+    //     int256 sharesBefore = eigenPodManager.podOwnerShares(staker);
+
+    //     // actually create the queued withdrawal, and check for event emission
+    //     cheats.startPrank(staker);
+    
+    //     cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+    //     emit BeaconChainETHWithdrawalQueued(
+    //         queuedWithdrawal.podOwner,
+    //         queuedWithdrawal.shares,
+    //         queuedWithdrawal.nonce,
+    //         queuedWithdrawal.delegatedAddress,
+    //         queuedWithdrawal.withdrawer,
+    //         eigenPodManager.calculateWithdrawalRoot(queuedWithdrawal)
+    //     );
+    //     withdrawalRoot = eigenPodManager.queueWithdrawal(amountWei, withdrawer);
+    //     cheats.stopPrank();
+
+    //     // verify that the withdrawal root does exist after queuing
+    //     require(eigenPodManager.withdrawalRootPending(withdrawalRoot), "withdrawalRootPendingBefore is false!");
+
+    //     // verify that staker nonce incremented correctly and shares decremented correctly
+    //     uint256 nonceAfter = eigenPodManager.cumulativeWithdrawalsQueued(staker);
+    //     int256 sharesAfter = eigenPodManager.podOwnerShares(staker);
+    //     require(nonceAfter == nonceBefore + 1, "nonce did not increment correctly on queuing withdrawal");
+    //     require(sharesAfter + amountWei == sharesBefore, "shares did not decrement correctly on queuing withdrawal");
+
+    //     return (queuedWithdrawal, withdrawalRoot);
+    // }
+
