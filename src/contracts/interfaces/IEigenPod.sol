@@ -50,6 +50,14 @@ interface IEigenPod {
     }
 
 
+    struct PartialWithdrawalProofRequest{
+        uint64 startTimestamp;
+        uint64 endTimestamp;
+        uint256 requestNonce;
+        bool fulfilled;
+    }
+
+
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,

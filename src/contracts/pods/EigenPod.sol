@@ -92,11 +92,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
     uint256 public nonBeaconChainETHBalanceWei;
 
+    mapping(uint256 => PartialWithdrawalProofRequest) partialWithdrawalProofRequests;
+
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
     /// @notice prover nonce for the function gateway contract
     uint256 public requestNonce;
+
+    uint64 public timestampProvenUntil;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -290,7 +294,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 startTimestamp,
         uint64 endTimestamp,
         bytes32 FUNCTION_ID
-    ) external {
+    ) external onlyEigenPodOwner {
+        require(startTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: startTimestamp must be after mostRecentWithdrawalTimestamp");
         eigenPodManager.requestProofViaFunctionGateway(
             FUNCTION_ID, 
             _timestampToSlot(startTimestamp),
@@ -300,6 +305,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             requestNonce,
             this.handleCallback.selector
         );
+
+        partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
+            requestNonce: requestNonce,
+            startTimestamp: startTimestamp,
+            endTimestamp: endTimestamp
+            fulfilled: false
+        });
         /**
         * Zero out the running total of partial withdrawals claimed.  Once another merkle proof for partial withdrawals is proven
         * this running total wil once again start accumulating.
@@ -317,6 +329,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalSumWei := mload(add(output, 0x20))
         }
         uint256 requestNonce = abi.decode(context, (uint256));
+
+        timestampProvenUntil = partialWithdrawalProofRequests[requestNonce].endTimestamp;
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
     }
 
