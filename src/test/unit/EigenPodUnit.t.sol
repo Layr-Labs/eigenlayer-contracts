@@ -152,6 +152,9 @@ contract EigenPodUnitTests is Test, ProofParsing {
         eigenPodManager.createPod();
         cheats.stopPrank();
         pod = eigenPodManager.getPod(podOwner);
+
+        // Filter 0 address
+        fuzzedAddressMapping[address(0x0)] = true;
     }
 
     function testStakingWithInvalidAmount () public {
@@ -434,7 +437,7 @@ contract EigenPodUnitTests is Test, ProofParsing {
         require(vw.amountToSendGwei == partialWithdrawalAmountGwei, "newAmount should be partialWithdrawalAmountGwei");
     }
 
-    function testRecoverTokens(uint256 amount, address recipient) external {
+    function testRecoverTokens(uint256 amount, address recipient) external fuzzedAddress(recipient) {
         cheats.assume(amount > 0 && amount < 1e30);  
         IERC20 randomToken = new ERC20PresetFixedSupply(
             "rand",

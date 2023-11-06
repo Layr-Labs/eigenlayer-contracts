@@ -6,14 +6,10 @@ import "forge-std/Test.sol";
 
 import "../../contracts/pods/EigenPodManager.sol";
 import "../../contracts/pods/EigenPodPausingConstants.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
 
 import "../events/IEigenPodManagerEvents.sol";
 import "../utils/EigenLayerUnitTestSetup.sol";
 import "../harnesses/EigenPodManagerWrapper.sol";
-import "../mocks/DelegationManagerMock.sol";
-import "../mocks/SlasherMock.sol";
-import "../mocks/StrategyManagerMock.sol";
 import "../mocks/EigenPodMock.sol";
 import "../mocks/ETHDepositMock.sol";
 
@@ -24,14 +20,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
 
     using stdStorage for StdStorage;
 
-    // Proxy Admin & Pauser Registry
-    ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
-
     // Mocks
-    StrategyManagerMock public strategyManagerMock;
-    DelegationManagerMock public delegationManagerMock;
-    SlasherMock public slasherMock;
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodMockImplementation;
     IBeacon public eigenPodBeacon; // Proxy for eigenPodMockImplementation
@@ -43,19 +32,10 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     IEigenPod public defaultPod;
     address public initialOwner = address(this);
 
-    function setUp() virtual public {
-        // Deploy ProxyAdmin
-        proxyAdmin = new ProxyAdmin();
-
-        // Initialize PauserRegistry
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        pauserRegistry = new PauserRegistry(pausers, unpauser);
+    function setUp() virtual override public {
+        EigenLayerUnitTestSetup.setUp();
 
         // Deploy Mocks
-        slasherMock = new SlasherMock();
-        delegationManagerMock = new DelegationManagerMock();
-        strategyManagerMock = new StrategyManagerMock();
         ethPOSMock = new ETHPOSDepositMock();
         eigenPodMockImplementation = new EigenPodMock();
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodMockImplementation));
@@ -72,7 +52,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
             address(
                 new TransparentUpgradeableProxy(
                     address(eigenPodManagerImplementation),
-                    address(proxyAdmin),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         EigenPodManager.initialize.selector,
                         type(uint256).max /*maxPods*/,
@@ -91,9 +71,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
         // Set defaultPod
         defaultPod = eigenPodManager.getPod(defaultStaker);
 
-        // Exclude the zero address, the proxyAdmin and the eigenPodManager itself from fuzzed inputs
+        // Exclude the zero address, and the eigenPodManager itself from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
-        addressIsExcludedFromFuzzedInputs[address(proxyAdmin)] = true;
         addressIsExcludedFromFuzzedInputs[address(eigenPodManager)] = true;
     }
 
@@ -183,7 +162,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         assertEq(eigenPodManager.maxPods(), newMaxPods, "Max pods not updated");
     }
 
-    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public {
+    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != initialOwner);
         cheats.prank(notOwner);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -330,7 +309,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
                                 Remove Shares Tests
     ******************************************************************************/
 
-    function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public {
+    function testFuzz_removeShares_revert_notDelegationManager(address notDelegationManager) public filterFuzzedAddressInputs(notDelegationManager) {
         cheats.assume(notDelegationManager != address(delegationManagerMock));
         cheats.prank(notDelegationManager);
         cheats.expectRevert("EigenPodManager.onlyDelegationManager: not the DelegationManager");
@@ -384,7 +363,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         assertEq(eigenPodManager.podOwnerShares(defaultStaker), int256(sharesAdded - sharesRemoved), "Incorrect number of shares removed");
     }
 
-    function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public {
+    function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public filterFuzzedAddressInputs(podOwner) {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
         cheats.assume(shares % GWEI_TO_WEI == 0);
@@ -488,7 +467,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
 contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
 
-    function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public deployPodForStaker(defaultStaker) {
+    function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
         cheats.assume(invalidCaller != defaultStaker);
         cheats.prank(invalidCaller);
         cheats.expectRevert("EigenPodManager.onlyEigenPod: not a pod");
@@ -541,7 +520,7 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             slasherMock,
             delegationManagerMock
         );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+        eigenLayerProxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
     function testFuzz_shareAdjustment_negativeToNegative(int256 sharesBefore, int256 sharesAfter) public {

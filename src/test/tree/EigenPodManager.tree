@@ -1,4 +1,4 @@
-├── EigenPodManager Tree (*** denotes that integration tests are needed to validate path)
+├── EigenPodManager Tree (*** denotes that integrationt tests are needed to validate path)
 ├── when contract is deployed and initialized
 │   └── it should properly set storage
 ├── when initialize called again
@@ -23,7 +23,7 @@
 ├── when updateBeaconChainOracle is called
 │   ├── given the user is not the owner
 │   │   └── it should revert
-│   └── given the user is the owner 
+│   └── given the user is the owner
 │       └── it should set the beacon chain oracle
 ├── when addShares is called
 │   ├── given that the caller is not the delegationManager
@@ -63,7 +63,7 @@
 │   │       └── it should increment the podOwner shares by the shares to withdraw
 │   └── given that the pod owner shares are positive
 │       └── it should withdraw restaked ETH from the eigenPod
-├── when shares are adjusted
+├── when shares are adjusted ***
 │   ├── given that sharesBefore is negative or 0
 │   │   ├── given that sharesAfter is negative or zero
 │   │   │   └── the change in delegateable shares should be 0
