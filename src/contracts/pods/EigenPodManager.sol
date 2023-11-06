@@ -342,8 +342,8 @@ contract EigenPodManager is
 
     function requestProofViaFunctionGateway(
         bytes32 FUNCTION_ID,
-        uint64 startTimestamp,
-        uint64 endTimestamp,
+        uint64 startSlot,
+        uint64 endSlot,
         address podAddress,
         uint64 oracleTimestamp,
         uint256 nonce,
@@ -352,7 +352,7 @@ contract EigenPodManager is
         functionGateway.request{value: msg.value}(
             FUNCTION_ID,
             abi.encodePacked(
-                getBlockRootAtTimestamp(oracleTimestamp), podAddress, startTimestamp, endTimestamp
+                getBlockRootAtTimestamp(oracleTimestamp), podAddress, startSlot, endSlot
             ),
             callbackSelector,
             abi.encode(nonce)

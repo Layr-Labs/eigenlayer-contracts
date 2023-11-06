@@ -291,14 +291,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
-        uint64 startTimestamp,
         uint64 endTimestamp,
         bytes32 FUNCTION_ID
     ) external onlyEigenPodOwner {
-        require(startTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: startTimestamp must be after mostRecentWithdrawalTimestamp");
         eigenPodManager.requestProofViaFunctionGateway(
             FUNCTION_ID, 
-            _timestampToSlot(startTimestamp),
+            _timestampToSlot(timestampProvenUntil),
             _timestampToSlot(endTimestamp),
             address(this),
             oracleTimestamp,
@@ -313,8 +311,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             fulfilled: false
         });
         /**
-        * Zero out the running total of partial withdrawals claimed.  Once another merkle proof for partial withdrawals is proven
-        * this running total wil once again start accumulating.
+        * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
+        * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
+        * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
         */
         sumOfPartialWithdrawalsClaimedGwei = 0;
         requestNonce++;
