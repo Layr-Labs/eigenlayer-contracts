@@ -400,8 +400,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testWithdrawNonBeaconChainETHBalanceWei() public {
         cheats.startPrank(podOwner);
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-        IEigenPod pod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        testDeployAndVerifyNewEigenPod();
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
         cheats.deal(address(this), 10e18);
         emit log_named_address("opd", address(pod));
 
