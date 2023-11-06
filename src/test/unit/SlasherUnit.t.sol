@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 
 import "forge-std/Test.sol";
 
-import "../../contracts/core/Slasher.sol";
+import "../../contracts/experimental/Slasher.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 import "../../contracts/strategies/StrategyBase.sol";
 
