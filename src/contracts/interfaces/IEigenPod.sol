@@ -239,5 +239,5 @@ interface IEigenPod {
         uint64 startTimestamp,
         uint64 endTimestamp,
         bytes32 FUNCTION_ID
-    ) external
+    ) external;
 }

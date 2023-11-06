@@ -21,7 +21,6 @@ import "../src/contracts/pods/EigenPodManager.sol";
 import "../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "../src/contracts/permissions/PauserRegistry.sol";
-import "../src/contracts/middleware/BLSPublicKeyCompendium.sol";
 
 import "../src/test/mocks/EmptyContract.sol";
 import "../src/test/mocks/ETHDepositMock.sol";
@@ -228,7 +227,6 @@ contract NativeStakingDeployment is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            uint64(REQUIRED_BALANCE_WEI),
             uint64(REQUIRED_BALANCE_WEI),
             1000 // temp genesis time, TODO: set if needed
         );

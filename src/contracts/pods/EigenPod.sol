@@ -309,7 +309,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
             requestNonce: requestNonce,
             startTimestamp: startTimestamp,
-            endTimestamp: endTimestamp
+            endTimestamp: endTimestamp,
             fulfilled: false
         });
         /**
@@ -563,7 +563,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) internal returns(int256 sharesDeltaGwei){
         
         uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
-        emit log_named_uint("VALIDATOR BALANCE", validatorBalance);
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 

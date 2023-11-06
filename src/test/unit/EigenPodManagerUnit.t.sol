@@ -540,28 +540,7 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
             eigenPodBeacon,
             strategyManagerMock,
             slasherMock,
-<<<<<<< HEAD
-            IDelegationManager(address(reenterer))
-        );
-        eigenPodManager = EigenPodManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(eigenPodManagerImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        EigenPodManager.initialize.selector,
-                        type(uint256).max /*maxPods*/,
-                        IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
-                        IFunctionGateway(address(0)),
-                        initialOwner,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
-                    )
-                )
-            )
-=======
             delegationManagerMock
->>>>>>> d49837751e0298a2aabd192aff990897f4454e11
         );
         proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
