@@ -53,7 +53,7 @@ interface IEigenPod {
     struct PartialWithdrawalProofRequest{
         uint64 startTimestamp;
         uint64 endTimestamp;
-        uint256 requestNonce;
+        address recipient;
         bool fulfilled;
     }
 
@@ -236,7 +236,6 @@ interface IEigenPod {
 
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
-        uint64 startTimestamp,
         uint64 endTimestamp,
         bytes32 FUNCTION_ID
     ) external;

@@ -292,8 +292,23 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
         uint64 endTimestamp,
+        address recipient,
         bytes32 FUNCTION_ID
     ) external onlyEigenPodOwner {
+        require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
+
+        //record the partial withdrawal proof request
+        partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
+            startTimestamp: startTimestamp,
+            endTimestamp: endTimestamp,
+            recipient: recipient,
+            fulfilled: false
+        });
+
+        requestNonce++;
+
+        emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
+
         eigenPodManager.requestProofViaFunctionGateway(
             FUNCTION_ID, 
             _timestampToSlot(timestampProvenUntil),
@@ -303,34 +318,28 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             requestNonce,
             this.handleCallback.selector
         );
-
-        partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
-            requestNonce: requestNonce,
-            startTimestamp: startTimestamp,
-            endTimestamp: endTimestamp,
-            fulfilled: false
-        });
-        /**
-        * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
-        * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
-        * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
-        */
-        sumOfPartialWithdrawalsClaimedGwei = 0;
-        requestNonce++;
-
-        emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
     function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
+        PartialWithdrawalProofRequest request = partialWithdrawalProofRequests[requestNonce];
         uint256 partialWithdrawalSumWei;
         assembly {
             partialWithdrawalSumWei := mload(add(output, 0x20))
         }
         uint256 requestNonce = abi.decode(context, (uint256));
 
-        timestampProvenUntil = partialWithdrawalProofRequests[requestNonce].endTimestamp;
+        timestampProvenUntil = request.endTimestamp;
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
+
+        uint26 amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+         /**
+        * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
+        * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
+        * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
+        */
+        sumOfPartialWithdrawalsClaimedGwei = 0;
+        _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
     }
 
     /*******************************************************************************
