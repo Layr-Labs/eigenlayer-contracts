@@ -162,6 +162,7 @@
                 ├── it should emit a PartialWithdrawalRedeemed event
                 ├── it should increment the sumOfPartialWithdrawalsClaimedGwei variable
                 └── it should return the verified withdrawal struct
+
 // Tests in Integration
 // Pausing Functionality
 // verifyWithdrawalCredentials (external)

@@ -436,18 +436,21 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         );
     }
 
-    ///@notice Effective balance is > 32 ETH
-    function test_largeEffectiveBalance() public {
+    function test_effectiveBalanceGreaterThan32ETH() public {
         // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _setWithdrawalCredentialParams();
+        
+        // Check that restaked balance greater than 32 ETH
+        uint64 effectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
+        assertGt(effectiveBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Proof file has an effective balance less than 32 ETH");
 
         // Verify withdrawal credentials
         vm.expectEmit(true, true, true, true);
         emit ValidatorRestaked(validatorIndex);
         vm.expectEmit(true, true, true, true);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
-        uint256 restakedBalanceGwei = eigenPodHarness.verifyWithdrawalCredentials(
+        uint256 restakedBalanceWei = eigenPodHarness.verifyWithdrawalCredentials(
             oracleTimestamp,
             beaconStateRoot,
             validatorIndex,
@@ -456,13 +459,35 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         );
 
         // Checks
-        assertEq(restakedBalanceGwei, 32e18, "Returned restaked balance gwei should be max");
+        assertEq(restakedBalanceWei, uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * uint256(1e9), "Returned restaked balance gwei should be max");
         _assertWithdrawalCredentialsSet(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
     }
 
-    //TODO: implement with new proofgen
-    function test_smallEffectiveBalance() public {
+    function test_effectiveBalanceLessThan32ETH() public {
+        // Set JSON and params
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913_30ETHBalance.json");
+        _setWithdrawalCredentialParams();
+        
+        // Check that restaked balance less than 32 ETH
+        uint64 effectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
+        assertLt(effectiveBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Proof file has an effective balance greater than 32 ETH");
 
+        // Verify withdrawal credentials
+        vm.expectEmit(true, true, true, true);
+        emit ValidatorRestaked(validatorIndex);
+        vm.expectEmit(true, true, true, true);
+        emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, effectiveBalanceGwei);
+        uint256 restakedBalanceWei = eigenPodHarness.verifyWithdrawalCredentials(
+            oracleTimestamp,
+            beaconStateRoot,
+            validatorIndex,
+            validatorFieldsProof,
+            validatorFields
+        );
+
+        // Checks
+        assertEq(restakedBalanceWei, uint256(effectiveBalanceGwei) * uint256(1e9), "Returned restaked balance gwei incorrect");
+        _assertWithdrawalCredentialsSet(effectiveBalanceGwei);
     }
 
     function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal {
@@ -489,6 +514,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
 
 /// @notice In practice, this function should be called after a validator has verified their withdrawal credentials
 contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, ProofParsing, IEigenPodEvents {
+    using BeaconChainProofs for *;
+
     // Params to verifyBalanceUpdate, can be set in test or helper function
     uint64 oracleTimestamp;
     uint40 validatorIndex;
@@ -567,7 +594,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
     /// @notice Rest of tests assume beacon chain proofs are correct; Now we update the validator's balance
 
     ///@notice Balance of validator is > 32e9
-    function test_maxBalanceUpdate_nonZeroSharesDelta() public {
+    function test_positiveSharesDelta() public {
         // Set JSON
         setJSON("src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
 
@@ -589,17 +616,37 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
         // Checks
         IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
         assertEq(validatorInfo.restakedBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Restaked balance gwei should be max");
-        assertNotEq(sharesDeltaGwei, 0, "Shares delta should be non-zero");
+        assertGt(sharesDeltaGwei, 0, "Shares delta should be positive");
         assertEq(sharesDeltaGwei, int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR)), "Shares delta should be equal to restaked balance");
     }
     
-    //TODO: fix when we have a proof with balance update < 32 ETH
-    function test_nonMaxBalanceUpdate() public {
+    function test_negativeSharesDelta() public {
         // Set JSON
-        setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
+        setJSON("src/test/test-data/balanceUpdateProof_balance28ETH_302913.json");
 
         // Set proof params
         _setBalanceUpdateParams();
+        uint64 newValidatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
+
+        // Set balance of validator to max ETH
+        eigenPodHarness.setValidatorRestakedBalance(validatorFields[0], MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
+
+        // Verify balance update
+        int256 sharesDeltaGwei = eigenPodHarness.verifyBalanceUpdate(
+            oracleTimestamp,
+            validatorIndex,
+            beaconStateRoot,
+            balanceUpdateProof,
+            validatorFields,
+            0 // Most recent balance update timestamp set to 0
+        );
+
+        // Checks
+        IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
+        assertEq(validatorInfo.restakedBalanceGwei, newValidatorBalance, "Restaked balance gwei should be max");
+        assertLt(sharesDeltaGwei, 0, "Shares delta should be negative");
+        int256 expectedSharesDiff = int256(uint256(newValidatorBalance)) - int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR));
+        assertEq(sharesDeltaGwei, expectedSharesDiff, "Shares delta should be equal to restaked balance");
     }
 
     function test_zeroSharesDelta() public {
@@ -791,9 +838,41 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         assertEq(validatorInfo.restakedBalanceGwei, 0, "Restaked balance gwei should be 0");
     }
 
-    /// @notice Tests processing a full withdrawal < 32 ETH
-    function test_processFullWithdrawal_lessThan32ETH() public {
-        //TODO
+    function test_processFullWithdrawal_lessThan32ETH() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("src/test/test-data/fullWithdrawalProof_Latest_28ETH.json");
+        _setWithdrawalProofParams();
+
+        // Get params to check against
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
+        assertLt(withdrawalAmountGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Withdrawal amount should be greater than max restaked balance for this test");
+
+        // Process full withdrawal
+        IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Storage checks in _verifyAndProcessWithdrawal
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        // assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+
+        // Checks from  _processFullWithdrawal
+        assertEq(eigenPod.withdrawableRestakedExecutionLayerGwei(), withdrawalAmountGwei, "Incorrect withdrawable restaked execution layer gwei");
+        // Excess withdrawal amount should be 0 since balance is < MAX
+        assertEq(vw.amountToSendGwei, 0, "Amount to send via router is not correct");
+        int256 expectedSharesDiff = int256(uint256(withdrawalAmountGwei)) - int256(uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR));
+        assertEq(vw.sharesDeltaGwei, expectedSharesDiff, "Shares delta not correct"); // Shares delta is 0 since restaked balance and amount to withdraw were max
+        
+        // ValidatorInfo storage update checks
+        IEigenPod.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
+        assertEq(uint8(validatorInfo.status), uint8(IEigenPod.VALIDATOR_STATUS.WITHDRAWN), "Validator status should be withdrawn");
+        assertEq(validatorInfo.restakedBalanceGwei, 0, "Restaked balance gwei should be 0");
     }
 
     function test_processPartialWithdrawal() public setWithdrawalCredentialsExcess {
