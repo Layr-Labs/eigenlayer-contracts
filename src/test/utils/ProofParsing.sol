@@ -66,10 +66,6 @@ contract ProofParsing is Test{
         return stdJson.readBytes32(proofConfigJson, ".slotRoot");
     }
 
-    function getBalanceRoot() public returns(bytes32) {
-        return stdJson.readBytes32(proofConfigJson, ".balanceRoot");
-    }
-
     function getTimestampRoot() public returns(bytes32) {
         return stdJson.readBytes32(proofConfigJson, ".timestampRoot");
     }
@@ -153,7 +149,6 @@ contract ProofParsing is Test{
             withdrawalFields[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
          return withdrawalFields;
-
     }
 
     function getValidatorFields() public returns(bytes32[] memory) {
@@ -163,24 +158,6 @@ contract ProofParsing is Test{
             validatorFields[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
         return validatorFields;
-    }
-
-    function getValidatorBalanceProof() public returns(bytes32[] memory) {
-        bytes32[] memory validatorBalanceProof = new bytes32[](44);
-        for (uint i = 0; i < 44; i++) {
-            prefix = string.concat(".ValidatorBalanceProof[", string.concat(vm.toString(i), "]"));
-            validatorBalanceProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
-        }
-        return validatorBalanceProof;
-    }
-
-    function getBalanceUpdateSlotProof() public returns(bytes32[] memory) {
-        bytes32[] memory balanceUpdateSlotProof = new bytes32[](5);
-        for (uint i = 0; i < 5; i++) {
-            prefix = string.concat(".slotProof[", string.concat(vm.toString(i), "]"));
-            balanceUpdateSlotProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
-        }
-        return balanceUpdateSlotProof;
     }
 
     function getBalanceUpdateProof() public returns(bytes32[] memory) {
