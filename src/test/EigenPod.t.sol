@@ -258,7 +258,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testStaking() public {
         cheats.startPrank(podOwner);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
-        emit log_named_address("newPod", address(newPod));
         cheats.expectEmit(true, true, true, true, address(newPod));
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
