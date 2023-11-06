@@ -350,13 +350,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint256 amountToWithdraw
     ) external onlyEigenPodOwner {
-        require(
-            amountToWithdraw <= nonBeaconChainETHBalanceWei,
-            "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei"
-        );
-        nonBeaconChainETHBalanceWei -= amountToWithdraw;
-        emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
-        _sendETH_AsDelayedWithdrawal(recipient, amountToWithdraw);
+        // require(
+        //     amountToWithdraw <= nonBeaconChainETHBalanceWei,
+        //     "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei"
+        // );
+        // nonBeaconChainETHBalanceWei -= amountToWithdraw;
+        // emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
+        // _sendETH_AsDelayedWithdrawal(recipient, amountToWithdraw);
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod

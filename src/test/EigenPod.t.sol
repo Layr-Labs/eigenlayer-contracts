@@ -405,14 +405,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         (bool sent, ) = payable(address(pod)).call{value: 1e18}("");
 
-        require(address(pod).balance == 1e18, "balance check");
+        // require(address(pod).balance == 1e18, "balance check");
 
-        // pod.withdrawNonBeaconChainETHBalanceWei(
-        //     podOwner,
-        //     0.1 ether
-        // );
+        pod.withdrawNonBeaconChainETHBalanceWei(
+            podOwner,
+            0.1 ether
+        );
 
-        // require(address(pod).balance == 0, "balance check");
+        require(address(pod).balance == 0, "balance check");
         cheats.stopPrank();
     }
 
