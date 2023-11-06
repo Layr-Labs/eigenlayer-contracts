@@ -176,6 +176,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit NonBeaconChainETHReceived(msg.value);
     }
 
+
     /**
      * @notice This function records an update (either increase or decrease) in a validator's balance.
      * @param oracleTimestamp The oracleTimestamp whose state root the proof will be proven against.
