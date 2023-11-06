@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 
 import "src/contracts/pods/EigenPod.sol";
 
+<<<<<<< HEAD
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/mocks/DelayedWithdrawalRouterMock.sol";
 import "src/test/mocks/ERC20Mock.sol";
@@ -13,6 +14,12 @@ import "src/test/harnesses/EigenPodHarness.sol";
 import "src/test/utils/ProofParsing.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/events/IEigenPodEvents.sol";
+=======
+contract EigenPodUnitTests is Test, ProofParsing {
+    
+    using BytesLib for bytes;    
+    using BeaconChainProofs for *;
+>>>>>>> 880a0dca (update EigenPod unit and integration tests)
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     // Contract Under Test: EigenPod
