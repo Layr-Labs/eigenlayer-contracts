@@ -183,6 +183,11 @@ contract ProofParsing is Test{
         return balanceUpdateSlotProof;
     }
 
+    function getBalanceUpdateProof() public returns(bytes32[] memory) {
+        // Balance update proofs are the same as withdrawal credential proofs
+        return getWithdrawalCredentialProof();
+    }
+
     function getWithdrawalCredentialProof() public returns(bytes32[] memory) {
         bytes32[] memory withdrawalCredenitalProof = new bytes32[](46);
         for (uint i = 0; i < 46; i++) {

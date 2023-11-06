@@ -11,6 +11,8 @@ import "./harnesses/EigenPodHarness.sol";
 
 contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     using BytesLib for bytes;
+    using BeaconChainProofs for *;
+
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
@@ -699,27 +701,27 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     // test freezing operator after a beacon chain slashing event
-    // function testUpdateSlashedBeaconBalance() public {
-    //     _deployInternalFunctionTester();
-    //     //make initial deposit
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-    //     _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-    //     IEigenPod newPod = eigenPodManager.getPod(podOwner);
+    function testUpdateSlashedBeaconBalance() public {
+        _deployInternalFunctionTester();
+        //make initial deposit
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-    //     cheats.warp(GOERLI_GENESIS_TIME);
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-    //     _proveOverCommittedStake(newPod);
+        cheats.warp(GOERLI_GENESIS_TIME);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        _proveOverCommittedStake(newPod);
 
-    //     uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
-    //     int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
+        uint64 newValidatorBalance = _getValidatorUpdatedBalance(); 
+        int256 beaconChainETHShares = eigenPodManager.podOwnerShares(podOwner);
 
-    //     require(
-    //         beaconChainETHShares == int256((newValidatorBalance) * GWEI_TO_WEI),
-    //         "eigenPodManager shares not updated correctly"
-    //     );
-    // }
+        require(
+            beaconChainETHShares == int256((newValidatorBalance) * GWEI_TO_WEI),
+            "eigenPodManager shares not updated correctly"
+        );
+    }
 
     //test deploying an eigen pod with mismatched withdrawal credentials between the proof and the actual pod's address
     function testDeployNewEigenPodWithWrongWithdrawalCreds(address wrongWithdrawalAddress) public {
@@ -823,35 +825,36 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    // function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
-    //     cheats.assume(timestamp > GOERLI_GENESIS_TIME);
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-    //     IEigenPod newPod = testDeployAndVerifyNewEigenPod();
+    function testBalanceProofWithWrongTimestamp(uint64 timestamp) public {
+        cheats.assume(timestamp > GOERLI_GENESIS_TIME);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        IEigenPod newPod = testDeployAndVerifyNewEigenPod();
 
-    //      // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-    //     // prove overcommitted balance
-    //     cheats.warp(timestamp);
-    //     _proveOverCommittedStake(newPod);
+         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        // prove overcommitted balance
+        cheats.warp(timestamp);
+        _proveOverCommittedStake(newPod);
 
 
-    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-    //     validatorFieldsArray[0] = getValidatorFields();
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
 
-    //     uint40[] memory validatorIndices = new uint40[](1);
-    //     validatorIndices[0] = uint40(getValidatorIndex());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
-    //     BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-    //     proofs[0] = _getBalanceUpdateProof();
+        bytes memory proof = abi.encodePacked(getBalanceUpdateProof());
+        bytes[] memory proofs = new bytes[](1);
+        proofs[0] = proof;
 
-    //     bytes32 newLatestBlockRoot = getLatestBlockRoot();
-    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
+        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();      
 
-    //     cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
-    //     newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
-    // }
+        cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: Validators balance has already been updated for this timestamp"));
+        newPod.verifyBalanceUpdates(uint64(block.timestamp - 1), validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+    }
 
     //test that when withdrawal credentials are verified more than once, it reverts
     function testDeployNewEigenPodWithActiveValidator() public {
@@ -903,97 +906,97 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         );
     }
 
-    // // 5. Prove overcommitted balance
-    // // Setup: Run (3).
-    // // Test: Watcher proves an overcommitted balance for validator from (3).
-    // //                     validator status should be marked as OVERCOMMITTED
+    // 5. Prove overcommitted balance
+    // Setup: Run (3).
+    // Test: Watcher proves an overcommitted balance for validator from (3).
+    //                     validator status should be marked as OVERCOMMITTED
 
-    // function testProveOverCommittedBalance() public {
-    //     _deployInternalFunctionTester();
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-    //     IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-    //     // get beaconChainETH shares
-    //     int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
+    function testProveOverCommittedBalance() public {
+        _deployInternalFunctionTester();
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        // get beaconChainETH shares
+        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
 
-    //     bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
-    //     uint256 validatorRestakedBalanceBefore = newPod
-    //         .validatorPubkeyHashToInfo(validatorPubkeyHash)
-    //         .restakedBalanceGwei;
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
+        uint256 validatorRestakedBalanceBefore = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-    //     // prove overcommitted balance
-    //     cheats.warp(GOERLI_GENESIS_TIME);
-    //     _proveOverCommittedStake(newPod);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        // prove overcommitted balance
+        cheats.warp(GOERLI_GENESIS_TIME);
+        _proveOverCommittedStake(newPod);
 
-    //     uint256 validatorRestakedBalanceAfter = newPod
-    //         .validatorPubkeyHashToInfo(validatorPubkeyHash)
-    //         .restakedBalanceGwei;
+        uint256 validatorRestakedBalanceAfter = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-    //     uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
-    //     int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
-    //     assertTrue(
-    //         eigenPodManager.podOwnerShares(podOwner) ==
-    //             int256(newValidatorBalance * GWEI_TO_WEI),
-    //         "hysterisis not working"
-    //     );
-    //     assertTrue(
-    //         beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
-    //         "BeaconChainETHShares not updated"
-    //     );
-    //     assertTrue(
-    //         int256(validatorRestakedBalanceBefore) - int256(validatorRestakedBalanceAfter) ==
-    //             shareDiff / int256(GWEI_TO_WEI),
-    //         "validator restaked balance not updated"
-    //     );
-    // }
+        uint64 newValidatorBalance = _getValidatorUpdatedBalance();
+        int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
+        assertTrue(
+            eigenPodManager.podOwnerShares(podOwner) ==
+                int256(newValidatorBalance * GWEI_TO_WEI),
+            "hysterisis not working"
+        );
+        assertTrue(
+            beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
+            "BeaconChainETHShares not updated"
+        );
+        assertTrue(
+            int256(validatorRestakedBalanceBefore) - int256(validatorRestakedBalanceAfter) ==
+                shareDiff / int256(GWEI_TO_WEI),
+            "validator restaked balance not updated"
+        );
+    }
 
-    // function testVerifyUndercommittedBalance() public {
-    //     _deployInternalFunctionTester();
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-    //     IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-    //     // get beaconChainETH shares
-    //     int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
-    //     bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
-    //     uint256 validatorRestakedBalanceBefore = newPod
-    //         .validatorPubkeyHashToInfo(validatorPubkeyHash)
-    //         .restakedBalanceGwei;
+    function testVerifyUndercommittedBalance() public {
+        _deployInternalFunctionTester();
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        // get beaconChainETH shares
+        int256 beaconChainETHBefore = eigenPodManager.podOwnerShares(podOwner);
+        bytes32 validatorPubkeyHash = getValidatorPubkeyHash();
+        uint256 validatorRestakedBalanceBefore = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-    //     // prove overcommitted balance
-    //     cheats.warp(GOERLI_GENESIS_TIME);
-    //     _proveOverCommittedStake(newPod);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        // prove overcommitted balance
+        cheats.warp(GOERLI_GENESIS_TIME);
+        _proveOverCommittedStake(newPod);
 
-    //     cheats.warp(block.timestamp + 1);
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 100 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
-    //     _proveUnderCommittedStake(newPod);
+        cheats.warp(block.timestamp + 1);
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 100 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913_incrementedBlockBy100.json");
+        _proveUnderCommittedStake(newPod);
 
-    //     uint256 validatorRestakedBalanceAfter = newPod
-    //         .validatorPubkeyHashToInfo(validatorPubkeyHash)
-    //         .restakedBalanceGwei;
+        uint256 validatorRestakedBalanceAfter = newPod
+            .validatorPubkeyHashToInfo(validatorPubkeyHash)
+            .restakedBalanceGwei;
 
-    //     uint64 newValidatorBalance = BeaconChainProofs.getBalanceAtIndex(getBalanceRoot(), uint40(getValidatorIndex()));
-    //     int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
+        uint64 newValidatorBalance = _getValidatorUpdatedBalance();
+        int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
 
-    //     assertTrue(
-    //         eigenPodManager.podOwnerShares(podOwner) ==
-    //             int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
-    //         "hysterisis not working"
-    //     );
-    //     assertTrue(
-    //         beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
-    //         "BeaconChainETHShares not updated"
-    //     );
-    //     assertTrue(
-    //         int256(uint256(validatorRestakedBalanceBefore)) - int256(uint256(validatorRestakedBalanceAfter)) ==
-    //             shareDiff / int256(GWEI_TO_WEI),
-    //         "validator restaked balance not updated"
-    //     );
-    // }
+        assertTrue(
+            eigenPodManager.podOwnerShares(podOwner) ==
+                int256((MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * GWEI_TO_WEI),
+            "hysterisis not working"
+        );
+        assertTrue(
+            beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner) == shareDiff,
+            "BeaconChainETHShares not updated"
+        );
+        assertTrue(
+            int256(uint256(validatorRestakedBalanceBefore)) - int256(uint256(validatorRestakedBalanceAfter)) ==
+                shareDiff / int256(GWEI_TO_WEI),
+            "validator restaked balance not updated"
+        );
+    }
 
     function testDeployingEigenPodRevertsWhenPaused() external {
         // pause the contract
@@ -1121,80 +1124,85 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    // function testVerifyOvercommittedStakeRevertsWhenPaused() external {
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
-    //     IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+    function testVerifyOvercommittedStakeRevertsWhenPaused() external {
+        // ./solidityProofGen "BalanceUpdateProof" 302913 false 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_notOverCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
+        IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
 
-    //     // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-    //     setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-    //     validatorFieldsArray[0] = getValidatorFields();
+        // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
 
-    //     uint40[] memory validatorIndices = new uint40[](1);
-    //     validatorIndices[0] = uint40(getValidatorIndex());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
-    //     BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-    //     proofs[0] = _getBalanceUpdateProof();
+        bytes[] memory proofs = new bytes[](1);
+        proofs[0] = abi.encodePacked(getBalanceUpdateProof());
 
-    //     bytes32 newBeaconStateRoot = getBeaconStateRoot();
-    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
-    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        bytes32 newBeaconStateRoot = getBeaconStateRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newBeaconStateRoot);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-    //     // pause the contract
-    //     cheats.startPrank(pauser);
-    //     eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE);
-    //     cheats.stopPrank();
+        // pause the contract
+        cheats.startPrank(pauser);
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE);
+        cheats.stopPrank();
 
-    //     cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-    //     newPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
-    // }
+        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+        newPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+    }
 
-    // function _proveOverCommittedStake(IEigenPod newPod) internal {
-    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-    //     validatorFieldsArray[0] = getValidatorFields();
+    function _proveOverCommittedStake(IEigenPod newPod) internal {
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
 
-    //     uint40[] memory validatorIndices = new uint40[](1);
-    //     validatorIndices[0] = uint40(getValidatorIndex());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
-    //     BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-    //     proofs[0] = _getBalanceUpdateProof();
+        bytes[] memory proofs = new bytes[](1);
+        proofs[0] = abi.encodePacked(getBalanceUpdateProof());
 
-    //     bytes32 newLatestBlockRoot = getLatestBlockRoot();
-    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
-    //     newPod.verifyBalanceUpdates(
-    //         uint64(block.timestamp),
-    //         validatorIndices,
-    //         stateRootProofStruct,
-    //         proofs,
-    //         validatorFieldsArray
-    //     );
-    // }
+        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        newPod.verifyBalanceUpdates(
+            uint64(block.timestamp),
+            validatorIndices,
+            stateRootProofStruct,
+            proofs,
+            validatorFieldsArray
+        );
+    }
 
-    // function _proveUnderCommittedStake(IEigenPod newPod) internal {
-    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-    //     validatorFieldsArray[0] = getValidatorFields();
+    function _proveUnderCommittedStake(IEigenPod newPod) internal {
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
 
-    //     uint40[] memory validatorIndices = new uint40[](1);
-    //     validatorIndices[0] = uint40(getValidatorIndex());
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
 
-    //     BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-    //     proofs[0] = _getBalanceUpdateProof();
+        bytes[] memory proofs = new bytes[](1);
+        proofs[0] = abi.encodePacked(getBalanceUpdateProof());
 
-    //     bytes32 newLatestBlockRoot = getLatestBlockRoot();
-    //     BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
-    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        bytes32 newLatestBlockRoot = getLatestBlockRoot();
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-    //     newPod.verifyBalanceUpdates(
-    //         uint64(block.timestamp),
-    //         validatorIndices,
-    //         stateRootProofStruct,
-    //         proofs,
-    //         validatorFieldsArray
-    //     );
-    //     require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
-    // }
+        newPod.verifyBalanceUpdates(
+            uint64(block.timestamp),
+            validatorIndices,
+            stateRootProofStruct,
+            proofs,
+            validatorFieldsArray
+        );
+        require(newPod.validatorPubkeyHashToInfo(getValidatorPubkeyHash()).status == IEigenPod.VALIDATOR_STATUS.ACTIVE);
+    }
+
+    function _getValidatorUpdatedBalance() internal returns (uint64) {
+        bytes32[] memory validatorFieldsToGet = getValidatorFields();
+        return validatorFieldsToGet.getEffectiveBalanceGwei();
+    }
 
     function testStake(bytes calldata _pubkey, bytes calldata _signature, bytes32 _depositDataRoot) public {
         // should fail if no/wrong value is provided
