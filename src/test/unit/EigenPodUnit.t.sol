@@ -158,9 +158,9 @@ contract EigenPodUnitTests is Test, ProofParsing {
     }
 
     function testDeployPodWithStateChecks() external {
-        IEigenPod pod = eigenPodManager.getPod(address(42000094992494));
-        eigenPodManager.createPod();
         cheats.startPrank(address(42000094992494));
+        eigenPodManager.createPod();
+        IEigenPod pod = eigenPodManager.getPod(address(42000094992494));
 
         require(pod.hasRestaked() == true, "hasRestaked is not true");
         cheats.stopPrank();
