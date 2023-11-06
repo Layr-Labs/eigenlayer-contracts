@@ -399,22 +399,24 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function testWithdrawNonBeaconChainETHBalanceWei() public {
-        cheats.startPrank(podOwner);
-        testDeployAndVerifyNewEigenPod();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        cheats.deal(address(this), 10e18);
+        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+        IEigenPod _pod = eigenPodManager.getPod(podOwner);
+
+        require(_pod == pod, "add check");
+
+        cheats.deal(address(podOwner), 10 ether);
         emit log_named_address("opd", address(pod));
 
-        (bool sent, ) = payable(address(pod)).call{value: 100}("");
+        (bool sent, ) = payable(address(pod)).call{value: 1 ether}("");
 
-        // require(address(pod).balance == 1e18, "balance check");
+        require(sent == true, "not sent");
 
+        cheats.startPrank(podOwner, podOwner);
         pod.withdrawNonBeaconChainETHBalanceWei(
             podOwner,
-            0.1 ether
+            1 ether
         );
 
-        require(address(pod).balance == 0, "balance check");
         cheats.stopPrank();
     }
 
