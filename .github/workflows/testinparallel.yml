@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+      fail-fast: false
         file: ${{fromJson(needs.prepare.outputs.matrix)}}
     steps:
     - name: Checkout code
