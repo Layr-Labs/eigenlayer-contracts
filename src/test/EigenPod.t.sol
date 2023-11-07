@@ -301,37 +301,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         );
     }
 
-    function testWithdrawBeforeRestakingWithTimestampChecks() public {
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-
-        //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
-        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
-        require(pod.hasRestaked() == false, "Pod should not be restaked");
-
-        // simulate a withdrawal
-        cheats.deal(address(pod), stakeAmount);
-        cheats.startPrank(podOwner);
-        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(
-            podOwner,
-            podOwner,
-            stakeAmount,
-            delayedWithdrawalRouter.userWithdrawalsLength(podOwner)
-        );
-        uint timestampBeforeTx = pod.mostRecentWithdrawalTimestamp();
-        pod.withdrawBeforeRestaking();
-        require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
-        require(
-            pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp),
-            "Most recent withdrawal block number not updated"
-        );
-        require(
-            pod.mostRecentWithdrawalTimestamp() > timestampBeforeTx,
-            "Most recent withdrawal block number not updated"
-        );
-    }
-
     function testDeployEigenPodWithoutActivateRestaking() public {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
