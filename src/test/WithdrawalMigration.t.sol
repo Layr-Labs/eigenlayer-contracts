@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "../test/EigenLayerTestHelper.t.sol";
-import "./unit/Utils.sol";
+import "src/test/utils/Utils.sol";
 import "./mocks/ERC20Mock.sol";
 
 ///@notice This set of tests shadow forks the contracts from M1, queues withdrawals, and tests the migration functionality
