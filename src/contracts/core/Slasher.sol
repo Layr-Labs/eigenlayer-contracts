@@ -28,26 +28,40 @@ contract Slasher is SlasherStorage {
     /**
      * @notice External function called by AVSs to register an operator without the ability to slash it
      * @param operator The address of the registering operator
-     * @param expiry The desired expiry time of the operator's signature
-     * @param signature The signature of the operator
+     * @param signatureWithSaltAndExpiry The signature, salt, and expiry of the operator's signature
      */
-    function registerOperatorWithoutSlashingWithAVS(address operator, uint256 expiry, bytes memory signature) external {
-        require(expiry > block.timestamp, "Slasher.registerOperatorWithoutSlashingWithAVS: signature expired");
-        require(!registeredWithoutSlashing[msg.sender][operator], "Slasher.registerOperatorWithoutSlashingWithAVS: operator already registered without slashing");
+    function registerOperatorNoSlashingWithAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) external {
+        require(signatureWithSaltAndExpiry.expiry > block.timestamp, "Slasher.registerOperatorNoSlashingWithAVS: signature expired");
+        require(isOperatorSaltUsed[msg.sender][signatureWithSaltAndExpiry.salt] == false, "Slasher.registerOperatorNoSlashingWithAVS: salt already used");
+        require(!registeredWithoutSlashing[msg.sender][operator], "Slasher.registerOperatorNoSlashingWithAVS: operator already registered without slashing");
         // check operator signature
-        EIP1271SignatureUtils.checkSignature_EIP1271(operator, calculateRegistrationWithoutSlashingDigestHash(operator, msg.sender, nonces[msg.sender]++, expiry), signature);
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            operator, 
+            calculateRegistrationNoSlashingDigestHash({
+                operator: operator, 
+                avs: msg.sender, 
+                salt: signatureWithSaltAndExpiry.salt, 
+                expiry: signatureWithSaltAndExpiry.expiry
+            }), 
+            signatureWithSaltAndExpiry.signature
+        );
+        isOperatorSaltUsed[operator][signatureWithSaltAndExpiry.salt] = true;
         // register operator
         registeredWithoutSlashing[msg.sender][operator] = true;
+
+        emit OperatorRegistrationStatusUpdate(operator, msg.sender, RegistrationStatus.REGISTERED);
     }
 
     /**
      * @notice Public function called by AVSs to deregister an operator once the operator is already registered without slashing
      * @param operator The address of the registering operator
      */
-    function deregisterOperatorWithoutSlashingWithAVS(address operator) external {
-        require(registeredWithoutSlashing[msg.sender][operator], "Slasher.deregisterOperatorWithoutSlashingWithAVS: operator is not registered without slashing");
+    function deregisterOperatorNoSlashingFromAVS(address operator) external {
+        require(registeredWithoutSlashing[msg.sender][operator], "Slasher.deregisterOperatorNoSlashingFromAVS: operator is not registered without slashing");
         // register operator
         registeredWithoutSlashing[msg.sender][operator] = false;
+
+        emit OperatorRegistrationStatusUpdate(operator, msg.sender, RegistrationStatus.DEREGISTERED);
     }
 
     
@@ -55,16 +69,16 @@ contract Slasher is SlasherStorage {
      * @notice Public function for the the operator message digest to sign for registration without slashing
      * @param operator The address of the registering operator 
      * @param avs The avs the operator is registering with
-     * @param nonce The nonce to use for the operator's signature
+     * @param salt The salt to use for the operator's signature
      * @param expiry The desired expiry time of the operator's signature
      */
-    function calculateRegistrationWithoutSlashingDigestHash(
+    function calculateRegistrationNoSlashingDigestHash(
         address operator,
         address avs,
-        uint256 nonce,
+        bytes32 salt,
         uint256 expiry
     ) public view returns (bytes32) {
         // calculate the digest hash
-        return _hashTypedDataV4(keccak256(abi.encode(REGISTRATION_WITHOUT_SLASHING_TYPEHASH, operator, avs, nonce, expiry)));
+        return _hashTypedDataV4(keccak256(abi.encode(REGISTRATION_WITHOUT_SLASHING_TYPEHASH, operator, avs, salt, expiry)));
     }
 }

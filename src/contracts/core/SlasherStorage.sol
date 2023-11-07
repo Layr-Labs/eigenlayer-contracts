@@ -22,15 +22,15 @@ abstract contract SlasherStorage is Initializable, OwnableUpgradeable, ISlasher,
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant REGISTRATION_WITHOUT_SLASHING_TYPEHASH =
-        keccak256("RegistrationWithoutSlashing(address operator,address avs,uint256 nonce,uint256 expiry)");
+        keccak256("RegistrationWithoutSlashing(address operator,address avs,bytes32 salt,uint256 expiry)");
 
     /// @notice The central StrategyManager contract of EigenLayer
     IStrategyManager public immutable strategyManager;
     /// @notice The DelegationManager contract of EigenLayer
     IDelegationManager public immutable delegation;
 
-    /// @notice staker => number of signed deposit nonce (used in depositIntoStrategyWithSignature)
-    mapping(address => uint256) public nonces;
+    /// @notice operator => salt => whether that salt has been used
+    mapping(address => mapping(bytes32 => bool)) public isOperatorSaltUsed;
 
     /// @notice avs => operator => bool whether the operator is registered without slashing for the avs
     mapping(address => mapping(address => bool)) public registeredWithoutSlashing;
