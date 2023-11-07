@@ -157,15 +157,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
         fuzzedAddressMapping[address(0x0)] = true;
     }
 
-    function testDeployPodWithStateChecks() external {
-        cheats.startPrank(address(42000094992494));
-        eigenPodManager.createPod();
-        IEigenPod pod = eigenPodManager.getPod(address(42000094992494));
-
-        require(pod.hasRestaked() == true, "hasRestaked is not true");
-        cheats.stopPrank();
-    }
-
     function testStakingWithInvalidAmount () public {
         cheats.deal(address(eigenPodManager), 10e18);
         cheats.startPrank(address(eigenPodManager));
@@ -540,12 +531,5 @@ contract EigenPodUnitTests is Test, ProofParsing {
         cheats.startPrank(podOwner);
         eigenPodManager.createPod();
         cheats.stopPrank();
-    }
-
-    function _getLatestDelayedWithdrawalAmount(address recipient) internal view returns (uint256) {
-        return
-            delayedWithdrawalRouter
-                .userDelayedWithdrawalByIndex(recipient, delayedWithdrawalRouter.userWithdrawalsLength(recipient) - 1)
-                .amount;
     }
 }

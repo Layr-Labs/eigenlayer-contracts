@@ -110,6 +110,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice event for the claiming of delayedWithdrawals
     event DelayedWithdrawalsClaimed(address recipient, uint256 amountClaimed, uint256 delayedWithdrawalsCompleted);
 
+    /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
+    event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
+
     modifier fuzzedAddress(address addr) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);
         _;
@@ -282,10 +285,18 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             stakeAmount,
             delayedWithdrawalRouter.userWithdrawalsLength(podOwner)
         );
+
+        uint timestampBeforeTx = pod.mostRecentWithdrawalTimestamp();
+
         pod.withdrawBeforeRestaking();
+
         require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
         require(
             pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp),
+            "Most recent withdrawal block number not updated"
+        );
+        require(
+            pod.mostRecentWithdrawalTimestamp() > timestampBeforeTx,
             "Most recent withdrawal block number not updated"
         );
     }
@@ -399,21 +410,38 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testWithdrawNonBeaconChainETHBalanceWei() public {
         IEigenPod pod = testDeployAndVerifyNewEigenPod();
-        IEigenPod _pod = eigenPodManager.getPod(podOwner);
-
-        require(_pod == pod, "add check");
 
         cheats.deal(address(podOwner), 10 ether);
-        emit log_named_address("opd", address(pod));
+        emit log_named_address("Pod:", address(pod));
+
+        uint256 balanceBeforeDeposit = pod.nonBeaconChainETHBalanceWei();
 
         (bool sent, ) = payable(address(pod)).call{value: 1 ether}("");
 
         require(sent == true, "not sent");
 
+        uint256 balanceAfterDeposit = pod.nonBeaconChainETHBalanceWei();
+
+        require(
+            balanceBeforeDeposit < balanceAfterDeposit 
+            && (balanceAfterDeposit - balanceBeforeDeposit) == 1 ether, 
+            "increment checks"
+        );
+
         cheats.startPrank(podOwner, podOwner);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit NonBeaconChainETHWithdrawn(podOwner, 1 ether);
         pod.withdrawNonBeaconChainETHBalanceWei(
             podOwner,
             1 ether
+        );
+
+        uint256 balanceAfterWithdrawal = pod.nonBeaconChainETHBalanceWei();
+
+        require(
+            balanceAfterWithdrawal < balanceAfterDeposit 
+            && balanceAfterWithdrawal == balanceBeforeDeposit, 
+            "decrement checks"
         );
 
         cheats.stopPrank();
