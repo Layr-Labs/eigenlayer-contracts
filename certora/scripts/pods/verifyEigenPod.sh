@@ -10,7 +10,8 @@ certoraRun certora/harnesses/EigenPodHarness.sol \
     certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
     --verify EigenPodHarness:certora/specs/pods/EigenPod.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --prover_args '-optimisticFallback true -recursionEntryLimit 3' \
+    --optimistic_hashing \
     $RULE \
     --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
