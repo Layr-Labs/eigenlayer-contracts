@@ -105,3 +105,8 @@ rule validatorIndexSetOnlyOnce(bytes32 pubkeyHash) {
     assert(validatorIndexBefore == 0 || validatorIndexAfter == validatorIndexBefore,
         "validator index modified from nonzero value");
 }
+
+// verifies that once a validator has its status set to WITHDRAWN, its ‘restakedBalanceGwei’ is *and always remains* zero
+invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
+    (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
+        (get_restakedBalanceGwei(pubkeyHash) == 0);
