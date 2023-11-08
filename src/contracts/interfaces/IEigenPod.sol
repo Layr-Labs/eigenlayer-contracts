@@ -27,6 +27,12 @@ interface IEigenPod {
         WITHDRAWN // withdrawn from the Beacon Chain
     }
 
+    enum REQUEST_STATUS {
+        PENDING, // request is pending
+        FULFILLED, // request is fulfilled
+        CANCELLED // request is cancelled
+    }
+
     struct ValidatorInfo {
         // index of the validator in the beacon chain
         uint64 validatorIndex;
@@ -54,7 +60,7 @@ interface IEigenPod {
         uint64 startTimestamp;
         uint64 endTimestamp;
         address recipient;
-        bool fulfilled;
+        REQUEST_STATUS status;
     }
 
 
