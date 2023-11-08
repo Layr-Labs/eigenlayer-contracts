@@ -265,6 +265,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             withdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
         }
 
+        // check if podOwner will have 'share debt' (negative shares) after the update
+        int256 newShareAmount = eigenPodManager.podOwnerShares(podOwner) + withdrawalSummary.sharesDeltaGwei;
+        if (newShareAmount < 0) {
+            // check if the `amountToSendGwei` is enough to pay off the existing share debt. pay off all debt if possible, or only some of it if not.
+            if (withdrawalSummary.amountToSendGwei >= (-newShareAmount)) {
+                withdrawalSummary.amountToSendGwei += newShareAmount;
+                verifiedWithdrawal.sharesDeltaGwei -= newShareAmount;
+            } else {
+                verifiedWithdrawal.sharesDeltaGwei += withdrawalSummary.amountToSendGwei;
+                withdrawalSummary.amountToSendGwei = 0;
+            }
+        }
+
         // If any withdrawals are eligible for immediate redemption, send to the pod owner via
         // DelayedWithdrawalRouter
         if (withdrawalSummary.amountToSendGwei != 0) {
