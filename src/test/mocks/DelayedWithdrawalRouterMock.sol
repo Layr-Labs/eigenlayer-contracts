@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "../../contracts/interfaces/IDelayedWithdrawalRouter.sol";
 
-
 contract DelayedWithdrawalRouterMock is IDelayedWithdrawalRouter {
     /**
      * @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.

@@ -19,6 +19,38 @@ contract EPInternalFunctions is EigenPod {
         _GENESIS_TIME
     ) {}
 
+    function verifyWithdrawalCredentials(
+        uint64 oracleTimestamp,
+        bytes32 beaconStateRoot,
+        uint40 validatorIndex,
+        bytes calldata validatorFieldsProof,
+        bytes32[] calldata validatorFields
+    ) public returns (uint256) {
+        return _verifyWithdrawalCredentials(
+            oracleTimestamp,
+            beaconStateRoot,
+            validatorIndex,
+            validatorFieldsProof,
+            validatorFields
+        );
+    }
+
+    function verifyAndProcessWithdrawal(
+        bytes32 beaconStateRoot,
+        BeaconChainProofs.WithdrawalProof calldata withdrawalProof,
+        bytes calldata validatorFieldsProof,
+        bytes32[] calldata validatorFields,
+        bytes32[] calldata withdrawalFields
+    ) public returns (IEigenPod.VerifiedWithdrawal memory) {
+        return _verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalProof,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+    }
+
     function processFullWithdrawal(
         uint40 validatorIndex,
         bytes32 validatorPubkeyHash,
@@ -59,11 +91,11 @@ contract EPInternalFunctions is EigenPod {
         bytes32[] calldata validatorFields,
         uint64 mostRecentBalanceUpdateTimestamp
     )
-        public
+        public returns (int256)
     {
         bytes32 pkhash = validatorFields[0];
         _validatorPubkeyHashToInfo[pkhash].mostRecentBalanceUpdateTimestamp = mostRecentBalanceUpdateTimestamp;
-        _verifyBalanceUpdate(
+        return _verifyBalanceUpdate(
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
@@ -74,5 +106,9 @@ contract EPInternalFunctions is EigenPod {
 
     function setValidatorStatus(bytes32 pkhash, VALIDATOR_STATUS status) public {
         _validatorPubkeyHashToInfo[pkhash].status = status;
+    }
+
+    function setValidatorRestakedBalance(bytes32 pkhash, uint64 restakedBalanceGwei) public {
+        _validatorPubkeyHashToInfo[pkhash].restakedBalanceGwei = restakedBalanceGwei;
     }
  }

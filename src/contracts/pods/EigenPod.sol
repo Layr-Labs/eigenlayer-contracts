@@ -549,7 +549,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
-         uint64 newRestakedBalanceGwei;
+        uint64 newRestakedBalanceGwei;
         if (validatorBalance > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
             newRestakedBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         } else {

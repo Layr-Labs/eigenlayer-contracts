@@ -1,0 +1,171 @@
+.
+├── EigenPod Tree (*** denotes that integration tests are needed to validate path)
+├── when the contract is deployed and initialized
+│   └── it should properly set storage
+├── when initialize called again
+│   └── it should revert
+├── // Balance Update Tree
+├── when verifyBalanceUpdates is called ***
+│   ├── given that balance updates are paused
+│   │   └── it should revert
+│   ├── given that the indices and proofs are different lengths
+│   │   └── it should revert
+│   ├── given that the oracle timestamp is stale
+│   │   └── it should revert
+│   ├── given that the beacon state root proof is invalid
+│   │   └── it should revert
+│   └── given that the above conditions are satisfied
+│       ├── it should call _verifyBalanceUpdate for each balance update
+│       └── it should record a beaconChainETH balance update in the EPM
+├── when _verifyBalanceUpdate is called (internal function)
+│   ├── given that the most recent balance update timestamp is greater than or equal to the oracle timestamp
+│   │   └── it should revert
+│   ├── given that the validator status is not active
+│   │   └── it should revert
+│   ├── given that the validator withdrawable epoch is less than or equal to the epoch of the oracle timestamp
+│   │   └── given that the validator balance is equal to 0
+│   │       └── it should revert
+│   ├── given that the validator fields proof is not valid
+│   │   └── it should revert
+│   ├── given that the validator balances proof is not valid
+│   │   └── it should revert
+│   └── given that the above conditions are satisfied
+│       ├── given that the validator restaked balance is greater than the max restaked balance per validator
+│       │   └── it should set the new restaked balance to the validator restaked balance
+│       ├── given that the validator restaked balance is less than or equal to the max restaked balance per validator
+│       │   └── it should set the new restaked balance to the validator restaked balance
+│       ├── it should update the _validatorPubkeyHashToInfo mapping with the new restaked balance
+│       └── given that the new restaked balance is not equal to the validator restaked balance
+│           └── it should emit a validator balance updated event and return a non-zero sharesDeltaGwei
+├── // EigenPodManager Caller Tree
+├── when stake is called
+│   ├── given the caller is not the EigenPodManager
+│   │   └── it should revert
+│   ├── given the value staked is not 32 ETH
+│   │   └── it should revert
+│   └── given that all of the above conditions are satisfied
+│       └── it should stake ETH in the beacon chain deposit contract
+├── when withdrawRestakedBeaconChainETH is called - function only relevant when `withdrawableRestakedExecutionLayerGwei` is incremented after a full withdrawal
+│   ├── given that the caller is not the EigenPodManager
+│   │   └── it should revert
+│   ├── given that the amount to withdraw is not a whole Gwei amount
+│   │   └── it should revert
+│   ├── given that the amount to withdraw is greater than the withdrawable restaked execution layer amount
+│   │   └── it should revert
+│   └── given the above conditions are satisfied
+│       └── it should send eth from the pod to the recipient
+├── // EigenPodOwner Caller Tree
+├── when verifyWithdrawalCredentials is called ***
+│   ├── given that the caller is not the eigen pod Owner
+│   │   └── it should revert
+│   ├── given that verify credentials is paused
+│   │   └── it should revert
+│   ├── given that the proof is not valid for the timestamp
+│   │   └── it should revert
+│   ├── given that restaking is not enabled
+│   │   └── it should revert
+│   ├── given that the validator indices, proofs, and validator fields are different lengths
+│   │   └── it should revert
+│   ├── given that the withdrawal credential proof is stale
+│   │   └── it should revert
+│   ├── given that the beacon state root proof is invalid
+│   │   └── it should revert
+│   ├── it should call _verifyWithdrawalCredentials for each validator
+│   └── it should record a beaconChainETH balance update in the EPM
+├── when _verifyWithdrawalCredentials is called (internal function)
+│   ├── given that the validators status is inactive
+│   │   └── it should revert
+│   ├── given that validator's withdrawal credentials does not correspond to the pod withdrawal credentials
+│   │   └── it should revert
+│   ├── given that the validator fields proof is not valid
+│   │   └── it should revert
+│   └── given that all the above conditions are satisfied
+│       ├── given that the validator effective balance is greater than the max restaked balance
+│       │   └── it should set the validator restaked balance to the max restaked balance
+│       ├── given that the validator effective balance is less than or equal to the max restaked balance
+│       │   └── it should set the validator restaked balance to the validator effective balance
+│       ├── it should update the _validatorPubkeyHashToInfo mapping with an active validator and restaked balance
+│       ├── it should emit ValidatorRestaked and ValidatorBalanceUpdated Events
+│       └── It should return the validator's restakedBalance in wei
+├── when withdrawNonBeaconChainETHBalanceWei is called
+│   ├── given that the caller is not the eigen pod owner
+│   │   └── it should revert
+│   ├── given that the amount to withdraw is greater than the non-beacon chain eth balance
+│   │   └── it should revert
+│   └── given the above conditions pass
+│       └── it should emit a non beacon chain eth withdrawn event and send eth to the delayed withdrawal router
+├── when recoverTokens is called
+│   ├── given that the caller is not the eigen pod owner
+│   │   └── it should revert
+│   ├── given that the tokens and amounts to withdraw are different lengths
+│   │   └── it should revert
+│   └── given that the above conditions pass
+│       └── it should transfer tokens to the recipient
+├── when activate restaking is called
+│   ├── given that the eigenpods verify credentials is not paused ***
+│   │   └── it should revert
+│   ├── given that the caller is not the eigen pod owner
+│   │   └── it should revert
+│   ├── given that hasRestaked is true
+│   │   └── it should revert
+│   └── given that all the above conditions pass
+│       └── it should set hasRestaked to true, process a withdrawal of ETH to the delayed withdrawal router, and emit a RestakingActivated event
+├── when withdrawBeforeRestaking is called
+│   ├── given that the caller is not the eigen pod owner
+│   │   └── it should revert
+│   ├── given that has restaked is true
+│   │   └── it should revert
+│   └── given that the above conditions pass
+│       └── it should process a withdrawal of eth to the delayed withdrawal router
+├── // Withdrawal Tree
+├── when verifyAndProcessWithdrawals is called ***
+│   ├── given that verifying withdrawals are paused
+│   │   └── it should revert
+│   ├── given that validatorFields, validatorProofs, withdrawalProofs, withdrawalFields, are different lengths
+│   │   └── it should revert
+│   ├── given that the beacon state root proof is invalid
+│   │   └── it should revert
+│   ├── given that the above conditions are satisfied
+│   ├── it should call _verifyAndProcessWithdrawal
+│   ├── given that the amount of ETH to withdraw immediately is greater than 0
+│   │   └── it should send the ETH to the delayed withdrawal router
+│   └── given that the pod's shares have are not 0
+│       └── it should record a beacon chain balance update in the EPM
+└── when _verifyAndProcessWithdrawal is called (internal function)
+    ├── given that the proof timestamp is stale
+    │   └── it should revert
+    ├── given that the status of the validator is inactive
+    │   └── it should revert
+    ├── given that the withdrawalTimestamp has already been proven for the validator
+    │   └── it should revert
+    ├── given that the withdrawal proof is invalid
+    │   └── it should revert
+    ├── given that the validator fields proof is invalid
+    │   └── it should revert
+    └── given that the above conditions are satisfied
+        ├── it should set the withdrawal timestamp as proven for the validator pubKey
+        ├── given that the epoch of the proof is after the withdrawable epoch
+        │   ├── it should call _processFullWithdrawal
+        │   └── when _processFullWithdrawal is called (internal function)
+        │       ├── given that the withdrawalAmount is greater than the max restaked balance per validator
+        │       │   └── it should set the amount to queue to the max restaked balance per validator
+        │       ├── given that the withdrawalAmount is less than or equal to the max restaked balance per validator
+        │       │   └── it should set the amount to queue to the withdrawal amount
+        │       ├── it should set the amount of ETH to withdraw via the delayed withdrawal router as the difference between the withdrawalAmount and amount to queue
+        │       ├── it should increment withdrawableRestakedExecutionLayerGwei by the amount to queue
+        │       ├── it should update the sharesDelta of the withdrawal as the difference between the amount to queue and the previous restaked balance
+        │       ├── it should update the _validatorPubkeyHashToInfo mapping with a restaked balance of 0 and status as withdrawn
+        │       └── it should emit a FullWithdrawalRedeemed event and return the verified withdrawal struct
+        └── given that the epoch of the proof is before the withdrawable epoch
+            ├── it should call _processPartialWithdrawal
+            └── when _processPartialWithdrawal is called (internal function)
+                ├── it should emit a PartialWithdrawalRedeemed event
+                ├── it should increment the sumOfPartialWithdrawalsClaimedGwei variable
+                └── it should return the verified withdrawal struct
+
+// Tests in Integration
+// Pausing Functionality
+// verifyWithdrawalCredentials (external)
+// verifyBalanceUpdates (external)
+// verifyAndProcessWithdrawals(external)
+// Withdraw restaked beacon chain ETH after withdrawing
