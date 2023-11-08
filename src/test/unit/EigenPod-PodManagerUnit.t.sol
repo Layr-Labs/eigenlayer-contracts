@@ -119,7 +119,9 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
 /**
  * @notice Tests function calls from EigenPod to EigenPodManager
  * 1. Do a full withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
- * 2. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate -> assert shares are updated
+ * 2. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+ * 3. Verify balance updates and call `recordBeaconChainEThBalanceUpdate` -> assert shares are updated
+ * 4. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
  * 3. Reentrancy check (first function in below commented out tests)
  */
 }
