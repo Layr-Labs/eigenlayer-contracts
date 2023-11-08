@@ -1,0 +1,125 @@
+.
+├── DelegationManager Tree
+├── registerAsOperator()
+│   ├── given caller has already registered as operator
+│   │   └── it should revert
+│   ├── given operatorDetails.earningsReceiver is 0 address
+│   │   └── it should revert
+│   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
+│   │   └── it should revert
+│   ├── given caller has already delegated to an operator
+│   │   └── it should revert
+│   ├── given caller doesn't have delegatable shares
+│   │   └── it should set caller delegated to themselves, call the StakeRegistry, and emit events
+│   └── given caller has delegatable shares
+│       ├── given caller has EigenPod shares
+│       │   └── it should set caller delegated to themselves, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│       ├── given caller has StrategyManager shares
+│       │   └── it should set caller delegated to themselves, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│       └── given caller has shares in both EigenPod and StrategyManager
+│           └── it should set caller delegated to themselves, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+├── modifyOperatorDetails()
+│   ├── given caller is not an operator
+│   │   └── it should revert
+│   ├── given operatorDetails.earningsReceiver is 0 address
+│   │   └── it should revert
+│   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
+│   │   └── it should revert
+│   ├── given operatorDetails.stakerOptOutWindowBlocks is less than the current stakerOptOutWindowBlocks
+│   │   └── it should revert
+│   └── given caller is an operator and provides a valid earningsReceiver and stakerOptOutWindowBlocks
+│       └── it should update the operatorDetails and emit events
+├── updateOperatorMetadataURI()
+│   ├── given caller is not an operator
+│   │   └── it should revert
+│   └── given caller is an operator
+│       └── it should emit an event
+├── delegateTo()
+│   ├── given caller is already delegated to an operator
+│   │   └── it should revert
+│   ├── given passed in operator param isn't a registered operator
+│   │   └── it should revert
+│   ├── given operator's delegationApprover is set to zero address
+│   │   ├── given caller doesn't have delegatable shares
+│   │   │   └── it should set caller delegated to operator, call the StakeRegistry, and emit events
+│   │   └── given caller has delegatable shares
+│   │       ├── given caller has EigenPod shares
+│   │       │   └── it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│   │       ├── given caller has StrategyManager shares
+│   │       │   └── it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│   │       └── given caller has shares in both EigenPod and StrategyManager
+│   │           └── it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+│   └── given operator's delegationApprover is set to nonzero address
+│       ├── given caller is the delegationApprover
+│       │   ├── given delegationApprover doesn't have delegatable shares
+│       │   │   └── it should set delegationApprover delegated to operator, call the StakeRegistry, and emit events
+│       │   └── given delegationApprover has delegatable shares
+│       │       ├── given delegationApprover has EigenPod shares
+│       │       │   └── it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│       │       ├── given delegationApprover has StrategyManager shares
+│       │       │   └── it should set delegationApprover delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│       │       └── given delegationApprover has shares in both EigenPod and StrategyManager
+│       │           └── it should set delegationApprover delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+│       └── given caller is not the delegationApprover
+│           ├── given the delegationApprover is an EOA
+│           │   ├── given the block timestamp is past the expiry timestamp
+│           │   │   └── it should revert
+│           │   ├── given the delegationApprove salt has already been used
+│           │   │   └── it should revert
+│           │   ├── given the signature verification fails
+│           │   │   └── it should revert
+│           │   └── given the signature verification succeeds
+│           │       ├── given caller doesn't have delegatable shares
+│           │       │   └── it should set caller delegated to operator, call the StakeRegistry, and emit events
+│           │       └── given caller has delegatable shares
+│           │           ├── given caller has EigenPod shares
+│           │           │   └── it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│           │           ├── given caller has StrategyManager shares
+│           │           │   └── it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│           │           └── given caller has shares in both EigenPod and StrategyManager
+│           │               └── it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+│           └── given the delegationApprover is a contract
+│               ├── given the block timestamp is past the expiry timestamp
+│               │   └── it should revert
+│               ├── given the delegationApprove salt has already been used
+│               │   └── it should revert
+│               ├── given the contract isn't EIP1271 compliant
+│               │   └── it should revert
+│               ├── given the signature verification fails, isValidSignature() does not return  EIP1271_MAGICVALUE
+│               │   └── it should revert
+│               └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+│                   ├── given caller doesn't have delegatable shares
+│                   │   └── it should set caller delegated to operator, call the StakeRegistry, and emit events
+│                   └── given caller has delegatable shares
+│                       ├── given caller has EigenPod shares
+│                       │   └── it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│                       ├── given caller has StrategyManager shares
+│                       │   └── it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│                       └── given caller has shares in both EigenPod and StrategyManager
+│                           └── it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+├── delegateToBySignature()
+├── undelegate
+├── queueWithdrawals
+├── completeQueuedWithdrawal
+├── completeQueuedWithdrawals
+├── migrateQueuedWithdrawals
+├── increaseDelegatedShares
+├── decreaseDelegatedShares
+├── setWithdrawalDelayBlocks
+│   ├── given not called by owner
+│   │   └── it should revert
+│   ├── given new delay is > MAX_WITHDRAWAL_DELAY_BLOCKS
+│   │   └── it should revert
+│   └── given called by owner and new delay is <= MAX_WITHDRAWAL_DELAY_BLOCKS
+│       └── it should set the new delay and emit event
+├── setStakeRegistry
+│   ├── given not called by owner
+│   │   └── it should revert
+│   ├── given existing stakeRegistry address is set
+│   │   └── it should revert
+│   ├── given new stakeRegistry address is 0
+│   │   └── it should revert
+│   └── given called by owner, existing address not set, and new address is nonzero
+│       └── it should set the new stakeRegistry address and emit event
+├── getDelegatableShares
+└── calculateDelegationApprovalDigestHash
