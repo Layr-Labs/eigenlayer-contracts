@@ -111,8 +111,11 @@ interface IEigenPod {
     /// @notice Emitted when partial withdrawal proof is fulfilled
     event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
 
-    /// @notice Emitted when a partial withdrawal zk proof is requested from succinct
+    /// @notice Emitted when a partial withdrawal proof is requested from succinct
     event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint256 requestNonce);
+
+    /// @notice Emitted when a partial withdrawal proof  is cancelled
+    event PartialWithdrawalProofCancelled(uint256 requestNonce);
 
 
 
@@ -238,11 +241,10 @@ interface IEigenPod {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
     function handleCallback(bytes memory output, bytes memory context) external;
-
-
     function submitPartialWithdrawalsBatchForVerification(
         uint64 oracleTimestamp,
         uint64 endTimestamp,
+        address recipient,
         bytes32 FUNCTION_ID
     ) external;
 }

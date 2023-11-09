@@ -296,10 +296,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 FUNCTION_ID
     ) external onlyEigenPodOwner {
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
-
+        
+        //the startTimestamp is the timestamp of the first slot after the previous proof's endTimestamp     
+        uint64 startTimestamp = timestampProvenUntil + BeaconChainProofs.SECONDS_PER_SLOT;
+        
         //record the partial withdrawal proof request
         partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
-            startTimestamp: startTimestamp,
+            startTimestamp: startTimestamp, 
             endTimestamp: endTimestamp,
             recipient: recipient,
             status: REQUEST_STATUS.PENDING
@@ -323,7 +326,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice The callback function for the ZK proof fulfiller.
     function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
         PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
-        require(request.status == REQUEST_STATUS.pending, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
+        require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
         uint256 partialWithdrawalSumWei;
         assembly {
             partialWithdrawalSumWei := mload(add(output, 0x20))
@@ -335,7 +338,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
-        uint26 amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+        uint256 amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
          /**
         * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
         * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the

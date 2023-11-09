@@ -156,6 +156,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         cheats.expectRevert("Initializable: contract is already initialized");
         eigenPodManager.initialize(type(uint256).max /*maxPods*/,
             IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+            IFunctionGateway(address(0)), /*functionGateway*/
             initialOwner,
             pauserRegistry,
             0 /*initialPausedStatus*/);
