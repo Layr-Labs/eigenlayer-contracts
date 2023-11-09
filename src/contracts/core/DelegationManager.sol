@@ -666,7 +666,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _pushOperatorStakeUpdate(address operator) internal {
-        // if the stake regsitry has been set
+        // if the stake registry has been set
         if (address(stakeRegistry) != address(0)) {
             address[] memory operators = new address[](1);
             operators[0] = operator;
