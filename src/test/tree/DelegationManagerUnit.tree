@@ -188,8 +188,18 @@
 # completeQueuedWithdrawal
 # completeQueuedWithdrawals
 # migrateQueuedWithdrawals
-# increaseDelegatedShares
-# decreaseDelegatedShares
+# when increaseDelegatedShares is called
+## if the caller is not the strategy manager or eigen pod manager
+### it should revert
+## given that the staker is delegated
+### it should increase the operator's share for the staker and its associated strategy
+### it should push an operator stake update
+# when decreaseDelegatedShares is called
+## if the caller is not the strategy manager or eigen pod manager
+### it should revert
+## given that the staker is delegated
+### it should increase the operator's share for the staker and its associated strategy
+### it should push an operator stake update
 # when setWithdrawalDelayBlocks is called 
 ## given not called by owner
 ### it should revert
