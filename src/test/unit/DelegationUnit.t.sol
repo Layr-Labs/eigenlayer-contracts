@@ -16,10 +16,10 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 /**
  * @notice Unit testing of the DelegationManager contract. Withdrawals are tightly coupled
  * with EigenPodManager and StrategyManager and are part of integration tests.
- * Contracts tested: DelegationMananger
+ * Contracts tested: DelegationManager
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
-contract DelegationManangerUnitTests is EigenLayerUnitTestSetup, IDelegationManagerEvents {
+contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManagerEvents {
     // Contract under test
     DelegationManager delegationManager;
     DelegationManager delegationManagerImplementation;
@@ -217,7 +217,7 @@ contract DelegationManangerUnitTests is EigenLayerUnitTestSetup, IDelegationMana
     }
 }
 
-contract  DelegationManagerUnitTests_Initialization_Setters is DelegationManangerUnitTests {
+contract  DelegationManagerUnitTests_Initialization_Setters is DelegationManagerUnitTests {
     function test_initialization() public {
         assertEq(address(delegationManager.strategyManager()), address(strategyManagerMock), "constructor / initializer incorrect, strategyManager set wrong");
         assertEq(address(delegationManager.slasher()), address(slasherMock), "constructor / initializer incorrect, slasher set wrong");
@@ -267,7 +267,7 @@ contract  DelegationManagerUnitTests_Initialization_Setters is DelegationManange
     }
 }
 
-contract DelegationManagerUnitTests_Old is DelegationManangerUnitTests {
+contract DelegationManagerUnitTests_Old is DelegationManagerUnitTests {
     /**
      * @notice `operator` registers via calling `DelegationManager.registerAsOperator(operatorDetails, metadataURI)`
      * Should be able to set any parameters, other than setting their `earningsReceiver` to the zero address or too high value for `stakerOptOutWindowBlocks`
