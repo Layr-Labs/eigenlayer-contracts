@@ -16,7 +16,7 @@
 #### it should increase the operator's shares and and emit an OperatorSharesIncreased event
 ### it should push an operator stake update
 ## it should emit an OperatorRegistered event and OperatorMetadataURIUpdated event
-# modifyOperatorDetails()
+# when modifyOperatorDetails is called
 ## given caller is not an operator
 ### it should revert
 ## given operatorDetails.earningsReceiver is 0 address
@@ -26,7 +26,7 @@
 ## given operatorDetails.stakerOptOutWindowBlocks is less than the current stakerOptOutWindowBlocks
 ### it should revert
 ## given caller is an operator and provides a valid earningsReceiver and stakerOptOutWindowBlocks
-### it should update the operatorDetails and emit events
+### it should update the operatorDetails and emit an OperatorDetailsModified event
 # when updateOperatorMetadataURI is called
 ## given caller is not an operator
 ### it should revert
