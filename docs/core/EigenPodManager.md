@@ -436,14 +436,13 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
     2. Exit their validator from the beacon chain and provide a proof to this method
     3. Complete their withdrawal (via [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal)).
 
-If the Pod Owner only completes steps 1 and 2 above, the ETH of the pod owner is still staked through EigenLayer and can be used to service AVSs, even though their ETH has been withdrawn from the beacon chain. The protocol allows for this edge case. 
+If the Pod Owner only exits their validator, the ETH of the pod owner is still staked through EigenLayer and can be used to service AVSs, even though their ETH has been withdrawn from the beacon chain. The protocol allows for this edge case. 
 
 *Beacon chain proofs used*:
 * [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)
 * [`verifyWithdrawal`](./proofs/BeaconChainProofs.md#beaconchainproofsverifywithdrawal)
 * [`verifyValidatorFields`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorfields)
 
-An edge 
 *Effects*:
 * For each proven withdrawal:
     * The validator in question is recorded as having a proven withdrawal at the timestamp given by `withdrawalProof.timestampRoot`
