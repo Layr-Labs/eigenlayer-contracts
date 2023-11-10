@@ -87,4 +87,14 @@ contract EigenPodMock is IEigenPod, Test {
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
+
+    function requestPartialWithdrawalsProof(
+        uint64 oracleTimestamp,
+        uint64 endTimestamp,
+        address recipient,
+        bytes32 RANGE_SPLITTER_FUNCTION_ID,
+        uint32 callbackGasLimit
+    ) external {}
+
+    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint64 oracleTimestamp, uint256 endSlot) external{}
 }

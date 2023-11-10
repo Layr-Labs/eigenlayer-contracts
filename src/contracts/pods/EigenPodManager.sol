@@ -343,18 +343,23 @@ contract EigenPodManager is
         bytes32 FUNCTION_ID,
         uint64 startSlot,
         uint64 endSlot,
-        address podAddress
+        address podAddress,
+        bytes memory callbackData,
+        uint32 callbackGasLimit
     ) external payable {
-        succinctGateway.request{value: msg.value}(
+        succinctGateway.requestCall{value: msg.value}(
             FUNCTION_ID,
-            abi.encodePacked(podAddress, startSlot, endSlot)
+            abi.encodePacked(podAddress, startSlot, endSlot),
+            podAddress,
+            callbackData,
+            callbackGasLimit
         );
     }
     // confirms that a proof is verified via the succinct gateway
     function confirmProofVerification(
         bytes32 FUNCTION_ID,
         bytes calldata input
-    ) external {
-        succinctGateway.verifiedCall(FUNCTION_ID, input);
+    ) external returns (bytes memory){
+        return succinctGateway.verifiedCall(FUNCTION_ID, input);
     }
 }

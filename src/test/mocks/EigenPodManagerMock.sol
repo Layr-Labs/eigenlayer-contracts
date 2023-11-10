@@ -77,4 +77,20 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function numPods() external view returns (uint256) {}
 
     function maxPods() external view returns (uint256) {}
+
+    function requestProofViaSuccinctGateway(
+        bytes32 FUNCTION_ID,
+        uint64 startSlot,
+        uint64 endSlot,
+        address podAddress,
+        bytes memory entryCallData,
+        uint32 callbackGasLimit
+    ) external payable {}
+
+    function confirmProofVerification(
+        bytes32 FUNCTION_ID,
+        bytes calldata input
+    ) external returns (bytes memory) {}
+
+    function succinctGateway() external view returns (ISuccinctGateway) {}
 }

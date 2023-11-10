@@ -9,6 +9,7 @@ import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
+import "./ISuccinctGateway.sol";
 
 /**
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
@@ -151,11 +152,15 @@ interface IEigenPodManager is IPausable {
         bytes32 FUNCTION_ID,
         uint64 startSlot,
         uint64 endSlot,
-        address podAddress
+        address podAddress,
+        bytes memory entryCallData,
+        uint32 callbackGasLimit
     ) external payable;
 
     function confirmProofVerification(
         bytes32 FUNCTION_ID,
         bytes calldata input
-    ) external;
+    ) external returns (bytes memory);
+
+    function succinctGateway() external view returns (ISuccinctGateway);
 }

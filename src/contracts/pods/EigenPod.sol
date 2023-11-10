@@ -93,16 +93,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public nonBeaconChainETHBalanceWei;
 
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint64 public sumOfPartialWithdrawalsClaimedGwei;
-
-    /// @notice latest timestamp until which all partial withdrawals have been proven for the pod
-    uint64 public timestampProvenUntil;
+    uint256 public sumOfPartialWithdrawalsClaimedWei;
 
     /// @notice This mapping tracks every partial withdrawal proof request made
     mapping(uint256 => PartialWithdrawalProofRequest) partialWithdrawalProofRequests;
 
     /// @notice prover nonce for the function gateway contract
     uint256 public requestNonce;
+
+    /// @notice latest timestamp until which all partial withdrawals have been proven for the pod
+    uint64 public timestampProvenUntil;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -445,9 +445,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function requestPartialWithdrawalsProof(
+        uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
-        bytes32 RANGE_SPLITTER_FUNCTION_ID
+        bytes32 RANGE_SPLITTER_FUNCTION_ID,
+        uint32 callbackGasLimit
     ) external onlyEigenPodOwner {
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
@@ -466,24 +468,28 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
+        bytes memory callBackData = abi.encodePacked(oracleTimestamp, endTimestamp);
+
         eigenPodManager.requestProofViaSuccinctGateway(
             RANGE_SPLITTER_FUNCTION_ID, 
             _timestampToSlot(timestampProvenUntil),
             _timestampToSlot(endTimestamp),
-            address(this)
+            address(this),
+            callBackData,
+            callbackGasLimit
         );
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
+    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
-        uint256 startSlot = _computeSlotAtTimestamp(timestampProvenUntil);
+        uint256 startSlot = _timestampToSlot(timestampProvenUntil);
         bytes memory output = eigenPodManager.confirmProofVerification(WITHDRAWAL_FUNCTION_ID, abi.encodePacked(beaconBlockRoot, address(this), startSlot, endSlot));
 
-        uint256 partialWithdrawalSumWei = abi.decode(output, (uint256,));
+        uint256 partialWithdrawalSumWei = abi.decode(output, (uint256));
 
         //record the timestamp until which all withdrawals have been proven
         timestampProvenUntil = request.endTimestamp;
@@ -491,16 +497,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
         uint256 amountToSendWei;
-        if(sumOfPartialWithdrawalsClaimedGwei > partialWithdrawalSumWei){
-            sumOfPartialWithdrawalsClaimedGwei -= partialWithdrawalSumWei;
+        if(sumOfPartialWithdrawalsClaimedWei > partialWithdrawalSumWei){
+            sumOfPartialWithdrawalsClaimedWei -= partialWithdrawalSumWei;
         } else {
-            amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+            amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedWei;
             /**
             * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
-            * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
-            * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
+            * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedWei.  When the
+            * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedWei from the amount proven by the oracle
             */
-            sumOfPartialWithdrawalsClaimedGwei = 0;
+            sumOfPartialWithdrawalsClaimedWei = 0;
         }
 
         //mark the partial withdrawal proof as being fulfilled
@@ -817,7 +823,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
-        sumOfPartialWithdrawalsClaimedGwei += partialWithdrawalAmountGwei;
+        sumOfPartialWithdrawalsClaimedWei += (partialWithdrawalAmountGwei * GWEI_TO_WEI);
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
@@ -891,5 +897,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[41] private __gap;
 }

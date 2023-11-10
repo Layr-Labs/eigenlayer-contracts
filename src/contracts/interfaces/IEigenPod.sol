@@ -49,11 +49,23 @@ interface IEigenPod {
         int256 sharesDeltaGwei;
     }
 
+    struct PartialWithdrawalProofRequest{
+        uint64 startTimestamp;
+        uint64 endTimestamp;
+        address recipient;
+        REQUEST_STATUS status;
+    }
 
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,
         FAILED
+    }
+
+     enum REQUEST_STATUS {
+        PENDING, // request is pending
+        FULFILLED, // request is fulfilled
+        CANCELLED // request is cancelled
     }
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
@@ -226,10 +238,12 @@ interface IEigenPod {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
     function requestPartialWithdrawalsProof(
+        uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
-        bytes32 RANGE_SPLITTER_FUNCTION_ID
+        bytes32 RANGE_SPLITTER_FUNCTION_ID,
+        uint32 callbackGasLimit
     ) external;
 
-    function handleCallback(uint64 oracleTimestamp, uint256 endSlot) external;
+    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint64 oracleTimestamp, uint256 endSlot) external;
 }
