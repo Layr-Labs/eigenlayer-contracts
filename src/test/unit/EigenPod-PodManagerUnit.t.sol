@@ -115,21 +115,85 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
 }
 
 contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_UnitTests {
-/**
- * 1. verifyBalanceUpdates revert when PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE set
- * 2. verifyAndProcessWithdrawals revert when PAUSED_EIGENPODS_VERIFY_WITHDRAWAL set
- * 3. verifyWithdrawalCredentials revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
- * 4. activateRestaking revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
- */
+    /**
+     * 1. verifyBalanceUpdates revert when PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE set
+     * 2. verifyAndProcessWithdrawals revert when PAUSED_EIGENPODS_VERIFY_WITHDRAWAL set
+     * 3. verifyWithdrawalCredentials revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
+     * 4. activateRestaking revert when PAUSED_EIGENPODS_VERIFY_CREDENTIALS set
+     */
+
+    /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
+    uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
+    /**
+     * @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality `
+     * function *of the EigenPodManager* when set. See EigenPodManager code for details.
+     */
+    uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
+
+    /// @notice Index for flag that pauses the deposit related functions *of the EigenPods* when set. see EigenPod code for details.
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
+    /// @notice Index for flag that pauses the `verifyBalanceUpdate` function *of the EigenPods* when set. see EigenPod code for details.
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
+    /// @notice Index for flag that pauses the `verifyBeaconChainFullWithdrawal` function *of the EigenPods* when set. see EigenPod code for details.
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+
+    function xtest_verifyBalanceUpdates_revert_pausedEigenVerifyBalanceUpdate() public {
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+
+        uint40[] memory validatorIndices = new uint40[](1);
+
+        BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
+
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct;
+
+        // pause the contract
+        cheats.prank(address(pauser));
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE);
+
+        cheats.prank(address(podOwner));
+        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+        eigenPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+    }
 }
 
 contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests {
-/**
- * @notice Tests function calls from EPM to EigenPod
- * 1. Stake works when pod is deployed
- * 2. Stake when pod is not deployed -> check that ethPOS deposit contract is correct for this and above test
- * 3. Withdraw restakedBeaconChainETH -> ensure we do a full withdrawal before
- */
+    /**
+     * @notice Tests function calls from EPM to EigenPod
+     * 1. Stake works when pod is deployed
+     * 2. Stake when pod is not deployed -> check that ethPOS deposit contract is correct for this and above test
+     * 3. Withdraw restakedBeaconChainETH -> ensure we do a full withdrawal before
+     */
+
+    function test_stake_podAlreadyDeployed() public {
+        bytes memory pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
+    
+        bytes memory signature;
+    
+        bytes32 depositDataRoot;
+    
+        uint256 stakeAmount = 32e18;
+
+        cheats.startPrank(podOwner);
+        cheats.deal(podOwner, stakeAmount);
+        eigenPodManagerWrapper.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
+
+    function test_stake_podNotDeployed() public {
+        address newPodOwner = address(69696969696);
+        bytes memory pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
+    
+        bytes memory signature;
+    
+        bytes32 depositDataRoot;
+    
+        uint256 stakeAmount = 32e18;
+
+        cheats.startPrank(newPodOwner);
+        cheats.deal(newPodOwner, stakeAmount);
+        eigenPodManagerWrapper.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+    }
 }
 
 contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_UnitTests {
