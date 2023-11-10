@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "src/test/mocks/StrategyManagerMock.sol";
+import "src/test/mocks/DelegationManagerMock.sol";
+import "src/test/mocks/SlasherMock.sol";
+import "src/test/mocks/EigenPodManagerMock.sol";
+import "src/test/utils/EigenLayerUnitTestBase.sol";
 
-import "forge-std/Test.sol";
+abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
+    // Declare Mocks
+    StrategyManagerMock strategyManagerMock;
+    DelegationManagerMock public delegationManagerMock;
+    SlasherMock public slasherMock;
+    EigenPodManagerMock public eigenPodManagerMock;
 
-abstract contract EigenLayerUnitTestSetup is Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    function setUp() public virtual override {
+        EigenLayerUnitTestBase.setUp();
+        strategyManagerMock = new StrategyManagerMock();
+        delegationManagerMock = new DelegationManagerMock();
+        slasherMock = new SlasherMock();
+        eigenPodManagerMock = new EigenPodManagerMock();
 
-    mapping(address => bool) public addressIsExcludedFromFuzzedInputs;
-
-    address public constant pauser = address(555);
-    address public constant unpauser = address(556);
-
-    // Helper Functions/Modifiers
-    modifier filterFuzzedAddressInputs(address fuzzedAddress) {
-        cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
-        _;
+        addressIsExcludedFromFuzzedInputs[address(0)] = true;
+        addressIsExcludedFromFuzzedInputs[address(strategyManagerMock)] = true;
+        addressIsExcludedFromFuzzedInputs[address(delegationManagerMock)] = true;
+        addressIsExcludedFromFuzzedInputs[address(slasherMock)] = true;
+        addressIsExcludedFromFuzzedInputs[address(eigenPodManagerMock)] = true;
     }
 }

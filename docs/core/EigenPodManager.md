@@ -434,7 +434,9 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
 * Full withdrawals are performed when a Pod Owner decides to fully exit a validator from the beacon chain. To do this, the Pod Owner should follow these steps: 
     1. Undelegate or queue a withdrawal (via the `DelegationManager`: ["Undelegating and Withdrawing"](./DelegationManager.md#undelegating-and-withdrawing))
     2. Exit their validator from the beacon chain and provide a proof to this method
-    3. Complete their withdrawal (via [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal))
+    3. Complete their withdrawal (via [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal)).
+
+If the Pod Owner only exits their validator, the ETH of the pod owner is still staked through EigenLayer and can be used to service AVSs, even though their ETH has been withdrawn from the beacon chain. The protocol allows for this edge case. 
 
 *Beacon chain proofs used*:
 * [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)
