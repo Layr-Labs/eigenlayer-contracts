@@ -347,18 +347,18 @@ contract EigenPodManager is
         bytes32 FUNCTION_ID,
         uint64 startSlot,
         uint64 endSlot,
-        address podAddress,
-        uint64 oracleTimestamp,
-        uint256 nonce,
-        bytes4 callbackSelector
+        address podAddress
     ) external payable {
         functionGateway.request{value: msg.value}(
             FUNCTION_ID,
-            abi.encodePacked(
-                getBlockRootAtTimestamp(oracleTimestamp), podAddress, startSlot, endSlot
-            ),
-            callbackSelector,
-            abi.encode(nonce)
+            abi.encodePacked(podAddress, startSlot, endSlot)
         );
+    }
+
+    function confirmProofVerification(
+        bytes32 FUNCTION_ID,
+        bytes calldata input
+    ) external {
+        functionGateway.verifiedCall(FUNCTION_ID, input);
     }
 }

@@ -293,7 +293,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
-        bytes32 FUNCTION_ID
+        bytes32 RANGE_SPLITTER_FUNCTION_ID
     ) external onlyEigenPodOwner {
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
@@ -313,42 +313,47 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
         eigenPodManager.requestProofViaFunctionGateway(
-            FUNCTION_ID, 
+            RANGE_SPLITTER_FUNCTION_ID, 
             _timestampToSlot(timestampProvenUntil),
             _timestampToSlot(endTimestamp),
-            address(this),
-            oracleTimestamp,
-            requestNonce,
-            this.handleCallback.selector
+            address(this)
         );
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(bytes memory output, bytes memory context) external onlyFunctionGateway {
+    function handleCallback(uint64 oracleTimestamp, uint256 endSlot) external onlyFunctionGateway {
         PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
-        uint256 partialWithdrawalSumWei;
-        assembly {
-            partialWithdrawalSumWei := mload(add(output, 0x20))
-        }
-        uint256 requestNonce = abi.decode(context, (uint256));
+
+        bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
+        uint256 startSlot = _computeSlotAtTimestamp(timestampProvenUntil);
+        bytes memory output = eigenPodManager.confirmProofVerification(WITHDRAWAL_FUNCTION_ID, abi.encodePacked(beaconBlockRoot, address(this), startSlot, endSlot));
+
+        uint256 partialWithdrawalSumWei = abi.decode(output, (uint256,));
 
         //record the timestamp until which all withdrawals have been proven
         timestampProvenUntil = request.endTimestamp;
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
-        uint256 amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
-         /**
-        * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
-        * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
-        * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
-        */
-        sumOfPartialWithdrawalsClaimedGwei = 0;
+        uint256 amountToSendWei;
+        if(sumOfPartialWithdrawalsClaimedGwei > partialWithdrawalSumWei){
+            sumOfPartialWithdrawalsClaimedGwei -= partialWithdrawalSumWei;
+        } else {
+            amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+            /**
+            * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
+            * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
+            * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
+            */
+            sumOfPartialWithdrawalsClaimedGwei = 0;
+        }
 
         //mark the partial withdrawal proof as being fulfilled
         partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
-        _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
+        if(amountToSendWei > 0){
+            _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
+        }
     }
 
     function cancelProofRequest(uint256 requestNonce) external onlyEigenPodOwner {
