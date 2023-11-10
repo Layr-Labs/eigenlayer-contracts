@@ -26,6 +26,8 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     
     // Address of pod for which proofs were generated
     address podAddress = address(0x49c486E3f4303bc11C02F952Fe5b08D0AB22D443);
+
+    uint256 GWEI_TO_WEI = 1e9;
     
     // Constants
     // uint32 public constant WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -904,7 +906,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
 
         // Checks from  _processPartialWithdrawal
-        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), withdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedWei(), withdrawalAmountGwei * GWEI_TO_WEI, "Incorrect partial withdrawal amount");
         assertEq(vw.amountToSendGwei, withdrawalAmountGwei, "Amount to send via router is not correct");
         assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
 
@@ -968,7 +970,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.processPartialWithdrawal(validatorIndex, withdrawalTimestamp, recipient, partialWithdrawalAmountGwei);
 
         // Checks
-        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), partialWithdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedWei(), partialWithdrawalAmountGwei * GWEI_TO_WEI, "Incorrect partial withdrawal amount");
         assertEq(vw.amountToSendGwei, partialWithdrawalAmountGwei, "Amount to send via router is not correct");
         assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
     }
