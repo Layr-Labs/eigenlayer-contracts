@@ -290,7 +290,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function submitPartialWithdrawalsBatchForVerification(
-        uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
         bytes32 RANGE_SPLITTER_FUNCTION_ID
