@@ -94,6 +94,15 @@ interface IEigenPod {
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
+    /// @notice Emitted when partial withdrawal proof is fulfilled
+    event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
+
+    /// @notice Emitted when a partial withdrawal proof is requested from succinct
+    event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint256 requestNonce);
+
+    /// @notice Emitted when a partial withdrawal proof  is cancelled
+    event PartialWithdrawalProofCancelled(uint256 requestNonce);
+
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
@@ -215,4 +224,12 @@ interface IEigenPod {
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+
+    function requestPartialWithdrawalsProof(
+        uint64 endTimestamp,
+        address recipient,
+        bytes32 RANGE_SPLITTER_FUNCTION_ID
+    ) external;
+
+    function handleCallback(uint64 oracleTimestamp, uint256 endSlot) external;
 }

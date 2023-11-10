@@ -17,6 +17,7 @@ import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IEigenPod.sol";
 import "../interfaces/IDelayedWithdrawalRouter.sol";
 import "../interfaces/IPausable.sol";
+import "../interfaces/ISuccinctGateway.sol";
 
 import "./EigenPodPausingConstants.sol";
 
@@ -94,6 +95,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
+    /// @notice latest timestamp until which all partial withdrawals have been proven for the pod
+    uint64 public timestampProvenUntil;
+
+    /// @notice This mapping tracks every partial withdrawal proof request made
+    mapping(uint256 => PartialWithdrawalProofRequest) partialWithdrawalProofRequests;
+
+    /// @notice prover nonce for the function gateway contract
+    uint256 public requestNonce;
+
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
@@ -121,6 +131,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             timestamp > mostRecentWithdrawalTimestamp,
             "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"
         );
+        _;
+    }
+
+    //Only callable by Succint's function gateway contract
+    modifier onlySuccinctGateway() {
+        require(msg.sender == address(eigenPodManager.succinctGateway()), "EigenPod.onlySuccinctGateway: not succinctGateway");
         _;
     }
 
@@ -426,6 +442,79 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
         _sendETH(recipient, amountWei);
+    }
+
+    function requestPartialWithdrawalsProof(
+        uint64 endTimestamp,
+        address recipient,
+        bytes32 RANGE_SPLITTER_FUNCTION_ID
+    ) external onlyEigenPodOwner {
+        require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
+        
+        //the startTimestamp is the timestamp of the first slot after the previous proof's endTimestamp     
+        uint64 startTimestamp = timestampProvenUntil + BeaconChainProofs.SECONDS_PER_SLOT;
+        
+        //record the partial withdrawal proof request
+        partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
+            startTimestamp: startTimestamp, 
+            endTimestamp: endTimestamp,
+            recipient: recipient,
+            status: REQUEST_STATUS.PENDING
+        });
+
+        requestNonce++;
+
+        emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
+
+        eigenPodManager.requestProofViaSuccinctGateway(
+            RANGE_SPLITTER_FUNCTION_ID, 
+            _timestampToSlot(timestampProvenUntil),
+            _timestampToSlot(endTimestamp),
+            address(this)
+        );
+    }
+
+    /// @notice The callback function for the ZK proof fulfiller.
+    function handleCallback(uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
+        PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
+        require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
+
+        bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
+        uint256 startSlot = _computeSlotAtTimestamp(timestampProvenUntil);
+        bytes memory output = eigenPodManager.confirmProofVerification(WITHDRAWAL_FUNCTION_ID, abi.encodePacked(beaconBlockRoot, address(this), startSlot, endSlot));
+
+        uint256 partialWithdrawalSumWei = abi.decode(output, (uint256,));
+
+        //record the timestamp until which all withdrawals have been proven
+        timestampProvenUntil = request.endTimestamp;
+        emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
+
+        //subtract out any partial withdrawals proven via merkle proofs in the interim
+        uint256 amountToSendWei;
+        if(sumOfPartialWithdrawalsClaimedGwei > partialWithdrawalSumWei){
+            sumOfPartialWithdrawalsClaimedGwei -= partialWithdrawalSumWei;
+        } else {
+            amountToSendWei = partialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+            /**
+            * Zero out the running total of partial withdrawals claimed. Any merkle proofs for partial withdrawals proven
+            * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedGwei.  When the
+            * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedGwei from the amount proven by the oracle
+            */
+            sumOfPartialWithdrawalsClaimedGwei = 0;
+        }
+
+        //mark the partial withdrawal proof as being fulfilled
+        partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
+        if(amountToSendWei > 0){
+            _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
+        }
+    }
+
+    function cancelProofRequest(uint256 requestNonce) external onlyEigenPodOwner {
+        PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
+        require(request.status == REQUEST_STATUS.PENDING, "EigenPod.cancelProofRequest: request nonce is either cancelled or fulfilled");
+        partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.CANCELLED;
+        emit PartialWithdrawalProofCancelled(requestNonce);
     }
 
     /*******************************************************************************
@@ -774,6 +863,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return (timestamp - GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
     }
 
+    /**
+     * @dev Converts a timestamp to a beacon chain slot by calculating the number of
+     * seconds since genesis, and dividing by seconds per slot.
+     * reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
+     */
+    function _timestampToSlot(uint64 timestamp) internal view returns (uint64) {
+        require(timestamp >= GENESIS_TIME, "EigenPod._timestampToEpoch: timestamp is before genesis");
+        return (timestamp - GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_SLOT;
+    }
+
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
@@ -792,5 +891,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[42] private __gap;
 }

@@ -233,6 +233,15 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
+
+    /**
+    * @notice Updates the succinct gateway contract that is used to request partial withdrawal proofs
+    * @param newSuccinctGateway is the new gateway contract being pointed to
+    */
+    function updateSuccinctGateway(ISuccinctGateway newSuccinctGateway) external onlyOwner {
+        _setSuccinctGateway(newSuccinctGateway);
+    }
+
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
@@ -265,6 +274,12 @@ contract EigenPodManager is
     function _setMaxPods(uint256 _maxPods) internal {
         emit MaxPodsUpdated(maxPods, _maxPods);
         maxPods = _maxPods;
+    }
+
+    /// @notice Internal setter for `functionGateway` that also emits an event
+    function _setSuccinctGateway(ISuccinctGateway newSuccinctGateway) internal {
+        succinctGateway = newSuccinctGateway;
+        emit SuccinctGatewayUpdated(address(newSuccinctGateway));
     }
 
     /**
@@ -314,12 +329,32 @@ contract EigenPodManager is
     }
 
     /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32) {
+    function getBlockRootAtTimestamp(uint64 timestamp) public view returns (bytes32) {
         bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
         require(
             stateRoot != bytes32(0),
             "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
         );
         return stateRoot;
+    }
+
+    //make a request for a proof to the succinct gateway
+    function requestProofViaSuccinctGateway(
+        bytes32 FUNCTION_ID,
+        uint64 startSlot,
+        uint64 endSlot,
+        address podAddress
+    ) external payable {
+        succinctGateway.request{value: msg.value}(
+            FUNCTION_ID,
+            abi.encodePacked(podAddress, startSlot, endSlot)
+        );
+    }
+    // confirms that a proof is verified via the succinct gateway
+    function confirmProofVerification(
+        bytes32 FUNCTION_ID,
+        bytes calldata input
+    ) external {
+        succinctGateway.verifiedCall(FUNCTION_ID, input);
     }
 }
