@@ -93,4 +93,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     ) external returns (bytes memory) {}
 
     function succinctGateway() external view returns (ISuccinctGateway) {}
+
+        function updateSuccinctGateway(ISuccinctGateway newSuccinctGateway) external {}
+
 }

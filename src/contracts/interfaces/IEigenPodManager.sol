@@ -163,4 +163,6 @@ interface IEigenPodManager is IPausable {
     ) external returns (bytes memory);
 
     function succinctGateway() external view returns (ISuccinctGateway);
+
+    function updateSuccinctGateway(ISuccinctGateway newSuccinctGateway) external;
 }
