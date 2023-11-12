@@ -118,6 +118,9 @@ interface IEigenPod {
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
+    
+    /// @notice Returns the genesis timestamp of the beacon chain
+    function GENESIS_TIME() external view returns (uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
@@ -245,5 +248,7 @@ interface IEigenPod {
         uint32 callbackGasLimit
     ) external;
 
-    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint64 oracleTimestamp, uint256 endSlot) external;
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint256 endSlot) external;
+
+    function timestampProvenUntil() external returns(uint64);
 }

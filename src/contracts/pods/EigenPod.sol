@@ -66,6 +66,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
     uint64 public immutable GENESIS_TIME;
 
+
+    ///TODO: change this/figure out if this should be a constant or not.
+    bytes32 public constant WITHDRAWAL_FUNCTION_ID = bytes32(0);
+
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -322,6 +326,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // ensure that caller has previously enabled restaking by calling `activateRestaking()`
         hasEnabledRestaking
     {
+        // initializes the  "timestampProvenUntil" for batched zk partial withdrawals to the GENESIS_TIME
+        timestampProvenUntil = GENESIS_TIME;
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
@@ -450,11 +456,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         bytes32 RANGE_SPLITTER_FUNCTION_ID,
         uint32 callbackGasLimit
-    ) external onlyEigenPodOwner {
+    ) external onlyEigenPodOwner hasEnabledRestaking {
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
-        //the startTimestamp is the timestamp of the first slot after the previous proof's endTimestamp     
-        uint64 startTimestamp = timestampProvenUntil + BeaconChainProofs.SECONDS_PER_SLOT;
+        //the proofs are made [startTimestamp, endTimestamp), so the next startTimestamp = previous endTimestamp     
+        uint64 startTimestamp = timestampProvenUntil;
         
         //record the partial withdrawal proof request
         partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
@@ -468,7 +474,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
-        bytes memory callBackData = abi.encodePacked(oracleTimestamp, endTimestamp);
+        //These are the inputs to the callback function for this specific proof request.
+        bytes memory callBackData = abi.encodePacked(requestNonce, oracleTimestamp, endTimestamp);
 
         eigenPodManager.requestProofViaSuccinctGateway(
             RANGE_SPLITTER_FUNCTION_ID, 
@@ -481,7 +488,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 

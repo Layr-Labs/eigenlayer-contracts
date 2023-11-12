@@ -8,6 +8,8 @@ import "./EigenLayerDeployer.t.sol";
 import "../contracts/libraries/BeaconChainProofs.sol";
 import "./mocks/BeaconChainOracleMock.sol";
 import "./harnesses/EigenPodHarness.sol";
+import "src/test/mocks/SuccinctGatewayMock.sol";
+
 
 contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     using BytesLib for bytes;
@@ -35,6 +37,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IETHPOSDeposit public ethPOSDeposit;
     IBeacon public eigenPodBeacon;
     EPInternalFunctions public podInternalFunctionTester;
+    MockSuccinctGateway public mockSuccinctGateway;
+
 
     BeaconChainOracleMock public beaconChainOracle;
     address[] public slashingContracts;
@@ -160,6 +164,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             GOERLI_GENESIS_TIME
         );
 
+        mockSuccinctGateway = new MockSuccinctGateway();
+
+
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // this contract is deployed later to keep its address the same (for these tests)
@@ -247,6 +254,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 withdrawalDelayBlocks
             )
         );
+        eigenPodManager.updateSuccinctGateway(mockSuccinctGateway);
 
         cheats.deal(address(podOwner), 5 * stakeAmount);
 
@@ -1379,6 +1387,41 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
         cheats.stopPrank();
     }
+
+    function test_SuccinctGatewayAddressInPodManager() public {
+        require(address(eigenPodManager.succinctGateway()) == address(mockSuccinctGateway), "succinctGateway not set correctly");
+    }
+
+    function testFuzz_PassInInvalidEndTimestamp(uint64 wrongEndTimestamp) public {
+        IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
+        uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
+
+        cheats.assume(current_timestampProvenUntil > wrongEndTimestamp);
+
+        cheats.startPrank(podOwner);
+        eigenPod.requestPartialWithdrawalsProof(
+            0,
+            wrongEndTimestamp,
+            address(this),
+            bytes32(0),
+            100000
+        );
+        cheats.stopPrank();
+    }
+
+    // function test_RequestAndFullfillAProof(uint64 endTimestamp) public {
+    //     IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
+
+    //     cheats.assume(startTimestamp > eigenPod.GENESIS_TIME());
+    //     cheats.assume(startTimestamp < endTimestamp);
+    //     eigenPod.requestPartialWithdrawalsProof(
+    //         eigenPod.GENESIS_TIME(),
+    //         endTimestamp,
+    //         address(this),
+    //         bytes32(0),
+    //         100000
+    //     );
+    // }
 
     /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
