@@ -12,6 +12,8 @@ import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
@@ -28,7 +30,8 @@ contract EigenPodManager is
     Pausable,
     EigenPodPausingConstants,
     EigenPodManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    Test
 {
     
     modifier onlyEigenPod(address podOwner) {
@@ -74,6 +77,7 @@ contract EigenPodManager is
      */
     function createPod() external returns (address) {
         require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
+
         // deploy a pod if the sender doesn't have one already
         IEigenPod pod = _deployPod();
 
