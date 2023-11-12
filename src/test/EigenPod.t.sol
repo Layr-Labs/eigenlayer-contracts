@@ -1393,10 +1393,12 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testFuzz_PassInInvalidEndTimestamp(uint64 wrongEndTimestamp) public {
         IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
         uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
+        cheats.assume(wrongEndTimestamp < current_timestampProvenUntil);
 
         cheats.assume(current_timestampProvenUntil > wrongEndTimestamp);
 
         cheats.startPrank(podOwner);
+        cheats.expectRevert(bytes("EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil"));
         eigenPod.requestPartialWithdrawalsProof(
             0,
             wrongEndTimestamp,
