@@ -92,8 +92,6 @@ contract EigenPodMock is IEigenPod, Test {
         uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
-        bytes32 RANGE_SPLITTER_FUNCTION_ID,
-        bytes32 WITHDRAWAL_FUNCTION_ID,
         uint32 callbackGasLimit
     ) external {}
 

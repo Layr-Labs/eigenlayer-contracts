@@ -1397,8 +1397,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             0,
             wrongEndTimestamp,
             address(this),
-            bytes32(0),
-            bytes32(0),
             100000
         );
         cheats.stopPrank();
@@ -1412,22 +1410,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newEndTimestamp = current_timestampProvenUntil + 100;
         uint256 requestNonceBefore = eigenPod.requestNonce();
         cheats.startPrank(podOwner);
-        mockSuccinctGateway.setFunctionID(bytes32(0));
+        mockSuccinctGateway.setFunctionID(sha256(bytes("WITHDRAWAL_FUNCTION_ID")));
 
         uint256 outPutSum = 100;
         cheats.deal(address(eigenPod), outPutSum);
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, bytes32(0), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, sha256(bytes("WITHDRAWAL_FUNCTION_ID")), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
             current_timestampProvenUntil,
             newEndTimestamp,
             address(eigenPod),
-            bytes32(0),
-            bytes32(0),
             100000
         );
 
@@ -1436,7 +1432,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //this mocks the succinct prover's callback into EP
         bytes memory proof;
         _makeProofCallback(
-            bytes32(0), 
+            sha256(bytes("WITHDRAWAL_FUNCTION_ID")), 
             input,
             output,
             proof, 
@@ -1460,22 +1456,19 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 newEndTimestamp = current_timestampProvenUntil + 100;
         uint256 requestNonceBefore = eigenPod.requestNonce();
         cheats.startPrank(podOwner);
-        mockSuccinctGateway.setFunctionID(bytes32(0));
+        mockSuccinctGateway.setFunctionID(sha256(bytes("WITHDRAWAL_FUNCTION_ID")));
 
-        uint256 outPutSum = 100;
-        cheats.deal(address(eigenPod), outPutSum);
+        cheats.deal(address(eigenPod), 100);
 
-        bytes memory output = abi.encodePacked(outPutSum);
+        bytes memory output = abi.encodePacked(uint256(100));
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, bytes32(0), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, sha256(bytes("WITHDRAWAL_FUNCTION_ID")), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
             current_timestampProvenUntil,
             newEndTimestamp,
             address(eigenPod),
-            bytes32(0),
-            bytes32(0),
             100000
         );
 
@@ -1487,9 +1480,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(request.status == IEigenPod.REQUEST_STATUS.CANCELLED, "status not set correctly");
         
         bytes memory proof;
+        bytes32 functionID = sha256(bytes("WITHDRAWAL_FUNCTION_ID"));
         cheats.expectRevert();
         _makeProofCallback(
-            bytes32(0), 
+            functionID, 
             input,
             output,
             proof, 

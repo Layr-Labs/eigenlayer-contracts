@@ -68,6 +68,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
     uint64 public immutable GENESIS_TIME;
 
+    bytes32 public immutable RANGE_SPLITTER_FUNCTION_ID = sha256(bytes("RANGE_SPLITTER_FUNCTION_ID"));
+    bytes32 public immutable WITHDRAWAL_FUNCTION_ID = sha256(bytes("WITHDRAWAL_FUNCTION_ID"));
+
     // STORAGE VARIABLES
     /// @notice The owner of this EigenPod
     address public podOwner;
@@ -452,8 +455,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 oracleTimestamp,
         uint64 endTimestamp,
         address recipient,
-        bytes32 RANGE_SPLITTER_FUNCTION_ID,
-        bytes32 WITHDRAWAL_FUNCTION_ID,
         uint32 callbackGasLimit
     ) external onlyEigenPodOwner hasEnabledRestaking {
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
