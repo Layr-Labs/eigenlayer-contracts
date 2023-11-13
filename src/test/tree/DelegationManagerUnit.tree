@@ -179,12 +179,77 @@
 ### given the staker doesn't have delegateable shares
 #### it should return a zero withdrawal root
 ### given the staker has delegateable shares ***
-#### it should decrease the operator shares, emit events, and queue a withdrawal 
-
-# queueWithdrawals
-# completeQueuedWithdrawal
+#### it should call _removeSharesAndQueueWithdrawal
+# when queueWithdrawals is called ***
+## given that entering the withdrawal queue is paused
+### it should revert
+## it should loop through each strategy and call _removeSharesAndQueueWithdrawal
+# when _removeSharesAndQueueWithdrawal is called
+## given that the staker is a zero address
+### it should revert
+## given that the length of strategies is 0
+### it should revert
+## it should loop through each strategy
+### given that the staker is delegated to (not zero address)
+#### it should decrease the operator's shares
+### given that the strategy is the beacon chain strategy
+#### it should remove shares from the eigen pod manager
+### given that the strategy is not the beacon chain eth strategy
+#### it should remove shares from the strategy manager
+### given that the staker is delegated to (not zero address)
+#### it should push a stake update
+### it should increment the staker's cumulative withdrawals queueWithdrawals
+### it should calculate and set the withdrawal root as pending
+### it should emit a WithdrawalQueued event and return the withdrawal root
+# completeQueuedWithdrawal ***
+## given that the exiting the withdrawal queue is paused
+### it should revert
+## given that the function is reentered
+### it should revert
+## it should call _completeQueuedWithdrawal (internal function)
 # completeQueuedWithdrawals
-# migrateQueuedWithdrawals
+## given that the exiting the withdrawal queue is paused
+### it should revert
+## given that the function is reentered
+### it should revert
+## it should loop through each strategy and call _completeQueuedWithdrawal (internal function)
+# when _completeQueuedWithdrawal is called
+## given that the withdrawal root is not pending
+### it should revert
+## given that the withdrawal delay blocks period has not elapsed
+### it should revert
+## given that the caller is not the withdrawer
+### it should revert
+## given that receiveAsTokens is true 
+### given that the tokens and strategies length are not equal
+#### it should revert
+## given that the above conditions are satisfied
+### it should delete the withdrawal root from pending withdrawals
+### given that receiveAsTokens is true
+#### it should call _withdrawSharesAsTokens for each strategy to withdraw from
+### given that receiveAsTokens is false
+#### it should loop through each strategy to withdraw from
+#### given that the strategy is the beaconChainETHStrategy
+##### it should call addShares on the eigenPodManager with the staker as the original pod owner
+##### given that the staker is delegated to (operator not zero address)
+###### it should increase the original pod operator's shares
+###### it should push a stake update for the original pod operator
+#### given that the strategy is not the beaconChainETHStrategy
+##### it should call addShares on the strategyManager with the staker as the withdrawer
+##### it should increase the operator's shares with the staker as the withdrawer
+#### it should push an operator stake update
+### it should emit a WithdrawalCompleted event
+# when _withdrawSharesAsTokens is called (internal function) ***
+## given that the strategy is the beaconChainStrategy 
+### it should call withdrawSharesAsTokens on the eigen pod manager
+## given that the strategy is not the beaconChainStrategy
+### it should call withdrawSharesAsTokens on the strategy manager
+# when migrate queued withdrawals is called
+## given that the withdrawal is deleted from the strategy manager
+### it should calculate a new root
+#### given that the root is already pending
+##### it should revert
+### it should emit WithdrawalQueued and WithdrawalMigrated events
 # when increaseDelegatedShares is called
 ## if the caller is not the strategy manager or eigen pod manager
 ### it should revert
