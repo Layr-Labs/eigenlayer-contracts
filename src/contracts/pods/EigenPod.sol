@@ -473,7 +473,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
         //These are the inputs to the callback function for this specific proof request.
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, WITHDRAWAL_FUNCTION_ID, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
 
         requestNonce++;
 
@@ -488,7 +488,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(bytes32 WITHDRAWAL_FUNCTION_ID, uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external onlySuccinctGateway() {
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 

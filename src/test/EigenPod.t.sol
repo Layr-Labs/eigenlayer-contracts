@@ -1417,7 +1417,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, sha256(bytes("WITHDRAWAL_FUNCTION_ID")), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
@@ -1490,8 +1490,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPod), 
             callBackData
         );
-
     }
+
+
 
     /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
