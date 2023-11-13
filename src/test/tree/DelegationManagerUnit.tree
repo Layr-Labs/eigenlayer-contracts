@@ -42,7 +42,10 @@
 #### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ### given caller has delegatable shares
 #### given caller has EigenPod shares
-##### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+##### given EigenPod shares are <= 0
+###### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+##### given EigenPod shares are > 0
+###### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 #### given caller has StrategyManager shares
 ##### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 #### given caller has shares in both EigenPod and StrategyManager
@@ -53,7 +56,10 @@
 ##### it should set delegationApprover delegated to operator, call the StakeRegistry, and emit events
 #### given delegationApprover has delegatable shares
 ##### given delegationApprover has EigenPod shares
-###### it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+###### given EigenPod shares are <= 0
+####### it should set delegationApprover delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+###### given EigenPod shares are > 0
+####### it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ##### given delegationApprover has StrategyManager shares
 ###### it should set delegationApprover delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ##### given delegationApprover has shares in both EigenPod and StrategyManager
@@ -71,7 +77,10 @@
 ####### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ###### given caller has delegatable shares
 ####### given caller has EigenPod shares
-######## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+######## given EigenPod shares are <= 0
+######### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######## given EigenPod shares are > 0
+######### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ####### given caller has StrategyManager shares
 ######## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ####### given caller has shares in both EigenPod and StrategyManager
@@ -90,7 +99,10 @@
 ####### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ###### given caller has delegatable shares
 ####### given caller has EigenPod shares
-######## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+######## given EigenPod shares are <= 0
+######### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######## given EigenPod shares are > 0
+######### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ####### given caller has StrategyManager shares
 ######## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ####### given caller has shares in both EigenPod and StrategyManager
@@ -111,7 +123,10 @@
 ###### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ##### given caller has delegatable shares
 ###### given caller has EigenPod shares
-####### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+####### given EigenPod shares are <= 0
+######## it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+####### given EigenPod shares are > 0
+######## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ###### given caller has StrategyManager shares
 ####### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ###### given caller has shares in both EigenPod and StrategyManager
@@ -122,7 +137,10 @@
 ####### it should set delegationApprover delegated to operator, call the StakeRegistry, and emit events
 ###### given delegationApprover has delegatable shares
 ####### given delegationApprover has EigenPod shares
-######## it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+######## given EigenPod shares are <= 0
+######### it should set delegationApprover delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######## given EigenPod shares are > 0
+######### it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ####### given delegationApprover has StrategyManager shares
 ######## it should set delegationApprover delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ####### given delegationApprover has shares in both EigenPod and StrategyManager
@@ -140,7 +158,10 @@
 ######### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ######## given caller has delegatable shares
 ######### given caller has EigenPod shares
-########## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+########## given EigenPod shares are <= 0
+########### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+########## given EigenPod shares are > 0
+########### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ######### given caller has StrategyManager shares
 ########## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ######### given caller has shares in both EigenPod and StrategyManager
@@ -159,7 +180,10 @@
 ######### it should set caller delegated to operator, call the StakeRegistry, and emit events
 ######## given caller has delegatable shares
 ######### given caller has EigenPod shares
-########## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+########## given EigenPod shares are <= 0
+########### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+########## given EigenPod shares are > 0
+########### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
 ######### given caller has StrategyManager shares
 ########## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ######### given caller has shares in both EigenPod and StrategyManager
