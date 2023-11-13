@@ -102,7 +102,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public sumOfPartialWithdrawalsClaimedWei;
 
     /// @notice This mapping tracks every partial withdrawal proof request made
-    mapping(uint256 => PartialWithdrawalProofRequest) partialWithdrawalProofRequests;
+    mapping(uint256 => PartialWithdrawalProofRequest) internal _partialWithdrawalProofRequests;
 
     /// @notice prover nonce for the function gateway contract
     uint256 public requestNonce;
@@ -465,7 +465,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 startTimestamp = timestampProvenUntil;
         
         //record the partial withdrawal proof request
-        partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
+        _partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
             startTimestamp: startTimestamp, 
             endTimestamp: endTimestamp,
             recipient: recipient,
@@ -491,7 +491,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice The callback function for the ZK proof fulfiller.
     function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external onlySuccinctGateway() {
-        PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
+        PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
@@ -520,7 +520,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         //mark the partial withdrawal proof as being fulfilled
-        partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
+        _partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
 
         if(amountToSendWei > 0){
             emit log_named_uint("amountToSendWei", amountToSendWei);
@@ -529,9 +529,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     function cancelProofRequest(uint256 requestNonce) external onlyEigenPodOwner {
-        PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
+        PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.cancelProofRequest: request nonce is either cancelled or fulfilled");
-        partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.CANCELLED;
+        _partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.CANCELLED;
         emit PartialWithdrawalProofCancelled(requestNonce);
     }
 
@@ -897,6 +897,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[validatorPubkeyHash];
+    }
+
+    function partialWithdrawalProofRequests(uint256 requestNonce) external view returns (PartialWithdrawalProofRequest memory){
+        return _partialWithdrawalProofRequests[requestNonce];
     }
 
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {

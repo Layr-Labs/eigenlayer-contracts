@@ -252,6 +252,8 @@ interface IEigenPod {
 
     function cancelProofRequest(uint256 requestNonce) external;
 
+    function partialWithdrawalProofRequests(uint256 requestNonce) external returns(PartialWithdrawalProofRequest memory);
+
     function timestampProvenUntil() external returns(uint64);
 
     function requestNonce() external returns(uint256);

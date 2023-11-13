@@ -101,4 +101,5 @@ contract EigenPodMock is IEigenPod, Test {
     function GENESIS_TIME() external view returns (uint64){}
     function timestampProvenUntil() external returns(uint64){}
     function requestNonce() external returns(uint256){}
+        function partialWithdrawalProofRequests(uint256 requestNonce) external returns(PartialWithdrawalProofRequest memory){}
 }

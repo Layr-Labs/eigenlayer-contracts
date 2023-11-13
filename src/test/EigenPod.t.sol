@@ -1478,6 +1478,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
         eigenPod.cancelProofRequest(requestNonceBefore);
+
+         IEigenPod.PartialWithdrawalProofRequest memory request = eigenPod.partialWithdrawalProofRequests(requestNonceBefore);
+
+        require(request.status == IEigenPod.REQUEST_STATUS.CANCELLED, "status not set correctly");
         
         bytes memory proof;
         cheats.expectRevert();
