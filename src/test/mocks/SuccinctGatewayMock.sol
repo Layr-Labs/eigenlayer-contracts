@@ -129,28 +129,37 @@ contract MockSuccinctGateway is ISuccinctGateway, Test {
             msg.sender,
             msg.value
         );
+    }
 
-
-        // Assume outputs have been pre-loaded, and automatically fulfill and callback.
+     function fulfillCall(
+        bytes32 _functionId,
+        bytes memory _input,
+        bytes memory _output,
+        bytes memory _proof,
+        address _callbackAddress,
+        bytes memory _callbackData
+    ) external {
+        // Compute the input and output hashes.
         bytes32 inputHash = sha256(_input);
-        emit log_named_bytes32("inputHash", inputHash);
-        bytes memory output = outputs[inputHash];
-                emit log_named_bytes("output", output);
+        bytes32 outputHash = sha256(_output);
 
-        bytes32 outputHash = sha256(output);
-
+        // Set the current verified call.
         verifiedFunctionId = _functionId;
         verifiedInputHash = inputHash;
-        verifiedOutput = output;
+        verifiedOutput = _output;
+
+        // Execute the callback.
         (bool status,) = _callbackAddress.call(_callbackData);
         if (!status) {
             revert CallFailed(_callbackAddress, _callbackData);
         }
 
+        // Delete the current verified call.
         delete verifiedFunctionId;
         delete verifiedInputHash;
         delete verifiedOutput;
 
+        // Emit event.
         emit Call(_functionId, inputHash, outputHash);
     }
 

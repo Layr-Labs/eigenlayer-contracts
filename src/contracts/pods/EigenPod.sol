@@ -21,6 +21,8 @@ import "../interfaces/ISuccinctGateway.sol";
 
 import "./EigenPodPausingConstants.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -36,7 +38,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
@@ -521,6 +523,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
 
         if(amountToSendWei > 0){
+            emit log_named_uint("amountToSendWei", amountToSendWei);
             _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
         }
     }

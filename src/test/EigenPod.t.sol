@@ -1410,6 +1410,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function test_OptimisticRequestPartialWithdrawalProofFlow() external {
         IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
         uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
+        uint256 requestNonce = eigenPod.requestNonce();
 
         uint64 newEndTimestamp = current_timestampProvenUntil + 100;
         uint256 requestNonceBefore = eigenPod.requestNonce();
@@ -1418,7 +1419,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint256 outPutSum = 100;
         cheats.deal(address(eigenPod), outPutSum);
-        mockSuccinctGateway.setOutput(abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil), _computeSlotAtTimestamp(newEndTimestamp)), abi.encodePacked(outPutSum));
+
+        bytes memory output = abi.encodePacked(outPutSum);
+        bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
+
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+
+
         eigenPod.requestPartialWithdrawalsProof(
             current_timestampProvenUntil,
             newEndTimestamp,
@@ -1427,10 +1434,43 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             100000
         );
 
+        bytes memory proof;
+        _makeProofCallback(
+            bytes32(0), 
+            input,
+            output,
+            proof, 
+            address(eigenPod), 
+            callBackData
+        );
+
+        
+
         require(eigenPod.requestNonce() == requestNonceBefore + 1);
 
         cheats.stopPrank();
     }
+
+    function _makeProofCallback(
+        bytes32 _functionId,
+        bytes memory _input,
+        bytes memory _output,
+        bytes memory _proof,
+        address _callbackAddress,
+        bytes memory _callbackData
+    ) internal {
+
+        mockSuccinctGateway.fulfillCall(
+            _functionId,
+            _input,
+            _output,
+            _proof,
+            _callbackAddress,
+            _callbackData
+        );
+
+    }
+
     /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
