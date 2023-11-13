@@ -543,7 +543,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, _operatorDetails, emptyStringForMetadataURI);
-        _delegateStakerToOperator(staker, operator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, operator);
 
         // try to delegate again and check that the call reverts
         cheats.startPrank(staker);
