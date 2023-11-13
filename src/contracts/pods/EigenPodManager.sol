@@ -364,6 +364,7 @@ contract EigenPodManager is
         bytes32 FUNCTION_ID,
         bytes calldata input
     ) external returns (bytes memory){
+        
         return succinctGateway.verifiedCall(FUNCTION_ID, input);
     }
 }

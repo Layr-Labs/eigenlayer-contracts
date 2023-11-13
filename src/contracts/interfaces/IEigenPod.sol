@@ -248,7 +248,9 @@ interface IEigenPod {
         uint32 callbackGasLimit
     ) external;
 
-    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint256 endSlot) external;
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external;
 
     function timestampProvenUntil() external returns(uint64);
+
+    function requestNonce() external returns(uint256);
 }

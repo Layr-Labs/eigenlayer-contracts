@@ -58,7 +58,6 @@ interface ISuccinctGateway is ISuccinctGatewayEvents, ISuccinctGatewayErrors {
 
     function verifiedCall(bytes32 functionId, bytes memory input)
         external
-        view
         returns (bytes memory);
 
     function isCallback() external view returns (bool);

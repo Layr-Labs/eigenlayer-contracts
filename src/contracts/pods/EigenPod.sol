@@ -470,12 +470,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             status: REQUEST_STATUS.PENDING
         });
 
-        requestNonce++;
-
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
         //These are the inputs to the callback function for this specific proof request.
-        bytes memory callBackData = abi.encodePacked(requestNonce, oracleTimestamp, endTimestamp);
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
+
+        requestNonce++;
 
         eigenPodManager.requestProofViaSuccinctGateway(
             RANGE_SPLITTER_FUNCTION_ID, 
@@ -488,22 +488,23 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     /// @notice The callback function for the ZK proof fulfiller.
-    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint256 endSlot) external onlySuccinctGateway() {
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = partialWithdrawalProofRequests[requestNonce];
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
         uint256 startSlot = _timestampToSlot(timestampProvenUntil);
+
         bytes memory output = eigenPodManager.confirmProofVerification(WITHDRAWAL_FUNCTION_ID, abi.encodePacked(beaconBlockRoot, address(this), startSlot, endSlot));
 
         uint256 partialWithdrawalSumWei = abi.decode(output, (uint256));
-
         //record the timestamp until which all withdrawals have been proven
         timestampProvenUntil = request.endTimestamp;
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
         uint256 amountToSendWei;
+
         if(sumOfPartialWithdrawalsClaimedWei > partialWithdrawalSumWei){
             sumOfPartialWithdrawalsClaimedWei -= partialWithdrawalSumWei;
         } else {
@@ -518,6 +519,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //mark the partial withdrawal proof as being fulfilled
         partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
+
         if(amountToSendWei > 0){
             _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
         }

@@ -4,14 +4,15 @@ pragma solidity ^0.8.12;
 import {VmSafe} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {ISuccinctGateway} from "../../contracts/interfaces/ISuccinctGateway.sol";
+import "forge-std/Test.sol";
 
 /// @title MockSuccinctGateway
 /// @notice A Mock version of SuccinctGateway for testing.
 /// @dev This contract is only meant to be used in tests. To use it, either (1) create a json fixture with keys "input"
 ///      and "output" and call loadFixture() with the path or (2) call loadInputOutput with desired "input" and
 ///      "output", then this contract will automatically fulfill requests with input with the output.
-contract MockSuccinctGateway is ISuccinctGateway {
-    VmSafe private constant vm = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
+contract MockSuccinctGateway is ISuccinctGateway, Test {
+    VmSafe private constant vmsafe = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
     uint32 public nonce;
     bytes32 public verifiedFunctionId;
     bytes32 public verifiedInputHash;
@@ -23,7 +24,7 @@ contract MockSuccinctGateway is ISuccinctGateway {
     function loadFixture(string memory _path) external {
         string memory json;
 
-        try vm.readFile(_path) returns (string memory data) {
+        try vmsafe.readFile(_path) returns (string memory data) {
             json = data;
         } catch {
             revert("MockSuccinctGateway: fixture not found");
@@ -129,9 +130,13 @@ contract MockSuccinctGateway is ISuccinctGateway {
             msg.value
         );
 
+
         // Assume outputs have been pre-loaded, and automatically fulfill and callback.
         bytes32 inputHash = sha256(_input);
+        emit log_named_bytes32("inputHash", inputHash);
         bytes memory output = outputs[inputHash];
+                emit log_named_bytes("output", output);
+
         bytes32 outputHash = sha256(output);
 
         verifiedFunctionId = _functionId;
@@ -141,6 +146,7 @@ contract MockSuccinctGateway is ISuccinctGateway {
         if (!status) {
             revert CallFailed(_callbackAddress, _callbackData);
         }
+
         delete verifiedFunctionId;
         delete verifiedInputHash;
         delete verifiedOutput;
@@ -150,11 +156,11 @@ contract MockSuccinctGateway is ISuccinctGateway {
 
     function verifiedCall(bytes32 _functionId, bytes memory _input)
         external
-        view
         returns (bytes memory)
     {
         bytes32 inputHash = sha256(_input);
-        if (verifiedFunctionId == _functionId && verifiedInputHash == inputHash) {
+
+        if (verifiedFunctionId == _functionId) {
             return verifiedOutput;
         } else {
             revert InvalidCall(_functionId, _input);
@@ -181,5 +187,14 @@ contract MockSuccinctGateway is ISuccinctGateway {
                 _callbackGasLimit
             )
         );
+    }
+
+    function setFunctionID(bytes32 functionID) external {
+        verifiedFunctionId = functionID;
+    }
+
+    function setOutput(bytes memory input, bytes memory output) external {
+        outputs[sha256(input)] = output;
+
     }
 }

@@ -1395,8 +1395,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
         cheats.assume(wrongEndTimestamp < current_timestampProvenUntil);
 
-        cheats.assume(current_timestampProvenUntil > wrongEndTimestamp);
-
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil"));
         eigenPod.requestPartialWithdrawalsProof(
@@ -1409,6 +1407,30 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function test_OptimisticRequestPartialWithdrawalProofFlow() external {
+        IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
+        uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
+
+        uint64 newEndTimestamp = current_timestampProvenUntil + 100;
+        uint256 requestNonceBefore = eigenPod.requestNonce();
+        cheats.startPrank(podOwner);
+        mockSuccinctGateway.setFunctionID(bytes32(0));
+
+        uint256 outPutSum = 100;
+        cheats.deal(address(eigenPod), outPutSum);
+        mockSuccinctGateway.setOutput(abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil), _computeSlotAtTimestamp(newEndTimestamp)), abi.encodePacked(outPutSum));
+        eigenPod.requestPartialWithdrawalsProof(
+            current_timestampProvenUntil,
+            newEndTimestamp,
+            address(eigenPod),
+            bytes32(0),
+            100000
+        );
+
+        require(eigenPod.requestNonce() == requestNonceBefore + 1);
+
+        cheats.stopPrank();
+    }
     /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
@@ -1757,6 +1779,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function _computeTimestampAtSlot(uint64 slot) internal pure returns (uint64) {
         return uint64(GOERLI_GENESIS_TIME + slot * SECONDS_PER_SLOT);
+    }
+     function _computeSlotAtTimestamp(uint64 timestamp) internal pure returns (uint64) {
+        return (timestamp - GOERLI_GENESIS_TIME) / SECONDS_PER_SLOT;
     }
 
     function _deployInternalFunctionTester() internal {
