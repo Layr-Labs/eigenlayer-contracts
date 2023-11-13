@@ -19,6 +19,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     uint40 validatorIndex0 = 0;
     uint40 validatorIndex1 = 1;
+     bytes memory proof;
 
 
     address podOwner = address(42000094993494);
@@ -1422,7 +1423,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-
         bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
@@ -1434,7 +1434,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             100000
         );
 
-        bytes memory proof;
         _makeProofCallback(
             bytes32(0), 
             input,
