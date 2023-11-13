@@ -1,4 +1,4 @@
-# DelegationManager Tree
+# DelegationManager Tree (*** denotes that integration tests are needed to validate path)
 # when registerAsOperator is called
 ## given that the caller has already registered as operator
 ### it should revert
@@ -164,7 +164,7 @@
 ########## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ######### given caller has shares in both EigenPod and StrategyManager
 ########## it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
-# undelegate()
+# when undelegate is called
 ## given caller is not delegated to an operator
 ### it should revert
 ## given that the caller is registered as operator
@@ -173,16 +173,13 @@
 ### it should revert
 ## given msg.sender is neither the staker, operator, or delegationApprover (if applicable)
 ### it should revert
-## given msg.sender is the staker
-### given staker doesn't have delegatable shares
-#### it should undelegate the staker, emit events except for StakerForceUndelegated, and return zero withdrawal root
-### given staker has delegatable shares
-#### it should undelegate the staker, decrease operator shares (EPM and/or SM), emit events, and queue withdrawal
-## given msg.sender is the operator or delegationApprover
-### given staker doesn't have delegatable shares
-#### it should undelegate the staker, emit events, and return zero withdrawal root
-### given staker has delegatable shares
-#### it should undelegate the staker, decrease operator shares (EPM and/or SM), emit events, and queue withdrawal
+## given the msg.sender is the operator or delegationApprover
+### it should emit a StakerForceUndelegated event
+## it should emit a StakerUndelegatedEvent and undelegate the staker
+### given the staker doesn't have delegateable shares
+#### it should return a zero withdrawal root
+### given the staker has delegateable shares ***
+#### it should decrease the operator shares, emit events, and queue a withdrawal 
 
 # queueWithdrawals
 # completeQueuedWithdrawal

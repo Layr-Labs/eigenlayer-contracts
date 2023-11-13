@@ -32,6 +32,9 @@ interface IDelegationManagerEvents {
     // @notice Emitted when @param staker undelegates from @param operator.
     event StakerUndelegated(address indexed staker, address indexed operator);
 
+    /// @notice Emitted when @param staker is undelegated via a call not originating from the staker themself
+    event StakerForceUndelegated(address indexed staker, address indexed operator);
+
     /**
      * @notice Emitted when a new withdrawal is queued.
      * @param withdrawalRoot Is the hash of the `withdrawal`.

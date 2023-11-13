@@ -216,8 +216,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return stakerSignatureAndExpiry;
     }
 
-    // @notice Assumes operator does not have a delegation approver
-    function _delegateStakerToOperator(address staker, address operator) internal {
+    // @notice Assumes operator does not have a delegation approver & staker != approver
+    function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
+        cheats.assume(staker != operator);
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.prank(staker);
         delegationManager.delegateTo(
@@ -227,10 +228,35 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         );
     }
 
+    function _delegateToOperatorWhoRequiresSig(address staker, address operator, bytes32 salt) internal {
+        cheats.assume(staker != operator);
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        cheats.prank(staker);
+        delegationManager.delegateTo(
+            operator,
+            approverSignatureAndExpiry,
+            salt
+        );
+    }
+
+    function _delegateToOperatorWhoRequiresSig(address staker, address operator) internal {
+        _delegateToOperatorWhoRequiresSig(staker, operator, emptySalt);
+    }
+
     function _registerOperatorWithBaseDetails(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
             delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
+    }
+
+    function _registerOperatorWithDelegationApprover(address operator) internal {
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: cheats.addr(delegationSignerPrivateKey),
             stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
@@ -530,7 +556,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
-            _delegateStakerToOperator(staker, defaultOperator);          
+            _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);          
         }
 
         uint256 _delegatedSharesBefore = delegationManager.operatorShares(delegationManager.delegatedTo(staker), strategyMock);
@@ -592,7 +618,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
 
         // delegate from the `staker` to the operator *if `delegateFromStakerToOperator` is 'true'*
         if (delegateFromStakerToOperator) {
-            _delegateStakerToOperator(staker, defaultOperator);          
+            _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);          
         }
 
         uint256[] memory sharesInputArray = new uint256[](strategies.length);
@@ -644,6 +670,145 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     }
 }
 
+contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
+    // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
+    function test_undelegate_revert_paused(address staker) public filterFuzzedAddressInputs(staker) {
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
+
+        cheats.prank(staker);
+        cheats.expectRevert(bytes("Pausable: index is paused"));
+        delegationManager.undelegate(staker);
+    }
+
+    function testFuzz_undelegate_revert_notDelgated(address undelegatedStaker) public filterFuzzedAddressInputs(undelegatedStaker) {
+        cheats.assume(undelegatedStaker != defaultOperator);
+        assertFalse(delegationManager.isDelegated(undelegatedStaker), "bad test setup");
+
+        cheats.prank(undelegatedStaker);
+        cheats.expectRevert("DelegationManager.undelegate: staker must be delegated to undelegate");
+        delegationManager.undelegate(undelegatedStaker);
+    }
+
+    // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
+    function testFuzz_undelegate_revert_stakerIsOperator(address operator) public filterFuzzedAddressInputs(operator) {
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.prank(operator);
+        cheats.expectRevert("DelegationManager.undelegate: operators cannot be undelegated");
+        delegationManager.undelegate(operator);
+    }
+
+    /**
+     * @notice verifies that `DelegationManager.undelegate` reverts if trying to undelegate an operator from themselves
+     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
+     */
+    function testFuzz_undelegate_operatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
+        // register *this contract* as an operator with the specified `delegationApprover`
+        address operator = address(this);
+        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: operator,
+            delegationApprover: delegationApprover,
+            stakerOptOutWindowBlocks: 0
+        });
+        _registerOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+
+        address caller;
+        if (callFromOperatorOrApprover) {
+            caller = delegationApprover;
+        } else {
+            caller = operator;
+        }
+
+        // try to call the `undelegate` function and check for reversion
+        cheats.prank(caller);
+        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
+        delegationManager.undelegate(operator);
+    }
+
+    //TODO: verify that this check is even needed
+    function test_undelegate_revert_zeroAddress() public {
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
+
+        cheats.prank(address(0));
+        cheats.expectRevert("DelegationManager.undelegate: cannot undelegate zero address");
+        delegationManager.undelegate(address(0));
+    }
+
+    /**
+     * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
+     * to or the operator's `delegationApprover`), or the staker themselves
+     */
+    function testFuzz_undelegate_revert_invalidCaller(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) {
+        address staker = address(0x123);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        // filter out addresses that are actually allowed to call the function
+        cheats.assume(invalidCaller != staker);
+        cheats.assume(invalidCaller != defaultOperator);
+        cheats.assume(invalidCaller != delegationApprover);
+
+        _registerOperatorWithDelegationApprover(defaultOperator);
+        _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
+
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("DelegationManager.undelegate: caller cannot undelegate staker");
+        delegationManager.undelegate(staker);
+    }
+
+    /**
+     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
+     * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
+     * Does nothing if the staker is already undelegated
+     * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
+     * Emits a `StakerUndelegated` event
+     */
+    function testFuzz_undelegate_noDelegateableShares(address staker) public filterFuzzedAddressInputs(staker) {
+        // register *this contract* as an operator and delegate from the `staker` to them
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
+        cheats.prank(staker);
+        bytes32 withdrawalRoot = delegationManager.undelegate(staker);
+
+        assertEq(withdrawalRoot, bytes32(0), "withdrawalRoot should be zero");
+        assertEq(delegationManager.delegatedTo(staker), address(0), "undelegated staker should be delegated to zero address");
+        assertFalse(delegationManager.isDelegated(staker), "staker not undelegated");
+    }
+
+    /**
+     * @notice Verifies that the `undelegate` function allows for a force undelegation
+     */
+    function testFuzz_undelegate_forceUndelegation_noDelegateableShares(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
+        filterFuzzedAddressInputs(staker)
+    {
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+
+        _registerOperatorWithDelegationApprover(defaultOperator);
+        _delegateToOperatorWhoRequiresSig(staker, defaultOperator, salt);
+
+        address caller;
+        if (callFromOperatorOrApprover) {
+            caller = delegationApprover;
+        } else {
+            caller = defaultOperator;
+        }
+
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerForceUndelegated(staker, defaultOperator);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit StakerUndelegated(staker, defaultOperator);
+        cheats.prank(caller);
+        bytes32 withdrawalRoot = delegationManager.undelegate(staker);
+
+        assertEq(withdrawalRoot, bytes32(0), "withdrawalRoot should be zero");
+        assertEq(delegationManager.delegatedTo(staker), address(0), "undelegated staker should be delegated to zero address");
+        assertFalse(delegationManager.isDelegated(staker), "staker not undelegated");
+    }
+}
 contract DelegationManagerUnitTests_Old is DelegationManagerUnitTests {
     /**
      * @notice `staker` delegates to an operator who does not require any signature verification (i.e. the operator’s `delegationApprover` address is set to the zero address)
@@ -1256,45 +1421,6 @@ contract DelegationManagerUnitTests_Old is DelegationManagerUnitTests {
         cheats.stopPrank();
     }
 
-    /**
-     * Staker is undelegated from an operator, via a call to `undelegate`, properly originating from the staker's address.
-     * Reverts if the staker is themselves an operator (i.e. they are delegated to themselves)
-     * Does nothing if the staker is already undelegated
-     * Properly undelegates the staker, i.e. the staker becomes “delegated to” the zero address, and `isDelegated(staker)` returns ‘false’
-     * Emits a `StakerUndelegated` event
-     */
-    function testUndelegateFromOperator(address staker) public {
-        // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
-        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
-
-        cheats.startPrank(staker);
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
-        delegationManager.undelegate(staker);
-        cheats.stopPrank();
-
-        require(!delegationManager.isDelegated(staker), "staker not undelegated!");
-        require(delegationManager.delegatedTo(staker) == address(0), "undelegated staker should be delegated to zero address");
-    }
-
-    // @notice Verifies that an operator cannot undelegate from themself (this should always be forbidden)
-    function testOperatorCannotUndelegateFromThemself(address operator) public filterFuzzedAddressInputs(operator) {
-        cheats.startPrank(operator);
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
-        delegationManager.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        cheats.stopPrank();
-        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
-        
-        cheats.startPrank(operator);
-        delegationManager.undelegate(operator);
-        cheats.stopPrank();
-    }
-
     // @notice Verifies that it is not possible for a staker to delegate to an operator when they are already delegated to an operator
     function testCannotDelegateWhenStakerHasExistingDelegation(address staker, address operator, address operator2) public
         filterFuzzedAddressInputs(staker)
@@ -1347,139 +1473,6 @@ contract DelegationManagerUnitTests_Old is DelegationManagerUnitTests {
         cheats.expectRevert(bytes("Pausable: index is paused"));
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
         delegationManager.delegateTo(operator, signatureWithExpiry, emptySalt);
-        cheats.stopPrank();
-    }
-
-    // @notice Verifies that undelegating is not possible when the "undelegation paused" switch is flipped
-    function testCannotUndelegateWhenPausedUndelegationIsSet(address operator, address staker) public filterFuzzedAddressInputs(operator) filterFuzzedAddressInputs(staker) {
-        // register *this contract* as an operator and delegate from the `staker` to them (already filters out case when staker is the operator since it will revert)
-        IDelegationManager.SignatureWithExpiry memory approverSignatureAndExpiry;
-        testDelegateToOperatorWhoAcceptsAllStakers(staker, approverSignatureAndExpiry, emptySalt);
-
-        // set the pausing flag
-        cheats.startPrank(pauser);
-        delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
-        cheats.stopPrank();
-
-        cheats.startPrank(staker);
-        cheats.expectRevert(bytes("Pausable: index is paused"));
-        delegationManager.undelegate(staker);
-        cheats.stopPrank();
-    }
-
-    // special event purely used in the StrategyManagerMock contract, inside of `undelegate` function to verify that the correct call is made
-    event ForceTotalWithdrawalCalled(address staker);
-
-    /**
-     * @notice Verifies that the `undelegate` function properly calls `strategyManager.forceTotalWithdrawal` when necessary
-     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
-     */
-    function testForceUndelegation(address staker, bytes32 salt, bool callFromOperatorOrApprover) public
-        filterFuzzedAddressInputs(staker)
-    {
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-        address operator = address(this);
-
-        // filtering since you can't delegate to yourself after registering as an operator
-        cheats.assume(staker != operator);
-
-        // register this contract as an operator and delegate from the staker to it
-        uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoRequiresECDSASignature(staker, salt, expiry);
-
-        address caller;
-        if (callFromOperatorOrApprover) {
-            caller = delegationApprover;
-        } else {
-            caller = operator;
-        }
-
-        // call the `undelegate` function
-        cheats.startPrank(caller);
-        // check that the correct calldata is forwarded by looking for an event emitted by the StrategyManagerMock contract
-        if (strategyManagerMock.stakerStrategyListLength(staker) != 0) {
-            cheats.expectEmit(true, true, true, true, address(strategyManagerMock));
-            emit ForceTotalWithdrawalCalled(staker);
-        }
-        // withdrawal root
-        (IStrategy[] memory strategies, uint256[] memory shares) = delegationManager.getDelegatableShares(staker);
-        IDelegationManager.Withdrawal memory fullWithdrawal = IDelegationManager.Withdrawal({
-            staker: staker,
-            delegatedTo: operator,
-            withdrawer: staker,
-            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            shares: shares
-        });
-        bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(fullWithdrawal);
-
-        (bytes32 returnValue) = delegationManager.undelegate(staker);
-
-        if (strategies.length == 0) {
-            withdrawalRoot = bytes32(0);
-        }
-
-        // check that the return value is the withdrawal root
-        require(returnValue == withdrawalRoot, "contract returned wrong return value");
-        cheats.stopPrank();
-    }
-
-    /**
-     * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
-     * to or the operator's `delegationApprover`), or the staker themselves
-     */
-    function testCannotCallUndelegateFromImproperAddress(address staker, address caller) public
-        filterFuzzedAddressInputs(staker)
-        filterFuzzedAddressInputs(caller)
-    {
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-        address operator = address(this);
-
-        // filtering since you can't delegate to yourself after registering as an operator
-        cheats.assume(staker != operator);
-
-        // filter out addresses that are actually allowed to call the function
-        cheats.assume(caller != operator);
-        cheats.assume(caller != delegationApprover);
-        cheats.assume(caller != staker);
-
-        // register this contract as an operator and delegate from the staker to it
-        uint256 expiry = type(uint256).max;
-        testDelegateToOperatorWhoRequiresECDSASignature(staker, emptySalt, expiry);
-
-        // try to call the `undelegate` function and check for reversion
-        cheats.startPrank(caller);
-        cheats.expectRevert(bytes("DelegationManager.undelegate: caller cannot undelegate staker"));
-        delegationManager.undelegate(staker);
-        cheats.stopPrank();
-    }
-
-    /**
-     * @notice verifies that `DelegationManager.undelegate` reverts if trying to undelegate an operator from themselves
-     * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
-     */
-    function testOperatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
-        // register *this contract* as an operator
-        address operator = address(this);
-        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: delegationApprover,
-            stakerOptOutWindowBlocks: 0
-        });
-        _registerOperator(operator, _operatorDetails, emptyStringForMetadataURI);
-
-        address caller;
-        if (callFromOperatorOrApprover) {
-            caller = delegationApprover;
-        } else {
-            caller = operator;
-        }
-
-        // try to call the `undelegate` function and check for reversion
-        cheats.startPrank(caller);
-        cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
-        delegationManager.undelegate(operator);
         cheats.stopPrank();
     }
 
