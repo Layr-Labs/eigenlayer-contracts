@@ -1398,6 +1398,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             wrongEndTimestamp,
             address(this),
             bytes32(0),
+            bytes32(0),
             100000
         );
         cheats.stopPrank();
@@ -1418,13 +1419,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, bytes32(0), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
             current_timestampProvenUntil,
             newEndTimestamp,
             address(eigenPod),
+            bytes32(0),
             bytes32(0),
             100000
         );
@@ -1465,13 +1467,14 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, bytes32(0), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
             current_timestampProvenUntil,
             newEndTimestamp,
             address(eigenPod),
+            bytes32(0),
             bytes32(0),
             100000
         );
