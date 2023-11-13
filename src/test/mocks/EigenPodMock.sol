@@ -97,6 +97,7 @@ contract EigenPodMock is IEigenPod, Test {
     ) external {}
 
     function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external{}
+    function cancelProofRequest(uint256 requestNonce) external{}
     function GENESIS_TIME() external view returns (uint64){}
     function timestampProvenUntil() external returns(uint64){}
     function requestNonce() external returns(uint256){}

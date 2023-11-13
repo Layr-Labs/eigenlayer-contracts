@@ -19,8 +19,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     uint40 validatorIndex0 = 0;
     uint40 validatorIndex1 = 1;
-     bytes memory proof;
-
 
     address podOwner = address(42000094993494);
 
@@ -832,10 +830,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function testProveWithdrawalCredentialsAfterValidatorExit() public {
         // ./solidityProofGen  -newBalance=0 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913_exited.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
-               emit log("hello");
-
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        emit log("hello");
         //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
@@ -1434,6 +1429,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             100000
         );
 
+         uint256 delayedWithdrawalRouterContractBalanceBefore = address(delayedWithdrawalRouter).balance;
+
+        //this mocks the succinct prover's callback into EP
+        bytes memory proof;
         _makeProofCallback(
             bytes32(0), 
             input,
@@ -1442,30 +1441,53 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPod), 
             callBackData
         );
-
-        
-
         require(eigenPod.requestNonce() == requestNonceBefore + 1);
+        require(
+            address(delayedWithdrawalRouter).balance - delayedWithdrawalRouterContractBalanceBefore == outPutSum,
+            "pod delayed withdrawal balance hasn't been updated correctly"
+        );
 
         cheats.stopPrank();
     }
 
-    function _makeProofCallback(
-        bytes32 _functionId,
-        bytes memory _input,
-        bytes memory _output,
-        bytes memory _proof,
-        address _callbackAddress,
-        bytes memory _callbackData
-    ) internal {
+    function test_CancelProofRequest() external {
+        IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
+        uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
+        uint256 requestNonce = eigenPod.requestNonce();
 
-        mockSuccinctGateway.fulfillCall(
-            _functionId,
-            _input,
-            _output,
-            _proof,
-            _callbackAddress,
-            _callbackData
+        uint64 newEndTimestamp = current_timestampProvenUntil + 100;
+        uint256 requestNonceBefore = eigenPod.requestNonce();
+        cheats.startPrank(podOwner);
+        mockSuccinctGateway.setFunctionID(bytes32(0));
+
+        uint256 outPutSum = 100;
+        cheats.deal(address(eigenPod), outPutSum);
+
+        bytes memory output = abi.encodePacked(outPutSum);
+        bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+
+
+        eigenPod.requestPartialWithdrawalsProof(
+            current_timestampProvenUntil,
+            newEndTimestamp,
+            address(eigenPod),
+            bytes32(0),
+            100000
+        );
+
+
+        eigenPod.cancelProofRequest(requestNonceBefore);
+        
+        bytes memory proof;
+        cheats.expectRevert();
+        _makeProofCallback(
+            bytes32(0), 
+            input,
+            output,
+            proof, 
+            address(eigenPod), 
+            callBackData
         );
 
     }
@@ -1753,6 +1775,26 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return withdrawalRoot;
     }
 */
+    function _makeProofCallback(
+        bytes32 _functionId,
+        bytes memory _input,
+        bytes memory _output,
+        bytes memory _proof,
+        address _callbackAddress,
+        bytes memory _callbackData
+    ) internal {
+
+        mockSuccinctGateway.fulfillCall(
+            _functionId,
+            _input,
+            _output,
+            _proof,
+            _callbackAddress,
+            _callbackData
+        );
+
+    }
+
     function _getLatestDelayedWithdrawalAmount(address recipient) internal view returns (uint256) {
         return
             delayedWithdrawalRouter
