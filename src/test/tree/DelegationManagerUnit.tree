@@ -107,7 +107,7 @@
 ######## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
 ####### given caller has shares in both EigenPod and StrategyManager
 ######## it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
-# delegateToBySignature()
+# when delegateToBySignature is called
 ## given block timestamp is > staker signature expiry
 ### it should revert
 ## given staker signature verification fails
@@ -301,5 +301,3 @@
 ### it should revert
 ## given called by owner, existing address not set, and new address is nonzero
 ### it should set the new stakeRegistry address and emit event
-# getDelegatableShares
-# calculateDelegationApprovalDigestHash
