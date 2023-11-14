@@ -13,54 +13,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] strategyTokenBalance;
 
     /**
-     * @notice Helper function to test `initiateDelegation` functionality.  Handles registering as an operator, depositing tokens
-     * into both Weth and Eigen strategies, as well as delegating assets from "stakers" to the operator.
-     * @param operatorIndex is the index of the operator to use from the test-data/operators.json file
-     * @param amountEigenToDeposit amount of eigen token to deposit
-     * @param amountEthToDeposit amount of eth to deposit
-     */
-
-    function _testInitiateDelegation(
-        uint8 operatorIndex,
-        uint256 amountEigenToDeposit,
-        uint256 amountEthToDeposit
-    ) public returns (uint256 amountEthStaked, uint256 amountEigenStaked) {
-        address operator = getOperatorAddress(operatorIndex);
-
-        //setting up operator's delegation terms
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
-        _testRegisterAsOperator(operator, operatorDetails);
-
-        for (uint256 i; i < stakers.length; i++) {
-            //initialize weth, eigen and eth balances for staker
-            eigenToken.transfer(stakers[i], amountEigenToDeposit);
-            weth.transfer(stakers[i], amountEthToDeposit);
-
-            //deposit staker's eigen and weth into strategy manager
-            _testDepositEigen(stakers[i], amountEigenToDeposit);
-            _testDepositWeth(stakers[i], amountEthToDeposit);
-
-            //delegate the staker's deposits to operator
-            uint256 operatorEigenSharesBefore = delegation.operatorShares(operator, eigenStrat);
-            uint256 operatorWETHSharesBefore = delegation.operatorShares(operator, wethStrat);
-            _testDelegateToOperator(stakers[i], operator);
-            //verify that `increaseOperatorShares` worked
-            assertTrue(
-                delegation.operatorShares(operator, eigenStrat) - operatorEigenSharesBefore == amountEigenToDeposit
-            );
-            assertTrue(delegation.operatorShares(operator, wethStrat) - operatorWETHSharesBefore == amountEthToDeposit);
-        }
-        amountEthStaked += delegation.operatorShares(operator, wethStrat);
-        amountEigenStaked += delegation.operatorShares(operator, eigenStrat);
-
-        return (amountEthStaked, amountEigenStaked);
-    }
-
-    /**
      * @notice Register 'sender' as an operator, setting their 'OperatorDetails' in DelegationManager to 'operatorDetails', verifies
      * that the storage of DelegationManager contract is updated appropriately
      *
