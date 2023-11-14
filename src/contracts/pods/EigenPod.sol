@@ -472,6 +472,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
+        //NOTE: it is not clear what callback data needs to passed here since succinct is going to make multiple callbacks for each request.
         //These are the inputs to the callback function for this specific proof request.
         bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
 
