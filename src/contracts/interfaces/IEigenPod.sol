@@ -51,6 +51,7 @@ interface IEigenPod {
 
     struct PartialWithdrawalProofRequest{
         uint64 startTimestamp;
+        uint64 splitTimestamps;
         uint64 endTimestamp;
         address recipient;
         REQUEST_STATUS status;

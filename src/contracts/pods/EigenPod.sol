@@ -461,12 +461,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 startTimestamp = timestampProvenUntil;
         
         //record the partial withdrawal proof request
-        _partialWithdrawalProofRequests[requestNonce] = PartialWithdrawalProofRequest({
-            startTimestamp: startTimestamp, 
-            endTimestamp: endTimestamp,
-            recipient: recipient,
-            status: REQUEST_STATUS.PENDING
-        });
+       PartialWithdrawalProofRequest memory request =  _partialWithdrawalProofRequests[requestNonce];
+       request.startTimestamp = startTimestamp;
+       request.endTimestamp = endTimestamp;
+       request.recipient = recipient;
+       request.status = REQUEST_STATUS.PENDING;
+
+
 
         emit PartialWithdrawalProofRequested(startTimestamp, endTimestamp, requestNonce);
 
@@ -497,7 +498,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         uint256 partialWithdrawalSumWei = abi.decode(output, (uint256));
         //record the timestamp until which all withdrawals have been proven
-        timestampProvenUntil = request.endTimestamp;
+        timestampProvenUntil = _slotToTimestamp(endSlot);
         emit PartialWithdrawalProven(requestNonce, partialWithdrawalSumWei);
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
