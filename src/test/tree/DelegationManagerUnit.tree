@@ -110,84 +110,83 @@
 # delegateToBySignature()
 ## given block timestamp is > staker signature expiry
 ### it should revert
-## given staker is an EOA
-### given staker signature verification fails
+## given staker signature verification fails
+### it should revert
+## given staker signature verification succeeds
+### given caller is already delegated to an operator
 #### it should revert
-### given staker signature verification succeeds
-#### given caller is already delegated to an operator
-##### it should revert
-#### given passed in operator param isn't a registered operator
-##### it should revert
-#### given operator's delegationApprover is set to zero address
-##### given caller doesn't have delegatable shares
-###### it should set caller delegated to operator, call the StakeRegistry, and emit events
-##### given caller has delegatable shares
-###### given caller has EigenPod shares
+### given passed in operator param isn't a registered operator
+#### it should revert
+### given operator's delegationApprover is set to zero address
+#### given caller doesn't have delegatable shares
+##### it should set caller delegated to operator, call the StakeRegistry, and emit events
+#### given caller has delegatable shares
+##### given caller has EigenPod shares
+###### given EigenPod shares are <= 0
+####### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+###### given EigenPod shares are > 0
+####### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+##### given caller has StrategyManager shares
+###### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+##### given caller has shares in both EigenPod and StrategyManager
+###### it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+### given operator's delegationApprover is set to nonzero address
+#### given caller is the delegationApprover
+##### given delegationApprover doesn't have delegatable shares
+###### it should set delegationApprover delegated to operator, call the StakeRegistry, and emit events
+##### given delegationApprover has delegatable shares
+###### given delegationApprover has EigenPod shares
 ####### given EigenPod shares are <= 0
-######## it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######## it should set delegationApprover delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
 ####### given EigenPod shares are > 0
-######## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
-###### given caller has StrategyManager shares
-####### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
-###### given caller has shares in both EigenPod and StrategyManager
-####### it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
-#### given operator's delegationApprover is set to nonzero address
-##### given caller is the delegationApprover
-###### given delegationApprover doesn't have delegatable shares
-####### it should set delegationApprover delegated to operator, call the StakeRegistry, and emit events
-###### given delegationApprover has delegatable shares
-####### given delegationApprover has EigenPod shares
-######## given EigenPod shares are <= 0
-######### it should set delegationApprover delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
-######## given EigenPod shares are > 0
-######### it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
-####### given delegationApprover has StrategyManager shares
-######## it should set delegationApprover delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
-####### given delegationApprover has shares in both EigenPod and StrategyManager
-######## it should set delegationApprover delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
-##### given caller is not the delegationApprover
-###### given the delegationApprover is an EOA
-####### given the block timestamp is past the expiry timestamp
-######## it should revert
-####### given the delegationApprove salt has already been used
-######## it should revert
-####### given the signature verification fails
-######## it should revert
-####### given the signature verification succeeds
-######## given caller doesn't have delegatable shares
-######### it should set caller delegated to operator, call the StakeRegistry, and emit events
-######## given caller has delegatable shares
-######### given caller has EigenPod shares
-########## given EigenPod shares are <= 0
-########### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
-########## given EigenPod shares are > 0
-########### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
-######### given caller has StrategyManager shares
-########## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
-######### given caller has shares in both EigenPod and StrategyManager
-########## it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
-###### given the delegationApprover is a contract
-####### given the block timestamp is past the expiry timestamp
-######## it should revert
-####### given the delegationApprove salt has already been used
-######## it should revert
-####### given the contract isn't EIP1271 compliant
-######## it should revert
-####### given the signature verification fails, isValidSignature() does not return  EIP1271_MAGICVALUE
-######## it should revert
-####### given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
-######## given caller doesn't have delegatable shares
-######### it should set caller delegated to operator, call the StakeRegistry, and emit events
-######## given caller has delegatable shares
-######### given caller has EigenPod shares
-########## given EigenPod shares are <= 0
-########### it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
-########## given EigenPod shares are > 0
-########### it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
-######### given caller has StrategyManager shares
-########## it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
-######### given caller has shares in both EigenPod and StrategyManager
-########## it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+######## it should set delegationApprover delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+###### given delegationApprover has StrategyManager shares
+####### it should set delegationApprover delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+###### given delegationApprover has shares in both EigenPod and StrategyManager
+####### it should set delegationApprover delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+#### given caller is not the delegationApprover
+##### given the delegationApprover is an EOA
+###### given the block timestamp is past the expiry timestamp
+####### it should revert
+###### given the delegationApprove salt has already been used
+####### it should revert
+###### given the signature verification fails
+####### it should revert
+###### given the signature verification succeeds
+####### given caller doesn't have delegatable shares
+######## it should set caller delegated to operator, call the StakeRegistry, and emit events
+####### given caller has delegatable shares
+######## given caller has EigenPod shares
+######### given EigenPod shares are <= 0
+########## it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######### given EigenPod shares are > 0
+########## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+######## given caller has StrategyManager shares
+######### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+######## given caller has shares in both EigenPod and StrategyManager
+######### it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+##### given the delegationApprover is a contract
+###### given the block timestamp is past the expiry timestamp
+####### it should revert
+###### given the delegationApprove salt has already been used
+####### it should revert
+###### given the contract isn't EIP1271 compliant
+####### it should revert
+###### given the signature verification fails, isValidSignature() does not return  EIP1271_MAGICVALUE
+####### it should revert
+###### given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+####### given caller doesn't have delegatable shares
+######## it should set caller delegated to operator, call the StakeRegistry, and emit events
+####### given caller has delegatable shares
+######## given caller has EigenPod shares
+######### given EigenPod shares are <= 0
+########## it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+######### given EigenPod shares are > 0
+########## it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+######## given caller has StrategyManager shares
+######### it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+######## given caller has shares in both EigenPod and StrategyManager
+######### it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
 # when undelegate is called
 ## given caller is not delegated to an operator
 ### it should revert
