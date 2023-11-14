@@ -490,7 +490,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice The callback function for the ZK proof fulfiller.
     function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[requestNonce];
-        require(_slotToTimestamp(ednSlot) <= request.endTimestamp);
+        require(_slotToTimestamp(ednSlot) <= request.endTimestamp, "endSlot must be less than the request's endTimestamp");
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
