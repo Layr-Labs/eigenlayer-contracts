@@ -141,7 +141,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
     /// @notice Index for flag that pauses the `verifyBeaconChainFullWithdrawal` function *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
 
-    function xtest_verifyBalanceUpdates_revert_pausedEigenVerifyBalanceUpdate() public {
+    function test_verifyBalanceUpdates_revert_pausedEigenVerifyBalanceUpdate() public {
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
 
         uint40[] memory validatorIndices = new uint40[](1);
@@ -157,6 +157,62 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
         cheats.prank(address(podOwner));
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
         eigenPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+    }
+
+    function test_verifyAndProcessWithdrawals_revert_pausedEigenVerifyWithdrawal() public {
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct;
+        BeaconChainProofs.WithdrawalProof[] memory withdrawalProofsArray;
+
+        bytes[] memory validatorFieldsProofArray = new bytes[](1);
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        bytes32[][] memory withdrawalFieldsArray = new bytes32[][](1);
+
+        // pause the contract
+        cheats.prank(address(pauser));
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_WITHDRAWAL);
+
+        cheats.prank(address(podOwner));
+        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+        eigenPod.verifyAndProcessWithdrawals(
+            0,
+            stateRootProofStruct,
+            withdrawalProofsArray,
+            validatorFieldsProofArray,
+            validatorFieldsArray,
+            withdrawalFieldsArray
+        );
+    }
+
+    function test_verifyWithdrawalCredentials_revert_pausedEigenVerifyCredentials() public {
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        bytes[] memory proofsArray = new bytes[](1);
+        uint40[] memory validatorIndices = new uint40[](1);
+
+        // pause the contract
+        cheats.prank(address(pauser));
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
+
+        cheats.prank(address(podOwner));
+        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+        eigenPod.verifyWithdrawalCredentials(
+            0,
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
+    }
+
+    function test_activateRestaking_revert_pausedEigenVerifyCredentials() public {
+        // pause the contract
+        cheats.prank(address(pauser));
+        eigenPodManager.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
+
+        cheats.prank(address(podOwner));
+        cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
+        eigenPod.activateRestaking();
     }
 }
 
@@ -214,6 +270,8 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
  * 4. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
  * 3. Reentrancy check (first function in below commented out tests)
  */
+
+
 }
 
 ///@notice Placeholder for future unit tests that combine interactions between the EigenPod & EigenPodManager
