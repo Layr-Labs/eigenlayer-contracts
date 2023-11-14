@@ -32,7 +32,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     function _testRegisterAsOperator(
         address sender,
         IDelegationManager.OperatorDetails memory operatorDetails
-    ) internal {
+    ) internal returns (Operator memory) {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
@@ -45,6 +45,15 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         assertTrue(delegation.isDelegated(sender), "_testRegisterAsOperator: sender not marked as actively delegated");
         cheats.stopPrank();
+
+        Operator memory operatorStruct = Operator({
+            operator: sender,
+            operatorDetails: operatorDetails,
+            delegatedStakers: new address[](1)
+        });
+        operatorStruct.delegatedStakers[0] = sender;
+
+        return operatorStruct;
     }
 
     /**
@@ -80,16 +89,18 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         IERC20 underlyingToken,
         IStrategy stratToDepositTo
     ) internal returns (uint256 amountDeposited) {
+        // TODO: modify this to be a require statement instead? would probably be better to do the filtering on a higher level.
         // deposits will revert when amountToDeposit is 0
         cheats.assume(amountToDeposit > 0);
 
-        // whitelist the strategy for deposit, in case it wasn't before
+        // whitelist the strategy for deposit, in the case where it wasn't before
         {
-            cheats.startPrank(strategyManager.strategyWhitelister());
-            IStrategy[] memory _strategy = new IStrategy[](1);
-            _strategy[0] = stratToDepositTo;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy);
-            cheats.stopPrank();
+            if (strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
+                IStrategy[] memory _strategy = new IStrategy[](1);
+                _strategy[0] = stratToDepositTo;
+                cheats.prank(strategyManager.strategyWhitelister());
+                strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            }
         }
 
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
@@ -109,8 +120,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             underlyingToken.approve(address(strategyManager), type(uint256).max);
             strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
             amountDeposited = amountToDeposit;
+            cheats.stopPrank();
 
-            //check if depositor has never used this strat, that it is added correctly to stakerStrategyList array.
+            // check if staker had zero shares before, that it is added correctly to stakerStrategyList array.
             if (operatorSharesBefore == 0) {
                 // check that strategy is appropriately added to dynamic array of all of sender's strategies
                 assertTrue(
@@ -120,14 +132,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 );
             }
 
-            // check that the shares out match the expected amount out
+            // check that the shares output matches the expected amount out
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
         }
-        cheats.stopPrank();
     }
 
     /**
