@@ -12,14 +12,40 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] priorTotalShares;
     uint256[] strategyTokenBalance;
 
-    // takes in a Staker struct and modifies it in place
-    function _updateStakerState(Staker memory staker) internal view {
+    // takes in a Staker struct and gets the staker's updated state
+    function _updateStakerState(Staker memory staker) internal view returns (Staker memory) {
         (IStrategy[] memory stakerStrategies, uint256[] memory stakerShares) = strategyManager.getDeposits(staker.staker);
-        staker.strategies = stakerStrategies;
-        staker.shares = stakerShares;
-        staker.delegatedTo = delegation.delegatedTo(staker.staker);
+        address delegatedTo = delegation.delegatedTo(staker.staker);
+        Staker memory updatedState = Staker({
+            // staker's address should never change
+            staker: staker.staker,
+            strategies: stakerStrategies,
+            shares: stakerShares,
+            delegatedTo: delegatedTo,
+            // don't change this -- update the queued withdrawals elsewhere, when applicable
+            queuedWithdrawals: staker.queuedWithdrawals
+        });
 
         // TODO: add some invariant checks?
+        return updatedState;
+    }
+
+    function _strategyInStakerList(Staker memory staker, IStrategy strategy) internal view returns (bool) {
+        for (uint256 i = 0; i < staker.strategies.length; ++i) {
+            if (staker.strategies[i] == strategy) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _stakerShares(Staker memory staker, IStrategy strategy)  internal view returns (uint256) {
+        for (uint256 i = 0; i < staker.strategies.length; ++i) {
+            if (staker.strategies[i] == strategy) {
+                return staker.shares[i];
+            }
+        }
+        return 0;
     }
 
     /**
@@ -55,6 +81,73 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         return operatorStruct;
     }
+
+    // @notice Deposits `amountToDeposit` of `underlyingToken` from `staker` into `stratToDepositTo`.
+    function _testDepositToStrategy(
+        Staker memory staker,
+        uint256 amountToDeposit,
+        IERC20 underlyingToken,
+        IStrategy stratToDepositTo
+    ) internal returns (uint256 amountDeposited) {
+        // deposits will revert when amountToDeposit is 0
+        require(amountToDeposit != 0, "bad usage of _testDepositToStrategy helper function");
+
+        // whitelist the strategy for deposit, in the case where it wasn't before
+        {
+            if (strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
+                IStrategy[] memory _strategy = new IStrategy[](1);
+                _strategy[0] = stratToDepositTo;
+                cheats.prank(strategyManager.strategyWhitelister());
+                strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            }
+        }
+
+        // assumes this contract already has the underlying token!
+        uint256 contractBalance = underlyingToken.balanceOf(address(this));
+        // calculate the expected output
+        uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
+        // logging and error for misusing this function (see assumption above)
+        if (amountToDeposit > contractBalance) {
+            emit log("amountToDeposit > contractBalance");
+            emit log_named_uint("amountToDeposit is", amountToDeposit);
+            emit log_named_uint("while contractBalance is", contractBalance);
+            revert("_testDepositToStrategy failure");
+        } else {
+            underlyingToken.transfer(staker.staker, amountToDeposit);
+            cheats.startPrank(staker.staker);
+            underlyingToken.approve(address(strategyManager), type(uint256).max);
+            strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
+            amountDeposited = amountToDeposit;
+            cheats.stopPrank();
+
+            Staker memory stakerStateAfter = _updateStakerState(staker);
+
+            // staker had zero shares in the strategy before, check that it is added correctly to stakerStrategyList array.
+            if (_stakerShares(staker, stratToDepositTo) == 0) {
+                // check that strategy is appropriately added to dynamic array of all of staker's strategies
+                assertTrue(
+                    stakerStateAfter.strategies[stakerStateAfter.strategies.length - 1] == stratToDepositTo,
+                    "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
+                );
+                assertEq(stakerStateAfter.strategies.length, staker.strategies.length + 1,
+                    "strategy list did not update correctly");
+            } else {
+                assertTrue(_strategyInStakerList(staker, stratToDepositTo), "strategy somehow not in staker strategy array");
+                assertEq(stakerStateAfter.strategies.length, staker.strategies.length,
+                    "strategy list updated incorrectly");
+            }
+
+            // check that the shares difference matches the expected amount out
+            assertEq(
+                _stakerShares(staker, stratToDepositTo) - _stakerShares(staker, stratToDepositTo),
+                expectedSharesOut,
+                "_testDepositToStrategy: actual shares out should match expected shares out"
+            );
+        }
+    }
+
+
+
 
     /**
      * @notice Deposits `amountToDeposit` of WETH from address `sender` into `wethStrat`.
@@ -103,10 +196,10 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             }
         }
 
-        uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
+        uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
-        // check the expected output
+        // calculate the expected output
         uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
         // logging and error for misusing this function (see assumption above)
         if (amountToDeposit > contractBalance) {
@@ -123,7 +216,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             cheats.stopPrank();
 
             // check if staker had zero shares before, that it is added correctly to stakerStrategyList array.
-            if (operatorSharesBefore == 0) {
+            if (stakerSharesBefore == 0) {
                 // check that strategy is appropriately added to dynamic array of all of sender's strategies
                 assertTrue(
                     strategyManager.stakerStrategyList(sender, strategyManager.stakerStrategyListLength(sender) - 1) ==
@@ -134,7 +227,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
             // check that the shares output matches the expected amount out
             assertEq(
-                strategyManager.stakerStrategyShares(sender, stratToDepositTo) - operatorSharesBefore,
+                strategyManager.stakerStrategyShares(sender, stratToDepositTo) - stakerSharesBefore,
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
@@ -170,10 +263,10 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         assertTrue(delegation.isDelegated(staker), "_testDelegateToOperator: delegated status not set appropriately");
 
         for (uint256 i = 0; i < numStrats; ++i) {
-            uint256 operatorSharesBefore = inititalSharesInStrats[i];
+            uint256 stakerSharesBefore = inititalSharesInStrats[i];
             uint256 operatorSharesAfter = delegation.operatorShares(operator, stakerStrategies[i]);
             assertTrue(
-                operatorSharesAfter == (operatorSharesBefore + stakerShares[i]),
+                operatorSharesAfter == (stakerSharesBefore + stakerShares[i]),
                 "_testDelegateToOperator: delegatedShares not increased correctly"
             );
         }
