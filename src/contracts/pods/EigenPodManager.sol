@@ -12,8 +12,6 @@ import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
@@ -30,8 +28,7 @@ contract EigenPodManager is
     Pausable,
     EigenPodPausingConstants,
     EigenPodManagerStorage,
-    ReentrancyGuardUpgradeable,
-    Test
+    ReentrancyGuardUpgradeable
 {
     
     modifier onlyEigenPod(address podOwner) {
