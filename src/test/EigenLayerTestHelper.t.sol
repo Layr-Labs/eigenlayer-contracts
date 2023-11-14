@@ -12,6 +12,16 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] priorTotalShares;
     uint256[] strategyTokenBalance;
 
+    // takes in a Staker struct and modifies it in place
+    function _updateStakerState(Staker memory staker) internal view {
+        (IStrategy[] memory stakerStrategies, uint256[] memory stakerShares) = strategyManager.getDeposits(staker.staker);
+        staker.strategies = stakerStrategies;
+        staker.shares = stakerShares;
+        staker.delegatedTo = delegation.delegatedTo(staker.staker);
+
+        // TODO: add some invariant checks?
+    }
+
     /**
      * @notice Register 'sender' as an operator, setting their 'OperatorDetails' in DelegationManager to 'operatorDetails', verifies
      * that the storage of DelegationManager contract is updated appropriately
