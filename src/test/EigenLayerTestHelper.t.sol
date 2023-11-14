@@ -7,10 +7,6 @@ import "../contracts/interfaces/ISignatureUtils.sol";
 import "./mocks/StakeRegistryStub.sol";
 
 contract EigenLayerTestHelper is EigenLayerDeployer {
-    uint8 durationToInit = 2;
-    uint256 public SECP256K1N_MODULUS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
-    uint256 public SECP256K1N_MODULUS_HALF = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
     uint256[] sharesBefore;
     uint256[] balanceBefore;
     uint256[] priorTotalShares;
@@ -307,24 +303,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         //queue the withdrawal
         withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer);
         return (withdrawalRoot, queuedWithdrawal);
-    }
-
-    /**
-     * Helper for ECDSA signatures: combines V and S into VS - if S is greater than SECP256K1N_MODULUS_HALF, then we
-     * get the modulus, so that the leading bit of s is always 0.  Then we set the leading
-     * bit to be either 0 or 1 based on the value of v, which is either 27 or 28
-     */
-    function getVSfromVandS(uint8 v, bytes32 s) internal view returns (bytes32) {
-        if (uint256(s) > SECP256K1N_MODULUS_HALF) {
-            s = bytes32(SECP256K1N_MODULUS - uint256(s));
-        }
-
-        bytes32 vs = s;
-        if (v == 28) {
-            vs = bytes32(uint256(s) ^ (1 << 255));
-        }
-
-        return vs;
     }
 
     /// @notice registers a fixed address as an operator, delegates to it from a second address,

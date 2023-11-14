@@ -25,7 +25,6 @@ import "../contracts/permissions/PauserRegistry.sol";
 
 import "./utils/Operators.sol";
 
-import "./mocks/LiquidStakingToken.sol";
 import "./mocks/EmptyContract.sol";
 import "./mocks/ETHDepositMock.sol";
 import "./mocks/BeaconChainOracleMock.sol";
@@ -71,8 +70,6 @@ contract EigenLayerDeployer is Operators {
 
     uint256 wethInitialSupply = 10e50;
     uint256 public constant eigenTotalSupply = 1000e18;
-    uint256 nonce = 69;
-    uint256 public gasLimit = 750000;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
@@ -85,7 +82,6 @@ contract EigenLayerDeployer is Operators {
     address operator = address(0x4206904396bF2f8b173350ADdEc5007A52664293); //sk: e88d9d864d5d731226020c5d2f02b62a4ce2a4534a39c225d32d3db795f83319
     address acct_0 = cheats.addr(uint256(priv_key_0));
     address acct_1 = cheats.addr(uint256(priv_key_1));
-    address _challenger = address(0x6966904396bF2f8b173350bCcec5007A52669873);
     address public eigenLayerReputedMultisig = address(this);
 
     address eigenLayerProxyAdminAddress;
@@ -101,8 +97,6 @@ contract EigenLayerDeployer is Operators {
     address emptyContractAddress;
     address operationsMultisig;
     address executorMultisig;
-
-    uint256 public initialBeaconChainOracleThreshold = 3;
 
     string internal goerliDeploymentConfig = vm.readFile("script/output/M1_deployment_goerli_2023_3_23.json");
 
