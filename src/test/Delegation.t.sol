@@ -14,7 +14,6 @@ contract DelegationTests is EigenLayerTestHelper {
 
     address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
     StakeRegistryStub public stakeRegistry;
-    uint8 defaultQuorumNumber = 0;
     bytes32 defaultOperatorId = bytes32(uint256(0));
 
     modifier fuzzedAmounts(uint256 ethAmount, uint256 eigenAmount) {
@@ -71,10 +70,6 @@ contract DelegationTests is EigenLayerTestHelper {
         cheats.assume(ethAmount >= 1);
         cheats.assume(eigenAmount >= 2);
 
-        // Set weights ahead of the helper function call
-        bytes memory quorumNumbers = new bytes(2);
-        quorumNumbers[0] = bytes1(uint8(0));
-        quorumNumbers[0] = bytes1(uint8(1));
         _testDelegation(operator, staker, ethAmount, eigenAmount);
     }
 
