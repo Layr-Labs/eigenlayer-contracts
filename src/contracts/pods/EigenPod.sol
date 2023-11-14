@@ -466,7 +466,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             endTimestamp: endTimestamp,
             recipient: recipient,
             status: REQUEST_STATUS.PENDING
-       }
+       };
 
 
 
@@ -490,17 +490,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice The callback function for the ZK proof fulfiller.
     function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 startSlot, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[requestNonce];
+
+        require(startSlot < endSlot, "invalid start and end slot values");
         require(_slotToTimestamp(endSlot) <= request.endTimestamp, "endSlot must be less than the request's endTimestamp");
         require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "startSlot must be greater than or equal to the timestampProvenUntilp");
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
-        uint256 startSlot = _timestampToSlot(timestampProvenUntil);
-
         bytes memory output = eigenPodManager.confirmProofVerification(WITHDRAWAL_FUNCTION_ID, abi.encodePacked(beaconBlockRoot, address(this), startSlot, endSlot));
 
-
-        request.splitTimestamps.
         uint256 partialWithdrawalSumWei = abi.decode(output, (uint256));
         //record the timestamp until which all withdrawals have been proven
         timestampProvenUntil = _slotToTimestamp(endSlot);
@@ -522,7 +520,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         //mark the partial withdrawal proof as being fulfilled
-        _partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
+        if(endSlot == request.endTimestamp){
+            _partialWithdrawalProofRequests[requestNonce].status = REQUEST_STATUS.FULFILLED;
+        }
 
         if(amountToSendWei > 0){
             _sendETH_AsDelayedWithdrawal(request.recipient, amountToSendWei);
