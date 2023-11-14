@@ -136,15 +136,15 @@ contract EigenLayerDeployer is Operators {
     //performs basic deployment before each test
     // for fork tests run:  forge test -vv --fork-url https://eth-goerli.g.alchemy.com/v2/demo   -vv
     function setUp() public virtual {
-        try vm.envUint("CHAIN_ID") returns (uint256 chainId) {
-            if (chainId == 31337) {
-                _deployEigenLayerContractsLocal();
-            } else if (chainId == 5) {
-                _deployEigenLayerContractsGoerli();
-            }
-            // If CHAIN_ID ENV is not set, assume local deployment on 31337
-        } catch {
+        // read the chain ID
+        uint256 chainId = block.chainid;
+        // run set up based on the chain ID
+        if (chainId == 31337) {
             _deployEigenLayerContractsLocal();
+        } else if (chainId == 5) {
+            _deployEigenLayerContractsGoerli();
+        } else {
+            revert("testing setup not supported for this chain. add it if you need it.");
         }
 
         fuzzedAddressMapping[address(0)] = true;
@@ -159,23 +159,12 @@ contract EigenLayerDeployer is Operators {
         _setAddresses(goerliDeploymentConfig);
         pauser = operationsMultisig;
         unpauser = executorMultisig;
-        // deploy proxy admin for ability to upgrade proxy contracts
-        eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
 
-        emptyContract = new EmptyContract();
-
-        //deploy pauser registry
-        eigenLayerPauserReg = PauserRegistry(eigenLayerPauserRegAddress);
-
-        delegation = DelegationManager(delegationAddress);
-        strategyManager = StrategyManager(strategyManagerAddress);
-        slasher = Slasher(slasherAddress);
-        eigenPodManager = EigenPodManager(eigenPodManagerAddress);
-        delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
-
-        beaconChainOracleAddress = address(new BeaconChainOracleMock());
-
+        // TODO: un-hardcode these
+        beaconChainOracleAddress = 0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c;
         ethPOSDeposit = new ETHPOSDepositMock();
+
+        // TODO: figure out if this is a necessary step on Goelri
         pod = new EigenPod(
             ethPOSDeposit,
             delayedWithdrawalRouter,
@@ -183,8 +172,6 @@ contract EigenLayerDeployer is Operators {
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             GOERLI_GENESIS_TIME
         );
-
-        eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         //simple ERC20 (**NOT** WETH-like!), used in a test strategy
         weth = new ERC20PresetFixedSupply("weth", "WETH", wethInitialSupply, address(this));
@@ -369,9 +356,20 @@ contract EigenLayerDeployer is Operators {
         strategyManagerAddress = stdJson.readAddress(config, ".addresses.strategyManager");
         slasherAddress = stdJson.readAddress(config, ".addresses.slasher");
         eigenPodManagerAddress = stdJson.readAddress(config, ".addresses.eigenPodManager");
+        eigenPodBeaconAddress = stdJson.readAddress(config, ".addresses.eigenPodBeacon");
         delayedWithdrawalRouterAddress = stdJson.readAddress(config, ".addresses.delayedWithdrawalRouter");
         emptyContractAddress = stdJson.readAddress(config, ".addresses.emptyContract");
         operationsMultisig = stdJson.readAddress(config, ".parameters.operationsMultisig");
         executorMultisig = stdJson.readAddress(config, ".parameters.executorMultisig");
+
+        eigenLayerProxyAdmin = ProxyAdmin(eigenLayerProxyAdminAddress);
+        emptyContract = EmptyContract(emptyContractAddress);
+        eigenLayerPauserReg = PauserRegistry(eigenLayerPauserRegAddress);
+        delegation = DelegationManager(delegationAddress);
+        strategyManager = StrategyManager(strategyManagerAddress);
+        slasher = Slasher(slasherAddress);
+        eigenPodManager = EigenPodManager(eigenPodManagerAddress);
+        delayedWithdrawalRouter = DelayedWithdrawalRouter(delayedWithdrawalRouterAddress);
+        eigenPodBeacon = UpgradeableBeacon(eigenPodBeaconAddress);
     }
 }
