@@ -30,7 +30,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         return updatedState;
     }
 
-    function _strategyInStakerList(Staker memory staker, IStrategy strategy) internal view returns (bool) {
+    function _strategyInStakerList(Staker memory staker, IStrategy strategy) internal pure returns (bool) {
         for (uint256 i = 0; i < staker.strategies.length; ++i) {
             if (staker.strategies[i] == strategy) {
                 return true;
@@ -39,7 +39,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         return false;
     }
 
-    function _stakerShares(Staker memory staker, IStrategy strategy)  internal view returns (uint256) {
+    function _stakerShares(Staker memory staker, IStrategy strategy)  internal pure returns (uint256) {
         for (uint256 i = 0; i < staker.strategies.length; ++i) {
             if (staker.strategies[i] == strategy) {
                 return staker.shares[i];
@@ -94,7 +94,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         // whitelist the strategy for deposit, in the case where it wasn't before
         {
-            if (strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
+            if (!strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
                 IStrategy[] memory _strategy = new IStrategy[](1);
                 _strategy[0] = stratToDepositTo;
                 cheats.prank(strategyManager.strategyWhitelister());
@@ -188,7 +188,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         // whitelist the strategy for deposit, in the case where it wasn't before
         {
-            if (strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
+            if (!strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
                 IStrategy[] memory _strategy = new IStrategy[](1);
                 _strategy[0] = stratToDepositTo;
                 cheats.prank(strategyManager.strategyWhitelister());
