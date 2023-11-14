@@ -377,6 +377,20 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
 }
 
 contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerUnitTests {
+
+    function test_registerAsOperator_revert_paused() public {
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
+
+        cheats.expectRevert("Pausable: index is paused");
+        delegationManager.registerAsOperator(IDelegationManager.OperatorDetails({
+            earningsReceiver: defaultOperator,
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        }), emptyStringForMetadataURI);
+    }
+
     // @notice Verifies that someone cannot successfully call `DelegationManager.registerAsOperator(operatorDetails)` again after registering for the first time
     function testFuzz_registerAsOperator_revert_cannotRegisterMultipleTimes(address operator, IDelegationManager.OperatorDetails memory operatorDetails) public 
         filterFuzzedAddressInputs(operator)
@@ -569,6 +583,18 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 }
 
 contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
+
+    function test_revert_paused() public {
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
+
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        cheats.prank(defaultStaker);
+        cheats.expectRevert("Pausable: index is paused");
+        delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);        
+    }
+
     /**
      * @notice Delegates from `staker` to an operator, then verifies that the `staker` cannot delegate to another `operator` (at least without first undelegating)
      */
@@ -1338,6 +1364,19 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 }
 
 contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUnitTests {
+
+    function test_revert_paused() public {
+        // set the pausing flag
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getStakerSignature(stakerPrivateKey, defaultOperator, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
+        cheats.expectRevert("Pausable: index is paused");
+        delegationManager.delegateToBySignature(defaultStaker, defaultOperator, stakerSignatureAndExpiry, approverSignatureAndExpiry, emptySalt);        
+    }
+
     /// @notice Checks that `DelegationManager.delegateToBySignature` reverts if the staker's signature has expired
     function testFuzz_Revert_WhenStakerSignatureExpired(
         address staker,
@@ -1908,7 +1947,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
 
         cheats.prank(staker);
-        cheats.expectRevert(bytes("Pausable: index is paused"));
+        cheats.expectRevert("Pausable: index is paused");
         delegationManager.undelegate(staker);
     }
 

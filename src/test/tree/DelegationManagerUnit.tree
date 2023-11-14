@@ -11,6 +11,8 @@
 #### it should revert
 ### it should emit an OperatorDetailsModified event
 ## it should call `_delegate`
+### given that delegation is paused
+#### it should revert
 ### it should set the operator delegated to itself and emit a StakerDelegated event
 ### given the caller has delegateable shares
 #### it should increase the operator's shares and and emit an OperatorSharesIncreased event
@@ -33,6 +35,8 @@
 ## given caller is an operator
 ### it should emit an event
 # when delegateTo is called 
+## given that new delegations are paused
+### it should revert
 ## given caller is already delegated to an operator
 ### it should revert
 ## given passed in operator param isn't a registered operator
@@ -113,6 +117,8 @@
 ## given staker signature verification fails
 ### it should revert
 ## given staker signature verification succeeds
+### given that new delegations are paused
+#### it should revert
 ### given caller is already delegated to an operator
 #### it should revert
 ### given passed in operator param isn't a registered operator
