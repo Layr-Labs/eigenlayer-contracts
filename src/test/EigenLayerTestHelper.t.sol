@@ -207,65 +207,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
     }
 
-    /**
-     * @notice Creates a queued withdrawal from `staker`. Begins by registering the staker as a delegate (if specified), then deposits `amountToDeposit`
-     * into the WETH strategy, and then queues a withdrawal using
-     * `strategyManager.queueWithdrawal(strategyArray, tokensArray, shareAmounts, withdrawer)`
-     * @notice After initiating a queued withdrawal, this test checks that `strategyManager.canCompleteQueuedWithdrawal` immediately returns the correct
-     * response depending on whether `staker` is delegated or not.
-     * @param staker The address to initiate the queued withdrawal
-     * @param registerAsOperator If true, `staker` will also register as a delegate in the course of this function
-     * @param amountToDeposit The amount of WETH to deposit
-     */
-    function _createQueuedWithdrawal(
-        address staker,
-        bool registerAsOperator,
-        uint256 amountToDeposit,
-        IStrategy[] memory strategyArray,
-        uint256[] memory shareAmounts,
-        address withdrawer
-    ) internal returns (bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal) {
-        require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
-
-        // we do this here to ensure that `staker` is delegated if `registerAsOperator` is true
-        if (registerAsOperator) {
-            assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
-            IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: staker,
-                delegationApprover: address(0),
-                stakerOptOutWindowBlocks: 0
-            });
-            _testRegisterAsOperator(staker, operatorDetails);
-            assertTrue(
-                delegation.isDelegated(staker),
-                "_createQueuedWithdrawal: staker isn't delegated when they should be"
-            );
-        }
-
-        queuedWithdrawal = IDelegationManager.Withdrawal({
-            strategies: strategyArray,
-            shares: shareAmounts,
-            staker: staker,
-            withdrawer: withdrawer,
-            nonce: delegation.cumulativeWithdrawalsQueued(staker),
-            delegatedTo: delegation.delegatedTo(staker),
-            startBlock: uint32(block.number)
-        });
-
-        {
-            //make deposit in WETH strategy
-            uint256 amountDeposited = _testDepositWeth(staker, amountToDeposit);
-            // We can't withdraw more than we deposit
-            if (shareAmounts[0] > amountDeposited) {
-                cheats.expectRevert("StrategyManager._removeShares: shareAmount too high");
-            }
-        }
-
-        //queue the withdrawal
-        withdrawalRoot = _testQueueWithdrawal(staker, strategyArray, shareAmounts, withdrawer);
-        return (withdrawalRoot, queuedWithdrawal);
-    }
-
     /// @notice registers a fixed address as an operator, delegates to it from a second address,
     ///         and checks that the operator's voteWeights increase properly
     /// @param operator is the operator being delegated to.
@@ -421,12 +362,12 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     function _testQueueWithdrawal(
-        address depositor,
+        address staker,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
         address withdrawer
     ) internal returns (bytes32) {
-        cheats.startPrank(depositor);
+        cheats.startPrank(staker);
 
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
 

@@ -38,7 +38,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         address withdrawer = staker;
         
         {   
-            assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
+            assertTrue(!delegation.isDelegated(staker), "staker is already delegated");
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
                 earningsReceiver: staker,
                 delegationApprover: address(0),
@@ -46,7 +46,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             });
             _testRegisterAsOperator(staker, operatorDetails);
             assertTrue(
-                delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
+                delegation.isDelegated(staker), "staker isn't delegated when they should be"
             );
         
             //make deposit in WETH strategy
@@ -227,7 +227,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
 
 
      /**
-     * @notice Modified from existing _createQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
+     * @notice Modified from existing _createOnlyQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
      * @notice Creates a queued withdrawal from `staker`, queues a withdrawal using
      * `delegation.queueWithdrawal(strategyArray, tokensArray, shareAmounts, withdrawer)`
      * @notice After initiating a queued withdrawal, this test checks that `delegation.canCompleteQueuedWithdrawal` immediately returns the correct
@@ -246,7 +246,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
     )
         internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
     {
-        require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
+        require(amountToDeposit >= shareAmounts[0], "_createOnlyQueuedWithdrawal: sanity check failed");
 
         queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
