@@ -82,7 +82,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
     // @notice Deposits `amountToDeposit` of `underlyingToken` from `staker` into `stratToDepositTo`.
     function _testDepositToStrategy(
-        Staker memory staker,
+        Staker memory stakerStateBefore,
         uint256 amountToDeposit,
         IERC20 underlyingToken,
         IStrategy stratToDepositTo
@@ -111,33 +111,33 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             emit log_named_uint("while contractBalance is", contractBalance);
             revert("_testDepositToStrategy failure");
         } else {
-            underlyingToken.transfer(staker.staker, amountToDeposit);
-            cheats.startPrank(staker.staker);
+            underlyingToken.transfer(stakerStateBefore.staker, amountToDeposit);
+            cheats.startPrank(stakerStateBefore.staker);
             underlyingToken.approve(address(strategyManager), type(uint256).max);
             strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
             cheats.stopPrank();
 
-            stakerStateAfter = _updateStakerState(staker);
+            stakerStateAfter = _updateStakerState(stakerStateBefore);
 
             // staker had zero shares in the strategy before, check that it is added correctly to stakerStrategyList array.
-            if (_stakerShares(staker, stratToDepositTo) == 0) {
+            if (_stakerShares(stakerStateBefore, stratToDepositTo) == 0) {
                 // check that strategy is appropriately added to dynamic array of all of staker's strategies
                 assertTrue(
                     stakerStateAfter.strategies[stakerStateAfter.strategies.length - 1] == stratToDepositTo,
                     "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
-                assertEq(stakerStateAfter.strategies.length, staker.strategies.length + 1,
+                assertEq(stakerStateAfter.strategies.length, stakerStateBefore.strategies.length + 1,
                     "strategy list did not update correctly");
             } else {
-                assertTrue(_strategyInStakerList(staker, stratToDepositTo), "strategy somehow not in staker strategy array");
+                assertTrue(_strategyInStakerList(stakerStateBefore, stratToDepositTo), "strategy somehow not in staker strategy array");
                 assertTrue(_strategyInStakerList(stakerStateAfter, stratToDepositTo), "strategy somehow not in staker strategy array");
-                assertEq(stakerStateAfter.strategies.length, staker.strategies.length,
+                assertEq(stakerStateAfter.strategies.length, stakerStateBefore.strategies.length,
                     "strategy list updated incorrectly");
             }
 
             // check that the shares difference matches the expected amount out
             assertEq(
-                _stakerShares(stakerStateAfter, stratToDepositTo) - _stakerShares(staker, stratToDepositTo),
+                _stakerShares(stakerStateAfter, stratToDepositTo) - _stakerShares(stakerStateBefore, stratToDepositTo),
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
@@ -149,11 +149,62 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      * @notice Deposits `amountToDeposit` of WETH from `staker` into `wethStrat`.
      * @param amountToDeposit Amount of WETH that is first *transferred from this contract to `staker`* and then deposited by `staker` into `wethStrat`
      */
-    function _testDepositWeth(Staker memory staker, uint256 amountToDeposit) internal returns (Staker memory /*stakerStateAfter*/) {
-        return _testDepositToStrategy(staker, amountToDeposit, weth, wethStrat);
+    function _testDepositWeth(Staker memory stakerStateBefore, uint256 amountToDeposit) internal returns (Staker memory /*stakerStateAfter*/) {
+        return _testDepositToStrategy(stakerStateBefore, amountToDeposit, weth, wethStrat);
     }
 
+    function _testQueueWithdrawal(
+        Staker memory stakerStateBefore,
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        address withdrawer
+    ) internal returns (Staker memory stakerStateAfter) {
+        // prepare struct for call
+        IDelegationManager.QueuedWithdrawalParams[] memory withdrawalParams =
+            new IDelegationManager.QueuedWithdrawalParams[](1);
+        withdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: shares,
+            withdrawer: withdrawer
+        });
 
+        // actually make the call to queue the withdrawal
+        cheats.prank(stakerStateBefore.staker);
+        delegation.queueWithdrawals(withdrawalParams);
+
+        // update the Staker struct appropriately
+        stakerStateAfter = _updateStakerState(stakerStateBefore);
+        stakerStateAfter.queuedWithdrawals =
+            new IDelegationManager.Withdrawal[](stakerStateBefore.queuedWithdrawals.length + 1);
+        for (uint256 i = 0; i < stakerStateBefore.queuedWithdrawals.length; ++i) {
+            stakerStateAfter.queuedWithdrawals[i] = stakerStateBefore.queuedWithdrawals[i];
+        }
+        IDelegationManager.Withdrawal memory newWithdrawal = IDelegationManager.Withdrawal({
+            staker: stakerStateBefore.staker,
+            delegatedTo: stakerStateBefore.delegatedTo,
+            withdrawer: withdrawer,
+            nonce: delegation.stakerNonce(stakerStateBefore.staker),
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            shares: shares
+        });
+        stakerStateAfter.queuedWithdrawals[stakerStateAfter.queuedWithdrawals.length - 1] = newWithdrawal;
+
+        // return the updated Staker struct
+        return stakerStateAfter;
+    }
+
+    // @notice queue a withdrawal from the Staker starting with `stakerStateBefore`, for all of their deposits, to `withdrawer`
+    function _testQueueWithdraw_AllShares(Staker memory stakerStateBefore, address withdrawer)
+        internal returns (Staker memory stakerStateAfter)
+    {
+        return _testQueueWithdrawal({
+            stakerStateBefore: stakerStateBefore,
+            strategies: stakerStateBefore.strategies,
+            shares: stakerStateBefore.shares,
+            withdrawer: withdrawer
+        });
+    }
 
 
 

@@ -26,6 +26,13 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         return _testDepositWeth(defaultStaker, amountToDeposit);
     }
 
+    function testQueueWithdrawal_Weth() public returns (Staker memory /*stakerStateAfter*/) {
+        uint256 amountToDeposit = 10e18;
+        Staker memory stakerStateBefore = testWethDeposit_abstractStakerStruct(amountToDeposit);
+        // queue the withdrawal to the staker themself
+        return _testQueueWithdraw_AllShares(stakerStateBefore, stakerStateBefore.staker);
+    }
+
 
 
 
