@@ -822,11 +822,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
-
-        // register *this contract* as an operator
-        address operator = address(this);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != operator);
+        cheats.assume(staker != defaultOperator);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -835,7 +832,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         approverSignatureAndExpiry.expiry = expiry;
         {
             bytes32 digestHash =
-                delegationManager.calculateDelegationApprovalDigestHash(staker, operator, delegationManager.delegationApprover(operator), emptySalt, expiry);
+                delegationManager.calculateDelegationApprovalDigestHash(staker, defaultOperator, delegationManager.delegationApprover(defaultOperator), emptySalt, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(delegationSignerPrivateKey, digestHash);
             // mess up the signature by flipping v's parity
             v = (v == 27 ? 28 : 27);
@@ -845,7 +842,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // try to delegate from the `staker` to the operator, and check reversion
         cheats.startPrank(staker);
         cheats.expectRevert(bytes("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer"));
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);        
+        delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, emptySalt);        
         cheats.stopPrank();
     }
 
@@ -915,23 +912,15 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.assume(expiry >= block.timestamp);
 
         address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-
-        // register *this contract* as an operator
-        address operator = address(this);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != operator);
+        cheats.assume(staker != defaultOperator);
 
-        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: delegationApprover,
-            stakerOptOutWindowBlocks: 0
-        });
-        _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
+        _registerOperatorWithDelegationApprover(defaultOperator);
 
         // verify that the salt hasn't been used before
-        assertFalse(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too early?");
+        assertFalse(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(defaultOperator), salt), "salt somehow spent too early?");
         // calculate the delegationSigner's signature
-        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, operator, salt, expiry);
+        ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(delegationSignerPrivateKey, staker, defaultOperator, salt, expiry);
 
         // Set staker shares in StrategyManager
         IStrategy[] memory strategiesToReturn = new IStrategy[](1);
@@ -943,21 +932,21 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit StakerDelegated(staker, operator);
-        delegationManager.delegateTo(operator, approverSignatureAndExpiry, salt);        
+        emit StakerDelegated(staker, defaultOperator);
+        delegationManager.delegateTo(defaultOperator, approverSignatureAndExpiry, salt);        
         cheats.stopPrank();
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, strategyMock);
         assertEq(operatorSharesBefore + shares, operatorSharesAfter, "operator shares not increased correctly");
         assertFalse(delegationManager.isOperator(staker), "staker incorrectly registered as operator");
-        assertEq(delegationManager.delegatedTo(staker), operator, "staker delegated to the wrong address");
+        assertEq(delegationManager.delegatedTo(staker), defaultOperator, "staker delegated to the wrong address");
         assertFalse(delegationManager.isOperator(staker), "staker incorrectly registered as operator");
 
-        if (staker == delegationManager.delegationApprover(operator)) {
+        if (staker == delegationManager.delegationApprover(defaultOperator)) {
             // verify that the salt is still marked as unused (since it wasn't checked or used)
-            assertFalse(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent too incorrectly?");
+            assertFalse(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(defaultOperator), salt), "salt somehow spent too incorrectly?");
         } else {
             // verify that the salt is marked as used
-            assertTrue(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(operator), salt), "salt somehow spent not spent?"); 
+            assertTrue(delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(defaultOperator), salt), "salt somehow spent not spent?"); 
         }
     }
 
@@ -1901,26 +1890,20 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
      * @param callFromOperatorOrApprover -- calls from the operator if 'false' and the 'approver' if true
      */
     function testFuzz_undelegate_operatorCannotForceUndelegateThemself(address delegationApprover, bool callFromOperatorOrApprover) public {
-        // register *this contract* as an operator with the specified `delegationApprover`
-        address operator = address(this);
-        IDelegationManager.OperatorDetails memory _operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: delegationApprover,
-            stakerOptOutWindowBlocks: 0
-        });
-        _registerOperator(operator, _operatorDetails, emptyStringForMetadataURI);
+        // register *this contract* as an operator with the default `delegationApprover`
+        _registerOperatorWithDelegationApprover(defaultOperator);
 
         address caller;
         if (callFromOperatorOrApprover) {
             caller = delegationApprover;
         } else {
-            caller = operator;
+            caller = defaultOperator;
         }
 
         // try to call the `undelegate` function and check for reversion
         cheats.prank(caller);
         cheats.expectRevert(bytes("DelegationManager.undelegate: operators cannot be undelegated"));
-        delegationManager.undelegate(operator);
+        delegationManager.undelegate(defaultOperator);
     }
 
     //TODO: verify that this check is even needed
