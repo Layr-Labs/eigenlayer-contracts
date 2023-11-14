@@ -493,7 +493,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(startSlot < endSlot, "invalid start and end slot values");
         require(_slotToTimestamp(endSlot) <= request.endTimestamp, "endSlot must be less than the request's endTimestamp");
-        require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "startSlot must be greater than or equal to the timestampProvenUntilp");
+        require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "startSlot must be greater than or equal to the timestampProvenUntil");
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
@@ -890,6 +890,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _timestampToSlot(uint64 timestamp) internal view returns (uint64) {
         require(timestamp >= GENESIS_TIME, "EigenPod._timestampToEpoch: timestamp is before genesis");
         return (timestamp - GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_SLOT;
+    }
+
+    /**
+     * @dev Converts a slot to a beacon chain timestamp by calculating the number of
+     * seconds since genesis, and dividing by seconds per slot.
+     * reference: https://github.com/ethereum/consensus-specs/blob/ce240ca795e257fc83059c4adfd591328c7a7f21/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot
+     */
+    function _slotToTimestamp(uint64 slot) internal pure returns (uint64) {
+        return uint64(GOERLI_GENESIS_TIME + slot * SECONDS_PER_SLOT);
     }
 
     /*******************************************************************************
