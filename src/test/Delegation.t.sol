@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "src/contracts/interfaces/ISignatureUtils.sol";
+import "src/test/mocks/StakeRegistryStub.sol";
 
 import "../test/EigenLayerTestHelper.t.sol";
 

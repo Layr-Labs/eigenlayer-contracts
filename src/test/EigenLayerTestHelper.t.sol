@@ -4,8 +4,6 @@ pragma solidity =0.8.12;
 import "../test/EigenLayerDeployer.t.sol";
 import "../contracts/interfaces/ISignatureUtils.sol";
 
-import "./mocks/StakeRegistryStub.sol";
-
 contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] sharesBefore;
     uint256[] balanceBefore;
@@ -88,7 +86,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 amountToDeposit,
         IERC20 underlyingToken,
         IStrategy stratToDepositTo
-    ) internal returns (uint256 amountDeposited) {
+    ) internal returns (Staker memory stakerStateAfter) {
         // deposits will revert when amountToDeposit is 0
         require(amountToDeposit != 0, "bad usage of _testDepositToStrategy helper function");
 
@@ -117,10 +115,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             cheats.startPrank(staker.staker);
             underlyingToken.approve(address(strategyManager), type(uint256).max);
             strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
-            amountDeposited = amountToDeposit;
             cheats.stopPrank();
 
-            Staker memory stakerStateAfter = _updateStakerState(staker);
+            stakerStateAfter = _updateStakerState(staker);
 
             // staker had zero shares in the strategy before, check that it is added correctly to stakerStrategyList array.
             if (_stakerShares(staker, stratToDepositTo) == 0) {
@@ -133,18 +130,30 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                     "strategy list did not update correctly");
             } else {
                 assertTrue(_strategyInStakerList(staker, stratToDepositTo), "strategy somehow not in staker strategy array");
+                assertTrue(_strategyInStakerList(stakerStateAfter, stratToDepositTo), "strategy somehow not in staker strategy array");
                 assertEq(stakerStateAfter.strategies.length, staker.strategies.length,
                     "strategy list updated incorrectly");
             }
 
             // check that the shares difference matches the expected amount out
             assertEq(
-                _stakerShares(staker, stratToDepositTo) - _stakerShares(staker, stratToDepositTo),
+                _stakerShares(stakerStateAfter, stratToDepositTo) - _stakerShares(staker, stratToDepositTo),
                 expectedSharesOut,
                 "_testDepositToStrategy: actual shares out should match expected shares out"
             );
         }
+        return stakerStateAfter;
     }
+
+    /**
+     * @notice Deposits `amountToDeposit` of WETH from `staker` into `wethStrat`.
+     * @param amountToDeposit Amount of WETH that is first *transferred from this contract to `staker`* and then deposited by `staker` into `wethStrat`
+     */
+    function _testDepositWeth(Staker memory staker, uint256 amountToDeposit) internal returns (Staker memory /*stakerStateAfter*/) {
+        return _testDepositToStrategy(staker, amountToDeposit, weth, wethStrat);
+    }
+
+
 
 
 
