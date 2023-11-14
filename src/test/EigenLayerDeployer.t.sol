@@ -80,8 +80,6 @@ contract EigenLayerDeployer is Operators {
     bytes32 priv_key_0 = 0x1234567812345678123456781234567812345678123456781234567812345678;
     bytes32 priv_key_1 = 0x1234567812345678123456781234567812345698123456781234567812348976;
 
-    //strategy indexes for undelegation (see commitUndelegation function)
-    uint256[] public strategyIndexes;
     address[2] public stakers;
     address sample_registrant = cheats.addr(436364636);
 

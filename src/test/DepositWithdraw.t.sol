@@ -35,8 +35,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
         uint256[] memory shareAmounts = new uint256[](1);
         shareAmounts[0] = depositAmount - 1 gwei; //leave some shares behind so we don't get undelegation issues
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
         address withdrawer = staker;
         
         {   
@@ -98,7 +96,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                                 strategyArray,
                                 tokensArray,
                                 shareAmounts,
-                                strategyIndexes,
                                 withdrawer
                                 );
         
@@ -232,7 +229,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      /**
      * @notice Modified from existing _createQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
      * @notice Creates a queued withdrawal from `staker`, queues a withdrawal using
-     * `delegation.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
+     * `delegation.queueWithdrawal(strategyArray, tokensArray, shareAmounts, withdrawer)`
      * @notice After initiating a queued withdrawal, this test checks that `delegation.canCompleteQueuedWithdrawal` immediately returns the correct
      * response depending on whether `staker` is delegated or not.
      * @param staker The address to initiate the queued withdrawal
@@ -245,7 +242,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         IStrategy[] memory strategyArray,
         IERC20[] memory /*tokensArray*/,
         uint256[] memory shareAmounts,
-        uint256[] memory /*strategyIndexes*/,
         address withdrawer
     )
         internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)

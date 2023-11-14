@@ -128,13 +128,13 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
      */
     function _testDelegateToOperator(address staker, address operator) internal {
         //staker-specific information
-        (IStrategy[] memory delegateStrategies, uint256[] memory delegateShares) = strategyManager.getDeposits(staker);
+        (IStrategy[] memory stakerStrategies, uint256[] memory stakerShares) = strategyManager.getDeposits(staker);
 
-        uint256 numStrats = delegateShares.length;
+        uint256 numStrats = stakerShares.length;
         assertTrue(numStrats != 0, "_testDelegateToOperator: delegating from address with no deposits");
         uint256[] memory inititalSharesInStrats = new uint256[](numStrats);
         for (uint256 i = 0; i < numStrats; ++i) {
-            inititalSharesInStrats[i] = delegation.operatorShares(operator, delegateStrategies[i]);
+            inititalSharesInStrats[i] = delegation.operatorShares(operator, stakerStrategies[i]);
         }
 
         cheats.startPrank(staker);
@@ -150,9 +150,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         for (uint256 i = 0; i < numStrats; ++i) {
             uint256 operatorSharesBefore = inititalSharesInStrats[i];
-            uint256 operatorSharesAfter = delegation.operatorShares(operator, delegateStrategies[i]);
+            uint256 operatorSharesAfter = delegation.operatorShares(operator, stakerStrategies[i]);
             assertTrue(
-                operatorSharesAfter == (operatorSharesBefore + delegateShares[i]),
+                operatorSharesAfter == (operatorSharesBefore + stakerShares[i]),
                 "_testDelegateToOperator: delegatedShares not increased correctly"
             );
         }
@@ -200,7 +200,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     /**
      * @notice Creates a queued withdrawal from `staker`. Begins by registering the staker as a delegate (if specified), then deposits `amountToDeposit`
      * into the WETH strategy, and then queues a withdrawal using
-     * `strategyManager.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
+     * `strategyManager.queueWithdrawal(strategyArray, tokensArray, shareAmounts, withdrawer)`
      * @notice After initiating a queued withdrawal, this test checks that `strategyManager.canCompleteQueuedWithdrawal` immediately returns the correct
      * response depending on whether `staker` is delegated or not.
      * @param staker The address to initiate the queued withdrawal
@@ -213,7 +213,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 amountToDeposit,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
-        uint256[] memory strategyIndexes,
         address withdrawer
     ) internal returns (bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal) {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
@@ -253,7 +252,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         }
 
         //queue the withdrawal
-        withdrawalRoot = _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, withdrawer);
+        withdrawalRoot = _testQueueWithdrawal(staker, strategyArray, shareAmounts, withdrawer);
         return (withdrawalRoot, queuedWithdrawal);
     }
 
@@ -281,11 +280,11 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         uint256 amountBefore = delegation.operatorShares(operator, wethStrat);
 
         //making additional deposits to the strategies
-        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(!delegation.isDelegated(staker) == true, "testDelegation: staker is already delegated");
         _testDepositWeth(staker, ethAmount);
         _testDepositEigen(staker, eigenAmount);
         _testDelegateToOperator(staker, operator);
-        assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegate");
+        assertTrue(delegation.isDelegated(staker) == true, "testDelegation: staker is not delegated");
 
         (/*IStrategy[] memory updatedStrategies*/, uint256[] memory updatedShares) = strategyManager.getDeposits(staker);
 
@@ -413,7 +412,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
     function _testQueueWithdrawal(
         address depositor,
-        uint256[] memory /*strategyIndexes*/,
         IStrategy[] memory strategyArray,
         uint256[] memory shareAmounts,
         address withdrawer

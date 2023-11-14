@@ -145,10 +145,9 @@ contract DelegationTests is EigenLayerTestHelper {
         _testDelegation(operator, staker, ethAmount, eigenAmount);
 
         (IStrategy[] memory strategyArray, uint256[] memory shareAmounts) = strategyManager.getDeposits(staker);
-        uint256[] memory strategyIndexes = new uint256[](strategyArray.length);
 
         // withdraw shares
-        _testQueueWithdrawal(staker, strategyIndexes, strategyArray, shareAmounts, staker /*withdrawer*/);
+        _testQueueWithdrawal(staker, strategyArray, shareAmounts, staker /*withdrawer*/);
 
         cheats.startPrank(staker);
         delegation.undelegate(staker);

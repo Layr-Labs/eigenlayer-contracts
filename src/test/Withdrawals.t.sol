@@ -81,12 +81,9 @@ contract WithdrawalTests is EigenLayerTestHelper {
             dataForTestWithdrawal.nonce = 0;
         }
 
-        uint256[] memory strategyIndexes = new uint256[](2);
         IERC20[] memory tokensArray = new IERC20[](2);
         {
             // hardcoded values
-            strategyIndexes[0] = 0;
-            strategyIndexes[1] = 0;
             tokensArray[0] = weth;
             tokensArray[1] = eigenToken;
         }
@@ -96,7 +93,6 @@ contract WithdrawalTests is EigenLayerTestHelper {
 
         _testQueueWithdrawal(
             depositor,
-            strategyIndexes,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
             withdrawer
@@ -182,12 +178,9 @@ contract WithdrawalTests is EigenLayerTestHelper {
             dataForTestWithdrawal.nonce = 0;
         }
 
-        uint256[] memory strategyIndexes = new uint256[](2);
         IERC20[] memory tokensArray = new IERC20[](2);
         {
             // hardcoded values
-            strategyIndexes[0] = 0;
-            strategyIndexes[1] = 0;
             tokensArray[0] = weth;
             tokensArray[1] = eigenToken;
         }
@@ -197,7 +190,6 @@ contract WithdrawalTests is EigenLayerTestHelper {
 
         _testQueueWithdrawal(
             depositor,
-            strategyIndexes,
             dataForTestWithdrawal.delegatorStrategies,
             dataForTestWithdrawal.delegatorShares,
             dataForTestWithdrawal.withdrawer
@@ -301,10 +293,6 @@ contract WithdrawalTests is EigenLayerTestHelper {
     //     (IStrategy[] memory updatedStrategies, uint256[] memory updatedShares) =
     //         strategyManager.getDeposits(staker);
 
-    //     uint256[] memory strategyIndexes = new uint256[](2);
-    //     strategyIndexes[0] = 0;
-    //     strategyIndexes[1] = 1;
-
     //     IERC20[] memory tokensArray = new IERC20[](2);
     //     tokensArray[0] = weth;
     //     tokensArray[0] = eigenToken;
@@ -313,7 +301,7 @@ contract WithdrawalTests is EigenLayerTestHelper {
     //     cheats.expectRevert(
     //         bytes("StrategyManager.onlyNotFrozen: staker has been frozen and may be subject to slashing")
     //     );
-    //     _testQueueWithdrawal(staker, strategyIndexes, updatedStrategies, updatedShares, staker);
+    //     _testQueueWithdrawal(staker, updatedStrategies, updatedShares, staker);
     // }
 
     // Helper function to begin a delegation
