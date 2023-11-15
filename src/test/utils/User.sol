@@ -26,8 +26,9 @@ contract User is Test {
     // StrategyBase public baseStrategyImplementation;
     // EmptyContract public emptyContract;
 
-    constructor(EigenLayerDeployer globalStateContract) {
-        globalState = globalStateContract;
+    // assumes that this contract is deployed by the 'EigenLayerDeployer' contract
+    constructor() {
+        globalState = EigenLayerDeployer(msg.sender);
         user = address(this);
     }
 
@@ -91,7 +92,6 @@ contract User is Test {
     ) public {
         string memory emptyStringForMetadataURI;
 
-        cheats.prank(user);
         delegation().registerAsOperator(operatorDetails, emptyStringForMetadataURI);
 
         assertTrue(delegation().isOperator(user), "testRegisterAsOperator: user is not a operator");
@@ -120,7 +120,7 @@ contract User is Test {
         uint256 amountToDeposit,
         IERC20 underlyingToken,
         IStrategy stratToDepositTo
-    ) internal {
+    ) public {
         // deposits will revert when amountToDeposit is 0
         require(amountToDeposit != 0, "bad usage of depositToStrategy helper function");
 
@@ -129,8 +129,9 @@ contract User is Test {
             if (!strategyManager().strategyIsWhitelistedForDeposit(stratToDepositTo)) {
                 IStrategy[] memory _strategy = new IStrategy[](1);
                 _strategy[0] = stratToDepositTo;
-                cheats.prank(strategyManager().strategyWhitelister());
+                cheats.startPrank(strategyManager().strategyWhitelister());
                 strategyManager().addStrategiesToDepositWhitelist(_strategy);
+                cheats.stopPrank();
             }
         }
 
@@ -187,57 +188,63 @@ contract User is Test {
         assertTrue(strategyInStakerList(stratToDepositTo), "strategy somehow not in staker strategy array");
     }
 
-    // function _testQueueWithdrawal(
-    //     Staker memory stakerStateBefore,
-    //     IStrategy[] memory strategies,
-    //     uint256[] memory shares,
-    //     address withdrawer
-    // ) internal returns (Staker memory stakerStateAfter) {
-    //     // prepare struct for call
-    //     IDelegationManager.QueuedWithdrawalParams[] memory withdrawalParams =
-    //         new IDelegationManager.QueuedWithdrawalParams[](1);
-    //     withdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
-    //         strategies: strategies,
-    //         shares: shares,
-    //         withdrawer: withdrawer
-    //     });
+    function queueWithdrawal(
+        IStrategy[] memory strategies,
+        uint256[] memory shares,
+        address withdrawer
+    ) public {
+        // TODO: store state before, query state after, and add checks
 
-    //     // actually make the call to queue the withdrawal
-    //     cheats.prank(stakerStateBefore.staker);
-    //     delegation.queueWithdrawals(withdrawalParams);
+        // prepare struct for call
+        IDelegationManager.QueuedWithdrawalParams[] memory withdrawalParams =
+            new IDelegationManager.QueuedWithdrawalParams[](1);
+        withdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategies,
+            shares: shares,
+            withdrawer: withdrawer
+        });
 
-    //     // update the Staker struct appropriately
-    //     stakerStateAfter = _updateStakerState(stakerStateBefore);
-    //     stakerStateAfter.queuedWithdrawals =
-    //         new IDelegationManager.Withdrawal[](stakerStateBefore.queuedWithdrawals.length + 1);
-    //     for (uint256 i = 0; i < stakerStateBefore.queuedWithdrawals.length; ++i) {
-    //         stakerStateAfter.queuedWithdrawals[i] = stakerStateBefore.queuedWithdrawals[i];
-    //     }
-    //     IDelegationManager.Withdrawal memory newWithdrawal = IDelegationManager.Withdrawal({
-    //         staker: stakerStateBefore.staker,
-    //         delegatedTo: stakerStateBefore.delegatedTo,
-    //         withdrawer: withdrawer,
-    //         nonce: delegation.stakerNonce(stakerStateBefore.staker),
-    //         startBlock: uint32(block.number),
-    //         strategies: strategies,
-    //         shares: shares
-    //     });
-    //     stakerStateAfter.queuedWithdrawals[stakerStateAfter.queuedWithdrawals.length - 1] = newWithdrawal;
+        // actually make the call to queue the withdrawal
+        delegation().queueWithdrawals(withdrawalParams);
 
-    //     // return the updated Staker struct
-    //     return stakerStateAfter;
-    // }
+        // store the queued withdrawal in this contract's storage
+        IDelegationManager.Withdrawal memory newWithdrawal = IDelegationManager.Withdrawal({
+            staker: user,
+            delegatedTo: delegation().delegatedTo(user),
+            withdrawer: withdrawer,
+            nonce: delegation().stakerNonce(user),
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            shares: shares
+        });
+        queuedWithdrawals.push(newWithdrawal);
+    }
 
-    // // @notice queue a withdrawal from the Staker starting with `stakerStateBefore`, for all of their deposits, to `withdrawer`
-    // function _testQueueWithdraw_AllShares(Staker memory stakerStateBefore, address withdrawer)
-    //     internal returns (Staker memory stakerStateAfter)
-    // {
-    //     return _testQueueWithdrawal({
-    //         stakerStateBefore: stakerStateBefore,
-    //         strategies: stakerStateBefore.strategies,
-    //         shares: stakerStateBefore.shares,
-    //         withdrawer: withdrawer
-    //     });
-    // }
+    function completeOldestQueuedWithdrawalAsShares() public {
+        // TODO: store state before, query state after, and add checks
 
+        require(queuedWithdrawals.length != 0, "misuse of helper function, user has no queued withdrawals");
+
+        // prepare call
+        IDelegationManager.Withdrawal memory withdrawal = queuedWithdrawals[0];
+        _removeQueuedWithdrawalFromList(0);
+        IERC20[] memory tokens;
+        uint256 middlewareTimesIndex = 0;
+        bool receiveAsTokens = false;
+
+        // perform the call
+        delegation().completeQueuedWithdrawal(withdrawal, tokens, middlewareTimesIndex, receiveAsTokens);
+    }
+
+    function _removeQueuedWithdrawalFromList(uint256 listIndexToRemove) internal {
+        uint256 listLength = queuedWithdrawals.length;
+        if (listLength == 0) {
+            revert("helper function misuse. length already zero");
+        } else if (listIndexToRemove == listLength - 1) {
+            queuedWithdrawals.pop();
+        } else {
+            queuedWithdrawals[listIndexToRemove] = queuedWithdrawals[listLength - 1];
+            queuedWithdrawals.pop();
+        }
+    }
 }
