@@ -416,6 +416,9 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
     }
 
     function testFuzz_revert_invalidValidatorFields(address wrongWithdrawalAddress) public {
+        // filter fuzzed input; the call will pass in the event that these two addresses collide
+        cheats.assume(wrongWithdrawalAddress != address(eigenPodHarness));
+
         // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _setWithdrawalCredentialParams();
