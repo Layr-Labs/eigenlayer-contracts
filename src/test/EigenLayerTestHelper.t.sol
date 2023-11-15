@@ -10,42 +10,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     uint256[] priorTotalShares;
     uint256[] strategyTokenBalance;
 
-    // takes in a Staker struct and gets the staker's updated state
-    function _updateStakerState(Staker memory staker) internal view returns (Staker memory) {
-        (IStrategy[] memory stakerStrategies, uint256[] memory stakerShares) = strategyManager.getDeposits(staker.staker);
-        address delegatedTo = delegation.delegatedTo(staker.staker);
-        Staker memory updatedState = Staker({
-            // staker's address should never change
-            staker: staker.staker,
-            strategies: stakerStrategies,
-            shares: stakerShares,
-            delegatedTo: delegatedTo,
-            // don't change this -- update the queued withdrawals elsewhere, when applicable
-            queuedWithdrawals: staker.queuedWithdrawals
-        });
-
-        // TODO: add some invariant checks?
-        return updatedState;
-    }
-
-    function _strategyInStakerList(Staker memory staker, IStrategy strategy) internal pure returns (bool) {
-        for (uint256 i = 0; i < staker.strategies.length; ++i) {
-            if (staker.strategies[i] == strategy) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function _stakerShares(Staker memory staker, IStrategy strategy)  internal pure returns (uint256) {
-        for (uint256 i = 0; i < staker.strategies.length; ++i) {
-            if (staker.strategies[i] == strategy) {
-                return staker.shares[i];
-            }
-        }
-        return 0;
-    }
-
     /**
      * @notice Register 'sender' as an operator, setting their 'OperatorDetails' in DelegationManager to 'operatorDetails', verifies
      * that the storage of DelegationManager contract is updated appropriately
@@ -56,158 +20,18 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     function _testRegisterAsOperator(
         address sender,
         IDelegationManager.OperatorDetails memory operatorDetails
-    ) internal returns (Operator memory) {
+    ) internal {
         cheats.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
-
         assertTrue(
             keccak256(abi.encode(delegation.operatorDetails(sender))) == keccak256(abi.encode(operatorDetails)),
             "_testRegisterAsOperator: operatorDetails not set appropriately"
         );
-
         assertTrue(delegation.isDelegated(sender), "_testRegisterAsOperator: sender not marked as actively delegated");
         cheats.stopPrank();
-
-        Operator memory operatorStruct = Operator({
-            operator: sender,
-            operatorDetails: operatorDetails,
-            delegatedStakers: new address[](1)
-        });
-        operatorStruct.delegatedStakers[0] = sender;
-
-        return operatorStruct;
     }
-
-    // @notice Deposits `amountToDeposit` of `underlyingToken` from `staker` into `stratToDepositTo`.
-    function _testDepositToStrategy(
-        Staker memory stakerStateBefore,
-        uint256 amountToDeposit,
-        IERC20 underlyingToken,
-        IStrategy stratToDepositTo
-    ) internal returns (Staker memory stakerStateAfter) {
-        // deposits will revert when amountToDeposit is 0
-        require(amountToDeposit != 0, "bad usage of _testDepositToStrategy helper function");
-
-        // whitelist the strategy for deposit, in the case where it wasn't before
-        {
-            if (!strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
-                IStrategy[] memory _strategy = new IStrategy[](1);
-                _strategy[0] = stratToDepositTo;
-                cheats.prank(strategyManager.strategyWhitelister());
-                strategyManager.addStrategiesToDepositWhitelist(_strategy);
-            }
-        }
-
-        // assumes this contract already has the underlying token!
-        uint256 contractBalance = underlyingToken.balanceOf(address(this));
-        // calculate the expected output
-        uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
-        // logging and error for misusing this function (see assumption above)
-        if (amountToDeposit > contractBalance) {
-            emit log("amountToDeposit > contractBalance");
-            emit log_named_uint("amountToDeposit is", amountToDeposit);
-            emit log_named_uint("while contractBalance is", contractBalance);
-            revert("_testDepositToStrategy failure");
-        } else {
-            underlyingToken.transfer(stakerStateBefore.staker, amountToDeposit);
-            cheats.startPrank(stakerStateBefore.staker);
-            underlyingToken.approve(address(strategyManager), type(uint256).max);
-            strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
-            cheats.stopPrank();
-
-            stakerStateAfter = _updateStakerState(stakerStateBefore);
-
-            // staker had zero shares in the strategy before, check that it is added correctly to stakerStrategyList array.
-            if (_stakerShares(stakerStateBefore, stratToDepositTo) == 0) {
-                // check that strategy is appropriately added to dynamic array of all of staker's strategies
-                assertTrue(
-                    stakerStateAfter.strategies[stakerStateAfter.strategies.length - 1] == stratToDepositTo,
-                    "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
-                );
-                assertEq(stakerStateAfter.strategies.length, stakerStateBefore.strategies.length + 1,
-                    "strategy list did not update correctly");
-            } else {
-                assertTrue(_strategyInStakerList(stakerStateBefore, stratToDepositTo), "strategy somehow not in staker strategy array");
-                assertTrue(_strategyInStakerList(stakerStateAfter, stratToDepositTo), "strategy somehow not in staker strategy array");
-                assertEq(stakerStateAfter.strategies.length, stakerStateBefore.strategies.length,
-                    "strategy list updated incorrectly");
-            }
-
-            // check that the shares difference matches the expected amount out
-            assertEq(
-                _stakerShares(stakerStateAfter, stratToDepositTo) - _stakerShares(stakerStateBefore, stratToDepositTo),
-                expectedSharesOut,
-                "_testDepositToStrategy: actual shares out should match expected shares out"
-            );
-        }
-        return stakerStateAfter;
-    }
-
-    /**
-     * @notice Deposits `amountToDeposit` of WETH from `staker` into `wethStrat`.
-     * @param amountToDeposit Amount of WETH that is first *transferred from this contract to `staker`* and then deposited by `staker` into `wethStrat`
-     */
-    function _testDepositWeth(Staker memory stakerStateBefore, uint256 amountToDeposit) internal returns (Staker memory /*stakerStateAfter*/) {
-        return _testDepositToStrategy(stakerStateBefore, amountToDeposit, weth, wethStrat);
-    }
-
-    function _testQueueWithdrawal(
-        Staker memory stakerStateBefore,
-        IStrategy[] memory strategies,
-        uint256[] memory shares,
-        address withdrawer
-    ) internal returns (Staker memory stakerStateAfter) {
-        // prepare struct for call
-        IDelegationManager.QueuedWithdrawalParams[] memory withdrawalParams =
-            new IDelegationManager.QueuedWithdrawalParams[](1);
-        withdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
-            strategies: strategies,
-            shares: shares,
-            withdrawer: withdrawer
-        });
-
-        // actually make the call to queue the withdrawal
-        cheats.prank(stakerStateBefore.staker);
-        delegation.queueWithdrawals(withdrawalParams);
-
-        // update the Staker struct appropriately
-        stakerStateAfter = _updateStakerState(stakerStateBefore);
-        stakerStateAfter.queuedWithdrawals =
-            new IDelegationManager.Withdrawal[](stakerStateBefore.queuedWithdrawals.length + 1);
-        for (uint256 i = 0; i < stakerStateBefore.queuedWithdrawals.length; ++i) {
-            stakerStateAfter.queuedWithdrawals[i] = stakerStateBefore.queuedWithdrawals[i];
-        }
-        IDelegationManager.Withdrawal memory newWithdrawal = IDelegationManager.Withdrawal({
-            staker: stakerStateBefore.staker,
-            delegatedTo: stakerStateBefore.delegatedTo,
-            withdrawer: withdrawer,
-            nonce: delegation.stakerNonce(stakerStateBefore.staker),
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            shares: shares
-        });
-        stakerStateAfter.queuedWithdrawals[stakerStateAfter.queuedWithdrawals.length - 1] = newWithdrawal;
-
-        // return the updated Staker struct
-        return stakerStateAfter;
-    }
-
-    // @notice queue a withdrawal from the Staker starting with `stakerStateBefore`, for all of their deposits, to `withdrawer`
-    function _testQueueWithdraw_AllShares(Staker memory stakerStateBefore, address withdrawer)
-        internal returns (Staker memory stakerStateAfter)
-    {
-        return _testQueueWithdrawal({
-            stakerStateBefore: stakerStateBefore,
-            strategies: stakerStateBefore.strategies,
-            shares: stakerStateBefore.shares,
-            withdrawer: withdrawer
-        });
-    }
-
-
-
 
     /**
      * @notice Deposits `amountToDeposit` of WETH from address `sender` into `wethStrat`.
@@ -245,7 +69,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         // TODO: modify this to be a require statement instead? would probably be better to do the filtering on a higher level.
         // deposits will revert when amountToDeposit is 0
         cheats.assume(amountToDeposit > 0);
-
         // whitelist the strategy for deposit, in the case where it wasn't before
         {
             if (!strategyManager.strategyIsWhitelistedForDeposit(stratToDepositTo)) {
@@ -255,7 +78,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                 strategyManager.addStrategiesToDepositWhitelist(_strategy);
             }
         }
-
         uint256 stakerSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
         // assumes this contract already has the underlying token!
         uint256 contractBalance = underlyingToken.balanceOf(address(this));
@@ -274,7 +96,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);
             amountDeposited = amountToDeposit;
             cheats.stopPrank();
-
             // check if staker had zero shares before, that it is added correctly to stakerStrategyList array.
             if (stakerSharesBefore == 0) {
                 // check that strategy is appropriately added to dynamic array of all of sender's strategies
@@ -284,7 +105,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
                     "_testDepositToStrategy: stakerStrategyList array updated incorrectly"
                 );
             }
-
             // check that the shares output matches the expected amount out
             assertEq(
                 strategyManager.stakerStrategyShares(sender, stratToDepositTo) - stakerSharesBefore,

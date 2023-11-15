@@ -6,36 +6,6 @@ import "./mocks/ERC20_OneWeiFeeOnTransfer.sol";
 
 contract DepositWithdrawTests is EigenLayerTestHelper {
     uint256[] public emptyUintArray;
-    Staker public defaultStaker;
-
-    function setUp() public virtual override {
-        EigenLayerDeployer.setUp();
-        // minimal set up for staker object. just give it an address
-        defaultStaker.staker = address(1234567);
-    }
-
-    /**
-     * @notice Verifies that it is possible to deposit WETH
-     * @param amountToDeposit Fuzzed input for amount of WETH to deposit
-     */
-    function testWethDeposit_abstractStakerStruct(uint256 amountToDeposit) public returns (Staker memory /*stakerStateAfter*/) {
-        // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
-        cheats.assume(amountToDeposit >= 1);
-        // sanity-limiting on fuzzed input size
-        cheats.assume(amountToDeposit <= wethInitialSupply);
-        return _testDepositWeth(defaultStaker, amountToDeposit);
-    }
-
-    function testQueueWithdrawal_Weth() public returns (Staker memory /*stakerStateAfter*/) {
-        uint256 amountToDeposit = 10e18;
-        Staker memory stakerStateBefore = testWethDeposit_abstractStakerStruct(amountToDeposit);
-        // queue the withdrawal to the staker themself
-        return _testQueueWithdraw_AllShares(stakerStateBefore, stakerStateBefore.staker);
-    }
-
-
-
-
 
     /**
      * @notice Verifies that it is possible to deposit WETH
