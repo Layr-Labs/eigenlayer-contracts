@@ -494,7 +494,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function handleCallback(uint256 nonce, uint64 oracleTimestamp, uint64 startSlot, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[nonce];
 
-        require(nonce = lastRequestNonceProven + 1, "must callback in order");
+        require(nonce == lastRequestNonceProven + 1, "must callback in order");
         require(startSlot < endSlot, "invalid start and end slot values");
         require(_slotToTimestamp(endSlot) <= request.endTimestamp, "endSlot must be less than the request's endTimestamp");
         require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "startSlot must be greater than or equal to the timestampProvenUntil");
@@ -525,7 +525,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         //mark the partial withdrawal proof as being fulfilled
         if(endSlot == request.endTimestamp){
-            _partialWithdrawalProofRequests[requnonceestNonce].status = REQUEST_STATUS.FULFILLED;
+            _partialWithdrawalProofRequests[nonce].status = REQUEST_STATUS.FULFILLED;
             lastRequestNonceProven = nonce;
         }
 
