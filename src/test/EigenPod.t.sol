@@ -21,6 +21,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     uint40 validatorIndex1 = 1;
 
     address podOwner = address(42000094993494);
+    uint64 oracleTimestamp = 0;
 
     Vm cheats = Vm(HEVM_ADDRESS);
     DelegationManager public delegation;
@@ -1405,7 +1406,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function test_OptimisticRequestPartialWithdrawalProofFlow() external {
         IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
         uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
-        uint256 requestNonce = eigenPod.requestNonce();
+        uint256 requestNonce = eigenPod.requestNonce() + 1;
 
         uint64 newEndTimestamp = current_timestampProvenUntil + 100;
         uint256 requestNonceBefore = eigenPod.requestNonce();
@@ -1417,7 +1418,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(outPutSum);
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _computeSlotAtTimestamp(current_timestampProvenUntil), _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(

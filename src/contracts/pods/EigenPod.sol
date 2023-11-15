@@ -457,6 +457,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint32 callbackGasLimit
     ) external onlyEigenPodOwner hasEnabledRestaking {
+        requestNonce++;
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
         //the proofs are made [startTimestamp, endTimestamp), so the next startTimestamp = previous endTimestamp     
@@ -478,7 +479,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //These are the inputs to the callback function for this specific proof request.
         bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
 
-        requestNonce++;
 
         eigenPodManager.requestProofViaSuccinctGateway(
             RANGE_SPLITTER_FUNCTION_ID, 
