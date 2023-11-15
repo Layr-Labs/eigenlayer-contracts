@@ -1452,7 +1452,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     function test_CancelProofRequest() external {
         IEigenPod eigenPod = testDeployAndVerifyNewEigenPod();
         uint64 current_timestampProvenUntil = eigenPod.timestampProvenUntil();
-        uint256 requestNonce = eigenPod.requestNonce();
 
         uint64 newEndTimestamp = current_timestampProvenUntil + 100;
         uint256 requestNonceBefore = eigenPod.requestNonce();
@@ -1463,7 +1462,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         bytes memory output = abi.encodePacked(uint256(100));
         bytes memory input = abi.encodePacked(address(eigenPod), _computeSlotAtTimestamp(current_timestampProvenUntil),  _computeSlotAtTimestamp(newEndTimestamp));
-        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, sha256(bytes("WITHDRAWAL_FUNCTION_ID")), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.requestPartialWithdrawalsProof(
@@ -1472,6 +1470,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPod),
             100000
         );
+        
+        uint256 requestNonce = eigenPod.requestNonce();
+        bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, sha256(bytes("WITHDRAWAL_FUNCTION_ID")), requestNonce, current_timestampProvenUntil, _computeSlotAtTimestamp(newEndTimestamp));
 
 
         eigenPod.cancelProofRequest(requestNonceBefore);

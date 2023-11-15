@@ -494,10 +494,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function handleCallback(uint256 nonce, uint64 oracleTimestamp, uint64 startSlot, uint64 endSlot) external onlySuccinctGateway() {
         PartialWithdrawalProofRequest memory request = _partialWithdrawalProofRequests[nonce];
 
-        require(nonce == lastRequestNonceProven + 1, "must callback in order");
-        require(startSlot < endSlot, "invalid start and end slot values");
-        require(_slotToTimestamp(endSlot) <= request.endTimestamp, "endSlot must be less than the request's endTimestamp");
-        require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "startSlot must be greater than or equal to the timestampProvenUntil");
+        require(nonce == lastRequestNonceProven + 1, "EigenPod.handleCallback: must callback in order");
+        require(startSlot < endSlot, "EigenPod.handleCallback: invalid start and end slot values");
+        require(_slotToTimestamp(endSlot) <= request.endTimestamp, "EigenPod.handleCallback: endSlot must be less than the request's endTimestamp");
+        require(_slotToTimestamp(startSlot) >= timestampProvenUntil, "EigenPod.handleCallback: startSlot must be greater than or equal to the timestampProvenUntil");
         require(request.status == REQUEST_STATUS.PENDING, "EigenPod.handleCallback: request nonce is either cancelled or fulfilled");
 
         bytes32 beaconBlockRoot = eigenPodManager.getBlockRootAtTimestamp(oracleTimestamp);
