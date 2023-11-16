@@ -156,13 +156,9 @@ abstract contract IntegrationBase {
         uint[] memory removedShares,
         string memory err
     ) internal {
-        // Put current state on stack and revert to prior state to fetch
-        // previous operator shares
-        uint curState = global.warpToLast();
-        uint[] memory prevShares = _getOperatorShares(operator, strategies);
-        global.warpToPresent(curState); // Snap back to reality
-
         uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -236,6 +232,19 @@ abstract contract IntegrationBase {
         }
 
         return expectedShares;
+    }
+
+    modifier timewarp() {
+        uint curState = global.warpToLast();
+        _;
+        global.warpToPresent(curState);
+    }
+
+    function _getPrevOperatorShares(
+        IUser operator, 
+        IStrategy[] memory strategies
+    ) internal timewarp() view returns (uint[] memory) {
+        return _getOperatorShares(operator, strategies);
     }
 
     /// @dev Looks up each strategy and returns a list of the operator's shares
