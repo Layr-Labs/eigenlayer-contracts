@@ -75,14 +75,14 @@ contract Staker is Test {
         assertEq(_getStakerSharesForStrategy(strategy), stakerSharesBefore + shares, "staker shares not updated correctly");
         assertEq(_getOperatorSharesForStrategy(strategy), operatorSharesBefore + shares, "operator shares not updated correctly");
         if (stakerSharesBefore == 0) {
-            assertEq(globalRefs.strategyManager().stakerStrategyListLength(staker), stakerStrategyListLengthBefore + 1, "strategy not added to staker's strategy list");
+            assertEq(globalRefs.strategyManager().stakerStrategyListLength(staker), stakerStrategyListLengthBefore + 1, "strategy not added to stakers strategy list");
             assertEq(
                 address(globalRefs.strategyManager().stakerStrategyList(staker, stakerStrategyListLengthBefore)),
                 address(strategy),
-                "strategy not added to staker's strategy list"
+                "strategy not added to stakers strategy list"
             );        
         } else {
-            assertEq(globalRefs.strategyManager().stakerStrategyListLength(staker), stakerStrategyListLengthBefore, "staker's strategy list length changed");
+            assertEq(globalRefs.strategyManager().stakerStrategyListLength(staker), stakerStrategyListLengthBefore, "stakers strategy list length changed");
         }
     }
 
