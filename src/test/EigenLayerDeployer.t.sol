@@ -34,29 +34,6 @@ import "forge-std/Test.sol";
 contract EigenLayerDeployer is Operators {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    struct Staker {
-        // the Staker's own address
-        address staker;
-        // all strategies that the Staker has deposits in
-        IStrategy[] strategies;
-        // the amount of shares that the Staker has in each of the `strategies`
-        uint256[] shares;
-        // the operator who the staker is delegatedTo (zero address if not delegated)
-        address delegatedTo;
-        // list of all _uncompleted_ withdrawals created by the Staker
-        IDelegationManager.Withdrawal[] queuedWithdrawals;
-    }
-
-    struct Operator {
-        // the Operator's own address
-        address operator;
-        // info about the operator stored in the DelegationManager
-        IDelegationManager.OperatorDetails operatorDetails;
-        // list of all stakers who are delegated to the operator. Should include the Operator themself.
-        address[] delegatedStakers;
-        // TODO: info about AVS registrations
-    }
-
     // EigenLayer contracts
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;
