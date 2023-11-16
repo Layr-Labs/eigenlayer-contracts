@@ -36,7 +36,7 @@ contract TestScenario is IntegrationTestRunner {
         // Queue Withdrawal for entire strategy balance
         staker.queueFullWithdrawal(strategy1);
 
-        // Complete Queued Withdrawal
-        staker.completeQueuedWithdrawal();
+        // Complete first (0-indexed) queued withdrawal
+        staker.completeQueuedWithdrawal(0);
     }
 }
