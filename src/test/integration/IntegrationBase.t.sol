@@ -134,13 +134,9 @@ abstract contract IntegrationBase {
         uint[] memory addedShares,
         string memory err
     ) internal {
-        // Put current state on stack and revert to prior state to fetch
-        // previous operator shares
-        uint curState = global.warpToLast();
-        uint[] memory prevShares = _getOperatorShares(operator, strategies);
-        global.warpToPresent(curState); // Snap back to reality
-
         uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -174,13 +170,9 @@ abstract contract IntegrationBase {
         uint[] memory addedShares,
         string memory err
     ) internal {
-        // Put current state on stack and revert to prior state to fetch
-        // previous staker shares
-        uint curState = global.warpToLast();
-        uint[] memory prevShares = _getStakerShares(staker, strategies);
-        global.warpToPresent(curState); // Snap back to reality
-
         uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(operator, strategies);
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -196,13 +188,9 @@ abstract contract IntegrationBase {
         uint[] memory removedShares,
         string memory err
     ) internal {
-        // Put current state on stack and revert to prior state to fetch
-        // previous staker shares
-        uint curState = global.warpToLast();
-        uint[] memory prevShares = _getStakerShares(staker, strategies);
-        global.warpToPresent(curState); // Snap back to reality
-
         uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(operator, strategies);
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
@@ -240,6 +228,7 @@ abstract contract IntegrationBase {
         global.warpToPresent(curState);
     }
 
+    /// @dev Uses timewarp modifier to get operator shares at the last snapshot
     function _getPrevOperatorShares(
         IUser operator, 
         IStrategy[] memory strategies
@@ -256,6 +245,14 @@ abstract contract IntegrationBase {
         }
 
         return curShares;
+    }
+
+    /// @dev Uses timewarp modifier to get staker shares at the last snapshot
+    function _getPrevStakerShares(
+        IUser staker, 
+        IStrategy[] memory strategies
+    ) internal timewarp() view returns (uint[] memory) {
+        return _getStakerShares(staker, strategies);
     }
 
     /// @dev Looks up each strategy and returns a list of the staker's shares
