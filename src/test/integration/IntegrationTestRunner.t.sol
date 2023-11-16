@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 // Imports
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
@@ -33,6 +34,13 @@ abstract contract IntegrationTestRunner is Test {
     IBeacon public eigenPodBeacon;
     EigenPod public pod;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
+
+    // Strategy Contracts to deploy
+    StrategyBase public strategy1;
+    IERC20 public strategy1Token;
+    StrategyBase public strategy2;
+    IERC20 public strategy2Token;
+    StrategyBase public baseStrategyImplementation;
     
     // Mock Contracts to deploy
     ETHPOSDepositMock public ethPOSDeposit;
@@ -56,6 +64,9 @@ abstract contract IntegrationTestRunner is Test {
         cheats.assume(!addressIsExcludedFromFuzzedInputs[fuzzedAddress]);
         _;
     }
+
+    // List of all strategies
+    IStrategy[] public strategies;
 
     function setUp() public virtual {
         // Deploy ProxyAdmin
@@ -176,5 +187,41 @@ abstract contract IntegrationTestRunner is Test {
                 withdrawalDelayBlocks
             )
         );
+
+        // Strategy Deployments
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+
+        // Strategy1
+        strategy1Token = new ERC20PresetFixedSupply("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
+        strategy1 = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, strategy1Token, pauserRegistry)
+                )
+            )
+        );
+
+        //Strategy2
+        strategy2Token = new ERC20PresetFixedSupply("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
+        strategy2 = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, strategy2Token, pauserRegistry)
+                )
+            )
+        );
+
+        // Whitelist strategies and add to global list of strategies
+        IStrategy[] memory _strategies = new IStrategy[](2);
+        _strategies[0] = strategy1;
+        _strategies[1] = strategy2;
+        strategyManager.addStrategiesToDepositWhitelist(_strategies);
+
+        strategies.push(strategy1);
+        strategies.push(strategy2);
     }
 }

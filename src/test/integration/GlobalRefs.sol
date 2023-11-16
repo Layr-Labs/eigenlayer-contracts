@@ -6,9 +6,9 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 contract GlobalRefs {
-    EigenPodManager eigenPodManager;
-    DelegationManager delegationManager;
-    StrategyManager strategyManager;
+    EigenPodManager public eigenPodManager;
+    DelegationManager public delegationManager;
+    StrategyManager public strategyManager;
 
     constructor(EigenPodManager _eigenPodManager, DelegationManager _delegationManager, StrategyManager _strategyManager) {
         eigenPodManager = _eigenPodManager;
