@@ -26,7 +26,7 @@ contract Operator is Test {
     // Registration Functions
     function register() public {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: address(this),
+            earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });

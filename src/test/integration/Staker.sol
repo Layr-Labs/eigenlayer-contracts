@@ -57,7 +57,7 @@ contract Staker is Test {
         }
         
         // Update operator's delegatedStaker array
-        operator.addDelegatedStaker(address(this));
+        operator.addDelegatedStaker(staker);
     }
 
     function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) public returns (uint256 shares){
@@ -102,7 +102,7 @@ contract Staker is Test {
         params[0] = IDelegationManager.QueuedWithdrawalParams({
             strategies: strategyArray,
             shares: shareAmounts,
-            withdrawer: address(this)
+            withdrawer: staker
         });
         _queueWithdrawal(params);
     }
