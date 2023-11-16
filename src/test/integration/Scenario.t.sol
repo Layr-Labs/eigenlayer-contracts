@@ -28,7 +28,8 @@ contract TestScenario is IntegrationTestRunner {
         operator.register();
 
         // Delegate To Operator
-        staker.delegate(operator);
+        staker.delegate(address(operator));
+        operator.addDelegatedStaker(address(staker));
 
         // Deposit into strategy
         staker.depositIntoStrategy(strategy1, strategy1Token, 1000);

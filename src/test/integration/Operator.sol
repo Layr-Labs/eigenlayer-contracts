@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "forge-std/Test.sol";
-
+import "src/test/integration/Staker.sol";
 import "src/test/integration/GlobalRefs.sol";
 
-contract Operator is Test {
-    // Pointer to global reference contract
-    GlobalRefs globalRefs;
-
+contract Operator is Staker {
     // Array of addresses who are delegated to staker
     address[] public delegatedStaker;
     mapping(address => bool) public isDelegatedStaker;
@@ -19,9 +15,7 @@ contract Operator is Test {
     // Delegation Signer Private Key
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
 
-    constructor(GlobalRefs _globalRefs) {
-        globalRefs = _globalRefs;
-    }
+    constructor(GlobalRefs _globalRefs) Staker (_globalRefs){}
 
     // Registration Functions
     function register() public {
@@ -56,6 +50,11 @@ contract Operator is Test {
             "stakerOptOutWindowBlocks not set correctly"
         );
         assertEq(globalRefs.delegationManager().delegatedTo(operator), operator, "operator not delegated to self");       
+    }
+
+    // Override staker functions that operator shouldn't call
+    function delegate(address operator) public override {
+        revert("Operator cannot delegate since it's delegated to itself");
     }
 
     // Helper functions to update stakers that are delegated to this operator

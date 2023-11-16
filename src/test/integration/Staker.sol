@@ -6,11 +6,10 @@ import "forge-std/Test.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 
 import "src/test/integration/GlobalRefs.sol";
-import "src/test/integration/Operator.sol";
 
 contract Staker is Test {
     // Pointer to global reference contract
-    GlobalRefs globalRefs;
+    GlobalRefs public globalRefs;
 
     // Local Storage
     IDelegationManager.Withdrawal[] public queuedWithdrawals;
@@ -27,40 +26,37 @@ contract Staker is Test {
         globalRefs = _globalRefs;
     }
 
-    function delegate(Operator operator) public {
+    function delegate(address operator) public virtual {
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         bytes32 emptySalt;
         _delegate(operator, approverSignatureAndExpiry, emptySalt);
 
         // Assert that salt is not spent
         assertFalse(globalRefs.delegationManager().delegationApproverSaltIsSpent(
-            globalRefs.delegationManager().delegationApprover(address(operator)),
+            globalRefs.delegationManager().delegationApprover(operator),
             emptySalt
         ), "salt somehow spent too early");
     }
 
-    function _delegate(Operator operator, ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) internal {
+    function _delegate(address operator, ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry, bytes32 approverSalt) internal {
         // Save pre-delegation state of operator 
         (IStrategy[] memory stakerStrategies, uint256[] memory stakerShares) = globalRefs.delegationManager().getDelegatableShares(staker);
         uint256[] memory operatorSharesBefore = new uint256[](stakerShares.length);
         for (uint256 i = 0; i < stakerShares.length; i++) {
-            operatorSharesBefore[i] = globalRefs.delegationManager().operatorShares(address(operator), stakerStrategies[i]);
+            operatorSharesBefore[i] = globalRefs.delegationManager().operatorShares(operator, stakerStrategies[i]);
         }
 
         // Delegate to operator
-        globalRefs.delegationManager().delegateTo(address(operator), approverSignatureAndExpiry, approverSalt);
+        globalRefs.delegationManager().delegateTo(operator, approverSignatureAndExpiry, approverSalt);
 
         // Checks
-        assertEq(globalRefs.delegationManager().delegatedTo(staker), address(operator), "staker delegated to the wrong address");
+        assertEq(globalRefs.delegationManager().delegatedTo(staker), operator, "staker delegated to the wrong address");
         for(uint256 i = 0; i < stakerShares.length; i++) {
-            assertEq(globalRefs.delegationManager().operatorShares(address(operator), stakerStrategies[i]), operatorSharesBefore[i] + stakerShares[i], "operator shares not updated correctly");
+            assertEq(globalRefs.delegationManager().operatorShares(operator, stakerStrategies[i]), operatorSharesBefore[i] + stakerShares[i], "operator shares not updated correctly");
         }
-        
-        // Update operator's delegatedStaker array
-        operator.addDelegatedStaker(staker);
     }
 
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) public returns (uint256 shares){
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) public returns (uint256 shares) {
         // Save pre-deposit state
         uint256 stakerSharesBefore = _getStakerSharesForStrategy(strategy);
         uint256 operatorSharesBefore = _getOperatorSharesForStrategy(strategy);
