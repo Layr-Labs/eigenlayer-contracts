@@ -259,18 +259,101 @@ contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
     }
+
+    function xtest_withdrawRestakedBeaconChainETH() public {
+        bytes memory pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
+    
+        bytes memory signature;
+    
+        bytes32 depositDataRoot;
+    
+        uint256 stakeAmount = 32e18;
+
+        cheats.startPrank(podOwner);
+        cheats.deal(podOwner, stakeAmount);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+
+        // cheats.startPrank(delegationManager); tbd
+        eigenPodManager.withdrawSharesAsTokens(
+            podOwner,
+            podOwner,
+            32e18
+        );
+
+        cheats.stopPrank();
+    }
 }
 
 contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_UnitTests {
-/**
- * @notice Tests function calls from EigenPod to EigenPodManager
- * 1. Do a full withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
- * 2. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
- * 3. Verify balance updates and call `recordBeaconChainEThBalanceUpdate` -> assert shares are updated
- * 4. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
- * 3. Reentrancy check (first function in below commented out tests)
- */
+    /**
+     * @notice Tests function calls from EigenPod to EigenPodManager
+     * 1. Do a full withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 2. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 3. Verify balance updates and call `recordBeaconChainEThBalanceUpdate` -> assert shares are updated
+     * 4. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 3. Reentrancy check (first function in below commented out tests)
+     */
 
+    // function xtest_fullWithdrawal_andRecordBeaconChainETHBalanceUpdate() public {
+    //     // Arrange: Set up the conditions for a full withdrawal
+    //     setupFullWithdrawalConditions();
+
+    //     uint256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+
+    //     // Act: Perform the full withdrawal and record the balance update
+    //     performFullWithdrawal(/* parameters */);
+    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(/* parameters */);
+
+    //     // Assert: Check that the shares are updated correctly
+    //     uint256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
+    //     assert(updatedShares != initialShares, "Shares should be updated after full withdrawal");
+    // }
+
+    // function xtest_partialWithdrawal_andRecordBeaconChainETHBalanceUpdate() public {
+    //     // Arrange: Set up conditions for a partial withdrawal
+    //     setupPartialWithdrawalConditions();
+
+    //     uint256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+
+    //     // Act: Perform the partial withdrawal and record the balance update
+    //     performPartialWithdrawal(/* parameters */);
+    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(/* parameters */);
+
+    //     // Assert: Check that the shares are updated correctly
+    //     uint256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
+    //     assert(updatedShares != initialShares, "Shares should be updated after partial withdrawal");
+    // }
+
+    // function xtest_verifyBalanceUpdates_andRecordBeaconChainETHBalanceUpdate() public {
+    //     // Arrange: Set up conditions to verify balance updates
+    //     setupVerifyBalanceUpdatesConditions();
+
+    //     uint256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+
+    //     // Act: Verify balance updates and record the balance update
+    //     verifyBalanceUpdates(/* parameters */);
+    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(/* parameters */);
+
+    //     // Assert: Check that the shares are updated correctly
+    //     uint256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
+    //     assert(updatedShares != initialShares, "Shares should be updated after verifying balance updates");
+    // }
+
+    // function xtest_verifyWithdrawalCredentials_andRecordBeaconChainETHBalanceUpdate() public {
+    //     // Arrange: Set up conditions to verify withdrawal credentials
+    //     setupVerifyWithdrawalCredentialsConditions();
+
+    //     uint256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+
+    //     // Act: Verify withdrawal credentials and record the balance update
+    //     verifyWithdrawalCredentials(/* parameters */);
+    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(/* parameters */);
+
+    //     // Assert: Check that the shares are updated correctly
+    //     uint256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
+    //     assert(updatedShares != initialShares, "Shares should be updated after verifying withdrawal credentials");
+    // }
 
 }
 
