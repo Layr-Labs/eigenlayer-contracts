@@ -178,7 +178,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
      * @param stateRootProof proves a `beaconStateRoot` against a block root fetched from the oracle
-     * @param balanceUpdateProofs is a list of proofs that prove `validatorFields` and validator balance against the `beaconStateRoot` for each balance update being made
+     * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -186,11 +186,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+        bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
     ) external onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE) {
         require(
-            (validatorIndices.length == balanceUpdateProofs.length) && (balanceUpdateProofs.length == validatorFields.length),
+            (validatorIndices.length == validatorFieldsProofs.length) && (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyBalanceUpdates: validatorIndices and proofs must be same length"
         );
 
@@ -213,7 +213,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 oracleTimestamp,
                 validatorIndices[i],
                 stateRootProof.beaconStateRoot,
-                balanceUpdateProofs[i],
+                validatorFieldsProofs[i], // Use validator fields proof because contains the effective balance
                 validatorFields[i]
             );
         }
@@ -500,11 +500,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 oracleTimestamp,
         uint40 validatorIndex,
         bytes32 beaconStateRoot,
-        BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
+        bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) internal returns(int256 sharesDeltaGwei){
-        
-        uint64 validatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
+        uint64 validatorEffectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
@@ -525,7 +524,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // -- A fully withdrawn validator should withdraw via verifyAndProcessWithdrawals
         if (validatorFields.getWithdrawableEpoch() <= _timestampToEpoch(oracleTimestamp)) {
             require(
-                validatorBalance > 0,
+                validatorEffectiveBalanceGwei > 0,
                 "EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"
             );
         }
@@ -534,26 +533,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         BeaconChainProofs.verifyValidatorFields({
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
-            validatorFieldsProof: balanceUpdateProof.validatorFieldsProof,
-            validatorIndex: validatorIndex
-        });
-
-        // Verify passed-in validator balanceRoot against verified beaconStateRoot:
-        BeaconChainProofs.verifyValidatorBalance({
-            beaconStateRoot: beaconStateRoot,
-            balanceRoot: balanceUpdateProof.balanceRoot,
-            validatorBalanceProof: balanceUpdateProof.validatorBalanceProof,
+            validatorFieldsProof: validatorFieldsProof,
             validatorIndex: validatorIndex
         });
 
         // Done with proofs! Now update the validator's balance and send to the EigenPodManager if needed
 
         uint64 currentRestakedBalanceGwei = validatorInfo.restakedBalanceGwei;
-         uint64 newRestakedBalanceGwei;
-        if (validatorBalance > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+        uint64 newRestakedBalanceGwei;
+        if (validatorEffectiveBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
             newRestakedBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         } else {
-            newRestakedBalanceGwei = validatorBalance;
+            newRestakedBalanceGwei = validatorEffectiveBalanceGwei;
         }
         
         // Update validator balance and timestamp, and save to state:

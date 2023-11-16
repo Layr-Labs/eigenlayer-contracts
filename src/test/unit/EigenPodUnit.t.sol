@@ -12,7 +12,8 @@ import "forge-std/Test.sol";
 
 contract EigenPodUnitTests is Test, ProofParsing {
     
-    using BytesLib for bytes;
+    using BytesLib for bytes;    
+    using BeaconChainProofs for *;
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
 
@@ -216,7 +217,7 @@ contract EigenPodUnitTests is Test, ProofParsing {
 
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
-        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+        bytes memory balanceUpdateProof = abi.encodePacked(getBalanceUpdateProof());
 
         bytes32 newBeaconStateRoot = getBeaconStateRoot();
         emit log_named_bytes32("newBeaconStateRoot", newBeaconStateRoot);
@@ -229,7 +230,7 @@ contract EigenPodUnitTests is Test, ProofParsing {
             oracleTimestamp,
             0,
             bytes32(0),
-            proof,
+            balanceUpdateProof,
             validatorFields,
             mostRecentBalanceUpdateTimestamp
         );
@@ -361,25 +362,24 @@ contract EigenPodUnitTests is Test, ProofParsing {
     * Regression test for a bug that allowed balance updates to be made for withdrawn validators.  Thus
     * the validator's balance could be maliciously proven to be 0 before the validator themselves are
     * able to prove their withdrawal.
-    */
+    */    
     function testBalanceUpdateMadeAfterWithdrawableEpochFails() external {
         _deployInternalFunctionTester();
         cheats.roll(block.number + 1);
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_slot_6399999.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
-        setJSON("./src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
-        bytes32[] memory validatorFields= getValidatorFields();
+        setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
+        bytes32[] memory validatorFields = getValidatorFields();
 
         uint40 validatorIndex = uint40(getValidatorIndex());
 
-        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+        bytes memory proof = abi.encodePacked(getBalanceUpdateProof());
         bytes32 newLatestBlockRoot = getLatestBlockRoot();
 
         BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(newLatestBlockRoot);
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof(); 
-        proof.balanceRoot = bytes32(uint256(0));     
 
-        validatorFields[7] = bytes32(uint256(0));
+        validatorFields[7] = bytes32(uint256(0)); // set withdrawable epoch timestamp to 0
         cheats.warp(GOERLI_GENESIS_TIME + 1 days);
         uint64 oracleTimestamp = uint64(block.timestamp);
 
@@ -487,17 +487,6 @@ contract EigenPodUnitTests is Test, ProofParsing {
 
     function _getStateRootProof() internal returns (BeaconChainProofs.StateRootProof memory) {
         return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), abi.encodePacked(getStateRootProof()));
-    }
-
-    function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
-        bytes32 balanceRoot = getBalanceRoot();
-        BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
-            abi.encodePacked(getValidatorBalanceProof()),
-            abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
-            balanceRoot
-        );
-
-        return proofs;
     }
 
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
