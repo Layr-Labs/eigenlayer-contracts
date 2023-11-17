@@ -1,33 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/contracts/integration/IntegrationBase.sol";
-import "src/contracts/integration/Staker.sol";
-
-/// Some ideas "flags" we can add to easily create test variants
-enum AssetType {
-    NO_ASSETS,
-    LST_ONLY,
-    NATIVE_ONLY,
-    MIXED_ASSETS
-}
-
-/**
- * When queueing a withdrawal, the user uses their `WithdrawalType`:
- */
-enum WithdrawalType {
-    PARTIAL_WITHDRAWAL_SINGLE, // User will queue a single withdrawal that includes some strats/shares
-    FULL_WITHDRAWAL_SINGLE,    // User will queue a single withdrawal that includes all strats/shares
-    FULL_WITHDRAWAL_MULTI      // For each strategy, user will queue a withdrawal for all shares
-}
-
-/**
- * When queueing a withdrawal, the user uses their `WithdrawerType` to select a withdrawer:
- */
-enum WithdrawerType {
-    SELF_WITHDRAWER,           // User will queue withdrawals with themselves as the withdrawer
-    OTHER_WITHDRAWER           // User will queue withdrawals with someone else as the withdrawer
-}
+import "src/test/integration/IntegrationBase.t.sol";
+import "src/test/integration/users/User.sol";
 
 contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
 
@@ -36,13 +11,13 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
     /// 2. delegate to an operator
     /// 3. queue a withdrawal for all shares (withdrawer set to staker)
     /// 4. complete their queued withdrawal as tokens
-    function test_deposit_delegate_queue_complete(bytes32 rand) public {   
+    function test_deposit_delegate_queue_complete(uint16 _random) public {   
         // Creating new user objects / withdrawal params will use only these setups: 
         _configRand({
-            randomSeed: rand
-            stakerTypes: LST_ONLY | NATIVE_ONLY | MIXED_ASSETS,
-            withdrawalTypes: FULL_WITHDRAWAL_SINGLE | FULL_WITHDRAWAL_MULTI,
-            withdrawerTypes: SELF_WITHDRAWER
+            _randomSeed: _random,
+            _stakerAssets: HOLDS_LST,
+            _operatorAssets: NO_ASSETS | HOLDS_LST,
+            _withdrawType: FULL_WITHDRAW_SINGLE /**| FULL_WITHDRAW_MULTI*/
         });
 
         /// 0. Create an operator and a staker with:
@@ -54,11 +29,12 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             User staker,
             IStrategy[] memory strategies, 
             uint[] memory tokenBalances
-        ) = _newRandomStaker();
+        ) = _newStaker();
+        (User operator, ,) = _newOperator();
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(staker), "staker should not be delegated");
+        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         {
             /// 1. Deposit into strategies:
@@ -80,32 +56,29 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             //     was awarded the staker's shares
             staker.delegateTo(operator);
 
-            assertTrue(delegationManager.isDelegated(staker), "staker should be delegated");
-            assertEq(operator, delegationManager.delegatedTo(staker), "staker should be delegated to operator");
+            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
+            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
             assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
             assert_Snap_AddedOperatorShares(operator, strategies, shares, "operator should have received shares");
         }
 
-        // Determine what type of withdrawal the staker should do, and prepare their params
-        (
-            IDelegationManager.QueuedWithdrawalParams[] memory params,
-            IDelegationManager.Withdrawal[] memory withdrawals
-        ) = _selectWithdrawals(strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals;
+        bytes32[] memory withdrawalRoots;
 
         {
             /// 3. Queue withdrawal(s):
-            // The staker will queue each of the selected withdrawals
+            // The staker will queue one or more withdrawals for the selected strategies and shares
             //
             // ... check that each withdrawal was successfully enqueued, that the returned roots
             //     match the hashes of each withdrawal, and that the staker and operator have
             //     reduced shares.
-            bytes32[] memory withdrawalRoots = staker.queueWithdrawals(params);
+            (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
 
-            assertEq(withdrawals.length, delegationManager.cumulativeWithdrawalsQueued(staker), "withdrawals should have incremented nonce");
             assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
             assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
+            assert_Snap_IncreasedQueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
             assert_Snap_RemovedOperatorShares(operator, strategies, shares, "failed to remove operator shares");
-            assert_Snap_RemovedStakerShares(operator, strategies, shares, "failed to remove staker shares");
+            assert_Snap_RemovedStakerShares(staker, strategies, shares, "failed to remove staker shares");
         }
 
         // Fast forward to when we can complete the withdrawal
@@ -123,7 +96,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
                 uint[] memory expectedTokens = _calculateExpectedTokens(withdrawal.strategies, withdrawal.shares);
                 IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawal, true);
 
-                assert_Snap_SentTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+                assert_Snap_IncreasedTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
             }
         }
     }
