@@ -34,7 +34,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         // TODO - deposit into strats
 
         assert_HasUnderlyingTokenBalances(operator, strategies, tokenBalances, "_newOperator: failed to award token balances");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newOperator: operator should be registered");
+        assertTrue(delegationManager.isOperator(operator.addr()), "_newOperator: operator should be registered");
 
         return (operator, strategies, tokenBalances);
     }
@@ -45,7 +45,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal {
         (IStrategy[] memory strategies, uint[] memory shares) = 
-            delegationManager.getDelegatableShares(address(user));
+            delegationManager.getDelegatableShares(user.addr());
         
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
@@ -63,9 +63,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint expectedBalance = expectedBalances[i];
             uint tokenBalance;
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokenBalance = address(user).balance;
+                // tokenBalance = address(user).balance;
+                revert("TODO: unimplemented");
             } else {
-                tokenBalance = strat.underlyingToken().balanceOf(address(user));
+                tokenBalance = strat.underlyingToken().balanceOf(user.addr());
             }
 
             assertEq(expectedBalance, tokenBalance, err);
@@ -78,9 +79,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint tokenBalance;
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokenBalance = address(user).balance;
+                // tokenBalance = address(user).balance;
+                revert("TODO: unimplemented");
             } else {
-                tokenBalance = strat.underlyingToken().balanceOf(address(user));
+                tokenBalance = strat.underlyingToken().balanceOf(user.addr());
             }
 
             assertEq(0, tokenBalance, err);
@@ -102,7 +104,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // actualShares = eigenPodManager.podOwnerShares(address(user));
                 revert("unimplemented");
             } else {
-                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+                actualShares = strategyManager.stakerStrategyShares(user.addr(), strat);
             }
 
             assertEq(expectedShares[i], actualShares, err);
@@ -118,7 +120,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
-            uint actualShares = delegationManager.operatorShares(address(user), strat);
+            uint actualShares = delegationManager.operatorShares(user.addr(), strat);
 
             assertEq(expectedShares[i], actualShares, err);
         }
@@ -311,7 +313,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory curShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            curShares[i] = delegationManager.operatorShares(address(operator), strategies[i]);
+            curShares[i] = delegationManager.operatorShares(operator.addr(), strategies[i]);
         }
 
         return curShares;
@@ -336,7 +338,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // curShares[i] = eigenPodManager.podOwnerShares(address(staker));
                 revert("TODO: unimplemented");
             } else {
-                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+                curShares[i] = strategyManager.stakerStrategyShares(staker.addr(), strat);
             }
         }
 
@@ -348,7 +350,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getCumulativeWithdrawals(User staker) internal view returns (uint) {
-        return delegationManager.cumulativeWithdrawalsQueued(address(staker));
+        return delegationManager.cumulativeWithdrawalsQueued(staker.addr());
     }
 
     function _getPrevTokenBalances(User staker, IERC20[] memory tokens) internal timewarp() returns (uint[] memory) {
@@ -359,7 +361,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory balances = new uint[](tokens.length);
 
         for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokens[i].balanceOf(address(staker));
+            balances[i] = tokens[i].balanceOf(staker.addr());
         }
 
         return balances;

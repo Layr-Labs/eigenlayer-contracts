@@ -43,6 +43,10 @@ contract User is Test {
         _;
     }
 
+    function addr() public virtual view returns (address) {
+        return address(this);
+    }
+
     function registerAsOperator() public createSnapshot virtual {
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
@@ -50,6 +54,7 @@ contract User is Test {
             stakerOptOutWindowBlocks: 0
         });
 
+        cheats.prank(addr());
         delegationManager.registerAsOperator(details, "metadata");
     }
 
@@ -65,17 +70,20 @@ contract User is Test {
                 revert("depositIntoEigenlayer: unimplemented");
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
+                cheats.startPrank(addr());
                 underlyingToken.approve(address(strategyManager), tokenBalance);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+                cheats.stopPrank();
             }
-            depositedStrategies.push(strat);
+            // depositedStrategies.push(strat);
         }
     }
 
     /// @dev Delegate to the operator without a signature
     function delegateTo(User operator) public createSnapshot virtual {
         ISignatureUtils.SignatureWithExpiry memory emptySig;
-        delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
+        cheats.prank(addr());
+        delegationManager.delegateTo(operator.addr(), emptySig, bytes32(0));
     }
 
     /// @dev Queues a single withdrawal for every share and strategy pair
@@ -84,9 +92,9 @@ contract User is Test {
         uint[] memory shares
     ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory, bytes32[] memory) {
 
-        address operator = delegationManager.delegatedTo(address(this));
-        address withdrawer = address(this);
-        uint nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
+        address operator = delegationManager.delegatedTo(addr());
+        address withdrawer = addr();
+        uint nonce = delegationManager.cumulativeWithdrawalsQueued(addr());
         
         bytes32[] memory withdrawalRoots;
 
@@ -101,7 +109,7 @@ contract User is Test {
         // Create Withdrawal struct using same info
         IDelegationManager.Withdrawal[] memory withdrawals = new IDelegationManager.Withdrawal[](1);
         withdrawals[0] = IDelegationManager.Withdrawal({
-            staker: address(this),
+            staker: addr(),
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
@@ -110,6 +118,7 @@ contract User is Test {
             shares: shares
         });
 
+        cheats.prank(addr());
         withdrawalRoots = delegationManager.queueWithdrawals(params);
 
         // Basic sanity check - we do all other checks outside this file
@@ -134,6 +143,7 @@ contract User is Test {
             }
         }
 
+        cheats.prank(addr());
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
 
         return tokens;
@@ -156,14 +166,18 @@ contract User_SignedMethods is User {
         userAddress = cheats.addr(privateKey);
     }
 
+    function addr() public override view returns (address) {
+        return userAddress;
+    }
+
     function delegateTo(User operator) public createSnapshot override {
         // Create signatures
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getDelegateToSignature(address(operator), expiry);
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getDelegateToSignature(operator.addr(), expiry);
 
         // Delegate
-        delegationManager.delegateToBySignature(userAddress, address(operator), stakerSignatureAndExpiry, emptySig, bytes32(0));
+        delegationManager.delegateToBySignature(addr(), operator.addr(), stakerSignatureAndExpiry, emptySig, bytes32(0));
     }
 
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
@@ -177,6 +191,7 @@ contract User_SignedMethods is User {
                 revert("depositIntoEigenlayer: unimplemented");
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
+                cheats.startPrank(addr());
                 underlyingToken.approve(address(strategyManager), tokenBalance);
                 bytes memory signature = _getStrategyDepositSignature(strat, underlyingToken, tokenBalance, expiry);
                 strategyManager.depositIntoStrategyWithSignature(
@@ -187,13 +202,14 @@ contract User_SignedMethods is User {
                     expiry,
                     signature
                 );
+                cheats.stopPrank();
             }
-            depositedStrategies.push(strat);
+            // depositedStrategies.push(strat);
         }
     }
 
-    function _getStrategyDepositSignature(IStrategy strategy, IERC20 token, uint256 amount, uint256 expiry) internal returns (bytes) {
-        uint256 nonceBefore = strategyManager.nonces(userAddress);
+    function _getStrategyDepositSignature(IStrategy strategy, IERC20 token, uint256 amount, uint256 expiry) internal returns (bytes memory) {
+        uint256 nonceBefore = strategyManager.nonces(addr());
         bytes memory signature;
 
         bytes32 structHash = keccak256(
@@ -202,6 +218,9 @@ contract User_SignedMethods is User {
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
+        emit log_named_uint("v: ", v);
+        emit log_named_bytes32("r: ", r);
+        emit log_named_bytes32("s: ", s);
 
         signature = abi.encodePacked(r, s, v);
 
@@ -210,12 +229,15 @@ contract User_SignedMethods is User {
  
 
     function _getDelegateToSignature(address operator, uint256 expiry)
-        internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry)
+        internal returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry)
     {
         stakerSignatureAndExpiry.expiry = expiry;
         {
-            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(userAddress, operator, expiry);
+            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(addr(), operator, expiry);
             (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
+            emit log_named_uint("v: ", v);
+            emit log_named_bytes32("r: ", r);
+            emit log_named_bytes32("s: ", s);
             stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
         }
         return stakerSignatureAndExpiry;

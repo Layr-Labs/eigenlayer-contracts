@@ -386,7 +386,7 @@ abstract contract IntegrationDeployer is Test {
                 IERC20 underlyingToken = strat.underlyingToken();
                 
                 uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
-                StdCheats.deal(address(underlyingToken), address(user), balance);
+                StdCheats.deal(address(underlyingToken), user.addr(), balance);
 
                 tokenBalances[i] = balance;
                 strategies[i] = strat;

@@ -33,7 +33,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+        assertFalse(delegationManager.isDelegated(staker.addr()), "staker should not be delegated");
 
         {
             /// 1. Deposit into strategies:
@@ -45,7 +45,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             staker.depositIntoEigenlayer(strategies, tokenBalances);
 
             assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+            assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should have expected shares in each strategy after depositing");
         }
 
         {
@@ -55,8 +55,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             //     was awarded the staker's shares
             staker.delegateTo(operator);
 
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+            assertTrue(delegationManager.isDelegated(staker.addr()), "staker should be delegated");
+            assertEq(operator.addr(), delegationManager.delegatedTo(staker.addr()), "staker should be delegated to operator");
             assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
             assert_Snap_AddedOperatorShares(operator, strategies, shares, "operator should have received shares");
         }
@@ -122,7 +122,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+        assertFalse(delegationManager.isDelegated(staker.addr()), "staker should not be delegated");
 
         {
             /// 1. Deposit into strategies:
@@ -134,7 +134,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             staker.depositIntoEigenlayer(strategies, tokenBalances);
 
             assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+            assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should have expected shares in each strategy after depositing");
         }
 
         {
@@ -144,8 +144,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
             //     was awarded the staker's shares
             staker.delegateTo(operator);
 
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+            assertTrue(delegationManager.isDelegated(staker.addr()), "staker should be delegated");
+            assertEq(operator.addr(), delegationManager.delegatedTo(staker.addr()), "staker should be delegated to operator");
             assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
             assert_Snap_AddedOperatorShares(operator, strategies, shares, "operator should have received shares");
         }
