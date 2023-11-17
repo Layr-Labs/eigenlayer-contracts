@@ -63,6 +63,7 @@ interface IEigenPod {
     }
 
      enum REQUEST_STATUS {
+        DEFAULT, // state of request prior to pending
         PENDING, // request is pending
         FULFILLED, // request is fulfilled
         CANCELLED // request is cancelled
