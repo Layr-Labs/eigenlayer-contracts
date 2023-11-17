@@ -480,7 +480,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes memory callBackData = abi.encodeWithSelector(EigenPod.handleCallback.selector, requestNonce, oracleTimestamp, _timestampToSlot(endTimestamp));
 
 
-        eigenPodManager.requestProofViaSuccinctGateway(
+        eigenPodManager.requestProofViaSuccinctGateway{value: msg.value}(
             RANGE_SPLITTER_FUNCTION_ID, 
             _timestampToSlot(timestampProvenUntil),
             _timestampToSlot(endTimestamp),
