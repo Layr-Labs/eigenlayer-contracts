@@ -1,7 +1,0 @@
-- Stakers and Operators are both represented by User/IUser, as they can do pretty much all the same things.
-    - Should rely on good variable naming to distinguish
-- Minimal assertions/cheats used in User contract. These are for carrying out user behaviors, only. Exception:
-    - User methods snapshot state before performing actions
-- Top-level error messages are passed into helper assert methods so that it's always clear where an error came from
-- User contract should have an interface as similar as possible to the contract interfaces, so it feels like calling an EigenLayer method rather than some weird abstraction. Exceptions for things like:
-    - `user.depositIntoEigenLayer(strats, tokenBalances)`

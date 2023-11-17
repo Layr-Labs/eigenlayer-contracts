@@ -22,7 +22,7 @@ import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/mocks/BeaconChainOracleMock.sol";
 
-import "src/test/integration/User.sol";
+import "src/test/integration/User.t.sol";
 
 abstract contract IntegrationDeployer is Test, IUserDeployer {
 

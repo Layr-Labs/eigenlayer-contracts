@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/User.sol";
+import "src/test/integration/User.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
 
@@ -19,7 +19,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
      * @dev Create a new user according to configured random variants.
      * This user is ready to deposit into some strategies and has some underlying token balances
      */
-    function _newStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
         
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newStaker: failed to award token balances");
@@ -27,7 +27,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (staker, strategies, tokenBalances);
     }
 
-    function _newOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
         (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
         
         operator.registerAsOperator();

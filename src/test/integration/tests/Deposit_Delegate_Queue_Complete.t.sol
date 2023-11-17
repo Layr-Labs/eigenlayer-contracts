@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "src/test/integration/IntegrationBase.t.sol";
-import "src/test/integration/User.sol";
+import "src/test/integration/User.t.sol";
 
 contract Deposit_Delegate_Queue_Complete is IntegrationBase {
 
@@ -28,8 +28,8 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
             User staker,
             IStrategy[] memory strategies, 
             uint[] memory tokenBalances
-        ) = _newStaker();
-        (User operator, ,) = _newOperator();
+        ) = _newRandomStaker();
+        (User operator, ,) = _newRandomOperator();
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -117,8 +117,8 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
             User staker,
             IStrategy[] memory strategies, 
             uint[] memory tokenBalances
-        ) = _newStaker();
-        (User operator, ,) = _newOperator();
+        ) = _newRandomStaker();
+        (User operator, ,) = _newRandomOperator();
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
