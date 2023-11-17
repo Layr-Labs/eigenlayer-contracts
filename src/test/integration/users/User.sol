@@ -140,10 +140,10 @@ contract User is Test {
     }
 }
 
+/// @notice A user contract that implements 1271 signatures
 contract User_SignedMethods is User {
 
-    uint256 immutable privateKey;
-    address immutable userAddress;
+    mapping(bytes32 => bool) public signedHashes;
 
     constructor(
         DelegationManager _delegationManager,
@@ -151,19 +151,27 @@ contract User_SignedMethods is User {
         EigenPodManager _eigenPodManager,
         Global _global
     ) User(_delegationManager, _strategyManager, _eigenPodManager, _global) {
-        // Generate private key from contract address
-        privateKey = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, address(this))));
-        userAddress = cheats.addr(privateKey);
     }
 
     function delegateTo(User operator) public createSnapshot override {
-        // Create signatures
+        // Create empty data
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry = _getDelegateToSignature(address(operator), expiry);
+
+        // Get signature
+        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry;
+        stakerSignatureAndExpiry.expiry = expiry;
+        bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(address(this), address(operator), expiry);
+        stakerSignatureAndExpiry.signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
+
+        // Mark hash as signed
+        signedHashes[digestHash] = true;
 
         // Delegate
-        delegationManager.delegateToBySignature(userAddress, address(operator), stakerSignatureAndExpiry, emptySig, bytes32(0));
+        delegationManager.delegateToBySignature(address(this), address(operator), stakerSignatureAndExpiry, emptySig, bytes32(0));
+
+        // Mark hash as used
+        signedHashes[digestHash] = false;
     }
 
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
@@ -176,50 +184,46 @@ contract User_SignedMethods is User {
                 // TODO handle this flow - need to deposit into EPM + prove credentials
                 revert("depositIntoEigenlayer: unimplemented");
             } else {
+                // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokenBalance);
-                bytes memory signature = _getStrategyDepositSignature(strat, underlyingToken, tokenBalance, expiry);
+
+                // Get signature
+                uint256 nonceBefore = strategyManager.nonces(address(this));
+                bytes32 structHash = keccak256(
+                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
+                );
+                bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
+                bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
+
+                // Mark hash as signed
+                signedHashes[digestHash] = true;
+
+                // Deposit
                 strategyManager.depositIntoStrategyWithSignature(
                     strat,
                     underlyingToken,
                     tokenBalance,
-                    userAddress,
+                    address(this),
                     expiry,
                     signature
                 );
+
+                // Mark hash as used
+                signedHashes[digestHash] = false;
             }
             depositedStrategies.push(strat);
         }
     }
-
-    function _getStrategyDepositSignature(IStrategy strategy, IERC20 token, uint256 amount, uint256 expiry) internal returns (bytes) {
-        uint256 nonceBefore = strategyManager.nonces(userAddress);
-        bytes memory signature;
-
-        bytes32 structHash = keccak256(
-            abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
-        );
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
-
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
-
-        signature = abi.encodePacked(r, s, v);
-
-        return signature;
-    }
  
-
-    function _getDelegateToSignature(address operator, uint256 expiry)
-        internal view returns (ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry)
-    {
-        stakerSignatureAndExpiry.expiry = expiry;
-        {
-            bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(userAddress, operator, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(privateKey, digestHash);
-            stakerSignatureAndExpiry.signature = abi.encodePacked(r, s, v);
+    bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
+    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4) {
+        if(signedHashes[hash]){
+            return MAGIC_VALUE;
+        } else {
+            return 0xffffffff;
         }
-        return stakerSignatureAndExpiry;
-    }
+    } 
 }
 
 // contract User_MixedAssets is User {
