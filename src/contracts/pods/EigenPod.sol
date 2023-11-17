@@ -327,8 +327,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         // ensure that caller has previously enabled restaking by calling `activateRestaking()`
         hasEnabledRestaking
     {
-        // initializes the  "timestampProvenUntil" for batched zk partial withdrawals to the GENESIS_TIME
-        timestampProvenUntil = GENESIS_TIME;
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
@@ -457,6 +455,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address recipient,
         uint32 callbackGasLimit
     ) external payable onlyEigenPodOwner hasEnabledRestaking {
+        // initializes the  "timestampProvenUntil" for batched zk partial withdrawals to the GENESIS_TIME
+        if(timestampProvenUntil == 0){
+            timestampProvenUntil = GENESIS_TIME;
+        }
+        
         requestNonce++;
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
