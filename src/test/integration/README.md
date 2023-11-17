@@ -58,7 +58,7 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
 The main feature we're using is foundry's `cheats.snapshot()` and `cheats.revertTo(snapshot)` to zip around in time. You can look at the [Cheatcodes Reference](https://book.getfoundry.sh/cheatcodes/#cheatcodes-interface) to get some idea, but the docs aren't actually correct. The best thing to do is look through our tests and see how it's being used. If you see an assertion called `assert_Snap_...`, that's using the `TimeMachine` under the hood. 
 
 Speaking of, the `TimeMachine` is a global contract that controls the time, fate, and destiny of all who use it.
-* `Users` use the `TimeMachine` to snapshot chain state *before* every action they perform. (see the [`User.createSnapshot`](https://github.com/layr-labs/eigenlayer-contracts/blob/c99e847709852d7246c73b7d72d44bba368b760e/src/test/integration/User.t.sol#L43-L46) modifier).
+* `Users` use the `TimeMachine` to snapshot chain state *before* every action they perform. (see the [`User.createSnapshot`](https://github.com/layr-labs/eigenlayer-contracts/blob/c5193f7bff00903a4323be2a1500cbf7137a83e9/src/test/integration/User.t.sol#L43-L46) modifier).
 * `IntegrationBase` uses a `timewarp` modifier to quickly fetch state "from before the last user action". These are leveraged within various `assert_Snap_XYZ` methods to allow the test to quickly compare previous and current values. ([example assertion method](https://github.com/layr-labs/eigenlayer-contracts/blob/c99e847709852d7246c73b7d72d44bba368b760e/src/test/integration/IntegrationBase.t.sol#L146-L148))
 
 This means that tests can perform user actions with very little setup or "reading prior state", and perform all the important assertions after each action. For example:
@@ -66,13 +66,12 @@ This means that tests can perform user actions with very little setup or "readin
 ```solidity
 function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {   
     // ... test setup goes above here
-    uint[] memory expectedShares = _getExpectedShares(strategies, tokenBalances);
-
+    
     // This snapshots state before the deposit.
     staker.depositIntoEigenlayer(strategies, tokenBalances);
     // This checks the staker's shares from before `depositIntoEigenlayer`, and compares
     // them to their shares after `depositIntoEigenlayer`.
-    assert_Snap_AddedStakerShares(staker, strategies, expectedShares, "failed to award staker's shares");
+    assert_Snap_AddedStakerShares(staker, strategies, expectedShares, "failed to award staker shares");
 
     // This snapshots state before delegating.
     staker.delegateTo(operator);
