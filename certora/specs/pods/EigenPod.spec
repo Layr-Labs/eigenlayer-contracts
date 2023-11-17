@@ -97,6 +97,7 @@ invariant inactiveValidatorsHaveEmptyInfo(bytes32 pubkeyHash)
 rule validatorIndexSetOnlyOnce(bytes32 pubkeyHash) {
     requireInvariant inactiveValidatorsHaveEmptyInfo(pubkeyHash);
     uint64 validatorIndexBefore = get_validatorIndex(pubkeyHash);
+    // perform arbitrary function call
     method f;
     env e;
     calldataarg args;
