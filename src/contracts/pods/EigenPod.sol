@@ -507,7 +507,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint256 partialWithdrawalSumWei = abi.decode(output, (uint256));
         //record the timestamp until which all withdrawals have been proven
         timestampProvenUntil = _slotToTimestamp(endSlot);
-        emit PartialWithdrawalProven(nonce, partialWithdrawalSumWei);
+        emit PartialWithdrawalBatchProven(nonce, partialWithdrawalSumWei);
 
         //subtract out any partial withdrawals proven via merkle proofs in the interim
         uint256 amountToSendWei;

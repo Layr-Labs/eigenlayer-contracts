@@ -107,7 +107,7 @@ interface IEigenPod {
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
     /// @notice Emitted when partial withdrawal proof is fulfilled
-    event PartialWithdrawalProven(uint256 nonce, uint256 partialWithdrawalSum);
+    event PartialWithdrawalBatchProven(uint256 nonce, uint256 partialWithdrawalSum);
 
     /// @notice Emitted when a partial withdrawal proof is requested from succinct
     event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint256 requestNonce);
