@@ -96,16 +96,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public nonBeaconChainETHBalanceWei;
 
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint256 public sumOfPartialWithdrawalsClaimedWei;
+    uint64 public sumOfPartialWithdrawalsClaimedGwei;
+
+    /// @notice latest timestamp until which all partial withdrawals have been proven for the pod
+    uint64 public timestampProvenUntil;
 
     /// @notice This mapping tracks every partial withdrawal proof request made
     mapping(uint256 => PartialWithdrawalProofRequest) internal _partialWithdrawalProofRequests;
 
     /// @notice prover nonce for the function gateway contract
     uint256 public requestNonce;
-
-    /// @notice latest timestamp until which all partial withdrawals have been proven for the pod
-    uint64 public timestampProvenUntil;
 
     uint256 public lastRequestNonceProven;
 
@@ -512,6 +512,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //subtract out any partial withdrawals proven via merkle proofs in the interim
         uint256 amountToSendWei;
 
+        uint256 sumOfPartialWithdrawalsClaimedWei = uint256(sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI);
+
         if(sumOfPartialWithdrawalsClaimedWei > partialWithdrawalSumWei){
             sumOfPartialWithdrawalsClaimedWei -= partialWithdrawalSumWei;
         } else {
@@ -521,7 +523,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             * after this this request for a proof is made will be added to sumOfPartialWithdrawalsClaimedWei.  When the
             * zk proof is fulfilled, we will subtract sumOfPartialWithdrawalsClaimedWei from the amount proven by the oracle
             */
-            sumOfPartialWithdrawalsClaimedWei = 0;
+            sumOfPartialWithdrawalsClaimedGwei = 0;
         }
 
         //mark the partial withdrawal proof as being fulfilled
@@ -842,7 +844,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
-        sumOfPartialWithdrawalsClaimedWei += (partialWithdrawalAmountGwei * GWEI_TO_WEI);
+        sumOfPartialWithdrawalsClaimedGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return
