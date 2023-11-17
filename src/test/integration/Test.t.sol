@@ -15,9 +15,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
         // Creating new user objects / withdrawal params will use only these setups: 
         _configRand({
             _randomSeed: _random,
-            _stakerAssets: HOLDS_LST,
-            _operatorAssets: NO_ASSETS | HOLDS_LST,
-            _withdrawType: FULL_WITHDRAW_SINGLE /**| FULL_WITHDRAW_MULTI*/
+            _assetTypes: HOLDS_LST,
+            _signedTypes: NO_SIGNED_METHODS /**| SIGNED_METHODS*/
         });
 
         /// 0. Create an operator and a staker with:

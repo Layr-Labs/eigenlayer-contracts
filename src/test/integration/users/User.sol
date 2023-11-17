@@ -135,6 +135,16 @@ contract User is Test {
     }
 }
 
+contract User_SignedMethods is User {
+    
+    constructor(
+        DelegationManager _delegationManager,
+        StrategyManager _strategyManager,
+        EigenPodManager _eigenPodManager,
+        Global _global
+    ) User(_delegationManager, _strategyManager, _eigenPodManager, _global) { }
+}
+
 // contract User_MixedAssets is User {
 //     /// Since this is the base setup, we don't need anything else
 // }
