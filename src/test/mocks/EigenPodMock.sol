@@ -93,7 +93,7 @@ contract EigenPodMock is IEigenPod, Test {
         uint64 endTimestamp,
         address recipient,
         uint32 callbackGasLimit
-    ) external {}
+    ) external payable {}
 
     function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 startSlot, uint64 endSlot) external{}
     function cancelProofRequest(uint256 requestNonce) external{}

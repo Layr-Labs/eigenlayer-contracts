@@ -346,8 +346,9 @@ contract EigenPodManager is
         uint64 endSlot,
         address podAddress,
         bytes memory callbackData,
-        uint32 callbackGasLimit
-    ) external payable {
+        uint32 callbackGasLimit,
+        address podOwner
+    ) external payable onlyEigenPod(podOwner){
         succinctGateway.requestCall{value: msg.value}(
             FUNCTION_ID,
             abi.encodePacked(podAddress, startSlot, endSlot),

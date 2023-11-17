@@ -153,8 +153,9 @@ interface IEigenPodManager is IPausable {
         uint64 startSlot,
         uint64 endSlot,
         address podAddress,
-        bytes memory entryCallData,
-        uint32 callbackGasLimit
+        bytes memory callbackData,
+        uint32 callbackGasLimit,
+        address podOwner
     ) external payable;
 
     function confirmProofVerification(

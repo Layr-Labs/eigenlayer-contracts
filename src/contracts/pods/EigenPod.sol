@@ -456,7 +456,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 endTimestamp,
         address recipient,
         uint32 callbackGasLimit
-    ) external onlyEigenPodOwner hasEnabledRestaking {
+    ) external payable onlyEigenPodOwner hasEnabledRestaking {
         requestNonce++;
         require(endTimestamp > timestampProvenUntil, "EigenPod.submitPartialWithdrawalsBatchForVerification: endTimestamp must be greater than timestampProvenUntil");
         
@@ -486,7 +486,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             _timestampToSlot(endTimestamp),
             address(this),
             callBackData,
-            callbackGasLimit
+            callbackGasLimit,
+            podOwner
         );
     }
 
