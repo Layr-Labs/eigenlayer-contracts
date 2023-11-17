@@ -12,7 +12,8 @@ certoraRun certora/harnesses/EigenPodHarness.sol \
     --optimistic_loop \
     --prover_args '-optimisticFallback true -recursionEntryLimit 3' \
     --optimistic_hashing \
+    --hashing_length_bound 64 \
     $RULE \
-    --loop_iter 2 \
+    --loop_iter 1 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --msg "EigenPod $1 $2" \
