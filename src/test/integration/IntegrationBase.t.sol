@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/users/User.sol";
+import "src/test/integration/User.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
 

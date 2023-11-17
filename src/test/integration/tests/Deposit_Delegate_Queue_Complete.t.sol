@@ -2,21 +2,21 @@
 pragma solidity =0.8.12;
 
 import "src/test/integration/IntegrationBase.t.sol";
-import "src/test/integration/users/User.sol";
+import "src/test/integration/User.sol";
 
-contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
+contract Deposit_Delegate_Queue_Complete is IntegrationBase {
 
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. delegate to an operator
     /// 3. queue a withdrawal for all shares (withdrawer set to staker)
     /// 4. complete their queued withdrawal as tokens
-    function test_deposit_delegate_queue_completeAsTokens(uint16 _random) public {   
-        // Creating new user objects / withdrawal params will use only these setups: 
+    function testFuzz_deposit_delegate_queue_completeAsTokens(uint24 _random) public {   
+        // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST,
-            _signedTypes: NO_SIGNED_METHODS | SIGNED_METHODS
+            _userTypes: DEFAULT | SIGNED_METHODS
         });
 
         /// 0. Create an operator and a staker with:
@@ -100,12 +100,12 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
         }
     }
 
-    function test_deposit_delegate_queue_completeAsShares(uint16 _random) public {   
-        // Creating new user objects / withdrawal params will use only these setups: 
+    function testFuzz_deposit_delegate_queue_completeAsShares(uint24 _random) public {   
+        // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST,
-            _signedTypes: NO_SIGNED_METHODS | SIGNED_METHODS
+            _userTypes: DEFAULT | SIGNED_METHODS
         });
 
         /// 0. Create an operator and a staker with:

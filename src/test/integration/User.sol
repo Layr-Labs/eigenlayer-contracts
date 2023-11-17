@@ -12,6 +12,13 @@ import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 
+interface IUserDeployer {
+    function delegationManager() external view returns (DelegationManager);
+    function strategyManager() external view returns (StrategyManager);
+    function eigenPodManager() external view returns (EigenPodManager);
+    function timeMachine() external view returns (TimeMachine);
+}
+
 contract User is Test {
 
     Vm cheats = Vm(HEVM_ADDRESS);
@@ -20,22 +27,17 @@ contract User is Test {
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
 
-    IStrategy[] depositedStrategies;
-
     TimeMachine timeMachine;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    constructor(
-        DelegationManager _delegationManager,
-        StrategyManager _strategyManager,
-        EigenPodManager _eigenPodManager,
-        TimeMachine _timeMachine
-    ) {
-        delegationManager = _delegationManager;
-        strategyManager = _strategyManager;
-        eigenPodManager = _eigenPodManager;
-        timeMachine = _timeMachine;
+    constructor() {
+        IUserDeployer deployer = IUserDeployer(msg.sender);
+
+        delegationManager = deployer.delegationManager();
+        strategyManager = deployer.strategyManager();
+        eigenPodManager = deployer.eigenPodManager();
+        timeMachine = deployer.timeMachine();
     }
 
     modifier createSnapshot() virtual {
@@ -68,7 +70,6 @@ contract User is Test {
                 underlyingToken.approve(address(strategyManager), tokenBalance);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
             }
-            depositedStrategies.push(strat);
         }
     }
 
@@ -145,13 +146,7 @@ contract User_SignedMethods is User {
 
     mapping(bytes32 => bool) public signedHashes;
 
-    constructor(
-        DelegationManager _delegationManager,
-        StrategyManager _strategyManager,
-        EigenPodManager _eigenPodManager,
-        TimeMachine _timeMachine
-    ) User(_delegationManager, _strategyManager, _eigenPodManager, _timeMachine) {
-    }
+    constructor() User() {}
 
     function delegateTo(User operator) public createSnapshot override {
         // Create empty data
@@ -212,12 +207,11 @@ contract User_SignedMethods is User {
                 // Mark hash as used
                 signedHashes[digestHash] = false;
             }
-            depositedStrategies.push(strat);
         }
     }
  
     bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
-    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4) {
+    function isValidSignature(bytes32 hash, bytes memory) external view returns (bytes4) {
         if(signedHashes[hash]){
             return MAGIC_VALUE;
         } else {
@@ -225,37 +219,3 @@ contract User_SignedMethods is User {
         }
     } 
 }
-
-// contract User_MixedAssets is User {
-//     /// Since this is the base setup, we don't need anything else
-// }
-
-// contract User_LSTOnly is User {
-
-//     /// @dev For each strategy/token balance, call the relevant deposit method
-//     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
-
-//         for (uint i = 0; i < strategies.length; i++) {
-//             IStrategy strat = strategies[i];
-//             uint tokenBalance = tokenBalances[i];
-//             IERC20 underlyingToken = strat.underlyingToken();
-
-//             strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
-//         }
-//     }
-// }
-
-// contract User_NativeOnly is User {
-
-//     /// @dev For each strategy/token balance, call the relevant deposit method
-//     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
-
-//         for (uint i = 0; i < strategies.length; i++) {
-//             IStrategy strat = strategies[i];
-//             uint tokenBalance = tokenBalances[i];
-            
-//             // TODO handle this flow - need to deposit into EPM + prove credentials
-//             revert("TODO: unimplemented");
-//         }
-//     }
-// }
