@@ -16,7 +16,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST,
-            _signedTypes: NO_SIGNED_METHODS /**| SIGNED_METHODS*/
+            _signedTypes: NO_SIGNED_METHODS | SIGNED_METHODS
         });
 
         /// 0. Create an operator and a staker with:
