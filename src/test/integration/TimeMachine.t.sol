@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import "forge-std/Test.sol";
 
-contract Global is Test {
+contract TimeMachine is Test {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 

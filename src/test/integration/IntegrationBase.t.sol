@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
-import "src/test/integration/Global.t.sol";
+import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
@@ -31,9 +31,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
         (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
         
         operator.registerAsOperator();
-        // TODO - deposit into strats
+        operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-        assert_HasUnderlyingTokenBalances(operator, strategies, tokenBalances, "_newOperator: failed to award token balances");
+        assert_Snap_AddedStakerShares(operator, strategies, tokenBalances, "_newOperator: failed to add delegatable shares");
+        assert_Snap_AddedOperatorShares(operator, strategies, tokenBalances, "_newOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newOperator: operator should be registered");
 
         return (operator, strategies, tokenBalances);
@@ -73,18 +74,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal {
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint tokenBalance;
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokenBalance = address(user).balance;
-            } else {
-                tokenBalance = strat.underlyingToken().balanceOf(address(user));
-            }
-
-            assertEq(0, tokenBalance, err);
-        }
+        assert_HasUnderlyingTokenBalances(user, strategies, new uint[](strategies.length), err);
     }
 
     function assert_HasExpectedShares(
@@ -141,7 +131,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
     
     /**
-     * Snapshot assertions combine Global's snapshots with assertions
+     * Snapshot assertions combine Timemachine's snapshots with assertions
      * that allow easy comparisons between prev/cur values
      */
 
@@ -293,9 +283,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     modifier timewarp() {
-        uint curState = global.warpToLast();
+        uint curState = timeMachine.warpToLast();
         _;
-        global.warpToPresent(curState);
+        timeMachine.warpToPresent(curState);
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot

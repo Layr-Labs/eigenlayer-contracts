@@ -45,7 +45,7 @@ abstract contract IntegrationDeployer is Test {
     IStrategy[] _strategies;
 
     // TODO - rename to time machine??
-    Global global;
+    TimeMachine timeMachine;
 
     // Lists of strategies used in the system
     //
@@ -263,7 +263,7 @@ abstract contract IntegrationDeployer is Test {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         mixedStrats.push(BEACONCHAIN_ETH_STRAT);
 
-        global = new Global();
+        timeMachine = new TimeMachine();
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -286,6 +286,7 @@ abstract contract IntegrationDeployer is Test {
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategy;
+        cheats.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(strategies);
 
         // Add to lstStrats and mixedStrats
@@ -340,10 +341,10 @@ abstract contract IntegrationDeployer is Test {
         // Create User contract based on deposit type:
         User user;
         if (signedType == NO_SIGNED_METHODS) {
-            user = new User(delegationManager, strategyManager, eigenPodManager, global);
+            user = new User(delegationManager, strategyManager, eigenPodManager, timeMachine);
         } else if (signedType == SIGNED_METHODS) {
             // User will use `delegateToBySignature` and `depositIntoStrategyWithSignature`
-            user = User(new User_SignedMethods(delegationManager, strategyManager, eigenPodManager, global));
+            user = User(new User_SignedMethods(delegationManager, strategyManager, eigenPodManager, timeMachine));
         } else {
             revert("_newUser: unimplemented signedType");
         }

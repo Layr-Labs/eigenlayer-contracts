@@ -10,7 +10,7 @@ import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 
-import "src/test/integration/Global.t.sol";
+import "src/test/integration/TimeMachine.t.sol";
 
 contract User is Test {
 
@@ -22,7 +22,7 @@ contract User is Test {
 
     IStrategy[] depositedStrategies;
 
-    Global global;
+    TimeMachine timeMachine;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -30,16 +30,16 @@ contract User is Test {
         DelegationManager _delegationManager,
         StrategyManager _strategyManager,
         EigenPodManager _eigenPodManager,
-        Global _global
+        TimeMachine _timeMachine
     ) {
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
-        global = _global;
+        timeMachine = _timeMachine;
     }
 
     modifier createSnapshot() virtual {
-        global.createSnapshot();
+        timeMachine.createSnapshot();
         _;
     }
 
@@ -149,8 +149,8 @@ contract User_SignedMethods is User {
         DelegationManager _delegationManager,
         StrategyManager _strategyManager,
         EigenPodManager _eigenPodManager,
-        Global _global
-    ) User(_delegationManager, _strategyManager, _eigenPodManager, _global) {
+        TimeMachine _timeMachine
+    ) User(_delegationManager, _strategyManager, _eigenPodManager, _timeMachine) {
     }
 
     function delegateTo(User operator) public createSnapshot override {
