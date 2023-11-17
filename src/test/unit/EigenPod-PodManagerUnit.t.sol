@@ -14,7 +14,7 @@ import "src/test/mocks/EigenPodMock.sol";
 import "src/test/mocks/Dummy.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/mocks/DelayedWithdrawalRouterMock.sol";
-import "src/test/mocks/ERC20Mock.sol";
+import "src/test/mocks/BeaconChainOracleMock.sol";
 import "src/test/events/IEigenPodEvents.sol";
 import "src/test/events/IEigenPodManagerEvents.sol";
 
@@ -30,6 +30,7 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
     // Mocks
     IETHPOSDeposit public ethPOSMock;
     IDelayedWithdrawalRouter public delayedWithdrawalRouterMock;
+    BeaconChainOracleMock beaconChainOracle;
     
     // Constants
     uint64 public constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
@@ -50,6 +51,7 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
         // Deploy Mocks
         ethPOSMock = new ETHPOSDepositMock();
         delayedWithdrawalRouterMock = new DelayedWithdrawalRouterMock();
+        beaconChainOracle = new BeaconChainOracleMock();
 
         // Deploy proxy contract for EPM
         EmptyContract emptyContract = new EmptyContract();
@@ -83,7 +85,7 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 type(uint256).max /*maxPods*/,
-                IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+                beaconChainOracle,
                 initialOwner,
                 pauserRegistry,
                 0 /*initialPausedStatus*/
@@ -285,15 +287,52 @@ contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests
     }
 }
 
-contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_UnitTests {
-    /**
+contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_UnitTests, ProofParsing {
+     /**
      * @notice Tests function calls from EigenPod to EigenPodManager
-     * 1. Do a full withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
-     * 2. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
-     * 3. Verify balance updates and call `recordBeaconChainEThBalanceUpdate` -> assert shares are updated
-     * 4. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
-     * 3. Reentrancy check (first function in below commented out tests)
+     * 1. Verify withdrawal credentials and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 2. Do a full withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 3. Do a partial withdrawal and call `recordBeaconChainETHBalanceUpdate` -> assert shares are updated
+     * 4. Verify balance updates and call `recordBeaconChainEThBalanceUpdate` -> assert shares are updated
+     * 5. Reentrancy check (first function in below commented out tests)
      */
+
+    using BeaconChainProofs for *;
+
+    // Params to verify withdrawal credentials
+    BeaconChainProofs.StateRootProof stateRootProofStruct; 
+    uint40[] validatorIndices;
+    bytes[] validatorFieldsProofs;
+    bytes32[][] validatorFields; // Only used to verify withdrawal credentials
+
+    function test_verifyWithdrawalCredentials_andRecordBeaconChainETHBalanceUpdate() public {    
+        // Arrange: Set up conditions to verify withdrawal credentials
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _setWithdrawalCredentialParams();
+
+        // Set oracle block root and warp time
+        _setOracleBlockRoot();
+        cheats.warp(GOERLI_GENESIS_TIME + 1 days);
+        uint64 oracleTimestamp = uint64(block.timestamp);
+
+        // Save state for checks 
+        int256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+
+        // Act: Verify withdrawal credentials and record the balance update
+        cheats.prank(podOwner);
+        eigenPod.verifyWithdrawalCredentials(
+            oracleTimestamp,
+            stateRootProofStruct,
+            validatorIndices,
+            validatorFieldsProofs,
+            validatorFields
+        );
+
+        // Assert: Check that the shares are updated correctly
+        int256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
+        assertTrue(updatedShares != initialShares, "Shares should be updated after verifying withdrawal credentials");
+        assertEq(updatedShares, 32e18, "Shares should be 32ETH in wei after verifying withdrawal credentials");
+    }
 
     // function xtest_fullWithdrawal_andRecordBeaconChainETHBalanceUpdate() public {
     //     // Arrange: Set up the conditions for a full withdrawal
@@ -340,21 +379,30 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
     //     assert(updatedShares != initialShares, "Shares should be updated after verifying balance updates");
     // }
 
-    // function xtest_verifyWithdrawalCredentials_andRecordBeaconChainETHBalanceUpdate() public {
-    //     // Arrange: Set up conditions to verify withdrawal credentials
-    //     setupVerifyWithdrawalCredentialsConditions();
+    function _setWithdrawalCredentialParams() internal {
+        // Set state proof struct
+        stateRootProofStruct = _getStateRootProof();
 
-    //     uint256 initialShares = eigenPodManager.podOwnerShares(podOwner);
+        // Set validator indices
+        uint40 validatorIndex = uint40(getValidatorIndex());
+        validatorIndices.push(validatorIndex);
 
-    //     // Act: Verify withdrawal credentials and record the balance update
-    //     verifyWithdrawalCredentials(/* parameters */);
-    //     eigenPodManager.recordBeaconChainETHBalanceUpdate(/* parameters */);
+        // Set validatorFieldsArray
+        validatorFields.push(getValidatorFields());
 
-    //     // Assert: Check that the shares are updated correctly
-    //     uint256 updatedShares = eigenPodManager.podOwnerShares(podOwner);
-    //     assert(updatedShares != initialShares, "Shares should be updated after verifying withdrawal credentials");
-    // }
+        // Set validator fields proof
+        validatorFieldsProofs.push(abi.encodePacked(getWithdrawalCredentialProof())); // Validator fields are proven here
+    }
 
+    function _getStateRootProof() internal returns (BeaconChainProofs.StateRootProof memory) {
+        return BeaconChainProofs.StateRootProof(getBeaconStateRoot(), abi.encodePacked(getStateRootProof()));
+    }
+
+    function _setOracleBlockRoot() internal {
+        bytes32 latestBlockRoot = getLatestBlockRoot();
+        //set beaconStateRoot
+        beaconChainOracle.setOracleBlockRootAtTimestamp(latestBlockRoot);
+    }
 }
 
 ///@notice Placeholder for future unit tests that combine interactions between the EigenPod & EigenPodManager
