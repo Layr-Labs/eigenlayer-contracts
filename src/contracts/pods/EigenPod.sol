@@ -756,6 +756,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
 
+    ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec
     function _calculateValidatorPubkeyHash(bytes memory validatorPubkey) internal view returns(bytes32){
         require(validatorPubkey.length == 48, "EigenPod._calculateValidatorPubkeyHash must be a 48-byte BLS public key");
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
@@ -791,6 +792,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
+    ///@notice Returns the validatorInfo for a given validatorPubkey
     function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[_calculateValidatorPubkeyHash(validatorPubkey)];
     }
