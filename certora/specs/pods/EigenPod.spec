@@ -85,7 +85,6 @@ methods {
     function get_mostRecentBalanceUpdateTimestamp(bytes32 pubkeyHash) external returns (uint64) envfree;
     function get_podOwnerShares() external returns (int256) envfree;
     function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
-    function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
     function get_ETH_Balance() external returns (uint256) envfree;
 }
 
@@ -147,7 +146,6 @@ rule validatorIndexSetOnlyOnce(bytes32 pubkeyHash) {
 invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
         (get_restakedBalanceGwei(pubkeyHash) == 0);
-
 
 // // TODO: see if this draft rule can be salvaged
 // // draft rule to capture the following behavior (or at least most of it):
@@ -244,3 +242,50 @@ invariant consistentAccounting() {
         to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
 }
 */
+// // based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
+// ghost mathint sumOfValidatorRestakedbalancesWei {
+//     init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
+// }
+
+// // hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] IEigenPod.ValidatorInfo newValue (IEigenPod.ValidatorInfo oldValue) STORAGE {
+// //     sumOfValidatorRestakedbalancesWei = (
+// //         sumOfValidatorRestakedbalancesWei + 
+// //         to_mathint(newValue.restakedBalanceGwei) * 1000000000 -
+// //         to_mathint(oldValue.restakedBalanceGwei) * 1000000000
+// //     );
+// // }
+// // struct ValidatorInfo {
+// //     // index of the validator in the beacon chain
+// //     uint64 validatorIndex;
+// //     // amount of beacon chain ETH restaked on EigenLayer in gwei
+// //     uint64 restakedBalanceGwei;
+// //     //timestamp of the validator's most recent balance update
+// //     uint64 mostRecentBalanceUpdateTimestamp;
+// //     // status of the validator
+// //     VALIDATOR_STATUS status;
+// // }
+
+// // NOTE: this fails with the error:
+// // CRITICAL: Found errors
+// // CRITICAL: [main] ERROR ALWAYS - Error in spec file (EigenPod.spec:153:1): Slot pattern EigenPodHarness._validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] is not an integral type: IEigenPod.ValidatorInfo
+// // CRITICAL: Encountered an error running Certora Prover:
+// // CVL specification syntax and type check failed
+// // it would seem that some workaround may be necessary to make this struct storage work with a 'hook'
+// hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] uint256 newValue (uint256 oldValue) STORAGE {
+//     sumOfValidatorRestakedbalancesWei = (
+//         sumOfValidatorRestakedbalancesWei + 
+//         // extract the restakedBalanceGwei and multiply by 1e9 to get wei
+//         to_mathint((newValue << 184) >> 192) * 1000000000 -
+//         to_mathint((newValue << 184) >> 192) * 1000000000
+//     );
+// }
+
+// rule baseInvariant() {
+//     // perform arbitrary function call
+//     method f;
+//     env e;
+//     calldataarg args;
+//     f(e,args);
+//     assert(sumOfValidatorRestakedbalancesWei == get_podOwnerShares() - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
+//         "base invariant violated");
+// }
