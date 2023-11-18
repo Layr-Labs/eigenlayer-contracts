@@ -1391,6 +1391,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         IEigenPod.ValidatorInfo memory info2 = pod.validatorPubkeyHashToInfo(getValidatorPubkeyHash());
 
         require(info1.validatorIndex == info2.validatorIndex, "validatorIndex does not match");
+        require(info1.restakedBalanceGwei > 0, "restakedBalanceGwei is 0");
         require(info1.restakedBalanceGwei == info2.restakedBalanceGwei, "restakedBalanceGwei does not match");
         require(info1.mostRecentBalanceUpdateTimestamp == info2.mostRecentBalanceUpdateTimestamp, "mostRecentBalanceUpdateTimestamp does not match");
         require(info1.status == info2.status, "status does not match");
