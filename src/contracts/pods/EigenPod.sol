@@ -756,6 +756,16 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
 
+    function _validatorPubkeyHash(bytes memory validatorPubkey) internal view returns(bytes32){
+         bytes memory paddedPubkey = new bytes(data.length + 16);
+
+        // Copy original data to the new array
+        for (uint i = 0; i < validatorPubkey.length; i++) {
+            paddedPubkey[i] = validatorPubkey[i];
+        }
+        return sha256(paddedData);
+    }
+
     /**
      * Calculates delta between two share amounts and returns as an int256
      */
@@ -784,6 +794,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
+    }
+
+    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory) {
+        require(validatorPubkey.length == 48, "EigenPod.validatorPubkeyHashToInfo must be a 48-byte BLS public key");
+
+        return _validatorPubkeyHash[_validatorPubkeyHash(validatorPubkey)]
+    }
+
+    function validatorStatus(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory) {
+        require(validatorPubkey.length == 48, "EigenPod.validatorPubkeyHashToInfo must be a 48-byte BLS public key");
+        return _validatorPubkeyHashToInfo[_validatorPubkeyHash(validatorPubkey)].status;
     }
 
 
