@@ -25,4 +25,12 @@ contract EigenPodHarness is EigenPod {
     function get_mostRecentBalanceUpdateTimestamp(bytes32 pubkeyHash) public view returns (uint64) {
         return _validatorPubkeyHashToInfo[pubkeyHash].mostRecentBalanceUpdateTimestamp;
     }
+
+    function get_podOwnerShares() public view returns (int256) {
+        return eigenPodManager.podOwnerShares(podOwner);
+    }
+
+    function get_withdrawableRestakedExecutionLayerGwei() public view returns (uint256) {
+        return withdrawableRestakedExecutionLayerGwei;
+    }
 }
