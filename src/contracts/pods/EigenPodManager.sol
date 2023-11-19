@@ -234,15 +234,6 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
-
-    /**
-    * @notice Updates the succinct gateway contract that is used to request partial withdrawal proofs
-    * @param newSuccinctGateway is the new gateway contract being pointed to
-    */
-    function updateSuccinctGateway(ISuccinctGateway newSuccinctGateway) external onlyOwner {
-        _setSuccinctGateway(newSuccinctGateway);
-    }
-
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
@@ -275,12 +266,6 @@ contract EigenPodManager is
     function _setMaxPods(uint256 _maxPods) internal {
         emit MaxPodsUpdated(maxPods, _maxPods);
         maxPods = _maxPods;
-    }
-
-    /// @notice Internal setter for `functionGateway` that also emits an event
-    function _setSuccinctGateway(ISuccinctGateway newSuccinctGateway) internal {
-        succinctGateway = newSuccinctGateway;
-        emit SuccinctGatewayUpdated(address(newSuccinctGateway));
     }
 
     /**
@@ -357,6 +342,22 @@ contract EigenPodManager is
             callbackGasLimit
         );
     }
+
+    function requestPartialWithdrawalProof(
+        address podOwner,
+        uint8 proverID,
+        bytes calldata input
+    ) external payable onlyEigenPod(podOwner){
+        ProofServiceDetails memory proverDetails = proofServiceDirectory[proverID];
+        require(msg.value >= proverDetails.fee, "EigenPodManager.requestPartialWithdrawalProof: incorrect fee amount");
+        bytes memory payload = abi.encodeWithSelector(proverDetails.requestSelector, input);
+
+        (bool success, bytes memory returnData) = address(proverDetails.proverAddress).call{value: msg.value}(payload);
+        require(success, "EigenPodManager.requestPartialWithdrawalProof: call to selected prover failed");
+
+        emit ProofRequested(podOwner, proverID, success);
+    }
+
     // confirms that a proof is verified via the succinct gateway
     function confirmProofVerification(
         bytes32 FUNCTION_ID,

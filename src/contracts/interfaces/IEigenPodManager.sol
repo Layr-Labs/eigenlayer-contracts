@@ -42,6 +42,15 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Emitted when succinct gateway contract is updated
     event SuccinctGatewayUpdated(address indexed newSuccinctGateway);
+
+    event ProofRequested(address indexed podOwner, uint8 indexed proverID,  bool success);
+
+
+    struct ProofServiceDetails{
+        address proverAddress;
+        bytes4 requestSelector;
+        uint256 fee;
+    }
     
     /**
      * @notice Creates an EigenPod for the sender.
