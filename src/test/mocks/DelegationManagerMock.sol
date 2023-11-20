@@ -105,11 +105,15 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external pure returns (bytes32 approverDigestHash) {}
 
+    function calculateOperatorRegistrationDigestHash(address operator, address avs, bytes32 salt, uint256 expiry) external view returns (bytes32) {}
+
     function DOMAIN_TYPEHASH() external view returns (bytes32) {}
 
     function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32) {}
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
+
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
 
     function domainSeparator() external view returns (bytes32) {}
 
@@ -117,7 +121,17 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
 
-   function queueWithdrawals(
+    function registerOperatorWithAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) external {}
+
+    function deregisterOperatorFromAVS(address operator) external {}
+
+    function updateAVSMetadataURI(string calldata metadataURI) external {}
+
+    function registeredWithAVS(address operator, address avs) external view returns (bool) {}
+
+    function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
+
+    function queueWithdrawals(
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) external returns (bytes32[] memory) {}
 

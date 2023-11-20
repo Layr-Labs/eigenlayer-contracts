@@ -157,6 +157,12 @@ interface IDelegationManager is ISignatureUtils {
     event OperatorRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorRegistrationStatus status);
 
     /**
+     * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /**
      * @notice Registers the caller as an operator in EigenLayer.
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
@@ -185,6 +191,7 @@ interface IDelegationManager is ISignatureUtils {
      */
     function updateOperatorMetadataURI(string calldata metadataURI) external;
 
+    
     /**
      * @notice Caller delegates their stake to an operator.
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
@@ -319,6 +326,29 @@ interface IDelegationManager is ISignatureUtils {
         uint256 shares
     ) external;
 
+    /**
+     * @notice Called by AVSs to register an operator with the AVS.
+     * @param operator The address of the operator to register.
+     * @param signatureWithSaltAndExpiry The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperatorWithAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) external;
+
+    /**
+     * @notice Called by AVSs to deregister an operator with the AVS.
+     * @param operator The address of the operator to deregister.
+     */
+    function deregisterOperatorFromAVS(address operator) external;
+
+    /**
+     * @notice Called by an AVS to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an AVS
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external;
+
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
     function stakeRegistry() external view returns (IStakeRegistryStub);
 
@@ -379,6 +409,17 @@ interface IDelegationManager is ISignatureUtils {
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
 
     /**
+     * @notice Mapping: AVS => operator => whether or not the operator is currently registered with the AVS
+     */
+    function registeredWithAVS(address operator, address avs) external view returns (bool);
+
+    /**
+     * @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
+     * @dev Salts is used in the `registerOperatorWithAVS` function.
+     */
+    function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool);
+
+    /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
      * @param staker The signing staker
      * @param operator The operator who is being delegated to
@@ -420,6 +461,20 @@ interface IDelegationManager is ISignatureUtils {
         uint256 expiry
     ) external view returns (bytes32);
 
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
+     * @param operator The account registering as an operator
+     * @param avs The AVS the operator is registering with
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid
+     */
+    function calculateOperatorRegistrationDigestHash(
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) external view returns (bytes32);
+
     /// @notice The EIP-712 typehash for the contract's domain
     function DOMAIN_TYPEHASH() external view returns (bytes32);
 
@@ -428,6 +483,9 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
+
+    /// @notice The EIP-712 typehash for the Registration struct used by the contract
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);
 
     /**
      * @notice Getter function for the current EIP-712 domain separator for this contract.
