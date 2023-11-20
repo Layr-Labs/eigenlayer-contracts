@@ -104,7 +104,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
+            _assetTypes: HOLDS_LST | HOLDS_ETH,
             _userTypes: DEFAULT | SIGNED_METHODS
         });
 

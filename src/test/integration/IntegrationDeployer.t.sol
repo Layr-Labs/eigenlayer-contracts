@@ -20,7 +20,8 @@ import "src/contracts/permissions/PauserRegistry.sol";
 
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/mocks/BeaconChainOracleMock.sol";
+import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
+import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/User.t.sol";
 
@@ -54,6 +55,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     // Mock Contracts to deploy
     ETHPOSDepositMock ethPOSDeposit;
     BeaconChainOracleMock beaconChainOracle;
+    BeaconChainMock public beaconChain;
 
     // ProxyAdmin
     ProxyAdmin eigenLayerProxyAdmin;
@@ -253,7 +255,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         mixedStrats.push(BEACONCHAIN_ETH_STRAT);
 
+        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
         timeMachine = new TimeMachine();
+        timeMachine.setProofGenStartTime(2 hours);
+
+        // Create mock beacon chain / proof gen interface
+        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle);
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -332,7 +339,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             // User will use `delegateToBySignature` and `depositIntoStrategyWithSignature`
             user = User(new User_SignedMethods());
         } else {
-            revert("_newUser: unimplemented userType");
+            revert("_randUser: unimplemented userType");
         }
 
         // For the specific asset selection we made, get a random assortment of
@@ -378,14 +385,20 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 tokenBalances[i] = balance;
                 strategies[i] = strat;
             }
-
-            return (strategies, tokenBalances);
         } else if (assetType == HOLDS_ETH) {
-            revert("_getRandAssets: HOLDS_ETH unimplemented");
+            strategies = new IStrategy[](1);
+            tokenBalances = new uint[](1);
+
+            // Award the user 32 ETH
+            uint amount = 32 ether;
+            cheats.deal(address(user), amount);
+
+            strategies[0] = BEACONCHAIN_ETH_STRAT;
+            tokenBalances[0] = amount;
         } else if (assetType == HOLDS_MIX) {
-            revert("_getRandAssets: HOLDS_MIX unimplemented");
+            revert("_dealRandAssets: HOLDS_MIX unimplemented");
         } else {
-            revert("_getRandAssets: assetType unimplemented");
+            revert("_dealRandAssets: assetType unimplemented");
         }
 
         return (strategies, tokenBalances);
@@ -467,10 +480,16 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            IERC20 underlyingToken = strat.underlyingToken();
 
-            emit log_named_string("token name: ", IERC20Metadata(address(underlyingToken)).name());
-            emit log_named_uint("token balance: ", tokenBalances[i]);
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                emit log_named_string("token name: ", "Native ETH");
+                emit log_named_uint("token balance: ", tokenBalances[i]);    
+            } else {
+                IERC20 underlyingToken = strat.underlyingToken();
+
+                emit log_named_string("token name: ", IERC20Metadata(address(underlyingToken)).name());
+                emit log_named_uint("token balance: ", tokenBalances[i]);
+            }
         }
     }
 }
