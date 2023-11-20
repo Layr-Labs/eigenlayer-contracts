@@ -475,6 +475,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.REGISTERED);
     }
 
+    /**
+     * @notice External function called by AVSs to deregister an operator with the AVS.
+     * @param operator The address of the operator to deregister.
+     */
+    function deregisterOperatorFromAVS(address operator) external {
+        require(registeredWithAVS[msg.sender][operator], "DelegationManager.deregisterOperatorFromAVS: operator not registered");
+
+        // deregister operator
+        registeredWithAVS[msg.sender][operator] = false;
+
+        emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.DEREGISTERED);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
