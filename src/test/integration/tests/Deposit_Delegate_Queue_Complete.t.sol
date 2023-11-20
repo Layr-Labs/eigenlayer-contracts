@@ -4,7 +4,7 @@ pragma solidity =0.8.12;
 import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/User.t.sol";
 
-contract Deposit_Delegate_Queue_Complete is IntegrationBase {
+contract Integration_Deposit_Delegate_Queue_Complete is IntegrationBase {
 
     /*******************************************************************************
                                 FULL WITHDRAWALS
@@ -92,17 +92,20 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
             /// 4. Complete withdrawal(s):
             // The staker will complete each withdrawal as tokens
             // 
-            // ... check that the staker received their tokens
+            // ... check that the withdrawal is not pending, that the staker received the expected tokens, and that the total shares of each 
+            //     strategy withdrawn from decreased
             for (uint i = 0; i < withdrawals.length; i++) {
                 IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
 
                 uint[] memory expectedTokens = _calculateExpectedTokens(withdrawal.strategies, withdrawal.shares);
                 IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawal, true);
 
-                assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+                assert_Snap_IncreasedTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
                 assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
                 assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
                 assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
+                assert_Snap_DecreasedStrategyShares(withdrawal.strategies, withdrawal.shares, "strategies should have total shares decremented");
+                assert_NoWithdrawalsPending(withdrawalRoots, "staker's withdrawals should no longer be pending");
             }
         }
 
@@ -308,6 +311,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
             /// 4. Complete withdrawal(s):
             // The staker will complete each withdrawal as tokens
             // 
+<<<<<<< HEAD
             // ... check that the staker received their tokens and that the staker/operator
             // have unchanged share amounts
             for (uint i = 0; i < withdrawals.length; i++) {
@@ -316,7 +320,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
                 uint[] memory expectedTokens = _calculateExpectedTokens(withdrawal.strategies, withdrawal.shares);
                 IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawal, true);
 
-                assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+                assert_Snap_IncreasedTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
                 assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
                 assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
                 assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
@@ -418,15 +422,25 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
             // 
             // ... check that the staker received their tokens and that the staker/operator
             // have unchanged share amounts
+=======
+            // ... check that the withdrawal is not pending, that the withdrawer received the expected shares, and that the total shares of each 
+            //     strategy withdrawn remains unchanged
+>>>>>>> 6ed48d00 (test: add scenario 2 tests)
             for (uint i = 0; i < withdrawals.length; i++) {
                 IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
 
                 staker.completeQueuedWithdrawal(withdrawal, false);
 
+<<<<<<< HEAD
                 assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
                 assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
                 assert_Snap_Added_StakerShares(staker, withdrawal.strategies, withdrawal.shares, "staker should have received shares");
                 assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.shares, "operator should have received shares");
+=======
+                assert_NoWithdrawalsPending(withdrawalRoots, "staker's withdrawals should no longer be pending");
+                assert_Snap_AddedStakerShares(staker, withdrawal.strategies, withdrawal.shares, "staker should have received expected tokens");
+                assert_Snap_UnchangedStrategyShares(withdrawal.strategies, "strategies should have total shares unchanged");
+>>>>>>> 6ed48d00 (test: add scenario 2 tests)
             }
         }
 
