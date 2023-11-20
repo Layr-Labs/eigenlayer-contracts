@@ -104,6 +104,12 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
+    /// @notice Enum representing the status of an operator's registration with the AVS
+    enum OperatorRegistrationStatus {
+        DEREGISTERED,
+        REGISTERED
+    }
+
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -146,6 +152,9 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when an operator's registration status for an AVS is updated
+    event OperatorRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorRegistrationStatus status);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.

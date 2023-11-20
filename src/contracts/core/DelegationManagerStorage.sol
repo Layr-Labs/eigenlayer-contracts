@@ -25,6 +25,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
         keccak256("DelegationApproval(address staker,address operator,bytes32 salt,uint256 expiry)");
 
+    /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
+    bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
+        keccak256("OperatorAVSRegistration(address operator,address delegationApprover,uint256 withdrawalDelayBlocks)");
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -92,6 +96,14 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
     IStakeRegistryStub public stakeRegistry;
 
+    /// @notice Mapping: AVS => operator => whether or not the operator is currently registered with the AVS
+    mapping(address => mapping(address => bool)) public registeredWithAVS;
+
+    /// @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
+    /// @dev Salt is used in the `registerOperatorWithAVS` function.
+    mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
+
+    /// @notice Mapping: operator => 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
@@ -103,5 +115,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 }
