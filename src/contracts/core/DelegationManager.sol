@@ -442,6 +442,39 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    /**
+     * @notice External function called by AVSs to register an operator with the AVS.
+     * @param operator The address of the operator to register.
+     * @param signatureWithSaltAndExpiry The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperatorWithAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry) external {
+        require(signatureWithSaltAndExpiry.expiry > block.timestamp, "DelegationManager.registerOperatorWithAVS: signature expired");
+        require(operatorSaltIsSpent[operator][signatureWithSaltAndExpiry.salt] == false, "DelegationManager.registerOperatorWithAVS: salt already used");
+        require(!registeredWithAVS[msg.sender][operator], "DelegationManager.registerOperatorWithAVS: operator already registered");
+
+        // Calculate the digest hash
+        bytes32 operatorRegistrationDigestHash = calculateOperatorRegistrationDigestHash({
+            operator: operator, 
+            avs: msg.sender, 
+            salt: signatureWithSaltAndExpiry.salt, 
+            expiry: signatureWithSaltAndExpiry.expiry
+        });
+
+        // Check that the signature is valid
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            operator,
+            operatorRegistrationDigestHash,
+            signatureWithSaltAndExpiry.signature
+        );
+
+        // mark the salt as spent
+        operatorSaltIsSpent[operator][signatureWithSaltAndExpiry.salt] = true;
+        // register operator
+        registeredWithAVS[msg.sender][operator] = true;
+
+        emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.REGISTERED);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -937,6 +970,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
+    }
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
+     * @param operator The account registering as an operator
+     * @param avs The AVS the operator is registering with
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid
+     */
+    function calculateOperatorRegistrationDigestHash(
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the struct hash
+        bytes32 operatorStructHash = keccak256(
+            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
+        );
+        // calculate the digest hash
+        bytes32 operatorDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), operatorStructHash));
+        return operatorDigestHash;
     }
 
     /**
