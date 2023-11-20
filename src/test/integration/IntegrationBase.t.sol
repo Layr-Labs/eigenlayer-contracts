@@ -123,18 +123,26 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
     function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
-            assertTrue(delegationManager.pendingWithdrawals(withdrawalRoots[i]), err);
+            assert_WithdrawalPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
     function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
-            assertFalse(delegationManager.pendingWithdrawals(withdrawalRoots[i]), err);
+            assert_WithdrawalNotPending(withdrawalRoots[i], err);
         }
     }
 
     /// @dev Asserts that the hash of each withdrawal corresponds to the provided withdrawal root
+    function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal {
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), err);
+    }
+
+    function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal {
+        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), err);
+    }
+
     function assert_ValidWithdrawalHashes(
         IDelegationManager.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
@@ -143,8 +151,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
         bytes32[] memory expectedRoots = _getWithdrawalHashes(withdrawals);
 
         for (uint i = 0; i < withdrawals.length; i++) {
-            assertEq(withdrawalRoots[i], expectedRoots[i], err);
+            assert_ValidWithdrawalHash(withdrawals[i], withdrawalRoots[i], err);
         }
+    }
+
+    function assert_ValidWithdrawalHash(
+        IDelegationManager.Withdrawal memory withdrawal,
+        bytes32 withdrawalRoot,
+        string memory err
+    ) internal {
+        assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
     
     /*******************************************************************************
@@ -266,6 +282,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// Snapshot assertions for underlying token balances:
 
+    function assert_Snap_IncrementQueuedWithdrawals(
+        User staker,
+        string memory err
+    ) internal {
+        uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
+        // Use timewarp to get previous cumulative withdrawals
+        uint prevQueuedWithdrawals = _getPrevCumulativeWithdrawals(staker);
+
+        assertEq(prevQueuedWithdrawals + 1, curQueuedWithdrawals, err);
+    }
+
+
     /// @dev Check that the staker has `addedTokens` additional underlying tokens 
     // since the last snapshot
     function assert_Snap_Added_TokenBalances(
@@ -374,6 +402,44 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (withdrawStrats, withdrawShares);
     }
+    function assert_Snap_Removed_StrategyShares(
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStrategyShares(strategies);
+
+        // Use timewarp to get previous strategy shares
+        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            uint prevShare = prevShares[i];
+            uint curShare = curShares[i];
+
+            assertEq(prevShare - removedShares[i], curShare, err);
+        }
+    }
+
+    function assert_Snap_Unchanged_StrategyShares(
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStrategyShares(strategies);
+
+        // Use timewarp to get previous strategy shares
+        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            uint prevShare = prevShares[i];
+            uint curShare = curShares[i];
+
+            assertEq(prevShare, curShare, err);
+        }
+    }
+
+    /**
+     * Helpful getters:
+     */
 
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
@@ -523,5 +589,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return balances;
+    }
+
+    function _getPrevStrategyShares(IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getStrategyShares(strategies);
+    }
+
+    function _getStrategyShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory shares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            shares[i] = strategies[i].totalShares();
+        }
+
+        return shares;
     }
 }
