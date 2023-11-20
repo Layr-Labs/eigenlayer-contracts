@@ -443,7 +443,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice External function called by AVSs to register an operator with the AVS.
+     * @notice Called by AVSs to register an operator with the AVS.
      * @param operator The address of the operator to register.
      * @param signatureWithSaltAndExpiry The signature, salt, and expiry of the operator's signature.
      */
@@ -476,7 +476,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice External function called by AVSs to deregister an operator with the AVS.
+     * @notice Called by AVSs to deregister an operator with the AVS.
      * @param operator The address of the operator to deregister.
      */
     function deregisterOperatorFromAVS(address operator) external {
@@ -486,6 +486,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         registeredWithAVS[msg.sender][operator] = false;
 
         emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.DEREGISTERED);
+    }
+
+    /**
+     * @notice Called by an AVS to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an AVS
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external {
+        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /*******************************************************************************
