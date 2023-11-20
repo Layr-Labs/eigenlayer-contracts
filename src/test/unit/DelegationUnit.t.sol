@@ -148,14 +148,12 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     // @notice Assumes operator does not have a delegation approver & staker != approver
     function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
-        cheats.assume(staker != operator);
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.prank(staker);
         delegationManager.delegateTo(operator, approverSignatureAndExpiry, emptySalt);
     }
 
     function _delegateToOperatorWhoRequiresSig(address staker, address operator, bytes32 salt) internal {
-        cheats.assume(staker != operator);
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
@@ -179,7 +177,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry,
         bytes32 salt
     ) internal {
-        cheats.assume(staker != operator);
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
         cheats.prank(caller);
         delegationManager.delegateToBySignature(
@@ -198,7 +195,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry,
         bytes32 salt
     ) internal {
-        cheats.assume(staker != operator);
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
             delegationSignerPrivateKey,
@@ -1933,9 +1929,6 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         cheats.assume(expiry >= block.timestamp);
         cheats.assume(shares > 0);
 
-        // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(defaultStaker != defaultOperator);
-
         _registerOperatorWithDelegationApprover(defaultOperator);
 
         // verify that the salt hasn't been used before
@@ -2519,6 +2512,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         bytes32 salt,
         bool callFromOperatorOrApprover
     ) public filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != defaultOperator);
         address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
