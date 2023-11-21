@@ -76,6 +76,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
+    function withdrawalDelayBlocks() external pure returns (uint256) {
+        return 0;
+    }
+
     function isDelegated(address staker) external view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
