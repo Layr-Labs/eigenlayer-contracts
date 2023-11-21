@@ -36,26 +36,35 @@
 │   └── given caller is an operator
 │       └── it should emit an event
 ├── when delegateTo is called
+│   └── it calls _delegate() (internal function) with msg.sender as the staker
+├── when delegateToBySignature is called
+│   ├── given block timestamp is > staker signature expiry
+│   │   └── it should revert
+│   ├── given staker signature verification fails
+│   │   └── it should revert
+│   └── given staker signature verification succeeds
+│       └── it should call _delegate() (internal function)
+├── when _delegate() is called
 │   ├── given that new delegations are paused
 │   │   └── it should revert
-│   ├── given caller is already delegated to an operator
+│   ├── given staker is already delegated to an operator
 │   │   └── it should revert
 │   ├── given passed in operator param isn't a registered operator
 │   │   └── it should revert
 │   ├── given operator's delegationApprover is set to zero address OR given caller is the delegationApprover
 │   │   └── it should check delegatable shares and update accordingly (**below logic tree reused elsewhere**)
-│   │       ├── given caller doesn't have delegatable shares
-│   │       │   └── it should set caller delegated to operator, call the StakeRegistry, and emit events
-│   │       └── given caller has delegatable shares
-│   │           ├── given caller has EigenPod shares
+│   │       ├── given staker doesn't have delegatable shares
+│   │       │   └── it should set staker delegated to operator, call the StakeRegistry, and emit events
+│   │       └── given staker has delegatable shares
+│   │           ├── given staker has EigenPod shares
 │   │           │   ├── given EigenPod shares are <= 0
-│   │           │   │   └── it should set caller delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+│   │           │   │   └── it should set staker delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
 │   │           │   └── given EigenPod shares are > 0
-│   │           │       └── it should set caller delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
-│   │           ├── given caller has StrategyManager shares
-│   │           │   └── it should set caller delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
-│   │           └── given caller has shares in both EigenPod and StrategyManager
-│   │               └── it should set caller delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+│   │           │       └── it should set staker delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│   │           ├── given staker has StrategyManager shares
+│   │           │   └── it should set staker delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│   │           └── given staker has shares in both EigenPod and StrategyManager
+│   │               └── it should set staker delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
 │   └── given operator's delegationApprover is set to nonzero address AND the caller is not the delegationApprover
 │       ├── given the delegationApprover is an EOA
 │       │   ├── given the block timestamp is past the expiry timestamp
@@ -77,41 +86,6 @@
 │           │   └── it should revert
 │           └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
 │               └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
-├── when delegateToBySignature is called
-│   ├── given block timestamp is > staker signature expiry
-│   │   └── it should revert
-│   ├── given staker signature verification fails
-│   │   └── it should revert
-│   └── given staker signature verification succeeds
-│       ├── given that new delegations are paused
-│       │   └── it should revert
-│       ├── given caller is already delegated to an operator
-│       │   └── it should revert
-│       ├── given passed in operator param isn't a registered operator
-│       │   └── it should revert
-│       ├── given operator's delegationApprover is set to zero address OR given operator's delegationApprover is set to nonzero address
-│       │   └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
-│       └── given operator's delegationApprover is set to nonzero address AND the caller is not the delegationApprover
-│           ├── given the delegationApprover is an EOA
-│           │   ├── given the block timestamp is past the expiry timestamp
-│           │   │   └── it should revert
-│           │   ├── given the delegationApprove salt has already been used
-│           │   │   └── it should revert
-│           │   ├── given the signature verification fails
-│           │   │   └── it should revert
-│           │   └── given the signature verification succeeds
-│           │       └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
-│           └── given the delegationApprover is a contract
-│               ├── given the block timestamp is past the expiry timestamp
-│               │   └── it should revert
-│               ├── given the delegationApprove salt has already been used
-│               │   └── it should revert
-│               ├── given the contract isn't EIP1271 compliant
-│               │   └── it should revert
-│               ├── given the signature verification fails, isValidSignature() does not return  EIP1271_MAGICVALUE
-│               │   └── it should revert
-│               └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
-│                   └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
 ├── when undelegate is called
 │   ├── given caller is not delegated to an operator
 │   │   └── it should revert
