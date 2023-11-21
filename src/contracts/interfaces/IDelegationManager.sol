@@ -370,6 +370,14 @@ interface IDelegationManager is ISignatureUtils {
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
 
     /**
+     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    function withdrawalDelayBlocks() external view returns (uint256);
+
+    /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
      * @param staker The signing staker
      * @param operator The operator who is being delegated to
