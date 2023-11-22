@@ -324,25 +324,7 @@ contract EigenPodManager is
         return stateRoot;
     }
 
-    //make a request for a proof to the succinct gateway
-    function requestProofViaSuccinctGateway(
-        bytes32 FUNCTION_ID,
-        uint64 startSlot,
-        uint64 endSlot,
-        address podAddress,
-        bytes memory callbackData,
-        uint32 callbackGasLimit,
-        address podOwner
-    ) external payable onlyEigenPod(podOwner){
-        succinctGateway.requestCall{value: msg.value}(
-            FUNCTION_ID,
-            abi.encodePacked(podAddress, startSlot, endSlot),
-            podAddress,
-            callbackData,
-            callbackGasLimit
-        );
-    }
-
+    //make a request for a proof to the prover's service of choice
     function requestPartialWithdrawalProof(
         address podOwner,
         uint8 proverID,
