@@ -249,7 +249,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot);
+    function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
 
     /**
      * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
