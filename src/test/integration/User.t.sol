@@ -128,6 +128,11 @@ contract User is Test {
         return delegationManager.undelegate(address(this));
     }
 
+    /// @dev Force undelegate staker
+    function undelegate(User staker) public createSnapshot virtual returns(bytes32){
+        return delegationManager.undelegate(address(staker));
+    }
+
     /// @dev Queues a single withdrawal for every share and strategy pair
     function queueWithdrawals(
         IStrategy[] memory strategies, 
