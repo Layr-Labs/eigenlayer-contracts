@@ -354,7 +354,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory balances = new uint[](tokens.length);
 
         for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokens[i].balanceOf(address(staker));
+            if (address(tokens[i]) == address(0)) {
+                balances[i] = address(staker).balance;
+            } else {
+                balances[i] = tokens[i].balanceOf(address(staker));
+            }
         }
 
         return balances;

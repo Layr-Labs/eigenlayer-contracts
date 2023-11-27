@@ -63,6 +63,8 @@ contract User is Test {
         _;
     }
 
+    receive() external payable {}
+
     /**
      * DelegationManager methods:
      */
@@ -171,7 +173,10 @@ contract User is Test {
 
                 // If we're withdrawing as tokens, we need to process a withdrawal proof first
                 if (receiveAsTokens) {
-                    WithdrawalProofs memory proofs = beaconChain.exitValidator(validatorIndex);
+                    emit log("exiting validator and processing withdrawals...");
+                    BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex, address(pod));
+
+                    uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
 
                     pod.verifyAndProcessWithdrawals({
                         oracleTimestamp: proofs.oracleTimestamp,
@@ -181,6 +186,11 @@ contract User is Test {
                         validatorFields: proofs.validatorFields,
                         withdrawalFields: proofs.withdrawalFields
                     });
+
+                    uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+
+                    emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
+                    emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
                 }
             } else {
                 tokens[i] = strat.underlyingToken();
