@@ -27,7 +27,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
     bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
-        keccak256("OperatorAVSRegistration(address operator,address delegationApprover,uint256 withdrawalDelayBlocks)");
+        keccak256("OperatorAVSRegistration(address operator,address avs,uint256 expiry)");
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
