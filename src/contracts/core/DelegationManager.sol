@@ -472,7 +472,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // register operator
         registeredWithAVS[msg.sender][operator] = true;
 
-        emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.REGISTERED);
+        emit OperatorRegistrationStatusUpdatedForAVS(operator, msg.sender, OperatorRegistrationStatus.REGISTERED);
     }
 
     /**
@@ -485,7 +485,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // deregister operator
         registeredWithAVS[msg.sender][operator] = false;
 
-        emit OperatorRegistrationStatusUpdated(operator, msg.sender, OperatorRegistrationStatus.DEREGISTERED);
+        emit OperatorRegistrationStatusUpdatedForAVS(operator, msg.sender, OperatorRegistrationStatus.DEREGISTERED);
     }
 
     /**

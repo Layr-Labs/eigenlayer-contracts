@@ -154,7 +154,7 @@ interface IDelegationManager is ISignatureUtils {
     event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorRegistrationStatus status);
+    event OperatorRegistrationStatusUpdatedForAVS(address indexed operator, address indexed avs, OperatorRegistrationStatus status);
 
     /**
      * @notice Emitted when @param operator indicates that they are updating their MetadataURI string
