@@ -50,7 +50,8 @@ interface IEigenPod {
     }
 
 
-    struct ProofFulfiller {
+    struct ProofService {
+        address caller;
         // whether or not the proof fulfiller is allowed to fulfill proofs
         bool permission;
         // whether or not the proof fulfiller has been added
@@ -105,7 +106,7 @@ interface IEigenPod {
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
     /// @notice Emitted when a new proof fulfiller is added
-    event ProofFulfillerUpdated(address indexed proofFulfiller);
+    event ProofServiceUpdated(address indexed proofService);
 
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
@@ -229,6 +230,6 @@ interface IEigenPod {
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
-    function addProofFulfiller(address fulfiller, bool permission) external;
+    function updateProofService(address fulfiller, bool permission, uint256 feeBips, address feeRecipient) external; 
 
 }

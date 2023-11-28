@@ -103,7 +103,9 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint64 public withdrawalProvenUntilTimestamp;
 
     /// @notice This mapping stores permissioned proof fulfillment services
-    mapping(address => ProofFulfiller) public permissionedFulfillers;
+    ProofService public proofService;
+
+    bool public partialWithdrawalProofSwitch;
 
 
 
@@ -151,7 +153,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
     modifier onlyFulfiller() {
-        require(permissionedFulfillers[msg.sender], "EigenPod.onlyFulfiller: not a permissioned fulfiller");
+        require(msg.sender == proofService.caller, "EigenPod.onlyFulfiller: not a permissioned fulfiller");
+        _;
+    }
+
+    modifier partialWithdrawalProofSwitchOff() {
+        require(!partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOff: partial withdrawal proof switch is on");
         _;
     }
 
@@ -446,14 +453,15 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
 
-    function updateProofFulfiller(address fulfiller, bool permission, uint256 feeBips, address feeRecipient) external onlyEigenPodManager {
-        require(bips <= MAX_BIPS, "BIPS value out of range");
-        permissionedFulfillers[fulfiller] = ProofFulfiller({
+    function updateProofService(address caller, bool permission, uint256 feeBips, address feeRecipient) external onlyEigenPodManager {
+        require(feeBips <= MAX_BIPS, "BIPS value out of range");
+        proofService = ProofService({
+            caller: caller,
             permission: permission,
             feeBips: feeBips,
             feeRecipient: feeRecipient
-        })
-        emit ProofFulfillerUpdated(fulfiller);
+        });
+        emit ProofServiceUpdated(fulfiller);
     }
 
 
@@ -467,16 +475,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 endTimestamp,
         uint256 provenPartialWithdrawalSumWei
     ) onlyFulfiller external {
+        if (!partialWithdrawalProofSwitch){
+            partialWithdrawalProofSwitch = true;
+        }
         require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
         require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
-        ProofFullfiller memory fulfiller = permissionedFulfillers[msg.sender];
+        require(msg.sender == proofService.caller, "EigenPod.fulfillPartialWithdrawalProofRequest: msg.sender must be proofService.feeRecipient");
         
-        uint256 fee = (provenPartialWithdrawalSumWei * fulfiller.feeBips) / MAX_BIPS;
+        uint256 fee = (provenPartialWithdrawalSumWei * proofService.feeBips) / MAX_BIPS;
         provenPartialWithdrawalSumWei -= fee;
         //send proof service their fee
-        AddressUpgradeable.sendValue(payable(fulfiller.feeRecipient), fee);
-
-
+        AddressUpgradeable.sendValue(payable(proofService.feeRecipient), fee);
 
         //subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
@@ -488,8 +497,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
        
        
         withdrawalProvenUntilTimestamp = endTimestamp;
-        
-
     }
 
     /*******************************************************************************
@@ -541,14 +548,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             validatorFieldsProof: validatorFieldsProof,
             validatorIndex: validatorIndex
         });
-        emit log("HEHEHR");
-        verifyValidator123({
-            beaconStateRoot: beaconStateRoot,
-            validatorFields: validatorFields,
-            validatorFieldsProof: validatorFieldsProof,
-            validatorIndex: validatorIndex
-        });
-
 
         // Proofs complete - update this validator's status, record its proven balance, and save in state:
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
@@ -792,7 +791,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
-    ) internal returns (VerifiedWithdrawal memory) {
+    ) partialWithdrawalProofSwitchOff internal returns (VerifiedWithdrawal memory) {
         emit PartialWithdrawalRedeemed(
             validatorIndex,
             withdrawalTimestamp,
