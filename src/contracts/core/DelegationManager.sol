@@ -230,15 +230,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         );
 
         // Gather strategies and shares to remove from staker/operator during undelegation
+        // Undelegation removes ALL currently-active strategies and shares
         (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
 
+        // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
             emit StakerForceUndelegated(staker, operator);
         }
 
+        // undelegate the staker
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
+        // if no delegatable shares, return zero root, and don't queue a withdrawal
         if (strategies.length == 0) {
             withdrawalRoots = new bytes32[](0);
         } else {
