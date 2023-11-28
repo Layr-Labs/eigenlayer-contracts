@@ -50,6 +50,16 @@ interface IEigenPod {
     }
 
 
+    struct ProofFulfiller {
+        // whether or not the proof fulfiller is allowed to fulfill proofs
+        bool permission;
+        // whether or not the proof fulfiller has been added
+        uint256 feeBips;
+        // the commission rate of the proof fulfiller
+        address feeRecipient;
+    }
+
+
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,
@@ -93,6 +103,9 @@ interface IEigenPod {
 
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
+
+    /// @notice Emitted when a new proof fulfiller is added
+    event ProofFulfillerUpdated(address indexed proofFulfiller);
 
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
@@ -215,4 +228,7 @@ interface IEigenPod {
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+
+    function addProofFulfiller(address fulfiller, bool permission) external;
+
 }

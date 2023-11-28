@@ -20,6 +20,9 @@ import "../interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 
+
+import "forge-std/Test.sol";
+
 /**
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
@@ -35,7 +38,7 @@ import "./EigenPodPausingConstants.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
+contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, Test {
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
@@ -49,6 +52,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * We can't allow "stale" roots to be used for restaking as the validator may have been slashed in a more updated beacon state root. 
      */
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
+
+    uint256 internal constant MAX_BIPS = 10000;
 
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
@@ -94,6 +99,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
+    /// @notice This variable tracks the timestamp at which the last partial withdrawal was proven via ZK proofs
+    uint64 public withdrawalProvenUntilTimestamp;
+
+    /// @notice This mapping stores permissioned proof fulfillment services
+    mapping(address => ProofFulfiller) public permissionedFulfillers;
+
+
+
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
@@ -134,6 +147,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             !IPausable(address(eigenPodManager)).paused(index),
             "EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"
         );
+        _;
+    }
+
+    modifier onlyFulfiller() {
+        require(permissionedFulfillers[msg.sender], "EigenPod.onlyFulfiller: not a permissioned fulfiller");
         _;
     }
 
@@ -311,7 +329,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
-
         /**
          * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS) as we are doing a balance check here
          * The validator container persists as the state evolves and even after the validator exits. So we can use a more "fresh" credential proof within
@@ -428,6 +445,53 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _sendETH(recipient, amountWei);
     }
 
+
+    function updateProofFulfiller(address fulfiller, bool permission, uint256 feeBips, address feeRecipient) external onlyEigenPodManager {
+        require(bips <= MAX_BIPS, "BIPS value out of range");
+        permissionedFulfillers[fulfiller] = ProofFulfiller({
+            permission: permission,
+            feeBips: feeBips,
+            feeRecipient: feeRecipient
+        })
+        emit ProofFulfillerUpdated(fulfiller);
+    }
+
+
+    /*******************************************************************************
+                    EXTERNAL FUNCTIONS CALLABLE BY PERMISSIONED SERVICES
+    *******************************************************************************/
+
+    function fulfillPartialWithdrawalProofRequest(
+        address requestor,
+        uint64 startTimestamp,
+        uint64 endTimestamp,
+        uint256 provenPartialWithdrawalSumWei
+    ) onlyFulfiller external {
+        require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
+        require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
+        ProofFullfiller memory fulfiller = permissionedFulfillers[msg.sender];
+        
+        uint256 fee = (provenPartialWithdrawalSumWei * fulfiller.feeBips) / MAX_BIPS;
+        provenPartialWithdrawalSumWei -= fee;
+        //send proof service their fee
+        AddressUpgradeable.sendValue(payable(fulfiller.feeRecipient), fee);
+
+
+
+        //subtract an partial withdrawals that may have been claimed via merkle proofs
+        if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
+            provenPartialWithdrawalSumWei = provenPartialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+        } else {
+            provenPartialWithdrawalSumWei = 0;
+        }
+        _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
+       
+       
+        withdrawalProvenUntilTimestamp = endTimestamp;
+        
+
+    }
+
     /*******************************************************************************
                                 INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -477,6 +541,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             validatorFieldsProof: validatorFieldsProof,
             validatorIndex: validatorIndex
         });
+        emit log("HEHEHR");
+        verifyValidator123({
+            beaconStateRoot: beaconStateRoot,
+            validatorFields: validatorFields,
+            validatorFieldsProof: validatorFieldsProof,
+            validatorIndex: validatorIndex
+        });
+
 
         // Proofs complete - update this validator's status, record its proven balance, and save in state:
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
@@ -785,7 +857,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
-
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
