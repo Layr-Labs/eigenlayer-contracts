@@ -93,5 +93,4 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
 ### What needs to be done?
 
 * Suggest or PR cleanup if you have ideas. Currently, the `IntegrationDeployer` contract is pretty messy.
-* Currently, the only supported assetTypes are `NO_ASSETS` and `HOLDS_LST`. There are flags for `HOLDS_ETH` and `HOLDS_MIXED`, but we need to implement `EigenPod` proof generation/usage before they can be used.
 * Coordinate in Slack to pick out some user flows to write tests for!

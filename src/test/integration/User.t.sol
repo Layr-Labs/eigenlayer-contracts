@@ -174,7 +174,7 @@ contract User is Test {
                 // If we're withdrawing as tokens, we need to process a withdrawal proof first
                 if (receiveAsTokens) {
                     emit log("exiting validator and processing withdrawals...");
-                    BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex, address(pod));
+                    BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
 
                     uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
 
