@@ -152,8 +152,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    modifier onlyFulfiller() {
-        require(msg.sender == proofService.caller, "EigenPod.onlyFulfiller: not a permissioned fulfiller");
+    modifier onlyProofService() {
+        require(msg.sender == proofService.caller, "EigenPod.onlyProofService: not a permissioned fulfiller");
         _;
     }
 
@@ -161,6 +161,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(!partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOff: partial withdrawal proof switch is on");
         _;
     }
+
+    modifier partialWithdrawalProofSwitchOn() {
+        require(partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOn: partial withdrawal proof switch is off");
+        _;
+    }
+
 
     constructor(
         IETHPOSDeposit _ethPOS,
@@ -419,6 +425,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _processWithdrawalBeforeRestaking(podOwner);
     }
 
+
+    function turnOnPartialWithdrawalProofSwitch() external onlyEigenPodOwner {
+        partialWithdrawalProofSwitch = true;
+    }
+
     /*******************************************************************************
                     EXTERNAL FUNCTIONS CALLABLE BY EIGENPODMANAGER
     *******************************************************************************/
@@ -474,10 +485,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 startTimestamp,
         uint64 endTimestamp,
         uint256 provenPartialWithdrawalSumWei
-    ) onlyFulfiller external {
-        if (!partialWithdrawalProofSwitch){
-            partialWithdrawalProofSwitch = true;
-        }
+    ) external onlyProofService partialWithdrawalProofSwitchOn {
         require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
         require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
         require(msg.sender == proofService.caller, "EigenPod.fulfillPartialWithdrawalProofRequest: msg.sender must be proofService.feeRecipient");
