@@ -99,12 +99,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
+    /// @notice This is the offchain proving service
+    ProofService public proofService;
+
     /// @notice This variable tracks the timestamp at which the last partial withdrawal was proven via ZK proofs
     uint64 public withdrawalProvenUntilTimestamp;
 
-    /// @notice This mapping stores permissioned proof fulfillment services
-    ProofService public proofService;
-
+    /// @notice Switch to turn off partial withdrawal merkle proofs and turn on offchain proofs as a service
     bool public partialWithdrawalProofSwitch;
 
 
@@ -491,9 +492,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint256 provenPartialWithdrawalSumWei,
         uint256 fee
     ) external onlyProofService partialWithdrawalProofSwitchOn {
+        //TODO: figure if we wanna do the first proof from genesis time or not
+        if(withdrawalProvenUntilTimestamp == 0){
+            withdrawalProvenUntilTimestamp = GENESIS_TIME;
+        }
+        require(startTimestamp < endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp")
         require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
         require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
-        require(msg.sender == proofService.caller, "EigenPod.fulfillPartialWithdrawalProofRequest: msg.sender must be proofService.feeRecipient");
         require(fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
         provenPartialWithdrawalSumWei -= fee;
         //send proof service their fee
@@ -872,5 +877,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[42] private __gap;
 }
