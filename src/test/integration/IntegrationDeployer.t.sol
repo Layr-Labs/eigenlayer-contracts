@@ -77,7 +77,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    
+
     uint constant MIN_BALANCE = 1e6;
     uint constant MAX_BALANCE = 5e6;
 
@@ -301,8 +301,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         emit log_named_uint("_configRand: set random seed to: ", _randomSeed);
         random = keccak256(abi.encodePacked(_randomSeed));
 
-        emit log_named_uint("_configRand: allowed asset types: ", _assetTypes);
-
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
@@ -392,8 +390,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             strategies = new IStrategy[](1);
             tokenBalances = new uint[](1);
 
-            // Award the user 32 ETH
-            uint amount = 32 ether;
+            // Award the user with a random multiple of 32 ETH
+            uint amount = 32 ether * _randUint({ min: 1, max: 3 });
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;

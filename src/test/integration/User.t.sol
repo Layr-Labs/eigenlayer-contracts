@@ -35,10 +35,9 @@ contract User is Test {
     /// @dev Native restaker state vars
 
     BeaconChainMock beaconChain;
+    // User's EigenPod and each of their validator indices within that pod
     EigenPod pod;
-
-    // TODO - change this to handle multiple validators
-    uint40 validatorIndex;
+    uint40[] validators;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -85,24 +84,31 @@ contract User is Test {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                eigenPodManager.stake{ value: tokenBalance }("", "", bytes32(0));
+                // We're depositing via `eigenPodManager.stake`, which only accepts
+                // deposits of exactly 32 ether.
+                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
+                
+                // For each multiple of 32 ether, deploy a new validator to the same pod
+                uint numValidators = tokenBalance / 32 ether;
+                for (uint j = 0; j < numValidators; j++) {
+                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
 
-                (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
-                    beaconChain.newValidator({
-                        balanceWei: tokenBalance,
-                        withdrawalCreds: _podWithdrawalCredentials()
+                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
+                        beaconChain.newValidator({
+                            balanceWei: 32 ether,
+                            withdrawalCreds: _podWithdrawalCredentials()
+                        });
+                    
+                    validators.push(newValidatorIndex);
+
+                    pod.verifyWithdrawalCredentials({
+                        oracleTimestamp: proofs.oracleTimestamp,
+                        stateRootProof: proofs.stateRootProof,
+                        validatorIndices: proofs.validatorIndices,
+                        validatorFieldsProofs: proofs.validatorFieldsProofs,
+                        validatorFields: proofs.validatorFields
                     });
-
-                validatorIndex = newValidatorIndex;
-
-                pod.verifyWithdrawalCredentials({
-                    oracleTimestamp: proofs.oracleTimestamp,
-                    stateRootProof: proofs.stateRootProof,
-                    validatorIndices: proofs.validatorIndices,
-                    validatorFieldsProofs: proofs.validatorFieldsProofs,
-                    validatorFields: proofs.validatorFields
-                });
-
+                }
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokenBalance);
@@ -171,24 +177,32 @@ contract User is Test {
 
                 // If we're withdrawing as tokens, we need to process a withdrawal proof first
                 if (receiveAsTokens) {
-                    emit log("exiting validator and processing withdrawals...");
-                    BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
+                    
+                    emit log("exiting validators and processing withdrawals...");
+                    
+                    uint numValidators = validators.length;
+                    for (uint j = 0; j < numValidators; j++) {
+                        emit log_named_uint("exiting validator ", j);
 
-                    uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
+                        uint40 validatorIndex = validators[j];
+                        BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
 
-                    pod.verifyAndProcessWithdrawals({
-                        oracleTimestamp: proofs.oracleTimestamp,
-                        stateRootProof: proofs.stateRootProof,
-                        withdrawalProofs: proofs.withdrawalProofs,
-                        validatorFieldsProofs: proofs.validatorFieldsProofs,
-                        validatorFields: proofs.validatorFields,
-                        withdrawalFields: proofs.withdrawalFields
-                    });
+                        uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
 
-                    uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+                        pod.verifyAndProcessWithdrawals({
+                            oracleTimestamp: proofs.oracleTimestamp,
+                            stateRootProof: proofs.stateRootProof,
+                            withdrawalProofs: proofs.withdrawalProofs,
+                            validatorFieldsProofs: proofs.validatorFieldsProofs,
+                            validatorFields: proofs.validatorFields,
+                            withdrawalFields: proofs.withdrawalFields
+                        });
 
-                    emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
-                    emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
+                        uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+
+                        emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
+                        emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
+                    }
                 }
             } else {
                 tokens[i] = strat.underlyingToken();
@@ -240,22 +254,31 @@ contract User_SignedMethods is User {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                eigenPodManager.stake{ value: tokenBalance }("", "", bytes32(0));
+                // We're depositing via `eigenPodManager.stake`, which only accepts
+                // deposits of exactly 32 ether.
+                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
+                
+                // For each multiple of 32 ether, deploy a new validator to the same pod
+                uint numValidators = tokenBalance / 32 ether;
+                for (uint j = 0; j < numValidators; j++) {
+                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
 
-                (uint40 newValidatorIndex, CredentialsProofs memory proofs) = beaconChain.newValidator({
-                    balanceWei: tokenBalance,
-                    withdrawalCreds: _podWithdrawalCredentials()
-                });
+                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
+                        beaconChain.newValidator({
+                            balanceWei: 32 ether,
+                            withdrawalCreds: _podWithdrawalCredentials()
+                        });
+                    
+                    validators.push(newValidatorIndex);
 
-                validatorIndex = newValidatorIndex;
-
-                pod.verifyWithdrawalCredentials({
-                    oracleTimestamp: proofs.oracleTimestamp,
-                    stateRootProof: proofs.stateRootProof,
-                    validatorIndices: proofs.validatorIndices,
-                    validatorFieldsProofs: proofs.validatorFieldsProofs,
-                    validatorFields: proofs.validatorFields
-                });
+                    pod.verifyWithdrawalCredentials({
+                        oracleTimestamp: proofs.oracleTimestamp,
+                        stateRootProof: proofs.stateRootProof,
+                        validatorIndices: proofs.validatorIndices,
+                        validatorFieldsProofs: proofs.validatorFieldsProofs,
+                        validatorFields: proofs.validatorFields
+                    });
+                }
             } else {
                 // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();

@@ -115,7 +115,7 @@ contract BeaconChainMock is Test {
 
         // Update state - set validator balance to zero and send balance to withdrawal destination
         validators[validatorIndex].effectiveBalanceGwei = 0;
-        cheats.deal(destination, amountToWithdraw);
+        cheats.deal(destination, destination.balance + amountToWithdraw);
 
         return withdrawal;
     }
