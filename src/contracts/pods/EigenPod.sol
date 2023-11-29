@@ -799,7 +799,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Returns the validator status for a given validatorPubkey
     function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS) {
-        require(validatorPubkey.length == 48, "EigenPod.validatorPubkeyHashToInfo must be a 48-byte BLS public key");
         bytes32 validatorPubkeyHash = _calculateValidatorPubkeyHash(validatorPubkey);
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
     }
