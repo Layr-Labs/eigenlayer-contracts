@@ -6,17 +6,20 @@ import "forge-std/Test.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/pods/EigenPod.sol";
 
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
+import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 interface IUserDeployer {
     function delegationManager() external view returns (DelegationManager);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
+    function beaconChain() external view returns (BeaconChainMock);
 }
 
 contract User is Test {
@@ -29,7 +32,16 @@ contract User is Test {
 
     TimeMachine timeMachine;
 
+    /// @dev Native restaker state vars
+
+    BeaconChainMock beaconChain;
+    // User's EigenPod and each of their validator indices within that pod
+    EigenPod pod;
+    uint40[] validators;
+
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    uint constant GWEI_TO_WEI = 1e9;
 
     constructor() {
         IUserDeployer deployer = IUserDeployer(msg.sender);
@@ -38,12 +50,21 @@ contract User is Test {
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
         timeMachine = deployer.timeMachine();
+                
+        beaconChain = deployer.beaconChain();
+        pod = EigenPod(payable(eigenPodManager.createPod()));
     }
 
     modifier createSnapshot() virtual {
         timeMachine.createSnapshot();
         _;
     }
+
+    receive() external payable {}
+
+    /**
+     * DelegationManager methods:
+     */
 
     function registerAsOperator() public createSnapshot virtual {
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
@@ -63,8 +84,31 @@ contract User is Test {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO handle this flow - need to deposit into EPM + prove credentials
-                revert("depositIntoEigenlayer: unimplemented");
+                // We're depositing via `eigenPodManager.stake`, which only accepts
+                // deposits of exactly 32 ether.
+                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
+                
+                // For each multiple of 32 ether, deploy a new validator to the same pod
+                uint numValidators = tokenBalance / 32 ether;
+                for (uint j = 0; j < numValidators; j++) {
+                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
+
+                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
+                        beaconChain.newValidator({
+                            balanceWei: 32 ether,
+                            withdrawalCreds: _podWithdrawalCredentials()
+                        });
+                    
+                    validators.push(newValidatorIndex);
+
+                    pod.verifyWithdrawalCredentials({
+                        oracleTimestamp: proofs.oracleTimestamp,
+                        stateRootProof: proofs.stateRootProof,
+                        validatorIndices: proofs.validatorIndices,
+                        validatorFieldsProofs: proofs.validatorFieldsProofs,
+                        validatorFields: proofs.validatorFields
+                    });
+                }
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokenBalance);
@@ -129,7 +173,37 @@ contract User is Test {
             IStrategy strat = withdrawal.strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokens[i] = IERC20(address(0));
+                tokens[i] = NATIVE_ETH;
+
+                // If we're withdrawing as tokens, we need to process a withdrawal proof first
+                if (receiveAsTokens) {
+                    
+                    emit log("exiting validators and processing withdrawals...");
+                    
+                    uint numValidators = validators.length;
+                    for (uint j = 0; j < numValidators; j++) {
+                        emit log_named_uint("exiting validator ", j);
+
+                        uint40 validatorIndex = validators[j];
+                        BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
+
+                        uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
+
+                        pod.verifyAndProcessWithdrawals({
+                            oracleTimestamp: proofs.oracleTimestamp,
+                            stateRootProof: proofs.stateRootProof,
+                            withdrawalProofs: proofs.withdrawalProofs,
+                            validatorFieldsProofs: proofs.validatorFieldsProofs,
+                            validatorFields: proofs.validatorFields,
+                            withdrawalFields: proofs.withdrawalFields
+                        });
+
+                        uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+
+                        emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
+                        emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
+                    }
+                }
             } else {
                 tokens[i] = strat.underlyingToken();
             }
@@ -139,10 +213,14 @@ contract User is Test {
 
         return tokens;
     }
+
+    function _podWithdrawalCredentials() internal view returns (bytes memory) {
+        return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
+    }
 }
 
-/// @notice A user contract that implements 1271 signatures
-contract User_SignedMethods is User {
+/// @notice A user contract that calls nonstandard methods (like xBySignature methods)
+contract User_AltMethods is User {
 
     mapping(bytes32 => bool) public signedHashes;
 
@@ -176,8 +254,31 @@ contract User_SignedMethods is User {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO handle this flow - need to deposit into EPM + prove credentials
-                revert("depositIntoEigenlayer: unimplemented");
+                // We're depositing via `eigenPodManager.stake`, which only accepts
+                // deposits of exactly 32 ether.
+                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
+                
+                // For each multiple of 32 ether, deploy a new validator to the same pod
+                uint numValidators = tokenBalance / 32 ether;
+                for (uint j = 0; j < numValidators; j++) {
+                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
+
+                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
+                        beaconChain.newValidator({
+                            balanceWei: 32 ether,
+                            withdrawalCreds: _podWithdrawalCredentials()
+                        });
+                    
+                    validators.push(newValidatorIndex);
+
+                    pod.verifyWithdrawalCredentials({
+                        oracleTimestamp: proofs.oracleTimestamp,
+                        stateRootProof: proofs.stateRootProof,
+                        validatorIndices: proofs.validatorIndices,
+                        validatorFieldsProofs: proofs.validatorFieldsProofs,
+                        validatorFields: proofs.validatorFields
+                    });
+                }
             } else {
                 // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();

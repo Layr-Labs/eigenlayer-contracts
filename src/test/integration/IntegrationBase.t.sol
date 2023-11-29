@@ -22,7 +22,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
         
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newStaker: failed to award token balances");
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
         return (staker, strategies, tokenBalances);
     }
@@ -33,9 +33,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         operator.registerAsOperator();
         operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-        assert_Snap_AddedStakerShares(operator, strategies, tokenBalances, "_newOperator: failed to add delegatable shares");
-        assert_Snap_AddedOperatorShares(operator, strategies, tokenBalances, "_newOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newOperator: operator should be registered");
+        assert_Snap_AddedStakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
+        assert_Snap_AddedOperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
+        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
 
         return (operator, strategies, tokenBalances);
     }
@@ -88,9 +88,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint actualShares;
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO
-                // actualShares = eigenPodManager.podOwnerShares(address(user));
-                revert("unimplemented");
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
+                int shares = eigenPodManager.podOwnerShares(address(user));
+                if (shares < 0) {
+                    revert("assert_HasExpectedShares: negative shares");
+                }
+
+                actualShares = uint(shares);
             } else {
                 actualShares = strategyManager.stakerStrategyShares(address(user), strat);
             }
@@ -251,9 +257,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint tokenBalance = tokenBalances[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - need to calculate this
-                // expectedShares[i] = eigenPodManager.underlyingToShares(tokenBalance);
-                revert("_calculateExpectedShares: unimplemented for native eth");
+                expectedShares[i] = tokenBalances[i];
             } else {
                 expectedShares[i] = strat.underlyingToShares(tokenBalance);
             }
@@ -271,9 +275,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - need to calculate this
-                // expectedTokens[i] = eigenPodManager.underlyingToShares(tokenBalance);
-                revert("_calculateExpectedShares: unimplemented for native eth");
+                expectedTokens[i] = shares[i];
             } else {
                 expectedTokens[i] = strat.sharesToUnderlying(shares[i]);
             }
@@ -323,8 +325,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // curShares[i] = eigenPodManager.podOwnerShares(address(staker));
-                revert("TODO: unimplemented");
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
+                int shares = eigenPodManager.podOwnerShares(address(staker));
+                if (shares < 0) {
+                    revert("_getStakerShares: negative shares");
+                }
+
+                curShares[i] = uint(shares);
             } else {
                 curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
             }
@@ -349,7 +358,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory balances = new uint[](tokens.length);
 
         for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokens[i].balanceOf(address(staker));
+            if (tokens[i] == NATIVE_ETH) {
+                balances[i] = address(staker).balance;
+            } else {
+                balances[i] = tokens[i].balanceOf(address(staker));
+            }
         }
 
         return balances;

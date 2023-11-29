@@ -15,8 +15,8 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
-            _userTypes: DEFAULT | SIGNED_METHODS
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         /// 0. Create an operator and a staker with:
@@ -104,8 +104,8 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
-            _userTypes: DEFAULT | SIGNED_METHODS
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         /// 0. Create an operator and a staker with:
