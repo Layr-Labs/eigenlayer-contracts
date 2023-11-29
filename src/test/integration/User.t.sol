@@ -219,8 +219,8 @@ contract User is Test {
     }
 }
 
-/// @notice A user contract that implements 1271 signatures
-contract User_SignedMethods is User {
+/// @notice A user contract that calls nonstandard methods (like xBySignature methods)
+contract User_AltMethods is User {
 
     mapping(bytes32 => bool) public signedHashes;
 

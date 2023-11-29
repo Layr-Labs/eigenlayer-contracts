@@ -90,12 +90,12 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     uint constant NO_ASSETS = (FLAG << 0); // will have no assets
     uint constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
     uint constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-    uint constant HOLDS_MIX = (FLAG << 3); // will hold a mix of LSTs and ETH
+    uint constant HOLDS_ALL = (FLAG << 3); // will hold every LST and ETH
 
     /// @dev User contract flags
     /// These are used with _configRand to determine what User contracts can be deployed
     uint constant DEFAULT = (FLAG << 0);
-    uint constant SIGNED_METHODS = (FLAG << 1);
+    uint constant ALT_METHODS = (FLAG << 1);
 
     // /// @dev Withdrawal flags
     // /// These are used with _configRand to determine how a user conducts a withdrawal
@@ -122,10 +122,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         assetTypeToStr[NO_ASSETS] = "NO_ASSETS";
         assetTypeToStr[HOLDS_LST] = "HOLDS_LST";
         assetTypeToStr[HOLDS_ETH] = "HOLDS_ETH";
-        assetTypeToStr[HOLDS_MIX] = "HOLDS_MIX";
+        assetTypeToStr[HOLDS_ALL] = "HOLDS_ALL";
         
         userTypeToStr[DEFAULT] = "DEFAULT";
-        userTypeToStr[SIGNED_METHODS] = "SIGNED_METHODS";
+        userTypeToStr[ALT_METHODS] = "ALT_METHODS";
     }
 
     function setUp() public virtual {
@@ -336,9 +336,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         User user;
         if (userType == DEFAULT) {
             user = new User();
-        } else if (userType == SIGNED_METHODS) {
-            // User will use `delegateToBySignature` and `depositIntoStrategyWithSignature`
-            user = User(new User_SignedMethods());
+        } else if (userType == ALT_METHODS) {
+            // User will use nonstandard methods like:
+            // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+            user = User(new User_AltMethods());
         } else {
             revert("_randUser: unimplemented userType");
         }
@@ -356,9 +357,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     /// NO_ASSETS - return will be empty
     /// HOLDS_LST - `strategies` will be a random subset of initialized strategies
     ///             `tokenBalances` will be the user's balances in each token
-    /// HOLDS_ETH - `strategies` will only contain BEACON_CHAIN_ETH_STRAT, and
+    /// HOLDS_ETH - `strategies` will only contain BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain the user's eth balance
-    /// HOLDS_MIX - random combination of `HOLDS_LST` and `HOLDS_ETH` 
+    /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
+    ///             `tokenBalances` will contain random token/eth balances accordingly
     function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
 
         IStrategy[] memory strategies;
@@ -396,8 +398,30 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
-        } else if (assetType == HOLDS_MIX) {
-            revert("_dealRandAssets: HOLDS_MIX unimplemented");
+        } else if (assetType == HOLDS_ALL) {
+            uint numLSTs = lstStrats.length;
+            strategies = new IStrategy[](numLSTs + 1);
+            tokenBalances = new uint[](numLSTs + 1);
+            
+            // For each LST, award the user a random balance of the underlying token
+            for (uint i = 0; i < numLSTs; i++) {
+                IStrategy strat = lstStrats[i];
+                IERC20 underlyingToken = strat.underlyingToken();
+                
+                uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+                StdCheats.deal(address(underlyingToken), address(user), balance);
+
+                tokenBalances[i] = balance;
+                strategies[i] = strat;
+            }
+
+            // Award the user with a random multiple of 32 ETH
+            uint amount = 32 ether * _randUint({ min: 1, max: 3 });
+            cheats.deal(address(user), amount);
+
+            // Add BEACONCHAIN_ETH_STRAT and eth balance
+            strategies[numLSTs] = BEACONCHAIN_ETH_STRAT;
+            tokenBalances[numLSTs] = amount;
         } else {
             revert("_dealRandAssets: assetType unimplemented");
         }
