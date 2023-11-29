@@ -1,10 +1,19 @@
 
 methods {
+    //// Internal, SUMMARIZED EigenPod library functions
+    function _.verifyValidatorFields(bytes32, bytes32[] calldata, bytes calldata, uint40) internal => NONDET;
+    function _.verifyValidatorBalance(bytes32, bytes32, bytes calldata, uint40) internal => NONDET;
+    function _.verifyStateRootAgainstLatestBlockRoot(bytes32, bytes32, bytes calldata) internal => NONDET;
+    function _.verifyWithdrawal(bytes32, bytes32[] calldata, BeaconChainProofs.WithdrawalProof calldata) internal => NONDET;
+
+    // summarize the deployment of EigenPods to avoid default, HAVOC behavior
+    function _.deploy(uint256, bytes32, bytes memory bytecode) internal => NONDET;
+
     //// External Calls
 	// external calls to DelegationManager 
-    function _.undelegate(address) external;
-    function _.decreaseDelegatedShares(address,address,uint256) external;
-	function _.increaseDelegatedShares(address,address,uint256) external;
+    function _.undelegate(address) external => DISPATCHER(true);
+    function _.decreaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
+	function _.increaseDelegatedShares(address,address,uint256) external => DISPATCHER(true);
 
     // external calls from DelegationManager to ServiceManager
     function _.updateStakes(address[]) external => NONDET;
@@ -12,6 +21,7 @@ methods {
 	// external calls to Slasher
     function _.isFrozen(address) external => DISPATCHER(true);
 	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
+    function _.recordStakeUpdate(address,uint32,uint32,uint256) external => NONDET;
 
 	// external calls to StrategyManager
     function _.getDeposits(address) external => DISPATCHER(true);
@@ -19,6 +29,11 @@ methods {
     function _.addShares(address,address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
+    function _.migrateQueuedWithdrawal(IStrategyManager.DeprecatedStruct_QueuedWithdrawal) external => NONDET;
+
+    // external calls to Strategy contracts
+    function _.deposit(address, uint256) external => NONDET;
+    function _.withdraw(address, address, uint256) external => NONDET;
 
 	// external calls to EigenPodManager
     function _.addShares(address,uint256) external => DISPATCHER(true);
@@ -27,13 +42,22 @@ methods {
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
-    
+    function _.stake(bytes, bytes, bytes32) external => DISPATCHER(true);
+
+    // external calls to ETH2Deposit contract
+    function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
+
     // external calls to DelayedWithdrawalRouter (from EigenPod)
     function _.createDelayedWithdrawal(address, address) external => DISPATCHER(true);
 
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
+
+    // external calls to ERC20 token
+    function _.transfer(address, uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address uint256) external => DISPATCHER(true);
+    function _.approve(address, uint256) external => DISPATCHER(true);
 	
     // envfree functions
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external returns (uint64) envfree;
@@ -127,50 +151,27 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
 // // EigenPodManager.podOwnerShares(podOwner) - withdrawableRestakedExecutionLayerGwei
 // // we can track changes to the '_validatorPubkeyHashToInfo' mapping and check this with ghost variables
 
-// // based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
-// ghost mathint sumOfValidatorRestakedbalancesWei {
-//     init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
-// }
+// based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
+ghost mathint sumOfValidatorRestakedbalancesWei {
+    // NOTE: this commented out line is broken, as calling functions in axioms is currently disallowed, but this is what we'd run ideally. 
+    // init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
+    init_state axiom sumOfValidatorRestakedbalancesWei == 0;
+}
 
-// // hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] IEigenPod.ValidatorInfo newValue (IEigenPod.ValidatorInfo oldValue) STORAGE {
-// //     sumOfValidatorRestakedbalancesWei = (
-// //         sumOfValidatorRestakedbalancesWei + 
-// //         to_mathint(newValue.restakedBalanceGwei) * 1000000000 -
-// //         to_mathint(oldValue.restakedBalanceGwei) * 1000000000
-// //     );
-// // }
-// // struct ValidatorInfo {
-// //     // index of the validator in the beacon chain
-// //     uint64 validatorIndex;
-// //     // amount of beacon chain ETH restaked on EigenLayer in gwei
-// //     uint64 restakedBalanceGwei;
-// //     //timestamp of the validator's most recent balance update
-// //     uint64 mostRecentBalanceUpdateTimestamp;
-// //     // status of the validator
-// //     VALIDATOR_STATUS status;
-// // }
+hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) STORAGE {
+    sumOfValidatorRestakedbalancesWei = (
+        sumOfValidatorRestakedbalancesWei + 
+        to_mathint(newValue) * 1000000000 -
+        to_mathint(oldValue) * 1000000000
+    );
+}
 
-// // NOTE: this fails with the error:
-// // CRITICAL: Found errors
-// // CRITICAL: [main] ERROR ALWAYS - Error in spec file (EigenPod.spec:153:1): Slot pattern EigenPodHarness._validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] is not an integral type: IEigenPod.ValidatorInfo
-// // CRITICAL: Encountered an error running Certora Prover:
-// // CVL specification syntax and type check failed
-// // it would seem that some workaround may be necessary to make this struct storage work with a 'hook'
-// hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash] uint256 newValue (uint256 oldValue) STORAGE {
-//     sumOfValidatorRestakedbalancesWei = (
-//         sumOfValidatorRestakedbalancesWei + 
-//         // extract the restakedBalanceGwei and multiply by 1e9 to get wei
-//         to_mathint((newValue << 184) >> 192) * 1000000000 -
-//         to_mathint((newValue << 184) >> 192) * 1000000000
-//     );
-// }
-
-// rule baseInvariant() {
-//     // perform arbitrary function call
-//     method f;
-//     env e;
-//     calldataarg args;
-//     f(e,args);
-//     assert(sumOfValidatorRestakedbalancesWei == get_podOwnerShares() - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
-//         "base invariant violated");
-// }
+rule baseInvariant() {
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg args;
+    f(e,args);
+    assert(sumOfValidatorRestakedbalancesWei == get_podOwnerShares() - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
+        "base invariant violated");
+}
