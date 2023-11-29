@@ -138,11 +138,17 @@ interface IEigenPod {
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
 
+    /// @notice Returns the validatorInfo struct for the provided pubkey
+    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
+
     ///@notice mapping that tracks proven withdrawals
     function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
 
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
+
+    /// @notice This returns the status of a given validator pubkey
+    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
 
     /**
      * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
