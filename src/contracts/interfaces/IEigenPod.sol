@@ -52,8 +52,6 @@ interface IEigenPod {
 
     struct ProofService {
         address caller;
-        // whether or not the proof fulfiller is allowed to fulfill proofs
-        bool permission;
         // whether or not the proof fulfiller has been added
         uint256 maxFee;
         // the commission rate of the proof fulfiller
@@ -230,6 +228,6 @@ interface IEigenPod {
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
-    function updateProofService(address fulfiller, bool permission, uint256 feeBips, address feeRecipient) external; 
+    function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external; 
 
 }

@@ -53,8 +53,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      */
     uint256 internal constant VERIFY_BALANCE_UPDATE_WINDOW_SECONDS = 4.5 hours;
 
-    uint256 internal constant MAX_BIPS = 10000;
-
     /// @notice This is the beacon chain deposit contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -469,15 +467,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
 
-    function updateProofService(address caller, bool permission, uint256 feeBips, address feeRecipient) external onlyEigenPodManager {
-        require(feeBips <= MAX_BIPS, "BIPS value out of range");
+    function updateProofService(address caller, uint256 maxFee, address feeRecipient) external onlyEigenPodManager {
         proofService = ProofService({
             caller: caller,
-            permission: permission,
-            feeBips: feeBips,
+            maxFee: maxFee,
             feeRecipient: feeRecipient
         });
-        emit ProofServiceUpdated(fulfiller);
+        emit ProofServiceUpdated(proofService.caller);
     }
 
 
@@ -496,7 +492,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         if(withdrawalProvenUntilTimestamp == 0){
             withdrawalProvenUntilTimestamp = GENESIS_TIME;
         }
-        require(startTimestamp < endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp")
+        require(startTimestamp < endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
         require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
         require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
         require(fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
