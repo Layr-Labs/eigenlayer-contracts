@@ -1371,6 +1371,36 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
+    function test_validatorPubkeyToInfo() external {
+        bytes memory pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+
+        IEigenPod.ValidatorInfo memory info1 = pod.validatorPubkeyToInfo(pubkey);
+        IEigenPod.ValidatorInfo memory info2 = pod.validatorPubkeyHashToInfo(getValidatorPubkeyHash());
+
+        require(info1.validatorIndex == info2.validatorIndex, "validatorIndex does not match");
+        require(info1.restakedBalanceGwei > 0, "restakedBalanceGwei is 0");
+        require(info1.restakedBalanceGwei == info2.restakedBalanceGwei, "restakedBalanceGwei does not match");
+        require(info1.mostRecentBalanceUpdateTimestamp == info2.mostRecentBalanceUpdateTimestamp, "mostRecentBalanceUpdateTimestamp does not match");
+        require(info1.status == info2.status, "status does not match");
+    }
+
+    function test_validatorStatus() external {
+        bytes memory pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod pod = eigenPodManager.getPod(podOwner);
+
+        IEigenPod.VALIDATOR_STATUS status1 = pod.validatorStatus(pubkey);
+        IEigenPod.VALIDATOR_STATUS status2 = pod.validatorStatus(getValidatorPubkeyHash());
+
+        require(status1 == status2, "status does not match");
+    }
+
     /* TODO: reimplement similar tests
     function testQueueBeaconChainETHWithdrawalWithoutProvingFullWithdrawal() external {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
