@@ -50,7 +50,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     // which of these lists to select user assets from.
     IStrategy[] lstStrats;
     IStrategy[] ethStrats;   // only has one strat tbh
-    IStrategy[] mixedStrats; // just a combination of the above 2 lists
+    IStrategy[] allStrats; // just a combination of the above 2 lists
+    IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
 
     // Mock Contracts to deploy
     ETHPOSDepositMock ethPOSDeposit;
@@ -256,7 +257,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        mixedStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
 
         // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
         timeMachine = new TimeMachine();
@@ -286,9 +288,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         cheats.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(strategies);
 
-        // Add to lstStrats and mixedStrats
+        // Add to lstStrats and allStrats
         lstStrats.push(strategy);
-        mixedStrats.push(strategy);
+        allStrats.push(strategy);
+        allTokens.push(underlyingToken);
     }
 
     function _configRand(
