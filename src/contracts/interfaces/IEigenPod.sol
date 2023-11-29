@@ -55,7 +55,7 @@ interface IEigenPod {
         // whether or not the proof fulfiller is allowed to fulfill proofs
         bool permission;
         // whether or not the proof fulfiller has been added
-        uint256 feeBips;
+        uint256 maxFee;
         // the commission rate of the proof fulfiller
         address feeRecipient;
     }

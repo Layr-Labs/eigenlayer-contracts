@@ -488,13 +488,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address requestor,
         uint64 startTimestamp,
         uint64 endTimestamp,
-        uint256 provenPartialWithdrawalSumWei
+        uint256 provenPartialWithdrawalSumWei,
+        uint256 fee
     ) external onlyProofService partialWithdrawalProofSwitchOn {
         require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
         require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
         require(msg.sender == proofService.caller, "EigenPod.fulfillPartialWithdrawalProofRequest: msg.sender must be proofService.feeRecipient");
-        
-        uint256 fee = (provenPartialWithdrawalSumWei * proofService.feeBips) / MAX_BIPS;
+        require(fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
         provenPartialWithdrawalSumWei -= fee;
         //send proof service their fee
         AddressUpgradeable.sendValue(payable(proofService.feeRecipient), fee);
@@ -502,10 +502,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
             provenPartialWithdrawalSumWei = provenPartialWithdrawalSumWei - sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
-        } else {
-            provenPartialWithdrawalSumWei = 0;
-        }
-        _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
+            _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
+        } 
        
        
         withdrawalProvenUntilTimestamp = endTimestamp;
@@ -803,7 +801,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
-    ) partialWithdrawalProofSwitchOff internal returns (VerifiedWithdrawal memory) {
+    ) internal partialWithdrawalProofSwitchOff returns (VerifiedWithdrawal memory) {
         emit PartialWithdrawalRedeemed(
             validatorIndex,
             withdrawalTimestamp,
