@@ -68,6 +68,15 @@ contract BeaconChainMock is Test {
         uint balanceWei, 
         bytes memory withdrawalCreds
     ) public returns (uint40, CredentialsProofs memory) {
+        // These checks mimic the checks made in the beacon chain deposit contract
+        //
+        // We sanity-check them here because this contract sorta acts like the 
+        // deposit contract and this ensures we only create validators that could
+        // exist IRL
+        require(balanceWei >= 1 ether, "BeaconChainMock.newValidator: deposit value too low");
+        require(balanceWei % 1 gwei == 0, "BeaconChainMock.newValidator: value not multiple of gwei");
+        uint depositAmount = balanceWei / GWEI_TO_WEI;
+        require(depositAmount <= type(uint64).max, "BeaconChainMock.newValidator: deposit value too high");
 
         // Create unique index for new validator
         uint40 validatorIndex = nextValidatorIndex;
@@ -78,7 +87,7 @@ contract BeaconChainMock is Test {
             pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
             validatorIndex: validatorIndex,
             withdrawalCreds: withdrawalCreds,
-            effectiveBalanceGwei: uint64(balanceWei / GWEI_TO_WEI)
+            effectiveBalanceGwei: uint64(depositAmount)
         });
         validators[validatorIndex] = validator;
 

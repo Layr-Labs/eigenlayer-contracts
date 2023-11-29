@@ -44,8 +44,6 @@ contract User is Test {
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     uint constant GWEI_TO_WEI = 1e9;
 
-    
-
     constructor() {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
@@ -169,7 +167,7 @@ contract User is Test {
             IStrategy strat = withdrawal.strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokens[i] = IERC20(address(0));
+                tokens[i] = NATIVE_ETH;
 
                 // If we're withdrawing as tokens, we need to process a withdrawal proof first
                 if (receiveAsTokens) {

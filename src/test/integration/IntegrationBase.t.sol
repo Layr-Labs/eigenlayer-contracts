@@ -88,7 +88,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint actualShares;
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - is this the right way to handle this?
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
                 int shares = eigenPodManager.podOwnerShares(address(user));
                 if (shares < 0) {
                     revert("assert_HasExpectedShares: negative shares");
@@ -323,7 +325,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - is this the right way to handle this?
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
                 int shares = eigenPodManager.podOwnerShares(address(staker));
                 if (shares < 0) {
                     revert("_getStakerShares: negative shares");
@@ -354,7 +358,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory balances = new uint[](tokens.length);
 
         for (uint i = 0; i < tokens.length; i++) {
-            if (address(tokens[i]) == address(0)) {
+            if (tokens[i] == NATIVE_ETH) {
                 balances[i] = address(staker).balance;
             } else {
                 balances[i] = tokens[i].balanceOf(address(staker));

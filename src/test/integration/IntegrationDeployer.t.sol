@@ -74,7 +74,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
     // Constants
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 constant GOERLI_GENESIS_TIME = 1616508000;
+
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    
     uint constant MIN_BALANCE = 1e6;
     uint constant MAX_BALANCE = 5e6;
 
