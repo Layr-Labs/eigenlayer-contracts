@@ -426,8 +426,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
 
-    function turnOnPartialWithdrawalProofSwitch() external onlyEigenPodOwner {
-        partialWithdrawalProofSwitch = true;
+    function flipPartialWithdrawalProofSwitch() external onlyEigenPodOwner {
+        if(partialWithdrawalProofSwitch) {
+            partialWithdrawalProofSwitch = false;
+        } else {
+            partialWithdrawalProofSwitch = true;
+        }
     }
 
     /*******************************************************************************
