@@ -226,12 +226,13 @@ contract EigenPodManager is
     }
 
     function proofServiceCallback(
-        bytes32 blockRoot;
-        uint64 oracleTimestamp;
+        bytes32 blockRoot,
+        uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external onlyProofService partialWithdrawalProofSwitchOn {
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
+            require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
             require(callbackInfo[i].fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
@@ -354,7 +355,7 @@ contract EigenPodManager is
     }
 
     /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32) {
+    function getBlockRootAtTimestamp(uint64 timestamp) public view returns (bytes32) {
         bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
         require(
             stateRoot != bytes32(0),
