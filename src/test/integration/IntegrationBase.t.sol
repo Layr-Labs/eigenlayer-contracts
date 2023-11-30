@@ -413,8 +413,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory prevShares = _getPrevStrategyShares(strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            uint prevShare = prevShares[i];
-            uint curShare = curShares[i];
+            // Ignore BeaconChainETH strategy since it doesn't keep track of global strategy shares
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                continue;
+            }
+            uint256 prevShare = prevShares[i];
+            uint256 curShare = curShares[i];
 
             assertEq(prevShare - removedShares[i], curShare, err);
         }
@@ -599,7 +603,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory shares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            shares[i] = strategies[i].totalShares();
+            if (strategies[i] != BEACONCHAIN_ETH_STRAT) {
+                shares[i] = strategies[i].totalShares();
+            }
+            // BeaconChainETH strategy doesn't keep track of global strategy shares, so we ignore
         }
 
         return shares;

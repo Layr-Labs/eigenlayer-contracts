@@ -16,7 +16,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
 
@@ -70,7 +70,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
 
@@ -107,10 +107,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-
-        uint[] memory expectedTokens = _calculateExpectedTokens(expectedWithdrawal.strategies, expectedWithdrawal.shares);
-        IERC20[] memory tokens = staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-
+        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
         assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
     }
 
@@ -118,8 +115,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
-            _userTypes: DEFAULT | SIGNED_METHODS
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         /// 0. Create an operator and a staker with:
@@ -167,8 +164,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
-            _assetTypes: HOLDS_LST,
-            _userTypes: DEFAULT | SIGNED_METHODS
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         /// 0. Create an operator and a staker with:
@@ -204,10 +201,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-
-        uint[] memory expectedTokens = _calculateExpectedTokens(expectedWithdrawal.strategies, expectedWithdrawal.shares);
-        IERC20[] memory tokens = staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-
+        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
         assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
     }
 
