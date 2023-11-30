@@ -63,7 +63,7 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * `address delegationApprover`: if set, this address must sign and approve new delegation from Stakers to this Operator *(optional)*
 * `uint32 stakerOptOutWindowBlocks`: the minimum delay (in blocks) between beginning and completing registration for an AVS. *(currently unused)*
 
-`registerAsOperator` cements the Operator's `OperatorDetails`, and self-delegates the Operator to themselves - permanently marking the caller as an Operator. They cannot "deregister" as an Operator - however, they can exit the system by withdrawing their funds via `queueWithdrawal`.
+`registerAsOperator` cements the Operator's `OperatorDetails`, and self-delegates the Operator to themselves - permanently marking the caller as an Operator. They cannot "deregister" as an Operator - however, they can exit the system by withdrawing their funds via `queueWithdrawals`.
 
 *Effects*:
 * Sets `OperatorDetails` for the Operator in question
@@ -165,7 +165,7 @@ Allows a Staker to delegate to an Operator by way of signature. This function ca
 These methods can be called by both Stakers AND Operators, and are used to (i) undelegate a Staker from an Operator, (ii) queue a withdrawal of a Staker/Operator's shares, or (iii) complete a queued withdrawal:
 
 * [`DelegationManager.undelegate`](#undelegate)
-* [`DelegationManager.queueWithdrawal`](#queuewithdrawal)
+* [`DelegationManager.queueWithdrawals`](#queuewithdrawals)
 * [`DelegationManager.completeQueuedWithdrawal`](#completequeuedwithdrawal)
 * [`DelegationManager.completeQueuedWithdrawals`](#completequeuedwithdrawals)
 
@@ -207,44 +207,44 @@ Note that becoming an Operator is irreversible! Although Operators can withdraw,
 * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
 * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
-#### `queueWithdrawal`
+#### `queueWithdrawals`
 
 ```solidity
-function queueWithdrawal(
-    IStrategy[] calldata strategies,
-    uint[] calldata shares,
-    address withdrawer
+function queueWithdrawals(
+    QueuedWithdrawalParams[] calldata queuedWithdrawalParams
 ) 
     external 
     onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) 
-    returns (bytes32)
+    returns (bytes32[] memory)
 ```
 
-Allows the caller to queue a withdrawal of their held shares across any strategy (in either/both the `EigenPodManager` or `StrategyManager`). If the caller is delegated to an Operator, the `shares` and `strategies` being withdrawn are immediately removed from that Operator's delegated share balances. Note that if the caller is an Operator, this still applies, as Operators are essentially delegated to themselves.
+Allows the caller to queue one or more withdrawals of their held shares across any strategy (in either/both the `EigenPodManager` or `StrategyManager`). If the caller is delegated to an Operator, the `shares` and `strategies` being withdrawn are immediately removed from that Operator's delegated share balances. Note that if the caller is an Operator, this still applies, as Operators are essentially delegated to themselves.
 
-`queueWithdrawal` works very similarly to `undelegate`, except that the caller is not undelegated, and also may:
+`queueWithdrawals` works very similarly to `undelegate`, except that the caller is not undelegated, and also may:
 * Choose which strategies and how many shares to withdraw (as opposed to ALL shares/strategies)
 * Specify a `withdrawer` to receive withdrawn funds once the withdrawal is completed
 
-All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawal is in the queue.
+All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
 
-The withdrawal can be completed by the `withdrawer` after `withdrawalDelayBlocks`, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+Withdrawals can be completed by the `withdrawer` after `withdrawalDelayBlocks`, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
 *Effects*:
-* If the caller is delegated to an Operator, that Operator's delegated balances are decreased according to the `strategies` and `shares` being withdrawn.
-* A `Withdrawal` is queued for the `withdrawer`, tracking the strategies and shares being withdrawn
-    * The caller's withdrawal nonce is increased
-    * The hash of the `Withdrawal` is marked as "pending"
-* See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
-* See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
+* For each withdrawal:
+    * If the caller is delegated to an Operator, that Operator's delegated balances are decreased according to the `strategies` and `shares` being withdrawn.
+    * A `Withdrawal` is queued for the `withdrawer`, tracking the strategies and shares being withdrawn
+        * The caller's withdrawal nonce is increased
+        * The hash of the `Withdrawal` is marked as "pending"
+    * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
+    * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_ENTER_WITHDRAWAL_QUEUE`
-* `strategies.length` MUST equal `shares.length`
-* `strategies.length` MUST NOT be equal to 0
-* The `withdrawer` MUST NOT be 0
-* See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
-* See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
+* For each withdrawal:
+    * `strategies.length` MUST equal `shares.length`
+    * `strategies.length` MUST NOT be equal to 0
+    * The `withdrawer` MUST NOT be 0
+    * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
+    * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
 #### `completeQueuedWithdrawal`
 
@@ -390,7 +390,7 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 ```solidity
 function setWithdrawalDelayBlocks(
-    uint256 _newWithdrawalDelayBlocks
+    uint256 newWithdrawalDelayBlocks
 ) 
     external 
     onlyOwner
@@ -403,4 +403,4 @@ Allows the `owner` to update the number of blocks that must pass before a withdr
 
 *Requirements*:
 * Caller MUST be the `owner`
-* `_withdrawalDelayBlocks` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS` (50400)
+* `newWithdrawalDelayBlocks` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS` (50400)

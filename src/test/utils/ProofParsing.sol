@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../contracts/libraries/BN254.sol";
 import "forge-std/Test.sol";
-import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
-
-contract ProofParsing is Test{
+contract ProofParsing is Test {
     string internal proofConfigJson;
     string prefix;
 
@@ -17,11 +14,8 @@ contract ProofParsing is Test{
     bytes32[46] validatorProof;
     bytes32[44] historicalSummaryProof;
 
-
-
     bytes32[7] executionPayloadProof;
     bytes32[4] timestampProofs;
-
 
     bytes32 slotRoot;
     bytes32 executionPayloadRoot;
@@ -166,12 +160,12 @@ contract ProofParsing is Test{
     }
 
     function getWithdrawalCredentialProof() public returns(bytes32[] memory) {
-        bytes32[] memory withdrawalCredenitalProof = new bytes32[](46);
+        bytes32[] memory withdrawalCredentialProof = new bytes32[](46);
         for (uint i = 0; i < 46; i++) {
             prefix = string.concat(".WithdrawalCredentialProof[", string.concat(vm.toString(i), "]"));
-            withdrawalCredenitalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalCredentialProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return withdrawalCredenitalProof;
+        return withdrawalCredentialProof;
     }
 
     function getValidatorFieldsProof() public returns(bytes32[] memory) {
