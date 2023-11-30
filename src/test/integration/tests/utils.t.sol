@@ -96,4 +96,10 @@ contract IntegrationTestUtils is IntegrationBase {
         assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_UnchangedStrategyShares(strategies, "strategies should have total shares unchanged");
     }
+
+    function assertRegisteredAsOperatorState(User staker) internal {
+        // Ensure the staker is now registered as an operator
+        // You may need to expand on this with actual checks relevant to your system
+        assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
+    }
 }
