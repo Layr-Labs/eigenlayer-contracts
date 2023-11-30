@@ -343,7 +343,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 UTILITY METHODS
     *******************************************************************************/
 
-    function _randPartialWithdrawals(
+    function _randWithdrawal(
         IStrategy[] memory strategies, 
         uint[] memory shares
     ) internal returns (IStrategy[] memory, uint[] memory) {
@@ -353,17 +353,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory withdrawShares = new uint[](stratsToWithdraw);
 
         for (uint i = 0; i < stratsToWithdraw; i++) {
-            // Random portion of shares to withdraw:
-            // 0: withdraw all
-            // 1: withdraw half
-            // we could get more granular, but we'd need to handle:
-            // - native eth shares can only be withdrawn in units of 1 gwei
-            // - LST shares have an exchange rate when ultimately converted to tokens
-            uint portion = _randUint({ min: 0, max: 1 });
-            uint sharesToWithdraw = 
-                portion == 0 ? 
-                    shares[i] : 
-                    shares[i] / 2;
+            uint sharesToWithdraw;
+
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                // For native eth, withdraw a random amount of gwei (at least 1)
+                uint portion = _randUint({ min: 1, max: shares[i] / GWEI_TO_WEI });
+                portion *= GWEI_TO_WEI;
+
+                sharesToWithdraw = shares[i] - portion;
+            } else {
+                // For LSTs, withdraw a random amount of shares (at least 1)
+                uint portion = _randUint({ min: 1, max: shares[i] });
+
+                sharesToWithdraw = shares[i] - portion;
+            }
 
             withdrawStrats[i] = strategies[i];
             withdrawShares[i] = sharesToWithdraw;

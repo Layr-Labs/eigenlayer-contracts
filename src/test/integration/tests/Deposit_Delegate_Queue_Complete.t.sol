@@ -217,7 +217,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
     }
 
     /*******************************************************************************
-                                PARTIAL WITHDRAWALS
+                              RANDOM WITHDRAWALS
     *******************************************************************************/
 
     /// Generates a random staker and operator. The staker:
@@ -225,7 +225,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a random subset of shares
     /// 4. completes the queued withdrawal as tokens
-    function testFuzz_deposit_delegate_queuePartial_completeAsTokens(uint24 _random) public {
+    function testFuzz_deposit_delegate_queueRand_completeAsTokens(uint24 _random) public {
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
@@ -279,7 +279,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         (
             IStrategy[] memory withdrawStrats,
             uint[] memory withdrawShares
-        ) = _randPartialWithdrawals(strategies, shares);
+        ) = _randWithdrawal(strategies, shares);
 
         IDelegationManager.Withdrawal[] memory withdrawals;
         bytes32[] memory withdrawalRoots;
@@ -333,7 +333,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a random subset of shares
     /// 4. completes the queued withdrawal as shares
-    function testFuzz_deposit_delegate_queuePartial_completeAsShares(uint24 _random) public {
+    function testFuzz_deposit_delegate_queueRand_completeAsShares(uint24 _random) public {
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
@@ -387,7 +387,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         (
             IStrategy[] memory withdrawStrats,
             uint[] memory withdrawShares
-        ) = _randPartialWithdrawals(strategies, shares);
+        ) = _randWithdrawal(strategies, shares);
 
         IDelegationManager.Withdrawal[] memory withdrawals;
         bytes32[] memory withdrawalRoots;

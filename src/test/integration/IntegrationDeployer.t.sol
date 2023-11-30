@@ -81,6 +81,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
     uint constant MIN_BALANCE = 1e6;
     uint constant MAX_BALANCE = 5e6;
+    uint constant GWEI_TO_WEI = 1e9;
 
     // Flags
     uint constant FLAG = 1;
