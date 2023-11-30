@@ -131,10 +131,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
 
     /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
     uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
-    /**
-     * @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality `
-     * function *of the EigenPodManager* when set. See EigenPodManager code for details.
-     */
+    /// @notice Index for flag that pauses all withdrawal-of-restaked ETH related functionality `function *of the EigenPodManager* when set. See EigenPodManager code for details.
     uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
 
     /// @notice Index for flag that pauses the deposit related functions *of the EigenPods* when set. see EigenPod code for details.
@@ -224,16 +221,11 @@ contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests
      * @notice Tests function calls from EPM to EigenPod
      * 1. Stake works when pod is deployed
      * 2. Stake when pod is not deployed -> check that ethPOS deposit contract is correct for this and above test
-     * 3. Withdraw restakedBeaconChainETH -> ensure we do a full withdrawal before
      */
 
-    function test_stake_podAlreadyDeployed() public {
-        bytes memory pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
-    
-        bytes memory signature;
-    
-        bytes32 depositDataRoot;
-    
+    bytes public constant pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
+
+    function test_stake_podAlreadyDeployed(bytes memory signature, bytes32 depositDataRoot) public {
         uint256 stakeAmount = 32e18;
 
         uint256 maxPods = eigenPodManager.maxPods();
@@ -247,13 +239,8 @@ contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests
         cheats.stopPrank();
     }
 
-    function test_stake_podNotDeployed() public {
+    function test_stake_podNotDeployed(bytes memory signature, bytes32 depositDataRoot) public {
         address newPodOwner = address(69696969696);
-        bytes memory pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
-    
-        bytes memory signature;
-    
-        bytes32 depositDataRoot;
     
         uint256 stakeAmount = 32e18;
 
