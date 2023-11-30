@@ -142,13 +142,11 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
 
     function test_verifyBalanceUpdates_revert_pausedEigenVerifyBalanceUpdate() public {
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-
-        uint40[] memory validatorIndices = new uint40[](1);
-
-        BeaconChainProofs.BalanceUpdateProof[] memory proofs = new BeaconChainProofs.BalanceUpdateProof[](1);
-
         BeaconChainProofs.StateRootProof memory stateRootProofStruct;
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        bytes[] memory proofsArray = new bytes[](1);
+        uint40[] memory validatorIndices = new uint40[](1);
 
         // pause the contract
         cheats.prank(address(pauser));
@@ -156,7 +154,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodPausing is EigenPod_PodManager_Un
 
         cheats.prank(address(podOwner));
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
-        eigenPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofs, validatorFieldsArray);
+        eigenPod.verifyBalanceUpdates(0, validatorIndices, stateRootProofStruct, proofsArray, validatorFieldsArray);
     }
 
     function test_verifyAndProcessWithdrawals_revert_pausedEigenVerifyWithdrawal() public {
@@ -268,7 +266,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
     uint40[] validatorIndices;
     bytes[] validatorFieldsProofs;
     bytes32[][] validatorFields;
-    BeaconChainProofs.BalanceUpdateProof[] balanceUpdateProof;
+    // BeaconChainProofs.BalanceUpdateProof[] balanceUpdateProof;
     BeaconChainProofs.WithdrawalProof[] withdrawalProofs;
     bytes32[][] withdrawalFields;
 
@@ -318,14 +316,14 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
 
         // Save state for checks
         int256 initialShares = eigenPodManager.podOwnerShares(podOwner);
-        uint64 newValidatorBalance = balanceUpdateProof[0].balanceRoot.getBalanceAtIndex(validatorIndices[0]);
+        uint64 newValidatorBalance = validatorFields[0].getEffectiveBalanceGwei();
 
         // Verify balance update
         eigenPod.verifyBalanceUpdates(
             oracleTimestamp,
             validatorIndices,
             stateRootProofStruct,
-            balanceUpdateProof,
+            validatorFieldsProofs,
             validatorFields
         );
 
@@ -344,7 +342,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         _verifyWithdrawalCredentials();
 
         // Set JSON
-        setJSON("src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         bytes32 validatorPubkeyHash = validatorFields[0].getPubkeyHash();
 
         // Set proof params, oracle block root, and warp time
@@ -355,14 +353,14 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
 
         // Save state for checks
         int256 initialShares = eigenPodManager.podOwnerShares(podOwner);
-        uint64 newValidatorBalance = balanceUpdateProof[0].balanceRoot.getBalanceAtIndex(validatorIndices[0]);
+        uint64 newValidatorBalance = validatorFields[0].getEffectiveBalanceGwei();
 
         // Verify balance update
         eigenPod.verifyBalanceUpdates(
             oracleTimestamp,
             validatorIndices,
             stateRootProofStruct,
-            balanceUpdateProof,
+            validatorFieldsProofs,
             validatorFields
         );
 
@@ -575,20 +573,20 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         // Reset arrays
         delete validatorIndices;
         delete validatorFields;
-        delete balanceUpdateProof;
+        delete validatorFieldsProofs;
         
         // Set state proof struct
         stateRootProofStruct = _getStateRootProof();
-    
-        // Set validator index, beacon state root, balance update proof, and validator fields
+
+        // Set validator indices
         uint40 validatorIndex = uint40(getValidatorIndex());
         validatorIndices.push(validatorIndex);
 
-        // Set validatorFields array
+        // Set validatorFieldsArray
         validatorFields.push(getValidatorFields());
 
-        // Set balance update proof
-        balanceUpdateProof.push(_getBalanceUpdateProof());
+        // Set validator fields proof
+        validatorFieldsProofs.push(abi.encodePacked(getBalanceUpdateProof())); // Validator fields are proven here
     }
 
     function _setWithdrawalProofParams() internal {
@@ -614,15 +612,15 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         withdrawalProofs.push(_getWithdrawalProof());
     }
 
-    function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
-        bytes32 balanceRoot = getBalanceRoot();
-        BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
-            abi.encodePacked(getValidatorBalanceProof()),
-            abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
-            balanceRoot
-        );
-        return proofs;
-    }
+    // function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
+    //     bytes32 balanceRoot = getBalanceRoot();
+    //     BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
+    //         abi.encodePacked(getValidatorBalanceProof()),
+    //         abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
+    //         balanceRoot
+    //     );
+    //     return proofs;
+    // }
 
     /// @notice this function just generates a valid proof so that we can test other functionalities of the withdrawal flow
     function _getWithdrawalProof() internal returns (BeaconChainProofs.WithdrawalProof memory) {

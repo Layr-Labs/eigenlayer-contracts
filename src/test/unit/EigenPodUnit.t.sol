@@ -521,7 +521,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
     uint64 oracleTimestamp;
     uint40 validatorIndex;
     bytes32 beaconStateRoot;
-    BeaconChainProofs.BalanceUpdateProof balanceUpdateProof;
+    bytes validatorFieldsProof;
     bytes32[] validatorFields;
 
     function testFuzz_revert_oracleTimestampStale(uint64 oracleFuzzTimestamp, uint64 mostRecentBalanceUpdateTimestamp) public {
@@ -531,7 +531,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
         
         // Get validator fields and balance update root
         validatorFields = getValidatorFields();
-        BeaconChainProofs.BalanceUpdateProof memory proof = _getBalanceUpdateProof();
+        validatorFieldsProof = abi.encodePacked(getBalanceUpdateProof());
 
         // Balance update reversion
         cheats.expectRevert(
@@ -541,7 +541,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             oracleFuzzTimestamp,
             0,
             bytes32(0),
-            balanceUpdateProof,
+            validatorFieldsProof,
             validatorFields,
             mostRecentBalanceUpdateTimestamp
         );
@@ -565,7 +565,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
-            balanceUpdateProof,
+            validatorFieldsProof,
             validatorFields,
             0 // Most recent balance update timestamp set to 0
         );
@@ -578,30 +578,31 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
      */
     function test_revert_balanceUpdateAfterWithdrawableEpoch() external {
         // Set Json proof
-        setJSON("src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         
         // Set proof params
         _setBalanceUpdateParams();
         
-        // Set balance root and  withdrawable epoch
-        balanceUpdateProof.balanceRoot = bytes32(uint256(0));     
+        // Set effective balance and  withdrawable epoch
+        validatorFields[2] = bytes32(uint256(0)); // per consensus spec, slot 2 is effective balance
         validatorFields[7] = bytes32(uint256(0)); // per consensus spec, slot 7 is withdrawable epoch == 0
         
+        console.log("withdrawable epoch: ", validatorFields.getWithdrawableEpoch());
         // Expect revert on balance update 
         cheats.expectRevert(bytes("EigenPod.verifyBalanceUpdate: validator is withdrawable but has not withdrawn"));
-        eigenPodHarness.verifyBalanceUpdate(oracleTimestamp, validatorIndex, beaconStateRoot, balanceUpdateProof, validatorFields, 0);
+        eigenPodHarness.verifyBalanceUpdate(oracleTimestamp, validatorIndex, beaconStateRoot, validatorFieldsProof, validatorFields, 0);
     }
 
     /// @notice Rest of tests assume beacon chain proofs are correct; Now we update the validator's balance
 
-    ///@notice Balance of validator is > 32e9
+    ///@notice Balance of validator is >= 32e9
     function test_positiveSharesDelta() public {
         // Set JSON
-        setJSON("src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
 
         // Set proof params
         _setBalanceUpdateParams();
-        
+
         // Verify balance update
         vm.expectEmit(true, true, true, true);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
@@ -609,7 +610,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
-            balanceUpdateProof,
+            validatorFieldsProof,
             validatorFields,
             0 // Most recent balance update timestamp set to 0
         );
@@ -627,7 +628,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
 
         // Set proof params
         _setBalanceUpdateParams();
-        uint64 newValidatorBalance = balanceUpdateProof.balanceRoot.getBalanceAtIndex(validatorIndex);
+        uint64 newValidatorBalance = validatorFields.getEffectiveBalanceGwei();
 
         // Set balance of validator to max ETH
         eigenPodHarness.setValidatorRestakedBalance(validatorFields[0], MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
@@ -637,7 +638,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
-            balanceUpdateProof,
+            validatorFieldsProof,
             validatorFields,
             0 // Most recent balance update timestamp set to 0
         );
@@ -652,7 +653,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
 
     function test_zeroSharesDelta() public {
         // Set JSON
-        setJSON("src/test/test-data/balanceUpdateProof_overCommitted_302913.json");
+        setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
 
         // Set proof params
         _setBalanceUpdateParams();
@@ -665,7 +666,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
             oracleTimestamp,
             validatorIndex,
             beaconStateRoot,
-            balanceUpdateProof,
+            validatorFieldsProof,
             validatorFields,
             0 // Most recent balance update timestamp set to 0
         );
@@ -678,7 +679,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
         // Set validator index, beacon state root, balance update proof, and validator fields
         validatorIndex = uint40(getValidatorIndex());
         beaconStateRoot = getBeaconStateRoot();
-        balanceUpdateProof = _getBalanceUpdateProof();
+        validatorFieldsProof = abi.encodePacked(getBalanceUpdateProof());
         validatorFields = getValidatorFields();
 
         // Get an oracle timestamp
@@ -687,16 +688,6 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
 
         // Set validator status to active
         eigenPodHarness.setValidatorStatus(validatorFields[0], IEigenPod.VALIDATOR_STATUS.ACTIVE);
-    }
-
-    function _getBalanceUpdateProof() internal returns (BeaconChainProofs.BalanceUpdateProof memory) {
-        bytes32 balanceRoot = getBalanceRoot();
-        BeaconChainProofs.BalanceUpdateProof memory proofs = BeaconChainProofs.BalanceUpdateProof(
-            abi.encodePacked(getValidatorBalanceProof()),
-            abi.encodePacked(getWithdrawalCredentialProof()), //technically this is to verify validator pubkey in the validator fields, but the WC proof is effectively the same so we use it here again.
-            balanceRoot
-        );
-        return proofs;
     }
 }
 
