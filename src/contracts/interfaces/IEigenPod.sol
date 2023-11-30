@@ -50,15 +50,6 @@ interface IEigenPod {
     }
 
 
-    struct ProofService {
-        address caller;
-        // whether or not the proof fulfiller has been added
-        uint256 maxFee;
-        // the commission rate of the proof fulfiller
-        address feeRecipient;
-    }
-
-
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,
@@ -102,10 +93,6 @@ interface IEigenPod {
 
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
-
-    /// @notice Emitted when a new proof fulfiller is added
-    event ProofServiceUpdated(address indexed proofService);
-
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
@@ -228,6 +215,8 @@ interface IEigenPod {
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
-    function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external; 
-
+    function fulfillPartialWithdrawalProofRequest(
+        IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
+        address feeRecipient
+    ) external;
 }

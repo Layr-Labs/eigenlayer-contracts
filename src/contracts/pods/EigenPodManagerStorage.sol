@@ -64,6 +64,12 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      */
     mapping(address => int256) public podOwnerShares;
 
+    /// @notice This is the offchain proving service
+    ProofService public proofService;
+
+    /// @notice Switch to turn off partial withdrawal merkle proofs and turn on offchain proofs as a service
+    bool public partialWithdrawalProofSwitch;
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -83,5 +89,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[43] private __gap;
 }

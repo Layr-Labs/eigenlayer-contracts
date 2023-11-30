@@ -44,6 +44,16 @@ contract EigenPodManager is
         _;
     }
 
+    modifier onlyProofService() {
+        require(msg.sender == proofService.caller, "EigenPod.onlyProofService: not a permissioned fulfiller");
+        _;
+    }
+
+    modifier partialWithdrawalProofSwitchOn() {
+        require(partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOn: partial withdrawal proof switch is off");
+        _;
+    }
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -213,6 +223,33 @@ contract EigenPodManager is
 
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
+    }
+
+    function proofServiceCallback(
+        WithdrawalCallbackInfo[] calldata callbackInfo
+    ) external onlyProofService partialWithdrawalProofSwitchOn {
+        for(uint256 i = 0; i < callbackInfo.length; i++) {
+            require(callbackInfo[i].fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
+            IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
+            pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
+        }
+    }
+
+    function flipPartialWithdrawalProofSwitch() external onlyOwner {
+        if(partialWithdrawalProofSwitch) {
+            partialWithdrawalProofSwitch = false;
+        } else {
+            partialWithdrawalProofSwitch = true;
+        }
+    }
+
+    function updateProofService(address caller, uint256 maxFee, address feeRecipient) external onlyOwner {
+        proofService = ProofService({
+            caller: caller,
+            maxFee: maxFee,
+            feeRecipient: feeRecipient
+        });
+        emit ProofServiceUpdated(proofService.caller);
     }
 
     /**

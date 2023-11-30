@@ -29,6 +29,9 @@ interface IEigenPodManager is IPausable {
     /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
+    /// @notice Emitted when a new proof fulfiller is added
+    event ProofServiceUpdated(address indexed proofService);
+
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(
         address indexed podOwner,
@@ -38,6 +41,24 @@ interface IEigenPodManager is IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+
+    //info for each withdrawal called back by proof service
+    struct WithdrawalCallbackInfo {
+        address podOwner;
+        uint64 startTimestamp;
+        uint64 endTimestamp;
+        uint256 provenPartialWithdrawalSumWei;
+        uint256 fee;
+    }
+
+
+    struct ProofService {
+        address caller;
+        // whether or not the proof fulfiller has been added
+        uint256 maxFee;
+        // the commission rate of the proof fulfiller
+        address feeRecipient;
+    }
 
     /**
      * @notice Creates an EigenPod for the sender.
@@ -143,4 +164,11 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+
+    /// @notice Returns the status of the proof switch
+    function partialWithdrawalProofSwitch() external view returns (bool);
+
+    function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external; 
+
 }

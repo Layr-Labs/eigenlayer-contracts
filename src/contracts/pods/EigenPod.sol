@@ -97,16 +97,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
-    /// @notice This is the offchain proving service
-    ProofService public proofService;
-
     /// @notice This variable tracks the timestamp at which the last partial withdrawal was proven via ZK proofs
     uint64 public withdrawalProvenUntilTimestamp;
-
-    /// @notice Switch to turn off partial withdrawal merkle proofs and turn on offchain proofs as a service
-    bool public partialWithdrawalProofSwitch;
-
-
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -138,6 +130,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
+    modifier partialWithdrawalProofSwitchOff() {
+        require(!eigenPodManager.partialWithdrawalProofSwitch(), "EigenPod.partialWithdrawalProofSwitchOff: partial withdrawal proof switch is on");
+        _;
+    }
+
     /**
      * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
@@ -150,22 +147,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         );
         _;
     }
-
-    modifier onlyProofService() {
-        require(msg.sender == proofService.caller, "EigenPod.onlyProofService: not a permissioned fulfiller");
-        _;
-    }
-
-    modifier partialWithdrawalProofSwitchOff() {
-        require(!partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOff: partial withdrawal proof switch is on");
-        _;
-    }
-
-    modifier partialWithdrawalProofSwitchOn() {
-        require(partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOn: partial withdrawal proof switch is off");
-        _;
-    }
-
 
     constructor(
         IETHPOSDeposit _ethPOS,
@@ -424,15 +405,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _processWithdrawalBeforeRestaking(podOwner);
     }
 
-
-    function flipPartialWithdrawalProofSwitch() external onlyEigenPodOwner {
-        if(partialWithdrawalProofSwitch) {
-            partialWithdrawalProofSwitch = false;
-        } else {
-            partialWithdrawalProofSwitch = true;
-        }
-    }
-
     /*******************************************************************************
                     EXTERNAL FUNCTIONS CALLABLE BY EIGENPODMANAGER
     *******************************************************************************/
@@ -467,38 +439,25 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     }
 
 
-    function updateProofService(address caller, uint256 maxFee, address feeRecipient) external onlyEigenPodManager {
-        proofService = ProofService({
-            caller: caller,
-            maxFee: maxFee,
-            feeRecipient: feeRecipient
-        });
-        emit ProofServiceUpdated(proofService.caller);
-    }
-
-
     /*******************************************************************************
                     EXTERNAL FUNCTIONS CALLABLE BY PERMISSIONED SERVICES
     *******************************************************************************/
 
     function fulfillPartialWithdrawalProofRequest(
-        address requestor,
-        uint64 startTimestamp,
-        uint64 endTimestamp,
-        uint256 provenPartialWithdrawalSumWei,
-        uint256 fee
-    ) external onlyProofService partialWithdrawalProofSwitchOn {
+        IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
+        address feeRecipient
+    ) external onlyEigenPodManager  {
         //TODO: figure if we wanna do the first proof from genesis time or not
         if(withdrawalProvenUntilTimestamp == 0){
             withdrawalProvenUntilTimestamp = GENESIS_TIME;
         }
-        require(startTimestamp < endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
-        require(startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
-        require(requestor == podOwner, "EigenPod.fulfillPartialWithdrawalProofRequest: requestor must be podOwner");
-        require(fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
-        provenPartialWithdrawalSumWei -= fee;
+        uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
+
+        require(withdrawalCallbackInfo.startTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
+        require(withdrawalCallbackInfo.startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
+        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
         //send proof service their fee
-        AddressUpgradeable.sendValue(payable(proofService.feeRecipient), fee);
+        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
 
         //subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
@@ -506,7 +465,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
         } 
        
-        withdrawalProvenUntilTimestamp = endTimestamp;
+        withdrawalProvenUntilTimestamp = withdrawalCallbackInfo.endTimestamp;
     }
 
     /*******************************************************************************
@@ -872,5 +831,5 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[44] private __gap;
 }

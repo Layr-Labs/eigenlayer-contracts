@@ -89,4 +89,9 @@ contract EigenPodMock is IEigenPod, Test {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
 
     function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external{}
+
+    function fulfillPartialWithdrawalProofRequest(
+        IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
+        address feeRecipient
+    ) external {}
 }
