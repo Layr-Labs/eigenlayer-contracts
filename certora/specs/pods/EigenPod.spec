@@ -39,10 +39,12 @@ methods {
     function _.addShares(address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256) external => DISPATCHER(true);
+    function _.podOwnerShares(address) external => DISPATCHER(true);
 
     // external calls to EigenPod
 	function _.withdrawRestakedBeaconChainETH(address,uint256) external => DISPATCHER(true);
     function _.stake(bytes, bytes, bytes32) external => DISPATCHER(true);
+    function _.initialize(address) external => DISPATCHER(true);
 
     // external calls to ETH2Deposit contract
     function _.deposit(bytes, bytes, bytes, bytes32) external => NONDET;
@@ -155,6 +157,8 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
 ghost mathint sumOfValidatorRestakedbalancesWei {
     // NOTE: this commented out line is broken, as calling functions in axioms is currently disallowed, but this is what we'd run ideally. 
     // init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
+
+    // since both of these variables are zero at construction, just set the ghost to zero in the axiom
     init_state axiom sumOfValidatorRestakedbalancesWei == 0;
 }
 
@@ -167,11 +171,14 @@ hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restaked
 }
 
 rule baseInvariant() {
+    int256 podOwnerSharesBefore = get_podOwnerShares();
     // perform arbitrary function call
     method f;
     env e;
     calldataarg args;
     f(e,args);
-    assert(sumOfValidatorRestakedbalancesWei == get_podOwnerShares() - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
+    int256 podOwnerSharesAfter = get_podOwnerShares();
+    mathint podOwnerSharesDelta = podOwnerSharesAfter - podOwnerSharesBefore;
+    assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
         "base invariant violated");
 }
