@@ -3,14 +3,14 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "../../contracts/pods/EigenPodManager.sol";
-import "../../contracts/pods/EigenPodPausingConstants.sol";
+import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/pods/EigenPodPausingConstants.sol";
 
-import "../events/IEigenPodManagerEvents.sol";
-import "../utils/EigenLayerUnitTestSetup.sol";
-import "../harnesses/EigenPodManagerWrapper.sol";
-import "../mocks/EigenPodMock.sol";
-import "../mocks/ETHDepositMock.sol";
+import "src/test/events/IEigenPodManagerEvents.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
+import "src/test/harnesses/EigenPodManagerWrapper.sol";
+import "src/test/mocks/EigenPodMock.sol";
+import "src/test/mocks/ETHDepositMock.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     // Contracts Under Test: EigenPodManager
@@ -23,7 +23,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodMockImplementation;
     IBeacon public eigenPodBeacon; // Proxy for eigenPodMockImplementation
-    IStrategy public beaconChainETHStrategy;
     
     // Constants
     uint256 public constant GWEI_TO_WEI = 1e9;
@@ -63,9 +62,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
                 )
             )
         );
-
-        // Set beaconChainETHStrategy
-        beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
 
         // Set defaultPod
         defaultPod = eigenPodManager.getPod(defaultStaker);
