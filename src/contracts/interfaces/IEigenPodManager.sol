@@ -54,8 +54,6 @@ interface IEigenPodManager is IPausable {
 
     struct ProofService {
         address caller;
-        // whether or not the proof fulfiller has been added
-        uint256 maxFee;
         // the commission rate of the proof fulfiller
         address feeRecipient;
     }
