@@ -97,9 +97,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
-    /// @notice This variable tracks the timestamp at which the last partial withdrawal was proven via ZK proofs
-    uint64 public withdrawalProvenUntilTimestamp;
-
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
         _;
@@ -447,14 +444,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
     ) external onlyEigenPodManager  {
-        //TODO: figure if we wanna do the first proof from genesis time or not
-        if(withdrawalProvenUntilTimestamp == 0){
-            withdrawalProvenUntilTimestamp = GENESIS_TIME;
-        }
         uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
 
         require(withdrawalCallbackInfo.startTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
-        require(withdrawalCallbackInfo.startTimestamp == withdrawalProvenUntilTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match withdrawalProvenUntilTimestamp");
+        require(withdrawalCallbackInfo.startTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
         provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
         //send proof service their fee
         AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
@@ -465,7 +458,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
         } 
        
-        withdrawalProvenUntilTimestamp = withdrawalCallbackInfo.endTimestamp;
+        mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
     }
 
     /*******************************************************************************
