@@ -258,11 +258,14 @@ hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restaked
 }
 
 rule baseInvariant() {
+    int256 podOwnerSharesBefore = get_podOwnerShares();
     // perform arbitrary function call
     method f;
     env e;
     calldataarg args;
     f(e,args);
-    assert(sumOfValidatorRestakedbalancesWei == get_podOwnerShares() - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
+    int256 podOwnerSharesAfter = get_podOwnerShares();
+    mathint podOwnerSharesDelta = podOwnerSharesAfter - podOwnerSharesBefore;
+    assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
         "base invariant violated");
 }
