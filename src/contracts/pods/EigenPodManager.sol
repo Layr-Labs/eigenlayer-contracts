@@ -226,8 +226,11 @@ contract EigenPodManager is
     }
 
     function proofServiceCallback(
+        bytes32 blockRoot;
+        uint64 oracleTimestamp;
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external onlyProofService partialWithdrawalProofSwitchOn {
+        require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
             require(callbackInfo[i].fee <= proofService.maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
