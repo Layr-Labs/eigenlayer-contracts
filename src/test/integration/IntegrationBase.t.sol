@@ -355,9 +355,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
         // Use timewarp to get previous token balances
         uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
 
-        for (uint i = 0; i < tokens.length; i++) {
-            uint prevBalance = prevTokenBalances[i];
-            uint curBalance = curTokenBalances[i];
+        for (uint i = 0; i < strategies.length; i++) {
+            // Ignore BeaconChainETH strategy since it doesn't keep track of global strategy shares
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                continue;
+            }
+            uint256 prevShare = prevShares[i];
+            uint256 curShare = curShares[i];
 
             assertEq(prevBalance - removedTokens[i], curBalance, err);
         }

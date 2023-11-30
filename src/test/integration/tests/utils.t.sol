@@ -29,6 +29,19 @@ contract IntegrationTestUtils is IntegrationBase {
         assert_Snap_AddedOperatorShares(operator, strategies, shares, "operator should have received shares");
     }
 
+    function assertQueuedWithdrawalState(User staker, User operator, IStrategy[] memory strategies, uint256[] memory shares, IDelegationManager.Withdrawal[] memory withdrawals, bytes32[] memory withdrawalRoots) internal {
+        // The staker will queue one or more withdrawals for the selected strategies and shares
+        //
+        // ... check that each withdrawal was successfully enqueued, that the returned roots
+        //     match the hashes of each withdrawal, and that the staker and operator have
+        //     reduced shares.
+        assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
+        assert_Snap_IncreasedQueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
+        assert_Snap_RemovedOperatorShares(operator, strategies, shares, "failed to remove operator shares");
+        assert_Snap_RemovedStakerShares(staker, strategies, shares, "failed to remove staker shares");
+    }
+
     function assertUndelegateState(
         User staker, 
         User operator, 
@@ -61,8 +74,8 @@ contract IntegrationTestUtils is IntegrationBase {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as tokens
         // 
-        // ... check that the withdrawal is not pending, that the withdrawer received the expected shares, and that the total shares of each 
-        //     strategy withdrawn remains unchanged 
+        // ... check that the withdrawal is not pending, that the withdrawer received the expected tokens, and that the total shares of each 
+        //     strategy withdrawn decreases
         assert_withdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker's withdrawal should no longer be pending");
         assert_Snap_IncreasedTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_DecreasedStrategyShares(strategies, shares, "strategies should have total shares decremented");
