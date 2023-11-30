@@ -153,7 +153,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_withAdditionalDepositAfter(uint24 _random) public {   
+    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,

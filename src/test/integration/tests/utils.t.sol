@@ -73,14 +73,8 @@ contract IntegrationTestUtils is IntegrationBase {
     ) internal {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as tokens
-        // 
-<<<<<<< HEAD
         // ... check that the withdrawal is not pending, that the withdrawer received the expected tokens, and that the total shares of each 
         //     strategy withdrawn decreases
-=======
-        // ... check that the withdrawal is not pending, that the withdrawer received the expected shares, and that the total shares of each 
-        //     strategy withdrawn remains unchanged 
->>>>>>> c04f76d3 (test: move assertions into common functions)
         assert_withdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker's withdrawal should no longer be pending");
         assert_Snap_IncreasedTokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_DecreasedStrategyShares(strategies, shares, "strategies should have total shares decremented");
@@ -101,13 +95,10 @@ contract IntegrationTestUtils is IntegrationBase {
         assert_Snap_AddedStakerShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_UnchangedStrategyShares(strategies, "strategies should have total shares unchanged");
     }
-<<<<<<< HEAD
 
     function assertRegisteredAsOperatorState(User staker) internal {
         // Ensure the staker is now registered as an operator
         // You may need to expand on this with actual checks relevant to your system
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
     }
-=======
->>>>>>> c04f76d3 (test: move assertions into common functions)
 }
