@@ -127,13 +127,11 @@ contract User is Test {
     function queueWithdrawals(
         IStrategy[] memory strategies, 
         uint[] memory shares
-    ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory, bytes32[] memory) {
+    ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
 
         address operator = delegationManager.delegatedTo(address(this));
         address withdrawer = address(this);
         uint nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
-        
-        bytes32[] memory withdrawalRoots;
 
         // Create queueWithdrawals params
         IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
@@ -155,12 +153,12 @@ contract User is Test {
             shares: shares
         });
 
-        withdrawalRoots = delegationManager.queueWithdrawals(params);
+        bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
 
         // Basic sanity check - we do all other checks outside this file
         assertEq(withdrawals.length, withdrawalRoots.length, "User.queueWithdrawals: length mismatch");
 
-        return (withdrawals, withdrawalRoots);
+        return (withdrawals);
     }
 
     function completeQueuedWithdrawal(
