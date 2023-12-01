@@ -176,11 +176,19 @@ contract User is Test {
 
         return (withdrawals);
     }
+    
+    function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+        return _completeQueuedWithdrawal(withdrawal, true);
+    }
 
-    function completeQueuedWithdrawal(
+    function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+        return _completeQueuedWithdrawal(withdrawal, false);
+    }
+
+    function _completeQueuedWithdrawal(
         IDelegationManager.Withdrawal memory withdrawal, 
         bool receiveAsTokens
-    ) public createSnapshot virtual returns (IERC20[] memory) {
+    ) internal virtual returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 
         for (uint i = 0; i < tokens.length; i++) {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/test/integration/tests/utils.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/User.t.sol";
 
-contract Integration_Deposit_Delegate_Queue_Complete is IntegrationTestUtils {
+contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
     /*******************************************************************************
                                 FULL WITHDRAWALS
@@ -58,7 +58,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationTestUtils {
 
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
 
@@ -116,7 +116,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationTestUtils {
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeQueuedWithdrawal(withdrawals[i], false);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
 
@@ -184,7 +184,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationTestUtils {
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares, tokens, expectedTokens);
         }
 
@@ -246,7 +246,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationTestUtils {
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeQueuedWithdrawal(withdrawals[i], false);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares);
         }
 
