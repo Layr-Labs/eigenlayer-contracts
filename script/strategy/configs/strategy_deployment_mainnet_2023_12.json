@@ -20,7 +20,6 @@
         },
         {
             "token_address": "0xA35b1B31Ce002FBF2058D22F30f95D405200A15b",
-            "token_name": "ETHx",
             "token_symbol": "ETHx",
             "max_per_deposit": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
             "max_deposits": 200000000000000000000000
