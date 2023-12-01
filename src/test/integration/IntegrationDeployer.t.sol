@@ -189,6 +189,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
+        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -197,7 +198,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
-                0 // initialPausedStatus
+                0 /* initialPausedStatus */,
+                withdrawalDelayBlocks
             )
         );
         // StrategyManager
@@ -237,7 +239,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         // Delayed Withdrawal Router
-        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),

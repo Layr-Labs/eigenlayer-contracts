@@ -43,6 +43,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultStaker = cheats.addr(uint256(123_456_789));
     address defaultOperator = address(this);
 
+    uint256 initializedWithdrawalDelayBlocks = 0;
+
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // Index for flag that pauses new delegations when set.
@@ -53,6 +55,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     // Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
@@ -69,7 +73,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 new TransparentUpgradeableProxy(
                     address(delegationManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(DelegationManager.initialize.selector, address(this), pauserRegistry, 0) // 0 is initialPausedStatus
+                    abi.encodeWithSelector(
+                        DelegationManager.initialize.selector,
+                        address(this),
+                        pauserRegistry,
+                        0, // 0 is initialPausedStatus
+                        initializedWithdrawalDelayBlocks
+                    )
                 )
             )
         );
@@ -240,11 +250,11 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: defaultOperator,
+            earningsReceiver: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        _registerOperator(defaultOperator, operatorDetails, emptyStringForMetadataURI);
+        _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
     function _registerOperator(
@@ -294,7 +304,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(address(this), pauserRegistry, 0);
+        delegationManager.initialize(address(this), pauserRegistry, 0, initializedWithdrawalDelayBlocks);
     }
 
     /// @notice Verifies that the stakeRegistry cannot be set after it has already been set
@@ -303,37 +313,27 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         delegationManager.setStakeRegistry(stakeRegistryMock);
     }
 
-    function testFuzz_setWithdrawalDelayBlocks_revert_notOwner(
-        address invalidCaller
-    ) public filterFuzzedAddressInputs(invalidCaller) {
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        delegationManager.setWithdrawalDelayBlocks(0);
-    }
-
-    function testFuzz_setWithdrawalDelayBlocks_revert_tooLarge(uint256 newWithdrawalDelayBlocks) external {
-        // filter fuzzed inputs to disallowed amounts
-        cheats.assume(newWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
-
-        // attempt to set the `withdrawalDelayBlocks` variable
-        cheats.expectRevert("DelegationManager.setWithdrawalDelayBlocks: newWithdrawalDelayBlocks too high");
-        delegationManager.setWithdrawalDelayBlocks(newWithdrawalDelayBlocks);
-    }
-
-    function testFuzz_setWithdrawalDelayBlocks(uint256 newWithdrawalDelayBlocks) public {
-        cheats.assume(newWithdrawalDelayBlocks <= delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
-
-        // set the `withdrawalDelayBlocks` variable
-        uint256 previousDelayBlocks = delegationManager.withdrawalDelayBlocks();
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalDelayBlocksSet(previousDelayBlocks, newWithdrawalDelayBlocks);
-        delegationManager.setWithdrawalDelayBlocks(newWithdrawalDelayBlocks);
-
-        // Check storage
-        assertEq(
-            delegationManager.withdrawalDelayBlocks(),
-            newWithdrawalDelayBlocks,
-            "withdrawalDelayBlocks not set correctly"
+    function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(uint256 withdrawalDelayBlocks) public {
+        cheats.assume(withdrawalDelayBlocks > MAX_WITHDRAWAL_DELAY_BLOCKS);
+        // Deploy DelegationManager implmentation and proxy
+        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
+        cheats.expectRevert(
+            "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
+        delegationManager = DelegationManager(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(delegationManagerImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        DelegationManager.initialize.selector,
+                        address(this),
+                        pauserRegistry,
+                        0, // 0 is initialPausedStatus
+                        withdrawalDelayBlocks
+                    )
+                )
+            )
         );
     }
 }
@@ -894,9 +894,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.roll(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
         cheats.assume(expiry < block.timestamp);
-
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1098,8 +1095,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
-
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 

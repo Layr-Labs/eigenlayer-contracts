@@ -204,7 +204,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 DelegationManager.initialize.selector,
                 initialOwner,
                 pauserReg,
-                0 /*initialPausedStatus*/
+                0 /*initialPausedStatus*/,
+                WITHDRAWAL_DELAY_BLOCKS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
