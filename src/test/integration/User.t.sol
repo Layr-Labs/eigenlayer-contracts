@@ -124,17 +124,19 @@ contract User is Test {
     }
 
     /// @dev Undelegate from operator
-    function undelegate() public createSnapshot virtual returns(Withdrawal[] memory){
-        IDelegationManager.Withdrawal[] memory withdrawal = [_getExpectedWithdrawalStruct()];
+    function undelegate() public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+        IDelegationManager.Withdrawal[] memory withdrawal = new IDelegationManager.Withdrawal[](1);
+        withdrawal[0] = _getExpectedWithdrawalStructForStaker(address(this));
         delegationManager.undelegate(address(this));
-        return withdrawals;
+        return withdrawal;
     }
 
     /// @dev Force undelegate staker
-    function forceUndelegate(User staker) public createSnapshot virtual returns(Withdrawal[] memory){
-        IDelegationManager.Withdrawal[] memory withdrawal = [_getExpectedWithdrawalStruct()];
-        return delegationManager.undelegate(address(staker));
-        return withdrawl;
+    function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+        IDelegationManager.Withdrawal[] memory withdrawal = new IDelegationManager.Withdrawal[](1);
+        withdrawal[0] = _getExpectedWithdrawalStructForStaker(address(staker));
+        delegationManager.undelegate(address(staker));
+        return withdrawal;
     }
 
     /// @dev Queues a single withdrawal for every share and strategy pair
@@ -231,15 +233,15 @@ contract User is Test {
     }
 
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedWithdrawalStruct(User staker) internal view returns (IDelegationManager.Withdrawal memory) {
+    function _getExpectedWithdrawalStructForStaker(address staker) internal view returns (IDelegationManager.Withdrawal memory) {
         (IStrategy[] memory strategies, uint[] memory shares)
-            = delegationManager.getDelegatableShares(address(staker));
+            = delegationManager.getDelegatableShares(staker);
 
         return IDelegationManager.Withdrawal({
-            staker: address(staker),
-            delegatedTo: delegationManager.delegatedTo(address(staker)),
-            withdrawer: address(staker),
-            nonce: delegationManager.cumulativeWithdrawalsQueued(address(staker)),
+            staker: staker,
+            delegatedTo: delegationManager.delegatedTo(staker),
+            withdrawer: staker,
+            nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategies,
             shares: shares
