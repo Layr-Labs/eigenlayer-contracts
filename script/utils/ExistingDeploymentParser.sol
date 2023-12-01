@@ -46,13 +46,14 @@ contract ExistingDeploymentParser is Script, Test {
     address executorMultisig;
     address operationsMultisig;
 
-    // strategies deployed
-    StrategyBase[] public deployedStrategyArray;
+    string chainName;
 
     function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
+
+        _setCurrentChainName();
 
         // READ JSON CONFIG DATA
         string memory existingDeploymentData = vm.readFile(existingDeploymentInfoPath);
@@ -97,5 +98,17 @@ contract ExistingDeploymentParser is Script, Test {
             deployedStrategyArray.push(StrategyBase(strategyList[i]));
         }
         */
+    }
+
+    function _setCurrentChainName() internal returns (string memory) {
+        uint256 currentChainId = block.chainid;
+        if (currentChainId == 1) {
+            chainName = "mainnet";
+        } else if (currentChainId == 5) {
+            chainName = "goerli";
+        } else {
+            chainName = "unknown";
+        }
+        return chainName;
     }
 }
