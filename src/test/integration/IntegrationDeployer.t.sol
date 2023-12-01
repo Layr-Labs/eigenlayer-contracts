@@ -229,7 +229,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max, // maxPods
+                type(uint).max, // maxPods
                 address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
@@ -237,7 +237,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         // Delayed Withdrawal Router
-        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
+        uint withdrawalDelayBlocks = 7 days / 12 seconds;
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),

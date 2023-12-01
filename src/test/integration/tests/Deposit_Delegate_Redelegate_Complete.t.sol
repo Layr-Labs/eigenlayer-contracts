@@ -49,9 +49,9 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtil
         assertDelegationState(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = staker.undelegate();
-        assertUndelegateState(staker, operator1, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assertUndelegateState(staker, operator, withdrawals, withdrawalRoot, strategies, shares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
@@ -66,9 +66,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtil
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
+        withdrawals = staker.queueWithdrawals(strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         assertQueuedWithdrawalState(staker, operator2, strategies, shares, withdrawals, withdrawalRoots);
 
         // 7. Complete withdrawal
@@ -83,30 +82,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtil
         }
     }
 
-    /// @notice Assumes staker and withdrawer are the same
-    function _getExpectedWithdrawalStruct(User staker) internal view returns (IDelegationManager.Withdrawal memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager.getDelegatableShares(address(staker));
-
-        return IDelegationManager.Withdrawal({
-            staker: address(staker),
-            delegatedTo: delegationManager.delegatedTo(address(staker)),
-            withdrawer: address(staker),
-            nonce: delegationManager.cumulativeWithdrawalsQueued(address(staker)),
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            shares: shares
-        });
-    }
-
     //TODO: add complete last withdrawal as shares
     //TODO: add complete middle withdrawal as tokens and then restake and redelegate
     //TODO: additional deposit before delegating to new operator
     //TODO: additional deposit after delegating to new operator
-
-    function _getExpectedWithdrawalStruct_diffWithdrawer(User staker, address withdrawer) internal view returns (IDelegationManager.Withdrawal memory) {
-        IDelegationManager.Withdrawal memory withdrawal = _getExpectedWithdrawalStruct(staker);
-        withdrawal.withdrawer = withdrawer;
-        return withdrawal;
-    }
 }
