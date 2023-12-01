@@ -230,9 +230,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
-        address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
+        address operator = delegatedTo[staker];
         require(
             msg.sender == staker ||
                 msg.sender == operator ||
@@ -604,7 +604,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             address currentOperator = delegatedTo[msg.sender];
             for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
-                 * Other strategy sharescan + will be awarded to the withdrawer.
+                 * Other strategy shares can + will be awarded to the withdrawer.
                  */
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
                     address staker = withdrawal.staker;
@@ -666,7 +666,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _pushOperatorStakeUpdate(address operator) internal {
-        // if the stake regsitry has been set
+        // if the stake registry has been set
         if (address(stakeRegistry) != address(0)) {
             address[] memory operators = new address[](1);
             operators[0] = operator;

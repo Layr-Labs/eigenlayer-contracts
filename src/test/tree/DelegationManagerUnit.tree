@@ -1,0 +1,196 @@
+.
+├── DelegationManager Tree (*** denotes that integration tests are needed to validate path)
+├── when registerAsOperator is called
+│   ├── given that the caller has already registered as operator
+│   │   └── it should revert
+│   ├── it should call `_setOperatorDetails`
+│   │   ├── given that operatorDetails.earningsReceiver is 0 address
+│   │   │   └── it should revert
+│   │   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
+│   │   │   └── it should revert
+│   │   ├── given caller has already delegated to an operator
+│   │   │   └── it should revert
+│   │   └── it should emit an OperatorDetailsModified event
+│   └── it should call `_delegate`
+│       ├── given that delegation is paused
+│       │   └── it should revert
+│       ├── it should set the operator delegated to itself and emit a StakerDelegated event
+│       ├── given the caller has delegateable shares
+│       │   └── it should increase the operator's shares and and emit an OperatorSharesIncreased event
+│       └── it should push an operator stake update
+│           └── it should emit an OperatorRegistered event and OperatorMetadataURIUpdated event
+├── when modifyOperatorDetails is called
+│   ├── given caller is not an operator
+│   │   └── it should revert
+│   ├── given operatorDetails.earningsReceiver is 0 address
+│   │   └── it should revert
+│   ├── given operatorDetails.stakerOptOutWindowBlocks is > MAX_STAKER_OPT_OUT_WINDOW_BLOCKS
+│   │   └── it should revert
+│   ├── given operatorDetails.stakerOptOutWindowBlocks is less than the current stakerOptOutWindowBlocks
+│   │   └── it should revert
+│   └── given caller is an operator and provides a valid earningsReceiver and stakerOptOutWindowBlocks
+│       └── it should update the operatorDetails and emit an OperatorDetailsModified event
+├── when updateOperatorMetadataURI is called
+│   ├── given caller is not an operator
+│   │   └── it should revert
+│   └── given caller is an operator
+│       └── it should emit an event
+├── when delegateTo is called
+│   └── it calls _delegate() (internal function) with msg.sender as the staker
+├── when delegateToBySignature is called
+│   ├── given block timestamp is > staker signature expiry
+│   │   └── it should revert
+│   ├── given staker signature verification fails
+│   │   └── it should revert
+│   └── given staker signature verification succeeds
+│       └── it should call _delegate() (internal function)
+├── when _delegate() is called
+│   ├── given that new delegations are paused
+│   │   └── it should revert
+│   ├── given staker is already delegated to an operator
+│   │   └── it should revert
+│   ├── given passed in operator param isn't a registered operator
+│   │   └── it should revert
+│   ├── given operator's delegationApprover is set to zero address OR given caller is the delegationApprover
+│   │   └── it should check delegatable shares and update accordingly (**below logic tree reused elsewhere**)
+│   │       ├── given staker doesn't have delegatable shares
+│   │       │   └── it should set staker delegated to operator, call the StakeRegistry, and emit events
+│   │       └── given staker has delegatable shares
+│   │           ├── given staker has EigenPod shares
+│   │           │   ├── given EigenPod shares are <= 0
+│   │           │   │   └── it should set staker delegated to operator, operator beaconChainStrategy shares unchanged, call the StakeRegistry, and emit events
+│   │           │   └── given EigenPod shares are > 0
+│   │           │       └── it should set staker delegated to operator, increase operator beaconChainStrategy shares, call the StakeRegistry, and emit events
+│   │           ├── given staker has StrategyManager shares
+│   │           │   └── it should set staker delegated to operator, increase operator StrategyManager shares, call the StakeRegistry, and emit events
+│   │           └── given staker has shares in both EigenPod and StrategyManager
+│   │               └── it should set staker delegated to operator, increase operator shares (EPM and SM), call the StakeRegistry, and emit events
+│   └── given operator's delegationApprover is set to nonzero address AND the caller is not the delegationApprover
+│       ├── given the delegationApprover is an EOA
+│       │   ├── given the block timestamp is past the expiry timestamp
+│       │   │   └── it should revert
+│       │   ├── given the delegationApprove salt has already been used
+│       │   │   └── it should revert
+│       │   ├── given the signature verification fails
+│       │   │   └── it should revert
+│       │   └── given the signature verification succeeds
+│       │       └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
+│       └── given the delegationApprover is a contract
+│           ├── given the block timestamp is past the expiry timestamp
+│           │   └── it should revert
+│           ├── given the delegationApprove salt has already been used
+│           │   └── it should revert
+│           ├── given the contract isn't EIP1271 compliant
+│           │   └── it should revert
+│           ├── given the signature verification fails, isValidSignature() does not return  EIP1271_MAGICVALUE
+│           │   └── it should revert
+│           └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+│               └── it should check delegatable shares and update accordingly (**logic tree reused from above**)
+├── when undelegate is called
+│   ├── given caller is not delegated to an operator
+│   │   └── it should revert
+│   ├── given that the caller is registered as operator
+│   │   └── it should revert
+│   ├── given that staker param is zero address
+│   │   └── it should revert
+│   ├── given msg.sender is neither the staker, operator, or delegationApprover (if applicable)
+│   │   └── it should revert
+│   ├── given the msg.sender is the operator or delegationApprover
+│   │   └── it should emit a StakerForceUndelegated event
+│   └── it should emit a StakerUndelegatedEvent and undelegate the staker
+│       ├── given the staker doesn't have delegateable shares
+│       │   └── it should return a zero withdrawal root
+│       └── given the staker has delegateable shares ***
+│           └── it should call _removeSharesAndQueueWithdrawal
+├── when queueWithdrawals is called ***
+│   ├── given that entering the withdrawal queue is paused
+│   │   └── it should revert
+│   └── it should loop through each withdrawal and call _removeSharesAndQueueWithdrawal
+├── when _removeSharesAndQueueWithdrawal is called
+│   ├── given that the staker is a zero address
+│   │   └── it should revert
+│   ├── given that the length of strategies is 0
+│   │   └── it should revert
+│   └── it should loop through each strategy
+│       ├── given that the staker is delegated to (not zero address)
+│       │   └── it should decrease the operator's shares
+│       ├── given that the strategy is the beacon chain strategy
+│       │   └── it should remove shares from the eigen pod manager
+│       ├── given that the strategy is not the beacon chain eth strategy
+│       │   └── it should remove shares from the strategy manager
+│       ├── given that the staker is delegated to (not zero address)
+│       │   └── it should push a stake update
+│       ├── it should increment the staker's cumulativeWithdrawalsQueued
+│       ├── it should calculate and set the withdrawal root as pending
+│       └── it should emit a WithdrawalQueued event and return the withdrawal root
+├── when completeQueuedWithdrawal OR completeQueuedWithdrawals is called ***
+│   ├── given that the exiting the withdrawal queue is paused
+│   │   └── it should revert
+│   ├── given that the function is reentered
+│   │   └── it should revert
+│   └── it should call _completeQueuedWithdrawal (internal function) for each withdrawal
+├── when _completeQueuedWithdrawal is called ***
+│   ├── given that the withdrawal root is not pending
+│   │   └── it should revert
+│   ├── given that the withdrawal delay blocks period has not elapsed
+│   │   └── it should revert
+│   ├── given that the caller is not the withdrawer
+│   │   └── it should revert
+│   ├── given that receiveAsTokens is true
+│   │   └── given that the tokens and strategies length are not equal
+│   │       └── it should revert
+│   └── given that the above conditions are satisfied
+│       ├── it should delete the withdrawal root from pending withdrawals
+│       ├── given that receiveAsTokens is true
+│       │   └── it should call _withdrawSharesAsTokens for each strategy to withdraw from
+│       ├── given that receiveAsTokens is false
+│       │   ├── it should loop through each strategy to withdraw from
+│       │   ├── given that the strategy is the beaconChainETHStrategy
+│       │   │   ├── it should call addShares on the eigenPodManager with the staker as the original pod owner
+│       │   │   └── given that the staker is delegated to (operator not zero address)
+│       │   │       ├── it should increase the original pod operator's shares
+│       │   │       └── it should push a stake update for the original pod operator
+│       │   ├── given that the strategy is not the beaconChainETHStrategy
+│       │   │   ├── it should call addShares on the strategyManager with the staker as the withdrawer
+│       │   │   └── it should increase the operator's shares with the staker as the withdrawer
+│       │   └── it should push an operator stake update
+│       └── it should emit a WithdrawalCompleted event
+├── when _withdrawSharesAsTokens is called (internal function) ***
+│   ├── given that the strategy is the beaconChainStrategy
+│   │   └── it should call withdrawSharesAsTokens on the eigen pod manager
+│   └── given that the strategy is not the beaconChainStrategy
+│       └── it should call withdrawSharesAsTokens on the strategy manager
+├── when migrate queued withdrawals is called
+│   └── given that the withdrawal succesfully deletes from the strategy manager
+│       ├── it should calculate a new root
+│       │   └── given that the root is already pending
+│       │       └── it should revert
+│       └── it should emit WithdrawalQueued and WithdrawalMigrated events
+├── when increaseDelegatedShares is called
+│   ├── if the caller is not the strategy manager or eigen pod manager
+│   │   └── it should revert
+│   └── given that the staker is delegated
+│       ├── it should increase the operator's share for the staker and its associated strategy
+│       └── it should push an operator stake update
+├── when decreaseDelegatedShares is called
+│   ├── if the caller is not the strategy manager or eigen pod manager
+│   │   └── it should revert
+│   └── given that the staker is delegated
+│       ├── it should increase the operator's share for the staker and its associated strategy
+│       └── it should push an operator stake update
+├── when setWithdrawalDelayBlocks is called
+│   ├── given not called by owner
+│   │   └── it should revert
+│   ├── given new delay is > MAX_WITHDRAWAL_DELAY_BLOCKS
+│   │   └── it should revert
+│   └── given called by owner and new delay is <= MAX_WITHDRAWAL_DELAY_BLOCKS
+│       └── it should set the new delay and emit event
+└── when setStakeRegistry is called
+    ├── given not called by owner
+    │   └── it should revert
+    ├── given existing stakeRegistry address is set
+    │   └── it should revert
+    ├── given new stakeRegistry address is 0
+    │   └── it should revert
+    └── given called by owner, existing address not set, and new address is nonzero
+        └── it should set the new stakeRegistry address and emit event

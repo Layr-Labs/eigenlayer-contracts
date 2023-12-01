@@ -306,7 +306,7 @@ This method is not allowed to cause the `Staker's` balance to go negative. This 
 
 *Entry Points*:
 * `DelegationManager.undelegate`
-* `DelegationManager.queueWithdrawal`
+* `DelegationManager.queueWithdrawals`
 
 *Effects*:
 * Removes `shares` from `podOwner's` share balance
@@ -331,7 +331,7 @@ function addShares(
 
 The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). A Pod Owner might want to do this in order to change their delegated Operator without needing to fully exit their validators.
 
-Note that typically, shares from completed withdrawals are awarded to a `withdrawer` specified when the withdrawal is initiated in `DelegationManager.queueWithdrawal`. However, because beacon chain ETH shares are linked to proofs provided to a Pod Owner's `EigenPod`, this method is used to award shares to the original Pod Owner.
+Note that typically, shares from completed withdrawals are awarded to a `withdrawer` specified when the withdrawal is initiated in `DelegationManager.queueWithdrawals`. However, because beacon chain ETH shares are linked to proofs provided to a Pod Owner's `EigenPod`, this method is used to award shares to the original Pod Owner.
 
 If the Pod Owner has a share deficit (negative shares), the deficit is repaid out of the added `shares`. If the Pod Owner's positive share count increases, this change is returned to the `DelegationManager` to be delegated to the Pod Owner's Operator (if they have one).
 
@@ -432,7 +432,9 @@ Whether each withdrawal is a full or partial withdrawal is determined by the val
 * Full withdrawals are performed when a Pod Owner decides to fully exit a validator from the beacon chain. To do this, the Pod Owner should follow these steps: 
     1. Undelegate or queue a withdrawal (via the `DelegationManager`: ["Undelegating and Withdrawing"](./DelegationManager.md#undelegating-and-withdrawing))
     2. Exit their validator from the beacon chain and provide a proof to this method
-    3. Complete their withdrawal (via [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal))
+    3. Complete their withdrawal (via [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal)).
+
+If the Pod Owner only exits their validator, the ETH of the pod owner is still staked through EigenLayer and can be used to service AVSs, even though their ETH has been withdrawn from the beacon chain. The protocol allows for this edge case. 
 
 *Beacon chain proofs used*:
 * [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)

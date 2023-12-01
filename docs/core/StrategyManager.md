@@ -127,7 +127,7 @@ The Staker's share balance for the `strategy` is decreased by the removed `share
 
 *Entry Points*:
 * `DelegationManager.undelegate`
-* `DelegationManager.queueWithdrawal`
+* `DelegationManager.queueWithdrawals`
 
 *Effects*:
 * The Staker's share balance for the given `strategy` is decreased by the given `shares`

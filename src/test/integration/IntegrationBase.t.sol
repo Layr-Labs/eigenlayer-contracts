@@ -1,0 +1,527 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity =0.8.12;
+
+import "forge-std/Test.sol";
+
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
+import "src/test/integration/IntegrationDeployer.t.sol";
+import "src/test/integration/TimeMachine.t.sol";
+import "src/test/integration/User.t.sol";
+
+abstract contract IntegrationBase is IntegrationDeployer {
+
+    /**
+     * Gen/Init methods:
+     */
+
+    /**
+     * @dev Create a new user according to configured random variants.
+     * This user is ready to deposit into some strategies and has some underlying token balances
+     */
+    function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
+        
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
+
+        return (staker, strategies, tokenBalances);
+    }
+
+    function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
+        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
+        
+        operator.registerAsOperator();
+        operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+        assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
+        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
+        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+
+        return (operator, strategies, tokenBalances);
+    }
+
+    /** 
+     * Common assertions:
+     */
+
+    function assert_HasNoDelegatableShares(User user, string memory err) internal {
+        (IStrategy[] memory strategies, uint[] memory shares) = 
+            delegationManager.getDelegatableShares(address(user));
+        
+        assertEq(strategies.length, 0, err);
+        assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
+    }
+
+    function assert_HasUnderlyingTokenBalances(
+        User user, 
+        IStrategy[] memory strategies, 
+        uint[] memory expectedBalances, 
+        string memory err
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+            
+            uint expectedBalance = expectedBalances[i];
+            uint tokenBalance;
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                tokenBalance = address(user).balance;
+            } else {
+                tokenBalance = strat.underlyingToken().balanceOf(address(user));
+            }
+
+            assertEq(expectedBalance, tokenBalance, err);
+        }
+    }
+
+    function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal {
+        assert_HasUnderlyingTokenBalances(user, strategies, new uint[](strategies.length), err);
+    }
+
+    function assert_HasExpectedShares(
+        User user, 
+        IStrategy[] memory strategies, 
+        uint[] memory expectedShares, 
+        string memory err
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            uint actualShares;
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
+                int shares = eigenPodManager.podOwnerShares(address(user));
+                if (shares < 0) {
+                    revert("assert_HasExpectedShares: negative shares");
+                }
+
+                actualShares = uint(shares);
+            } else {
+                actualShares = strategyManager.stakerStrategyShares(address(user), strat);
+            }
+
+            assertEq(expectedShares[i], actualShares, err);
+        }
+    }
+
+    function assert_HasOperatorShares(
+        User user, 
+        IStrategy[] memory strategies, 
+        uint[] memory expectedShares, 
+        string memory err
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            uint actualShares = delegationManager.operatorShares(address(user), strat);
+
+            assertEq(expectedShares[i], actualShares, err);
+        }
+    }
+
+    /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
+    function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+        for (uint i = 0; i < withdrawalRoots.length; i++) {
+            assertTrue(delegationManager.pendingWithdrawals(withdrawalRoots[i]), err);
+        }
+    }
+
+    /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
+    function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal {
+        for (uint i = 0; i < withdrawalRoots.length; i++) {
+            assertFalse(delegationManager.pendingWithdrawals(withdrawalRoots[i]), err);
+        }
+    }
+
+    /// @dev Asserts that the hash of each withdrawal corresponds to the provided withdrawal root
+    function assert_ValidWithdrawalHashes(
+        IDelegationManager.Withdrawal[] memory withdrawals,
+        bytes32[] memory withdrawalRoots,
+        string memory err
+    ) internal {
+        bytes32[] memory expectedRoots = _getWithdrawalHashes(withdrawals);
+
+        for (uint i = 0; i < withdrawals.length; i++) {
+            assertEq(withdrawalRoots[i], expectedRoots[i], err);
+        }
+    }
+    
+    /*******************************************************************************
+                                SNAPSHOT ASSERTIONS
+                       TIME TRAVELERS ONLY BEYOND THIS POINT
+    *******************************************************************************/
+
+    /// Snapshot assertions for delegationManager.operatorShares:
+
+    /// @dev Check that the operator has `addedShares` additional operator shares 
+    // for each strategy since the last snapshot
+    function assert_Snap_Added_OperatorShares(
+        User operator, 
+        IStrategy[] memory strategies, 
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the operator has `removedShares` fewer operator shares
+    /// for each strategy since the last snapshot
+    function assert_Snap_Removed_OperatorShares(
+        User operator, 
+        IStrategy[] memory strategies, 
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the operator's shares in ALL strategies have not changed
+    /// since the last snapshot
+    function assert_Snap_Unchanged_OperatorShares(
+        User operator,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
+
+        // For each strategy, check (prev == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
+    /// Snapshot assertions for strategyMgr.stakerStrategyShares and eigenPodMgr.podOwnerShares:
+
+    /// @dev Check that the staker has `addedShares` additional delegatable shares
+    /// for each strategy since the last snapshot
+    function assert_Snap_Added_StakerShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker has `removedShares` fewer delegatable shares
+    /// for each strategy since the last snapshot
+    function assert_Snap_Removed_StakerShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory removedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
+    /// since the last snapshot
+    function assert_Snap_Unchanged_StakerShares(
+        User staker,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getStakerShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerShares(staker, strategies);
+
+        // For each strategy, check (prev == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
+    /// Snapshot assertions for underlying token balances:
+
+    /// @dev Check that the staker has `addedTokens` additional underlying tokens 
+    // since the last snapshot
+    function assert_Snap_Added_TokenBalances(
+        User staker,
+        IERC20[] memory tokens,
+        uint[] memory addedTokens,
+        string memory err
+    ) internal {
+        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
+        // Use timewarp to get previous token balances
+        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            uint prevBalance = prevTokenBalances[i];
+            uint curBalance = curTokenBalances[i];
+
+            assertEq(prevBalance + addedTokens[i], curBalance, err);
+        }
+    }
+
+    /// @dev Check that the staker has `removedTokens` fewer underlying tokens 
+    // since the last snapshot
+    function assert_Snap_Removed_TokenBalances(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedTokens,
+        string memory err
+    ) internal {
+        IERC20[] memory tokens = _getUnderlyingTokens(strategies);
+
+        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
+        // Use timewarp to get previous token balances
+        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            uint prevBalance = prevTokenBalances[i];
+            uint curBalance = curTokenBalances[i];
+
+            assertEq(prevBalance - removedTokens[i], curBalance, err);
+        }
+    }
+
+    /// @dev Check that the staker's underlying token balance for ALL tokens have
+    /// not changed since the last snapshot
+    function assert_Snap_Unchanged_TokenBalances(
+        User staker,
+        string memory err
+    ) internal {
+        IERC20[] memory tokens = allTokens;
+
+        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
+        // Use timewarp to get previous token balances
+        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            assertEq(prevTokenBalances[i], curTokenBalances[i], err);
+        }
+    }
+
+    /// Other snapshot assertions:
+
+    function assert_Snap_Added_QueuedWithdrawals(
+        User staker, 
+        IDelegationManager.Withdrawal[] memory withdrawals,
+        string memory err
+    ) internal {
+        uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
+        // Use timewarp to get previous cumulative withdrawals
+        uint prevQueuedWithdrawals = _getPrevCumulativeWithdrawals(staker);
+
+        assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
+    }
+
+    /*******************************************************************************
+                                UTILITY METHODS
+    *******************************************************************************/
+
+    function _randWithdrawal(
+        IStrategy[] memory strategies, 
+        uint[] memory shares
+    ) internal returns (IStrategy[] memory, uint[] memory) {
+        uint stratsToWithdraw = _randUint({ min: 1, max: strategies.length });
+
+        IStrategy[] memory withdrawStrats = new IStrategy[](stratsToWithdraw);
+        uint[] memory withdrawShares = new uint[](stratsToWithdraw);
+
+        for (uint i = 0; i < stratsToWithdraw; i++) {
+            uint sharesToWithdraw;
+
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                // For native eth, withdraw a random amount of gwei (at least 1)
+                uint portion = _randUint({ min: 1, max: shares[i] / GWEI_TO_WEI });
+                portion *= GWEI_TO_WEI;
+
+                sharesToWithdraw = shares[i] - portion;
+            } else {
+                // For LSTs, withdraw a random amount of shares (at least 1)
+                uint portion = _randUint({ min: 1, max: shares[i] });
+
+                sharesToWithdraw = shares[i] - portion;
+            }
+
+            withdrawStrats[i] = strategies[i];
+            withdrawShares[i] = sharesToWithdraw;
+        }
+
+        return (withdrawStrats, withdrawShares);
+    }
+
+    /// @dev For some strategies/underlying token balances, calculate the expected shares received
+    /// from depositing all tokens
+    function _calculateExpectedShares(IStrategy[] memory strategies, uint[] memory tokenBalances) internal returns (uint[] memory) {
+        uint[] memory expectedShares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            uint tokenBalance = tokenBalances[i];
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                expectedShares[i] = tokenBalances[i];
+            } else {
+                expectedShares[i] = strat.underlyingToShares(tokenBalance);
+            }
+        }
+
+        return expectedShares;
+    }
+
+    /// @dev For some strategies/underlying token balances, calculate the expected shares received
+    /// from depositing all tokens
+    function _calculateExpectedTokens(IStrategy[] memory strategies, uint[] memory shares) internal returns (uint[] memory) {
+        uint[] memory expectedTokens = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                expectedTokens[i] = shares[i];
+            } else {
+                expectedTokens[i] = strat.sharesToUnderlying(shares[i]);
+            }
+        }
+
+        return expectedTokens;
+    }
+
+    function _getWithdrawalHashes(
+        IDelegationManager.Withdrawal[] memory withdrawals
+    ) internal view returns (bytes32[] memory) {
+        bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
+
+        for (uint i = 0; i < withdrawals.length; i++) {
+            withdrawalRoots[i] = delegationManager.calculateWithdrawalRoot(withdrawals[i]);
+        }
+
+        return withdrawalRoots;
+    }
+
+    /// @dev Converts a list of strategies to underlying tokens
+    function _getUnderlyingTokens(IStrategy[] memory strategies) internal view returns (IERC20[] memory) {
+        IERC20[] memory tokens = new IERC20[](strategies.length);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            IStrategy strat = strategies[i];
+
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                tokens[i] = NATIVE_ETH;
+            } else {
+                tokens[i] = strat.underlyingToken();
+            }
+        }
+
+        return tokens;
+    }
+
+    modifier timewarp() {
+        uint curState = timeMachine.warpToLast();
+        _;
+        timeMachine.warpToPresent(curState);
+    }
+
+    /// @dev Uses timewarp modifier to get operator shares at the last snapshot
+    function _getPrevOperatorShares(
+        User operator, 
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getOperatorShares(operator, strategies);
+    }
+
+    /// @dev Looks up each strategy and returns a list of the operator's shares
+    function _getOperatorShares(User operator, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory curShares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            curShares[i] = delegationManager.operatorShares(address(operator), strategies[i]);
+        }
+
+        return curShares;
+    }
+
+    /// @dev Uses timewarp modifier to get staker shares at the last snapshot
+    function _getPrevStakerShares(
+        User staker, 
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getStakerShares(staker, strategies);
+    }
+
+    /// @dev Looks up each strategy and returns a list of the staker's shares
+    function _getStakerShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory curShares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                // This method should only be used for tests that handle positive
+                // balances. Negative balances are an edge case that require
+                // the own tests and helper methods.
+                int shares = eigenPodManager.podOwnerShares(address(staker));
+                if (shares < 0) {
+                    revert("_getStakerShares: negative shares");
+                }
+
+                curShares[i] = uint(shares);
+            } else {
+                curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+            }
+        }
+
+        return curShares;
+    }
+
+    function _getPrevCumulativeWithdrawals(User staker) internal timewarp() returns (uint) {
+        return _getCumulativeWithdrawals(staker);
+    }
+
+    function _getCumulativeWithdrawals(User staker) internal view returns (uint) {
+        return delegationManager.cumulativeWithdrawalsQueued(address(staker));
+    }
+
+    function _getPrevTokenBalances(User staker, IERC20[] memory tokens) internal timewarp() returns (uint[] memory) {
+        return _getTokenBalances(staker, tokens);
+    }
+
+    function _getTokenBalances(User staker, IERC20[] memory tokens) internal view returns (uint[] memory) {
+        uint[] memory balances = new uint[](tokens.length);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            if (tokens[i] == NATIVE_ETH) {
+                balances[i] = address(staker).balance;
+            } else {
+                balances[i] = tokens[i].balanceOf(address(staker));
+            }
+        }
+
+        return balances;
+    }
+}
