@@ -22,6 +22,7 @@ broadcast
 
 # Deployment tools
 /data
+.idea/
 
 # Certora Outputs
 .certora_internal/

@@ -42,6 +42,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // reused in various tests. in storage to help handle stack-too-deep errors
     address defaultStaker = cheats.addr(uint256(123_456_789));
     address defaultOperator = address(this);
+    address defaultAVS = address(this);
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -579,6 +580,15 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(metadataURI);
+    }
+
+    // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
+    function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
+        // call `updateAVSMetadataURI` and check for event
+        cheats.prank(defaultAVS);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
+        delegationManager.updateAVSMetadataURI(metadataURI);
     }
 }
 

@@ -140,6 +140,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
+     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an avs
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external {
+        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
+    }
+
+    /**
      * @notice Caller delegates their stake to an operator.
      * @param operator The account (`msg.sender`) is delegating its assets to for use in serving applications built on EigenLayer.
      * @param approverSignatureAndExpiry Verifies the operator approves of this delegation
