@@ -285,10 +285,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory removedShares,
         string memory err
     ) internal {
-        uint[] memory curShares = _getStrategyShares(strategies);
+        uint[] memory curShares = _getTotalStrategyShares(strategies);
 
         // Use timewarp to get previous strategy shares
-        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+        uint[] memory prevShares = _getPrevTotalStrategyShares(strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             // Ignore BeaconChainETH strategy since it doesn't keep track of global strategy shares
@@ -306,10 +306,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curShares = _getStrategyShares(strategies);
+        uint[] memory curShares = _getTotalStrategyShares(strategies);
 
         // Use timewarp to get previous strategy shares
-        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+        uint[] memory prevShares = _getPrevTotalStrategyShares(strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             uint prevShare = prevShares[i];
@@ -596,11 +596,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return balances;
     }
 
-    function _getPrevStrategyShares(IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
-        return _getStrategyShares(strategies);
+    function _getPrevTotalStrategyShares(IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getTotalStrategyShares(strategies);
     }
 
-    function _getStrategyShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
+    function _getTotalStrategyShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
         uint[] memory shares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
