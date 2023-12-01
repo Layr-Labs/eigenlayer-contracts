@@ -5,7 +5,7 @@ import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/User.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
-contract IntegrationTestUtils is IntegrationBase {
+contract IntegrationCheckUtils is IntegrationBase {
     
     function check_Deposit_State(User staker, IStrategy[] memory strategies, uint[] memory shares) internal {
         /// Deposit into strategies:

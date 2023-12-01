@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/User.t.sol";
-import "src/test/integration/tests/utils.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtils {
+contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUtils {
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. delegate to an operator
@@ -56,7 +55,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtil
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeQueuedWithdrawal(withdrawals[0], false);
+        staker.completeWithdrawalAsShares(withdrawals[0]);
         check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
 
         // 5. Delegate to a new operator
@@ -76,7 +75,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationTestUtil
         // Complete withdrawals
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
