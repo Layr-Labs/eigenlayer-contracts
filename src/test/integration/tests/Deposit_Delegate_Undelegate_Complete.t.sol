@@ -46,19 +46,19 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         assertDelegationState(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = staker.undelegate();
-        assertUndelegateState(staker, operator, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assertUndelegateState(staker, operator, withdrawals, withdrawalRoot, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
         // Complete withdrawal
-        uint[] memory expectedTokens = _calculateExpectedTokens(expectedWithdrawal.strategies, expectedWithdrawal.shares);
-        IERC20[] memory tokens = staker.completeQueuedWithdrawal(expectedWithdrawal, true);
+        uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals.strategies, withdrawals.shares);
+        IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals, true);
 
-        assertWithdrawalAsTokensState(staker, expectedWithdrawal, strategies, shares, tokens, expectedTokens);
+        assertWithdrawalAsTokensState(staker, withdrawals, strategies, shares, tokens, expectedTokens);
     }
 
     /// Randomly generates a user with different held assets. Then:
@@ -100,15 +100,15 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         assertDelegationState(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = staker.undelegate();
-        assertUndelegateState(staker, operator, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assertUndelegateState(staker, operator, withdrawals, withdrawalRoot, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-        assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
+        staker.completeQueuedWithdrawal(withdrawals, false);
+        assertWithdrawalAsSharesState(staker, withdrawals, strategies, shares);
     }
 
     function testFuzz_deposit_delegate_forceUndelegate_completeAsTokens(uint24 _random) public {
@@ -145,19 +145,19 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         assertDelegationState(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = operator.undelegate(staker);
-        assertUndelegateState(staker, operator, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assertUndelegateState(staker, operator, withdrawals, withdrawalRoot, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
         // Complete withdrawal
-        uint[] memory expectedTokens = _calculateExpectedTokens(expectedWithdrawal.strategies, expectedWithdrawal.shares);
-        IERC20[] memory tokens = staker.completeQueuedWithdrawal(expectedWithdrawal, true);
+        uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals.strategies, withdrawals.shares);
+        IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals, true);
 
-        assertWithdrawalAsTokensState(staker, expectedWithdrawal, strategies, shares, tokens, expectedTokens);
+        assertWithdrawalAsTokensState(staker, withdrawals, strategies, shares, tokens, expectedTokens);
     }
 
     function testFuzz_deposit_delegate_forceUndelegate_completeAsShares(uint24 _random) public {
@@ -194,38 +194,14 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationTestUtil
         assertDelegationState(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = operator.undelegate(staker);
-        assertUndelegateState(staker, operator, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assertUndelegateState(staker, operator, withdrawals, withdrawalRoot, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-        assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
-    }
-
-
-
-    /// @notice Assumes staker and withdrawer are the same
-    function _getExpectedWithdrawalStruct(User staker) internal view returns (IDelegationManager.Withdrawal memory) {
-        (IStrategy[] memory strategies, uint[] memory shares)
-            = delegationManager.getDelegatableShares(address(staker));
-
-        return IDelegationManager.Withdrawal({
-            staker: address(staker),
-            delegatedTo: delegationManager.delegatedTo(address(staker)),
-            withdrawer: address(staker),
-            nonce: delegationManager.cumulativeWithdrawalsQueued(address(staker)),
-            startBlock: uint32(block.number),
-            strategies: strategies,
-            shares: shares
-        });
-    }
-
-    function _getExpectedWithdrawalStruct_diffWithdrawer(User staker, address withdrawer) internal view returns (IDelegationManager.Withdrawal memory) {
-        IDelegationManager.Withdrawal memory withdrawal = _getExpectedWithdrawalStruct(staker);
-        withdrawal.withdrawer = withdrawer;
-        return withdrawal;
+        staker.completeQueuedWithdrawal(withdrawals, false);
+        assertWithdrawalAsSharesState(staker, withdrawals, strategies, shares);
     }
 }

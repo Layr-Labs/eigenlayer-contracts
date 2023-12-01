@@ -280,19 +280,46 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /// Snapshot assertions for underlying token balances:
-
-    function assert_Snap_IncrementQueuedWithdrawals(
-        User staker,
+    function assert_Snap_Removed_StrategyShares(
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
         string memory err
     ) internal {
-        uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
-        // Use timewarp to get previous cumulative withdrawals
-        uint prevQueuedWithdrawals = _getPrevCumulativeWithdrawals(staker);
+        uint[] memory curShares = _getStrategyShares(strategies);
 
-        assertEq(prevQueuedWithdrawals + 1, curQueuedWithdrawals, err);
+        // Use timewarp to get previous strategy shares
+        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            // Ignore BeaconChainETH strategy since it doesn't keep track of global strategy shares
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                continue;
+            }
+            uint prevShare = prevShares[i];
+            uint curShare = curShares[i];
+
+            assertEq(prevShare - removedShares[i], curShare, err);
+        }
     }
 
+    function assert_Snap_Unchanged_StrategyShares(
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStrategyShares(strategies);
+
+        // Use timewarp to get previous strategy shares
+        uint[] memory prevShares = _getPrevStrategyShares(strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            uint prevShare = prevShares[i];
+            uint curShare = curShares[i];
+
+            assertEq(prevShare, curShare, err);
+        }
+    }
+
+    /// Snapshot assertions for underlying token balances:
 
     /// @dev Check that the staker has `addedTokens` additional underlying tokens 
     // since the last snapshot
@@ -367,6 +394,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
     }
 
+    function assert_Snap_Added_QueuedWithdrawal(
+        User staker, 
+        IDelegationManager.Withdrawal memory withdrawal,
+        string memory err
+    ) internal {
+        uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
+        // Use timewarp to get previous cumulative withdrawals
+        uint prevQueuedWithdrawal = _getPrevCumulativeWithdrawals(staker);
+
+        assertEq(prevQueuedWithdrawal + 1, curQueuedWithdrawal, err);
+    }
+
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
@@ -401,44 +440,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return (withdrawStrats, withdrawShares);
-    }
-    function assert_Snap_Removed_StrategyShares(
-        IStrategy[] memory strategies,
-        uint[] memory removedShares,
-        string memory err
-    ) internal {
-        uint[] memory curShares = _getStrategyShares(strategies);
-
-        // Use timewarp to get previous strategy shares
-        uint[] memory prevShares = _getPrevStrategyShares(strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            // Ignore BeaconChainETH strategy since it doesn't keep track of global strategy shares
-            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
-                continue;
-            }
-            uint256 prevShare = prevShares[i];
-            uint256 curShare = curShares[i];
-
-            assertEq(prevShare - removedShares[i], curShare, err);
-        }
-    }
-
-    function assert_Snap_Unchanged_StrategyShares(
-        IStrategy[] memory strategies,
-        string memory err
-    ) internal {
-        uint[] memory curShares = _getStrategyShares(strategies);
-
-        // Use timewarp to get previous strategy shares
-        uint[] memory prevShares = _getPrevStrategyShares(strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            uint prevShare = prevShares[i];
-            uint curShare = curShares[i];
-
-            assertEq(prevShare, curShare, err);
-        }
     }
 
     /**

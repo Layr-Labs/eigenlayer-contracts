@@ -124,13 +124,17 @@ contract User is Test {
     }
 
     /// @dev Undelegate from operator
-    function undelegate() public createSnapshot virtual returns(bytes32){
-        return delegationManager.undelegate(address(this));
+    function undelegate() public createSnapshot virtual returns(Withdrawal[] memory){
+        IDelegationManager.Withdrawal[] memory withdrawal = [_getExpectedWithdrawalStruct()];
+        delegationManager.undelegate(address(this));
+        return withdrawals;
     }
 
     /// @dev Force undelegate staker
-    function undelegate(User staker) public createSnapshot virtual returns(bytes32){
+    function forceUndelegate(User staker) public createSnapshot virtual returns(Withdrawal[] memory){
+        IDelegationManager.Withdrawal[] memory withdrawal = [_getExpectedWithdrawalStruct()];
         return delegationManager.undelegate(address(staker));
+        return withdrawl;
     }
 
     /// @dev Queues a single withdrawal for every share and strategy pair
@@ -224,6 +228,22 @@ contract User is Test {
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
+    }
+
+    /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
+    function _getExpectedWithdrawalStruct(User staker) internal view returns (IDelegationManager.Withdrawal memory) {
+        (IStrategy[] memory strategies, uint[] memory shares)
+            = delegationManager.getDelegatableShares(address(staker));
+
+        return IDelegationManager.Withdrawal({
+            staker: address(staker),
+            delegatedTo: delegationManager.delegatedTo(address(staker)),
+            withdrawer: address(staker),
+            nonce: delegationManager.cumulativeWithdrawalsQueued(address(staker)),
+            startBlock: uint32(block.number),
+            strategies: strategies,
+            shares: shares
+        });
     }
 }
 
