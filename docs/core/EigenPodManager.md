@@ -229,7 +229,7 @@ function verifyBalanceUpdate(
     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE)
 ```
 
-Anyone (not just the Pod Owner) may call this method with a valid balance update proof to record an balance update in one of the `EigenPod's` validators.
+Anyone (not just the Pod Owner) may call this method with a valid balance update proof to record a balance update in one of the `EigenPod's` validators.
 
 A successful balance update proof updates the `EigenPod's` view of a validator's [effective balance](https://eth2book.info/capella/part2/incentives/balances/). If the validator's effective balance has changed, the difference is sent to `EigenPodManager.recordBeaconChainETHBalanceUpdate`, which updates the Pod Owner's shares. If the Pod Owner is delegated to an Operator, this delta is also sent to the `DelegationManager` to update the Operator's delegated beacon chain ETH shares.
 
@@ -258,7 +258,7 @@ For the validator whose balance should be updated, the caller must supply:
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE`
 * Balance updates should only be made before a validator has fully exited. If the validator has exited, any further proofs should follow the `verifyAndProcessWithdrawals` path.
-    * This is to prevent someone providing a "balance update" on an exited validator that "proves" a balance of 0, when we want to process that update as a withdrawal instead.
+    * This is to prevent someone from providing a "balance update" on an exited validator that "proves" a balance of 0, when we want to process that update as a withdrawal instead.
 * `oracleTimestamp`:
     * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
     * MUST be newer than the validator's `mostRecentBalanceUpdateTimestamp`
