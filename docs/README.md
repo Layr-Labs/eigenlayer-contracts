@@ -16,12 +16,12 @@ M2 adds several features, the most important of which is the basic support neede
 
 **EigenPodManager**:
 
-| File | Type | Proxy? | Goerli |
+| File | Type | Proxy | Goerli |
 | -------- | -------- | -------- | -------- |
-| [`EigenPodManager.sol`](../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy | TODO |
-| [`EigenPod.sol`](../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy | TODO |
-| [`DelayedWithdrawalRouter.sol`](../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy | TODO |
-| [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS proxy | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
+| [`EigenPodManager.sol`](../src/contracts/pods/EigenPodManager.sol) | Singleton | [`0x3093...C9a5`](https://goerli.etherscan.io/address/0x3093F3B560352F896F0e9567019902C9Aff8C9a5) | [`0x86bf...6CcA`](https://goerli.etherscan.io/address/0x86bf376E0C0c9c6D332E13422f35Aca75C106CcA) |
+| [`EigenPod.sol`](../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | [`0x3093...C9a5`](https://goerli.etherscan.io/address/0x3093F3B560352F896F0e9567019902C9Aff8C9a5) | [`0x86bf...6CcA`](https://goerli.etherscan.io/address/0x86bf376E0C0c9c6D332E13422f35Aca75C106CcA) |
+| [`DelayedWithdrawalRouter.sol`](../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | [`0x895...388f`](https://goerli.etherscan.io/address/0x89581561f1F98584F88b0d57c2180fb89225388f) | [`0x607...7fe`](https://goerli.etherscan.io/address/0x60700ade3Bf48C437a5D01b6Da8d7483cffa27fe) |
+| [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | - | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
 
 These contracts work together to enable native ETH restaking:
 * Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
@@ -33,10 +33,11 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 
 **StrategyManager**:
 
-| File | Type | Proxy? | Goerli |
+| File | Type | Proxy | Goerli |
 | -------- | -------- | -------- | -------- |
-| [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy | TODO |
-| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy | TODO |
+| [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | [`0x779...8E907`](https://goerli.etherscan.io/address/0x779d1b5315df083e3F9E94cB495983500bA8E907) | [`0x8676...0055`](https://goerli.etherscan.io/address/0x8676bb5f792ED407a237234Fe422aC6ed3540055) |
+| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | Instanced, stETH | [`0xB6...d14da`](https://goerli.etherscan.io/address/0xb613e78e2068d7489bb66419fb1cfa11275d14da) | [`0x81E9...F8ebA`](https://goerli.etherscan.io/address/0x81E94e16949AC397d508B5C2557a272faD2F8ebA) |
+| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | Instanced, rETH | [`0x8799...70b5`](https://goerli.etherscan.io/address/0x879944A8cB437a5f8061361f82A6d4EED59070b5) | [`0x81E9...F8ebA`](https://goerli.etherscan.io/address/0x81E94e16949AC397d508B5C2557a272faD2F8ebA) |
 
 These contracts work together to enable restaking for LSTs:
 * The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each of the 3 LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
@@ -46,9 +47,9 @@ See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md
 
 **DelegationManager**:
 
-| File | Type | Proxy? | Goerli |
+| File | Type | Proxy | Goerli |
 | -------- | -------- | -------- | -------- |
-| [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy | TODO |
+| [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | [`0x1b7...Eb0a8`](https://goerli.etherscan.io/address/0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8) | [`0x9b79...A99d`](https://goerli.etherscan.io/address/0x9b7980a32ceCe2Aa936DD2E43AF74af62581A99d) |
 
 The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
 
@@ -56,8 +57,8 @@ See full documentation in [`/core/DelegationManager.md`](./core/DelegationManage
 
 **Slasher**:
 
-| File | Type | Proxy? | Goerli |
+| File | Type | Proxy | Goerli |
 | -------- | -------- | -------- | -------- |
-| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | Singleton | Transparent proxy | TODO |
+| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | Singleton | [`0xD1...0C22`](https://goerli.etherscan.io/address/0xD11d60b669Ecf7bE10329726043B3ac07B380C22) | [`0x3865...8Be6`](https://goerli.etherscan.io/address/0x3865B5F5297f86c5295c7f818BAD1fA5286b8Be6) |
 
 The `Slasher` is deployed, but will remain completely paused during M2. Its design is not finalized.
