@@ -1,0 +1,16 @@
+{
+    "strategies": [
+        {
+            "token_address": "0x3338eCd3ab3d3503c55c931d759fA6d78d287236",
+            "token_symbol": "ETHx",
+            "max_per_deposit": 200000000000000000000000,
+            "max_deposits": 200000000000000000000000
+        },
+        {
+            "token_address": "0x2bBC91e1990F0dc5e5BAD04AaE000Ca97f56990f",
+            "token_symbol": "ankrETH",
+            "max_per_deposit": 200000000000000000000000,
+            "max_deposits": 200000000000000000000000
+        }
+    ]
+}
