@@ -43,7 +43,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultStaker = cheats.addr(uint256(123_456_789));
     address defaultOperator = address(this);
 
-    uint256 initializedWithdrawalDelayBlocks = 0;
+    uint256 initializedWithdrawalDelayBlocks = 50400;
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 

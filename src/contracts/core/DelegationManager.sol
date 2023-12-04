@@ -758,6 +758,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
             "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
         );
+        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
         withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
 
