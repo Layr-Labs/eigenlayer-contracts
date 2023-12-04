@@ -27,7 +27,7 @@ contract DeployStrategies is ExistingDeploymentParser {
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     string public configPath = string(bytes("script/strategy/configs/config.json"));
-    string public deploymentPath = string(bytes("script/output/M1_deployment_mainnet_2023_6_9.json"));
+    string public deploymentPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
 
     function run() external {
         _parseDeployedContracts(deploymentPath);
@@ -39,6 +39,8 @@ contract DeployStrategies is ExistingDeploymentParser {
         StrategyConfig[] memory strategyConfigs;
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
+
+        cheats.startBroadcast();
 
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
@@ -60,6 +62,8 @@ contract DeployStrategies is ExistingDeploymentParser {
                 )
             );
         }
+
+        cheats.stopBroadcast();
 
         _verifyImplementations();
         _verifyPauserInitializations();
