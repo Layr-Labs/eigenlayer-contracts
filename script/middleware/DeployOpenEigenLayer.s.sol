@@ -139,7 +139,7 @@ contract DeployOpenEigenLayer is Script, Test {
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
-            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
+            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0, 0 /* withdrawalDelayBlocks */)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),

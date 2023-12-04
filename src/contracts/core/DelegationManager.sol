@@ -65,15 +65,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     * withdrawalDelayBlocks is set only once here
      */
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus
+        uint256 initialPausedStatus,
+        uint256 _withdrawalDelayBlocks
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
+        _initializeWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /*******************************************************************************
@@ -216,19 +219,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // go through the internal delegation flow, checking the `approverSignatureAndExpiry` if applicable
         _delegate(staker, operator, approverSignatureAndExpiry, approverSalt);
-    }
-
-    /**
-     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
-     * @param newWithdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
-     */
-    function setWithdrawalDelayBlocks(uint256 newWithdrawalDelayBlocks) external onlyOwner {
-        require(
-            newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "DelegationManager.setWithdrawalDelayBlocks: newWithdrawalDelayBlocks too high"
-        );
-        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, newWithdrawalDelayBlocks);
-        withdrawalDelayBlocks = newWithdrawalDelayBlocks;
     }
 
     /**
@@ -769,6 +759,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         } else {
             strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
         }
+    }
+
+    function _initializeWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
+        require(
+            _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
+        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
+        withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
 
     /*******************************************************************************

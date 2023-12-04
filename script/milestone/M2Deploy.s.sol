@@ -326,7 +326,7 @@ contract M2Deploy is Script, Test {
         );
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        DelegationManager(address(delegation)).initialize(address(this), PauserRegistry(address(this)), 0);
+        DelegationManager(address(delegation)).initialize(address(this), PauserRegistry(address(this)), 0, 0);
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         EigenPodManager(address(eigenPodManager)).initialize(
