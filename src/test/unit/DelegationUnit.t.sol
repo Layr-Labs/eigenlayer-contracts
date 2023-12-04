@@ -42,6 +42,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // reused in various tests. in storage to help handle stack-too-deep errors
     address defaultStaker = cheats.addr(uint256(123_456_789));
     address defaultOperator = address(this);
+    address defaultAVS = address(this);
 
     uint256 initializedWithdrawalDelayBlocks = 50400;
 
@@ -241,7 +242,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
-    function _registerOperatorWith1271DelegationApprover(address operator) internal {
+    function _registerOperatorWith1271DelegationApprover(address operator) internal returns (ERC1271WalletMock) {
         address delegationSigner = cheats.addr(delegationSignerPrivateKey);
         /**
          * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
@@ -255,6 +256,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
+
+        return wallet;
     }
 
     function _registerOperator(
@@ -579,6 +582,15 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(metadataURI);
+    }
+
+    // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
+    function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
+        // call `updateAVSMetadataURI` and check for event
+        cheats.prank(defaultAVS);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
+        delegationManager.updateAVSMetadataURI(metadataURI);
     }
 }
 
@@ -1399,8 +1411,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // register *this contract* as an operator
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
-        _registerOperatorWith1271DelegationApprover(defaultOperator);
+        ERC1271WalletMock wallet = _registerOperatorWith1271DelegationApprover(defaultOperator);
+        cheats.assume(staker != address(wallet) && staker != defaultOperator);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
