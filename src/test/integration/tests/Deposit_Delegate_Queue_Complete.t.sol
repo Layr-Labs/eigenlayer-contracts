@@ -14,7 +14,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         (
@@ -22,7 +22,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             IStrategy[] memory strategies, 
             uint[] memory tokenBalances
         ) = _newRandomStaker();
-        // (User operator, ,) = _newRandomOperator();
+        (User operator, ,) = _newRandomOperator();
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -33,13 +33,45 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
 
+        /// 2. Delegate to an operator:
+        //
+        // ... check that the staker is now delegated to the operator, and that the operator
+        //     was awarded the staker's shares
+        staker.delegateTo(operator);
+
+        assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
+        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
+        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
+
+        IDelegationManager.Withdrawal[] memory withdrawals;
+        bytes32[] memory withdrawalRoots;
+        /// 3. Queue withdrawal(s):
+        // The staker will queue one or more withdrawals for all strategies and shares
+        //
+        // ... check that each withdrawal was successfully enqueued, that the returned withdrawals
+        //     match now-pending withdrawal roots, and that the staker and operator have
+        //     reduced shares.
+        withdrawals = staker.queueWithdrawals(strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
+        assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
+        assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
+
         // For LSTs, the tokenDelta will always be positive
         // For native ETH, the tokenDelta may be positive or negative
-        (int[] memory tokenDeltas, int[] memory shareDeltas) = _randBalanceUpdate(staker, strategies);
-
+        (
+            int[] memory tokenDeltas, 
+            int[] memory stakerShareDeltas,
+            int[] memory operatorShareDeltas
+        ) = _randBalanceUpdate(staker, strategies);
         staker.updateBalances(strategies, tokenDeltas);
 
-        assert_Snap_Delta_StakerShares(staker, strategies, shareDeltas, "staker should have applied deltas correctly");
+        assert_Snap_Delta_StakerShares(staker, strategies, stakerShareDeltas, "staker should have applied deltas correctly");
+        assert_Snap_Delta_OperatorShares(operator, strategies, operatorShareDeltas, "operator should have applied deltas correctly");
     }
 
     /// Generates a random staker and operator. The staker:

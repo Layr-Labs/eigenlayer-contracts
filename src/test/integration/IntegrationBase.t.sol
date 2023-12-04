@@ -224,6 +224,28 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Delta_OperatorShares(
+        User operator, 
+        IStrategy[] memory strategies, 
+        int[] memory shareDeltas,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getOperatorShares(operator, strategies);
+        // Use timewarp to get previous operator shares
+        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            uint expectedShares;
+            if (shareDeltas[i] < 0) {
+                expectedShares = prevShares[i] - uint(-shareDeltas[i]);
+            } else {
+                expectedShares = prevShares[i] + uint(shareDeltas[i]);
+            }
+            assertEq(expectedShares, curShares[i], err);
+        }
+    }
+
     /// Snapshot assertions for strategyMgr.stakerStrategyShares and eigenPodMgr.podOwnerShares:
 
     /// @dev Check that the staker has `addedShares` additional delegatable shares
@@ -465,15 +487,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _randBalanceUpdate(
         User staker,
         IStrategy[] memory strategies
-    ) internal returns (int[] memory, int[] memory) {
+    ) internal returns (int[] memory, int[] memory, int[] memory) {
 
         int[] memory tokenDeltas = new int[](strategies.length);
-        int[] memory shareDeltas = new int[](strategies.length);
+        int[] memory stakerShareDeltas = new int[](strategies.length);
+        int[] memory operatorShareDeltas = new int[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
-            int delta;
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 // TODO - could choose and set a "next updatable validator" at random here
                 uint40 validator = staker.getUpdatableValidator();
@@ -481,38 +503,52 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
                 // For native eth, add or remove a random amount of Gwei - minimum 1
                 // and max of the current beacon chain balance
-                uint64 portionGwei = uint64(_randUint({ min: 1, max: beaconBalanceGwei }));
-
+                int64 deltaGwei = int64(int(_randUint({ min: 1, max: beaconBalanceGwei })));
                 bool addTokens = _randBool();
-                int64 deltaGwei = addTokens ? int64(portionGwei) : -int64(portionGwei);
+                deltaGwei = addTokens ? deltaGwei : -deltaGwei;
 
-                IEigenPod.ValidatorInfo memory info = staker.pod().validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validator));
+                tokenDeltas[i] = int(deltaGwei) * int(GWEI_TO_WEI);
 
-                uint64 oldPodBalanceGwei = info.restakedBalanceGwei;
-                uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
-
-                shareDeltas[i] = _calculateSharesDelta(newPodBalanceGwei, oldPodBalanceGwei);
-                delta = int(deltaGwei) * int(GWEI_TO_WEI);
+                // stakerShareDeltas[i] = _calculateSharesDelta(newPodBalanceGwei, oldPodBalanceGwei);
+                stakerShareDeltas[i] = _calcNativeETHStakerShareDelta(staker, validator, beaconBalanceGwei, deltaGwei);
+                operatorShareDeltas[i] = _calcNativeETHOperatorShareDelta(staker, stakerShareDeltas[i]);
 
                 emit log_named_uint("current beacon balance (gwei): ", beaconBalanceGwei);
-                emit log_named_uint("current validator pod balance (gwei): ", oldPodBalanceGwei);
+                // emit log_named_uint("current validator pod balance (gwei): ", oldPodBalanceGwei);
                 emit log_named_int("beacon balance delta (gwei): ", deltaGwei);
-                emit log_named_int("expected pod balance delta (gwei): ", shareDeltas[i] / int(GWEI_TO_WEI));
+                emit log_named_int("staker share delta (gwei): ", stakerShareDeltas[i] / int(GWEI_TO_WEI));
+                emit log_named_int("operator share delta (gwei): ", operatorShareDeltas[i] / int(GWEI_TO_WEI));
             } else {
                 // For LSTs, mint a random token amount
                 uint portion = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
                 StdCheats.deal(address(strat.underlyingToken()), address(staker), portion);
 
-                delta = int(portion);
-                shareDeltas[i] = int(strat.underlyingToShares(uint(delta)));
+                int delta = int(portion);
+                tokenDeltas[i] = delta;
+                stakerShareDeltas[i] = int(strat.underlyingToShares(uint(delta)));
+                operatorShareDeltas[i] = int(strat.underlyingToShares(uint(delta)));
             }
-
-            tokenDeltas[i] = delta;
         }
-
-        return (tokenDeltas, shareDeltas);
+        return (tokenDeltas, stakerShareDeltas, operatorShareDeltas);
     }
 
+    function _calcNativeETHStakerShareDelta(
+        User staker, 
+        uint40 validatorIndex, 
+        uint64 beaconBalanceGwei, 
+        int64 deltaGwei
+    ) internal view returns (int) {
+        uint64 oldPodBalanceGwei = 
+            staker
+                .pod()
+                .validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validatorIndex))
+                .restakedBalanceGwei;
+        
+        uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
+
+        return (int(uint(newPodBalanceGwei)) - int(uint(oldPodBalanceGwei))) * int(GWEI_TO_WEI);
+    }
+    
     function _calcPodBalance(uint64 beaconBalanceGwei, int64 deltaGwei) internal pure returns (uint64) {
         uint64 podBalanceGwei;
         if (deltaGwei < 0) {
@@ -528,12 +564,29 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return podBalanceGwei;
     }
 
-    function _calculateSharesDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
-        return
-            (int(uint(newAmountGwei)) - int(uint(previousAmountGwei))) * int(GWEI_TO_WEI);
-    }
+    function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
+        int curPodOwnerShares = eigenPodManager.podOwnerShares(address(staker));
+        int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
-    // function _calculateDelta(uint64 new)
+        if (curPodOwnerShares <= 0) {
+            // if the shares started negative and stayed negative, then there cannot have been an increase in delegateable shares
+            if (newPodOwnerShares <= 0) {
+                return 0;
+            // if the shares started negative and became positive, then the increase in delegateable shares is the ending share amount
+            } else {
+                return newPodOwnerShares;
+            }
+        } else {
+            // if the shares started positive and became negative, then the decrease in delegateable shares is the starting share amount
+            if (newPodOwnerShares <= 0) {
+                return (-curPodOwnerShares);
+            // if the shares started positive and stayed positive, then the change in delegateable shares
+            // is the difference between starting and ending amounts
+            } else {
+                return (newPodOwnerShares - curPodOwnerShares);
+            }
+        }
+    }
 
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens

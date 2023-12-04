@@ -314,6 +314,7 @@ contract User_AltMethods is User {
     constructor() User() {}
 
     function delegateTo(User operator) public createSnapshot override {
+        emit log_named_address("- User.delegateTo: ", address(operator));
         // Create empty data
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
@@ -335,6 +336,8 @@ contract User_AltMethods is User {
     }
 
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
+        emit log("- User.depositIntoEigenlayer");
+        
         uint256 expiry = type(uint256).max;
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
