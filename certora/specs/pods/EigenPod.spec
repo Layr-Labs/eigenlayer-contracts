@@ -62,7 +62,7 @@ methods {
 
     // external calls to ERC20 token
     function _.transfer(address, uint256) external => DISPATCHER(true);
-    function _.transferFrom(address, address uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
     function _.approve(address, uint256) external => DISPATCHER(true);
 	
     // envfree functions
@@ -147,6 +147,7 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
         (get_restakedBalanceGwei(pubkeyHash) == 0);
 
+
 // // TODO: see if this draft rule can be salvaged
 // // draft rule to capture the following behavior (or at least most of it):
 // // The core invariant that ought to be maintained across the EPM and the EPs is that
@@ -223,7 +224,6 @@ rule consistentAccounting() {
     }
 }
 
-/*
 rule baseInvariant() {
     int256 podOwnerSharesBefore = get_podOwnerShares();
     // perform arbitrary function call
@@ -269,3 +269,9 @@ rule baseInvariant() {
     assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
         "base invariant violated");
 }
+
+invariant consistentAccounting() {
+    sumOfValidatorRestakedbalancesWei ==
+        to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
+}
+*/
