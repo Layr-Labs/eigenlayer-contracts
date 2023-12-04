@@ -8,7 +8,7 @@ methods {
 
     // Internal, NONDET-summarized Address library function -- unsound summary used to avoid HAVOC behavior
     // when sending ETH using `Address.sendValue()`
-    function Address.sendValue(address recipient, uint256 amount) internal => NONDET;
+    function _.sendValue(address recipient, uint256 amount) internal => NONDET;
 
     // summarize the deployment of EigenPods to avoid default, HAVOC behavior
     function _.deploy(uint256, bytes32, bytes memory bytecode) internal => NONDET;
