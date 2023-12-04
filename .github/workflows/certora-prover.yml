@@ -6,7 +6,7 @@ on:
       - master
       - release-v*
       - formal-verification
-      - fix-ci-errors
+      - m2-mainnet
   pull_request: {}
   workflow_dispatch: {}
 
