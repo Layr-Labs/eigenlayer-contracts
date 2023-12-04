@@ -232,7 +232,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
-    function _registerOperatorWith1271DelegationApprover(address operator) internal {
+    function _registerOperatorWith1271DelegationApprover(address operator) internal returns (ERC1271WalletMock) {
         address delegationSigner = cheats.addr(delegationSignerPrivateKey);
         /**
          * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
@@ -241,11 +241,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: defaultOperator,
+            earningsReceiver: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        _registerOperator(defaultOperator, operatorDetails, emptyStringForMetadataURI);
+        _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
+
+        return wallet;
     }
 
     function _registerOperator(
@@ -1414,8 +1416,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // register *this contract* as an operator
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
-        _registerOperatorWith1271DelegationApprover(defaultOperator);
+        ERC1271WalletMock wallet = _registerOperatorWith1271DelegationApprover(defaultOperator);
+        cheats.assume(staker != address(wallet) && staker != defaultOperator);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(
