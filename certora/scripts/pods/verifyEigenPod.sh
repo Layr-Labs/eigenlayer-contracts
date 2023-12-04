@@ -14,9 +14,9 @@ certoraRun certora/harnesses/EigenPodHarness.sol \
     lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     --verify EigenPodHarness:certora/specs/pods/EigenPod.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true -recursionEntryLimit 3' \
+    --prover_args '-recursionEntryLimit 3' \
     --optimistic_hashing \
-    --parametric_contracts EigenPodHarness EigenPodManager DelegationManager StrategyManager \
+    --parametric_contracts EigenPodHarness \
     $RULE \
     --loop_iter 1 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \

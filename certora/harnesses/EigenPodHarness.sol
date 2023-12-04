@@ -33,4 +33,8 @@ contract EigenPodHarness is EigenPod {
     function get_withdrawableRestakedExecutionLayerGwei() public view returns (uint256) {
         return withdrawableRestakedExecutionLayerGwei;
     }
+
+    function get_ETH_Balance() public view returns (uint256) {
+        return address(this).balance;
+    }
 }
