@@ -1,10 +1,14 @@
 
 methods {
-    //// Internal, SUMMARIZED EigenPod library functions
+    // Internal, NONDET-summarized EigenPod library functions
     function _.verifyValidatorFields(bytes32, bytes32[] calldata, bytes calldata, uint40) internal => NONDET;
     function _.verifyValidatorBalance(bytes32, bytes32, bytes calldata, uint40) internal => NONDET;
     function _.verifyStateRootAgainstLatestBlockRoot(bytes32, bytes32, bytes calldata) internal => NONDET;
     function _.verifyWithdrawal(bytes32, bytes32[] calldata, BeaconChainProofs.WithdrawalProof calldata) internal => NONDET;
+
+    // Internal, NONDET-summarized Address library function -- unsound summary used to avoid HAVOC behavior
+    // when sending ETH using `Address.sendValue()`
+    function Address.sendValue(address recipient, uint256 amount) internal => NONDET;
 
     // summarize the deployment of EigenPods to avoid default, HAVOC behavior
     function _.deploy(uint256, bytes32, bytes memory bytecode) internal => NONDET;
@@ -58,7 +62,7 @@ methods {
 
     // external calls to ERC20 token
     function _.transfer(address, uint256) external => DISPATCHER(true);
-    function _.transferFrom(address, address uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
     function _.approve(address, uint256) external => DISPATCHER(true);
 	
     // envfree functions
@@ -81,6 +85,8 @@ methods {
     function get_mostRecentBalanceUpdateTimestamp(bytes32 pubkeyHash) external returns (uint64) envfree;
     function get_podOwnerShares() external returns (int256) envfree;
     function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
+    function get_withdrawableRestakedExecutionLayerGwei() external returns (uint256) envfree;
+    function get_ETH_Balance() external returns (uint256) envfree;
 }
 
 // defines the allowed validator status transitions
@@ -142,6 +148,7 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
     (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.INACTIVE) =>
         (get_restakedBalanceGwei(pubkeyHash) == 0);
 
+
 // // TODO: see if this draft rule can be salvaged
 // // draft rule to capture the following behavior (or at least most of it):
 // // The core invariant that ought to be maintained across the EPM and the EPs is that
@@ -170,6 +177,51 @@ hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restaked
     );
 }
 
+rule consistentAccounting() {
+    // fetch info before call
+    int256 podOwnerSharesBefore = get_podOwnerShares();
+    uint256 withdrawableRestakedExecutionLayerGweiBefore = get_withdrawableRestakedExecutionLayerGwei();
+    uint256 eigenPodBalanceBefore = get_ETH_Balance();
+    // filter down to valid pre-states
+    require(sumOfValidatorRestakedbalancesWei ==
+        to_mathint(podOwnerSharesBefore) - to_mathint(withdrawableRestakedExecutionLayerGweiBefore));
+
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg args;
+    f(e,args);
+
+    // fetch info after call
+    int256 podOwnerSharesAfter = get_podOwnerShares();
+    uint256 withdrawableRestakedExecutionLayerGweiAfter = get_withdrawableRestakedExecutionLayerGwei();
+    uint256 eigenPodBalanceAfter = get_ETH_Balance();
+    /**
+     * handling for weird, unrealistic edge case where calling `initialize` causes the pod owner to change, so the 
+     * call to `get_podOwnerShares` queries the shares for a different address.
+     * calling `initialize` should *not* change user shares, so it is unrealistic to simulate it doing so.
+     */
+    if (f.selector == sig:initialize(address).selector) {
+        podOwnerSharesAfter = podOwnerSharesBefore;
+    }
+    // check post-state
+    // TODO: this check is still broken for `withdrawRestakedBeaconChainETH` since it does a low-level call to transfer the ETH, which triggers optimistic fallback dispatching
+    // special handling for one function
+    if (f.selector == sig:withdrawRestakedBeaconChainETH(address,uint256).selector) {
+        assert(sumOfValidatorRestakedbalancesWei ==
+            to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter)
+            // adjustment term for the ETH balance of the contract changing
+            + to_mathint(eigenPodBalanceBefore) - to_mathint(eigenPodBalanceAfter),
+            "invalid post-state");
+    // outside of special case, we don't need the adjustment term
+    } else {
+        assert(sumOfValidatorRestakedbalancesWei ==
+            to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter),
+            "invalid post-state");
+    }
+}
+
+/*
 rule baseInvariant() {
     int256 podOwnerSharesBefore = get_podOwnerShares();
     // perform arbitrary function call
@@ -182,3 +234,9 @@ rule baseInvariant() {
     assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
         "base invariant violated");
 }
+
+invariant consistentAccounting() {
+    sumOfValidatorRestakedbalancesWei ==
+        to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
+}
+*/
