@@ -22,6 +22,15 @@ interface IDelegationManagerEvents {
      */
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 
+    /// @notice Enum representing the status of an operator's registration with an AVS
+    enum OperatorAVSRegistrationStatus {
+        UNREGISTERED,       // Operator not registered to AVS
+        REGISTERED          // Operator registered to AVS
+    }
+
+    /// @notice Emitted when an operator's registration status for an AVS is updated
+    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
+
     /// @notice Emitted whenever an operator's shares are increased for a given strategy
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 

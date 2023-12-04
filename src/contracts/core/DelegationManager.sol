@@ -422,6 +422,77 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    /**
+     * @notice Called by an avs to register an operator with the avs.
+     * @param operator The address of the operator to register.
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {
+
+        require(
+            operatorSignature.expiry >= block.timestamp,
+            "DelegationManager.registerOperatorToAVS: operator signature expired"
+        );
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            "DelegationManager.registerOperatorToAVS: operator already registered"
+        );
+        require(
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "DelegationManager.registerOperatorToAVS: salt already spent"
+        );
+
+        // Calculate the digest hash
+        bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
+            operator: operator,
+            avs: msg.sender,
+            salt: operatorSignature.salt,
+            expiry: operatorSignature.expiry
+        });
+
+        // Check that the signature is valid
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            operator,
+            operatorRegistrationDigestHash,
+            operatorSignature.signature
+        );
+
+        // Set the operator as registered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
+
+        // Mark the salt as spent
+        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+    }
+
+    /**
+     * @notice Called by an avs to deregister an operator with the avs.
+     * @param operator The address of the operator to deregister.
+     */
+    function deregisterOperatorFromAVS(address operator) external {
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+            "DelegationManager.deregisterOperatorFromAVS: operator not registered"
+        );
+
+        // Set the operator as deregistered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
+    }
+
+    /**
+     * @notice Returns whether or not an operator is registered to an avs.
+     * @param operator The address of the operator.
+     * @param avs The address of the avs.
+     */
+    function isRegisteredToAVS(address operator, address avs) external view returns (bool) {
+        return avsOperatorStatus[avs][operator] == OperatorAVSRegistrationStatus.REGISTERED;
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -903,6 +974,30 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
+    }
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
+     * @param operator The account registering as an operator
+     * @param avs The AVS the operator is registering to
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid
+     */
+    function calculateOperatorAVSRegistrationDigestHash(
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the struct hash
+        bytes32 structHash = keccak256(
+            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
+        );
+        // calculate the digest hash
+        bytes32 digestHash = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
+        );
+        return digestHash;
     }
 
     /**
