@@ -1,10 +1,10 @@
 {
   "chainInfo": {
     "chainId": 5,
-    "deploymentBlock": 10157280
+    "deploymentBlock": 10157552
   },
   "strategies": {
-    "ETHx": "0x0730A8A234c97920D8F620A11c697185bE530D48",
-    "ankrETH": "0xE11729653f969d1B2e5279761BB8b19A2C17FC2E"
+    "ETHx": "0x09184f4bD2441D1028486e73494A7E881ebFfD4e",
+    "ankrETH": "0x20C3F8943e09ee3f7391791ABfa1385b3851C54D"
   }
 }
