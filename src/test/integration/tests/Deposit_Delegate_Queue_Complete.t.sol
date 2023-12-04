@@ -10,6 +10,38 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
                                 FULL WITHDRAWALS
     *******************************************************************************/
 
+    function testFuzz_deposit_delegate_updateBalance(uint24 _random) public {
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT
+        });
+
+        (
+            User staker,
+            IStrategy[] memory strategies, 
+            uint[] memory tokenBalances
+        ) = _newRandomStaker();
+        // (User operator, ,) = _newRandomOperator();
+        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+
+        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
+        assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+
+        // For LSTs, the tokenDelta will always be positive
+        // For native ETH, the tokenDelta may be positive or negative
+        (int[] memory tokenDeltas, int[] memory shareDeltas) = _randBalanceUpdate(staker, strategies);
+
+        staker.updateBalances(strategies, tokenDeltas);
+
+        assert_Snap_Delta_StakerShares(staker, strategies, shareDeltas, "staker should have applied deltas correctly");
+    }
+
     /// Generates a random staker and operator. The staker:
     /// 1. deposits all assets into strategies
     /// 2. delegates to an operator

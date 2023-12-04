@@ -319,6 +319,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Delta_StakerShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        int[] memory shareDeltas,
+        string memory err
+    ) internal {
+        int[] memory curShares = _getStakerSharesInt(staker, strategies);
+        // Use timewarp to get previous staker shares
+        int[] memory prevShares = _getPrevStakerSharesInt(staker, strategies);
+
+        // For each strategy, check (prev + added == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
+        }
+    }
+
     /// Snapshot assertions for underlying token balances:
 
     /// @dev Check that the staker has `addedTokens` additional underlying tokens 
@@ -446,6 +462,79 @@ abstract contract IntegrationBase is IntegrationDeployer {
      * Helpful getters:
      */
 
+    function _randBalanceUpdate(
+        User staker,
+        IStrategy[] memory strategies
+    ) internal returns (int[] memory, int[] memory) {
+
+        int[] memory tokenDeltas = new int[](strategies.length);
+        int[] memory shareDeltas = new int[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            int delta;
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                // TODO - could choose and set a "next updatable validator" at random here
+                uint40 validator = staker.getUpdatableValidator();
+                uint64 beaconBalanceGwei = beaconChain.balanceOfGwei(validator);
+
+                // For native eth, add or remove a random amount of Gwei - minimum 1
+                // and max of the current beacon chain balance
+                uint64 portionGwei = uint64(_randUint({ min: 1, max: beaconBalanceGwei }));
+
+                bool addTokens = _randBool();
+                int64 deltaGwei = addTokens ? int64(portionGwei) : -int64(portionGwei);
+
+                IEigenPod.ValidatorInfo memory info = staker.pod().validatorPubkeyHashToInfo(beaconChain.pubkeyHash(validator));
+
+                uint64 oldPodBalanceGwei = info.restakedBalanceGwei;
+                uint64 newPodBalanceGwei = _calcPodBalance(beaconBalanceGwei, deltaGwei);
+
+                shareDeltas[i] = _calculateSharesDelta(newPodBalanceGwei, oldPodBalanceGwei);
+                delta = int(deltaGwei) * int(GWEI_TO_WEI);
+
+                emit log_named_uint("current beacon balance (gwei): ", beaconBalanceGwei);
+                emit log_named_uint("current validator pod balance (gwei): ", oldPodBalanceGwei);
+                emit log_named_int("beacon balance delta (gwei): ", deltaGwei);
+                emit log_named_int("expected pod balance delta (gwei): ", shareDeltas[i] / int(GWEI_TO_WEI));
+            } else {
+                // For LSTs, mint a random token amount
+                uint portion = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+                StdCheats.deal(address(strat.underlyingToken()), address(staker), portion);
+
+                delta = int(portion);
+                shareDeltas[i] = int(strat.underlyingToShares(uint(delta)));
+            }
+
+            tokenDeltas[i] = delta;
+        }
+
+        return (tokenDeltas, shareDeltas);
+    }
+
+    function _calcPodBalance(uint64 beaconBalanceGwei, int64 deltaGwei) internal pure returns (uint64) {
+        uint64 podBalanceGwei;
+        if (deltaGwei < 0) {
+            podBalanceGwei = beaconBalanceGwei - uint64(uint(int(-deltaGwei)));
+        } else {
+            podBalanceGwei = beaconBalanceGwei + uint64(uint(int(deltaGwei)));
+        }
+
+        if (podBalanceGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
+            podBalanceGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
+        }
+
+        return podBalanceGwei;
+    }
+
+    function _calculateSharesDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
+        return
+            (int(uint(newAmountGwei)) - int(uint(previousAmountGwei))) * int(GWEI_TO_WEI);
+    }
+
+    // function _calculateDelta(uint64 new)
+
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
     function _calculateExpectedShares(IStrategy[] memory strategies, uint[] memory tokenBalances) internal returns (uint[] memory) {
@@ -456,7 +545,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint tokenBalance = tokenBalances[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                expectedShares[i] = tokenBalances[i];
+                expectedShares[i] = tokenBalance;
             } else {
                 expectedShares[i] = strat.underlyingToShares(tokenBalance);
             }
@@ -564,6 +653,31 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 curShares[i] = uint(shares);
             } else {
                 curShares[i] = strategyManager.stakerStrategyShares(address(staker), strat);
+            }
+        }
+
+        return curShares;
+    }
+
+    /// @dev Uses timewarp modifier to get staker shares at the last snapshot
+    function _getPrevStakerSharesInt(
+        User staker, 
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (int[] memory) {
+        return _getStakerSharesInt(staker, strategies);
+    }
+
+    /// @dev Looks up each strategy and returns a list of the staker's shares
+    function _getStakerSharesInt(User staker, IStrategy[] memory strategies) internal view returns (int[] memory) {
+        int[] memory curShares = new int[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                curShares[i] = eigenPodManager.podOwnerShares(address(staker));
+            } else {
+                curShares[i] = int(strategyManager.stakerStrategyShares(address(staker), strat));
             }
         }
 

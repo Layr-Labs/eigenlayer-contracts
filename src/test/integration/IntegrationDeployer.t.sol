@@ -170,7 +170,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            GOERLI_GENESIS_TIME
+            0
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
@@ -460,6 +460,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Hash `random` with itself so the next value we generate is different
         random = keccak256(abi.encodePacked(random));
         return min + value;
+    }
+
+    function _randBool() internal returns (bool) {
+        return _randUint({ min: 0, max: 1 }) == 0;
     }
 
     function _randAssetType() internal returns (uint) {
