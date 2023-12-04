@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/User.t.sol";
-import "src/test/integration/tests/utils.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationTestUtils {
+contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
 
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
@@ -25,22 +24,20 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationTestUtils {
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        assertDepositState(staker, strategies, shares);
+        check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true); // Assume 'true' is to receive as tokens
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            assertWithdrawalAsTokensState(staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, address(0), withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
@@ -61,21 +58,19 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationTestUtils {
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        assertDepositState(staker, strategies, shares);
+        check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeQueuedWithdrawal(withdrawals[i], false); // 'false' for shares
-            assertWithdrawalAsSharesState(staker, withdrawals[i], strategies, shares);
+            staker.completeWithdrawalAsShares(withdrawals[i]); 
+            check_Withdrawal_AsShares_State(staker, address(0), withdrawals[i], strategies, shares);
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion

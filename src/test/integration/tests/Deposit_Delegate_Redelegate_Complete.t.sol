@@ -13,8 +13,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
     /// 5. delegate to a new operator
     /// 5. queueWithdrawal
     /// 7. complete their queued withdrawal as tokens
-    function testFuzz_deposit_delegate_reDelegate_completeLastWithdrawalAsShares(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
+    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
+    // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
@@ -41,105 +41,32 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         /// 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        assertDepositState(staker, strategies, shares);
+        check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
         staker.delegateTo(operator1);
-        assertDelegationState(staker, operator1, strategies, shares);
+        check_Delegation_State(staker, operator1, strategies, shares);
 
         // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = staker.undelegate();
-        assertUndelegateState(staker, operator1, expectedWithdrawal, withdrawalRoot, strategies, shares);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-
-        assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
-
-        // 5. Delegate to a new operator
-        staker.delegateTo(operator2);
-        assertDelegationState(staker, operator2, strategies, shares);
-        assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
-
-        // 6. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
-        assertQueuedWithdrawalState(staker, operator2, strategies, shares, withdrawals, withdrawalRoots);
-
-        // 7. Complete withdrawal
-        // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-
-        // Complete all but last withdrawal as tokens
-        for (uint i = 0; i < withdrawals.length - 1; i++) {
-            staker.completeQueuedWithdrawal(withdrawals[i], true);
-        }
-
-        // Complete last withdrawal as shares
-        staker.completeQueuedWithdrawal(withdrawals[withdrawals.length - 1], false);
-        assertWithdrawalAsSharesState(staker, withdrawals[withdrawals.length - 1], strategies, shares);
-    }
-
-    function testFuzz_deposit_delegate_reDelegate_withAdditionalDepositBefore(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
-        /// 0. Create an operator and a staker with:
-        // - some nonzero underlying token balances
-        // - corresponding to a random number of strategies
-        //
-        // ... check that the staker has no deleagatable shares and isn't delegated
-
-        (
-            User staker,
-            IStrategy[] memory strategies, 
-            uint[] memory tokenBalances
-        ) = _newRandomStaker();
-        (User operator1, ,) = _newRandomOperator();
-        (User operator2, ,) = _newRandomOperator();
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
-        /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        assertDepositState(staker, strategies, shares);
-
-        // 2. Delegate to an operator
-        staker.delegateTo(operator1);
-        assertDelegationState(staker, operator1, strategies, shares);
-
-        // 3. Undelegate from an operator
-        IDelegationManager.Withdrawal memory expectedWithdrawal = _getExpectedWithdrawalStruct(staker);
-        bytes32 withdrawalRoot = staker.undelegate();
-        assertUndelegateState(staker, operator1, expectedWithdrawal, withdrawalRoot, strategies, shares);
-
-        // 4. Complete withdrawal as shares
-        // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeQueuedWithdrawal(expectedWithdrawal, false);
-
-        assertWithdrawalAsSharesState(staker, expectedWithdrawal, strategies, shares);
+        staker.completeWithdrawalAsShares(withdrawals[0]);
+        check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
 
         // 5. Delegate to a new operator
         staker.delegateTo(operator2);
-        assertDelegationState(staker, operator2, strategies, shares);
+        check_Delegation_State(staker, operator2, strategies, shares);
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
-        assertQueuedWithdrawalState(staker, operator2, strategies, shares, withdrawals, withdrawalRoots);
+        withdrawals = staker.queueWithdrawals(strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawals, withdrawalRoots);
 
         // 7. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
@@ -147,13 +74,83 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         // Complete withdrawals
         for (uint i = 0; i < withdrawals.length; i++) {
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
-            assertWithdrawalAsTokensState(staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
+    // function testFuzz_deposit_delegate_reDelegate_completeLastWithdrawalAsShares(uint24 _random) public {   
+    //     // When new Users are created, they will choose a random configuration from these params: 
+    //     _configRand({
+    //         _randomSeed: _random,
+    //         _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+    //         _userTypes: DEFAULT | ALT_METHODS
+    //     });
+
+    //     /// 0. Create an operator and a staker with:
+    //     // - some nonzero underlying token balances
+    //     // - corresponding to a random number of strategies
+    //     //
+    //     // ... check that the staker has no deleagatable shares and isn't delegated
+
+    //     (
+    //         User staker,
+    //         IStrategy[] memory strategies, 
+    //         uint[] memory tokenBalances
+    //     ) = _newRandomStaker();
+    //     (User operator1, ,) = _newRandomOperator();
+    //     (User operator2, ,) = _newRandomOperator();
+    //     uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+
+    //     assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
+    //     assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+
+    //     /// 1. Deposit Into Strategies
+    //     staker.depositIntoEigenlayer(strategies, tokenBalances);
+    //     check_Deposit_State(staker, strategies, shares);
+
+    //     // 2. Delegate to an operator
+    //     staker.delegateTo(operator1);
+    //     check_Delegation_State(staker, operator1, strategies, shares);
+
+    //     // 3. Undelegate from an operator
+    //     IDelegationManager.Withdrawal[] memory withdrawals = staker.undelegate();
+    //     bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+    //     check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares);
+
+    //     // 4. Complete withdrawal as shares
+    //     // Fast forward to when we can complete the withdrawal
+    //     cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+    //     staker.completeWithdrawalAsShares(withdrawals[0]);
+
+    //     check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
+
+    //     // 5. Delegate to a new operator
+    //     staker.delegateTo(operator2);
+    //     check_Delegation_State(staker, operator2, strategies, shares);
+    //     assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+
+    //     // 6. Queue Withdrawal
+    //     withdrawals = staker.queueWithdrawals(strategies, shares);
+    //     withdrawalRoots = _getWithdrawalHashes(withdrawals);
+    //     check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawals, withdrawalRoots);
+
+    //     // 7. Complete withdrawal
+    //     // Fast forward to when we can complete the withdrawal
+    //     cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+
+    //     // Complete all but last withdrawal as tokens
+    //     for (uint i = 0; i < withdrawals.length - 1; i++) {
+    //         staker.completeWithdrawalAsTokens(withdrawals[i]);
+    //     }
+
+    //     // Complete last withdrawal as shares
+    //     staker.completeWithdrawalAsTokens(withdrawals[withdrawals.length - 1]);
+    //     check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[withdrawals.length - 1], strategies, shares);
+    // }
+
+    function testFuzz_deposit_delegate_reDelegate_withAdditionalDepositBefore(uint24 _random) public {   
         // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
@@ -196,6 +193,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         staker.completeWithdrawalAsShares(withdrawals[0]);
+
         check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
 
         // 5. Delegate to a new operator

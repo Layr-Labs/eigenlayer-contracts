@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "src/test/integration/IntegrationBase.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/User.t.sol";
-import "src/test/integration/tests/utils.t.sol";
 
-contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationTestUtils {
+contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
     
     function testFuzz_delegate_deposit_queueWithdrawal_completeAsShares(uint24 _random) public {
         // Configure the random parameters for the test
@@ -21,26 +20,25 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationTes
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
-        assertDelegationState(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
+        check_Delegation_State(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
 
         // 2. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
-        assertDelegationState(staker, operator, strategies, shares);
+        check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
-        assertQueuedWithdrawalState(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeQueuedWithdrawal(withdrawals[i], false); // 'false' indicates completion as shares
-            assertWithdrawalAsSharesState(staker, withdrawals[i], strategies, shares);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
     }
 
@@ -58,27 +56,26 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationTes
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
-        assertDelegationState(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
+        check_Delegation_State(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
 
         // 2. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
-        assertDelegationState(staker, operator, strategies, shares);
+        check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawal
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-        (withdrawals, withdrawalRoots) = staker.queueWithdrawals(strategies, shares);
-        assertQueuedWithdrawalState(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
-            IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawals[i], true); // Assuming 'true' for tokens
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            assertWithdrawalAsTokensState(staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 }
