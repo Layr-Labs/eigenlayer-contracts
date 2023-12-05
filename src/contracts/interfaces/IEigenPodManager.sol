@@ -30,7 +30,10 @@ interface IEigenPodManager is IPausable {
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Emitted when a new proof fulfiller is added
-    event ProofServiceUpdated(address indexed proofService);
+    event ProofServiceUpdated(ProofService proofService);
+
+    /// @notice emitted when the partial withdrawal proof switch is turned on
+    event PartialWithdrawalProofSwitchOn();
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(

@@ -225,6 +225,7 @@ contract EigenPodManager is
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
 
+    /// @notice Called by proving service to fulfill a partial withdrawal proof request
     function proofServiceCallback(
         bytes32 blockRoot,
         uint64 oracleTimestamp,
@@ -233,19 +234,18 @@ contract EigenPodManager is
     ) external onlyProofService partialWithdrawalProofSwitchOn {
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
+            //these checks are verified in the snark, we add them here again as a sanity check
             require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
             require(callbackInfo[i].fee <= maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
         }
     }
-
-    function flipPartialWithdrawalProofSwitch() external onlyOwner {
-        if(partialWithdrawalProofSwitch) {
-            partialWithdrawalProofSwitch = false;
-        } else {
-            partialWithdrawalProofSwitch = true;
-        }
+    /// @notice enables partial withdrawal proving via offchain proofs
+    function turnOnPartialWithdrawalProofSwitch() external onlyOwner {
+        require(!partialWithdrawalProofSwitch)
+        partialWithdrawalProofSwitch = true;
+        emit PartialWithdrawalProofSwitchOn();
     }
 
     function updateProofService(address caller, address feeRecipient) external onlyOwner {
@@ -253,7 +253,7 @@ contract EigenPodManager is
             caller: caller,
             feeRecipient: feeRecipient
         });
-        emit ProofServiceUpdated(proofService.caller);
+        emit ProofServiceUpdated(proofService);
     }
 
     /**
