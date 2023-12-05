@@ -997,7 +997,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             .validatorPubkeyHashToInfo(validatorPubkeyHash)
             .restakedBalanceGwei;
 
-        uint64 newValidatorBalance = _getValidatorUpdatedBalance();
         int256 shareDiff = beaconChainETHBefore - eigenPodManager.podOwnerShares(podOwner);
 
         assertTrue(
@@ -1042,10 +1041,10 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function testCreatePodIfItReturnsPodAddress() external {
         cheats.startPrank(podOwner);
-        address podAddress = eigenPodManager.createPod();
+        address _podAddress = eigenPodManager.createPod();
         cheats.stopPrank();
         IEigenPod pod = eigenPodManager.getPod(podOwner);
-        require(podAddress == address(pod), "invalid pod address");
+        require(_podAddress == address(pod), "invalid pod address");
     }
 
     function testStakeOnEigenPodFromNonPodManagerAddress(address nonPodManager) external fuzzedAddress(nonPodManager) {
@@ -1390,13 +1389,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function test_validatorPubkeyToInfo() external {
-        bytes memory pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+        bytes memory _pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
 
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod pod = eigenPodManager.getPod(podOwner);
 
-        IEigenPod.ValidatorInfo memory info1 = pod.validatorPubkeyToInfo(pubkey);
+        IEigenPod.ValidatorInfo memory info1 = pod.validatorPubkeyToInfo(_pubkey);
         IEigenPod.ValidatorInfo memory info2 = pod.validatorPubkeyHashToInfo(getValidatorPubkeyHash());
 
         require(info1.validatorIndex == info2.validatorIndex, "validatorIndex does not match");
@@ -1407,13 +1406,13 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     function test_validatorStatus() external {
-        bytes memory pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
+        bytes memory _pubkey = hex"93a0dd04ccddf3f1b419fdebf99481a2182c17d67cf14d32d6e50fc4bf8effc8db4a04b7c2f3a5975c1b9b74e2841888";
 
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod pod = eigenPodManager.getPod(podOwner);
 
-        IEigenPod.VALIDATOR_STATUS status1 = pod.validatorStatus(pubkey);
+        IEigenPod.VALIDATOR_STATUS status1 = pod.validatorStatus(_pubkey);
         IEigenPod.VALIDATOR_STATUS status2 = pod.validatorStatus(getValidatorPubkeyHash());
 
         require(status1 == status2, "status does not match");

@@ -1,6 +1,6 @@
 ## EigenLayer M2 Docs
 
-**EigenLayer M2 is a testnet-only release** that extends the functionality of EigenLayer M1 (which is live on both Goerli and mainnet).
+**EigenLayer M2** extends the functionality of EigenLayer M1 (which is live on both Goerli and mainnet). M2 is currently on the Goerli testnet, and will eventually be released on mainnet.
 
 M1 enables very basic restaking: users that stake ETH natively or with a liquid staking token can opt-in to the M1 smart contracts, which currently support two basic operations: deposits and withdrawals. 
 
@@ -10,7 +10,6 @@ M2 adds several features, the most important of which is the basic support neede
 * Stakers can delegate their stake to a single operator
 * Native ETH restaking is now fully featured, using beacon chain state proofs to validate withdrawal credentials, validator balances, and validator exits
 * Proofs are supported by beacon chain headers provided by an oracle (See [`EigenPodManager` docs](./core/EigenPodManager.md) for more info)
-* TODO - multiquorums
 
 ### System Components
 
@@ -58,6 +57,6 @@ See full documentation in [`/core/DelegationManager.md`](./core/DelegationManage
 
 | File | Type | Proxy? | Goerli |
 | -------- | -------- | -------- | -------- |
-| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | Singleton | Transparent proxy | TODO |
+| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - | - |
 
-The `Slasher` is deployed, but will remain completely paused during M2. Its design is not finalized.
+The `Slasher` is deployed, but will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized.

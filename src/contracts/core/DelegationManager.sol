@@ -403,9 +403,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // add strategy shares to delegate's shares
             _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
-
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(operator);
         }
     }
 
@@ -434,9 +431,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 strategy: strategy,
                 shares: shares
             });
-
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(operator);
         }
     }
 
@@ -542,9 +536,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             unchecked { ++i; }
         }
-
-        // push the operator's new stake to the StakeRegistry
-        _pushOperatorStakeUpdate(operator);
     }
 
     /**
@@ -624,9 +615,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             strategy: withdrawal.strategies[i],
                             shares: increaseInDelegateableShares
                         });
-
-                        // push the operator's new stake to the StakeRegistry
-                        _pushOperatorStakeUpdate(podOwnerOperator);
                     }
                 } else {
                     strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
@@ -643,8 +631,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 }
                 unchecked { ++i; }
             }
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(currentOperator);
         }
 
         emit WithdrawalCompleted(withdrawalRoot);
@@ -661,16 +647,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // This will revert on underflow, so no check needed
         operatorShares[operator][strategy] -= shares;
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
-    }
-
-    function _pushOperatorStakeUpdate(address operator) internal {
-        // if the stake registry has been set
-        if (address(stakeRegistry) != address(0)) {
-            address[] memory operators = new address[](1);
-            operators[0] = operator;
-            // update the operator's stake in the StakeRegistry
-            stakeRegistry.updateStakes(operators);
-        }
     }
 
     /**
@@ -715,11 +691,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
 
             unchecked { ++i; }
-        }
-
-        // Push the operator's new stake to the StakeRegistry
-        if (operator != address(0)) {
-            _pushOperatorStakeUpdate(operator);
         }
 
         // Create queue entry and increment withdrawal nonce
