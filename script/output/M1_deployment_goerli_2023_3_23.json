@@ -1,11 +1,11 @@
 {
   "addresses": {
-    "baseStrategyImplementation": "0x2c836f44207A732bC951df98f0cAcE4704432B7E",
+    "baseStrategyImplementation": "0x81E94e16949AC397d508B5C2557a272faD2F8ebA",
     "delayedWithdrawalRouter": "0x89581561f1F98584F88b0d57c2180fb89225388f",
     "delayedWithdrawalRouterImplementation": "0x6854c0eF4A8dF70a5E832cC3b3b4C5a500063837",
     "delegation": "0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8",
     "delegationImplementation": "0xeBea7B291b6631806244Ed0E3d1E585e76BB37fb",
-    "eigenLayerPauserReg": "0x7cB9c5D6b9702f2f680e4d35cb1fC945D08208F6",
+    "eigenLayerPauserReg": "0x2588f9299871a519883D92dcd5092B4A0Cf70010",
     "eigenLayerProxyAdmin": "0x28ceac2ff82B2E00166e46636e2A4818C29902e2",
     "eigenPodBeacon": "0x3093F3B560352F896F0e9567019902C9Aff8C9a5",
     "eigenPodImplementation": "0x0062645382Af44593bA2E453F51604833277F371",
