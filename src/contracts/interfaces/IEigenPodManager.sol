@@ -175,6 +175,6 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the status of the proof switch
     function partialWithdrawalProofSwitch() external view returns (bool);
 
-    function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external; 
+    function updateProofService(address caller, address feeRecipient) external; 
 
 }

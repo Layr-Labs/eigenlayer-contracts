@@ -229,7 +229,7 @@ contract EigenPodManager is
     function proofServiceCallback(
         bytes32 blockRoot,
         uint64 oracleTimestamp,
-        uint256 maxFee;
+        uint256 maxFee,
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external onlyProofService partialWithdrawalProofSwitchOn {
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
@@ -243,7 +243,7 @@ contract EigenPodManager is
     }
     /// @notice enables partial withdrawal proving via offchain proofs
     function turnOnPartialWithdrawalProofSwitch() external onlyOwner {
-        require(!partialWithdrawalProofSwitch)
+        require(!partialWithdrawalProofSwitch);
         partialWithdrawalProofSwitch = true;
         emit PartialWithdrawalProofSwitchOn();
     }
