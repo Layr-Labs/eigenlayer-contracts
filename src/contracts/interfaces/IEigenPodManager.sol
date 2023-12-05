@@ -57,6 +57,8 @@ interface IEigenPodManager is IPausable {
         uint256 provenPartialWithdrawalSumWei;
         // prover fee
         uint256 fee;
+        // user-signed maxFee
+        uint256 maxFee;
     }
 
 
@@ -175,6 +177,14 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the status of the proof switch
     function partialWithdrawalProofSwitch() external view returns (bool);
 
+    /// @notice updates the proof service caller
     function updateProofService(address caller, address feeRecipient) external; 
+
+    /// @notice callback for proof service
+    function proofServiceCallback(
+        bytes32 blockRoot,
+        uint64 oracleTimestamp,
+        WithdrawalCallbackInfo[] calldata callbackInfo
+    ) external;
 
 }
