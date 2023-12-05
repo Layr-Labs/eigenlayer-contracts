@@ -4,12 +4,18 @@ pragma solidity =0.8.12;
 import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/User.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
+
+    using Strings for *;
+
+    uint numStakers = 0;
+    uint numOperators = 0;
 
     /**
      * Gen/Init methods:
@@ -20,7 +26,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
      * This user is ready to deposit into some strategies and has some underlying token balances
      */
     function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
+        string memory stakerName = string.concat("- Staker", numStakers.toString());
+        numStakers++;
+
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
         
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
@@ -28,7 +37,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser();
+        string memory operatorName = string.concat("- Operator", numOperators.toString());
+        numOperators++;
+
+        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
         
         operator.registerAsOperator();
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -148,8 +160,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
         bytes32[] memory withdrawalRoots,
         string memory err
     ) internal {
-        bytes32[] memory expectedRoots = _getWithdrawalHashes(withdrawals);
-
         for (uint i = 0; i < withdrawals.length; i++) {
             assert_ValidWithdrawalHash(withdrawals[i], withdrawalRoots[i], err);
         }
@@ -434,7 +444,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory withdrawal,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -479,10 +488,6 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (withdrawStrats, withdrawShares);
     }
-
-    /**
-     * Helpful getters:
-     */
 
     function _randBalanceUpdate(
         User staker,
