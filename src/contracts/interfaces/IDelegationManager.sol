@@ -116,6 +116,12 @@ interface IDelegationManager is ISignatureUtils {
      */
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
 
+    /**
+     * @notice Emitted when @param avs indicates that they are updating their MetadataURI string
+     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     */
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
@@ -173,8 +179,16 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an operator
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function updateOperatorMetadataURI(string calldata metadataURI) external;
+
+    /**
+     * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an AVS
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AVSMetadataURIUpdated` event
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external;
 
     /**
      * @notice Caller delegates their stake to an operator.
@@ -368,6 +382,14 @@ interface IDelegationManager is ISignatureUtils {
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
+
+    /**
+     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    function withdrawalDelayBlocks() external view returns (uint256);
 
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`

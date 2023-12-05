@@ -9,6 +9,8 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     IBeacon public eigenPodBeacon;
     IETHPOSDeposit public ethPOS;
 
+    mapping(address => int256) public podShares;
+
     function slasher() external view returns(ISlasher) {}
 
     function createPod() external returns(address) {}
@@ -63,7 +65,13 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function unpause(uint256 /*newPausedStatus*/) external{}
 
-    function podOwnerShares(address podOwner) external view returns (int256) {}
+    function podOwnerShares(address podOwner) external view returns (int256) {
+        return podShares[podOwner];
+    }
+
+    function setPodOwnerShares(address podOwner, int256 shares) external {
+        podShares[podOwner] = shares;
+    }
 
     function addShares(address /*podOwner*/, uint256 shares) external pure returns (uint256) {
         // this is the "increase in delegateable tokens"

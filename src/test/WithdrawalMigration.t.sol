@@ -29,7 +29,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
     IERC20 cbETH = IERC20(_CBETH_ADDRESS);
 
     function setUp() public override {
-        vm.createSelectFork("https://eth.llamarpc.com", _M1_BLOCK_FORK);
+        vm.createSelectFork(cheats.envString("RPC_MAINNET"), _M1_BLOCK_FORK);
         beaconChainETHStrategy = m1StrategyManager.beaconChainETHStrategy();
         // Unpause strategyManager
         cheats.prank(_M1_UNPAUSER);

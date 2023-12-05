@@ -12,7 +12,7 @@ import "src/test/mocks/Reenterer.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
- * @notice Unit testing of the StrategyMananger contract, entire withdrawal tests related to the
+ * @notice Unit testing of the StrategyManager contract, entire withdrawal tests related to the
  * DelegationManager are not tested here but callable functions by the DelegationManager are mocked and tested here.
  * Contracts tested: StrategyManager.sol
  * Contracts not mocked: StrategyBase, PauserRegistry
@@ -1117,7 +1117,7 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertEq(
             strategyManager.stakerStrategyListLength(staker),
             MAX_STAKER_STRATEGY_LIST_LENGTH,
-            "strategyMananger.stakerStrategyListLength(staker) != MAX_STAKER_STRATEGY_LIST_LENGTH"
+            "strategyManager.stakerStrategyListLength(staker) != MAX_STAKER_STRATEGY_LIST_LENGTH"
         );
 
         cheats.prank(staker);
