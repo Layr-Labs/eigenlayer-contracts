@@ -44,10 +44,15 @@ interface IEigenPodManager is IPausable {
 
     //info for each withdrawal called back by proof service
     struct WithdrawalCallbackInfo {
+        // the address of the pod owner
         address podOwner;
+        // lower bound of the withdrawal period
         uint64 startTimestamp;
+        // upper bound of the withdrawal period
         uint64 endTimestamp;
+        // amount being proven for withdrawal
         uint256 provenPartialWithdrawalSumWei;
+        // prover fee
         uint256 fee;
     }
 

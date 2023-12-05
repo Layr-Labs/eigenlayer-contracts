@@ -440,6 +440,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
                     EXTERNAL FUNCTIONS CALLABLE BY PERMISSIONED SERVICES
     *******************************************************************************/
 
+    /// @notice Called by the EigenPodManager to fulfill a partial withdrawal proof request
     function fulfillPartialWithdrawalProofRequest(
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
@@ -448,9 +449,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
         require(withdrawalCallbackInfo.startTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
         require(withdrawalCallbackInfo.startTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
-        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
-        //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
 
         //subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
@@ -460,7 +458,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         } else {
             sumOfPartialWithdrawalsClaimedGwei -= provenPartialWithdrawalSumWei / GWEI_TO_WEI;
         }
-       
+
+        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
+        //send proof service their fee
+        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
+    
         mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
     }
 
