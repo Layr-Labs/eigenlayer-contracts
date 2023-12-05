@@ -170,7 +170,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            GOERLI_GENESIS_TIME
+            0
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
@@ -329,7 +329,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
      * 
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser() internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -340,11 +340,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Create User contract based on deposit type:
         User user;
         if (userType == DEFAULT) {
-            user = new User();
+            user = new User(name);
         } else if (userType == ALT_METHODS) {
             // User will use nonstandard methods like:
             // `delegateToBySignature` and `depositIntoStrategyWithSignature`
-            user = User(new User_AltMethods());
+            user = User(new User_AltMethods(name));
         } else {
             revert("_randUser: unimplemented userType");
         }
@@ -460,6 +460,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Hash `random` with itself so the next value we generate is different
         random = keccak256(abi.encodePacked(random));
         return min + value;
+    }
+
+    function _randBool() internal returns (bool) {
+        return _randUint({ min: 0, max: 1 }) == 0;
     }
 
     function _randAssetType() internal returns (uint) {

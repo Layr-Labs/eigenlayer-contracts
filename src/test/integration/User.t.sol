@@ -36,14 +36,16 @@ contract User is Test {
 
     BeaconChainMock beaconChain;
     // User's EigenPod and each of their validator indices within that pod
-    EigenPod pod;
+    EigenPod public pod;
     uint40[] validators;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     uint constant GWEI_TO_WEI = 1e9;
 
-    constructor() {
+    string public NAME;
+
+    constructor(string memory name) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
         delegationManager = deployer.delegationManager();
@@ -53,6 +55,8 @@ contract User is Test {
                 
         beaconChain = deployer.beaconChain();
         pod = EigenPod(payable(eigenPodManager.createPod()));
+
+        NAME = name;
     }
 
     modifier createSnapshot() virtual {
@@ -67,6 +71,8 @@ contract User is Test {
      */
 
     function registerAsOperator() public createSnapshot virtual {
+        emit log(_name(".registerAsOperator"));
+
         IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
             earningsReceiver: address(this),
             delegationApprover: address(0),
@@ -78,6 +84,7 @@ contract User is Test {
 
     /// @dev For each strategy/token balance, call the relevant deposit method
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
+        emit log(_name(".depositIntoEigenlayer"));
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
@@ -117,14 +124,53 @@ contract User is Test {
         }
     }
 
+    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
+        emit log(_name(".updateBalances"));
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy strat = strategies[i];
+            int delta = tokenDeltas[i];
+
+            if (strat == BEACONCHAIN_ETH_STRAT) {
+                // TODO - right now, we just grab the first validator
+                uint40 validator = getUpdatableValidator();
+                BalanceUpdate memory update = beaconChain.updateBalance(validator, delta);
+
+                int sharesBefore = eigenPodManager.podOwnerShares(address(this));
+
+                pod.verifyBalanceUpdates({
+                    oracleTimestamp: update.oracleTimestamp,
+                    validatorIndices: update.validatorIndices,
+                    stateRootProof: update.stateRootProof,
+                    validatorFieldsProofs: update.validatorFieldsProofs,
+                    validatorFields: update.validatorFields
+                });
+
+                int sharesAfter = eigenPodManager.podOwnerShares(address(this));
+
+                emit log_named_int("pod owner shares before: ", sharesBefore);
+                emit log_named_int("pod owner shares after: ", sharesAfter);
+            } else {
+                uint tokens = uint(delta);
+                IERC20 underlyingToken = strat.underlyingToken();
+                underlyingToken.approve(address(strategyManager), tokens);
+                strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
+            }
+        }
+    }
+
     /// @dev Delegate to the operator without a signature
     function delegateTo(User operator) public createSnapshot virtual {
+        emit log_named_string(_name(".delegateTo: "), operator.NAME());
+
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
     }
 
     /// @dev Undelegate from operator
     function undelegate() public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+        emit log(_name(".undelegate"));
+
         IDelegationManager.Withdrawal[] memory withdrawal = new IDelegationManager.Withdrawal[](1);
         withdrawal[0] = _getExpectedWithdrawalStructForStaker(address(this));
         delegationManager.undelegate(address(this));
@@ -133,6 +179,8 @@ contract User is Test {
 
     /// @dev Force undelegate staker
     function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
+        emit log_named_string(_name(".forceUndelegate: "), staker.NAME());
+
         IDelegationManager.Withdrawal[] memory withdrawal = new IDelegationManager.Withdrawal[](1);
         withdrawal[0] = _getExpectedWithdrawalStructForStaker(address(staker));
         delegationManager.undelegate(address(staker));
@@ -144,6 +192,7 @@ contract User is Test {
         IStrategy[] memory strategies, 
         uint[] memory shares
     ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
+        emit log(_name(".queueWithdrawals"));
 
         address operator = delegationManager.delegatedTo(address(this));
         address withdrawer = address(this);
@@ -176,12 +225,40 @@ contract User is Test {
 
         return (withdrawals);
     }
+
+    function completeWithdrawalsAsTokens(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
+        emit log(_name(".completeWithdrawalsAsTokens"));
+
+        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
+
+        for (uint i = 0; i < withdrawals.length; i++) {
+            tokens[i] = _completeQueuedWithdrawal(withdrawals[i], true);
+        }
+
+        return tokens;
+    }
     
     function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+        emit log(_name(".completeWithdrawalAsTokens"));
+
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
+    function completeWithdrawalsAsShares(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
+        emit log(_name(".completeWithdrawalsAsShares"));
+        
+        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
+
+        for (uint i = 0; i < withdrawals.length; i++) {
+            tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
+        }
+
+        return tokens;
+    }
+
     function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
+        emit log(_name(".completeWithdrawalAsShares"));
+
         return _completeQueuedWithdrawal(withdrawal, false);
     }
 
@@ -255,6 +332,14 @@ contract User is Test {
             shares: shares
         });
     }
+
+    function _name(string memory s) internal view returns (string memory) {
+        return string.concat(NAME, s);
+    }
+
+    function getUpdatableValidator() public view returns (uint40) {
+        return validators[0];
+    }
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
@@ -262,9 +347,10 @@ contract User_AltMethods is User {
 
     mapping(bytes32 => bool) public signedHashes;
 
-    constructor() User() {}
+    constructor(string memory name) User(name) {}
 
     function delegateTo(User operator) public createSnapshot override {
+        emit log_named_string(_name(".delegateTo: "), operator.NAME());
         // Create empty data
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
@@ -286,6 +372,8 @@ contract User_AltMethods is User {
     }
 
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
+        emit log(_name(".depositIntoEigenlayer"));
+        
         uint256 expiry = type(uint256).max;
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
