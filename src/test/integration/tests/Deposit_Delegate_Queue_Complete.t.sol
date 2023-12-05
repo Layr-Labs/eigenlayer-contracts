@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "src/test/integration/IntegrationBase.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/User.t.sol";
 
-contract Deposit_Delegate_Queue_Complete is IntegrationBase {
+contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
     /*******************************************************************************
                                 FULL WITHDRAWALS
@@ -39,71 +39,27 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
-        {
-            /// 1. Deposit into strategies:
-            // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-            // the staker calls the relevant deposit function, depositing all held assets.
-            //
-            // ... check that all underlying tokens were transferred to the correct destination
-            //     and that the staker now has the expected amount of delegated shares in each strategy
-            staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
-            assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        }
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
 
-        {
-            /// 2. Delegate to an operator:
-            //
-            // ... check that the staker is now delegated to the operator, and that the operator
-            //     was awarded the staker's shares
-            staker.delegateTo(operator);
+        // 3. Queue Withdrawals
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
-            assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
-            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
-        }
-
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-
-        {
-            /// 3. Queue withdrawal(s):
-            // The staker will queue one or more withdrawals for all strategies and shares
-            //
-            // ... check that each withdrawal was successfully enqueued, that the returned withdrawals
-            //     match now-pending withdrawal roots, and that the staker and operator have
-            //     reduced shares.
-            withdrawals = staker.queueWithdrawals(strategies, shares);
-            withdrawalRoots = _getWithdrawalHashes(withdrawals);
-
-            assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-            assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
-            assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-            assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-            assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
-        }
-
+        // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
-        {
-            /// 4. Complete withdrawal(s):
-            // The staker will complete each withdrawal as tokens
-            // 
-            // ... check that the staker received their tokens
-            for (uint i = 0; i < withdrawals.length; i++) {
-                IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
-
-                uint[] memory expectedTokens = _calculateExpectedTokens(withdrawal.strategies, withdrawal.shares);
-                IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawal, true);
-
-                assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
-                assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
-                assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
-            }
+        for (uint i = 0; i < withdrawals.length; i++) {
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
 
         // Check final state:
@@ -142,71 +98,26 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
-        {
-            /// 1. Deposit into strategies:
-            // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-            // the staker calls the relevant deposit function, depositing all held assets.
-            //
-            // ... check that all underlying tokens were transferred to the correct destination
-            //     and that the staker now has the expected amount of delegated shares in each strategy
-            staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
-            assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        }
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
 
-        {
-            /// 2. Delegate to an operator:
-            //
-            // ... check that the staker is now delegated to the operator, and that the operator
-            //     was awarded the staker's shares
-            staker.delegateTo(operator);
+        // 3. Queue Withdrawals
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
-            assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
-            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
-        }
-
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
-
-        {
-            /// 3. Queue withdrawal(s):
-            // The staker will queue one or more withdrawals for all strategies and shares
-            //
-            // ... check that each withdrawal was successfully enqueued, that the returned withdrawals
-            //     match now-pending withdrawal roots, and that the staker and operator have
-            //     reduced shares.
-            withdrawals = staker.queueWithdrawals(strategies, shares);
-            withdrawalRoots = _getWithdrawalHashes(withdrawals);
-
-            assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-            assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
-            assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-            assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-            assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
-        }
-
+        // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
-        {
-            /// 4. Complete withdrawal(s):
-            // The staker will complete each withdrawal as tokens
-            // 
-            // ... check that the staker and operator received their shares and that neither
-            // have any change in token balances
-            for (uint i = 0; i < withdrawals.length; i++) {
-                IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
-
-                staker.completeQueuedWithdrawal(withdrawal, false);
-
-                assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-                assert_Snap_Added_StakerShares(staker, withdrawal.strategies, withdrawal.shares, "staker should have received shares");
-                assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.shares, "operator should have received shares");
-            }
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
 
         // Check final state:
@@ -249,78 +160,32 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
-        {
-            /// 1. Deposit into strategies:
-            // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-            // the staker calls the relevant deposit function, depositing all held assets.
-            //
-            // ... check that all underlying tokens were transferred to the correct destination
-            //     and that the staker now has the expected amount of delegated shares in each strategy
-            staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
-            assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        }
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
 
-        {
-            /// 2. Delegate to an operator:
-            //
-            // ... check that the staker is now delegated to the operator, and that the operator
-            //     was awarded the staker's shares
-            staker.delegateTo(operator);
-
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
-            assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
-            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
-        }
-
+        // 3. Queue Withdrawals
         // Randomly select one or more assets to withdraw
         (
             IStrategy[] memory withdrawStrats,
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 
-        {
-            /// 3. Queue withdrawal(s):
-            // The staker will queue one or more withdrawals for the selected strategies and shares
-            //
-            // ... check that each withdrawal was successfully enqueued, that the returned roots
-            //     match the hashes of each withdrawal, and that the staker and operator have
-            //     reduced shares.
-            withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
-            withdrawalRoots = _getWithdrawalHashes(withdrawals);
-
-            assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-            assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
-            assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-            assert_Snap_Removed_OperatorShares(operator, withdrawStrats, withdrawShares, "failed to remove operator shares");
-            assert_Snap_Removed_StakerShares(staker, withdrawStrats, withdrawShares, "failed to remove staker shares");
-        }
-
+        // 4. Complete withdrawals
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-
-        {
-            /// 4. Complete withdrawal(s):
-            // The staker will complete each withdrawal as tokens
-            // 
-            // ... check that the staker received their tokens and that the staker/operator
-            // have unchanged share amounts
-            for (uint i = 0; i < withdrawals.length; i++) {
-                IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
-
-                uint[] memory expectedTokens = _calculateExpectedTokens(withdrawal.strategies, withdrawal.shares);
-                IERC20[] memory tokens = staker.completeQueuedWithdrawal(withdrawal, true);
-
-                assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
-                assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
-                assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
-            }
+        for (uint i = 0; i < withdrawals.length; i++) {
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares, tokens, expectedTokens);
         }
 
         // Check final state:
@@ -334,7 +199,7 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
     /// 3. queues a withdrawal for a random subset of shares
     /// 4. completes the queued withdrawal as shares
     function testFuzz_deposit_delegate_queueRand_completeAsShares(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
+               // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
@@ -357,77 +222,32 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
-        {
-            /// 1. Deposit into strategies:
-            // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-            // the staker calls the relevant deposit function, depositing all held assets.
-            //
-            // ... check that all underlying tokens were transferred to the correct destination
-            //     and that the staker now has the expected amount of delegated shares in each strategy
-            staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
-            assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        }
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
 
-        {
-            /// 2. Delegate to an operator:
-            //
-            // ... check that the staker is now delegated to the operator, and that the operator
-            //     was awarded the staker's shares
-            staker.delegateTo(operator);
-
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-            assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
-            assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
-            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
-        }
-
+        // 3. Queue Withdrawals
         // Randomly select one or more assets to withdraw
         (
             IStrategy[] memory withdrawStrats,
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        IDelegationManager.Withdrawal[] memory withdrawals;
-        bytes32[] memory withdrawalRoots;
+        IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 
-        {
-            /// 3. Queue withdrawal(s):
-            // The staker will queue one or more withdrawals for the selected strategies and shares
-            //
-            // ... check that each withdrawal was successfully enqueued, that the returned roots
-            //     match the hashes of each withdrawal, and that the staker and operator have
-            //     reduced shares.
-            withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
-            withdrawalRoots = _getWithdrawalHashes(withdrawals);
-
-            assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-            assert_AllWithdrawalsPending(withdrawalRoots, "staker's withdrawals should now be pending");
-            assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-            assert_Snap_Removed_OperatorShares(operator, withdrawStrats, withdrawShares, "failed to remove operator shares");
-            assert_Snap_Removed_StakerShares(staker, withdrawStrats, withdrawShares, "failed to remove staker shares");
-        }
-
+        // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
-        {
-            /// 4. Complete withdrawal(s):
-            // The staker will complete each withdrawal as tokens
-            // 
-            // ... check that the staker received their tokens and that the staker/operator
-            // have unchanged share amounts
-            for (uint i = 0; i < withdrawals.length; i++) {
-                IDelegationManager.Withdrawal memory withdrawal = withdrawals[i];
-
-                staker.completeQueuedWithdrawal(withdrawal, false);
-
-                assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-                assert_Snap_Added_StakerShares(staker, withdrawal.strategies, withdrawal.shares, "staker should have received shares");
-                assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.shares, "operator should have received shares");
-            }
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares);
         }
 
         // Check final state:
@@ -466,27 +286,17 @@ contract Deposit_Delegate_Queue_Complete is IntegrationBase {
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
-        {
-            /// 1. Deposit into strategies:
-            // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-            // the staker calls the relevant deposit function, depositing all held assets.
-            //
-            // ... check that all underlying tokens were transferred to the correct destination
-            //     and that the staker now has the expected amount of delegated shares in each strategy
-            staker.depositIntoEigenlayer(strategies, tokenBalances);
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
-            assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-            assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        }
+        // 2. Register staker as an operator
+        staker.registerAsOperator();
+        assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
 
-        {
-            /// 2. Register the staker as an operator, then attempt to delegate to an operator. 
-            ///    This should fail as the staker is already delegated to themselves.
-            staker.registerAsOperator();
-            assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-
-            cheats.expectRevert("DelegationManager._delegate: staker is already actively delegated");
-            staker.delegateTo(operator);
-        }
+        // 3. Attempt to delegate to an operator
+        //    This should fail as the staker is already delegated to themselves.
+        cheats.expectRevert("DelegationManager._delegate: staker is already actively delegated");
+        staker.delegateTo(operator);
     }
 }
