@@ -16,7 +16,7 @@ Looking at the current tests is a good place to start.
 
 During the test, the config passed into `_configRand` will randomly generate only the values you configure:
 * `assetTypes` affect the assets granted to Users when they are first created. You can use this to ensure your flows and assertions work when users are holding only LSTs, native ETH, or some combination.
-* `userTypes` affect the actual `User` contract being deployed. The `DEFAULT` flag deploys the base `User` contract, while `SIGNED_METHODS` deploys a version that derives from the same contract, but overrides some methods to use "functionWithSignature" variants.
+* `userTypes` affect the actual `User` contract being deployed. The `DEFAULT` flag deploys the base `User` contract, while `ALT_METHODS` deploys a version that derives from the same contract, but overrides some methods to use "functionWithSignature" and other variants.
 
 Here's an example:
 
@@ -27,7 +27,7 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
     _configRand({
         _randomSeed: _random,
         _assetTypes: HOLDS_LST,
-        _userTypes: DEFAULT | SIGNED_METHODS
+        _userTypes: DEFAULT | ALT_METHODS
     });
 
     // Because of the `assetTypes` flags above, this will create two Users for our test,
@@ -93,5 +93,4 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
 ### What needs to be done?
 
 * Suggest or PR cleanup if you have ideas. Currently, the `IntegrationDeployer` contract is pretty messy.
-* Currently, the only supported assetTypes are `NO_ASSETS` and `HOLDS_LST`. There are flags for `HOLDS_ETH` and `HOLDS_MIXED`, but we need to implement `EigenPod` proof generation/usage before they can be used.
 * Coordinate in Slack to pick out some user flows to write tests for!

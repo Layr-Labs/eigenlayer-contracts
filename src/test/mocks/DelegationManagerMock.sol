@@ -28,6 +28,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
+    function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
+
     function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
         delegatedTo[msg.sender] = operator;
     }
@@ -73,6 +75,10 @@ contract DelegationManagerMock is IDelegationManager, Test {
     }
 
     function stakerOptOutWindowBlocks(address /*operator*/) external pure returns (uint256) {
+        return 0;
+    }
+
+    function withdrawalDelayBlocks() external pure returns (uint256) {
         return 0;
     }
 

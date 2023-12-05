@@ -65,15 +65,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
+     * withdrawalDelayBlocks is set only once here
      */
     function initialize(
         address initialOwner,
         IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus
+        uint256 initialPausedStatus,
+        uint256 _withdrawalDelayBlocks
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
+        _initializeWithdrawalDelayBlocks(_withdrawalDelayBlocks);
     }
 
     /*******************************************************************************
@@ -137,6 +140,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function updateOperatorMetadataURI(string calldata metadataURI) external {
         require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
+    }
+
+    /**
+     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     * @param metadataURI The URI for metadata associated with an avs
+     */
+    function updateAVSMetadataURI(string calldata metadataURI) external {
+        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
@@ -211,28 +222,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
-     * @param newWithdrawalDelayBlocks new value of `withdrawalDelayBlocks`.
-     */
-    function setWithdrawalDelayBlocks(uint256 newWithdrawalDelayBlocks) external onlyOwner {
-        require(
-            newWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "DelegationManager.setWithdrawalDelayBlocks: newWithdrawalDelayBlocks too high"
-        );
-        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, newWithdrawalDelayBlocks);
-        withdrawalDelayBlocks = newWithdrawalDelayBlocks;
-    }
-
-    /**
      * Allows the staker, the staker's operator, or that operator's delegationApprover to undelegate
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
     function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
-        address operator = delegatedTo[staker];
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
+        address operator = delegatedTo[staker];
         require(
             msg.sender == staker ||
                 msg.sender == operator ||
@@ -604,7 +602,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             address currentOperator = delegatedTo[msg.sender];
             for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
-                 * Other strategy sharescan + will be awarded to the withdrawer.
+                 * Other strategy shares can + will be awarded to the withdrawer.
                  */
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
                     address staker = withdrawal.staker;
@@ -666,7 +664,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     function _pushOperatorStakeUpdate(address operator) internal {
-        // if the stake regsitry has been set
+        // if the stake registry has been set
         if (address(stakeRegistry) != address(0)) {
             address[] memory operators = new address[](1);
             operators[0] = operator;
@@ -761,6 +759,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         } else {
             strategyManager.withdrawSharesAsTokens(withdrawer, strategy, shares, token);
         }
+    }
+
+    function _initializeWithdrawalDelayBlocks(uint256 _withdrawalDelayBlocks) internal {
+        require(
+            _withdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
+        emit WithdrawalDelayBlocksSet(withdrawalDelayBlocks, _withdrawalDelayBlocks);
+        withdrawalDelayBlocks = _withdrawalDelayBlocks;
     }
 
     /*******************************************************************************

@@ -20,7 +20,7 @@ The `EigenPodManager` is the entry point for this process, allowing Stakers to d
 
 `EigenPods` serve as the withdrawal credentials for one or more beacon chain validators controlled by a Staker. Their primary role is to validate beacon chain proofs for each of the Staker's validators. Beacon chain proofs are used to verify a validator's:
 * `EigenPod.verifyWithdrawalCredentials`: withdrawal credentials and effective balance
-* `EigenPod.verifyBalanceUpdate`: current balance
+* `EigenPod.verifyBalanceUpdate`: effective balance
 * `EigenPod.verifyAndProcessWithdrawals`: withdrawable epoch, and processed withdrawals within historical block summary
 
 See [`./proofs`](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
@@ -231,9 +231,9 @@ function verifyBalanceUpdate(
 
 Anyone (not just the Pod Owner) may call this method with a valid balance update proof to record an balance update in one of the `EigenPod's` validators.
 
-A successful balance update proof updates the `EigenPod's` view of a validator's balance. If the validator's balance has changed, the difference is sent to `EigenPodManager.recordBeaconChainETHBalanceUpdate`, which updates the Pod Owner's shares. If the Pod Owner is delegated to an Operator, this delta is also sent to the `DelegationManager` to update the Operator's delegated beacon chain ETH shares.
+A successful balance update proof updates the `EigenPod's` view of a validator's [effective balance](https://eth2book.info/capella/part2/incentives/balances/). If the validator's effective balance has changed, the difference is sent to `EigenPodManager.recordBeaconChainETHBalanceUpdate`, which updates the Pod Owner's shares. If the Pod Owner is delegated to an Operator, this delta is also sent to the `DelegationManager` to update the Operator's delegated beacon chain ETH shares.
 
-Note that if a validator's balance has decreased, this method will result in shares being removed from the Pod Owner in `EigenPodManager.recordBeaconChainETHBalanceUpdate`. This may cause the Pod Owner's balance to go negative in some cases, representing a "deficit" that must be repaid before any withdrawals can be processed. One example flow where this might occur is:
+Note that if a validator's effective balance has decreased, this method will result in shares being removed from the Pod Owner in `EigenPodManager.recordBeaconChainETHBalanceUpdate`. This may cause the Pod Owner's balance to go negative in some cases, representing a "deficit" that must be repaid before any withdrawals can be processed. One example flow where this might occur is:
 * Pod Owner calls `DelegationManager.undelegate`, which queues a withdrawal in the `DelegationManager`. The Pod Owner's shares are set to 0 while the withdrawal is in the queue.
 * Pod Owner's beacon chain ETH balance decreases (maybe due to slashing), and someone provides a proof of this to `EigenPod.verifyBalanceUpdate`. In this case, the Pod Owner will have negative shares in the `EigenPodManager`.
 * After a delay, the Pod Owner calls `DelegationManager.completeQueuedWithdrawal`. The negative shares are then repaid out of the withdrawn assets.
@@ -241,18 +241,17 @@ Note that if a validator's balance has decreased, this method will result in sha
 For the validator whose balance should be updated, the caller must supply:
 * `validatorIndex`: the validator's `ValidatorIndex` (see [consensus specs](https://eth2book.info/capella/part3/config/types/#validatorindex))
 * `stateRootProof`: a proof that will verify `stateRootProof.beaconStateRoot` against an oracle-provided beacon block root
-* `balanceUpdateProof`: contains the `validatorFieldsProof` mentioned in `verifyWithdrawalCredentials`, as well as a proof that `balanceUpdateProof.balanceRoot` contains the validator's current balance
+* `validatorFieldsProofs`: a proof that the `Validator` container belongs to the associated validator at the given `ValidatorIndex` within `stateRootProof.beaconStateRoot`
 * `validatorFields`: the fields of the `Validator` container associated with the validator (see [consensus specs](https://eth2book.info/capella/part3/containers/dependencies/#validator))
 * `oracleTimestamp`: a timestamp used to fetch a beacon block root from `EigenPodManager.beaconChainOracle`
 
 *Beacon chain proofs used*:
 * [`verifyStateRootAgainstLatestBlockRoot`](./proofs/BeaconChainProofs.md#beaconchainproofsverifystaterootagainstlatestblockroot)
 * [`verifyValidatorFields`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorfields)
-* [`verifyValidatorBalance`](./proofs/BeaconChainProofs.md#beaconchainproofsverifyvalidatorbalance)
 
 *Effects*:
 * Updates the validator's stored info:
-    * `restakedBalanceGwei` is updated to the newly-proven balance
+    * `restakedBalanceGwei` is updated to the newly-proven effective balance
     * `mostRecentBalanceUpdateTimestamp` is set to the `oracleTimestamp` used to fetch the beacon block root
 * See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
@@ -267,7 +266,6 @@ For the validator whose balance should be updated, the caller must supply:
 * `validatorFields[0]` MUST be a pubkey hash corresponding to a validator whose withdrawal credentials have been proven, and is not yet withdrawn (`VALIDATOR_STATUS.ACTIVE`)
 * `BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot` MUST verify the provided `beaconStateRoot` against the oracle-provided `latestBlockRoot`
 * `BeaconChainProofs.verifyValidatorFields` MUST verify the provided `validatorFields` against the `beaconStateRoot`
-* `BeaconChainProofs.verifyValidatorBalance` MUST verify the provided `balanceRoot` against the `beaconStateRoot`
 * See [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](#eigenpodmanagerrecordbeaconchainethbalanceupdate)
 
 ---
