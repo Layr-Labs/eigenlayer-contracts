@@ -4,8 +4,6 @@ pragma solidity =0.8.12;
 import "../test/EigenLayerDeployer.t.sol";
 import "../contracts/interfaces/ISignatureUtils.sol";
 
-import "./mocks/StakeRegistryStub.sol";
-
 contract EigenLayerTestHelper is EigenLayerDeployer {
     uint8 durationToInit = 2;
     uint256 public SECP256K1N_MODULUS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;

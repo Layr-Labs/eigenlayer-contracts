@@ -12,7 +12,6 @@ contract DelegationTests is EigenLayerTestHelper {
     uint32 serveUntil = 100;
 
     address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
-    StakeRegistryStub public stakeRegistry;
     uint8 defaultQuorumNumber = 0;
     bytes32 defaultOperatorId = bytes32(uint256(0));
 
@@ -24,12 +23,6 @@ contract DelegationTests is EigenLayerTestHelper {
 
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
-
-        initializeMiddlewares();
-    }
-
-    function initializeMiddlewares() public {
-        stakeRegistry = new StakeRegistryStub();
     }
 
     /// @notice testing if an operator can register to themselves.

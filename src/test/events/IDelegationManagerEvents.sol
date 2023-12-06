@@ -2,12 +2,8 @@
 pragma solidity =0.8.12;
 
 import "src/contracts/interfaces/IDelegationManager.sol";
-import "src/test/mocks/StakeRegistryStub.sol";
 
 interface IDelegationManagerEvents {
-    /// @notice Emitted when the StakeRegistry is set
-    event StakeRegistrySet(IStakeRegistryStub stakeRegistry);
-
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, IDelegationManager.OperatorDetails operatorDetails);
 

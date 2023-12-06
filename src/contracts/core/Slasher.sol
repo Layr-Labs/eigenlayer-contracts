@@ -21,7 +21,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * Eventually, slashing design will be finalized and the Slasher will be finished
  * and more fully incorporated into the core contracts. For now, you can ignore this
  * file. If you really want to see what the deployed M1 version looks like, check
- * out the `init-mainnet-deployment` branch under "releases."
+ * out the `init-mainnet-deployment` branch under "releases".
  *
  * This contract is a stub that maintains its original interface for use in testing
  * and deploy scripts. Otherwise, it does nothing.
