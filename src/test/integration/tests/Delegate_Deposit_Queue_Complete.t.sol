@@ -38,7 +38,7 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationChe
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
+            check_Withdrawal_AsShares_State(staker, payable(operator), withdrawals[i], strategies, shares);
         }
     }
 
@@ -75,7 +75,7 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationChe
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, payable(operator), withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 }
