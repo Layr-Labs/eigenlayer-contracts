@@ -12,6 +12,7 @@ certoraRun certora/harnesses/EigenPodManagerHarness.sol \
     --optimistic_loop \
     --prover_args '-optimisticFallback true' \
     --optimistic_hashing \
+    --parametric_contracts EigenPodManagerHarness \
     $RULE \
     --loop_iter 3 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
