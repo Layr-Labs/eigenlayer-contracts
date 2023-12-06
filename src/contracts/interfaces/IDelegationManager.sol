@@ -372,9 +372,6 @@ interface IDelegationManager is ISignatureUtils {
         uint256 expiry
     ) external view returns (bytes32);
 
-    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    function stakeRegistry() external view returns (IStakeRegistryStub);
-    
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
