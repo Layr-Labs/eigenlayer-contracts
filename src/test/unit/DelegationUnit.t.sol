@@ -281,6 +281,54 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // filter out disallowed stakerOptOutWindowBlocks values
         cheats.assume(operatorDetails.stakerOptOutWindowBlocks <= delegationManager.MAX_STAKER_OPT_OUT_WINDOW_BLOCKS());
     }
+
+    /// @notice deposit into EigenLayer and set the staker's shares for the given strategy
+    /// Helper function to setup the mock strategyManager and eigenpodManager
+    function _setStakerDepositSingleStrat(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) internal {
+        if (strategy == beaconChainETHStrategy) {
+            eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(shares));
+        } else {
+            IStrategy[] memory strategyArray = new IStrategy[](1);
+            uint256[] memory shareAmounts = new uint256[](1);
+            strategyArray[0] = strategy;
+            shareAmounts[0] = shares;
+            strategyManagerMock.setDeposits(staker, strategy, shares);
+        }
+    }
+
+    function _setStakerDeposits(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory shares
+    ) internal {
+        for (uint256 i = 0; i < strategies.length; i++) {
+            _setStakerDepositSingleStrat(staker, strategies[i], shares[i]);
+        }
+    }
+
+    function _setUpQueueWithdrawalsStructSingleStrat(
+        address withdrawer,
+        IStrategy strategy,
+        uint256 shareAmount
+    ) internal returns (IDelegationManager.QueuedWithdrawalParams[] memory) {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        strategyArray[0] = strategy;
+        uint256[] memory shareAmounts = new uint256[](1);
+        shareAmounts[0] = shareAmount;
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+        
+        return params;
+    }
 }
 
 contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerUnitTests {
@@ -595,7 +643,7 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
 }
 
 contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
-    function test_revert_paused() public {
+    function test_Revert_WhenPaused() public {
         // set the pausing flag
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_NEW_DELEGATION);
@@ -2546,5 +2594,103 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
             "undelegated staker should be delegated to zero address"
         );
         assertFalse(delegationManager.isDelegated(staker), "staker not undelegated");
+    }
+}
+
+contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTests {
+    function test_Revert_WhenEnterQueueWithdrawalsPaused() public {
+        cheats.prank(pauser);
+        delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
+
+        address withdrawer = defaultOperator;
+        IStrategy strategy = IStrategy(strategyMock);
+        uint256 sharesAmount = 100;
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = _setUpQueueWithdrawalsStructSingleStrat(
+            withdrawer,
+            strategyMock,
+            sharesAmount
+        );
+        cheats.expectRevert("Pausable: index is paused");
+        delegationManager.queueWithdrawals(queueWithdrawal);
+    }
+
+    function test_Revert_WhenQueueWithdrawalParamsLengthMismatch() public {
+        IStrategy[] memory strategyArray = new IStrategy[](1);
+        strategyArray[0] = strategyMock;
+        uint256[] memory shareAmounts = new uint256[](2);
+        shareAmounts[0] = 100;
+        shareAmounts[1] = 100;
+        address withdrawer = defaultOperator;
+
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = new IDelegationManager.QueuedWithdrawalParams[](1);
+        queueWithdrawal[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+
+        cheats.expectRevert("DelegationManager.queueWithdrawal: input length mismatch");
+        delegationManager.queueWithdrawals(queueWithdrawal);
+    }
+
+    function test_Revert_WhenZeroAddressWithdrawer() public {
+        IStrategy strategy = IStrategy(strategyMock);
+        uint256 sharesAmount = 100;
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = _setUpQueueWithdrawalsStructSingleStrat(
+            address(0),
+            strategyMock,
+            sharesAmount
+        );
+        cheats.expectRevert("DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+        delegationManager.queueWithdrawals(queueWithdrawal);
+    }
+
+    function test_Revert_WhenEmptyStrategiesArray() public {
+        IStrategy[] memory strategyArray = new IStrategy[](0);
+        uint256[] memory shareAmounts = new uint256[](0);
+        address withdrawer = defaultOperator;
+
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = new IDelegationManager.QueuedWithdrawalParams[](1);
+        queueWithdrawal[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+
+        cheats.expectRevert("DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
+        delegationManager.queueWithdrawals(queueWithdrawal);
+    }
+
+    function test_SingleStratQueueWithdrawal() public {
+        address withdrawer = defaultOperator;
+        IStrategy strategy = IStrategy(strategyMock);
+        uint256 sharesAmount = 100;
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = _setUpQueueWithdrawalsStructSingleStrat(
+            withdrawer,
+            strategyMock,
+            sharesAmount
+        );
+        delegationManager.queueWithdrawals(queueWithdrawal);
+
+    }
+
+    function test_SingleStratQueueWithdrawalWhileDelegated(address staker) public {
+        cheats.assume(staker != defaultOperator);
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setStakerDepositSingleStrat(staker, strategyMock, 100);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        address withdrawer = defaultOperator;
+        IStrategy strategy = IStrategy(strategyMock);
+        uint256 sharesAmount = 100;
+        IDelegationManager.QueuedWithdrawalParams[] memory queueWithdrawal = _setUpQueueWithdrawalsStructSingleStrat(
+            withdrawer,
+            strategyMock,
+            sharesAmount
+        );
+        uint256 delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategy);
+        delegationManager.queueWithdrawals(queueWithdrawal);
+        uint256 delegatedSharesAfter = delegationManager.operatorShares(defaultOperator, strategy);
+        assertEq(delegatedSharesBefore - sharesAmount, delegatedSharesAfter, "delegated shares not decreased correctly");
     }
 }
