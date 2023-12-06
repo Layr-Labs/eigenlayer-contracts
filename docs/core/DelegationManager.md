@@ -19,7 +19,6 @@ This document organizes methods according to the following themes (click each to
 * [Delegating to an Operator](#delegating-to-an-operator)
 * [Undelegating and Withdrawing](#undelegating-and-withdrawing)
 * [Accounting](#accounting)
-* [System Configuration](#system-configuration)
 
 #### Important state variables
 
@@ -381,26 +380,3 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 *Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager` (although the `StrategyManager` doesn't use this method)
-
----
-
-### System Configuration
-
-#### `setWithdrawalDelayBlocks`
-
-```solidity
-function setWithdrawalDelayBlocks(
-    uint256 newWithdrawalDelayBlocks
-) 
-    external 
-    onlyOwner
-```
-
-Allows the `owner` to update the number of blocks that must pass before a withdrawal can be completed.
-
-*Effects*:
-* Updates `DelegationManager.withdrawalDelayBlocks`
-
-*Requirements*:
-* Caller MUST be the `owner`
-* `newWithdrawalDelayBlocks` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS` (50400)

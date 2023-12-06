@@ -8,7 +8,6 @@ import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/events/IDelegationManagerEvents.sol";
-import "src/test/mocks/StakeRegistryStub.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
@@ -27,7 +26,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     StrategyBase strategyMock;
     IERC20 mockToken;
     uint256 mockTokenInitialSupply = 10e50;
-    StakeRegistryStub stakeRegistryMock;
 
     // Delegation signer
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
@@ -84,12 +82,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 )
             )
         );
-
-        // Deploy mock stake registry and set
-        stakeRegistryMock = new StakeRegistryStub();
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit StakeRegistrySet(stakeRegistryMock);
-        delegationManager.setStakeRegistry(stakeRegistryMock);
 
         // Deploy mock token and strategy
         mockToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", mockTokenInitialSupply, address(this));
@@ -308,12 +300,6 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         delegationManager.initialize(address(this), pauserRegistry, 0, initializedWithdrawalDelayBlocks);
-    }
-
-    /// @notice Verifies that the stakeRegistry cannot be set after it has already been set
-    function test_setStakeRegistry_revert_alreadySet() public {
-        cheats.expectRevert("DelegationManager.setStakeRegistry: stakeRegistry already set");
-        delegationManager.setStakeRegistry(stakeRegistryMock);
     }
 
     function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(uint256 withdrawalDelayBlocks) public {

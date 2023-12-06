@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
-import "./IStakeRegistryStub.sol";
 import "./IStrategyManager.sol";
 
 /**
@@ -69,9 +68,6 @@ interface IDelegationManager is ISignatureUtils {
         // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
-
-    /// @notice Emitted when the StakeRegistry is set
-    event StakeRegistrySet(IStakeRegistryStub stakeRegistry);
 
     /**
      * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
@@ -323,9 +319,6 @@ interface IDelegationManager is ISignatureUtils {
         IStrategy strategy,
         uint256 shares
     ) external;
-
-    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    function stakeRegistry() external view returns (IStakeRegistryStub);
 
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
