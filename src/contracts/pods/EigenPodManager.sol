@@ -49,8 +49,8 @@ contract EigenPodManager is
         _;
     }
 
-    modifier partialWithdrawalProofSwitchOn() {
-        require(partialWithdrawalProofSwitch, "EigenPod.partialWithdrawalProofSwitchOn: partial withdrawal proof switch is off");
+    modifier proofServiceEnabled() {
+        require(partialWithdrawalProofSwitch, "EigenPod.proofServiceEnabled: partial withdrawal proof switch is off");
         _;
     }
 
@@ -230,21 +230,23 @@ contract EigenPodManager is
         bytes32 blockRoot,
         uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
-    ) external onlyProofService partialWithdrawalProofSwitchOn {
+    ) external onlyProofService proofServiceEnabled {
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
-            //these checks are verified in the snark, we add them here again as a sanity check
+            // these checks are verified in the snark, we add them here again as a sanity check
             require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
             require(callbackInfo[i].fee <= callbackInfo[i].maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
+            require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
         }
     }
+
     /// @notice enables partial withdrawal proving via offchain proofs
-    function turnOnPartialWithdrawalProofSwitch() external onlyOwner {
+    function enableProofService() external onlyOwner {
         require(!partialWithdrawalProofSwitch);
         partialWithdrawalProofSwitch = true;
-        emit PartialWithdrawalProofSwitchOn();
+        emit proofServiceEnabled();
     }
 
     function updateProofService(address caller, address feeRecipient) external onlyOwner {

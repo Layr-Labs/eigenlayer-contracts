@@ -108,7 +108,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     function _turnOnPartialWithdrawalSwitch(EigenPodManager epm) internal {
         // Turn on partial withdrawal switch
         cheats.prank(epm.owner());
-        epm.turnOnPartialWithdrawalProofSwitch();
+        epm.enableProofService();
         cheats.stopPrank();
     }
 }
