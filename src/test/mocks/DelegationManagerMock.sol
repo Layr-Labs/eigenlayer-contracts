@@ -130,8 +130,6 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function deregisterOperatorFromAVS(address operator) external {}
 
-    function isRegisteredToAVS(address operator, address avs) external view returns (bool) {}
-
     function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 
    function queueWithdrawals(

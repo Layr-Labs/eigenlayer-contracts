@@ -346,17 +346,10 @@ interface IDelegationManager is ISignatureUtils {
     function deregisterOperatorFromAVS(address operator) external;
 
     /**
-     * @notice Returns whether or not an operator is registered to an avs.
-     * @param operator The address of the operator.
-     * @param avs The address of the avs.
-     */
-    function isRegisteredToAVS(address operator, address avs) external view returns (bool);
-
-    /**
      * @notice Returns whether or not the salt has already been used by the operator.
      * @dev Salts is used in the `registerOperatorToAVS` function.
      */
-    function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool);
+    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS

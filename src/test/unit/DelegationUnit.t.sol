@@ -597,21 +597,21 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
     // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
     function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
         // call `updateAVSMetadataURI` and check for event
-        cheats.prank(defaultAVS);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
+        cheats.prank(defaultAVS);
         emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
         delegationManager.updateAVSMetadataURI(metadataURI);
     }
 
     // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
     function testFuzz_registerOperatorToAVS(bytes32 salt) public {
-        cheats.prank(defaultAVS);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-
         address operator = cheats.addr(delegationSignerPrivateKey);
         emit OperatorAVSRegistrationStatusUpdated(operator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED);
 
         uint256 expiry = type(uint256).max;
+
+        cheats.prank(defaultAVS);
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             delegationSignerPrivateKey,
             operator,
@@ -621,14 +621,11 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
         );
 
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
-        cheats.stopPrank();
     }
 
     // @notice Verifies an operator registers fails when the signature is not from the operator
     function testFuzz_revert_whenSignatureAddressIsNotOperator(bytes32 salt) public {
-        cheats.prank(defaultAVS);
         address operator = cheats.addr(delegationSignerPrivateKey);
-
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             delegationSignerPrivateKey,
@@ -638,15 +635,13 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
             expiry
         );
 
-        cheats.prank(operator);
         cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.prank(operator);
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
-        cheats.stopPrank();
     }
 
     // @notice Verifies an operator registers fails when the signature expiry already expires
     function testFuzz_revert_whenExpiryHasExpired(bytes32 salt, uint256 expiry, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public {
-        cheats.prank(defaultAVS);
         address operator = cheats.addr(delegationSignerPrivateKey);
         cheats.assume(operatorSignature.expiry < block.timestamp);
 
@@ -656,7 +651,6 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
 
     // @notice Verifies an operator registers fails when it's already registered to the avs
     function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(bytes32 salt) public {
-        cheats.prank(defaultAVS);
         address operator = cheats.addr(delegationSignerPrivateKey);
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
@@ -667,6 +661,7 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
             expiry
         );
 
+        cheats.startPrank(defaultAVS);
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
 
         cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator already registered");

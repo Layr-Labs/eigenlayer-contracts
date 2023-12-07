@@ -484,15 +484,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
-    /**
-     * @notice Returns whether or not an operator is registered to an avs.
-     * @param operator The address of the operator.
-     * @param avs The address of the avs.
-     */
-    function isRegisteredToAVS(address operator, address avs) external view returns (bool) {
-        return avsOperatorStatus[avs][operator] == OperatorAVSRegistrationStatus.REGISTERED;
-    }
-
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
