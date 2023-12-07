@@ -11,6 +11,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/harnesses/EigenPodManagerWrapper.sol";
 import "src/test/mocks/EigenPodMock.sol";
 import "src/test/mocks/ETHDepositMock.sol";
+import "src/test/mocks/BeaconChainOracleMock.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     // Contracts Under Test: EigenPodManager
@@ -23,6 +24,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodMockImplementation;
     IBeacon public eigenPodBeacon; // Proxy for eigenPodMockImplementation
+    BeaconChainOracleMock public beaconChainOracle;
     
     // Constants
     uint256 public constant GWEI_TO_WEI = 1e9;
@@ -36,6 +38,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
         // Deploy Mocks
         ethPOSMock = new ETHPOSDepositMock();
         eigenPodMockImplementation = new EigenPodMock();
+        beaconChainOracle = new BeaconChainOracleMock();
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodMockImplementation));
 
         // Deploy EPM Implementation & Proxy
@@ -54,7 +57,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
                     abi.encodeWithSelector(
                         EigenPodManager.initialize.selector,
                         type(uint256).max /*maxPods*/,
-                        IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
+                        beaconChainOracle /*beaconChainOracle*/,
                         initialOwner,
                         pauserRegistry,
                         0 /*initialPausedStatus*/
@@ -100,6 +103,13 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     function _checkPodDeployed(address staker, address expectedPod, uint256 numPodsBefore) internal {
         assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod, "Expected pod not deployed");
         assertEq(eigenPodManager.numPods(), numPodsBefore + 1, "Num pods not incremented");
+    }
+
+    function _turnOnPartialWithdrawalSwitch(EigenPodManager epm) internal {
+        // Turn on partial withdrawal switch
+        cheats.prank(epm.owner());
+        epm.turnOnPartialWithdrawalProofSwitch();
+        cheats.stopPrank();
     }
 }
 
@@ -550,3 +560,52 @@ contract EigenPodManagerUnitTests_ShareAdjustmentCalculationTests is EigenPodMan
         assertEq(sharesDelta, sharesAfter - sharesBefore, "Shares delta must be equal to the difference between sharesAfter and sharesBefore");
     }
 }
+
+contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManagerUnitTests {
+    address defaultProver = address(123);
+    bytes32 blockRoot = bytes32(uint256(123));
+
+
+    function setUp() virtual override public {
+        super.setUp();
+        cheats.startPrank(eigenPodManager.owner());
+        eigenPodManager.updateProofService(defaultProver, defaultProver);
+        cheats.stopPrank();
+
+        beaconChainOracle.setOracleBlockRootAtTimestamp(blockRoot);
+    }
+    function testFuzz_proofCallback_revert_incorrectOracleTimestamp(uint64 oracleTimestamp, uint64 startTimestamp, uint64 endTimestamp) public {
+        cheats.assume(oracleTimestamp < endTimestamp);
+        _turnOnPartialWithdrawalSwitch(eigenPodManager);
+
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, oracleTimestamp, endTimestamp, 0, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
+        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
+
+        cheats.startPrank(defaultProver);
+        cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp"));
+        eigenPodManager.proofServiceCallback(blockRoot, oracleTimestamp, withdrawalCallbackInfos);
+        cheats.stopPrank();
+    }
+
+    function testFuzz_proofCallback_revert_feeExceedsMaxFee(uint64 oracleTimestamp, uint64 endTimestamp, uint256 maxFee, uint256 fee) public {
+        cheats.assume(oracleTimestamp > endTimestamp);
+        cheats.assume(fee > maxFee);
+
+        _turnOnPartialWithdrawalSwitch(eigenPodManager);
+
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, oracleTimestamp, endTimestamp, 0, fee, maxFee);
+        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
+        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
+
+        cheats.startPrank(defaultProver);
+        cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee"));
+        eigenPodManager.proofServiceCallback(blockRoot, oracleTimestamp, withdrawalCallbackInfos);
+        cheats.stopPrank();
+    }
+
+
+
+
+}
+

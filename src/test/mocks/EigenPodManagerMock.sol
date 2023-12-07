@@ -89,4 +89,10 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function partialWithdrawalProofSwitch() external view returns (bool){}
     
     function updateProofService(address caller, address feeRecipient) external{}
+
+    function proofServiceCallback(
+        bytes32 blockRoot,
+        uint64 oracleTimestamp,
+        WithdrawalCallbackInfo[] calldata callbackInfo
+    ) external {}
 }
