@@ -33,7 +33,7 @@ interface IEigenPodManager is IPausable {
     event ProofServiceUpdated(ProofService proofService);
 
     /// @notice emitted when the partial withdrawal proof switch is turned on
-    event proofServiceEnabled();
+    event ProofServiceEnabled();
 
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(

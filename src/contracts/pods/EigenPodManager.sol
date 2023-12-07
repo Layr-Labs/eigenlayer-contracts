@@ -246,7 +246,7 @@ contract EigenPodManager is
     function enableProofService() external onlyOwner {
         require(!partialWithdrawalProofSwitch);
         partialWithdrawalProofSwitch = true;
-        emit proofServiceEnabled();
+        emit ProofServiceEnabled();
     }
 
     function updateProofService(address caller, address feeRecipient) external onlyOwner {

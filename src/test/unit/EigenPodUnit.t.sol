@@ -1028,10 +1028,14 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTests, IEigenPodEvents { 
 
 
-    function test_
+    function testFuzz_proofCallbackRequest_revert_inconsistentTimestamps(uint64 startTimestamp, uint64 endTimestamp) external {
+        cheats.assume(startTimestamp >= endTimestamp);
 
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, startTimestamp, endTimestamp, 0, 0, 0);
 
-
-
-
+        cheats.startPrank(address(eigenPodManagerMock));
+        cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
+        eigenPod.fulfillPartialWithdrawalProofRequest(withdrawalCallbackInfo, address(this));
+        cheats.stopPrank();
+    }
 }

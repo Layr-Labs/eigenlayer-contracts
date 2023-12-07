@@ -441,11 +441,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function fulfillPartialWithdrawalProofRequest(
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
-    ) external onlyEigenPodManager  {
+    ) external onlyEigenPodManager {
         uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
 
         require(withdrawalCallbackInfo.startTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
-        require(withdrawalCallbackInfo.startTimestamp > mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
+        require(withdrawalCallbackInfo.startTimestamp > mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must be greater than mostRecentWithdrawalTimestamp");
 
         //subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei >= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
