@@ -49,11 +49,6 @@ contract EigenPodManager is
         _;
     }
 
-    modifier proofServiceEnabled() {
-        require(partialWithdrawalProofSwitch, "EigenPod.proofServiceEnabled: partial withdrawal proof switch is off");
-        _;
-    }
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -230,12 +225,13 @@ contract EigenPodManager is
         bytes32 blockRoot,
         uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
-    ) external onlyProofService proofServiceEnabled nonReentrant {
+    ) external onlyProofService nonReentrant {
+        require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
             // these checks are verified in the snark, we add them here again as a sanity check
             require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
-            require(callbackInfo[i].fee <= callbackInfo[i].maxFee, "EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee");
+            require(callbackInfo[i].fee <= callbackInfo[i].maxFee, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
@@ -244,11 +240,12 @@ contract EigenPodManager is
 
     /// @notice enables partial withdrawal proving via offchain proofs
     function enableProofService() external onlyOwner {
-        require(!partialWithdrawalProofSwitch);
-        partialWithdrawalProofSwitch = true;
+        require(!proofServiceEnabled, "EigenPodManager.enableProofService: proof service already enabled");
+        proofServiceEnabled = true;
         emit ProofServiceEnabled();
     }
 
+    /// @notice changes the proof service related information
     function updateProofService(address caller, address feeRecipient) external onlyOwner {
         proofService = ProofService({
             caller: caller,

@@ -86,7 +86,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function maxPods() external view returns (uint256) {}
 
-    function partialWithdrawalProofSwitch() external view returns (bool){}
+    function proofServiceEnabled() external view returns (bool){}
     
     function updateProofService(address caller, address feeRecipient) external{}
 

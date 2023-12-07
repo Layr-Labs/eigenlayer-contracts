@@ -49,8 +49,6 @@ interface IEigenPodManager is IPausable {
     struct WithdrawalCallbackInfo {
         // the address of the pod owner
         address podOwner;
-        // lower bound of the withdrawal period
-        uint64 startTimestamp;
         // upper bound of the withdrawal period
         uint64 endTimestamp;
         // amount being proven for withdrawal
@@ -64,7 +62,7 @@ interface IEigenPodManager is IPausable {
 
     struct ProofService {
         address caller;
-        // the commission rate of the proof fulfiller
+        // fee recipient address of the proof service
         address feeRecipient;
     }
 
@@ -174,8 +172,8 @@ interface IEigenPodManager is IPausable {
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 
 
-    /// @notice Returns the status of the proof switch
-    function partialWithdrawalProofSwitch() external view returns (bool);
+    /// @notice Returns the status of the proof service
+    function proofServiceEnabled() external view returns (bool);
 
     /// @notice updates the proof service caller
     function updateProofService(address caller, address feeRecipient) external; 

@@ -124,11 +124,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    modifier partialWithdrawalProofSwitchOff() {
-        require(!eigenPodManager.partialWithdrawalProofSwitch(), "EigenPod.partialWithdrawalProofSwitchOff: partial withdrawal proof switch is on");
-        _;
-    }
-
     /**
      * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
@@ -441,13 +436,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function fulfillPartialWithdrawalProofRequest(
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
-    ) external onlyEigenPodManager {
+    ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
         uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
+        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
+                //send proof service their fee
+        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
+        require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
-        require(withdrawalCallbackInfo.startTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
-        require(withdrawalCallbackInfo.startTimestamp > mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must be greater than mostRecentWithdrawalTimestamp");
-
-        //subtract an partial withdrawals that may have been claimed via merkle proofs
+        // subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumWei >= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
             provenPartialWithdrawalSumWei -= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
             sumOfPartialWithdrawalsClaimedGwei = 0;
@@ -456,9 +452,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             sumOfPartialWithdrawalsClaimedGwei -= uint64(provenPartialWithdrawalSumWei / GWEI_TO_WEI);
         }
 
-        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
-        //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
+
     
         mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
     }
@@ -746,7 +740,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalTimestamp,
         address recipient,
         uint64 partialWithdrawalAmountGwei
-    ) internal partialWithdrawalProofSwitchOff returns (VerifiedWithdrawal memory) {
+    ) internal returns (VerifiedWithdrawal memory) {
+        require(
+            eigenPodManager.proofServiceEnabled(),
+            "EigenPod._processPartialWithdrawal: partial withdrawal proofs are disabled"
+        );
         emit PartialWithdrawalRedeemed(
             validatorIndex,
             withdrawalTimestamp,

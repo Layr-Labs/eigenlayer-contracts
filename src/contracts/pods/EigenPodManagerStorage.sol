@@ -67,8 +67,8 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice This is the offchain proving service
     ProofService public proofService;
 
-    /// @notice Switch to turn off partial withdrawal merkle proofs and turn on offchain proofs as a service
-    bool public partialWithdrawalProofSwitch;
+    /// @notice indicates offchain proofs as a service are enabled
+    bool public proofServiceEnabled;
 
     constructor(
         IETHPOSDeposit _ethPOS,
