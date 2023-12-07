@@ -1024,3 +1024,11 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         _;
     }
 }
+
+contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTests, IEigenPodEvents { 
+
+
+
+
+
+}
