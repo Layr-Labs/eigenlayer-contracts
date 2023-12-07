@@ -230,7 +230,7 @@ contract EigenPodManager is
         bytes32 blockRoot,
         uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
-    ) external onlyProofService proofServiceEnabled {
+    ) external onlyProofService proofServiceEnabled nonReentrant {
         require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
             // these checks are verified in the snark, we add them here again as a sanity check

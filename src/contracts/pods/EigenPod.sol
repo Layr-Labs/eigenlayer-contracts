@@ -448,7 +448,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(withdrawalCallbackInfo.startTimestamp > mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
 
         //subtract an partial withdrawals that may have been claimed via merkle proofs
-        if(provenPartialWithdrawalSumWei > sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
+        if(provenPartialWithdrawalSumWei >= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
             provenPartialWithdrawalSumWei -= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
             sumOfPartialWithdrawalsClaimedGwei = 0;
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
