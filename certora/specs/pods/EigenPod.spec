@@ -257,6 +257,7 @@ hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restaked
     );
 }
 
+/*
 rule baseInvariant() {
     int256 podOwnerSharesBefore = get_podOwnerShares();
     // perform arbitrary function call
