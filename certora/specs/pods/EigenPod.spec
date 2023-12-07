@@ -224,39 +224,6 @@ rule consistentAccounting() {
     }
 }
 
-rule baseInvariant() {
-    int256 podOwnerSharesBefore = get_podOwnerShares();
-    // perform arbitrary function call
-    method f;
-    env e;
-    calldataarg args;
-    f(e,args);
-    int256 podOwnerSharesAfter = get_podOwnerShares();
-    mathint podOwnerSharesDelta = podOwnerSharesAfter - podOwnerSharesBefore;
-    assert(sumOfValidatorRestakedbalancesWei == podOwnerSharesDelta - to_mathint(get_withdrawableRestakedExecutionLayerGwei()),
-        "base invariant violated");
-}
-
-invariant consistentAccounting() {
-    sumOfValidatorRestakedbalancesWei ==
-        to_mathint(get_withdrawableRestakedExecutionLayerGwei()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei());
-}
-*/
-// // based on Certora's example here https://github.com/Certora/Tutorials/blob/michael/ethcc/EthCC/Ghosts/ghostTest.spec
-// ghost mathint sumOfValidatorRestakedbalancesWei {
-//     init_state axiom sumOfValidatorRestakedbalancesWei == to_mathint(get_podOwnerShares()) - to_mathint(get_withdrawableRestakedExecutionLayerGwei() * 1000000000);
-// }
-    init_state axiom sumOfValidatorRestakedbalancesWei == 0;
-}
-
-hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) STORAGE {
-    sumOfValidatorRestakedbalancesWei = (
-        sumOfValidatorRestakedbalancesWei + 
-        to_mathint(newValue) * 1000000000 -
-        to_mathint(oldValue) * 1000000000
-    );
-}
-
 /*
 rule baseInvariant() {
     int256 podOwnerSharesBefore = get_podOwnerShares();
