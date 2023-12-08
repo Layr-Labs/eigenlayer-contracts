@@ -178,13 +178,6 @@
 │   └── given that the staker is delegated
 │       ├── it should increase the operator's share for the staker and its associated strategy
 │       └── it should push an operator stake update
-├── when setWithdrawalDelayBlocks is called
-│   ├── given not called by owner
-│   │   └── it should revert
-│   ├── given new delay is > MAX_WITHDRAWAL_DELAY_BLOCKS
-│   │   └── it should revert
-│   └── given called by owner and new delay is <= MAX_WITHDRAWAL_DELAY_BLOCKS
-│       └── it should set the new delay and emit event
 └── when setStakeRegistry is called
     ├── given not called by owner
     │   └── it should revert
