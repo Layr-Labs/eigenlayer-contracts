@@ -578,7 +578,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.assume(oracleTimestamp < endTimestamp);
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, oracleTimestamp, endTimestamp, 0, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, address(this), oracleTimestamp, endTimestamp, 0, 0, 0);
         IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
         withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
 
@@ -594,7 +594,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, oracleTimestamp, endTimestamp, 0, fee, maxFee);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, address(this), oracleTimestamp, endTimestamp, 0, fee, maxFee);
         IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
         withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
 

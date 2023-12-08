@@ -1026,16 +1026,46 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 }
 
 contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTests, IEigenPodEvents { 
-
+    address feeRecipient = address(123);
+    uint256 internal constant GWEI_TO_WEI = 1e9;
 
     function testFuzz_proofCallbackRequest_revert_inconsistentTimestamps(uint64 startTimestamp, uint64 endTimestamp) external {
-        cheats.assume(startTimestamp >= endTimestamp);
+        cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() >= endTimestamp);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), 0, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), 0, 0, 0);
 
         cheats.startPrank(address(eigenPodManagerMock));
-        cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");
+        cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
         eigenPod.fulfillPartialWithdrawalProofRequest(withdrawalCallbackInfo, address(this));
         cheats.stopPrank();
     }
+
+    function testFuzz_proofCallbackRequest_revert_inconsistentMostRecentWithdrawalTimestamps(uint64 mostRecentWithdrawalTimestamp) external {
+        cheats.assume(mostRecentWithdrawalTimestamp != eigenPod.mostRecentWithdrawalTimestamp());
+
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), 0, mostRecentWithdrawalTimestamp, 0, 0, 0);
+
+        cheats.startPrank(address(eigenPodManagerMock));
+        cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
+        eigenPod.fulfillPartialWithdrawalProofRequest(withdrawalCallbackInfo, address(this));
+        cheats.stopPrank();
+    }
+
+    function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei) external {
+        cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() < endTimestamp);
+         bytes32 slot = bytes32(uint256(56)); 
+        bytes32 value = bytes32(uint256(sumOfPartialWithdrawalsClaimedGwei)); 
+        cheats.store(address(eigenPod), slot, value);
+
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI, 0, 0);
+
+        cheats.deal(address(eigenPod), sumOfPartialWithdrawalsClaimedGwei);
+        cheats.startPrank(address(eigenPodManagerMock));
+        eigenPod.fulfillPartialWithdrawalProofRequest(withdrawalCallbackInfo, feeRecipient);
+        cheats.stopPrank();
+
+        require(eigenPod.mostRecentWithdrawalTimestamp() == endTimestamp, "mostRecentWithdrawalTimestamp should be updated");
+        require(eigenPod.sumOfPartialWithdrawalsClaimedGwei() == 0, "sumOfPartialWithdrawalsClaimedGwei should be set to 0");
+    }
+
 }

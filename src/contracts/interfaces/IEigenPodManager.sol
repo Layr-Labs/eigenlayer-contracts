@@ -50,7 +50,7 @@ interface IEigenPodManager is IPausable {
         // the address of the pod owner
         address podOwner;
         // the address of the pod being proven for
-        address pod;
+        address podAddress;
         // upper bound of the withdrawal period
         uint64 endTimestamp;
         // the latest timestamp proven until
