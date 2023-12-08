@@ -234,6 +234,7 @@ contract EigenPodManager is
             require(callbackInfo[i].fee <= callbackInfo[i].maxFee, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
+            require(address(pod) == callbackInfo[i].podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
         }
     }

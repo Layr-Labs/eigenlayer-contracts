@@ -437,7 +437,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
     ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
-        require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
+        require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
 
         uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
         provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
