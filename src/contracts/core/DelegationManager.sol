@@ -443,6 +443,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             !operatorSaltIsSpent[operator][operatorSignature.salt],
             "DelegationManager.registerOperatorToAVS: salt already spent"
         );
+        require(
+            isOperator(operator),
+            "DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
 
         // Calculate the digest hash
         bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({

@@ -605,8 +605,11 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
 
     // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
     function testFuzz_registerOperatorToAVS(bytes32 salt) public {
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
         address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorAVSRegistrationStatusUpdated(operator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED);
 
         uint256 expiry = type(uint256).max;
@@ -623,9 +626,31 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
+    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+
+        cheats.prank(defaultAVS);
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            delegationSignerPrivateKey,
+            operator,
+            defaultAVS,
+            salt,
+            expiry
+        );
+
+        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+    }
+
     // @notice Verifies an operator registers fails when the signature is not from the operator
     function testFuzz_revert_whenSignatureAddressIsNotOperator(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             delegationSignerPrivateKey,
@@ -652,6 +677,9 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
     // @notice Verifies an operator registers fails when it's already registered to the avs
     function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
         uint256 expiry = type(uint256).max;
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
             delegationSignerPrivateKey,
