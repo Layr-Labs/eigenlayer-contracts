@@ -1,6 +1,6 @@
 ## DelegationManager
 
-| File | Type | Proxy? |
+| File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`DelegationManager.sol`](../../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy |
 

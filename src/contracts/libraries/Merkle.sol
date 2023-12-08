@@ -152,7 +152,7 @@ library Merkle {
         //create a layer to store the internal nodes
         bytes32[] memory layer = new bytes32[](numNodesInLayer);
         //fill the layer with the pairwise hashes of the leaves
-        for (uint i = 0; i < numNodesInLayer; i++) {
+        for (uint256 i = 0; i < numNodesInLayer; i++) {
             layer[i] = sha256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
         }
         //the next layer above has half as many nodes
@@ -160,7 +160,7 @@ library Merkle {
         //while we haven't computed the root
         while (numNodesInLayer != 0) {
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            for (uint i = 0; i < numNodesInLayer; i++) {
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
             //the next layer above has half as many nodes
