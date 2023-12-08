@@ -27,7 +27,7 @@ This document provides an overview of system components, contracts, and user rol
 These contracts work together to enable native ETH restaking:
 * Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
 * The `EigenPodManager` handles `EigenPod` creation and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
-* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing certain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note users initiate withdrawals via the `DelegationManager`).
+* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing partial beacon chain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that all withdrawals from EigenLayer -- other than partial withdrawals earned by validators -- are initiated via the `DelegationManager`).
 * The `EigenLayerBeaconOracle` provides beacon chain block roots for use in various proofs. The oracle is supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
 See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md).
