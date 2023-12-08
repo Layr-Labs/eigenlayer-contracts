@@ -1,62 +1,102 @@
+[middleware-repo]: https://github.com/Layr-Labs/eigenlayer-middleware/
+
 ## EigenLayer M2 Docs
 
-**EigenLayer M2** extends the functionality of EigenLayer M1 (which is live on both Goerli and mainnet). M2 is currently on the Goerli testnet, and will eventually be released on mainnet.
+**EigenLayer M2** extends the functionality of EigenLayer M1 (which is live on mainnet). M2 is currently on the Goerli testnet, and will eventually be released on mainnet. 
 
-M1 enables very basic restaking: users that stake ETH natively or with a liquid staking token can opt-in to the M1 smart contracts, which currently support two basic operations: deposits and withdrawals. 
+This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
-M2 adds several features, the most important of which is the basic support needed to create an AVS<!--(*link: ["what is an AVS?"](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md) TODO*)-->. The M2 release includes the first AVS, EigenDA <!--(*link: read more about EigenDA (TODO)*)-->. The other features of M2 support AVSs and pad out existing features of M1. A short list of new features includes:
-* Anyone can register as an operator
-* Operators can begin providing services to an AVS
-* Stakers can delegate their stake to a single operator
-* Native ETH restaking is now fully featured, using beacon chain state proofs to validate withdrawal credentials, validator balances, and validator exits
-* Proofs are supported by beacon chain headers provided by an oracle (See [`EigenPodManager` docs](./core/EigenPodManager.md) for more info)
+This document provides an overview of system components, contracts, and user roles. Further documentation on the major system contracts can be found in [/core](./core/).
+
+#### Contents
+
+* [System Components](#system-components)
+* [Roles and Actors](#roles-and-actors)
 
 ### System Components
 
-**EigenPodManager**:
+#### EigenPodManager
 
-| File | Type | Proxy? | Goerli |
-| -------- | -------- | -------- | -------- |
-| [`EigenPodManager.sol`](../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy | TODO |
-| [`EigenPod.sol`](../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy | TODO |
-| [`DelayedWithdrawalRouter.sol`](../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy | TODO |
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`EigenPodManager.sol`](../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy |
+| [`EigenPod.sol`](../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy |
+| [`DelayedWithdrawalRouter.sol`](../src/contracts/pods/DelayedWithdrawalRouter.sol) | Singleton | Transparent proxy |
 | [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS proxy | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
 
 These contracts work together to enable native ETH restaking:
 * Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
 * The `EigenPodManager` handles `EigenPod` creation and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
-* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing certain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that most withdrawals are processed via the `DelegationManager`, not the `DelayedWithdrawalRouter`).
+* The `DelayedWithdrawalRouter` imposes a 7-day delay on completing partial beacon chain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that all withdrawals from EigenLayer -- other than partial withdrawals earned by validators -- are initiated via the `DelegationManager`).
 * The `EigenLayerBeaconOracle` provides beacon chain block roots for use in various proofs. The oracle is supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
 See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md).
 
-**StrategyManager**:
+#### StrategyManager
 
-| File | Type | Proxy? | Goerli |
-| -------- | -------- | -------- | -------- |
-| [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy | TODO |
-| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy | TODO |
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy |
+| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | One instance per supported LST | Transparent proxy |
 
 These contracts work together to enable restaking for LSTs:
 * The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each of the 3 LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
-* `StrategyBaseTVLLimits` is deployed as three separate instances, one for each supported LST (cbETH, rETH, and stETH). When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
+* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported LST. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
 
-**DelegationManager**:
+#### DelegationManager
 
-| File | Type | Proxy? | Goerli |
-| -------- | -------- | -------- | -------- |
-| [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy | TODO |
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy |
 
 The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
 
-**Slasher**:
+#### Slasher
 
-| File | Type | Proxy? | Goerli |
-| -------- | -------- | -------- | -------- |
-| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - | - |
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - |
 
-The `Slasher` is deployed, but will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized.
+<p align="center"><b>
+🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
+</b><p>
+
+---
+
+#### Roles and Actors
+
+To see an example of the user flows described in this section, check out our integration tests: [/src/test/integration](../src/test/integration/).
+
+##### Staker
+
+A Staker is any party who has assets deposited (or "restaked") into EigenLayer. Currently, these assets can be:
+* Native beacon chain ETH (via the EigenPodManager)
+* Liquid staking tokens (via the StrategyManager): cbETH, rETH, stETH, ankrETH, OETH, osETH, swETH, wBETH
+
+Stakers can restake any combination of these: a Staker may hold ALL of these assets, or only one of them.
+
+*Flows:*
+* Stakers **deposit** assets into EigenLayer via either the StrategyManager (for LSTs) or EigenPodManager (for beacon chain ETH)
+* Stakers **withdraw** assets via the DelegationManager, *no matter what assets they're withdrawing*
+* Stakers **delegate** to an Operator via the DelegationManager
+
+Unimplemented as of M2:
+* Stakers earn yield by delegating to an Operator as the Operator provides services to an AVS
+* Stakers are at risk of being slashed if the Operator misbehaves
+
+##### Operator
+
+An Operator is a user who helps run the software built on top of EigenLayer (AVSs). Operators register in EigenLayer and allow Stakers to delegate to them, then opt in to provide various services built on top of EigenLayer. Operators may themselves be Stakers; these are not mutually exclusive.
+
+*Flows:*
+* User can **register** as an Operator via the DelegationManager
+* Operators can **deposit** and **withdraw** assets just like Stakers can
+* Operators can opt in to providing services for an AVS using that AVS's middleware contracts. See the [EigenLayer middleware][middleware-repo] repo for now details.
+
+*Unimplemented as of M2:*
+* Operators earn fees as part of the services they provide
+* Operators may be slashed by the services they register with (if they misbehave)

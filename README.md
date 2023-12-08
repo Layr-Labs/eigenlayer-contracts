@@ -1,86 +1,85 @@
 <a name="introduction"/></a>
 
 # EigenLayer
-<p align="center"><b><font size="+1">
-🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
-</font></b><p>
 
-EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services.
+EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. This repo contains the EigenLayer core contracts, whose currently-supported assets include beacon chain ETH and several liquid staking tokens (LSTs). Users use these contracts to deposit and withdraw these assets, as well as delegate them to operators providing services to AVSs.
 
-We recommend starting with the [technical documentation](docs/README.md) to get an overview of the contracts before diving into the code. 
+## Getting Started
 
-For deployment addresses on both mainnet and Goerli, see [Deployments](#deployments) below.
-
-## Table of Contents  
-
-* [Installation and Running Tests / Analyzers](#installation-and-running-tests--analyzers)
-* [Technical Documentation](docs/README.md)
+* [Documentation](#documentation)
+* [Building and Running Tests](#building-and-running-tests)
 * [Deployments](#deployments)
 
-<a name="installation"/></a>
-## Installation and Running Tests / Analyzers
+## Documentation
 
-### Installation
+### Basics
+
+To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
+* [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
+* [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
+
+### Deep Dive
+
+The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
+
+To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
+
+## Building and Running Tests
+
+This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
 
 ```
 foundryup
 
-forge install
+forge build
+forge test
 ```
 
-This repository uses Foundry as a smart contract development toolchain.
+### Running Fork Tests
 
-See the [Foundry Docs](https://book.getfoundry.sh/) for more info on installation and usage.
+We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
 
-### Natspec Documentation
+Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment using this script to read from `config.yml`:
 
-You will notice that we also have hardhat installed in this repo. This is only used to generate natspec [docgen](https://github.com/OpenZeppelin/solidity-docgen). This is our workaround until foundry [finishes implementing](https://github.com/foundry-rs/foundry/issues/1675) the `forge doc` command.
+`source source-env.sh [goerli|local]`
 
-To generate the docs, run `npx hardhat docgen` (you may need to run `npm install` first).
-
-### Run Tests
-
-Prior to running tests, you should set up your environment. At present this repository contains fork tests against ETH mainnet; your environment will use an `RPC_MAINNET` key to run these tests. See the `.env.example` file for an example -- two simple options are to  copy the LlamaNodes RPC url to your `env` or use your own infura API key in the provided format. If you don't set the `RPC_MAINNET` key then the test cases will default to LlamaNodes RPC url when fork testing.
-
-The main command to run tests is:
-
-`forge test -vv`
-
-### Run Tests on a Fork
-
-Environment config is contained in config.yml. Before running the following commands, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then set up the environment with this script:
-
-`source source-env.sh [CHAIN]`
-
-For example, on goerli: `source source-env.sh goerli`.  Currently options for `[CHAIN]` are `goerli`, `local`.  Then to run the actual tests:
+Then run the tests:
 
 `forge test --fork-url [RPC_URL]`
 
-### Run Static Analysis
+### Running Static Analysis
+
+1. Install [solhint](https://github.com/protofire/solhint), then run:
 
 `solhint 'src/contracts/**/*.sol'`
+
+2. Install [slither](https://github.com/crytic/slither), then run:
 
 `slither .`
 
 ### Generate Inheritance and Control-Flow Graphs
 
-First [install surya](https://github.com/ConsenSys/surya/)
+1. Install [surya](https://github.com/ConsenSys/surya/) and graphviz:
 
-then run
+```
+npm i -g surya
 
-`surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png`
+apt install graphviz
+```
 
-and/or
+2. Then, run:
 
-`surya graph ./src/contracts/middleware/*.sol | dot -Tpng > MiddlewareControlFlowGraph.png`
+```
+surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
 
-and/or
-
-`surya mdreport surya_report.md ./src/contracts/**/*.sol`
+surya mdreport surya_report.md ./src/contracts/**/*.sol
+```
 
 ## Deployments
 
-### M1 (Current Mainnet Deployment)
+### Current Mainnet Deployment
+
+The current mainnet deployment is our M1 release, and is from a much older version of this repo. You can view the deployed contract addresses in [Current Mainnet Deployment](#current-mainnet-deployment) below, or check out the [`init-mainnet-deployment`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet-deployment) branch in "Releases".
 
 | Name | Solidity | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | -------- | 
@@ -101,7 +100,9 @@ and/or
 | Timelock | [Compound: `Timelock.sol`](https://github.com/compound-finance/compound-protocol/blob/a3214f67b73310d547e00fc578e8355911c9d376/contracts/Timelock.sol) | - | [`0xA6Db...0EAF`](https://etherscan.io/address/0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF) | |
 | Proxy Admin | [OpenZeppelin ProxyAdmin@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8b95...2444`](https://etherscan.io/address/0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444) | |
 
-### M2 (Current Goerli Testnet Deployment)
+### Current Testnet Deployment
+
+The current testnet deployment is from our M2 beta release, which is a slightly older version of this repo. You can view the deployed contract addresses in [Current Testnet Deployment](#current-testnet-deployment), or check out the [`goerli-m2-deployment`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/goerli-m2-deployment) branch in "Releases".
 
 | Name | Solidity | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | -------- | 
@@ -109,6 +110,7 @@ and/or
 | Strategy: stETH | [`StrategyBaseTVLLimits`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/strategies/StrategyBaseTVLLimits.sol) | [`0xB613...14da`](https://goerli.etherscan.io/address/0xb613e78e2068d7489bb66419fb1cfa11275d14da) | [`0x81E9...8ebA`](https://goerli.etherscan.io/address/0x81E94e16949AC397d508B5C2557a272faD2F8ebA) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | Strategy: rETH | [`StrategyBaseTVLLimits`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/strategies/StrategyBaseTVLLimits.sol) | [`0x8799...70b5`](https://goerli.etherscan.io/address/0x879944A8cB437a5f8061361f82A6d4EED59070b5) | [`0x81E9...8ebA`](https://goerli.etherscan.io/address/0x81E94e16949AC397d508B5C2557a272faD2F8ebA) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | EigenPodManager | [`EigenPodManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/pods/EigenPodManager.sol) | [`0xa286...df41`](https://goerli.etherscan.io/address/0xa286b84C96aF280a49Fe1F40B9627C2A2827df41) | [`0xdD09...901b`](https://goerli.etherscan.io/address/0xdD09d95bD25299EDBF4f33d76F84dBc77b0B901b) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| EigenLayerBeaconOracle | [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) | [`0x0a6e...db01`](https://goerli.etherscan.io/address/0x0a6e235c30658dbdb53147fbb199878a4e34db01) | OpenZeppelin UUPS |
 | EigenPod (beacon) | [`EigenPod`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/pods/EigenPod.sol) | [`0x3093...C9a5`](https://goerli.etherscan.io/address/0x3093F3B560352F896F0e9567019902C9Aff8C9a5) | [`0x86bf...6CcA`](https://goerli.etherscan.io/address/0x86bf376E0C0c9c6D332E13422f35Aca75C106CcA) | - Beacon: [OpenZeppelin BeaconProxy@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/BeaconProxy.sol) <br />- Deployed pods use [UpgradableBeacon@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
 | DelayedWithdrawalRouter | [`DelayedWithdrawalRouter`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/pods/DelayedWithdrawalRouter.sol) | [`0x8958...388f`](https://goerli.etherscan.io/address/0x89581561f1F98584F88b0d57c2180fb89225388f) | [`0x6070...27fe`](https://goerli.etherscan.io/address/0x60700ade3Bf48C437a5D01b6Da8d7483cffa27fe) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | DelegationManager | [`DelegationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/goerli-m2-deployment/src/contracts/core/DelegationManager.sol) | [`0x1b7b...b0a8`](https://goerli.etherscan.io/address/0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8) | [`0x9b79...A99d`](https://goerli.etherscan.io/address/0x9b7980a32ceCe2Aa936DD2E43AF74af62581A99d) | Proxy: [OpenZeppelin TUP@4.7.1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
