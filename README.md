@@ -22,7 +22,7 @@ To get a basic understanding of EigenLayer, check out [You Could've Invented Eig
 
 The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
 
-
+To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
 
 ## Building and Running Tests
 
