@@ -45,7 +45,7 @@ contract EigenPodManager is
     }
 
     modifier onlyProofService() {
-        require(msg.sender == proofService.caller, "EigenPod.onlyProofService: not a permissioned fulfiller");
+        require(msg.sender == proofService.caller, "EigenPodManager.onlyProofService: not a permissioned fulfiller");
         _;
     }
 

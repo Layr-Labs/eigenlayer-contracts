@@ -1031,7 +1031,7 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
     function testFuzz_proofCallbackRequest_revert_inconsistentTimestamps(uint64 startTimestamp, uint64 endTimestamp) external {
         cheats.assume(startTimestamp >= endTimestamp);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, endTimestamp, 0, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp, 0, 0, 0);
 
         cheats.startPrank(address(eigenPodManagerMock));
         cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must precede endTimestamp");

@@ -437,10 +437,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
         address feeRecipient
     ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
+        require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: startTimestamp must match mostRecentWithdrawalTimestamp");
+
         uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
         provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
-                //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
+
         require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
@@ -451,10 +452,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         } else {
             sumOfPartialWithdrawalsClaimedGwei -= uint64(provenPartialWithdrawalSumWei / GWEI_TO_WEI);
         }
-
-
     
         mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
+
+        //send proof service their fee
+        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
     }
 
     /*******************************************************************************

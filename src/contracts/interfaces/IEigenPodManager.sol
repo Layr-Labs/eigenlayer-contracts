@@ -51,6 +51,8 @@ interface IEigenPodManager is IPausable {
         address podOwner;
         // upper bound of the withdrawal period
         uint64 endTimestamp;
+        // the latest timestamp proven until
+        uint64 mostRecentWithdrawalTimestamp;
         // amount being proven for withdrawal
         uint256 provenPartialWithdrawalSumWei;
         // prover fee
