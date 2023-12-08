@@ -332,7 +332,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return withdrawalAmounts;
     }
 
-    function _setUpQueueWithdrawalsStructSingleStrat(
+    function _setUpQueueWithdrawalsSingleStrat(
         address staker,
         address withdrawer,
         IStrategy strategy,
@@ -368,7 +368,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return (queuedWithdrawalParams, withdrawal, withdrawalRoot);
     }
 
-    function _setUpQueueWithdrawalsStruct(
+    function _setUpQueueWithdrawals(
         address staker,
         address withdrawer,
         IStrategy[] memory strategies,
@@ -419,7 +419,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManager.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsStructSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
             withdrawer: withdrawer,
             strategy: strategies[0],
@@ -456,7 +456,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManager.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsStruct({
+        ) = _setUpQueueWithdrawals({
             staker: staker,
             withdrawer: withdrawer,
             strategies: strategies,
@@ -2740,7 +2740,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
     function test_Revert_WhenEnterQueueWithdrawalsPaused() public {
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
-        (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsStructSingleStrat({
+        (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
             withdrawer: defaultStaker,
             strategy: strategyMock,
@@ -2769,7 +2769,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
     }
 
     function test_Revert_WhenZeroAddressWithdrawer() public {
-        (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsStructSingleStrat({
+        (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
             withdrawer: address(0),
             strategy: strategyMock,
@@ -2820,7 +2820,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManager.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsStructSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
             withdrawer: staker,
             strategy: strategies[0],
@@ -2866,7 +2866,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManager.Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsStruct({
+        ) = _setUpQueueWithdrawals({
             staker: staker,
             withdrawer: staker,
             strategies: strategies,
