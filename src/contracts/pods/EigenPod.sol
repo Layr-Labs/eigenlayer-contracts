@@ -438,20 +438,19 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         address feeRecipient
     ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
         require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
+        require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
+
 
         uint256 provenPartialWithdrawalSumGwei = withdrawalCallbackInfo.provenPartialWithdrawalSumGwei;
+        require(sumOfPartialWithdrawalsClaimedGwei <= provenPartialWithdrawalSumGwei - withdrawalCallbackInfo.feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
         provenPartialWithdrawalSumGwei -= withdrawalCallbackInfo.feeGwei;
 
-        require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumGwei >= sumOfPartialWithdrawalsClaimedGwei) {
-            provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedGwei;
-            sumOfPartialWithdrawalsClaimedGwei = 0;
-            _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
-        } else {
-            sumOfPartialWithdrawalsClaimedGwei -= uint64(provenPartialWithdrawalSumGwei);
-        }
+        provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedGwei;
+        sumOfPartialWithdrawalsClaimedGwei = 0;
+        _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
     
         mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
 
