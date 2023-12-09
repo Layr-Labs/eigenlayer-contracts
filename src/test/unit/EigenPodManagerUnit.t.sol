@@ -588,7 +588,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.stopPrank();
     }
 
-    function testFuzz_proofCallback_revert_feeExceedsMaxFee(uint64 oracleTimestamp, uint64 endTimestamp, uint256 maxFee, uint256 fee) public {
+    function testFuzz_proofCallback_revert_feeExceedsMaxFee(uint64 oracleTimestamp, uint64 endTimestamp, uint64 maxFee, uint64 fee) public {
         cheats.assume(oracleTimestamp > endTimestamp);
         cheats.assume(fee > maxFee);
 

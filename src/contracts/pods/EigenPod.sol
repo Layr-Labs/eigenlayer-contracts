@@ -439,24 +439,24 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
         require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
 
-        uint256 provenPartialWithdrawalSumWei = withdrawalCallbackInfo.provenPartialWithdrawalSumWei;
-        provenPartialWithdrawalSumWei -= withdrawalCallbackInfo.fee;
+        uint256 provenPartialWithdrawalSumGwei = withdrawalCallbackInfo.provenPartialWithdrawalSumGwei;
+        provenPartialWithdrawalSumGwei -= withdrawalCallbackInfo.feeGwei;
 
         require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
-        if(provenPartialWithdrawalSumWei >= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI) {
-            provenPartialWithdrawalSumWei -= sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI;
+        if(provenPartialWithdrawalSumGwei >= sumOfPartialWithdrawalsClaimedGwei) {
+            provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedGwei;
             sumOfPartialWithdrawalsClaimedGwei = 0;
-            _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumWei);
+            _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
         } else {
-            sumOfPartialWithdrawalsClaimedGwei -= uint64(provenPartialWithdrawalSumWei / GWEI_TO_WEI);
+            sumOfPartialWithdrawalsClaimedGwei -= uint64(provenPartialWithdrawalSumGwei);
         }
     
         mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
 
         //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.fee);
+        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.feeGwei);
     }
 
     /*******************************************************************************

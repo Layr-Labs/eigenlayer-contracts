@@ -231,7 +231,7 @@ contract EigenPodManager is
         for(uint256 i = 0; i < callbackInfo.length; i++) {
             // these checks are verified in the snark, we add them here again as a sanity check
             require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
-            require(callbackInfo[i].fee <= callbackInfo[i].maxFee, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
+            require(callbackInfo[i].feeGwei <= callbackInfo[i].maxFeeGwei, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
             IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
             require(address(pod) == callbackInfo[i].podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");

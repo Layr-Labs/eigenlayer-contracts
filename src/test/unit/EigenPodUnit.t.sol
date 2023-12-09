@@ -1051,13 +1051,14 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
         cheats.stopPrank();
     }
 
-    function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei) external {
+    function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei, uint64 fee) external {
+        cheats.assume(sumOfPartialWithdrawalsClaimedGwei > fee);
         cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() < endTimestamp);
          bytes32 slot = bytes32(uint256(56)); 
         bytes32 value = bytes32(uint256(sumOfPartialWithdrawalsClaimedGwei)); 
         cheats.store(address(eigenPod), slot, value);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), sumOfPartialWithdrawalsClaimedGwei * GWEI_TO_WEI, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), sumOfPartialWithdrawalsClaimedGwei, fee, fee);
 
         cheats.deal(address(eigenPod), sumOfPartialWithdrawalsClaimedGwei);
         cheats.startPrank(address(eigenPodManagerMock));
@@ -1065,7 +1066,8 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
         cheats.stopPrank();
 
         require(eigenPod.mostRecentWithdrawalTimestamp() == endTimestamp, "mostRecentWithdrawalTimestamp should be updated");
-        require(eigenPod.sumOfPartialWithdrawalsClaimedGwei() == 0, "sumOfPartialWithdrawalsClaimedGwei should be set to 0");
+        require(eigenPod.sumOfPartialWithdrawalsClaimedGwei() == fee, "sumOfPartialWithdrawalsClaimedGwei should be set to 0");
+        require(feeRecipient.balance == withdrawalCallbackInfo.feeGwei, "feeRecipient should receive sumOfPartialWithdrawalsClaimedGwei");
     }
 
 }

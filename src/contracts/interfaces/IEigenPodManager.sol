@@ -56,11 +56,11 @@ interface IEigenPodManager is IPausable {
         // the latest timestamp proven until
         uint64 mostRecentWithdrawalTimestamp;
         // amount being proven for withdrawal
-        uint256 provenPartialWithdrawalSumWei;
+        uint64 provenPartialWithdrawalSumGwei;
         // prover fee
-        uint256 fee;
+        uint64 feeGwei;
         // user-signed maxFee
-        uint256 maxFee;
+        uint64 maxFeeGwei;
     }
 
 
