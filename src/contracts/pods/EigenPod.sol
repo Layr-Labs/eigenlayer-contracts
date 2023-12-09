@@ -447,7 +447,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
-        if(provenPartialWithdrawalSumGwei >= sumOfPartialWithdrawalsClaimedGwei) {
         provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedGwei;
         sumOfPartialWithdrawalsClaimedGwei = 0;
         _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);

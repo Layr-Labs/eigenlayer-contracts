@@ -1051,23 +1051,18 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
         cheats.stopPrank();
     }
 
-    function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei, uint64 fee) external {
-        cheats.assume(sumOfPartialWithdrawalsClaimedGwei > fee);
+    function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei, uint64 provenAmount, uint64 fee) external {
+        cheats.assume(provenAmount > fee && provenAmount < sumOfPartialWithdrawalsClaimedGwei);
         cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() < endTimestamp);
          bytes32 slot = bytes32(uint256(56)); 
         bytes32 value = bytes32(uint256(sumOfPartialWithdrawalsClaimedGwei)); 
         cheats.store(address(eigenPod), slot, value);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), sumOfPartialWithdrawalsClaimedGwei, fee, fee);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), endTimestamp, eigenPod.mostRecentWithdrawalTimestamp(), provenAmount, fee, fee);
 
-        cheats.deal(address(eigenPod), sumOfPartialWithdrawalsClaimedGwei);
         cheats.startPrank(address(eigenPodManagerMock));
+        cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei"));
         eigenPod.fulfillPartialWithdrawalProofRequest(withdrawalCallbackInfo, feeRecipient);
         cheats.stopPrank();
-
-        require(eigenPod.mostRecentWithdrawalTimestamp() == endTimestamp, "mostRecentWithdrawalTimestamp should be updated");
-        require(eigenPod.sumOfPartialWithdrawalsClaimedGwei() == fee, "sumOfPartialWithdrawalsClaimedGwei should be set to 0");
-        require(feeRecipient.balance == withdrawalCallbackInfo.feeGwei, "feeRecipient should receive sumOfPartialWithdrawalsClaimedGwei");
     }
-
 }
