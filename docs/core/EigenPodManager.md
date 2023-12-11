@@ -77,7 +77,7 @@ To complete the deposit process, the Staker needs to prove that the validator's 
 #### `EigenPodManager.createPod`
 
 ```solidity
-function createPod() external returns (address)
+function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address)
 ```
 
 Allows a Staker to deploy an `EigenPod` instance, if they have not done so already.
@@ -110,6 +110,7 @@ function stake(
 ) 
     external 
     payable
+    onlyWhenNotPaused(PAUSED_NEW_EIGENPODS)
 ```
 
 Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, providing the credentials for the Staker's beacon chain validator. The `EigenPod.stake` method is called, which automatically calculates the correct withdrawal credentials for the pod and passes these to the deposit contract along with the 32 ETH.
@@ -119,7 +120,7 @@ Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, provid
 * See [`EigenPod.stake`](#eigenpodstake)
 
 *Requirements*:
-* If deploying an `EigenPod`, pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
+* Pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
 * See [`EigenPod.stake`](#eigenpodstake)
 
 ##### `EigenPod.stake`
@@ -690,6 +691,7 @@ function withdrawNonBeaconChainETHBalanceWei(
 ) 
     external 
     onlyEigenPodOwner
+    onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
 ```
 
 Allows the Pod Owner to withdraw ETH accidentally sent to the contract's `receive` function.
@@ -703,6 +705,7 @@ Withdrawals from this function are sent via the `DelayedWithdrawalRouter`, and c
 * Sends `amountToWithdraw` wei to [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
 *Requirements:*
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * Caller MUST be the Pod Owner
 * `amountToWithdraw` MUST NOT be greater than the amount sent to the contract's `receive` function
 * See [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
@@ -717,6 +720,7 @@ function recoverTokens(
 ) 
     external 
     onlyEigenPodOwner
+    onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
 ```
 
 Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
@@ -725,5 +729,6 @@ Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
 * Calls `transfer` on each of the ERC20's in `tokenList`, sending the corresponding `amountsToWithdraw` to the `recipient`
 
 *Requirements:*
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * `tokenList` and `amountsToWithdraw` MUST have equal lengths
 * Caller MUST be the Pod Owner
