@@ -106,7 +106,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function calculateStakerDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
         external pure returns (bytes32 stakerDigestHash) {}
 
-    function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external pure returns (bytes32 approverDigestHash) {}
+    function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
+        external pure returns (bytes32 approverDigestHash) {}
+
+    function calculateOperatorAVSRegistrationDigestHash(address /*operator*/, address /*avs*/, bytes32 /*salt*/, uint256 /*expiry*/)
+        external pure returns (bytes32 digestHash) {}
 
     function DOMAIN_TYPEHASH() external view returns (bytes32) {}
 
@@ -114,11 +118,19 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
+
     function domainSeparator() external view returns (bytes32) {}
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
+
+    function registerOperatorToAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {}
+
+    function deregisterOperatorFromAVS(address operator) external {}
+
+    function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 
    function queueWithdrawals(
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
