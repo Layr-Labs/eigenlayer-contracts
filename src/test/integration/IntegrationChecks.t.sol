@@ -22,6 +22,17 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
     }
 
+    function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
+        /// Deposit into strategies:
+        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
+        // the staker calls the relevant deposit function, depositing some subset of held assets
+        //
+        // ... check that some underlying tokens were transferred to the correct destination
+        //     and that the staker now has the expected amount of delegated shares in each strategy
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
+        assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+    }
+
     function check_Delegation_State(
         User staker, 
         User operator, 
