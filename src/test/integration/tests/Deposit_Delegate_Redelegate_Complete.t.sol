@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity =0.8.12;
 
 import "src/test/integration/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
@@ -14,7 +14,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
     /// 5. queueWithdrawal
     /// 7. complete their queued withdrawal as tokens
     function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
-    // When new Users are created, they will choose a random configuration from these params: 
+        // When new Users are created, they will choose a random configuration from these params: 
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,

@@ -8,7 +8,6 @@ import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/events/IDelegationManagerEvents.sol";
-import "src/test/mocks/StakeRegistryStub.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
@@ -27,7 +26,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     StrategyBase strategyMock;
     IERC20 mockToken;
     uint256 mockTokenInitialSupply = 10e50;
-    StakeRegistryStub stakeRegistryMock;
 
     // Delegation signer
     uint256 delegationSignerPrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
@@ -44,6 +42,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultOperator = address(this);
     address defaultAVS = address(this);
 
+    uint256 initializedWithdrawalDelayBlocks = 50400;
+
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // Index for flag that pauses new delegations when set.
@@ -54,6 +54,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     // Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
@@ -70,16 +72,16 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 new TransparentUpgradeableProxy(
                     address(delegationManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(DelegationManager.initialize.selector, address(this), pauserRegistry, 0) // 0 is initialPausedStatus
+                    abi.encodeWithSelector(
+                        DelegationManager.initialize.selector,
+                        address(this),
+                        pauserRegistry,
+                        0, // 0 is initialPausedStatus
+                        initializedWithdrawalDelayBlocks
+                    )
                 )
             )
         );
-
-        // Deploy mock stake registry and set
-        stakeRegistryMock = new StakeRegistryStub();
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit StakeRegistrySet(stakeRegistryMock);
-        delegationManager.setStakeRegistry(stakeRegistryMock);
 
         // Deploy mock token and strategy
         mockToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", mockTokenInitialSupply, address(this));
@@ -146,6 +148,28 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         }
         return stakerSignatureAndExpiry;
     }
+
+    /**
+     * @notice internal function for calculating a signature from the operator corresponding to `_operatorPrivateKey`, delegating them to
+     * the `operator`, and expiring at `expiry`.
+     */
+    function _getOperatorSignature(
+        uint256 _operatorPrivateKey,
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
+        operatorSignature.expiry = expiry;
+        operatorSignature.salt = salt;
+        {
+            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
+            operatorSignature.signature = abi.encodePacked(r, s, v);
+        }
+        return operatorSignature;
+    }
+
 
     // @notice Assumes operator does not have a delegation approver & staker != approver
     function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
@@ -232,7 +256,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
-    function _registerOperatorWith1271DelegationApprover(address operator) internal {
+    function _registerOperatorWith1271DelegationApprover(address operator) internal returns (ERC1271WalletMock) {
         address delegationSigner = cheats.addr(delegationSignerPrivateKey);
         /**
          * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
@@ -241,11 +265,13 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         ERC1271WalletMock wallet = new ERC1271WalletMock(delegationSigner);
 
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: defaultOperator,
+            earningsReceiver: operator,
             delegationApprover: address(wallet),
             stakerOptOutWindowBlocks: 0
         });
-        _registerOperator(defaultOperator, operatorDetails, emptyStringForMetadataURI);
+        _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
+
+        return wallet;
     }
 
     function _registerOperator(
@@ -295,46 +321,30 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(address(this), pauserRegistry, 0);
+        delegationManager.initialize(address(this), pauserRegistry, 0, initializedWithdrawalDelayBlocks);
     }
 
-    /// @notice Verifies that the stakeRegistry cannot be set after it has already been set
-    function test_setStakeRegistry_revert_alreadySet() public {
-        cheats.expectRevert("DelegationManager.setStakeRegistry: stakeRegistry already set");
-        delegationManager.setStakeRegistry(stakeRegistryMock);
-    }
-
-    function testFuzz_setWithdrawalDelayBlocks_revert_notOwner(
-        address invalidCaller
-    ) public filterFuzzedAddressInputs(invalidCaller) {
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        delegationManager.setWithdrawalDelayBlocks(0);
-    }
-
-    function testFuzz_setWithdrawalDelayBlocks_revert_tooLarge(uint256 newWithdrawalDelayBlocks) external {
-        // filter fuzzed inputs to disallowed amounts
-        cheats.assume(newWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
-
-        // attempt to set the `withdrawalDelayBlocks` variable
-        cheats.expectRevert("DelegationManager.setWithdrawalDelayBlocks: newWithdrawalDelayBlocks too high");
-        delegationManager.setWithdrawalDelayBlocks(newWithdrawalDelayBlocks);
-    }
-
-    function testFuzz_setWithdrawalDelayBlocks(uint256 newWithdrawalDelayBlocks) public {
-        cheats.assume(newWithdrawalDelayBlocks <= delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
-
-        // set the `withdrawalDelayBlocks` variable
-        uint256 previousDelayBlocks = delegationManager.withdrawalDelayBlocks();
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit WithdrawalDelayBlocksSet(previousDelayBlocks, newWithdrawalDelayBlocks);
-        delegationManager.setWithdrawalDelayBlocks(newWithdrawalDelayBlocks);
-
-        // Check storage
-        assertEq(
-            delegationManager.withdrawalDelayBlocks(),
-            newWithdrawalDelayBlocks,
-            "withdrawalDelayBlocks not set correctly"
+    function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(uint256 withdrawalDelayBlocks) public {
+        cheats.assume(withdrawalDelayBlocks > MAX_WITHDRAWAL_DELAY_BLOCKS);
+        // Deploy DelegationManager implmentation and proxy
+        delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
+        cheats.expectRevert(
+            "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
+        delegationManager = DelegationManager(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(delegationManagerImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        DelegationManager.initialize.selector,
+                        address(this),
+                        pauserRegistry,
+                        0, // 0 is initialPausedStatus
+                        withdrawalDelayBlocks
+                    )
+                )
+            )
         );
     }
 }
@@ -581,14 +591,110 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(metadataURI);
     }
+}
 
+contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is DelegationManagerUnitTests {
     // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
     function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
         // call `updateAVSMetadataURI` and check for event
-        cheats.prank(defaultAVS);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
+        cheats.prank(defaultAVS);
         emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
         delegationManager.updateAVSMetadataURI(metadataURI);
+    }
+
+    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    function testFuzz_registerOperatorToAVS(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorAVSRegistrationStatusUpdated(operator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED);
+
+        uint256 expiry = type(uint256).max;
+
+        cheats.prank(defaultAVS);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            delegationSignerPrivateKey,
+            operator,
+            defaultAVS,
+            salt,
+            expiry
+        );
+
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+    }
+
+    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+
+        cheats.prank(defaultAVS);
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            delegationSignerPrivateKey,
+            operator,
+            defaultAVS,
+            salt,
+            expiry
+        );
+
+        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+    }
+
+    // @notice Verifies an operator registers fails when the signature is not from the operator
+    function testFuzz_revert_whenSignatureAddressIsNotOperator(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            delegationSignerPrivateKey,
+            operator,
+            defaultAVS,
+            salt,
+            expiry
+        );
+
+        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
+        cheats.prank(operator);
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+    }
+
+    // @notice Verifies an operator registers fails when the signature expiry already expires
+    function testFuzz_revert_whenExpiryHasExpired(bytes32 salt, uint256 expiry, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        cheats.assume(operatorSignature.expiry < block.timestamp);
+
+        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator signature expired");
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+    }
+
+    // @notice Verifies an operator registers fails when it's already registered to the avs
+    function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            delegationSignerPrivateKey,
+            operator,
+            defaultAVS,
+            salt,
+            expiry
+        );
+
+        cheats.startPrank(defaultAVS);
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+
+        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator already registered");
+        delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        cheats.stopPrank();
     }
 }
 
@@ -904,9 +1010,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         cheats.roll(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
         cheats.assume(expiry < block.timestamp);
-
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1108,8 +1211,6 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
-
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1414,8 +1515,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // register *this contract* as an operator
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
-        _registerOperatorWith1271DelegationApprover(defaultOperator);
+        ERC1271WalletMock wallet = _registerOperatorWith1271DelegationApprover(defaultOperator);
+        cheats.assume(staker != address(wallet) && staker != defaultOperator);
 
         // calculate the delegationSigner's signature
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry = _getApproverSignature(

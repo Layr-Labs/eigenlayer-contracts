@@ -7,7 +7,11 @@ import "src/test/integration/User.t.sol";
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
     
-    function check_Deposit_State(User staker, IStrategy[] memory strategies, uint[] memory shares) internal {
+    function check_Deposit_State(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory shares
+    ) internal {
         /// Deposit into strategies:
         // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
         // the staker calls the relevant deposit function, depositing all held assets.
@@ -18,18 +22,12 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
     }
 
-    function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
-        /// Deposit into strategies:
-        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-        // the staker calls the relevant deposit function, depositing some subset of held assets
-        //
-        // ... check that some underlying tokens were transferred to the correct destination
-        //     and that the staker now has the expected amount of delegated shares in each strategy
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
-        assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-    }
-
-    function check_Delegation_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory shares) internal {
+    function check_Delegation_State(
+        User staker, 
+        User operator, 
+        IStrategy[] memory strategies, 
+        uint[] memory shares
+    ) internal {
         /// Delegate to an operator:
         //
         // ... check that the staker is now delegated to the operator, and that the operator
@@ -37,10 +35,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
+        assert_Snap_Unchanged_StakerShares(staker, "staker shares should be unchanged after delegating");
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
     }
 
-    function check_QueuedWithdrawal_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory shares, IDelegationManager.Withdrawal[] memory withdrawals, bytes32[] memory withdrawalRoots) internal {
+    function check_QueuedWithdrawal_State(
+        User staker, 
+        User operator, 
+        IStrategy[] memory strategies, 
+        uint[] memory shares, 
+        IDelegationManager.Withdrawal[] memory withdrawals, 
+        bytes32[] memory withdrawalRoots
+    ) internal {
         // The staker will queue one or more withdrawals for the selected strategies and shares
         //
         // ... check that each withdrawal was successfully enqueued, that the returned roots
@@ -109,15 +115,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         }
     }
 
-
-    /**
-     * @notice Overloaded function to check the state after a withdrawal as shares, accepting a non-user type for the operator.
-     * @param staker The staker who completed the withdrawal.
-     * @param operator The operator address, which can be a non-user type like address(0).
-     * @param withdrawal The details of the withdrawal that was completed.
-     * @param strategies The strategies from which the withdrawal was made.
-     * @param shares The number of shares involved in the withdrawal.
-     */
     function check_Withdrawal_AsShares_State(
         User staker,
         User operator,

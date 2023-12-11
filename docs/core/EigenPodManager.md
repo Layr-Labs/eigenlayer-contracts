@@ -7,7 +7,7 @@
 * Beacon chain proofs
 * Stake / proof / withdrawal flows -->
 
-| File | Type | Proxy? |
+| File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`EigenPodManager.sol`](../../src/contracts/pods/EigenPodManager.sol) | Singleton | Transparent proxy |
 | [`EigenPod.sol`](../../src/contracts/pods/EigenPod.sol) | Instanced, deployed per-user | Beacon proxy |
@@ -23,7 +23,7 @@ The `EigenPodManager` is the entry point for this process, allowing Stakers to d
 * `EigenPod.verifyBalanceUpdate`: effective balance
 * `EigenPod.verifyAndProcessWithdrawals`: withdrawable epoch, and processed withdrawals within historical block summary
 
-See [`./proofs`](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
+See [/proofs](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
 
 #### High-level Concepts
 

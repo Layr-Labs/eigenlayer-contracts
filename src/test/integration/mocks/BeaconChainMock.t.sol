@@ -26,6 +26,14 @@ struct BeaconWithdrawal {
     bytes32[][] withdrawalFields;
 }
 
+struct BalanceUpdate {
+    uint64 oracleTimestamp;
+    BeaconChainProofs.StateRootProof stateRootProof;
+    uint40[] validatorIndices;
+    bytes[] validatorFieldsProofs;
+    bytes32[][] validatorFields;
+}
+
 contract BeaconChainMock is Test {
 
     Vm cheats = Vm(HEVM_ADDRESS);
@@ -68,6 +76,8 @@ contract BeaconChainMock is Test {
         uint balanceWei, 
         bytes memory withdrawalCreds
     ) public returns (uint40, CredentialsProofs memory) {
+        emit log_named_uint("- BeaconChain.newValidator with balance: ", balanceWei);
+
         // These checks mimic the checks made in the beacon chain deposit contract
         //
         // We sanity-check them here because this contract sorta acts like the 
@@ -104,6 +114,8 @@ contract BeaconChainMock is Test {
      * destination.
      */
     function exitValidator(uint40 validatorIndex) public returns (BeaconWithdrawal memory) {
+        emit log_named_uint("- BeaconChain.exitValidator: ", validatorIndex);
+
         Validator memory validator = validators[validatorIndex];
 
         // Get the withdrawal amount and destination
@@ -118,6 +130,39 @@ contract BeaconChainMock is Test {
         cheats.deal(destination, destination.balance + amountToWithdraw);
 
         return withdrawal;
+    }
+
+    /**
+     * Note: `delta` is expected to be a raw token amount. This method will convert the delta to Gwei
+     */
+    function updateBalance(uint40 validatorIndex, int delta) public returns (BalanceUpdate memory) {
+        delta /= int(GWEI_TO_WEI);
+        
+        emit log_named_uint("- BeaconChain.updateBalance for validator: ", validatorIndex);
+        emit log_named_int("- BeaconChain.updateBalance delta gwei: ", delta);
+        
+        // Apply delta and update validator balance in state
+        uint64 newBalance;
+        if (delta <= 0) {
+            newBalance = validators[validatorIndex].effectiveBalanceGwei - uint64(uint(-delta));
+        } else {
+            newBalance = validators[validatorIndex].effectiveBalanceGwei + uint64(uint(delta));
+        }
+        validators[validatorIndex].effectiveBalanceGwei = newBalance;
+        
+        // Generate balance update proof
+        Validator memory validator = validators[validatorIndex];
+        BalanceUpdate memory update = _genBalanceUpdateProof(validator);
+
+        return update;
+    }
+
+    function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
+        return validators[validatorIndex].effectiveBalanceGwei;
+    }
+
+    function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
+        return validators[validatorIndex].pubkeyHash;
     }
 
     /**
@@ -296,6 +341,54 @@ contract BeaconChainMock is Test {
         // Send the block root to the oracle
         oracle.setBlockRoot(withdrawal.oracleTimestamp, beaconBlockRoot);
         return withdrawal;
+    }
+
+    function _genBalanceUpdateProof(Validator memory validator) internal returns (BalanceUpdate memory) {
+        BalanceUpdate memory update;
+
+        update.validatorIndices = new uint40[](1);
+        update.validatorIndices[0] = validator.validatorIndex;
+
+        // Create validatorFields showing the balance update
+        update.validatorFields = new bytes32[][](1);
+        update.validatorFields[0] = new bytes32[](2 ** BeaconChainProofs.VALIDATOR_FIELD_TREE_HEIGHT);
+        update.validatorFields[0][BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = validator.pubkeyHash;
+        update.validatorFields[0][BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = 
+            bytes32(validator.withdrawalCreds);
+        update.validatorFields[0][BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = 
+            _toLittleEndianUint64(validator.effectiveBalanceGwei);
+
+        // Calculate beaconStateRoot using validator index and an empty proof:
+        update.validatorFieldsProofs = new bytes[](1);
+        update.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
+        bytes32 validatorRoot = Merkle.merkleizeSha256(update.validatorFields[0]);
+        uint index = _calcValProofIndex(validator.validatorIndex);
+
+        bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
+            proof: update.validatorFieldsProofs[0],
+            leaf: validatorRoot,
+            index: index
+        });
+
+        // Calculate blockRoot using beaconStateRoot and an empty proof:
+        bytes memory blockRootProof = new bytes(BLOCKROOT_PROOF_LEN);
+        bytes32 blockRoot = Merkle.processInclusionProofSha256({
+            proof: blockRootProof,
+            leaf: beaconStateRoot,
+            index: BeaconChainProofs.STATE_ROOT_INDEX
+        });
+
+        update.stateRootProof = BeaconChainProofs.StateRootProof({
+            beaconStateRoot: beaconStateRoot,
+            proof: blockRootProof
+        });
+
+        // Send the block root to the oracle and increment timestamp:
+        update.oracleTimestamp = uint64(nextTimestamp);
+        oracle.setBlockRoot(nextTimestamp, blockRoot);
+        nextTimestamp++;
+        
+        return update;
     }
 
     /**

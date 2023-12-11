@@ -12,7 +12,6 @@ contract DelegationTests is EigenLayerTestHelper {
     uint32 serveUntil = 100;
 
     address public registryCoordinator = address(uint160(uint256(keccak256("registryCoordinator"))));
-    StakeRegistryStub public stakeRegistry;
     uint8 defaultQuorumNumber = 0;
     bytes32 defaultOperatorId = bytes32(uint256(0));
 
@@ -24,12 +23,6 @@ contract DelegationTests is EigenLayerTestHelper {
 
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
-
-        initializeMiddlewares();
-    }
-
-    function initializeMiddlewares() public {
-        stakeRegistry = new StakeRegistryStub();
     }
 
     /// @notice testing if an operator can register to themselves.
@@ -333,7 +326,7 @@ contract DelegationTests is EigenLayerTestHelper {
     ///         cannot be intitialized multiple times
     function testCannotInitMultipleTimesDelegation() public cannotReinit {
         //delegation has already been initialized in the Deployer test contract
-        delegation.initialize(address(this), eigenLayerPauserReg, 0);
+        delegation.initialize(address(this), eigenLayerPauserReg, 0, initializedWithdrawalDelayBlocks);
     }
 
     /// @notice This function tests to ensure that a you can't register as a delegate multiple times
@@ -370,7 +363,7 @@ contract DelegationTests is EigenLayerTestHelper {
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegation.initialize(_attacker, eigenLayerPauserReg, 0);
+        delegation.initialize(_attacker, eigenLayerPauserReg, 0, initializedWithdrawalDelayBlocks);
     }
 
     /// @notice This function tests that the earningsReceiver cannot be set to address(0)
