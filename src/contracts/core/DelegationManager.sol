@@ -432,7 +432,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
 
         require(
             operatorSignature.expiry >= block.timestamp,
