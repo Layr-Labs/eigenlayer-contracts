@@ -77,7 +77,7 @@ To complete the deposit process, the Staker needs to prove that the validator's 
 #### `EigenPodManager.createPod`
 
 ```solidity
-function createPod() external
+function createPod() external returns (address)
 ```
 
 Allows a Staker to deploy an `EigenPod` instance, if they have not done so already.
