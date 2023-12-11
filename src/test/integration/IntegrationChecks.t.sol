@@ -18,6 +18,17 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
     }
 
+    function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
+        /// Deposit into strategies:
+        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
+        // the staker calls the relevant deposit function, depositing some subset of held assets
+        //
+        // ... check that some underlying tokens were transferred to the correct destination
+        //     and that the staker now has the expected amount of delegated shares in each strategy
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
+        assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+    }
+
     function check_Delegation_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory shares) internal {
         /// Delegate to an operator:
         //
@@ -76,7 +87,7 @@ contract IntegrationCheckUtils is IntegrationBase {
      */
     function check_Withdrawal_AsTokens_State(
         User staker,
-        address payable operator,
+        User operator,
         IDelegationManager.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares,
@@ -89,9 +100,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
 
-        // Checks specific to a valid operator
-        if (operator != payable(0)) {
-            assert_Snap_Unchanged_TokenBalances(User(operator), "operator token balances should not have changed");
+        // Checks specific to an operator that the Staker has delegated to
+        if (operator != User(payable(0))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(User(operator), "operator token balances should not have changed");
+            }
             assert_Snap_Unchanged_OperatorShares(User(operator), "operator shares should not have changed");
         }
     }
@@ -107,7 +120,7 @@ contract IntegrationCheckUtils is IntegrationBase {
      */
     function check_Withdrawal_AsShares_State(
         User staker,
-        address payable operator,
+        User operator,
         IDelegationManager.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
@@ -119,9 +132,10 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
 
         // Additional checks or handling for the non-user operator scenario
-        if (operator != payable(0)) {
-            // Perform checks relevant when there is a valid operator
-            assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
+        if (operator != User(User(payable(0)))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
+            }
             assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.shares, "operator should have received shares");
         }
     }

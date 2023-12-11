@@ -56,7 +56,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         // Complete withdrawal
         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[0].strategies, withdrawals[0].shares);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, payable(operator), withdrawals[0], strategies, shares, tokens, expectedTokens);
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, shares, tokens, expectedTokens);
 
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
@@ -163,7 +163,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
         uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[0].strategies, withdrawals[0].shares);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, payable(operator), withdrawals[0], strategies, shares, tokens, expectedTokens);
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, shares, tokens, expectedTokens);
 
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");

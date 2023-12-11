@@ -59,7 +59,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, payable(operator), withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
 
         // Check final state:
@@ -117,7 +117,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State(staker, payable(operator), withdrawals[i], strategies, shares);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
 
         // Check final state:
@@ -185,7 +185,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, payable(operator), withdrawals[i], withdrawStrats, withdrawShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares, tokens, expectedTokens);
         }
 
         // Check final state:
@@ -247,7 +247,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State(staker, payable(operator), withdrawals[i], withdrawStrats, withdrawShares);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares);
         }
 
         // Check final state:
