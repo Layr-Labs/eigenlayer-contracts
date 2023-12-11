@@ -20,7 +20,7 @@ The `EigenPodManager` is the entry point for this process, allowing Stakers to d
 
 `EigenPods` serve as the withdrawal credentials for one or more beacon chain validators controlled by a Staker. Their primary role is to validate beacon chain proofs for each of the Staker's validators. Beacon chain proofs are used to verify a validator's:
 * `EigenPod.verifyWithdrawalCredentials`: withdrawal credentials and effective balance
-* `EigenPod.verifyBalanceUpdate`: effective balance
+* `EigenPod.verifyBalanceUpdates`: current balance
 * `EigenPod.verifyAndProcessWithdrawals`: withdrawable epoch, and processed withdrawals within historical block summary
 
 See [/proofs](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
@@ -77,7 +77,7 @@ To complete the deposit process, the Staker needs to prove that the validator's 
 #### `EigenPodManager.createPod`
 
 ```solidity
-function createPod() external
+function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address)
 ```
 
 Allows a Staker to deploy an `EigenPod` instance, if they have not done so already.
@@ -110,6 +110,7 @@ function stake(
 ) 
     external 
     payable
+    onlyWhenNotPaused(PAUSED_NEW_EIGENPODS)
 ```
 
 Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, providing the credentials for the Staker's beacon chain validator. The `EigenPod.stake` method is called, which automatically calculates the correct withdrawal credentials for the pod and passes these to the deposit contract along with the 32 ETH.
@@ -119,7 +120,7 @@ Allows a Staker to deposit 32 ETH into the beacon chain deposit contract, provid
 * See [`EigenPod.stake`](#eigenpodstake)
 
 *Requirements*:
-* If deploying an `EigenPod`, pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
+* Pause status MUST NOT be set: `PAUSED_NEW_EIGENPODS`
 * See [`EigenPod.stake`](#eigenpodstake)
 
 ##### `EigenPod.stake`
@@ -213,29 +214,29 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
 At this point, a Staker/Pod Owner has deployed their `EigenPod`, started their beacon chain validator, and proven that its withdrawal credentials are pointed to their `EigenPod`. They are now free to delegate to an Operator (if they have not already), or start up + verify additional beacon chain validators that also withdraw to the same `EigenPod`.
 
 The primary method concerning actively restaked validators is:
-* [`EigenPod.verifyBalanceUpdate`](#eigenpodverifybalanceupdate)
+* [`EigenPod.verifyBalanceUpdates`](#eigenpodverifybalanceupdates)
 
-#### `EigenPod.verifyBalanceUpdate`
+#### `EigenPod.verifyBalanceUpdates`
 
 ```solidity
-function verifyBalanceUpdate(
+function verifyBalanceUpdates(
     uint64 oracleTimestamp,
-    uint40 validatorIndex,
+    uint40[] calldata validatorIndices,
     BeaconChainProofs.StateRootProof calldata stateRootProof,
-    BeaconChainProofs.BalanceUpdateProof calldata balanceUpdateProof,
-    bytes32[] calldata validatorFields
+    BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+    bytes32[][] calldata validatorFields
 ) 
     external 
     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE)
 ```
 
-Anyone (not just the Pod Owner) may call this method with a valid balance update proof to record an balance update in one of the `EigenPod's` validators.
+Anyone (not just the Pod Owner) may call this method with one or more valid balance update proofs to record beacon chain balance updates in one or more of the `EigenPod's` validators.
 
 A successful balance update proof updates the `EigenPod's` view of a validator's [effective balance](https://eth2book.info/capella/part2/incentives/balances/). If the validator's effective balance has changed, the difference is sent to `EigenPodManager.recordBeaconChainETHBalanceUpdate`, which updates the Pod Owner's shares. If the Pod Owner is delegated to an Operator, this delta is also sent to the `DelegationManager` to update the Operator's delegated beacon chain ETH shares.
 
 Note that if a validator's effective balance has decreased, this method will result in shares being removed from the Pod Owner in `EigenPodManager.recordBeaconChainETHBalanceUpdate`. This may cause the Pod Owner's balance to go negative in some cases, representing a "deficit" that must be repaid before any withdrawals can be processed. One example flow where this might occur is:
 * Pod Owner calls `DelegationManager.undelegate`, which queues a withdrawal in the `DelegationManager`. The Pod Owner's shares are set to 0 while the withdrawal is in the queue.
-* Pod Owner's beacon chain ETH balance decreases (maybe due to slashing), and someone provides a proof of this to `EigenPod.verifyBalanceUpdate`. In this case, the Pod Owner will have negative shares in the `EigenPodManager`.
+* Pod Owner's beacon chain ETH balance decreases (maybe due to slashing), and someone provides a proof of this to `EigenPod.verifyBalanceUpdates`. In this case, the Pod Owner will have negative shares in the `EigenPodManager`.
 * After a delay, the Pod Owner calls `DelegationManager.completeQueuedWithdrawal`. The negative shares are then repaid out of the withdrawn assets.
 
 For the validator whose balance should be updated, the caller must supply:
@@ -610,7 +611,7 @@ If the Pod Owner is not in undelegation limbo and is delegated to an Operator, t
 
 *Entry Points*:
 * `EigenPod.verifyWithdrawalCredentials`
-* `EigenPod.verifyBalanceUpdate`
+* `EigenPod.verifyBalanceUpdates`
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*:
@@ -690,6 +691,7 @@ function withdrawNonBeaconChainETHBalanceWei(
 ) 
     external 
     onlyEigenPodOwner
+    onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
 ```
 
 Allows the Pod Owner to withdraw ETH accidentally sent to the contract's `receive` function.
@@ -703,6 +705,7 @@ Withdrawals from this function are sent via the `DelayedWithdrawalRouter`, and c
 * Sends `amountToWithdraw` wei to [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
 
 *Requirements:*
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * Caller MUST be the Pod Owner
 * `amountToWithdraw` MUST NOT be greater than the amount sent to the contract's `receive` function
 * See [`DelayedWithdrawalRouter.createDelayedWithdrawal`](#delayedwithdrawalroutercreatedelayedwithdrawal)
@@ -717,6 +720,7 @@ function recoverTokens(
 ) 
     external 
     onlyEigenPodOwner
+    onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
 ```
 
 Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
@@ -725,5 +729,6 @@ Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
 * Calls `transfer` on each of the ERC20's in `tokenList`, sending the corresponding `amountsToWithdraw` to the `recipient`
 
 *Requirements:*
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * `tokenList` and `amountsToWithdraw` MUST have equal lengths
 * Caller MUST be the Pod Owner

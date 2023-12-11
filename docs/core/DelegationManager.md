@@ -51,6 +51,10 @@ Operators interact with the following functions to become an Operator:
 * [`DelegationManager.modifyOperatorDetails`](#modifyoperatordetails)
 * [`DelegationManager.updateOperatorMetadataURI`](#updateoperatormetadatauri)
 
+Once registered as an Operator, Operators can use an AVS's contracts to register with a specific AVS. The AVS will call these functions on the Operator's behalf:
+* [`DelegationManager.registerOperatorToAVS`](#registeroperatortoavs)
+* [`DelegationManager.deregisterOperatorFromAVS`](#deregisteroperatorfromavs)
+
 #### `registerAsOperator`
 
 ```solidity
@@ -101,6 +105,55 @@ Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state
 
 *Requirements*:
 * Caller MUST already be an Operator
+
+#### `registerOperatorToAVS`
+
+```solidity
+function registerOperatorToAVS(
+    address operator,
+    ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+```
+
+Allows the caller (an AVS) to register an `operator` with itself, given the provided signature is valid.
+
+*Effects*:
+* Sets the `operator's` status to `REGISTERED` for the AVS
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS`
+* `operator` MUST already be a registered Operator
+* `operator` MUST NOT already be registered with the AVS
+* `operatorSignature` must be a valid, unused, unexpired signature from the `operator`
+
+*As of M2*:
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+
+#### `deregisterOperatorFromAVS`
+
+```solidity
+function deregisterOperatorFromAVS(
+    address operator
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+```
+
+Allows the caller (an AVS) to deregister an `operator` with itself
+
+*Effects*:
+* Sets the `operator's` status to `UNREGISTERED` for the AVS
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS`
+* `operator` MUST already be registered with the AVS
+
+*As of M2*:
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+
+---
 
 ### Delegating to an Operator
 
@@ -348,7 +401,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 * `StrategyManager.depositIntoStrategy`
 * `StrategyManager.depositIntoStrategyWithSignature`
 * `EigenPod.verifyWithdrawalCredentials`
-* `EigenPod.verifyBalanceUpdate`
+* `EigenPod.verifyBalanceUpdates`
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for the `strategy` are increased.
@@ -372,7 +425,7 @@ function decreaseDelegatedShares(
 Called by the `EigenPodManager` when a Staker's shares decrease. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the decrease.
 
 *Entry Points*: This method may be called as a result of the following top-level function calls:
-* `EigenPod.verifyBalanceUpdate`
+* `EigenPod.verifyBalanceUpdates`
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's delegated balance for the `strategy` is decreased by `shares`
