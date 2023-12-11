@@ -17,4 +17,8 @@ contract EigenPodManagerHarness is EigenPodManager {
     function get_podOwnerShares(address podOwner) public view returns (int256) {
         return podOwnerShares[podOwner];
     }
+
+    function get_podByOwner(address podOwner) public view returns (IEigenPod) {
+        return ownerToPod[podOwner];
+    }
 }
