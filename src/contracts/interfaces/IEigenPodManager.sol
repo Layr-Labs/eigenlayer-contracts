@@ -179,6 +179,9 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the status of the proof service
     function proofServiceEnabled() external view returns (bool);
 
+    /// @notice turns on offchain proof service
+    function enableProofService() external;
+
     /// @notice updates the proof service caller
     function updateProofService(address caller, address feeRecipient) external; 
 

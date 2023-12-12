@@ -591,6 +591,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     /// @notice This test is to ensure that the partial withdrawal flow works correctly
     function testPartialWithdrawalFlow() public returns (IEigenPod) {
+        eigenPodManager.enableProofService();
         //this call is to ensure that validator 61068 has proven their withdrawalcreds
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");

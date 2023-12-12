@@ -95,4 +95,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
         uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external {}
+
+    function enableProofService() external {}
 }
