@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../munged/core/Slasher.sol";
+import "../../src/contracts/core/Slasher.sol";
 
 contract SlasherHarness is Slasher {
 

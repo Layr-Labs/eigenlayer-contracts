@@ -7,9 +7,9 @@ solc-select use 0.8.12
 
 certoraRun certora/harnesses/StrategyManagerHarness.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
-    certora/munged/pods/EigenPodManager.sol certora/munged/pods/EigenPod.sol certora/munged/pods/DelayedWithdrawalRouter.sol \
-    certora/munged/strategies/StrategyBase.sol certora/munged/core/DelegationManager.sol \
-    certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
+    src/contracts/pods/EigenPodManager.sol src/contracts/pods/EigenPod.sol src/contracts/pods/DelayedWithdrawalRouter.sol \
+    src/contracts/strategies/StrategyBase.sol src/contracts/core/DelegationManager.sol \
+    src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
     --optimistic_loop \
     --prover_args '-optimisticFallback true' \
