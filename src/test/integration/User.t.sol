@@ -225,14 +225,6 @@ contract User is Test {
 
         return (withdrawals);
     }
-    
-    function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        return _completeQueuedWithdrawal(withdrawal, true);
-    }
-
-    function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        return _completeQueuedWithdrawal(withdrawal, false);
-    }
 
     function completeWithdrawalsAsTokens(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
         emit log(_name(".completeWithdrawalsAsTokens"));
