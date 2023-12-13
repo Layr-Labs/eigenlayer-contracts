@@ -239,7 +239,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         // Delayed Withdrawal Router
-        uint withdrawalDelayBlocks = 7 days / 12 seconds;
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
