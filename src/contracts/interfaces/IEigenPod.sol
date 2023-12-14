@@ -221,7 +221,8 @@ interface IEigenPod {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
     function fulfillPartialWithdrawalProofRequest(
-        IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
+        IEigenPodManager.Journal calldata journal,
+        uint64 feeGwei,
         address feeRecipient
     ) external;
 }

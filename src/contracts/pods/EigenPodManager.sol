@@ -227,11 +227,10 @@ contract EigenPodManager is
     ) external onlyProofService nonReentrant {
         require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
-            (bytes32 imageID, bytes memory journalBytes) = parsePayload(callbackInfo[i].payload);
+            (bytes32 imageID, Journal memory journal, bytes memory journalBytes) = parsePayload(callbackInfo[i].payload);
 
             IRiscZeroVerifier(proofService.verifier).verify(callbackInfo[i].seal, imageID, callbackInfo[i].postStateDigest, sha256(journalBytes));
 
-            Journal memory journal = parseJournal(journalBytes);
             require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo[i].oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
             
             // these checks are verified in the snark, we add them here again as a sanity check
@@ -243,12 +242,12 @@ contract EigenPodManager is
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
             require(address(pod) == journal.podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");
             
-            pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
+            pod.fulfillPartialWithdrawalProofRequest(journal, callbackInfo[i].feeGwei, proofService.feeRecipient);
         }
     }
 
-    function parsePayload(bytes calldata payload) public returns(bytes32, bytes memory){
-        return (bytes32(payload[payload.length - 32:]), payload[0:payload.length - 32]);
+    function parsePayload(bytes calldata payload) public returns(bytes32, Journal memory, bytes memory){
+        return (bytes32(payload[payload.length - 32:]), parseJournal(payload[0:payload.length - 32]), payload[0:payload.length - 32]);
     }
 
     function parseJournal(bytes calldata journalBytes) public returns(Journal memory){

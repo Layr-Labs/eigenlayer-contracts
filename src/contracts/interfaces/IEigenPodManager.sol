@@ -201,12 +201,11 @@ interface IEigenPodManager is IPausable {
     function enableProofService() external;
 
     /// @notice updates the proof service caller
-    function updateProofService(address caller, address feeRecipient) external; 
+    function updateProofService(address caller, address feeRecipient, address verifier) external;
 
+    
     /// @notice callback for proof service
     function proofServiceCallback(
-        bytes32 blockRoot,
-        uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external;
 
