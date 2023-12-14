@@ -599,7 +599,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
 
         cheats.startPrank(defaultProver);
-        cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: fee must be less than or equal to maxFee"));
+        cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee"));
         eigenPodManager.proofServiceCallback(blockRoot, oracleTimestamp, withdrawalCallbackInfos);
         cheats.stopPrank();
     }

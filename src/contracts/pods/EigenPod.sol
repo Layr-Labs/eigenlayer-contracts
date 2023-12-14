@@ -434,16 +434,18 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
     /// @notice Called by the EigenPodManager to fulfill a partial withdrawal proof request
     function fulfillPartialWithdrawalProofRequest(
-        IEigenPodManager.WithdrawalCallbackInfo calldata withdrawalCallbackInfo,
+        IEigenPodManager.Journal calldata journal,
+        uint64 feeGwei,
         address feeRecipient
     ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_WITHDRAWAL) {
-        require(withdrawalCallbackInfo.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
-        require(mostRecentWithdrawalTimestamp < withdrawalCallbackInfo.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
+
+        require(journal.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
+        require(mostRecentWithdrawalTimestamp < journal.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
 
-        uint256 provenPartialWithdrawalSumGwei = withdrawalCallbackInfo.provenPartialWithdrawalSumGwei;
-        require(sumOfPartialWithdrawalsClaimedGwei <= provenPartialWithdrawalSumGwei - withdrawalCallbackInfo.feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
-        provenPartialWithdrawalSumGwei -= withdrawalCallbackInfo.feeGwei;
+        uint256 provenPartialWithdrawalSumGwei = journal.provenPartialWithdrawalSumGwei;
+        require(sumOfPartialWithdrawalsClaimedGwei <= provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        provenPartialWithdrawalSumGwei -= feeGwei;
 
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
@@ -451,10 +453,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         sumOfPartialWithdrawalsClaimedGwei = 0;
         _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
     
-        mostRecentWithdrawalTimestamp = withdrawalCallbackInfo.endTimestamp;
+        mostRecentWithdrawalTimestamp = journal.endTimestamp;
 
         //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), withdrawalCallbackInfo.feeGwei);
+        AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
     }
 
     /*******************************************************************************

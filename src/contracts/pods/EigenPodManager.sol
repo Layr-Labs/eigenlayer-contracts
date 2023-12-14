@@ -7,6 +7,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../interfaces/IBeaconChainOracle.sol";
+import "../interfaces/IRiscZeroVerifier.sol";
 
 import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
@@ -220,23 +221,47 @@ contract EigenPodManager is
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
 
-    /// @notice Called by proving service to fulfill a partial withdrawal proof request
+    /// @notice Called by proving service to fulfill partial withdrawal proof requests
     function proofServiceCallback(
-        bytes32 blockRoot,
-        uint64 oracleTimestamp,
         WithdrawalCallbackInfo[] calldata callbackInfo
     ) external onlyProofService nonReentrant {
         require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
-        require(blockRoot == getBlockRootAtTimestamp(oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
         for(uint256 i = 0; i < callbackInfo.length; i++) {
+            (bytes32 imageID, bytes memory journalBytes) = parsePayload(callbackInfo[i].payload);
+
+            IRiscZeroVerifier(proofService.verifier).verify(callbackInfo[i].seal, imageID, callbackInfo[i].postStateDigest, sha256(journalBytes));
+
+            Journal memory journal = parseJournal(journalBytes);
+            require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo[i].oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
+            
             // these checks are verified in the snark, we add them here again as a sanity check
-            require(oracleTimestamp >= callbackInfo[i].endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
-            require(callbackInfo[i].feeGwei <= callbackInfo[i].maxFeeGwei, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
-            IEigenPod pod = ownerToPod[callbackInfo[i].podOwner];
+            require(callbackInfo[i].oracleTimestamp >= journal.endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
+            require(callbackInfo[i].feeGwei <= journal.maxFeeGwei, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
+            
+            //ensure the correct pod is being called
+            IEigenPod pod = ownerToPod[journal.podOwner];
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
-            require(address(pod) == callbackInfo[i].podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");
+            require(address(pod) == journal.podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");
+            
             pod.fulfillPartialWithdrawalProofRequest(callbackInfo[i], proofService.feeRecipient);
         }
+    }
+
+    function parsePayload(bytes calldata payload) public returns(bytes32, bytes memory){
+        return (bytes32(payload[payload.length - 32:]), payload[0:payload.length - 32]);
+    }
+
+    function parseJournal(bytes calldata journalBytes) public returns(Journal memory){
+        return Journal({
+            provenPartialWithdrawalSumGwei: abi.decode(journalBytes[0:8], (uint64)),
+            blockRoot: abi.decode(journalBytes[8:40], (bytes32)),
+            podAddress: abi.decode(journalBytes[40:60], (address)),
+            podOwner: abi.decode(journalBytes[60:80], (address)),
+            mostRecentWithdrawalTimestamp: abi.decode(journalBytes[80:88], (uint64)),
+            endTimestamp: abi.decode(journalBytes[88:96], (uint64)),
+            maxFeeGwei: abi.decode(journalBytes[96:104], (uint64)),
+            nonce: abi.decode(journalBytes[104:112], (uint64))
+        });
     }
 
     /// @notice enables partial withdrawal proving via offchain proofs
@@ -247,10 +272,11 @@ contract EigenPodManager is
     }
 
     /// @notice changes the proof service related information
-    function updateProofService(address caller, address feeRecipient) external onlyOwner {
+    function updateProofService(address caller, address feeRecipient, address verifier) external onlyOwner {
         proofService = ProofService({
             caller: caller,
-            feeRecipient: feeRecipient
+            feeRecipient: feeRecipient,
+            verifier: verifier
         });
         emit ProofServiceUpdated(proofService);
     }
