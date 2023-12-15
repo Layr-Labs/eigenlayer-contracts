@@ -16,5 +16,6 @@ certoraRun certora/munged/strategies/StrategyBase.sol \
     --loop_iter 3 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
     --link StrategyBase:strategyManager=StrategyManager \
+    --parametric_contracts StrategyBase \
     $RULE \
     --msg "StrategyBase $1 $2" \

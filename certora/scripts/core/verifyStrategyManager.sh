@@ -14,6 +14,7 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     --optimistic_loop \
     --prover_args '-optimisticFallback true' \
     --optimistic_hashing \
+    --parametric_contracts StrategyManagerHarness \
     $RULE \
     --loop_iter 2 \
     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \

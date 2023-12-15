@@ -170,7 +170,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            GOERLI_GENESIS_TIME
+            0
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
@@ -189,6 +189,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
+        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -197,7 +198,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
-                0 // initialPausedStatus
+                0 /* initialPausedStatus */,
+                withdrawalDelayBlocks
             )
         );
         // StrategyManager
@@ -229,7 +231,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max, // maxPods
+                type(uint).max, // maxPods
                 address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
@@ -237,7 +239,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             )
         );
         // Delayed Withdrawal Router
-        uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation),
@@ -328,7 +329,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
      * 
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser() internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -339,11 +340,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Create User contract based on deposit type:
         User user;
         if (userType == DEFAULT) {
-            user = new User();
+            user = new User(name);
         } else if (userType == ALT_METHODS) {
             // User will use nonstandard methods like:
             // `delegateToBySignature` and `depositIntoStrategyWithSignature`
-            user = User(new User_AltMethods());
+            user = User(new User_AltMethods(name));
         } else {
             revert("_randUser: unimplemented userType");
         }
@@ -459,6 +460,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
         // Hash `random` with itself so the next value we generate is different
         random = keccak256(abi.encodePacked(random));
         return min + value;
+    }
+
+    function _randBool() internal returns (bool) {
+        return _randUint({ min: 0, max: 1 }) == 0;
     }
 
     function _randAssetType() internal returns (uint) {

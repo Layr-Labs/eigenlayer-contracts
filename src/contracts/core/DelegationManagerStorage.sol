@@ -25,6 +25,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
         keccak256("DelegationApproval(address staker,address operator,bytes32 salt,uint256 expiry)");
 
+    /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
+    bytes32 public constant OPERATOR_AVS_REGISTRATION_TYPEHASH =
+        keccak256("OperatorAVSRegistration(address operator,address avs,uint256 expiry)");
+
     /**
      * @notice Original EIP-712 Domain separator for this contract.
      * @dev The domain separator may change in the event of a fork that modifies the ChainID.
@@ -89,8 +93,16 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
-    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    IStakeRegistryStub public stakeRegistry;
+    /// @notice Deprecated from an old Goerli release
+    /// See conversation here: https://github.com/Layr-Labs/eigenlayer-contracts/pull/365/files#r1417525270
+    address private __deprecated_stakeRegistry;
+
+    /// @notice Mapping: AVS => operator => enum of operator status to the AVS
+    mapping(address => mapping(address => OperatorAVSRegistrationStatus)) public avsOperatorStatus;
+
+    /// @notice Mapping: operator => 32-byte salt => whether or not the salt has already been used by the operator.
+    /// @dev Salt is used in the `registerOperatorToAVS` function.
+    mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
@@ -103,5 +115,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 }

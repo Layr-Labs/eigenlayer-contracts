@@ -27,8 +27,8 @@ contract StrategyManagerMock is
     ISlasher public slasher;
     address public strategyWhitelister;
 
-    IStrategy[] public strategiesToReturn;
-    uint256[] public sharesToReturn;
+    mapping(address => IStrategy[]) public strategiesToReturn;
+    mapping(address => uint256[]) public sharesToReturn;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
@@ -67,21 +67,22 @@ contract StrategyManagerMock is
 
     /**
      * @notice mocks the return value of getDeposits
+     * @param staker staker whose deposits are being mocked
      * @param _strategiesToReturn strategies to return in getDeposits
      * @param _sharesToReturn shares to return in getDeposits
      */
-    function setDeposits(IStrategy[] calldata _strategiesToReturn, uint256[] calldata _sharesToReturn) external {
+    function setDeposits(address staker, IStrategy[] calldata _strategiesToReturn, uint256[] calldata _sharesToReturn) external {
         require(_strategiesToReturn.length == _sharesToReturn.length, "StrategyManagerMock: length mismatch");
-        strategiesToReturn = _strategiesToReturn;
-        sharesToReturn = _sharesToReturn;
+        strategiesToReturn[staker] = _strategiesToReturn;
+        sharesToReturn[staker] = _sharesToReturn;
     }
 
     /**
-     * @notice Get all details on the depositor's deposits and corresponding shares
-     * @return (depositor's strategies, shares in these strategies)
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @return (staker's strategies, shares in these strategies)
      */
-    function getDeposits(address /*depositor*/) external view returns (IStrategy[] memory, uint256[] memory) {
-        return (strategiesToReturn, sharesToReturn);
+    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
 
     /// @notice Returns the array of strategies in which `staker` has nonzero shares

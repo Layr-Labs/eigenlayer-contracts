@@ -348,7 +348,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function withdrawNonBeaconChainETHBalanceWei(
         address recipient,
         uint256 amountToWithdraw
-    ) external onlyEigenPodOwner {
+    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
         require(
             amountToWithdraw <= nonBeaconChainETHBalanceWei,
             "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei"
@@ -363,7 +363,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IERC20[] memory tokenList,
         uint256[] memory amountsToWithdraw,
         address recipient
-    ) external onlyEigenPodOwner {
+    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
         require(
             tokenList.length == amountsToWithdraw.length,
             "EigenPod.recoverTokens: tokenList and amountsToWithdraw must be same length"
