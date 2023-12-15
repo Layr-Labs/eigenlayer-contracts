@@ -6,10 +6,10 @@ fi
 solc-select use 0.8.12
 
 certoraRun certora/harnesses/EigenPodHarness.sol \
-    certora/munged/core/DelegationManager.sol certora/munged/pods/EigenPodManager.sol \
-    certora/munged/core/Slasher.sol certora/munged/permissions/PauserRegistry.sol \
-    certora/munged/core/StrategyManager.sol \
-    certora/munged/strategies/StrategyBase.sol \
+    src/contracts/core/DelegationManager.sol src/contracts/pods/EigenPodManager.sol \
+    src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
+    src/contracts/core/StrategyManager.sol \
+    src/contracts/strategies/StrategyBase.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
     lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
     --verify EigenPodHarness:certora/specs/pods/EigenPod.spec \

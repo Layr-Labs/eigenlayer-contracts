@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../munged/core/DelegationManager.sol";
+import "../../src/contracts/core/DelegationManager.sol";
 
 contract DelegationManagerHarness is DelegationManager {
 

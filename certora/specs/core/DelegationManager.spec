@@ -54,9 +54,9 @@ methods {
     function get_stakerDelegateableShares(address,address) external returns (uint256) envfree;
 
     //envfree functions
-    function delegatedTo(address staker) external returns (address) envfree;
-    function operatorDetails(address operator) external returns (IDelegationManager.OperatorDetails memory) envfree;
-    function earningsReceiver(address operator) external returns (address) envfree;
+    function delegatedTo(address) external returns (address) envfree;
+    function operatorDetails(address) external returns (IDelegationManager.OperatorDetails memory) envfree;
+    function earningsReceiver(address) external returns (address) envfree;
     function delegationApprover(address operator) external returns (address) envfree;
     function stakerOptOutWindowBlocks(address operator) external returns (uint256) envfree;
     function operatorShares(address operator, address strategy) external returns (uint256) envfree;

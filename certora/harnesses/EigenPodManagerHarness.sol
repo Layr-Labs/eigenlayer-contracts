@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../munged/pods/EigenPodManager.sol";
+import "../../src/contracts/pods/EigenPodManager.sol";
 
 contract EigenPodManagerHarness is EigenPodManager {
 

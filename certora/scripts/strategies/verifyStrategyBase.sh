@@ -5,11 +5,11 @@ fi
 
 solc-select use 0.8.12
 
-certoraRun certora/munged/strategies/StrategyBase.sol \
+certoraRun src/contracts/strategies/StrategyBase.sol \
     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
-    certora/munged/core/StrategyManager.sol \
-    certora/munged/permissions/PauserRegistry.sol \
-    certora/munged/core/Slasher.sol \
+    src/contracts/core/StrategyManager.sol \
+    src/contracts/permissions/PauserRegistry.sol \
+    src/contracts/core/Slasher.sol \
     --verify StrategyBase:certora/specs/strategies/StrategyBase.spec \
     --optimistic_loop \
     --prover_args '-optimisticFallback true -recursionErrorAsAssert false -recursionEntryLimit 3' \
