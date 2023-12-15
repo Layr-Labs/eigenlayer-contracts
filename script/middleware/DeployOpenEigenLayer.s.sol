@@ -77,7 +77,7 @@ contract DeployOpenEigenLayer is Script, Test {
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
-        // deploy proxy admin for ability to upgrade proxy contracts
+        // deploy proxy admin for the ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry

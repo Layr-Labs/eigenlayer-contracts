@@ -259,7 +259,7 @@ For the validator whose balance should be updated, the caller must supply:
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE`
 * Balance updates should only be made before a validator has fully exited. If the validator has exited, any further proofs should follow the `verifyAndProcessWithdrawals` path.
-    * This is to prevent someone providing a "balance update" on an exited validator that "proves" a balance of 0, when we want to process that update as a withdrawal instead.
+    * This is to prevent someone from providing a "balance update" on an exited validator that "proves" a balance of 0, when we want to process that update as a withdrawal instead.
 * `oracleTimestamp`:
     * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
     * MUST be newer than the validator's `mostRecentBalanceUpdateTimestamp`

@@ -8,12 +8,12 @@ This document aims to describe and summarize how actively validated services (AV
 - enabling AVS to freeze operators for the purpose of slashing (the corresponding unfreeze actions are determined by the veto committee).
 
 <p align="center"><b><font size="+1">
-🚧 ** The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
+🚧 ** The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. 🚧
 </font></b><p>
 
 We are currently in the process of implementing the API for payment flow from AVSs to operators in EigenLayer. Details of this API will be added to this document in the near future.
 
-The following figure summarizes scope of this document: 
+The following figure summarizes the scope of this document: 
 ![Doc Outline](../images/middleware_outline_doc.png)
 
 
@@ -23,7 +23,7 @@ In designing EigenLayer, the EigenLabs team aspired to make minimal assumptions 
 ## Important Terminology
 - **Tasks** - A task in EigenLayer is the smallest unit of work that operators commit to perform when serving an AVS. These tasks may be associated with one or more slashing conditions applicable to the AVS. 
 - **Strategies** - A strategy in EigenLayer is a contract that holds staker deposits, i.e. it controls one or more asset(s) that can be restaked. At launch EigenLayer will feature only simple strategies which may hold a single token. However, EigenLayer's strategy design is flexible and open, and in the future strategies could be deployed which implement more complex logic, including DeFi integrations. 
-- **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such trait could be stETH stakers or native stakers.  The purpose of having a quorum is that an AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
+- **Quorums** - A quorum in EigenLayer is a grouping of specific kinds of stake who opt into an AVS while satisfying a particular trait. Examples of such traits could be stETH stakers or native stakers.  The purpose of having a quorum is that an AVS can customize the makeup of their security offering by choosing which kinds of stake/security they would like to utilize.  
 
 # Key Design Considerations
 1. *Decomposition into "Tasks"*: <br/>
