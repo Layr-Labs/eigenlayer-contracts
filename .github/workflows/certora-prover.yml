@@ -51,8 +51,6 @@ jobs:
           chmod +x /usr/local/bin/solc
       - name: Verify rule ${{ matrix.params }}
         run: |
-          touch certora/applyHarness.patch
-          make -C certora munged
           bash ${{ matrix.params }}
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
