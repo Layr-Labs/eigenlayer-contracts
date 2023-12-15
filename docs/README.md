@@ -95,7 +95,7 @@ An Operator is a user who helps run the software built on top of EigenLayer (AVS
 *Flows:*
 * User can **register** as an Operator via the DelegationManager
 * Operators can **deposit** and **withdraw** assets just like Stakers can
-* Operators can opt in to providing services for an AVS using that AVS's middleware contracts. See the [EigenLayer middleware][middleware-repo] repo for now details.
+* Operators can opt in to providing services for an AVS using that AVS's middleware contracts. See the [EigenLayer middleware][middleware-repo] repo for more details.
 
 *Unimplemented as of M2:*
 * Operators earn fees as part of the services they provide
