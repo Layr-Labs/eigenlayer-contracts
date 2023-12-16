@@ -55,8 +55,10 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeWithdrawalAsShares(withdrawals[0]);
-        check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], strategies, shares);
+        }
 
         // 5. Delegate to a new operator
         staker.delegateTo(operator2);
