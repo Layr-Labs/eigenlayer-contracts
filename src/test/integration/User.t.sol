@@ -173,6 +173,14 @@ contract User is Test {
 
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         delegationManager.undelegate(address(this));
+
+        for (uint i = 0; i < expectedWithdrawals.length; i++) {
+            emit log("expecting withdrawal:");
+            emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
+            emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
+            emit log_named_uint("shares: ", expectedWithdrawals[i].shares[0]);
+        }
+        
         return expectedWithdrawals;
     }
 
@@ -324,9 +332,10 @@ contract User is Test {
         IDelegationManager.Withdrawal[] memory expectedWithdrawals = new IDelegationManager.Withdrawal[](strategies.length);
         address delegatedTo = delegationManager.delegatedTo(staker);
         uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
-        IStrategy[] memory singleStrategy = new IStrategy[](1);
-        uint256[] memory singleShares = new uint256[](1);
+        
         for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy[] memory singleStrategy = new IStrategy[](1);
+            uint256[] memory singleShares = new uint256[](1);
             singleStrategy[0] = strategies[i];
             singleShares[0] = shares[i];
             expectedWithdrawals[i] = IDelegationManager.Withdrawal({
@@ -338,7 +347,6 @@ contract User is Test {
                 strategies: singleStrategy,
                 shares: singleShares
             });
-            emit log_named_bytes("expected withdrawals[i]", abi.encode(expectedWithdrawals[i]));
         }
 
         return expectedWithdrawals;

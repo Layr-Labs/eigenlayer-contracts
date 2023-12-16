@@ -57,7 +57,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
         }
 
         // Check Final State
@@ -114,7 +114,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], strategies, shares);
+
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
         }
 
         // Check final state:
@@ -168,7 +169,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
         }
 
         // Check Final State
@@ -220,7 +221,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], strategies, shares);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
         }
 
         // Check final state:
