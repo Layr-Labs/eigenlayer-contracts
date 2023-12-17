@@ -242,12 +242,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
-        // if no delegatable shares, return zero root, and don't queue a withdrawal
+        // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
             withdrawalRoots = new bytes32[](0);
         } else {
             withdrawalRoots = new bytes32[](strategies.length);
-            for (uint i = 0; i < strategies.length; i++) {
+            for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy[] memory singleStrategy = new IStrategy[](1);
                 uint256[] memory singleShare = new uint256[](1);
                 singleStrategy[0] = strategies[i];
