@@ -232,7 +232,7 @@ contract EigenPodManager is
         for(uint256 i = 0; i < callbackInfo.length; i++) {
             (bytes32 imageID, Journal memory journal, bytes memory journalBytes) = parsePayload(callbackInfo[i].payload);
 
-            IRiscZeroVerifier(proofService.verifier).verify(callbackInfo[i].seal, imageID, callbackInfo[i].postStateDigest, sha256(journalBytes));
+            require(IRiscZeroVerifier(proofService.verifier).verify(callbackInfo[i].seal, imageID, callbackInfo[i].postStateDigest, sha256(journalBytes)), "EigenPodManager.proofServiceCallback: invalid proof");
 
             require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo[i].oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
             
