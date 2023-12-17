@@ -12,6 +12,7 @@ import "src/test/harnesses/EigenPodManagerWrapper.sol";
 import "src/test/mocks/EigenPodMock.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/mocks/BeaconChainOracleMock.sol";
+import "src/test/mocks/RiscZeroVerifierMock.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     // Contracts Under Test: EigenPodManager
@@ -568,8 +569,9 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
 
     function setUp() virtual override public {
         super.setUp();
+        RiscZeroVerifierMock defaultVerifier = new RiscZeroVerifierMock();
         cheats.startPrank(eigenPodManager.owner());
-        eigenPodManager.updateProofService(defaultProver, defaultProver);
+        eigenPodManager.updateProofService(defaultProver, defaultProver, address(defaultVerifier));
         cheats.stopPrank();
 
         beaconChainOracle.setOracleBlockRootAtTimestamp(blockRoot);
@@ -578,13 +580,13 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.assume(oracleTimestamp < endTimestamp);
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, address(this), oracleTimestamp, endTimestamp, 0, 0, 0);
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, 0, new bytes(0), bytes32(0), new bytes(0));
         IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
         withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp"));
-        eigenPodManager.proofServiceCallback(blockRoot, oracleTimestamp, withdrawalCallbackInfos);
+        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
         cheats.stopPrank();
     }
 
@@ -594,18 +596,45 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(defaultStaker, address(this), oracleTimestamp, endTimestamp, 0, fee, maxFee);
+        bytes memory payload = _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, maxFee, bytes32(0), blockRoot);
+
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, fee, new bytes(0), bytes32(0), payload);
         IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
         withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee"));
-        eigenPodManager.proofServiceCallback(blockRoot, oracleTimestamp, withdrawalCallbackInfos);
+        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
         cheats.stopPrank();
     }
 
+    function testFuzz_proofCallback_revert_incorrectBlockRoot(bytes32 incorrectBlockRoot) public {
+        cheats.assume(incorrectBlockRoot != blockRoot);
 
+        _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
+        bytes memory payload = _assembleJournal(defaultPod, defaultStaker, 0, 0, 0, bytes32(0), incorrectBlockRoot);
 
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, 0, new bytes(0), bytes32(0), payload);
+        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
+        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
+
+        cheats.startPrank(defaultProver);
+        cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp"));
+        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
+        cheats.stopPrank();
+    }
+
+    function _assembleJournal(
+        IEigenPod eigenPod, 
+        address podOwner, 
+        uint64 mostRecentWithdrawalTimestamp,
+        uint64 endTimestamp, 
+        uint64 maxFee,
+        bytes32 imageID,
+        bytes32 blockRoot
+    ) internal returns (bytes memory) {
+       return abi.encode(uint64(0), blockRoot, address(eigenPod), podOwner, mostRecentWithdrawalTimestamp, endTimestamp, maxFee, uint64(0), imageID);
+    }
 }
 

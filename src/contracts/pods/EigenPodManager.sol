@@ -13,6 +13,8 @@ import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title The contract used for creating and managing EigenPods
  * @author Layr Labs, Inc.
@@ -29,7 +31,8 @@ contract EigenPodManager is
     Pausable,
     EigenPodPausingConstants,
     EigenPodManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    Test
 {
     
     modifier onlyEigenPod(address podOwner) {
@@ -247,20 +250,8 @@ contract EigenPodManager is
     }
 
     function parsePayload(bytes calldata payload) public returns(bytes32, Journal memory, bytes memory){
-        return (bytes32(payload[payload.length - 32:]), parseJournal(payload[0:payload.length - 32]), payload[0:payload.length - 32]);
-    }
-
-    function parseJournal(bytes calldata journalBytes) public returns(Journal memory){
-        return Journal({
-            provenPartialWithdrawalSumGwei: abi.decode(journalBytes[0:8], (uint64)),
-            blockRoot: abi.decode(journalBytes[8:40], (bytes32)),
-            podAddress: abi.decode(journalBytes[40:60], (address)),
-            podOwner: abi.decode(journalBytes[60:80], (address)),
-            mostRecentWithdrawalTimestamp: abi.decode(journalBytes[80:88], (uint64)),
-            endTimestamp: abi.decode(journalBytes[88:96], (uint64)),
-            maxFeeGwei: abi.decode(journalBytes[96:104], (uint64)),
-            nonce: abi.decode(journalBytes[104:112], (uint64))
-        });
+       (Journal memory journal, bytes32 imageId) = abi.decode(payload, (Journal, bytes32));
+        return (imageId, journal, payload[0:payload.length - 32]);
     }
 
     /// @notice enables partial withdrawal proving via offchain proofs
