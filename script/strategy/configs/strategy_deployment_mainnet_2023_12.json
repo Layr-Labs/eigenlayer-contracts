@@ -14,7 +14,7 @@
         },
         {
             "token_address": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
-            "token_symbol": "oETH",
+            "token_symbol": "OETH",
             "max_per_deposit": 200000000000000000000000,
             "max_deposits": 200000000000000000000000
         },

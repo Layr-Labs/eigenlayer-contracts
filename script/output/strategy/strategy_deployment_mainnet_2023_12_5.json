@@ -1,0 +1,14 @@
+{
+  "chainInfo": {
+    "chainId": 1,
+    "deploymentBlock": 18721129
+  },
+  "strategies": {
+    "ETHx": "0x9d7eD45EE2E8FC5482fa2428f15C971e6369011d",
+    "ankrETH": "0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff",
+    "OETH": "0xa4C637e0F704745D182e4D38cAb7E7485321d059",
+    "osETH": "0x57ba429517c3473B6d34CA9aCd56c0e735b94c02",
+    "swETH": "0x0Fe4F44beE93503346A3Ac9EE5A26b130a5796d6",
+    "wBETH": "0x7CA911E83dabf90C90dD3De5411a10F1A6112184"
+  }
+}
