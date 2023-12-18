@@ -56,8 +56,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
-        for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            uint256[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
@@ -115,7 +115,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
 
-        for (uint i = 0; i < withdrawals.length; i++) {
+        for (uint256 i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
@@ -182,8 +182,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         // 4. Complete withdrawals
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        for (uint i = 0; i < withdrawals.length; i++) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            uint256[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawStrats, withdrawShares, tokens, expectedTokens);
         }

@@ -52,11 +52,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that each withdrawal was successfully enqueued, that the returned roots
         //     match the hashes of each withdrawal, and that the staker and operator have
         //     reduced shares.
-        assert_AllWithdrawalsPending(withdrawalRoots, "staker withdrawals should now be pending");
-        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-        assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
+        assert_AllWithdrawalsPending(withdrawalRoots,
+            "check_QueuedWithdrawal_State: staker withdrawals should now be pending");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
+            "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
+            "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove operator shares");
+        assert_Snap_Removed_StakerShares(staker, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove staker shares");
     }
 
     function check_Undelegate_State(
@@ -72,13 +77,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqeuued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
-        assertEq(withdrawalRoots.length, 1, "should only be one withdrawal root");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawl should match returned root");
-        assert_AllWithdrawalsPending(withdrawalRoots, "stakers withdrawal should now be pending");
-        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by 1");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-        assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
+        assertFalse(delegationManager.isDelegated(address(staker)),
+            "check_Undelegate_State: staker should not be delegated");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
+            "check_Undelegate_State: calculated withdrawl should match returned root");
+        assert_AllWithdrawalsPending(withdrawalRoots,
+            "check_Undelegate_State: stakers withdrawal should now be pending");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
+            "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+            "check_Undelegate_State: failed to remove operator shares");
+        assert_Snap_Removed_StakerShares(staker, strategies, shares,
+            "check_Undelegate_State: failed to remove staker shares");
     }
 
     function check_Withdrawal_AsTokens_State(

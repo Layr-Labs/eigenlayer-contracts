@@ -229,14 +229,14 @@ function undelegate(
 ) 
     external 
     onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-    returns (bytes32 withdrawalRoot)
+    returns (bytes32[] memory withdrawalRoots)
 ```
 
-`undelegate` can be called by a Staker to undelegate themselves, or by a Staker's delegated Operator (or that Operator's `delegationApprover`). Undelegation (i) queues a withdrawal on behalf of the Staker for all their delegated shares, and (ii) decreases the Operator's delegated shares according to the amounts and strategies being withdrawn.
+`undelegate` can be called by a Staker to undelegate themselves, or by a Staker's delegated Operator (or that Operator's `delegationApprover`). Undelegation (i) queues withdrawals on behalf of the Staker for all their delegated shares, and (ii) decreases the Operator's delegated shares according to the amounts and strategies being withdrawn.
 
-If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue.
+If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue - and an individual withdrawal is queued for each strategy removed.
 
-The withdrawal can be completed by the Staker after `withdrawalDelayBlocks`, and does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+The withdrawals can be completed by the Staker after `withdrawalDelayBlocks`. This does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once withdrawals are completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
 Note that becoming an Operator is irreversible! Although Operators can withdraw, they cannot use this method to undelegate from themselves.
 
@@ -244,9 +244,9 @@ Note that becoming an Operator is irreversible! Although Operators can withdraw,
 * Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.
 * The Staker is undelegated from the Operator
 * If the Staker has no delegatable shares, there is no withdrawal queued or further effects
-* A `Withdrawal` is queued for the Staker, tracking the strategies and shares being withdrawn
-    * The Staker's withdrawal nonce is increased
-    * The hash of the `Withdrawal` is marked as "pending"
+* For each strategy being withdrawn, a `Withdrawal` is queued for the Staker:
+    * The Staker's withdrawal nonce is increased by 1 for each `Withdrawal`
+    * The hash of each `Withdrawal` is marked as "pending"
 * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
 * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 

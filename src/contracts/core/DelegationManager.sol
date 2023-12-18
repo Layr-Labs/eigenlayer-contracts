@@ -217,7 +217,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
-    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
+    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -231,8 +231,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Gather strategies and shares to remove from staker/operator during undelegation
         // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = getDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
 
         // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
@@ -243,19 +242,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
-        // if no delegatable shares, return zero root, and don't queue a withdrawal
+        // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
-            return bytes32(0);
+            withdrawalRoots = new bytes32[](0);
         } else {
-            // Remove all strategies/shares from staker and operator and place into queue
-            return _removeSharesAndQueueWithdrawal({
-                staker: staker,
-                operator: operator,
-                withdrawer: staker,
-                strategies: strategies,
-                shares: shares
-            });
+            withdrawalRoots = new bytes32[](strategies.length);
+            for (uint256 i = 0; i < strategies.length; i++) {
+                IStrategy[] memory singleStrategy = new IStrategy[](1);
+                uint256[] memory singleShare = new uint256[](1);
+                singleStrategy[0] = strategies[i];
+                singleShare[0] = shares[i];
+
+                withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                    staker: staker,
+                    operator: operator,
+                    withdrawer: staker,
+                    strategies: singleStrategy,
+                    shares: singleShare
+                });
+            }
         }
+
+        return withdrawalRoots;
     }
 
      /**

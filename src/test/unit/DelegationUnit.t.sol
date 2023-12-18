@@ -2791,9 +2791,9 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, delegationManager.delegatedTo(staker));
         cheats.prank(staker);
-        bytes32 withdrawalRoot = delegationManager.undelegate(staker);
+        bytes32[] memory withdrawalRoots = delegationManager.undelegate(staker);
 
-        assertEq(withdrawalRoot, bytes32(0), "withdrawalRoot should be zero");
+        assertEq(withdrawalRoots.length, 0, "withdrawalRoot should be an empty array");
         assertEq(
             delegationManager.delegatedTo(staker),
             address(0),
@@ -2828,9 +2828,9 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerUndelegated(staker, defaultOperator);
         cheats.prank(caller);
-        bytes32 withdrawalRoot = delegationManager.undelegate(staker);
+        bytes32[] memory withdrawalRoots = delegationManager.undelegate(staker);
 
-        assertEq(withdrawalRoot, bytes32(0), "withdrawalRoot should be zero");
+        assertEq(withdrawalRoots.length, 0, "withdrawalRoot should be an empty array");
         assertEq(
             delegationManager.delegatedTo(staker),
             address(0),
@@ -3011,7 +3011,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
+            /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
             operator: defaultOperator,
@@ -3057,7 +3057,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
+            /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
             operator: defaultOperator,

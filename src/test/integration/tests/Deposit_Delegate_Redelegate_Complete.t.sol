@@ -55,8 +55,10 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
-        staker.completeWithdrawalAsShares(withdrawals[0]);
-        check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[0], strategies, shares);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares);
+        }
 
         // 5. Delegate to a new operator
         staker.delegateTo(operator2);
@@ -76,7 +78,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawals[i].shares, tokens, expectedTokens);
         }
     }
 
