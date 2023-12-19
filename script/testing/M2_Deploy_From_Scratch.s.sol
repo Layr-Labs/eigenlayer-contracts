@@ -398,8 +398,9 @@ contract Deployer_M2 is Script, Test {
             "strategyManager: eigenPodManager address not set correctly"
         );
 
-        require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
-        require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
+        // require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
 
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,
@@ -472,7 +473,8 @@ contract Deployer_M2 is Script, Test {
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
         require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
-        require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
@@ -489,7 +491,8 @@ contract Deployer_M2 is Script, Test {
             strategyManager.pauserRegistry() == eigenLayerPauserReg,
             "strategyManager: pauser registry not set correctly"
         );
-        require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
             "eigenPodManager: pauser registry not set correctly"
