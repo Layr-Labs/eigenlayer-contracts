@@ -896,7 +896,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
 
         // Checks from  _processPartialWithdrawal
-        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), withdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei(), withdrawalAmountGwei, "Incorrect partial withdrawal amount");
         assertEq(vw.amountToSendGwei, withdrawalAmountGwei, "Amount to send via router is not correct");
         assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
 
@@ -960,7 +960,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.processPartialWithdrawal(validatorIndex, withdrawalTimestamp, recipient, partialWithdrawalAmountGwei);
 
         // Checks
-        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedGwei(), partialWithdrawalAmountGwei, "Incorrect partial withdrawal amount");
+        assertEq(eigenPod.sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei(), partialWithdrawalAmountGwei, "Incorrect partial withdrawal amount");
         assertEq(vw.amountToSendGwei, partialWithdrawalAmountGwei, "Amount to send via router is not correct");
         assertEq(vw.sharesDeltaGwei, 0, "Shares delta should be 0");
     }
@@ -1052,15 +1052,16 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
     }
 
     function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei, uint64 provenAmount, uint64 fee) external {
-        cheats.assume(provenAmount > fee && provenAmount < sumOfPartialWithdrawalsClaimedGwei);
+        cheats.assume(sumOfPartialWithdrawalsClaimedGwei + fee > provenAmount);
+        cheats.assume(sumOfPartialWithdrawalsClaimedGwei + fee < 1000);
         cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() < endTimestamp);
          bytes32 slot = bytes32(uint256(56)); 
         bytes32 value = bytes32(uint256(sumOfPartialWithdrawalsClaimedGwei)); 
         cheats.store(address(eigenPod), slot, value);
-        IEigenPod.VerifiedPartialWithdrawal memory vp = IEigenPod.VerifiedPartialWithdrawal(provenAmount, eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp);
+        IEigenPod.VerifiedPartialWithdrawal memory vp = IEigenPod.VerifiedPartialWithdrawal({provenPartialWithdrawalSumGwei: provenAmount, mostRecentWithdrawalTimestamp: eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp: endTimestamp});
 
         cheats.startPrank(address(eigenPodManagerMock));
-        cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei"));
+        cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei"));
         eigenPod.fulfillPartialWithdrawalProofRequest(vp, fee, feeRecipient);
         cheats.stopPrank();
     }

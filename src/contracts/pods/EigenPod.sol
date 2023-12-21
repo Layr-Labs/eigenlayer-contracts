@@ -92,7 +92,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint256 public nonBeaconChainETHBalanceWei;
 
      /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint64 public sumOfPartialWithdrawalsClaimedGwei;
+    uint64 public sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -442,15 +442,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(verifiedPartialWithdrawal.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
         require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawal.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
-
-        uint256 provenPartialWithdrawalSumGwei = verifiedPartialWithdrawal.provenPartialWithdrawalSumGwei;
-        require(sumOfPartialWithdrawalsClaimedGwei <= provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: sumOfPartialWithdrawalsClaimedGwei must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        require(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei + feeGwei <= verifiedPartialWithdrawal.provenPartialWithdrawalSumGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        uint64 provenPartialWithdrawalSumGwei = verifiedPartialWithdrawal.provenPartialWithdrawalSumGwei;
         provenPartialWithdrawalSumGwei -= feeGwei;
 
 
         // subtract an partial withdrawals that may have been claimed via merkle proofs
-        provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedGwei;
-        sumOfPartialWithdrawalsClaimedGwei = 0;
+        provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei;
+        sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei = 0;
         _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
     
         mostRecentWithdrawalTimestamp = verifiedPartialWithdrawal.endTimestamp;
@@ -754,7 +753,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             partialWithdrawalAmountGwei
         );
 
-        sumOfPartialWithdrawalsClaimedGwei += partialWithdrawalAmountGwei;
+        sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei += partialWithdrawalAmountGwei;
 
         // For partial withdrawals, the withdrawal amount is immediately sent to the pod owner
         return

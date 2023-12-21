@@ -88,7 +88,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function proofServiceEnabled() external view returns (bool){}
     
-    function updateProofService(address caller, address feeRecipient, address verifier) external{}
+    function updateProofService(ProofService calldata newProofService) external{}
 
      function proofServiceCallback(
         WithdrawalCallbackInfo calldata callbackInfo

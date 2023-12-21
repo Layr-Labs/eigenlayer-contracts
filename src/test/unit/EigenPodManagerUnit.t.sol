@@ -573,7 +573,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         super.setUp();
         RiscZeroVerifierMock defaultVerifier = new RiscZeroVerifierMock();
         cheats.startPrank(eigenPodManager.owner());
-        eigenPodManager.updateProofService(defaultProver, defaultProver, address(defaultVerifier));
+        eigenPodManager.updateProofService(IEigenPodManager.ProofService({caller: defaultProver, feeRecipient: defaultProver, verifier: address(defaultVerifier)}));
         cheats.stopPrank();
 
         cheats.startPrank(defaultStaker);

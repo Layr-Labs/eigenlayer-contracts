@@ -263,13 +263,9 @@ contract EigenPodManager is
     }
 
     /// @notice changes the proof service related information
-    function updateProofService(address caller, address feeRecipient, address verifier) external onlyOwner {
-        proofService = ProofService({
-            caller: caller,
-            feeRecipient: feeRecipient,
-            verifier: verifier
-        });
-        emit ProofServiceUpdated(proofService);
+    function updateProofService(ProofService calldata newProofService) external onlyOwner {
+        proofService = newProofService;
+        emit ProofServiceUpdated(newProofService);
     }
 
     /**
