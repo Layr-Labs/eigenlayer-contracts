@@ -69,6 +69,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
 
         // Set defaultPod
         defaultPod = eigenPodManager.getPod(defaultStaker);
+        emit log_named_address("defaultPod", address(defaultPod));
+        emit log_named_address("defaultStaker", defaultStaker);
 
         // Exclude the zero address, and the eigenPodManager itself from fuzzed inputs
         addressIsExcludedFromFuzzedInputs[address(0)] = true;
@@ -574,13 +576,17 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         eigenPodManager.updateProofService(defaultProver, defaultProver, address(defaultVerifier));
         cheats.stopPrank();
 
+        cheats.startPrank(defaultStaker);
+        eigenPodManager.stake(new bytes(0), new bytes(0), bytes32(0));
+        cheats.stopPrank();
+
         beaconChainOracle.setOracleBlockRootAtTimestamp(blockRoot);
     }
     function testFuzz_proofCallback_revert_incorrectOracleTimestamp(uint64 oracleTimestamp, uint64 startTimestamp, uint64 endTimestamp) public {
         cheats.assume(oracleTimestamp < endTimestamp);
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.Journal memory journal;
+        IEigenPodManager.Journal memory journal = _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, 0, blockRoot);
         IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, 0, new bytes(0), bytes32(0), journal, bytes32(0));
 
         cheats.startPrank(defaultProver);
@@ -604,7 +610,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.assume(incorrectBlockRoot != blockRoot);
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
-
+        emit log_address(address(defaultPod));
         IEigenPodManager.Journal memory journal = _assembleJournal(defaultPod, defaultStaker, 0, 0, 0, incorrectBlockRoot);
 
         IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, 0, new bytes(0), bytes32(0), journal, bytes32(0));
