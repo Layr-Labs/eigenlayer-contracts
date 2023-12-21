@@ -226,32 +226,35 @@ contract EigenPodManager is
 
     /// @notice Called by proving service to fulfill partial withdrawal proof requests
     function proofServiceCallback(
-        WithdrawalCallbackInfo[] calldata callbackInfo
+        WithdrawalCallbackInfo calldata callbackInfo
     ) external onlyProofService nonReentrant {
         require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
-        for(uint256 i = 0; i < callbackInfo.length; i++) {
-            (bytes32 imageID, Journal memory journal, bytes memory journalBytes) = parsePayload(callbackInfo[i].payload);
 
-            require(IRiscZeroVerifier(proofService.verifier).verify(callbackInfo[i].seal, imageID, callbackInfo[i].postStateDigest, sha256(journalBytes)), "EigenPodManager.proofServiceCallback: invalid proof");
+        Journal memory journal = callbackInfo.journal;
+        require(IRiscZeroVerifier(proofService.verifier).verify(callbackInfo.seal, callbackInfo.imageId, callbackInfo.postStateDigest, sha256(abi.encode(journal))), "EigenPodManager.proofServiceCallback: invalid proof");
 
-            require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo[i].oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
-            
+        require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo.oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
+        
+        for (uint256 i = 0; i < journal.podOwners.length; i++) {
+
             // these checks are verified in the snark, we add them here again as a sanity check
-            require(callbackInfo[i].oracleTimestamp >= journal.endTimestamp, "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
-            require(callbackInfo[i].feeGwei <= journal.maxFeeGwei, "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
+            require(callbackInfo.oracleTimestamp >= journal.endTimestamps[i], "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
+            require(callbackInfo.feeGwei <= journal.maxFeesGwei[i], "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
             
             //ensure the correct pod is being called
-            IEigenPod pod = ownerToPod[journal.podOwner];
+            IEigenPod pod = ownerToPod[journal.podOwners[i]];
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
-            require(address(pod) == journal.podAddress, "EigenPodManager.proofServiceCallback: pod address does not match");
-            
-            pod.fulfillPartialWithdrawalProofRequest(journal, callbackInfo[i].feeGwei, proofService.feeRecipient);
-        }
-    }
+            require(address(pod) == journal.podAddresses[i], "EigenPodManager.proofServiceCallback: pod address does not match");
 
-    function parsePayload(bytes calldata payload) public returns(bytes32, Journal memory, bytes memory){
-       (Journal memory journal, bytes32 imageId) = abi.decode(payload, (Journal, bytes32));
-        return (imageId, journal, payload[0:payload.length - 32]);
+            IEigenPod.VerifiedPartialWithdrawal memory partialWithdrawal = IEigenPod.VerifiedPartialWithdrawal({
+                provenPartialWithdrawalSumGwei:  journal.provenPartialWithdrawalSumsGwei[i],
+                mostRecentWithdrawalTimestamp: journal.mostRecentWithdrawalTimestamps[i],
+                endTimestamp: journal.endTimestamps[i]
+
+            });
+            
+            pod.fulfillPartialWithdrawalProofRequest(partialWithdrawal, callbackInfo.feeGwei, proofService.feeRecipient);
+        }
     }
 
     /// @notice enables partial withdrawal proving via offchain proofs

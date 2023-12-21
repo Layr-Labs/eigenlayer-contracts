@@ -580,13 +580,12 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.assume(oracleTimestamp < endTimestamp);
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, 0, new bytes(0), bytes32(0), new bytes(0));
-        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
-        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
+        IEigenPodManager.Journal memory journal;
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, 0, new bytes(0), bytes32(0), journal, bytes32(0));
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp"));
-        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
+        eigenPodManager.proofServiceCallback(withdrawalCallbackInfo);
         cheats.stopPrank();
     }
 
@@ -595,16 +594,9 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         cheats.assume(fee > maxFee);
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
-
-        bytes memory payload = _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, maxFee, bytes32(0), blockRoot);
-
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, fee, new bytes(0), bytes32(0), payload);
-        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
-        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
-
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee"));
-        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
+        eigenPodManager.proofServiceCallback(IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, fee, new bytes(0), bytes32(0), _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, maxFee, blockRoot), bytes32(0)));
         cheats.stopPrank();
     }
 
@@ -613,15 +605,13 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
-        bytes memory payload = _assembleJournal(defaultPod, defaultStaker, 0, 0, 0, bytes32(0), incorrectBlockRoot);
+        IEigenPodManager.Journal memory journal = _assembleJournal(defaultPod, defaultStaker, 0, 0, 0, incorrectBlockRoot);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, 0, new bytes(0), bytes32(0), payload);
-        IEigenPodManager.WithdrawalCallbackInfo[] memory withdrawalCallbackInfos = new IEigenPodManager.WithdrawalCallbackInfo[](1);
-        withdrawalCallbackInfos[0] = withdrawalCallbackInfo;
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, 0, new bytes(0), bytes32(0), journal, bytes32(0));
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp"));
-        eigenPodManager.proofServiceCallback(withdrawalCallbackInfos);
+        eigenPodManager.proofServiceCallback(withdrawalCallbackInfo);
         cheats.stopPrank();
     }
 
@@ -631,10 +621,34 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         uint64 mostRecentWithdrawalTimestamp,
         uint64 endTimestamp, 
         uint64 maxFee,
-        bytes32 imageID,
         bytes32 blockRoot
-    ) internal returns (bytes memory) {
-       return abi.encode(uint64(0), blockRoot, address(eigenPod), podOwner, mostRecentWithdrawalTimestamp, endTimestamp, maxFee, uint64(0), imageID);
+    ) internal returns (IEigenPodManager.Journal memory) {
+        address[] memory eigenPodAddressArray = new address[](1);
+        eigenPodAddressArray[0] = address(eigenPod);
+        address[] memory podOwnerArray = new address[](1); // Replace YourType with the actual type of podOwner
+        podOwnerArray[0] = podOwner;
+        uint64[] memory withdrawalTimestampArray = new uint64[](1);
+        withdrawalTimestampArray[0] = mostRecentWithdrawalTimestamp;
+        uint64[] memory endTimestampArray = new uint64[](1);
+        endTimestampArray[0] = endTimestamp;
+        uint64[] memory feeArray = new uint64[](1);
+        feeArray[0] = maxFee;
+       return IEigenPodManager.Journal({
+                    provenPartialWithdrawalSumsGwei: new uint64[](1), 
+                    blockRoot: blockRoot, 
+                    podAddresses: eigenPodAddressArray, 
+                    podOwners: podOwnerArray, 
+                    mostRecentWithdrawalTimestamps: withdrawalTimestampArray, 
+                    endTimestamps: endTimestampArray, 
+                    maxFeesGwei: feeArray, 
+                    nonce: uint64(0)
+            });
     }
 }
+
+
+
+
+
+
 

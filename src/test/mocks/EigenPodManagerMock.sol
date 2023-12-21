@@ -91,7 +91,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function updateProofService(address caller, address feeRecipient, address verifier) external{}
 
      function proofServiceCallback(
-        WithdrawalCallbackInfo[] calldata callbackInfo
+        WithdrawalCallbackInfo calldata callbackInfo
     ) external{}
 
     function enableProofService() external {}

@@ -91,8 +91,8 @@ contract EigenPodMock is IEigenPod, Test {
 
     function updateProofService(address fulfiller, uint256 feeBips, address feeRecipient) external{}
 
-        function fulfillPartialWithdrawalProofRequest(
-        IEigenPodManager.Journal calldata journal,
+    function fulfillPartialWithdrawalProofRequest(
+        IEigenPod.VerifiedPartialWithdrawal calldata verifiedPartialWithdrawal,
         uint64 feeGwei,
         address feeRecipient
     ) external{}
