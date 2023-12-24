@@ -58,7 +58,7 @@ The following figure illustrates the above flow:
 
 A staker does not restake into AVSs. A staker delegates to an operator and it is the operator that registers for new AVSs (with the staker having option to opt-out).
 
-By delegating to a specific operator, stakers are implicitly agreeing to the AVSs they support. If desired, operators can pursue off-chain consensus with stakers prior to modifying their AVSs. Moreover, stakers will have a grace period to withdraw their delegation should an operator introduce an AVS that doesn't align with their objectives. This grace period is configurable on an operator level.
+By delegating to a specific operator, stakers are implicitly agreeing to the AVSs they support. If desired, operators can pursue off-chain consensus with stakers prior to modifying their AVSs. Moreover, stakers will have a grace period to withdraw their delegation should an operator introduce an AVS that doesn't align with their objectives. This grace period is configurable at the operator level.
 
 ### *AVS Visibility and Control*
 
@@ -74,7 +74,7 @@ Let us illustrate the usage of this facility with an example: A staker has deleg
  - The operator, noticing an upcoming change in their delegated stake, notifies the AVS about this change. To do this, the operator triggers the AVS to call the `ServiceManager.recordStakeUpdate(..)` which in turn accesses `Slasher.recordStakeUpdate(..)`.  On successful execution of this call, the event `MiddlewareTimesAdded(..)` is emitted.
 - The AVS provider now is aware of the change in stake, and the staker can eventually complete their withdrawal.  Refer [here](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/EigenLayer-withdrawal-flow.md) for more details
 
-The following figure illustrates the above flow: 
+The figure below illustrates this flow: 
 ![Stake update](../images/staker_withdrawing.png)
 
 ### *Deregistering from AVS*
@@ -84,7 +84,7 @@ The following figure illustrates the above flow in which the operator calls the 
 ![Operator deregistering](../images/operator_deregister.png)
 
 ### *Slashing*
-As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. In order for an AVS to be able to slash an operator in an objective manner, the AVS needs to deploy a DisputeResolution contract which anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
+As mentioned above, EigenLayer is built to support slashing as a result of an on-chain-checkable, objectively attributable action. For an AVS to slash an operator objectively, the AVS needs to deploy a DisputeResolution contract that anyone can call to raise a challenge against an EigenLayer operator for its adversarial action. On successful challenge, the DisputeResolution contract calls `ServiceManager.freezeOperator(..)`; the ServiceManager in turn calls `Slasher.freezeOperator(..)` to freeze the operator in EigenLayer. EigenLayer's Slasher contract emits a `OperatorFrozen(..)` event whenever an operator is (successfully) frozen
 
 The following figure illustrates the above flow: 
 ![Slashing](../images/slashing.png)
