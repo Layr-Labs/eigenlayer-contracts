@@ -49,8 +49,8 @@ interface IEigenPodManager is IPausable {
     struct WithdrawalCallbackInfo {
         // oracle timestamp
         uint64 oracleTimestamp;
-        // prover fee
-        uint64 feeGwei;
+        // prover fee for each pod being proven for
+        uint64[] feesGwei;
         /// @notice SNARK proof acting as the cryptographic seal over the execution results.
         bytes seal;
         /// @notice Digest of the zkVM SystemState after execution.

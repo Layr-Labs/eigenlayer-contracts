@@ -237,7 +237,7 @@ contract EigenPodManager is
 
             // these checks are verified in the snark, we add them here again as a sanity check
             require(callbackInfo.oracleTimestamp >= journal.endTimestamps[i], "EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp");
-            require(callbackInfo.feeGwei <= journal.maxFeesGwei[i], "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
+            require(callbackInfo.feesGwei[i] <= journal.maxFeesGwei[i], "EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee");
             
             //ensure the correct pod is being called
             IEigenPod pod = ownerToPod[journal.podOwners[i]];
@@ -248,7 +248,6 @@ contract EigenPodManager is
                 provenPartialWithdrawalSumGwei:  journal.provenPartialWithdrawalSumsGwei[i],
                 mostRecentWithdrawalTimestamp: journal.mostRecentWithdrawalTimestamps[i],
                 endTimestamp: journal.endTimestamps[i]
-
             });
             
             pod.fulfillPartialWithdrawalProofRequest(partialWithdrawal, callbackInfo.feeGwei, proofService.feeRecipient);
