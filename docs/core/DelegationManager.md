@@ -126,7 +126,7 @@ Allows the caller (an AVS) to register an `operator` with itself, given the prov
 * Pause status MUST NOT be set: `PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS`
 * `operator` MUST already be a registered Operator
 * `operator` MUST NOT already be registered with the AVS
-* `operatorSignature` must be a valid, unused, unexpired signature from the `operator`. The signature is an ECDSA signature by the operator over the [`OPERATOR_AVS_REGISTRATION_TYPEHASH`](../../src/contracts/core/DelegationManagerStorage.sol#L29). Expiry is a utc timestamp in seconds. Salt is used only once per signature to prevent replay attacks.
+* `operatorSignature` must be a valid, unused, unexpired signature from the `operator`. The signature is an ECDSA signature by the operator over the [`OPERATOR_AVS_REGISTRATION_TYPEHASH`](../../src/contracts/core/DelegationManagerStorage). Expiry is a utc timestamp in seconds. Salt is used only once per signature to prevent replay attacks.
 
 *As of M2*:
 * Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
