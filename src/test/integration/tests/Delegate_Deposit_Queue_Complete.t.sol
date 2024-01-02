@@ -4,9 +4,9 @@ pragma solidity ^0.8.12;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/User.t.sol";
 
-contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
+contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
     
-    function testFuzz_delegate_deposit_queueWithdrawal_completeAsShares(uint24 _random) public {
+    function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -27,7 +27,8 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationChe
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
-        check_Delegation_State(staker, operator, strategies, shares);
+        check_Deposit_State(staker, strategies, shares);
+        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
         IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
@@ -42,7 +43,7 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationChe
         }
     }
 
-    function testFuzz_delegate_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public {
+    function testFuzz_delegate_deposit_queue_completeAsTokens(uint24 _random) public {
         // Configure the random parameters for the test
         _configRand({
             _randomSeed: _random,
@@ -63,7 +64,8 @@ contract Integration_Delegate_Deposit_QueueWithdrawal_Complete is IntegrationChe
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // Check that the deposit increased operator shares the staker is delegated to
-        check_Delegation_State(staker, operator, strategies, shares);
+        check_Deposit_State(staker, strategies, shares);
+        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
         IDelegationManager.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
