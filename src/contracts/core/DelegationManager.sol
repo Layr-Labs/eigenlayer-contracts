@@ -434,7 +434,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Called by an avs to register an operator with the avs.
+     * @notice Called by the AVS's service manager contract to register an operator with the avs.
      * @param operator The address of the operator to register.
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
@@ -985,7 +985,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Calculates the digest hash to be signed by an operator to register with an AVS
      * @param operator The account registering as an operator
-     * @param avs The AVS the operator is registering to
+     * @param avs The address of the service manager contract for the AVS that the operator is registering to
      * @param salt A unique and single use value associated with the approver signature.
      * @param expiry Time after which the approver's signature becomes invalid
      */
