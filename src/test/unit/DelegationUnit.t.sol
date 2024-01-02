@@ -65,7 +65,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
-        // Deploy DelegationManager implmentation and proxy
+        // Deploy DelegationManager implementation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         delegationManager = DelegationManager(
             address(
