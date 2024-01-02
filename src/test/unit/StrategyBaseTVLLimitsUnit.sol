@@ -23,7 +23,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         // copy setup for StrategyBaseUnitTests
         StrategyBaseUnitTests.setUp();
 
-        // deploy the TVL-limited strategy
+        // depoloy the TVL-limited strategy
         strategyBaseTVLLimitsImplementation = new StrategyBaseTVLLimits(strategyManager);
         strategyWithTVLLimits = StrategyBaseTVLLimits(
             address(
