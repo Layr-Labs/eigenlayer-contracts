@@ -568,6 +568,9 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
     address defaultProver = address(123);
     bytes32 blockRoot = bytes32(uint256(123));
 
+    uint64[] public feesArray;
+    
+
 
     function setUp() virtual override public {
         super.setUp();
@@ -580,6 +583,8 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         eigenPodManager.stake(new bytes(0), new bytes(0), bytes32(0));
         cheats.stopPrank();
 
+        feesArray.push(0);
+
         beaconChainOracle.setOracleBlockRootAtTimestamp(blockRoot);
     }
     function testFuzz_proofCallback_revert_incorrectOracleTimestamp(uint64 oracleTimestamp, uint64 startTimestamp, uint64 endTimestamp) public {
@@ -587,7 +592,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
 
         IEigenPodManager.Journal memory journal = _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, 0, blockRoot);
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, 0, new bytes(0), bytes32(0), journal, bytes32(0));
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, feesArray, new bytes(0), bytes32(0), journal, bytes32(0));
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: oracle timestamp must be greater than or equal to callback timestamp"));
@@ -598,11 +603,12 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
     function testFuzz_proofCallback_revert_feeExceedsMaxFee(uint64 oracleTimestamp, uint64 endTimestamp, uint64 maxFee, uint64 fee) public {
         cheats.assume(oracleTimestamp > endTimestamp);
         cheats.assume(fee > maxFee);
+        feesArray[0] = fee;
 
         _turnOnPartialWithdrawalSwitch(eigenPodManager);
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: fee must be less than or equal to maxFee"));
-        eigenPodManager.proofServiceCallback(IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, fee, new bytes(0), bytes32(0), _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, maxFee, blockRoot), bytes32(0)));
+        eigenPodManager.proofServiceCallback(IEigenPodManager.WithdrawalCallbackInfo(oracleTimestamp, feesArray, new bytes(0), bytes32(0), _assembleJournal(defaultPod, defaultStaker, 0, endTimestamp, maxFee, blockRoot), bytes32(0)));
         cheats.stopPrank();
     }
 
@@ -613,7 +619,7 @@ contract EigenPodManagerUnitTests_OffchainProofGenerationTests is EigenPodManage
         emit log_address(address(defaultPod));
         IEigenPodManager.Journal memory journal = _assembleJournal(defaultPod, defaultStaker, 0, 0, 0, incorrectBlockRoot);
 
-        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, 0, new bytes(0), bytes32(0), journal, bytes32(0));
+        IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(0, feesArray, new bytes(0), bytes32(0), journal, bytes32(0));
 
         cheats.startPrank(defaultProver);
         cheats.expectRevert(bytes("EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp"));
