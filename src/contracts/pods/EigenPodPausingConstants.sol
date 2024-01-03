@@ -21,4 +21,6 @@ abstract contract EigenPodPausingConstants {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
     /// @notice Index for flag that pauses the `verifyBeaconChainFullWithdrawal` function *of the EigenPods* when set. see EigenPod code for details.
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+    /// @notice Index for flag that pauses `fulfillPartialWithdrawalProofRequest` function *of the EigenPods* when set. see EigenPod code for details.
+    uint8 internal constant PAUSED_EIGENPODS_FULFILL_PARTIAL_WITHDRAWAL_PROOF_REQUEST = 5;
 }

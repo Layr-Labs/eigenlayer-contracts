@@ -229,6 +229,9 @@ contract EigenPodManager is
         require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
 
         Journal memory journal = callbackInfo.journal;
+        _verifyJournalParameters(journal);
+        require(callbackInfo.feesGwei.length == journal.podOwners.length, "EigenPodManager.proofServiceCallback: feesGwei and podOwners must be the same length");
+        
         require(IRiscZeroVerifier(proofService.verifier).verify(callbackInfo.seal, callbackInfo.imageId, callbackInfo.postStateDigest, sha256(abi.encode(journal))), "EigenPodManager.proofServiceCallback: invalid proof");
 
         require(journal.blockRoot == getBlockRootAtTimestamp(callbackInfo.oracleTimestamp), "EigenPodManager.proofServiceCallback: block root does not match oracleRoot for that timestamp");
@@ -250,7 +253,7 @@ contract EigenPodManager is
                 endTimestamp: journal.endTimestamps[i]
             });
             
-            pod.fulfillPartialWithdrawalProofRequest(partialWithdrawal, callbackInfo.feeGwei, proofService.feeRecipient);
+            pod.fulfillPartialWithdrawalProofRequest(partialWithdrawal, callbackInfo.feesGwei[i], proofService.feeRecipient);
         }
     }
 
@@ -317,6 +320,14 @@ contract EigenPodManager is
     function _setMaxPods(uint256 _maxPods) internal {
         emit MaxPodsUpdated(maxPods, _maxPods);
         maxPods = _maxPods;
+    }
+
+    function _verifyJournalParameters(Journal memory journal) internal {
+        require(journal.podOwners.length == journal.podAddresses.length, "EigenPodManager.proofServiceCallback: podOwners and podAddresses must be the same length");
+        require(journal.podOwners.length == journal.provenPartialWithdrawalSumsGwei.length, "EigenPodManager.proofServiceCallback: podOwners and provenPartialWithdrawalSumsGwei must be the same length");
+        require(journal.podOwners.length == journal.mostRecentWithdrawalTimestamps.length, "EigenPodManager.proofServiceCallback: podOwners and mostRecentWithdrawalTimestamps must be the same length");
+        require(journal.podOwners.length == journal.endTimestamps.length, "EigenPodManager.proofServiceCallback: podOwners and endTimestamps must be the same length");
+        require(journal.podOwners.length == journal.maxFeesGwei.length, "EigenPodManager.proofServiceCallback: podOwners and maxFeesGwei must be the same length");
     }
 
     /**
