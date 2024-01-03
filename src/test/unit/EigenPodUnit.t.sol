@@ -1052,9 +1052,8 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
     }
 
     function testFuzz_proofCallbackRequest_PartialWithdrawalSumEqualsAlreadyProvenSum(uint64 endTimestamp, uint64 sumOfPartialWithdrawalsClaimedGwei, uint64 provenAmount, uint64 fee) external {
-        cheats.assume(sumOfPartialWithdrawalsClaimedGwei < 1000);
-        cheats.assume(fee < 1000);
-        cheats.assume(sumOfPartialWithdrawalsClaimedGwei + fee > provenAmount);
+        cheats.assume(provenAmount > fee);
+        cheats.assume(sumOfPartialWithdrawalsClaimedGwei > provenAmount);
 
         cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() < endTimestamp);
          bytes32 slot = bytes32(uint256(56)); 

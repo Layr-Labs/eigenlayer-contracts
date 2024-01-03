@@ -125,7 +125,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
     function test_initialization() public {
         // Check max pods, beacon chain, owner, and pauser
         assertEq(eigenPodManager.maxPods(), type(uint256).max, "Initialization: max pods incorrect");
-        assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))), "Initialization: beacon chain oracle incorrect");
         assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
         assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
         assertEq(eigenPodManager.paused(), 0, "Initialization: paused value not 0");

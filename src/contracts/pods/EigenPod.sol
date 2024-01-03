@@ -747,8 +747,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 partialWithdrawalAmountGwei
     ) internal returns (VerifiedWithdrawal memory) {
         require(
-            eigenPodManager.proofServiceEnabled(),
-            "EigenPod._processPartialWithdrawal: partial withdrawal proofs are disabled"
+            !eigenPodManager.proofServiceEnabled(),
+            "EigenPod._processPartialWithdrawal: partial withdrawal merkle proofs are disabled"
         );
         emit PartialWithdrawalRedeemed(
             validatorIndex,
