@@ -1032,7 +1032,7 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
     function testFuzz_proofCallbackRequest_revert_inconsistentTimestamps(uint64 endTimestamp) external {
         cheats.assume(eigenPod.mostRecentWithdrawalTimestamp() >= endTimestamp);
 
-        IEigenPod.VerifiedPartialWithdrawal memory vp = IEigenPod.VerifiedPartialWithdrawal(0, eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp);
+        IEigenPod.VerifiedPartialWithdrawalBatch memory vp = IEigenPod.VerifiedPartialWithdrawalBatch(0, eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp);
         cheats.startPrank(address(eigenPodManagerMock));
         cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
         eigenPod.fulfillPartialWithdrawalProofRequest(vp, 0, address(this));
@@ -1043,7 +1043,7 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
         cheats.assume(mostRecentWithdrawalTimestamp != eigenPod.mostRecentWithdrawalTimestamp());
 
         // IEigenPodManager.WithdrawalCallbackInfo memory withdrawalCallbackInfo = IEigenPodManager.WithdrawalCallbackInfo(podOwner, address(eigenPod), 0, mostRecentWithdrawalTimestamp, 0, 0, 0);
-        IEigenPod.VerifiedPartialWithdrawal memory vp = IEigenPod.VerifiedPartialWithdrawal(0, mostRecentWithdrawalTimestamp, 0);
+        IEigenPod.VerifiedPartialWithdrawalBatch memory vp = IEigenPod.VerifiedPartialWithdrawalBatch(0, mostRecentWithdrawalTimestamp, 0);
 
         cheats.startPrank(address(eigenPodManagerMock));
         cheats.expectRevert("EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
@@ -1059,7 +1059,7 @@ contract EigenPodUnitTests_OffchainPartialWithdrawalProofTests is EigenPodUnitTe
          bytes32 slot = bytes32(uint256(56)); 
         bytes32 value = bytes32(uint256(sumOfPartialWithdrawalsClaimedGwei)); 
         cheats.store(address(eigenPod), slot, value);
-        IEigenPod.VerifiedPartialWithdrawal memory vp = IEigenPod.VerifiedPartialWithdrawal({provenPartialWithdrawalSumGwei: provenAmount, mostRecentWithdrawalTimestamp: eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp: endTimestamp});
+        IEigenPod.VerifiedPartialWithdrawalBatch memory vp = IEigenPod.VerifiedPartialWithdrawalBatch({provenPartialWithdrawalSumGwei: provenAmount, mostRecentWithdrawalTimestamp: eigenPod.mostRecentWithdrawalTimestamp(), endTimestamp: endTimestamp});
 
         cheats.startPrank(address(eigenPodManagerMock));
         cheats.expectRevert(bytes("EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei"));

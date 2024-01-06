@@ -247,7 +247,7 @@ contract EigenPodManager is
             require(address(pod) != address(0), "EigenPodManager.proofServiceCallback: pod does not exist");
             require(address(pod) == journal.podAddresses[i], "EigenPodManager.proofServiceCallback: pod address does not match");
 
-            IEigenPod.VerifiedPartialWithdrawal memory partialWithdrawal = IEigenPod.VerifiedPartialWithdrawal({
+            IEigenPod.VerifiedPartialWithdrawalBatch memory partialWithdrawal = IEigenPod.VerifiedPartialWithdrawalBatch({
                 provenPartialWithdrawalSumGwei:  journal.provenPartialWithdrawalSumsGwei[i],
                 mostRecentWithdrawalTimestamp: journal.mostRecentWithdrawalTimestamps[i],
                 endTimestamp: journal.endTimestamps[i]

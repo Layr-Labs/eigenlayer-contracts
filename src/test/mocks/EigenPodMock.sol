@@ -89,7 +89,7 @@ contract EigenPodMock is IEigenPod, Test {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
 
     function fulfillPartialWithdrawalProofRequest(
-        IEigenPod.VerifiedPartialWithdrawal calldata verifiedPartialWithdrawal,
+        IEigenPod.VerifiedPartialWithdrawalBatch calldata verifiedPartialWithdrawalBatch,
         uint64 feeGwei,
         address feeRecipient
     ) external{}

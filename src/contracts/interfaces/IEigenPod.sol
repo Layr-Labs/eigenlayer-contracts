@@ -49,7 +49,7 @@ interface IEigenPod {
         int256 sharesDeltaGwei;
     }
 
-    struct VerifiedPartialWithdrawal{
+    struct VerifiedPartialWithdrawalBatch{
         // amount being proven for withdrawal
         uint64 provenPartialWithdrawalSumGwei;
         // the latest timestamp proven until
@@ -230,7 +230,7 @@ interface IEigenPod {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
     function fulfillPartialWithdrawalProofRequest(
-        IEigenPod.VerifiedPartialWithdrawal calldata verifiedPartialWithdrawal,
+        IEigenPod.VerifiedPartialWithdrawalBatch calldata verifiedPartialWithdrawalBatch,
         uint64 feeGwei,
         address feeRecipient
     ) external;
