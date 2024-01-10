@@ -458,10 +458,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             //Once sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei, we need to ensure that there is enough ETH in the pod to pay the fee
             if(provenPartialWithdrawalSumGwei > feeGwei){
                 provenPartialWithdrawalSumGwei -= feeGwei;
+                           //send proof service their fee
+            AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
             }
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
-            //send proof service their fee
-            AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
 
         } else {
             sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei -= provenPartialWithdrawalSumGwei;
