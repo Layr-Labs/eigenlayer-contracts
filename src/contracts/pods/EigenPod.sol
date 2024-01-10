@@ -440,10 +440,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external onlyEigenPodManager {
 
         require(verifiedPartialWithdrawalBatch.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
-        require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
-
-        require(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei <= verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be greater than or equal to provenPartialWithdrawalSumGwei + feeGwei");
-        
+        require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");        
         //update mostRecentWithdrawalTimestamp to currently proven endTimestamp
         mostRecentWithdrawalTimestamp = verifiedPartialWithdrawalBatch.endTimestamp;
 
