@@ -443,19 +443,26 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
         require(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei <= verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be greater than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        
+        //update mostRecentWithdrawalTimestamp to currently proven endTimestamp
         mostRecentWithdrawalTimestamp = verifiedPartialWithdrawalBatch.endTimestamp;
 
         uint64 provenPartialWithdrawalSumGwei = verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei;
         // subtract an partial withdrawals that may have been claimed via merkle proofs
-        if(provenPartialWithdrawalSumGwei > sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei && sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei > 0){
-            provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei;
-            sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei = 0;
+        if(provenPartialWithdrawalSumGwei > sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei){
+            if(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei > 0){
+                provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei;
+                sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei = 0;
+            }
 
+            //Once sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei, we need to ensure that there is enough ETH in the pod to pay the fee
             if(provenPartialWithdrawalSumGwei > feeGwei){
-                //send proof service their fee
-                AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
+                provenPartialWithdrawalSumGwei -= feeGwei;
             }
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
+            //send proof service their fee
+            AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
+
         } else {
             sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei -= provenPartialWithdrawalSumGwei;
         }
