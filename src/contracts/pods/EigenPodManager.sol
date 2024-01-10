@@ -225,7 +225,7 @@ contract EigenPodManager is
     /// @notice Called by proving service to fulfill partial withdrawal proof requests
     function proofServiceCallback(
         WithdrawalCallbackInfo calldata callbackInfo
-    ) external onlyProofService nonReentrant {
+    ) external onlyProofService nonReentrant onlyWhenNotPaused(PAUSED_EIGENPODS_FULFILL_PARTIAL_WITHDRAWAL_PROOF_REQUEST){
         require(proofServiceEnabled, "EigenPodManager.proofServiceCallback: offchain partial withdrawal proofs are not enabled");
 
         Journal memory journal = callbackInfo.journal;

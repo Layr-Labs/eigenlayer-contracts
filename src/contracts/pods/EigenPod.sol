@@ -437,7 +437,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         IEigenPod.VerifiedPartialWithdrawalBatch calldata verifiedPartialWithdrawalBatch,
         uint64 feeGwei,
         address feeRecipient
-    ) external onlyEigenPodManager onlyWhenNotPaused(PAUSED_EIGENPODS_FULFILL_PARTIAL_WITHDRAWAL_PROOF_REQUEST) {
+    ) external onlyEigenPodManager {
 
         require(verifiedPartialWithdrawalBatch.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
         require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
@@ -458,8 +458,8 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             //Once sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei, we need to ensure that there is enough ETH in the pod to pay the fee
             if(provenPartialWithdrawalSumGwei > feeGwei){
                 provenPartialWithdrawalSumGwei -= feeGwei;
-                           //send proof service their fee
-            AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
+                //send proof service their fee
+                AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
             }
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
 
