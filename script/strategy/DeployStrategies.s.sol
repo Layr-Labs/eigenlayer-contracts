@@ -27,10 +27,9 @@ contract DeployStrategies is ExistingDeploymentParser {
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     string public configPath = string(bytes("script/strategy/configs/config.json"));
-    string public deploymentPath = string(bytes("script/output/M1_deployment_mainnet_2023_6_9.json"));
 
     function run() external {
-        _parseDeployedContracts(deploymentPath);
+        _parseDeployedContracts();
 
         // READ JSON CONFIG/DEPLOYMENT FILE
         string memory config_data = vm.readFile(configPath);

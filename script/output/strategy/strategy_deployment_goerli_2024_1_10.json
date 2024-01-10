@@ -1,0 +1,10 @@
+{
+  "chainInfo": {
+    "chainId": 5,
+    "deploymentBlock": 10352822
+  },
+  "strategies": {
+    "lsETH": "0xa9DC3c93ae59B8d26AF17Ae63c96Be78793537A9",
+    "mETH": "0x1fB89fa0Eb825Ee89b12e00947c092A8F20f2242"
+  }
+}
