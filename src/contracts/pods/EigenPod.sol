@@ -442,23 +442,23 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         require(verifiedPartialWithdrawalBatch.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
         require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
 
-        require(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei <= verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be less than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        require(sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei <= verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei - feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: proven sum must be greater than or equal to provenPartialWithdrawalSumGwei + feeGwei");
+        mostRecentWithdrawalTimestamp = verifiedPartialWithdrawalBatch.endTimestamp;
 
         uint64 provenPartialWithdrawalSumGwei = verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei;
         // subtract an partial withdrawals that may have been claimed via merkle proofs
         if(provenPartialWithdrawalSumGwei > sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei && sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei > 0){
             provenPartialWithdrawalSumGwei -= sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei;
             sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei = 0;
+
+            if(provenPartialWithdrawalSumGwei > feeGwei){
+                //send proof service their fee
+                AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
+            }
             _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
         } else {
             sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei -= provenPartialWithdrawalSumGwei;
         }
-    
-        mostRecentWithdrawalTimestamp = verifiedPartialWithdrawalBatch.endTimestamp;
-
-        provenPartialWithdrawalSumGwei -= feeGwei;
-        //send proof service their fee
-        AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
     }
 
     /*******************************************************************************
