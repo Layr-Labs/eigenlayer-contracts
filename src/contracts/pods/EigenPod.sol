@@ -440,7 +440,10 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     ) external onlyEigenPodManager {
 
         require(verifiedPartialWithdrawalBatch.mostRecentWithdrawalTimestamp == mostRecentWithdrawalTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: proven mostRecentWithdrawalTimestamp must match mostRecentWithdrawalTimestamp in the EigenPod");
-        require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");        
+        require(mostRecentWithdrawalTimestamp < verifiedPartialWithdrawalBatch.endTimestamp, "EigenPod.fulfillPartialWithdrawalProofRequest: mostRecentWithdrawalTimestamp must precede endTimestamp");
+
+        require(verifiedPartialWithdrawalBatch.provenPartialWithdrawalSumGwei >= feeGwei, "EigenPod.fulfillPartialWithdrawalProofRequest: provenPartialWithdrawalSumGwei must be greater than the fee");
+        
         //update mostRecentWithdrawalTimestamp to currently proven endTimestamp
         mostRecentWithdrawalTimestamp = verifiedPartialWithdrawalBatch.endTimestamp;
 
@@ -453,12 +456,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             }
 
             //Once sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei, we need to ensure that there is enough ETH in the pod to pay the fee
-            if(provenPartialWithdrawalSumGwei > feeGwei){
+            if(provenPartialWithdrawalSumGwei >= feeGwei){
                 provenPartialWithdrawalSumGwei -= feeGwei;
                 //send proof service their fee
                 AddressUpgradeable.sendValue(payable(feeRecipient), feeGwei);
             }
-            _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
+            if(provenPartialWithdrawalSumGwei > 0){
+                _sendETH_AsDelayedWithdrawal(podOwner, provenPartialWithdrawalSumGwei);
+            }
 
         } else {
             sumOfPartialWithdrawalsClaimedViaMerkleProvenGwei -= provenPartialWithdrawalSumGwei;
