@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.12
 
 certoraRun certora/harnesses/PausableHarness.sol \
-    certora/munged/permissions/PauserRegistry.sol \
+    src/contracts/permissions/PauserRegistry.sol \
     --verify PausableHarness:certora/specs/permissions/Pausable.spec \
     --optimistic_loop \
     --prover_args '-optimisticFallback true -recursionErrorAsAssert false -recursionEntryLimit 3' \

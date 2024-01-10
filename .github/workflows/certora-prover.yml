@@ -43,7 +43,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Install certora
-        run: pip install certora-cli==4.13.1
+        run: pip install certora-cli
       - name: Install solc
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.12/solc-static-linux
@@ -51,8 +51,6 @@ jobs:
           chmod +x /usr/local/bin/solc
       - name: Verify rule ${{ matrix.params }}
         run: |
-          touch certora/applyHarness.patch
-          make -C certora munged
           bash ${{ matrix.params }}
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}

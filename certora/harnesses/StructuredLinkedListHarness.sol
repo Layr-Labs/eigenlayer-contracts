@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../munged/libraries/StructuredLinkedList.sol";
+import "../../src/contracts/libraries/StructuredLinkedList.sol";
 
 /**
  * @title StructuredLinkedList

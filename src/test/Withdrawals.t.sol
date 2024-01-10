@@ -3,8 +3,6 @@ pragma solidity =0.8.12;
 
 import "../test/EigenLayerTestHelper.t.sol";
 
-import "./mocks/StakeRegistryStub.sol";
-
 contract WithdrawalTests is EigenLayerTestHelper {
     // packed info used to help handle stack-too-deep errors
     struct DataForTestWithdrawal {
@@ -15,16 +13,9 @@ contract WithdrawalTests is EigenLayerTestHelper {
     }
 
     bytes32 defaultOperatorId = bytes32(uint256(0));
-    StakeRegistryStub public stakeRegistry;
 
     function setUp() public virtual override {
         EigenLayerDeployer.setUp();
-
-        initializeMiddlewares();
-    }
-
-    function initializeMiddlewares() public {
-        stakeRegistry = new StakeRegistryStub();
     }
 
     //This function helps with stack too deep issues with "testWithdrawal" test
@@ -40,8 +31,6 @@ contract WithdrawalTests is EigenLayerTestHelper {
         cheats.assume(depositor != operator);
         cheats.assume(ethAmount >= 1 && ethAmount <= 1e18);
         cheats.assume(eigenAmount >= 1 && eigenAmount <= 1e18);
-
-        initializeMiddlewares();
 
         if (RANDAO) {
             _testWithdrawalAndDeregistration(operator, depositor, withdrawer, ethAmount, eigenAmount, withdrawAsTokens);

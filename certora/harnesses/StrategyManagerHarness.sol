@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../munged/core/StrategyManager.sol";
+import "../../src/contracts/core/StrategyManager.sol";
 
 contract StrategyManagerHarness is StrategyManager {
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher)

@@ -39,3 +39,7 @@ script/output/M1_deployment_data.json
 script/misc
 
 test.sh
+
+# Surya outputs
+InheritanceGraph.png
+surya_report.md

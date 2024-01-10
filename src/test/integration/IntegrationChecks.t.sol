@@ -19,6 +19,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that all underlying tokens were transferred to the correct destination
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
+        assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
+    }
+    
+
+    function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
+        /// Deposit into strategies:
+        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
+        // the staker calls the relevant deposit function, depositing some subset of held assets
+        //
+        // ... check that some underlying tokens were transferred to the correct destination
+        //     and that the staker now has the expected amount of delegated shares in each strategy
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
     }
 
@@ -52,11 +64,17 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that each withdrawal was successfully enqueued, that the returned roots
         //     match the hashes of each withdrawal, and that the staker and operator have
         //     reduced shares.
-        assert_AllWithdrawalsPending(withdrawalRoots, "staker withdrawals should now be pending");
-        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawals should match returned roots");
-        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-        assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
+        assertEq(withdrawalRoots.length, 1, "check_QueuedWithdrawal_State: should only have 1 withdrawal root after queueing"); 
+        assert_AllWithdrawalsPending(withdrawalRoots,
+            "check_QueuedWithdrawal_State: staker withdrawals should now be pending");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
+            "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
+            "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove operator shares");
+        assert_Snap_Removed_StakerShares(staker, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove staker shares");
     }
 
     function check_Undelegate_State(
@@ -72,15 +90,30 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqeuued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
-        assertEq(withdrawalRoots.length, 1, "should only be one withdrawal root");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots, "calculated withdrawl should match returned root");
-        assert_AllWithdrawalsPending(withdrawalRoots, "stakers withdrawal should now be pending");
-        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals, "staker should have increased nonce by 1");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares, "failed to remove operator shares");
-        assert_Snap_Removed_StakerShares(staker, strategies, shares, "failed to remove staker shares");
+        assertFalse(delegationManager.isDelegated(address(staker)),
+            "check_Undelegate_State: staker should not be delegated");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
+            "check_Undelegate_State: calculated withdrawl should match returned root");
+        assert_AllWithdrawalsPending(withdrawalRoots,
+            "check_Undelegate_State: stakers withdrawal should now be pending");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
+            "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+            "check_Undelegate_State: failed to remove operator shares");
+        assert_Snap_Removed_StakerShares(staker, strategies, shares,
+            "check_Undelegate_State: failed to remove staker shares");
     }
 
+    /**
+     * @notice Overloaded function to check the state after a withdrawal as tokens, accepting a non-user type for the operator.
+     * @param staker The staker who completed the withdrawal.
+     * @param operator The operator address, which can be a non-user type like address(0).
+     * @param withdrawal The details of the withdrawal that was completed.
+     * @param strategies The strategies from which the withdrawal was made.
+     * @param shares The number of shares involved in the withdrawal.
+     * @param tokens The tokens received after the withdrawal.
+     * @param expectedTokens The expected tokens to be received after the withdrawal.
+     */
     function check_Withdrawal_AsTokens_State(
         User staker,
         User operator,
@@ -90,17 +123,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         IERC20[] memory tokens,
         uint[] memory expectedTokens
     ) internal {
-        /// Complete withdrawal(s):
-        // The staker will complete the withdrawal as tokens
-        // 
-        // ... check that the withdrawal is not pending, that the withdrawer received the expected tokens, and that the total shares of each 
-        //     strategy withdrawn decreases
+        // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-        assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
         assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
-        assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
+
+        // Checks specific to an operator that the Staker has delegated to
+        if (operator != User(payable(0))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(User(operator), "operator token balances should not have changed");
+            }
+            assert_Snap_Unchanged_OperatorShares(User(operator), "operator shares should not have changed");
+        }
     }
 
     function check_Withdrawal_AsShares_State(
@@ -110,17 +145,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         IStrategy[] memory strategies,
         uint[] memory shares
     ) internal {
-        /// Complete withdrawal(s):
-        // The staker will complete the withdrawal as shares
-        // 
-        // ... check that the withdrawal is not pending, that the withdrawer received the expected shares, and that the total shares of each 
-        //     strategy withdrawn remains unchanged 
+        // Common checks applicable to both user and non-user operator types
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should have received expected shares");
-        assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.shares, "operator should have received shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+
+        // Additional checks or handling for the non-user operator scenario
+        if (operator != User(User(payable(0)))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(User(operator), "operator should not have any change in underlying token balances");
+            }
+            assert_Snap_Added_OperatorShares(User(operator), withdrawal.strategies, withdrawal.shares, "operator should have received shares");
+        }
     }
 
     /// @notice Difference from above is that operator shares do not increase since staker is not delegated

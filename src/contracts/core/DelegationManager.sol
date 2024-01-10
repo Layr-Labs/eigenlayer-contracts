@@ -29,6 +29,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
+    // @dev Index for flag that pauses operator register/deregister to avs when set.
+    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 3;
+
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
@@ -82,18 +85,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
-
-    /**
-     * @notice Sets the address of the stakeRegistry
-     * @param _stakeRegistry is the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-     * @dev Only callable once
-     */
-    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external onlyOwner {
-        require(address(stakeRegistry) == address(0), "DelegationManager.setStakeRegistry: stakeRegistry already set");
-        require(address(_stakeRegistry) != address(0), "DelegationManager.setStakeRegistry: stakeRegistry cannot be zero address");
-        stakeRegistry = _stakeRegistry;
-        emit StakeRegistrySet(_stakeRegistry);
-    }
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -226,7 +217,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * a staker from their operator. Undelegation immediately removes ALL active shares/strategies from
      * both the staker and operator, and places the shares and strategies in the withdrawal queue
      */
-    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32) {
+    function undelegate(address staker) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
         require(isDelegated(staker), "DelegationManager.undelegate: staker must be delegated to undelegate");
         require(!isOperator(staker), "DelegationManager.undelegate: operators cannot be undelegated");
         require(staker != address(0), "DelegationManager.undelegate: cannot undelegate zero address");
@@ -240,8 +231,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Gather strategies and shares to remove from staker/operator during undelegation
         // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = getDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
 
         // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
@@ -252,19 +242,28 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerUndelegated(staker, operator);
         delegatedTo[staker] = address(0);
 
-        // if no delegatable shares, return zero root, and don't queue a withdrawal
+        // if no delegatable shares, return an empty array, and don't queue a withdrawal
         if (strategies.length == 0) {
-            return bytes32(0);
+            withdrawalRoots = new bytes32[](0);
         } else {
-            // Remove all strategies/shares from staker and operator and place into queue
-            return _removeSharesAndQueueWithdrawal({
-                staker: staker,
-                operator: operator,
-                withdrawer: staker,
-                strategies: strategies,
-                shares: shares
-            });
+            withdrawalRoots = new bytes32[](strategies.length);
+            for (uint256 i = 0; i < strategies.length; i++) {
+                IStrategy[] memory singleStrategy = new IStrategy[](1);
+                uint256[] memory singleShare = new uint256[](1);
+                singleStrategy[0] = strategies[i];
+                singleShare[0] = shares[i];
+
+                withdrawalRoots[i] = _removeSharesAndQueueWithdrawal({
+                    staker: staker,
+                    operator: operator,
+                    withdrawer: staker,
+                    strategies: singleStrategy,
+                    shares: singleShare
+                });
+            }
         }
+
+        return withdrawalRoots;
     }
 
      /**
@@ -403,9 +402,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             // add strategy shares to delegate's shares
             _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
-
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(operator);
         }
     }
 
@@ -434,10 +430,73 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 strategy: strategy,
                 shares: shares
             });
-
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(operator);
         }
+    }
+
+    /**
+     * @notice Called by an avs to register an operator with the avs.
+     * @param operator The address of the operator to register.
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+
+        require(
+            operatorSignature.expiry >= block.timestamp,
+            "DelegationManager.registerOperatorToAVS: operator signature expired"
+        );
+        require(
+            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
+            "DelegationManager.registerOperatorToAVS: operator already registered"
+        );
+        require(
+            !operatorSaltIsSpent[operator][operatorSignature.salt],
+            "DelegationManager.registerOperatorToAVS: salt already spent"
+        );
+        require(
+            isOperator(operator),
+            "DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
+
+        // Calculate the digest hash
+        bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
+            operator: operator,
+            avs: msg.sender,
+            salt: operatorSignature.salt,
+            expiry: operatorSignature.expiry
+        });
+
+        // Check that the signature is valid
+        EIP1271SignatureUtils.checkSignature_EIP1271(
+            operator,
+            operatorRegistrationDigestHash,
+            operatorSignature.signature
+        );
+
+        // Set the operator as registered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
+
+        // Mark the salt as spent
+        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
+    }
+
+    /**
+     * @notice Called by an avs to deregister an operator with the avs.
+     * @param operator The address of the operator to deregister.
+     */
+    function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
+        require(
+            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
+            "DelegationManager.deregisterOperatorFromAVS: operator not registered"
+        );
+
+        // Set the operator as deregistered
+        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
+
+        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
     /*******************************************************************************
@@ -542,9 +601,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
             unchecked { ++i; }
         }
-
-        // push the operator's new stake to the StakeRegistry
-        _pushOperatorStakeUpdate(operator);
     }
 
     /**
@@ -624,9 +680,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             strategy: withdrawal.strategies[i],
                             shares: increaseInDelegateableShares
                         });
-
-                        // push the operator's new stake to the StakeRegistry
-                        _pushOperatorStakeUpdate(podOwnerOperator);
                     }
                 } else {
                     strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
@@ -643,8 +696,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 }
                 unchecked { ++i; }
             }
-            // push the operator's new stake to the StakeRegistry
-            _pushOperatorStakeUpdate(currentOperator);
         }
 
         emit WithdrawalCompleted(withdrawalRoot);
@@ -661,16 +712,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // This will revert on underflow, so no check needed
         operatorShares[operator][strategy] -= shares;
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
-    }
-
-    function _pushOperatorStakeUpdate(address operator) internal {
-        // if the stake registry has been set
-        if (address(stakeRegistry) != address(0)) {
-            address[] memory operators = new address[](1);
-            operators[0] = operator;
-            // update the operator's stake in the StakeRegistry
-            stakeRegistry.updateStakes(operators);
-        }
     }
 
     /**
@@ -715,11 +756,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
 
             unchecked { ++i; }
-        }
-
-        // Push the operator's new stake to the StakeRegistry
-        if (operator != address(0)) {
-            _pushOperatorStakeUpdate(operator);
         }
 
         // Create queue entry and increment withdrawal nonce
@@ -944,6 +980,30 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
+    }
+
+    /**
+     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
+     * @param operator The account registering as an operator
+     * @param avs The AVS the operator is registering to
+     * @param salt A unique and single use value associated with the approver signature.
+     * @param expiry Time after which the approver's signature becomes invalid
+     */
+    function calculateOperatorAVSRegistrationDigestHash(
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        // calculate the struct hash
+        bytes32 structHash = keccak256(
+            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
+        );
+        // calculate the digest hash
+        bytes32 digestHash = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
+        );
+        return digestHash;
     }
 
     /**

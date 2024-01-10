@@ -357,7 +357,9 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
 
     function _seedPodWithETH(uint256 ethAmount) internal {
         cheats.deal(address(this), ethAmount);
-        address(eigenPod).call{value: ethAmount}("");
+        bool result;
+        bytes memory data;
+        (result, data) = address(eigenPod).call{value: ethAmount}("");
     }
 }
 

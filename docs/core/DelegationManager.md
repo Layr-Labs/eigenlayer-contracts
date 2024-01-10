@@ -1,6 +1,6 @@
 ## DelegationManager
 
-| File | Type | Proxy? |
+| File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`DelegationManager.sol`](../../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy |
 
@@ -19,7 +19,6 @@ This document organizes methods according to the following themes (click each to
 * [Delegating to an Operator](#delegating-to-an-operator)
 * [Undelegating and Withdrawing](#undelegating-and-withdrawing)
 * [Accounting](#accounting)
-* [System Configuration](#system-configuration)
 
 #### Important state variables
 
@@ -51,6 +50,10 @@ Operators interact with the following functions to become an Operator:
 * [`DelegationManager.registerAsOperator`](#registerasoperator)
 * [`DelegationManager.modifyOperatorDetails`](#modifyoperatordetails)
 * [`DelegationManager.updateOperatorMetadataURI`](#updateoperatormetadatauri)
+
+Once registered as an Operator, Operators can use an AVS's contracts to register with a specific AVS. The AVS will call these functions on the Operator's behalf:
+* [`DelegationManager.registerOperatorToAVS`](#registeroperatortoavs)
+* [`DelegationManager.deregisterOperatorFromAVS`](#deregisteroperatorfromavs)
 
 #### `registerAsOperator`
 
@@ -102,6 +105,55 @@ Allows an Operator to emit an `OperatorMetadataURIUpdated` event. No other state
 
 *Requirements*:
 * Caller MUST already be an Operator
+
+#### `registerOperatorToAVS`
+
+```solidity
+function registerOperatorToAVS(
+    address operator,
+    ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+```
+
+Allows the caller (an AVS) to register an `operator` with itself, given the provided signature is valid.
+
+*Effects*:
+* Sets the `operator's` status to `REGISTERED` for the AVS
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS`
+* `operator` MUST already be a registered Operator
+* `operator` MUST NOT already be registered with the AVS
+* `operatorSignature` must be a valid, unused, unexpired signature from the `operator`
+
+*As of M2*:
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+
+#### `deregisterOperatorFromAVS`
+
+```solidity
+function deregisterOperatorFromAVS(
+    address operator
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS)
+```
+
+Allows the caller (an AVS) to deregister an `operator` with itself
+
+*Effects*:
+* Sets the `operator's` status to `UNREGISTERED` for the AVS
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS`
+* `operator` MUST already be registered with the AVS
+
+*As of M2*:
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+
+---
 
 ### Delegating to an Operator
 
@@ -177,14 +229,14 @@ function undelegate(
 ) 
     external 
     onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
-    returns (bytes32 withdrawalRoot)
+    returns (bytes32[] memory withdrawalRoots)
 ```
 
-`undelegate` can be called by a Staker to undelegate themselves, or by a Staker's delegated Operator (or that Operator's `delegationApprover`). Undelegation (i) queues a withdrawal on behalf of the Staker for all their delegated shares, and (ii) decreases the Operator's delegated shares according to the amounts and strategies being withdrawn.
+`undelegate` can be called by a Staker to undelegate themselves, or by a Staker's delegated Operator (or that Operator's `delegationApprover`). Undelegation (i) queues withdrawals on behalf of the Staker for all their delegated shares, and (ii) decreases the Operator's delegated shares according to the amounts and strategies being withdrawn.
 
-If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue.
+If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue - and an individual withdrawal is queued for each strategy removed.
 
-The withdrawal can be completed by the Staker after `withdrawalDelayBlocks`, and does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+The withdrawals can be completed by the Staker after `withdrawalDelayBlocks`. This does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once withdrawals are completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
 Note that becoming an Operator is irreversible! Although Operators can withdraw, they cannot use this method to undelegate from themselves.
 
@@ -192,9 +244,9 @@ Note that becoming an Operator is irreversible! Although Operators can withdraw,
 * Any shares held by the Staker in the `EigenPodManager` and `StrategyManager` are removed from the Operator's delegated shares.
 * The Staker is undelegated from the Operator
 * If the Staker has no delegatable shares, there is no withdrawal queued or further effects
-* A `Withdrawal` is queued for the Staker, tracking the strategies and shares being withdrawn
-    * The Staker's withdrawal nonce is increased
-    * The hash of the `Withdrawal` is marked as "pending"
+* For each strategy being withdrawn, a `Withdrawal` is queued for the Staker:
+    * The Staker's withdrawal nonce is increased by 1 for each `Withdrawal`
+    * The hash of each `Withdrawal` is marked as "pending"
 * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
 * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
@@ -349,7 +401,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a Staker's shar
 * `StrategyManager.depositIntoStrategy`
 * `StrategyManager.depositIntoStrategyWithSignature`
 * `EigenPod.verifyWithdrawalCredentials`
-* `EigenPod.verifyBalanceUpdate`
+* `EigenPod.verifyBalanceUpdates`
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's shares for the `strategy` are increased.
@@ -373,7 +425,7 @@ function decreaseDelegatedShares(
 Called by the `EigenPodManager` when a Staker's shares decrease. This method is called to ensure that if the Staker is delegated to an Operator, that Operator's share count reflects the decrease.
 
 *Entry Points*: This method may be called as a result of the following top-level function calls:
-* `EigenPod.verifyBalanceUpdate`
+* `EigenPod.verifyBalanceUpdates`
 * `EigenPod.verifyAndProcessWithdrawals`
 
 *Effects*: If the Staker in question is delegated to an Operator, the Operator's delegated balance for the `strategy` is decreased by `shares`
@@ -381,26 +433,3 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 *Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager` (although the `StrategyManager` doesn't use this method)
-
----
-
-### System Configuration
-
-#### `setWithdrawalDelayBlocks`
-
-```solidity
-function setWithdrawalDelayBlocks(
-    uint256 newWithdrawalDelayBlocks
-) 
-    external 
-    onlyOwner
-```
-
-Allows the `owner` to update the number of blocks that must pass before a withdrawal can be completed.
-
-*Effects*:
-* Updates `DelegationManager.withdrawalDelayBlocks`
-
-*Requirements*:
-* Caller MUST be the `owner`
-* `newWithdrawalDelayBlocks` MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS` (50400)
