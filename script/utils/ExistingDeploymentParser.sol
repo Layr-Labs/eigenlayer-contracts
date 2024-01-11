@@ -47,13 +47,14 @@ contract ExistingDeploymentParser is Script, Test {
     address operationsMultisig;
 
     string chainName;
+    string existingDeploymentInfoPath;
 
-    function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal {
+    function _parseDeployedContracts() internal {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
 
-        _setCurrentChainName();
+        _setCurrentChainInfo();
 
         // READ JSON CONFIG DATA
         string memory existingDeploymentData = vm.readFile(existingDeploymentInfoPath);
@@ -100,12 +101,14 @@ contract ExistingDeploymentParser is Script, Test {
         */
     }
 
-    function _setCurrentChainName() internal returns (string memory) {
+    function _setCurrentChainInfo() internal returns (string memory) {
         uint256 currentChainId = block.chainid;
         if (currentChainId == 1) {
             chainName = "mainnet";
+            existingDeploymentInfoPath = "script/output/M1_deployment_mainnet_2023_6_9.json";
         } else if (currentChainId == 5) {
             chainName = "goerli";
+            existingDeploymentInfoPath = "script/output/M1_deployment_goerli_2023_3_23.json";
         } else {
             chainName = "unknown";
         }
