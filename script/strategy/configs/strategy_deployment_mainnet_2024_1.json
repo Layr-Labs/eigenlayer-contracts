@@ -8,7 +8,7 @@
         },
         {
             "token_address": "0x8c1bed5b9a0928467c9b1341da1d7bd5e10b6549",
-            "token_symbol": "lsETH",
+            "token_symbol": "LsETH",
             "max_per_deposit": 200000000000000000000000,
             "max_deposits": 200000000000000000000000
         },
