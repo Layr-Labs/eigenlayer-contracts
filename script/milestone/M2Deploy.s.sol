@@ -162,7 +162,7 @@ contract M2Deploy is Script, Test {
             lstDepositor
         );
 
-        // Store eigenPod owner pre-ugprade values
+        // Store eigenPod owner pre-upgrade values
         eigenPod = eigenPodManager.ownerToPod(eigenPodDepositor);
         require(address(eigenPod).balance > 0, "eigenPod to test has balance of 0");
         hasPod = eigenPodManager.hasPod(eigenPodDepositor);
@@ -431,7 +431,7 @@ contract M2Deploy is Script, Test {
         require(
             eigenPod.mostRecentWithdrawalTimestamp() == mostRecentWithdrawalBlock,
             "eigenPod.mostRecentWithdrawalTimestamp incorrect"
-        ); // Timestmap replace by block number in storage
+        ); // Timestamp replace by block number in storage
         require(!eigenPod.hasRestaked(), "eigenPod.hasRestaked incorrect");
 
         // Unpause eigenpods verify credentials
