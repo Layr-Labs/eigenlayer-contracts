@@ -28,4 +28,4 @@ number_underscore = "thousands"
 quote_style = "double"
 tab_width = 4
 
-# See more config options https://github.com/gakonst/foundry/tree/master/config
+# See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
