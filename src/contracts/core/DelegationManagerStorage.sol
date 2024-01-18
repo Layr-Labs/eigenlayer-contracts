@@ -82,7 +82,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * @notice Deprecated from an old Goerli release, setting withdrawalDelayBLocks on per strategy basis
      * see mapping strategyWithdrawalDelayBlocks below
      */
-    uint256 public __deprecated_withdrawalDelayBlocks;
+    uint256 private __deprecated_withdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
