@@ -75,7 +75,13 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
-    function withdrawalDelayBlocks() external pure returns (uint256) {
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256) {
         return 0;
     }
 

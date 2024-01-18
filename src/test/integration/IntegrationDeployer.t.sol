@@ -190,6 +190,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
+        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -199,7 +201,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 /* initialPausedStatus */,
-                withdrawalDelayBlocks
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         // StrategyManager

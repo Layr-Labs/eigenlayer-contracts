@@ -53,6 +53,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] validatorFields;
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
+    IStrategy[] public initializeStrategiesToSetDelayBlocks;
+    uint256[] public initializeWithdrawalDelayBlocks;
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 internal constant GOERLI_GENESIS_TIME = 1616508000;
@@ -205,7 +207,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 initialOwner,
                 pauserReg,
                 0 /*initialPausedStatus*/,
-                WITHDRAWAL_DELAY_BLOCKS
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(

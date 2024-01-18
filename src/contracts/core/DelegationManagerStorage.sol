@@ -79,12 +79,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
     /**
-     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
-     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     * @notice Deprecated from an old Goerli release, setting withdrawalDelayBLocks on per strategy basis
+     * see mapping strategyWithdrawalDelayBlocks below
      */
-    uint256 public withdrawalDelayBlocks;
+    uint256 public __deprecated_withdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
@@ -104,6 +102,14 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Salt is used in the `registerOperatorToAVS` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
+     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     */
+    mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
+
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
         eigenPodManager = _eigenPodManager;
@@ -115,5 +121,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[37] private __gap;
 }
