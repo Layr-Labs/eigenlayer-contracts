@@ -22,6 +22,9 @@ interface IStrategyManager {
      */
     event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
 
+    /// @notice Emitted when `creditTransfersDisabled` is updated for a strategy and value by the owner
+    event UpdatedCreditTransfersDisabled(IStrategy strategy, bool value);
+
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
 
@@ -99,8 +102,12 @@ interface IStrategyManager {
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+     * @param creditTransfersDisabledValues bool values to set `creditTransfersDisabled` to for each strategy
      */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external;
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist,
+        bool[] calldata creditTransfersDisabledValues
+    ) external;
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
@@ -119,6 +126,12 @@ interface IStrategyManager {
 
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
+
+    /**
+     * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
+     * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
+     */
+    function creditTransfersDisabled(IStrategy strategy) external view returns (bool);
 
 // LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
     // packed struct for queued withdrawals; helps deal with stack-too-deep errors

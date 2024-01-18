@@ -286,9 +286,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
+        bool[] memory _creditTransfersDisabledValues = new bool[](1);
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(strategies);
+        strategyManager.addStrategiesToDepositWhitelist(strategies, _creditTransfersDisabledValues);
 
         // Add to lstStrats and allStrats
         lstStrats.push(strategy);
