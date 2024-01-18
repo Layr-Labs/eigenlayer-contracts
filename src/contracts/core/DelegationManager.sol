@@ -277,12 +277,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](queuedWithdrawalParams.length);
+        address operator = delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
             require(queuedWithdrawalParams[i].withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
-
-            address operator = delegatedTo[msg.sender];
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -751,6 +750,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                  */
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
+                require(
+                    !strategyManager.creditTransfersDisabled(strategies[i]) || staker == withdrawer,
+                    "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if credit transfers are disabled"
+                );
                 // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], shares[i]);
             }

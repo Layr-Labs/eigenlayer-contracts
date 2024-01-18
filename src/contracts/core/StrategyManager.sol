@@ -138,6 +138,10 @@ contract StrategyManager is
         uint256 expiry,
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
+        require(
+            !creditTransfersDisabled[strategy],
+            "StrategyManager.depositIntoStrategyWithSignature: credit transfers disabled"
+        );
         require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
@@ -203,6 +207,17 @@ contract StrategyManager is
     }
 
     /**
+     * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
+     * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
+     * Defaulted to false for all existing strategies.
+     * @param strategy The strategy to set `creditTransfersDisabled` value to
+     * @param value bool value to set `creditTransfersDisabled` to
+     */
+    function setCreditTransfersDisabled(IStrategy strategy, bool value) external onlyOwner {
+        _setCreditTransfersDisabled(strategy, value);
+    }
+
+    /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */
@@ -213,16 +228,23 @@ contract StrategyManager is
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+     * @param creditTransfersDisabledValues bool values to set `creditTransfersDisabled` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist
+        IStrategy[] calldata strategiesToWhitelist,
+        bool[] calldata creditTransfersDisabledValues
     ) external onlyStrategyWhitelister {
+        require(
+            strategiesToWhitelist.length == creditTransfersDisabledValues.length,
+            "StrategyManager.addStrategiesToDepositWhitelist: array lengths do not match"
+        );
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength; ) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
+                _setCreditTransfersDisabled(strategiesToWhitelist[i], creditTransfersDisabledValues[i]);
             }
             unchecked {
                 ++i;
@@ -243,6 +265,8 @@ contract StrategyManager is
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
+                // Set mapping value to default false value
+                _setCreditTransfersDisabled(strategiesToRemoveFromWhitelist[i], false);
             }
             unchecked {
                 ++i;
@@ -375,6 +399,17 @@ contract StrategyManager is
         require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
+    }
+
+    /**
+     * @notice Internal function for modifying `creditTransfersDisabled`.
+     * Used inside of the `setCreditTransfersDisabled` and `addStrategiesToDepositWhitelist` functions.
+     * @param strategy The strategy to set `creditTransfersDisabled` value to
+     * @param value bool value to set `creditTransfersDisabled` to
+     */
+    function _setCreditTransfersDisabled(IStrategy strategy, bool value) internal {
+        emit UpdatedCreditTransfersDisabled(strategy, value);
+        creditTransfersDisabled[strategy] = value;
     }
 
     /**
