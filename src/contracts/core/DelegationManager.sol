@@ -638,7 +638,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         require(
             withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number, 
-            "DelegationManager.completeQueuedAction: minWithdrawalDelayBlocks period has not yet passed"
+            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
         );
 
         require(
