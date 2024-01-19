@@ -27,7 +27,8 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_FIELD_TREE_HEIGHT = 3;
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_HEADER_FIELDS = 15;
-    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT = 4;
+    //Note: changed in the deneb hard fork from 4->5
+    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT = 5;
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_FIELDS = 15;
     uint256 internal constant EXECUTION_PAYLOAD_FIELD_TREE_HEIGHT = 4;
