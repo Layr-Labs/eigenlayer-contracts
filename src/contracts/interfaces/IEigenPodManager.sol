@@ -105,9 +105,9 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the maximum number of EigenPods that can be created
     function maxPods() external view returns (uint256);
 
-    function denebForkTimestamp() external view returns (bool);
+    function denebForkTimestamp() external view returns (uint64);
 
-    function setDenebForkTimestamp() external;
+    function setDenebForkTimestamp(uint64 timestamp) external;
 
     /**
      * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
