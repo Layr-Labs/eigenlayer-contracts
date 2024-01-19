@@ -213,7 +213,7 @@ library BeaconChainProofs {
         bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
         WithdrawalProof calldata withdrawalProof,
-        bool isDeneb
+        bool denebForkTimestamp
     ) internal view {
         require(
             withdrawalFields.length == 2 ** WITHDRAWAL_FIELD_TREE_HEIGHT,
@@ -234,7 +234,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
-        if(!isDeneb){
+        if(block.timestamp >= denebForkTimestamp){
             require(
                 withdrawalProof.withdrawalProof.length ==
                     32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA + WITHDRAWALS_TREE_HEIGHT + 1),
@@ -258,7 +258,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: slotProof has incorrect length"
         );
 
-        if(!isDeneb){
+        if(block.timestamp >= denebForkTimestamp){
             require(
             withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA),
             "BeaconChainProofs.verifyWithdrawal: timestampProof has incorrect length"

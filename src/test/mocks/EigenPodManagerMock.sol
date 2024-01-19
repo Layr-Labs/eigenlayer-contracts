@@ -87,7 +87,7 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function maxPods() external view returns (uint256) {}
 
 
-     function isDeneb() external view returns (bool){}
+     function denebForkTimestamp() external view returns (uint64){}
 
-    function setIsDeneb() external{}
+    function setDenebForkTimestamp(uint64 timestamp) external{}
 }

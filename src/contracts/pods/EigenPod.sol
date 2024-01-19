@@ -608,7 +608,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             beaconStateRoot: beaconStateRoot, 
             withdrawalFields: withdrawalFields, 
             withdrawalProof: withdrawalProof,
-            isDeneb: eigenPodManager.isDeneb()
+            denebTimestamp: eigenPodManager.denebTimestamp()
         });
 
         uint40 validatorIndex = withdrawalFields.getValidatorIndex();

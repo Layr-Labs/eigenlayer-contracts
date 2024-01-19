@@ -234,11 +234,11 @@ contract EigenPodManager is
     }
 
     /**
-    * @notice Sets the isDeneb flag to true
+    * @notice Sets the denebTimestamp
     * @dev Callable only by the owner of this contract (i.e. governance)
     */
-    function setIsDeneb() external onlyOwner {
-        isDeneb = true;
+    function setDenebForkTimestamp(uint64 timestamp) external onlyOwner {
+        denebForkTimestamp = timestamp;
     }
 
     // INTERNAL FUNCTIONS
