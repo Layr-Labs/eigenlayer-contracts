@@ -140,6 +140,7 @@ contract EigenPodManager is
                 });
             }
         }
+        emit PodBalanceUpdated(podOwner, sharesDelta);
     }
 
     /**
@@ -214,7 +215,6 @@ contract EigenPodManager is
                 return;
             }
         }
-
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }

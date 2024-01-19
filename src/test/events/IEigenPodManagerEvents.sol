@@ -10,4 +10,7 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when the balance of an EigenPod is updated
+    event PodBalanceUpdated(address indexed podOwner, int256 sharesDelta);
 }
