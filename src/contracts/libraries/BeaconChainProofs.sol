@@ -258,7 +258,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: slotProof has incorrect length"
         );
 
-        if(block.timestamp >= denebForkTimestamp){
+        if(block.timestamp <= denebForkTimestamp){
             require(
             withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA),
             "BeaconChainProofs.verifyWithdrawal: timestampProof has incorrect length"
