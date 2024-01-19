@@ -13,14 +13,14 @@ contract ProofParsing is Test{
 
     bytes32[18] blockHeaderProof;
     bytes32[3] slotProof;
-    bytes32[9] withdrawalProof;
+    bytes32[10] withdrawalProof;
     bytes32[46] validatorProof;
     bytes32[44] historicalSummaryProof;
 
 
 
     bytes32[7] executionPayloadProof;
-    bytes32[4] timestampProofs;
+    bytes32[5] timestampProofs;
 
 
     bytes32 slotRoot;
@@ -89,8 +89,8 @@ contract ProofParsing is Test{
         return executionPayloadProof;
     }
 
-    function getTimestampProof() public returns(bytes32[4] memory) {
-        for (uint i = 0; i < 4; i++) {
+    function getTimestampProof() public returns(bytes32[5] memory) {
+        for (uint i = 0; i < 5; i++) {
             prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
             timestampProofs[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
@@ -122,8 +122,8 @@ contract ProofParsing is Test{
         return stateRootProof;
     }
 
-    function getWithdrawalProof() public returns(bytes32[9] memory) {
-        for (uint i = 0; i < 9; i++) {
+    function getWithdrawalProof() public returns(bytes32[10] memory) {
+        for (uint i = 0; i < 10; i++) {
             prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
             withdrawalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }

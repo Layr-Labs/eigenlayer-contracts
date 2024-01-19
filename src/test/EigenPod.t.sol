@@ -455,7 +455,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
-        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        setJSON("./src/test/test-data/fullWithdrawalDeneb.json");
         return _proveWithdrawalForPod(newPod);
     }
 
@@ -1684,7 +1684,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
-
+            emit log_named_uint("withdrawalproof legth", getWithdrawalProof().length);
             return
                 BeaconChainProofs.WithdrawalProof(
                     abi.encodePacked(getWithdrawalProof()),
