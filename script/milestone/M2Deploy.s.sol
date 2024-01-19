@@ -332,6 +332,7 @@ contract M2Deploy is Script, Test {
             address(this),
             PauserRegistry(address(this)),
             0, // initialPausedStatus
+            0, // minWithdrawalDelayBLocks
             strategyArray,
             withdrawalDelayBlocksArray
         );

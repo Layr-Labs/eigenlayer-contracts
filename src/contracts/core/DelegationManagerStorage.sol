@@ -45,7 +45,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -79,10 +80,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
     /**
-     * @notice Deprecated from an old Goerli release, setting withdrawalDelayBLocks on per strategy basis
-     * see mapping strategyWithdrawalDelayBlocks below
+     * @notice Global minimum withdrawal delay for all strategy withdrawals.
+     * We now configure withdrawal delays on a per-strategy basis but to withdraw from a strategy, 
+     * `minWithdrawalDelayBlocks` must have passed. See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
-    uint256 private __deprecated_withdrawalDelayBlocks;
+    uint256 public minWithdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
@@ -105,8 +107,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /**
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
-     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
 

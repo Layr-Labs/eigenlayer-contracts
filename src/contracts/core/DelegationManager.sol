@@ -74,13 +74,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
+        uint256 _minWithdrawalDelayBlocks,
         IStrategy[] calldata _strategiesToSetDelayBlocks,
         uint256[] calldata _withdrawalDelayBlocks
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
-        _initializeStrategyWithdrawalDelayBlocks(_strategiesToSetDelayBlocks, _withdrawalDelayBlocks);
+        _initializeMinWithdrawalDelayBlocks(_minWithdrawalDelayBlocks);
+        _setStrategyWithdrawalDelayBlocks(_strategiesToSetDelayBlocks, _withdrawalDelayBlocks);
     }
 
     /*******************************************************************************
@@ -267,7 +269,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return withdrawalRoots;
     }
 
-     /**
+    /**
      * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
      * from the staker. If the staker is delegated, withdrawn shares/strategies are also removed from
      * their operator.
@@ -499,6 +501,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
+    /**
+     * @notice Called by owner to set the minimum withdrawal delay blocks for each passed in strategy
+     * Note that the min number of blocks to complete a withdrawal of a strategy is 
+     * MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
+     * @param strategies The strategies to set the minimum withdrawal delay blocks for
+     * @param withdrawalDelayBlocks The minimum withdrawal delay blocks to set for each strategy
+     */
+    function setStrategyWithdrawalDelayBlocks(
+        IStrategy[] calldata strategies,
+        uint256[] calldata withdrawalDelayBlocks
+    ) external onlyOwner {
+        _setStrategyWithdrawalDelayBlocks(strategies, withdrawalDelayBlocks);
+    }
+
     /*******************************************************************************
                             INTERNAL FUNCTIONS
     *******************************************************************************/
@@ -617,18 +633,23 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         require(
             pendingWithdrawals[withdrawalRoot], 
-            "DelegationManager.completeQueuedAction: action is not in queue"
+            "DelegationManager._completeQueuedWithdrawal: action is not in queue"
+        );
+
+        require(
+            withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number, 
+            "DelegationManager.completeQueuedAction: minWithdrawalDelayBlocks period has not yet passed"
         );
 
         require(
             msg.sender == withdrawal.withdrawer, 
-            "DelegationManager.completeQueuedAction: only withdrawer can complete action"
+            "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
         );
 
         if (receiveAsTokens) {
             require(
                 tokens.length == withdrawal.strategies.length, 
-                "DelegationManager.completeQueuedAction: input length mismatch"
+                "DelegationManager._completeQueuedWithdrawal: input length mismatch"
             );
         }
 
@@ -640,9 +661,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         if (receiveAsTokens) {
             for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 require(
-                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number
-                    || withdrawal.strategies[i] == beaconChainETHStrategy, 
-                    "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed for this strategy"
+                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
+                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
                 _withdrawSharesAsTokens({
@@ -658,6 +678,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         } else {
             address currentOperator = delegatedTo[msg.sender];
             for (uint256 i = 0; i < withdrawal.strategies.length; ) {
+                require(
+                    withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number, 
+                    "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+                );
+
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy shares can + will be awarded to the withdrawer.
                  */
@@ -683,11 +708,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         });
                     }
                 } else {
-                    require(
-                        withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number, 
-                        "DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed for this strategy"
-                    );
-
                     strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
@@ -758,7 +778,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
                 require(
-                    !strategyManager.creditTransfersDisabled(strategies[i]) || staker == withdrawer,
+                    staker == withdrawer || !strategyManager.creditTransfersDisabled(strategies[i]),
                     "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if credit transfers are disabled"
                 );
                 // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
@@ -807,17 +827,26 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    function _initializeMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {
+        require(
+            _minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
+            "DelegationManager._initializeMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+        );
+        emit MinWithdrawalDelayBlocksSet(minWithdrawalDelayBlocks, _minWithdrawalDelayBlocks);
+        minWithdrawalDelayBlocks = _minWithdrawalDelayBlocks;
+    }
+
     /**
      * @notice Sets the withdrawal delay blocks for each strategy in `_strategiesToSetDelayBlocks` to `_withdrawalDelayBlocks`.
-     * only gets called once when initializing the contract.
+     * gets called when initializing contract or by calling `setStrategyWithdrawalDelayBlocks`
      */
-    function _initializeStrategyWithdrawalDelayBlocks(
+    function _setStrategyWithdrawalDelayBlocks(
         IStrategy[] calldata _strategiesToSetDelayBlocks,
         uint256[] calldata _withdrawalDelayBlocks
     ) internal {
         require(
             _strategiesToSetDelayBlocks.length == _withdrawalDelayBlocks.length,
-            "DelegationManager._initializeStrategyWithdrawalDelayBlocks: input length mismatch"
+            "DelegationManager._setStrategyWithdrawalDelayBlocks: input length mismatch"
         );
         uint256 numStrats = _strategiesToSetDelayBlocks.length;
         for (uint256 i = 0; i < numStrats; ++i) {
@@ -826,7 +855,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
             require(
                 newStrategyWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-                "DelegationManager._initializeStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+                "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
             );
 
             // set the new withdrawal delay blocks

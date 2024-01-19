@@ -213,7 +213,10 @@ contract StrategyManager is
      * @param strategy The strategy to set `creditTransfersDisabled` value to
      * @param value bool value to set `creditTransfersDisabled` to
      */
-    function setCreditTransfersDisabled(IStrategy strategy, bool value) external onlyOwner {
+    function setCreditTransfersDisabled(
+        IStrategy strategy,
+        bool value
+    ) external onlyStrategyWhitelister {
         _setCreditTransfersDisabled(strategy, value);
     }
 

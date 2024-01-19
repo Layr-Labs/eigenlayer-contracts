@@ -201,6 +201,7 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 /* initialPausedStatus */,
+                withdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
             )

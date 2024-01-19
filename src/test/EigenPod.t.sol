@@ -207,6 +207,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 initialOwner,
                 pauserReg,
                 0 /*initialPausedStatus*/,
+                WITHDRAWAL_DELAY_BLOCKS,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
             )

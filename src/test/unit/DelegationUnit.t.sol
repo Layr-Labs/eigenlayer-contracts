@@ -42,7 +42,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultOperator = address(this);
     address defaultAVS = address(this);
 
-    uint256 initializedWithdrawalDelayBlocks = 50400;
+    uint256 minWithdrawalDelayBlocks = 216000;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
 
@@ -57,7 +57,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
@@ -81,6 +82,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
+                        minWithdrawalDelayBlocks,
                         initializeStrategiesToSetDelayBlocks,
                         initializeWithdrawalDelayBlocks
                     )
@@ -517,13 +519,13 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             address(this),
             pauserRegistry,
             0,
+            0, // minWithdrawalDelayBLocks
             initializeStrategiesToSetDelayBlocks,
             initializeWithdrawalDelayBlocks
         );
     }
 
     function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(
-        // address[] calldata strategiesToSetDelayBlocks,
         uint256[] memory withdrawalDelayBlocks,
         uint256 invalidStrategyIndex
     ) public {
@@ -542,7 +544,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         // Deploy DelegationManager implmentation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         cheats.expectRevert(
-            "DelegationManager._initializeStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+            "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
         );
         delegationManager = DelegationManager(
             address(
@@ -554,6 +556,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
+                        minWithdrawalDelayBlocks,
                         strategiesToSetDelayBlocks,
                         withdrawalDelayBlocks
                     )
@@ -2539,8 +2542,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     ) public filterFuzzedAddressInputs(invalidCaller) {
         cheats.assume(invalidCaller != address(strategyManagerMock));
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
+        cheats.assume(invalidCaller != address(eigenLayerProxyAdmin));
 
-        cheats.prank(invalidCaller);
         cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
         delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, shares);
     }
@@ -3069,13 +3072,13 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
 
-        cheats.expectRevert("DelegationManager.completeQueuedAction: action is not in queue");
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: action is not in queue");
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
@@ -3114,8 +3117,8 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
-        cheats.expectRevert("DelegationManager.completeQueuedAction: only withdrawer can complete action");
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action");
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
@@ -3131,9 +3134,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         IERC20[] memory tokens = new IERC20[](0);
-        cheats.expectRevert("DelegationManager.completeQueuedAction: input length mismatch");
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: input length mismatch");
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
     }
 
@@ -3170,7 +3173,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // completeQueuedWithdrawal
         cheats.prank(withdrawer);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
@@ -3215,7 +3218,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // completeQueuedWithdrawal
         cheats.prank(withdrawer);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + minWithdrawalDelayBlocks);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);

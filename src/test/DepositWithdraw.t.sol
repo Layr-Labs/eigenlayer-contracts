@@ -385,6 +385,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
+                minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
             )
