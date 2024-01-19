@@ -1774,7 +1774,7 @@ contract Relayer is Test {
         bytes32[] calldata withdrawalFields,
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
-        BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
+        BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs, false);
     }
 }
 

@@ -105,6 +105,10 @@ interface IEigenPodManager is IPausable {
     /// @notice Returns the maximum number of EigenPods that can be created
     function maxPods() external view returns (uint256);
 
+    function isDeneb() external view returns (bool);
+
+    function setIsDeneb() external;
+
     /**
      * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
      * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can

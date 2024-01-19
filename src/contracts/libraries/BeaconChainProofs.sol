@@ -27,7 +27,8 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_FIELD_TREE_HEIGHT = 3;
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_HEADER_FIELDS = 15;
-    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT = 4;
+    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA = 4;
+    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB = 5;
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_FIELDS = 15;
     uint256 internal constant EXECUTION_PAYLOAD_FIELD_TREE_HEIGHT = 4;
@@ -211,7 +212,8 @@ library BeaconChainProofs {
     function verifyWithdrawal(
         bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
-        WithdrawalProof calldata withdrawalProof
+        WithdrawalProof calldata withdrawalProof,
+        bool isDeneb
     ) internal view {
         require(
             withdrawalFields.length == 2 ** WITHDRAWAL_FIELD_TREE_HEIGHT,
@@ -232,11 +234,20 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
-        require(
-            withdrawalProof.withdrawalProof.length ==
-                32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT + WITHDRAWALS_TREE_HEIGHT + 1),
-            "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
-        );
+        if(!isDeneb){
+            require(
+                withdrawalProof.withdrawalProof.length ==
+                    32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA + WITHDRAWALS_TREE_HEIGHT + 1),
+                "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
+            );
+        } else {
+            require(
+                withdrawalProof.withdrawalProof.length ==
+                    32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB + WITHDRAWALS_TREE_HEIGHT + 1),
+                "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
+            );
+        }
+
         require(
             withdrawalProof.executionPayloadProof.length ==
                 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT),
@@ -246,10 +257,18 @@ library BeaconChainProofs {
             withdrawalProof.slotProof.length == 32 * (BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyWithdrawal: slotProof has incorrect length"
         );
-        require(
-            withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+
+        if(!isDeneb){
+            require(
+            withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA),
             "BeaconChainProofs.verifyWithdrawal: timestampProof has incorrect length"
         );
+        } else {
+            require(
+                withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB),
+                "BeaconChainProofs.verifyWithdrawal: timestampProof has incorrect length"
+            );
+        }
 
         require(
             withdrawalProof.historicalSummaryBlockRootProof.length ==

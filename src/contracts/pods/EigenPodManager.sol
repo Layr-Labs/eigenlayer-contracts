@@ -233,6 +233,14 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
+    /**
+    * @notice Sets the isDeneb flag to true
+    * @dev Callable only by the owner of this contract (i.e. governance)
+    */
+    function setIsDeneb() external onlyOwner {
+        isDeneb = true;
+    }
+
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
