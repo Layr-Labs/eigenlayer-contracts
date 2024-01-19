@@ -234,7 +234,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
-        if(block.timestamp >= denebForkTimestamp){
+        if(block.timestamp <= denebForkTimestamp){
             require(
                 withdrawalProof.withdrawalProof.length ==
                     32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA + WITHDRAWALS_TREE_HEIGHT + 1),
