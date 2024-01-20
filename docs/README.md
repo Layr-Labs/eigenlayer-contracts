@@ -25,7 +25,7 @@ This document provides an overview of system components, contracts, and user rol
 | [`succinctlabs/EigenLayerBeaconOracle.sol`](https://github.com/succinctlabs/telepathy-contracts/blob/main/external/integrations/eigenlayer/EigenLayerBeaconOracle.sol) | Singleton | UUPS proxy | [`0x40B1...9f2c`](https://goerli.etherscan.io/address/0x40B10ddD29a2cfF33DBC420AE5bbDa0649049f2c) |
 
 These contracts work together to enable native ETH restaking:
-* Users deploy `EigenPods` via the `EigenPodManager`, which contain beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
+* Users deploy `EigenPods` via the `EigenPodManager`, which contains beacon chain state proof logic used to verify a validator's withdrawal credentials, balance, and exit. An `EigenPod's` main role is to serve as the withdrawal address for one or more of a user's validators.
 * The `EigenPodManager` handles `EigenPod` creation and accounting+interactions between users with restaked native ETH and the `DelegationManager`.
 * The `DelayedWithdrawalRouter` imposes a 7-day delay on completing partial beacon chain withdrawals from an `EigenPod`. This is primarily to add a stopgap against a hack being able to instantly withdraw funds (note that all withdrawals from EigenLayer -- other than partial withdrawals earned by validators -- are initiated via the `DelegationManager`).
 * The `EigenLayerBeaconOracle` provides beacon chain block roots for use in various proofs. The oracle is supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
@@ -62,7 +62,7 @@ See full documentation in [`/core/DelegationManager.md`](./core/DelegationManage
 | [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - |
 
 <p align="center"><b>
-🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
+🚧 The Slasher contract is under active development and its interface is expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
 </b><p>
 
 ---
