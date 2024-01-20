@@ -28,9 +28,13 @@ This document organizes methods according to the following themes (click each to
 * `mapping(address => mapping(IStrategy => uint256)) public operatorShares`: Tracks the current balance of shares an Operator is delegated according to each strategy. Updated by both the `StrategyManager` and `EigenPodManager` when a Staker's delegatable balance changes.
     * Because Operators are delegated to themselves, an Operator's own restaked assets are reflected in these balances.
     * A similar mapping exists in the `StrategyManager`, but the `DelegationManager` additionally tracks beacon chain ETH delegated via the `EigenPodManager`. The "beacon chain ETH" strategy gets its own special address for this mapping: `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0`.
-* `uint256 public withdrawalDelayBlocks`:
+* `uint256 public minWithdrawalDelayBlocks`:
     * As of M2, this is 50400 (roughly 1 week)
-    * Stakers must wait this amount of time before a withdrawal can be completed
+    * For all strategies including native beacon chain ETH, Stakers at minimum must wait this amount of time before a withdrawal can be completed.
+    To withdraw a specific strategy, it may require additional time depending on the strategy's withdrawal delay. See `strategyWithdrawalDelayBlocks` below.
+* `mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks`:
+    * This mapping tracks the withdrawal delay for each strategy. This mapping value only comes into affect
+    if strategyWithdrawalDelayBlocks[strategy] > minWithdrawalDelayBlocks. If the strategyWithdrawalDelayBlocks[strategy] is less than or equal to minWithdrawalDelayBlocks, then the minWithdrawalDelayBlocks is used.
 * `mapping(bytes32 => bool) public pendingWithdrawals;`:
     * `Withdrawals` are hashed and set to `true` in this mapping when a withdrawal is initiated. The hash is set to false again when the withdrawal is completed. A per-staker nonce provides a way to distinguish multiple otherwise-identical withdrawals.
 
@@ -236,7 +240,7 @@ function undelegate(
 
 If the Staker has active shares in either the `EigenPodManager` or `StrategyManager`, they are removed while the withdrawal is in the queue - and an individual withdrawal is queued for each strategy removed.
 
-The withdrawals can be completed by the Staker after `withdrawalDelayBlocks`. This does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once withdrawals are completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+The withdrawals can be completed by the Staker after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) where `strategy` is any of the Staker's delegated strategies. This does not require the Staker to "fully exit" from the system -- the Staker may choose to receive their shares back in full once withdrawals are completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
 Note that becoming an Operator is irreversible! Although Operators can withdraw, they cannot use this method to undelegate from themselves.
 
@@ -278,7 +282,9 @@ Allows the caller to queue one or more withdrawals of their held shares across a
 
 All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
 
-Withdrawals can be completed by the `withdrawer` after `withdrawalDelayBlocks`, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+Withdrawals can be completed by the `withdrawer` after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
+
+Note that for any `strategy` s.t `StrategyManager.creditTransfersDisabled(strategy) == true` the `withdrawer` must be the same address as the `staker` as this setting disallows users to deposit or withdraw on behalf of other users. (see [`creditTransfersDisabled`](./StrategyManager.md) for details). 
 
 *Effects*:
 * For each withdrawal:
@@ -295,6 +301,7 @@ Withdrawals can be completed by the `withdrawer` after `withdrawalDelayBlocks`, 
     * `strategies.length` MUST equal `shares.length`
     * `strategies.length` MUST NOT be equal to 0
     * The `withdrawer` MUST NOT be 0
+    * For all strategies being withdrawn, the `withdrawer` MUST be the same address as the `staker` if `StrategyManager.creditTransfersDisabled(strategy) == true`
     * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
     * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
@@ -312,7 +319,7 @@ function completeQueuedWithdrawal(
     nonReentrant
 ```
 
-After waiting `withdrawalDelayBlocks`, this allows the `withdrawer` of a `Withdrawal` to finalize a withdrawal and receive either (i) the underlying tokens of the strategies being withdrawn from, or (ii) the shares being withdrawn. This choice is dependent on the passed-in parameter `receiveAsTokens`.
+After waiting max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) number of blocks, this allows the `withdrawer` of a `Withdrawal` to finalize a withdrawal and receive either (i) the underlying tokens of the strategies being withdrawn from, or (ii) the shares being withdrawn. This choice is dependent on the passed-in parameter `receiveAsTokens`.
 
 For each strategy/share pair in the `Withdrawal`:
 * If the `withdrawer` chooses to receive tokens:
@@ -345,7 +352,8 @@ For each strategy/share pair in the `Withdrawal`:
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_EXIT_WITHDRAWAL_QUEUE`
 * The hash of the passed-in `Withdrawal` MUST correspond to a pending withdrawal
-    * At least `withdrawalDelayBlocks` MUST have passed before `completeQueuedWithdrawal` is called
+    * At least `minWithdrawalDelayBlocks` MUST have passed before `completeQueuedWithdrawal` is called
+    * For all strategies in the `Withdrawal`, at least `strategyWithdrawalDelayBlocks[strategy]` MUST have passed before `completeQueuedWithdrawal` is called
     * Caller MUST be the `withdrawer` specified in the `Withdrawal`
 * If `receiveAsTokens`:
     * The caller MUST pass in the underlying `IERC20[] tokens` being withdrawn in the appropriate order according to the strategies in the `Withdrawal`.

@@ -81,8 +81,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /**
      * @notice Global minimum withdrawal delay for all strategy withdrawals.
-     * We now configure withdrawal delays on a per-strategy basis but to withdraw from a strategy, 
-     * `minWithdrawalDelayBlocks` must have passed. See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
+     * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
+     * In addition, we now also configure withdrawal delays on a per-strategy basis.
+     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed. 
+     * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
     uint256 public minWithdrawalDelayBlocks;
 
