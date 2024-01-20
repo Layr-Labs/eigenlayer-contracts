@@ -514,7 +514,7 @@ function claimDelayedWithdrawals(
 
 After `withdrawalDelayBlocks`, withdrawals can be claimed using these methods. Claims may be processed on behalf of someone else by passing their address in as the `recipient`. Otherwise, claims are processed on behalf of `msg.sender`.
 
-This method loops over up to `maxNumberOfDelayedWithdrawalsToClaim` withdrawals, tallys each withdrawal amount, and sends the total to the `recipient`.
+This method loops over up to `maxNumberOfDelayedWithdrawalsToClaim` withdrawals, tallies each withdrawal amount, and sends the total to the `recipient`.
 
 *Effects*:
 * Updates the `recipient's` `delayedWithdrawalsCompleted`
