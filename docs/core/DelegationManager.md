@@ -278,7 +278,7 @@ Allows the caller to queue one or more withdrawals of their held shares across a
 
 All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
 
-Withdrawals can be completed by the `withdrawer` after `withdrawalDelayBlocks`, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
+Withdrawals can be completed by the `withdrawer` after `withdrawalDelayBlocks`, and do not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
 *Effects*:
 * For each withdrawal:
