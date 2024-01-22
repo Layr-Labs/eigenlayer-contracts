@@ -23,7 +23,7 @@ This document organizes methods according to the following themes (click each to
 * `mapping(address => IStrategy[]) public stakerStrategyList`: Maintains a list of the strategies a Staker holds a nonzero number of shares in.
     * Updated as needed when Stakers deposit and withdraw: if a Staker has a zero balance in a Strategy, it is removed from the list. Likewise, if a Staker deposits into a Strategy and did not previously have a balance, it is added to the list.
 * `mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit`: The `strategyWhitelister` is (as of M2) a permissioned role that can be changed by the contract owner. The `strategyWhitelister` has currently whitelisted 3 `StrategyBaseTVLLimits` contracts in this mapping, one for each supported LST.
-* `mapping(IStrategy => bool) public creditTransfersDisabled`: The `strategyWhitelister` can disable third party transfers for a given strategy. This means that if `creditTransfersDisabled[strategy] == true`, then you cannot deposit on behalf of another Staker and award them shares. You also cannot withraw shares on behalf of another Staker.  (see [`DelegationManager.queueWithdrawals`](./DelegationManager#queueWithdrawals.md)) 
+* `mapping(IStrategy => bool) public thirdPartyTransfersForbidden`: The `strategyWhitelister` can disable third party transfers for a given strategy. This means that if `thirdPartyTransfersForbidden[strategy] == true`, then you cannot deposit on behalf of another Staker and award them shares. You also cannot withraw shares on behalf of another Staker.  (see [`DelegationManager.queueWithdrawals`](./DelegationManager#queueWithdrawals.md)) 
 
 #### Helpful definitions
 
@@ -98,7 +98,7 @@ function depositIntoStrategyWithSignature(
 
 *Requirements*: See `depositIntoStrategy` above. Additionally:
 * Caller MUST provide a valid, unexpired signature over the correct fields
-* `creditTransfersDisabled[strategy]` MUST be false
+* `thirdPartyTransfersForbidden[strategy]` MUST be false
 
 ---
 

@@ -51,9 +51,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _creditTransfersDisabledValues = new bool[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("StrategyBase.deposit: Can only deposit underlyingToken"));
@@ -88,9 +88,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _creditTransfersDisabledValues = new bool[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(nonexistentStrategy);
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert();
@@ -102,9 +102,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _creditTransfersDisabledValues = new bool[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
@@ -281,9 +281,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _creditTransfersDisabledValues = new bool[](1);
+            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = oneWeiFeeOnTransferTokenStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
     
@@ -452,9 +452,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
-            bool[] memory _creditTransfersDisabledValues = new bool[](1);
+            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = stethStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
 
@@ -497,9 +497,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
-        bool[] memory _creditTransfersDisabledValues = new bool[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(_strategyBase);
-        _strategyManager.addStrategiesToDepositWhitelist(_strategy, _creditTransfersDisabledValues);
+        _strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         return _strategyManager;

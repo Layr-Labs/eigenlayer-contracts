@@ -126,6 +126,7 @@ contract StrategyManager is
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
+     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -139,8 +140,8 @@ contract StrategyManager is
         bytes memory signature
     ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
         require(
-            !creditTransfersDisabled[strategy],
-            "StrategyManager.depositIntoStrategyWithSignature: credit transfers disabled"
+            !thirdPartyTransfersForbidden[strategy],
+            "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled"
         );
         require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
         // calculate struct hash, then increment `staker`'s nonce
@@ -210,14 +211,14 @@ contract StrategyManager is
      * If true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing DelegationManager.queueWithdrawals, a staker can only withdraw to themselves.
      * Defaulted to false for all existing strategies.
-     * @param strategy The strategy to set `creditTransfersDisabled` value to
-     * @param value bool value to set `creditTransfersDisabled` to
+     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
+     * @param value bool value to set `thirdPartyTransfersForbidden` to
      */
-    function setCreditTransfersDisabled(
+    function setThirdPartyTransfersForbidden(
         IStrategy strategy,
         bool value
     ) external onlyStrategyWhitelister {
-        _setCreditTransfersDisabled(strategy, value);
+        _setThirdPartyTransfersForbidden(strategy, value);
     }
 
     /**
@@ -231,14 +232,14 @@ contract StrategyManager is
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     * @param creditTransfersDisabledValues bool values to set `creditTransfersDisabled` to for each strategy
+     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata creditTransfersDisabledValues
+        bool[] calldata thirdPartyTransfersForbiddenValues
     ) external onlyStrategyWhitelister {
         require(
-            strategiesToWhitelist.length == creditTransfersDisabledValues.length,
+            strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length,
             "StrategyManager.addStrategiesToDepositWhitelist: array lengths do not match"
         );
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
@@ -247,7 +248,7 @@ contract StrategyManager is
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
-                _setCreditTransfersDisabled(strategiesToWhitelist[i], creditTransfersDisabledValues[i]);
+                _setThirdPartyTransfersForbidden(strategiesToWhitelist[i], thirdPartyTransfersForbiddenValues[i]);
             }
             unchecked {
                 ++i;
@@ -269,7 +270,7 @@ contract StrategyManager is
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
                 // Set mapping value to default false value
-                _setCreditTransfersDisabled(strategiesToRemoveFromWhitelist[i], false);
+                _setThirdPartyTransfersForbidden(strategiesToRemoveFromWhitelist[i], false);
             }
             unchecked {
                 ++i;
@@ -405,14 +406,14 @@ contract StrategyManager is
     }
 
     /**
-     * @notice Internal function for modifying `creditTransfersDisabled`.
-     * Used inside of the `setCreditTransfersDisabled` and `addStrategiesToDepositWhitelist` functions.
-     * @param strategy The strategy to set `creditTransfersDisabled` value to
-     * @param value bool value to set `creditTransfersDisabled` to
+     * @notice Internal function for modifying `thirdPartyTransfersForbidden`.
+     * Used inside of the `setThirdPartyTransfersForbidden` and `addStrategiesToDepositWhitelist` functions.
+     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
+     * @param value bool value to set `thirdPartyTransfersForbidden` to
      */
-    function _setCreditTransfersDisabled(IStrategy strategy, bool value) internal {
-        emit UpdatedCreditTransfersDisabled(strategy, value);
-        creditTransfersDisabled[strategy] = value;
+    function _setThirdPartyTransfersForbidden(IStrategy strategy, bool value) internal {
+        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
+        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**

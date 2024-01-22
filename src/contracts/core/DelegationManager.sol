@@ -743,6 +743,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     /**
      * @notice Removes `shares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
      * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
+     * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[strategy] must be set to false in the StrategyManager.
      */
     function _removeSharesAndQueueWithdrawal(
         address staker, 
@@ -778,8 +779,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 eigenPodManager.removeShares(staker, shares[i]);
             } else {
                 require(
-                    staker == withdrawer || !strategyManager.creditTransfersDisabled(strategies[i]),
-                    "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if credit transfers are disabled"
+                    staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
+                    "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
                 );
                 // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
                 strategyManager.removeShares(staker, strategies[i], shares[i]);

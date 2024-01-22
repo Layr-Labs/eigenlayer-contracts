@@ -284,7 +284,7 @@ All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManage
 
 Withdrawals can be completed by the `withdrawer` after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
 
-Note that for any `strategy` s.t `StrategyManager.creditTransfersDisabled(strategy) == true` the `withdrawer` must be the same address as the `staker` as this setting disallows users to deposit or withdraw on behalf of other users. (see [`creditTransfersDisabled`](./StrategyManager.md) for details). 
+Note that for any `strategy` s.t `StrategyManager.thirdPartyTransfersForbidden(strategy) == true` the `withdrawer` must be the same address as the `staker` as this setting disallows users to deposit or withdraw on behalf of other users. (see [`thirdPartyTransfersForbidden`](./StrategyManager.md) for details). 
 
 *Effects*:
 * For each withdrawal:
@@ -301,7 +301,7 @@ Note that for any `strategy` s.t `StrategyManager.creditTransfersDisabled(strate
     * `strategies.length` MUST equal `shares.length`
     * `strategies.length` MUST NOT be equal to 0
     * The `withdrawer` MUST NOT be 0
-    * For all strategies being withdrawn, the `withdrawer` MUST be the same address as the `staker` if `StrategyManager.creditTransfersDisabled(strategy) == true`
+    * For all strategies being withdrawn, the `withdrawer` MUST be the same address as the `staker` if `StrategyManager.thirdPartyTransfersForbidden(strategy) == true`
     * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
     * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 

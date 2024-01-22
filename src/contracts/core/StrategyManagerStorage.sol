@@ -66,11 +66,11 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(address => uint256) internal beaconChainETHSharesToDecrementOnWithdrawal;
 
     /**
-     * @notice Mapping: strategy => whether or not stakers are allowed to transfer credit to another address
+     * @notice Mapping: strategy => whether or not stakers are allowed to transfer strategy shares to another address
      * if true for a strategy, a user cannot depositIntoStrategyWithSignature into that strategy for another staker
      * and also when performing queueWithdrawals, a staker can only withdraw to themselves
      */
-    mapping(IStrategy => bool) public creditTransfersDisabled;
+    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) {
         delegation = _delegation;

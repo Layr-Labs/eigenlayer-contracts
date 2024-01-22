@@ -107,13 +107,13 @@ contract StrategyManagerMock is
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
 
-    function creditTransfersDisabled(IStrategy strategy) external view returns (bool) {}
+    function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool) {}
 
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata /*strategiesToWhitelist*/,
-        bool[] calldata /*creditTransfersDisabledValues*/
+        bool[] calldata /*thirdPartyTransfersForbiddenValues*/
     ) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
