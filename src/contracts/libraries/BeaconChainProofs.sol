@@ -28,7 +28,8 @@ library BeaconChainProofs {
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_HEADER_FIELDS = 15;
     //Note: changed in the deneb hard fork from 4->5
-    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT = 5;
+    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB = 5;
+    uint256 internal constant EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA = 4;
 
     uint256 internal constant NUM_EXECUTION_PAYLOAD_FIELDS = 15;
     uint256 internal constant EXECUTION_PAYLOAD_FIELD_TREE_HEIGHT = 4;
@@ -262,7 +263,9 @@ library BeaconChainProofs {
     function verifyWithdrawal(
         bytes32 beaconStateRoot,
         bytes32[] calldata withdrawalFields,
-        WithdrawalProof calldata withdrawalProof
+        WithdrawalProof calldata withdrawalProof,
+        uint64 denebForkTimestamp
+
     ) internal view {
         require(
             withdrawalFields.length == 2 ** WITHDRAWAL_FIELD_TREE_HEIGHT,
@@ -283,9 +286,11 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
+        //Note: post deneb hard fork, the exection payload header fields increased, adding an extra level to the tree height
+        uint256 executionPayloadHeaderFieldTreeHeight = (getWithdrawalTimestamp(withdrawalProof) < denebForkTimestamp) ? EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA : EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB;
         require(
             withdrawalProof.withdrawalProof.length ==
-                32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT + WITHDRAWALS_TREE_HEIGHT + 1),
+                32 * (executionPayloadHeaderFieldTreeHeight + WITHDRAWALS_TREE_HEIGHT + 1),
             "BeaconChainProofs.verifyWithdrawal: withdrawalProof has incorrect length"
         );
         require(
@@ -298,7 +303,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: slotProof has incorrect length"
         );
         require(
-            withdrawalProof.timestampProof.length == 32 * (EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT),
+            withdrawalProof.timestampProof.length == 32 * (executionPayloadHeaderFieldTreeHeight),
             "BeaconChainProofs.verifyWithdrawal: timestampProof has incorrect length"
         );
 

@@ -233,6 +233,14 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
+    /**
+    * @notice Sets the denebTimestamp
+    * @dev Callable only by the owner of this contract (i.e. governance)
+    */
+    function setDenebForkTimestamp(uint64 timestamp) external onlyOwner {
+        denebForkTimestamp = timestamp;
+    }
+
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {

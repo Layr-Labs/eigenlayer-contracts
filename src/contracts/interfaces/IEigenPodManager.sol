@@ -143,4 +143,14 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+    /**
+     * the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
+     */
+    function denebForkTimestamp() external view returns (uint64);
+
+    /**
+     * governance-permissioned function to set the deneb fork timestamp
+     */
+    function setDenebForkTimestamp(uint64 timestamp) external;
 }
