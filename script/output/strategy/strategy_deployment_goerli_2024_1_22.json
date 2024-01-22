@@ -1,0 +1,9 @@
+{
+  "chainInfo": {
+    "chainId": 5,
+    "deploymentBlock": 10416464
+  },
+  "strategies": {
+    "wBETH": "0xD89dc4C40d901D4622C203Fb8808e6e7C7fcE164"
+  }
+}
