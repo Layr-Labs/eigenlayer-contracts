@@ -239,6 +239,7 @@ contract EigenPodManager is
     */
     function setDenebForkTimestamp(uint64 timestamp) external onlyOwner {
         denebForkTimestamp = timestamp;
+        emit DenebForkTimestampUpdated(timestamp);
     }
 
     // INTERNAL FUNCTIONS

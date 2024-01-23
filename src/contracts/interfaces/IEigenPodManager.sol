@@ -39,6 +39,8 @@ interface IEigenPodManager is IPausable {
         bytes32 withdrawalRoot
     );
 
+    event DenebForkTimestampUpdated(uint64 newValue);
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
