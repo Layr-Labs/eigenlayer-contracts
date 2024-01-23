@@ -13,7 +13,8 @@ contract ProofParsing is Test{
 
     bytes32[18] blockHeaderProof;
     bytes32[3] slotProof;
-    bytes32[10] withdrawalProof;
+    bytes32[10] withdrawalProofDeneb;
+    bytes32[9] withdrawalProofCapella;
     bytes32[46] validatorProof;
     bytes32[44] historicalSummaryProof;
 
@@ -122,12 +123,20 @@ contract ProofParsing is Test{
         return stateRootProof;
     }
 
-    function getWithdrawalProof() public returns(bytes32[10] memory) {
+    function getWithdrawalProofDeneb() public returns(bytes32[10] memory) {
         for (uint i = 0; i < 10; i++) {
             prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
-            withdrawalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalProofDeneb[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return withdrawalProof;
+        return withdrawalProofDeneb;
+    }
+
+    function getWithdrawalProofCapella() public returns(bytes32[9] memory) {
+        for (uint i = 0; i < 9; i++) {
+            prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
+            withdrawalProofCapella[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return withdrawalProofCapella;
     }
 
     function getValidatorProof() public returns(bytes32[46] memory) {

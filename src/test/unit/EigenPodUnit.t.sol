@@ -11,7 +11,7 @@ import "./../mocks/DelayedWithdrawalRouterMock.sol";
 import "forge-std/Test.sol";
 
 contract EigenPodUnitTests is Test, ProofParsing {
-    
+
     using BytesLib for bytes;
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
@@ -22,6 +22,9 @@ contract EigenPodUnitTests is Test, ProofParsing {
     uint40 validatorIndex1 = 1;
 
     address podOwner = address(42000094993494);
+
+    bool public IS_DENEB;
+
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -508,10 +511,10 @@ contract EigenPodUnitTests is Test, ProofParsing {
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
-
+            bytes memory withdrawalProof = IS_DENEB ? abi.encodePacked(getWithdrawalProofDeneb()) : abi.encodePacked(getWithdrawalProofCapella());
             return
                 BeaconChainProofs.WithdrawalProof(
-                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(withdrawalProof),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
                     abi.encodePacked(getTimestampProof()),

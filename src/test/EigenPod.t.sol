@@ -22,6 +22,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     address podOwner = address(42000094993494);
 
+    bool public IS_DENEB;
+
     Vm cheats = Vm(HEVM_ADDRESS);
     DelegationManager public delegation;
     IStrategyManager public strategyManager;
@@ -445,7 +447,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
-    function testFullWithdrawalFlow() public returns (IEigenPod) {
+    function testFullWithdrawalFlowDeneb() public returns (IEigenPod) {
+        IS_DENEB = true;
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
@@ -456,6 +459,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
         setJSON("./src/test/test-data/fullWithdrawalDeneb.json");
+        return _proveWithdrawalForPod(newPod);
+    }
+
+    function testFullWithdrawalFlow() public returns (IEigenPod) {
+        //this call is to ensure that validator 302913 has proven their withdrawalcreds
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
         return _proveWithdrawalForPod(newPod);
     }
 
@@ -1679,15 +1696,15 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
+        bytes memory withdrawalProof = IS_DENEB ? abi.encodePacked(getWithdrawalProofDeneb()) : abi.encodePacked(getWithdrawalProofCapella());
         {
             bytes32 blockRoot = getBlockRoot();
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
-            emit log_named_uint("withdrawalproof legth", getWithdrawalProof().length);
             return
                 BeaconChainProofs.WithdrawalProof(
-                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(withdrawalProof),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
                     abi.encodePacked(getTimestampProof()),
@@ -1702,6 +1719,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 );
         }
     }
+    
 
     function _setOracleBlockRoot() internal {
         bytes32 latestBlockRoot = getLatestBlockRoot();
