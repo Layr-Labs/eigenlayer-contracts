@@ -59,7 +59,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
         assert_Snap_Delta_OperatorShares(operator, strategies, operatorShareDeltas, "operator should have applied deltas correctly");
 
         // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
 
         // 5. Complete queued withdrawals as tokens
         staker.completeWithdrawalsAsTokens(withdrawals);

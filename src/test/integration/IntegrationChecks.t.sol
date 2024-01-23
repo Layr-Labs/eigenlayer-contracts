@@ -64,6 +64,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that each withdrawal was successfully enqueued, that the returned roots
         //     match the hashes of each withdrawal, and that the staker and operator have
         //     reduced shares.
+        assertEq(withdrawalRoots.length, 1, "check_QueuedWithdrawal_State: should only have 1 withdrawal root after queueing"); 
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_QueuedWithdrawal_State: staker withdrawals should now be pending");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
