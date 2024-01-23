@@ -19,6 +19,7 @@ This document organizes methods according to the following themes (click each to
 * [Delegating to an Operator](#delegating-to-an-operator)
 * [Undelegating and Withdrawing](#undelegating-and-withdrawing)
 * [Accounting](#accounting)
+* [System Configuration]()
 
 #### Important state variables
 
@@ -34,7 +35,7 @@ This document organizes methods according to the following themes (click each to
     To withdraw a specific strategy, it may require additional time depending on the strategy's withdrawal delay. See `strategyWithdrawalDelayBlocks` below.
 * `mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks`:
     * This mapping tracks the withdrawal delay for each strategy. This mapping value only comes into affect
-    if strategyWithdrawalDelayBlocks[strategy] > minWithdrawalDelayBlocks. If the strategyWithdrawalDelayBlocks[strategy] is less than or equal to minWithdrawalDelayBlocks, then the minWithdrawalDelayBlocks is used.
+    if `strategyWithdrawalDelayBlocks[strategy] > minWithdrawalDelayBlocks`. Otherwise, `minWithdrawalDelayBlocks` is used.
 * `mapping(bytes32 => bool) public pendingWithdrawals;`:
     * `Withdrawals` are hashed and set to `true` in this mapping when a withdrawal is initiated. The hash is set to false again when the withdrawal is completed. A per-staker nonce provides a way to distinguish multiple otherwise-identical withdrawals.
 
@@ -282,7 +283,7 @@ Allows the caller to queue one or more withdrawals of their held shares across a
 
 All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
 
-Withdrawals can be completed by the `withdrawer` after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn, and does not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
+Withdrawals can be completed by the `withdrawer` after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn. Withdrawals do not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
 
 Note that for any `strategy` s.t `StrategyManager.thirdPartyTransfersForbidden(strategy) == true` the `withdrawer` must be the same address as the `staker` as this setting disallows users to deposit or withdraw on behalf of other users. (see [`thirdPartyTransfersForbidden`](./StrategyManager.md) for details). 
 
@@ -441,3 +442,30 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 *Requirements*:
 * Caller MUST be either the `StrategyManager` or `EigenPodManager` (although the `StrategyManager` doesn't use this method)
+
+---
+
+### System Configuration
+
+* [`DelegationManager.setStrategyWithdrawalDelayBlocks`](#setstrategywithdrawaldelayblocks)
+
+#### `setStrategyWithdrawalDelayBlocks`
+
+```solidity
+function setStrategyWithdrawalDelayBlocks(
+    IStrategy[] calldata strategies,
+    uint256[] calldata withdrawalDelayBlocks
+) 
+    external 
+    onlyOwner
+```
+
+Allows the Owner to set a per-strategy withdrawal delay for each passed-in strategy. The total time required for a withdrawal to be completable is at least `minWithdrawalDelayBlocks`. If any of the withdrawal's strategies have a higher per-strategy withdrawal delay, the time required is the maximum of these per-strategy delays.
+
+*Effects*:
+* For each `strategy`, sets `strategyWithdrawalDelayBlocks[strategy]` to a new value
+
+*Requirements*:
+* Caller MUST be the Owner
+* `strategies.length` MUST be equal to `withdrawalDelayBlocks.length`
+* For each entry in `withdrawalDelayBlocks`, the value MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS`
