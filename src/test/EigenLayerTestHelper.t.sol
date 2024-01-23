@@ -127,8 +127,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
+            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = stratToDepositTo;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
 

@@ -54,7 +54,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
 
         for (uint256 i = 0; i < withdrawals.length; i++) {
             uint256[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
@@ -113,7 +113,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
 
         for (uint256 i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
@@ -181,7 +181,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete withdrawals
         // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
         for (uint256 i = 0; i < withdrawals.length; i++) {
             uint256[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].shares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
@@ -243,7 +243,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
 
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
