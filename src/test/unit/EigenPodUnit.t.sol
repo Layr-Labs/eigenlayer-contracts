@@ -527,7 +527,7 @@ contract EigenPodUnitTests_VerifyBalanceUpdateTests is EigenPodHarnessSetup, Pro
     bytes32[] validatorFields;
 
     function testFuzz_revert_oracleTimestampStale(uint64 oracleFuzzTimestamp, uint64 mostRecentBalanceUpdateTimestamp) public {
-        // Constain inputs and set proof file
+        // Constrain inputs and set proof file
         cheats.assume(oracleFuzzTimestamp < mostRecentBalanceUpdateTimestamp);
         setJSON("src/test/test-data/balanceUpdateProof_notOverCommitted_302913.json");
         
