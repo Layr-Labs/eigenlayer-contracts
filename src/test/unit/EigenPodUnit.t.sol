@@ -512,12 +512,13 @@ contract EigenPodUnitTests is Test, ProofParsing {
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
             bytes memory withdrawalProof = IS_DENEB ? abi.encodePacked(getWithdrawalProofDeneb()) : abi.encodePacked(getWithdrawalProofCapella());
+            bytes memory timestampProof = IS_DENEB ? abi.encodePacked(getTimestampProofDeneb()) : abi.encodePacked(getTimestampProofCapella());
             return
                 BeaconChainProofs.WithdrawalProof(
                     abi.encodePacked(withdrawalProof),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
-                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(timestampProof),
                     abi.encodePacked(getHistoricalSummaryProof()),
                     uint64(getBlockRootIndex()),
                     uint64(getHistoricalSummaryIndex()),

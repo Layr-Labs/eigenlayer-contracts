@@ -21,7 +21,8 @@ contract ProofParsing is Test{
 
 
     bytes32[7] executionPayloadProof;
-    bytes32[5] timestampProofs;
+    bytes32[5] timestampProofsCapella;
+    bytes32[4] timestampProofsDeneb;
 
 
     bytes32 slotRoot;
@@ -90,13 +91,23 @@ contract ProofParsing is Test{
         return executionPayloadProof;
     }
 
-    function getTimestampProof() public returns(bytes32[5] memory) {
+    function getTimestampProofDeneb() public returns(bytes32[5] memory) {
         for (uint i = 0; i < 5; i++) {
             prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
-            timestampProofs[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            timestampProofsCapella[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return timestampProofs;
+        return timestampProofsCapella;
     }
+
+    function getTimestampProofCapella() public returns(bytes32[4] memory) {
+        for (uint i = 0; i < 4; i++) {
+            prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
+            timestampProofsDeneb[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return timestampProofsDeneb;
+    }
+
+
 
     function getBlockHeaderProof() public returns(bytes32[18] memory) {
         for (uint i = 0; i < 18; i++) {
