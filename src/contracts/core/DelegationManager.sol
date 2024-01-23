@@ -75,14 +75,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
         uint256 _minWithdrawalDelayBlocks,
-        IStrategy[] calldata _strategiesToSetDelayBlocks,
+        IStrategy[] calldata _strategies,
         uint256[] calldata _withdrawalDelayBlocks
     ) external initializer {
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
         _initializeMinWithdrawalDelayBlocks(_minWithdrawalDelayBlocks);
-        _setStrategyWithdrawalDelayBlocks(_strategiesToSetDelayBlocks, _withdrawalDelayBlocks);
+        _setStrategyWithdrawalDelayBlocks(_strategies, _withdrawalDelayBlocks);
     }
 
     /*******************************************************************************
@@ -838,20 +838,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Sets the withdrawal delay blocks for each strategy in `_strategiesToSetDelayBlocks` to `_withdrawalDelayBlocks`.
+     * @notice Sets the withdrawal delay blocks for each strategy in `_strategies` to `_withdrawalDelayBlocks`.
      * gets called when initializing contract or by calling `setStrategyWithdrawalDelayBlocks`
      */
     function _setStrategyWithdrawalDelayBlocks(
-        IStrategy[] calldata _strategiesToSetDelayBlocks,
+        IStrategy[] calldata _strategies,
         uint256[] calldata _withdrawalDelayBlocks
     ) internal {
         require(
-            _strategiesToSetDelayBlocks.length == _withdrawalDelayBlocks.length,
+            _strategies.length == _withdrawalDelayBlocks.length,
             "DelegationManager._setStrategyWithdrawalDelayBlocks: input length mismatch"
         );
-        uint256 numStrats = _strategiesToSetDelayBlocks.length;
+        uint256 numStrats = _strategies.length;
         for (uint256 i = 0; i < numStrats; ++i) {
-            IStrategy strategy = _strategiesToSetDelayBlocks[i];
+            IStrategy strategy = _strategies[i];
             uint256 prevStrategyWithdrawalDelayBlocks = strategyWithdrawalDelayBlocks[strategy];
             uint256 newStrategyWithdrawalDelayBlocks = _withdrawalDelayBlocks[i];
             require(
@@ -975,6 +975,22 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
 
         return (strategies, shares);
+    }
+
+    /**
+     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
+     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
+     * @param strategies The strategies to check withdrawal delays for
+     */
+    function getWithdrawalDelay(IStrategy[] calldata strategies) public view returns (uint256) {
+        uint256 withdrawalDelay = minWithdrawalDelayBlocks;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint256 currWithdrawalDelay = strategyWithdrawalDelayBlocks[strategies[i]];
+            if (currWithdrawalDelay > withdrawalDelay) {
+                withdrawalDelay = currWithdrawalDelay;
+            }
+        }
+        return withdrawalDelay;
     }
 
     /// @notice Returns the keccak256 hash of `withdrawal`.

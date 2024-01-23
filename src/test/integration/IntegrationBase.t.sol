@@ -672,14 +672,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /// @dev Given a list of strategies, roll the block number forward to the
     /// a valid blocknumber to completeWithdrawals
     function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {
-        uint256 blocksToRoll = delegationManager.minWithdrawalDelayBlocks();
-        for (uint i = 0; i < strategies.length; i++) {
-            uint256 withdrawalDelayBlocks = delegationManager.strategyWithdrawalDelayBlocks(strategies[i]);
-            if (withdrawalDelayBlocks > blocksToRoll) {
-                blocksToRoll = withdrawalDelayBlocks;
-            }
-        }
-        cheats.roll(block.number + blocksToRoll);
+        // uint256 blocksToRoll = delegationManager.minWithdrawalDelayBlocks();
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     uint256 withdrawalDelayBlocks = delegationManager.strategyWithdrawalDelayBlocks(strategies[i]);
+        //     if (withdrawalDelayBlocks > blocksToRoll) {
+        //         blocksToRoll = withdrawalDelayBlocks;
+        //     }
+        // }
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
