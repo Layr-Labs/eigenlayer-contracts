@@ -265,7 +265,6 @@ library BeaconChainProofs {
         bytes32[] calldata withdrawalFields,
         WithdrawalProof calldata withdrawalProof,
         uint64 denebForkTimestamp
-
     ) internal view {
         require(
             withdrawalFields.length == 2 ** WITHDRAWAL_FIELD_TREE_HEIGHT,
