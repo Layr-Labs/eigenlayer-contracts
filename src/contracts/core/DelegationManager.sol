@@ -68,7 +68,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, and paused status.
-     * strategyWithdrawalDelayBlocks is set only once here
+     * minWithdrawalDelayBlocks is set only once here
      */
     function initialize(
         address initialOwner,
