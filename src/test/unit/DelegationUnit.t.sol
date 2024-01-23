@@ -65,7 +65,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
-        // Deploy DelegationManager implmentation and proxy
+        // Deploy DelegationManager implementation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         delegationManager = DelegationManager(
             address(
@@ -505,7 +505,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
     }
 
-    /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    /// @notice Verifies that the DelegationManager cannot be initialized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         delegationManager.initialize(address(this), pauserRegistry, 0, initializedWithdrawalDelayBlocks);
@@ -513,7 +513,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
 
     function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(uint256 withdrawalDelayBlocks) public {
         cheats.assume(withdrawalDelayBlocks > MAX_WITHDRAWAL_DELAY_BLOCKS);
-        // Deploy DelegationManager implmentation and proxy
+        // Deploy DelegationManager implementation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         cheats.expectRevert(
             "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
@@ -790,7 +790,7 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
         delegationManager.updateAVSMetadataURI(metadataURI);
     }
 
-    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    // @notice Verifies an operator registers successful to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
     function testFuzz_registerOperatorToAVS(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
@@ -813,7 +813,7 @@ contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is Delegation
         delegationManager.registerOperatorToAVS(operator, operatorSignature);
     }
 
-    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    // @notice Verifies an operator registers successful to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
     function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
@@ -3197,7 +3197,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             // Since staker is delegated, operatorShares get incremented
             assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
         } else {
-            // Since withdrawer is not the staker and isn't delegated, staker's oeprator shares are unchanged
+            // Since withdrawer is not the staker and isn't delegated, staker's operator shares are unchanged
             assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
         }
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
