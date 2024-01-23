@@ -19,7 +19,7 @@ This document organizes methods according to the following themes (click each to
 * [Delegating to an Operator](#delegating-to-an-operator)
 * [Undelegating and Withdrawing](#undelegating-and-withdrawing)
 * [Accounting](#accounting)
-* [System Configuration]()
+* [System Configuration](#system-configuration)
 
 #### Important state variables
 
