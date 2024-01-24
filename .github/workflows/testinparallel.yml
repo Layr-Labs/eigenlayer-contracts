@@ -37,8 +37,11 @@ jobs:
       with:
         version: nightly
 
-    - name: Install forge dependencies
-      run: forge install
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build --sizes
+      id: build
 
     - name: Run forge test for the file
       run: forge test --match-path src/test/${{ matrix.file }} --no-match-contract FFI
