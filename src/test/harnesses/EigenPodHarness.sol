@@ -2,8 +2,9 @@
 pragma solidity =0.8.12;
 
 import "../../contracts/pods/EigenPod.sol";
+import "forge-std/Test.sol";
 
-contract EPInternalFunctions is EigenPod {
+contract EPInternalFunctions is EigenPod, Test {
 
     constructor(
         IETHPOSDeposit _ethPOS,
