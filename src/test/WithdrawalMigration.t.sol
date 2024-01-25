@@ -96,7 +96,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             strategies: queuedWithdrawal.strategies,
             shares: queuedWithdrawal.shares
         });
-        bytes32 withdrawalRootDM = m1DelegationManager.calculateWithdrawalRoot(migratedWithdrawal);
+        bytes32 withdrawalRootDM = _calculateWithdrawalRoot(migratedWithdrawal);
         uint256 nonceBefore = m1DelegationManager.cumulativeWithdrawalsQueued(queuedWithdrawal.staker);
 
         // Migrate withdrawal
@@ -159,8 +159,8 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             shares: queuedWithdrawal2.shares
         });
 
-        bytes32 withdrawalRootDM1 = m1DelegationManager.calculateWithdrawalRoot(migratedWithdrawal1);
-        bytes32 withdrawalRootDM2 = m1DelegationManager.calculateWithdrawalRoot(migratedWithdrawal2);
+        bytes32 withdrawalRootDM1 = _calculateWithdrawalRoot(migratedWithdrawal1);
+        bytes32 withdrawalRootDM2 = _calculateWithdrawalRoot(migratedWithdrawal2);
 
         uint256 nonceBefore = m1DelegationManager.cumulativeWithdrawalsQueued(queuedWithdrawal1.staker);
 
@@ -351,6 +351,10 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             address(delegationManagerImplementation)
         );
         cheats.stopPrank();
+    }
+
+    function _calculateWithdrawalRoot(IDelegationManager.Withdrawal memory withdrawal) internal pure returns (bytes32) {
+        return keccak256(abi.encode(withdrawal));
     }
 
     // Events

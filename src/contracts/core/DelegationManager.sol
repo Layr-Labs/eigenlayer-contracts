@@ -356,7 +356,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 });
 
                 // create the new storage
-                bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
+                bytes32 newRoot = _calculateWithdrawalRoot(migratedWithdrawal);
                 // safety check to ensure that root doesn't exist already -- this should *never* be hit
                 require(!pendingWithdrawals[newRoot], "migrateQueuedWithdrawals: withdrawal already exists");
                 pendingWithdrawals[newRoot] = true;
@@ -551,7 +551,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256 /*middlewareTimesIndex*/,
         bool receiveAsTokens
     ) internal {
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bytes32 withdrawalRoot = _calculateWithdrawalRoot(withdrawal);
 
         require(
             pendingWithdrawals[withdrawalRoot], 
@@ -725,7 +725,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             shares: shares
         });
 
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        bytes32 withdrawalRoot = _calculateWithdrawalRoot(withdrawal);
 
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
@@ -791,6 +791,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
+    /// @notice Returns the keccak256 hash of `withdrawal`.
+    function _calculateWithdrawalRoot(Withdrawal memory withdrawal) internal pure returns (bytes32) {
+        return keccak256(abi.encode(withdrawal));
+    }
+
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
@@ -829,27 +834,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory) {
         return _operatorDetails[operator];
-    }
-
-    /*
-     * @notice Returns the earnings receiver address for an operator
-     */
-    function earningsReceiver(address operator) external view returns (address) {
-        return _operatorDetails[operator].earningsReceiver;
-    }
-
-    /**
-     * @notice Returns the delegationApprover account for an operator
-     */
-    function delegationApprover(address operator) external view returns (address) {
-        return _operatorDetails[operator].delegationApprover;
-    }
-
-    /**
-     * @notice Returns the stakerOptOutWindowBlocks for an operator
-     */
-    function stakerOptOutWindowBlocks(address operator) external view returns (uint256) {
-        return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
     /**
@@ -913,11 +897,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             }
         }
         return withdrawalDelay;
-    }
-
-    /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(Withdrawal memory withdrawal) public pure returns (bytes32) {
-        return keccak256(abi.encode(withdrawal));
     }
 
     /**

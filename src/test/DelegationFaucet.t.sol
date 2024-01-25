@@ -349,7 +349,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             });
         }
         cheats.expectEmit(true, true, true, true, address(delegation));
-        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
+        emit WithdrawalCompleted(_calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = false;
         delegationFaucet.completeQueuedWithdrawal(
@@ -410,7 +410,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             });
         }
         cheats.expectEmit(true, true, true, true, address(delegation));
-        emit WithdrawalCompleted(delegation.calculateWithdrawalRoot(queuedWithdrawal));
+        emit WithdrawalCompleted(_calculateWithdrawalRoot(queuedWithdrawal));
         uint256 middlewareTimesIndex = 0;
         bool receiveAsTokens = true;
         delegationFaucet.completeQueuedWithdrawal(
@@ -506,7 +506,11 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             delegatedTo: strategyManager.delegation().delegatedTo(staker)
         });
         // calculate the withdrawal root
-        withdrawalRoot = delegation.calculateWithdrawalRoot(queuedWithdrawal);
+        withdrawalRoot = _calculateWithdrawalRoot(queuedWithdrawal);
         return (queuedWithdrawal, tokensArray, withdrawalRoot);
+    }
+
+    function _calculateWithdrawalRoot(IDelegationManager.Withdrawal memory withdrawal) internal pure returns (bytes32) {
+        return keccak256(abi.encode(withdrawal));
     }
 }

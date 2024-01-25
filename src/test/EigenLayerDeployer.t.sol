@@ -112,6 +112,17 @@ contract EigenLayerDeployer is Operators {
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping(address => bool) fuzzedAddressMapping;
 
+    /// Typehash definitions for DelegationManager:
+
+    bytes32 internal constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+    bytes32 internal constant STAKER_DELEGATION_TYPEHASH =
+        keccak256("StakerDelegation(address staker,address operator,uint256 nonce,uint256 expiry)");
+
+    bytes32 internal constant DELEGATION_APPROVAL_TYPEHASH =
+        keccak256("DelegationApproval(address staker,address operator,bytes32 salt,uint256 expiry)");
+
     //ensures that a passed in address is not set to true in the fuzzedAddressMapping
     modifier fuzzedAddress(address addr) virtual {
         cheats.assume(fuzzedAddressMapping[addr] == false);

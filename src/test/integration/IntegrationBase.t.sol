@@ -170,7 +170,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         bytes32 withdrawalRoot,
         string memory err
     ) internal {
-        assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
+        assertEq(withdrawalRoot, _calculateWithdrawalRoot(withdrawal), err);
     }
     
     /*******************************************************************************
@@ -640,10 +640,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
         for (uint i = 0; i < withdrawals.length; i++) {
-            withdrawalRoots[i] = delegationManager.calculateWithdrawalRoot(withdrawals[i]);
+            withdrawalRoots[i] = _calculateWithdrawalRoot(withdrawals[i]);
         }
 
         return withdrawalRoots;
+    }
+
+    function _calculateWithdrawalRoot(IDelegationManager.Withdrawal memory withdrawal) internal pure returns (bytes32) {
+        return keccak256(abi.encode(withdrawal));
     }
 
     /// @dev Converts a list of strategies to underlying tokens

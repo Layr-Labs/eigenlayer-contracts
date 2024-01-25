@@ -322,21 +322,6 @@ interface IDelegationManager is ISignatureUtils {
      */
     function operatorDetails(address operator) external view returns (OperatorDetails memory);
 
-    /*
-     * @notice Returns the earnings receiver address for an operator
-     */
-    function earningsReceiver(address operator) external view returns (address);
-
-    /**
-     * @notice Returns the delegationApprover account for an operator
-     */
-    function delegationApprover(address operator) external view returns (address);
-
-    /**
-     * @notice Returns the stakerOptOutWindowBlocks for an operator
-     */
-    function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
-
     /**
      * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
      * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
@@ -429,15 +414,6 @@ interface IDelegationManager is ISignatureUtils {
         uint256 expiry
     ) external view returns (bytes32);
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    function DOMAIN_TYPEHASH() external view returns (bytes32);
-
-    /// @notice The EIP-712 typehash for the StakerDelegation struct used by the contract
-    function STAKER_DELEGATION_TYPEHASH() external view returns (bytes32);
-
-    /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
-    function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
-
     /**
      * @notice Getter function for the current EIP-712 domain separator for this contract.
      *
@@ -450,9 +426,6 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256);
-
-    /// @notice Returns the keccak256 hash of `withdrawal`.
-    function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32);
 
     function migrateQueuedWithdrawals(IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] memory withdrawalsToQueue) external;
 }

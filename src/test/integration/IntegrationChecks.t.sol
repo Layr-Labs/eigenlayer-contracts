@@ -124,7 +124,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint[] memory expectedTokens
     ) internal {
         // Common checks
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(_calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_StakerShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
@@ -146,7 +146,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint[] memory shares
     ) internal {
         // Common checks applicable to both user and non-user operator types
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(_calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
@@ -174,7 +174,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that the withdrawal is not pending, that the token balances of the staker and operator are unchanged,
         //     that the withdrawer received the expected shares, and that that the total shares of each o
         //     strategy withdrawn remains unchanged 
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(_calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
         assert_Snap_Added_StakerShares(staker, strategies, shares, "staker should have received expected shares");

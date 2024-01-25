@@ -163,7 +163,7 @@ contract DelegationTests is EigenLayerTestHelper {
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
         bytes32 structHash = keccak256(
-            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, expiry)
+            abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, nonceBefore, expiry)
         );
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
@@ -207,7 +207,7 @@ contract DelegationTests is EigenLayerTestHelper {
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
         bytes32 structHash = keccak256(
-            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max)
+            abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, nonceBefore, type(uint256).max)
         );
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
@@ -246,7 +246,7 @@ contract DelegationTests is EigenLayerTestHelper {
         uint256 nonceBefore = delegation.stakerNonce(staker);
 
         bytes32 structHash = keccak256(
-            abi.encode(delegation.STAKER_DELEGATION_TYPEHASH(), staker, operator, nonceBefore, type(uint256).max)
+            abi.encode(STAKER_DELEGATION_TYPEHASH, staker, operator, nonceBefore, type(uint256).max)
         );
         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", delegation.domainSeparator(), structHash));
 
