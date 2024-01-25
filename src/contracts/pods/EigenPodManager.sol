@@ -140,7 +140,7 @@ contract EigenPodManager is
                 });
             }
         }
-        emit PodBalanceUpdated(podOwner, sharesDelta);
+        emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
     /**
@@ -180,6 +180,8 @@ contract EigenPodManager is
         int256 currentPodOwnerShares = podOwnerShares[podOwner];
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
+
+        emit PodSharesUpdated(podOwner, int256(shares));
 
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }

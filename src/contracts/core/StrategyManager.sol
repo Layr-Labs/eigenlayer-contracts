@@ -305,6 +305,8 @@ contract StrategyManager is
 
         // add the returned shares to their existing shares for this strategy
         stakerStrategyShares[staker][strategy] += shares;
+
+        emit Deposit(staker, token, strategy, shares);
     }
 
     /**
@@ -334,7 +336,6 @@ contract StrategyManager is
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares(staker, strategy, shares);
 
-        emit Deposit(staker, token, strategy, shares);
         return shares;
     }
 
