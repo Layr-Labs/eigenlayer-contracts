@@ -188,28 +188,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return stakerSignatureAndExpiry;
     }
 
-    /**
-     * @notice internal function for calculating a signature from the operator corresponding to `_operatorPrivateKey`, delegating them to
-     * the `operator`, and expiring at `expiry`.
-     */
-    function _getOperatorSignature(
-        uint256 _operatorPrivateKey,
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
-        operatorSignature.expiry = expiry;
-        operatorSignature.salt = salt;
-        {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
-            operatorSignature.signature = abi.encodePacked(r, s, v);
-        }
-        return operatorSignature;
-    }
-
-
     // @notice Assumes operator does not have a delegation approver & staker != approver
     function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
