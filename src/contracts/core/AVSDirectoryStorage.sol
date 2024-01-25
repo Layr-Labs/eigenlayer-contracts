@@ -18,15 +18,6 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
-    
-    /// @notice The StrategyManager contract for EigenLayer
-    IStrategyManager public immutable strategyManager;
-
-    /// @notice The Slasher contract for EigenLayer
-    ISlasher public immutable slasher;
-
-    /// @notice The EigenPodManager contract for EigenLayer
-    IEigenPodManager public immutable eigenPodManager;
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
@@ -42,16 +33,8 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
     /// @dev Salt is used in the `registerOperatorToAVS` function.
     mapping(address => mapping(bytes32 => bool)) public operatorSaltIsSpent;
 
-    constructor(
-        IDelegationManager _delegation,
-        IStrategyManager _strategyManager,
-        ISlasher _slasher,
-        IEigenPodManager _eigenPodManager
-    ) {
+    constructor(IDelegationManager _delegation) {
         delegation = _delegation;
-        strategyManager = _strategyManager;
-        slasher = _slasher;
-        eigenPodManager = _eigenPodManager;
     }
 
     /**
