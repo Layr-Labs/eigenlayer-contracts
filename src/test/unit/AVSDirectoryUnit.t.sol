@@ -248,7 +248,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
-        cheats.assume(operatorSignature.expiry < block.timestamp);
+        operatorSignature.expiry = bound(operatorSignature.expiry, 0, block.timestamp - 1);
 
         cheats.expectRevert("AVSDirectory.registerOperatorToAVS: operator signature expired");
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);

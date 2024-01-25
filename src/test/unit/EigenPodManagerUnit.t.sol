@@ -289,7 +289,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_addShares(uint256 shares) public {
         // Fuzz inputs
         cheats.assume(defaultStaker != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        shares = shares - (shares % GWEI_TO_WEI); // Round down to nearest Gwei
         cheats.assume(int256(shares) >= 0);
 
         // Add shares
@@ -361,7 +361,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public filterFuzzedAddressInputs(podOwner) {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        cheats.assume(shares < type(uint256).max / 2);
+        shares = shares - (shares % GWEI_TO_WEI);  // Round down to nearest Gwei
+        assertTrue(int256(shares) % int256(GWEI_TO_WEI) == 0, "Shares must be a whole Gwei amount");
 
         // Initialize pod with shares
         _initializePodWithShares(podOwner, int256(shares));
