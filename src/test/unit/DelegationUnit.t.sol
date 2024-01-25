@@ -1185,7 +1185,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // filter to only valid `expiry` values
         expiry = bound(expiry, block.timestamp + 1, type(uint256).max);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        cheats.assume(staker != defaultOperator && staker != delegationApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
