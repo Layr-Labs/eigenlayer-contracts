@@ -4,10 +4,9 @@ pragma solidity =0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "../interfaces/ISlasher.sol";
-import "./DelegationManagerStorage.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+import "./DelegationManagerStorage.sol";
 
 /**
  * @title DelegationManager
@@ -28,9 +27,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // @dev Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
-
-    // @dev Index for flag that pauses operator register/deregister to avs when set.
-    uint8 internal constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 3;
 
     // @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
@@ -134,14 +130,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function updateOperatorMetadataURI(string calldata metadataURI) external {
         require(isOperator(msg.sender), "DelegationManager.updateOperatorMetadataURI: caller must be an operator");
         emit OperatorMetadataURIUpdated(msg.sender, metadataURI);
-    }
-
-    /**
-     * @notice Called by an avs to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an avs
-     */
-    function updateAVSMetadataURI(string calldata metadataURI) external {
-        emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
     /**
@@ -433,72 +421,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 shares: shares
             });
         }
-    }
-
-    /**
-     * @notice Called by the AVS's service manager contract to register an operator with the avs.
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-
-        require(
-            operatorSignature.expiry >= block.timestamp,
-            "DelegationManager.registerOperatorToAVS: operator signature expired"
-        );
-        require(
-            avsOperatorStatus[msg.sender][operator] != OperatorAVSRegistrationStatus.REGISTERED,
-            "DelegationManager.registerOperatorToAVS: operator already registered"
-        );
-        require(
-            !operatorSaltIsSpent[operator][operatorSignature.salt],
-            "DelegationManager.registerOperatorToAVS: salt already spent"
-        );
-        require(
-            isOperator(operator),
-            "DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
-
-        // Calculate the digest hash
-        bytes32 operatorRegistrationDigestHash = calculateOperatorAVSRegistrationDigestHash({
-            operator: operator,
-            avs: msg.sender,
-            salt: operatorSignature.salt,
-            expiry: operatorSignature.expiry
-        });
-
-        // Check that the signature is valid
-        EIP1271SignatureUtils.checkSignature_EIP1271(
-            operator,
-            operatorRegistrationDigestHash,
-            operatorSignature.signature
-        );
-
-        // Set the operator as registered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.REGISTERED;
-
-        // Mark the salt as spent
-        operatorSaltIsSpent[operator][operatorSignature.salt] = true;
-
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.REGISTERED);
-    }
-
-    /**
-     * @notice Called by an avs to deregister an operator with the avs.
-     * @param operator The address of the operator to deregister.
-     */
-    function deregisterOperatorFromAVS(address operator) external onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
-        require(
-            avsOperatorStatus[msg.sender][operator] == OperatorAVSRegistrationStatus.REGISTERED,
-            "DelegationManager.deregisterOperatorFromAVS: operator not registered"
-        );
-
-        // Set the operator as deregistered
-        avsOperatorStatus[msg.sender][operator] = OperatorAVSRegistrationStatus.UNREGISTERED;
-
-        emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
     /**
@@ -1059,30 +981,6 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // calculate the digest hash
         bytes32 approverDigestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), approverStructHash));
         return approverDigestHash;
-    }
-
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
-     * @param operator The account registering as an operator
-     * @param avs The address of the service manager contract for the AVS that the operator is registering to
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
-     */
-    function calculateOperatorAVSRegistrationDigestHash(
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) public view returns (bytes32) {
-        // calculate the struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry)
-        );
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), structHash)
-        );
-        return digestHash;
     }
 
     /**
