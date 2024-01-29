@@ -11,6 +11,11 @@ This document provides an overview of system components, contracts, and user rol
 #### Contents
 
 * [System Components](#system-components)
+    * [`EigenPodManager`](#eigenpodmanager)
+    * [`StrategyManager`](#strategymanager)
+    * [`DelegationManager`](#delegationmanager)
+    * [`AVSDirectory`](#avsdirectory)
+    * [`Slasher`](#slasher)
 * [Roles and Actors](#roles-and-actors)
 
 ### System Components
@@ -40,7 +45,7 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 | [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | One instance per supported LST | Transparent proxy |
 
 These contracts work together to enable restaking for LSTs:
-* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each of the 3 LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
+* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
 * `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported LST. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
@@ -54,6 +59,18 @@ See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md
 The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
+
+#### AVSDirectory
+
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`AVSDirectory.sol`](../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
+
+The `AVSDirectory` handles interactions between AVSs and the EigenLayer core contracts. Once registered as an Operator in EigenLayer core (via the `DelegationManager`), Operators can register with one or more AVSs (via the AVS's contracts) to begin providing services to them offchain. As a part of registering with an AVS, the AVS will record this registration in the core contracts by calling into the `AVSDirectory`.
+
+See full documentation in [`/core/AVSDirectory.md`](./core/AVSDirectory.md).
+
+For more information on AVS contracts, see the [middleware repo][middleware-repo].
 
 #### Slasher
 
