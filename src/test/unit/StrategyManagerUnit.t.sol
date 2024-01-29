@@ -902,7 +902,7 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
         for (uint256 i = 0; i < 3; ++i) {
-            cheats.assume(amounts[i] > 0 && amounts[i] < dummyToken.totalSupply());
+            amounts[i] = bound(amounts[i], 1, dummyToken.totalSupply() - 1);
             _depositIntoStrategySuccessfully(strategies[i], staker, amounts[i]);
         }
         IStrategy removeStrategy = strategies[randStrategy % 3];
@@ -944,7 +944,8 @@ contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
         strategies[2] = dummyStrat3;
         uint256[] memory sharesBefore = new uint256[](3);
         for (uint256 i = 0; i < 3; ++i) {
-            cheats.assume(sharesAmounts[i] > 0 && sharesAmounts[i] <= depositAmounts[i]);
+            depositAmounts[i] = bound(depositAmounts[i], 1, strategies[i].underlyingToken().totalSupply());
+            sharesAmounts[i] = bound(sharesAmounts[i], 1, depositAmounts[i]);
             _depositIntoStrategySuccessfully(strategies[i], staker, depositAmounts[i]);
             sharesBefore[i] = strategyManager.stakerStrategyShares(staker, strategies[i]);
             assertEq(sharesBefore[i], depositAmounts[i], "Staker has not deposited amount into strategy");

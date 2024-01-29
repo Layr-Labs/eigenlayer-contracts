@@ -188,28 +188,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return stakerSignatureAndExpiry;
     }
 
-    /**
-     * @notice internal function for calculating a signature from the operator corresponding to `_operatorPrivateKey`, delegating them to
-     * the `operator`, and expiring at `expiry`.
-     */
-    function _getOperatorSignature(
-        uint256 _operatorPrivateKey,
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
-        operatorSignature.expiry = expiry;
-        operatorSignature.salt = salt;
-        {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
-            operatorSignature.signature = abi.encodePacked(r, s, v);
-        }
-        return operatorSignature;
-    }
-
-
     // @notice Assumes operator does not have a delegation approver & staker != approver
     function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
         ISignatureUtils.SignatureWithExpiry memory approverSignatureAndExpiry;
@@ -1119,9 +1097,9 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
-        cheats.assume(expiry < block.timestamp);
+        expiry = bound(expiry, 0, block.timestamp - 1);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1205,9 +1183,10 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
-        cheats.assume(expiry >= block.timestamp);
+        expiry = bound(expiry, block.timestamp + 1, type(uint256).max);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        cheats.assume(staker != defaultOperator && staker != delegationApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -1592,10 +1571,9 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
-        cheats.assume(expiry < block.timestamp);
-
+        expiry = bound(expiry, 0, block.timestamp - 1);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1846,7 +1824,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 expiry,
         bytes memory signature
     ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
-        cheats.assume(expiry < block.timestamp);
+        expiry = bound(expiry, 0, block.timestamp - 1);
         cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
@@ -1983,12 +1961,18 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 stakerExpiry,
         uint256 delegationApproverExpiry
     ) public filterFuzzedAddressInputs(caller) {
-        // filter to only valid `stakerExpiry` values
-        cheats.assume(stakerExpiry >= block.timestamp);
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
+
+        // filter to only valid `stakerExpiry` values
+        stakerExpiry = bound(stakerExpiry, block.timestamp + 1, type(uint256).max);
         // filter to only *invalid* `delegationApproverExpiry` values
-        cheats.assume(delegationApproverExpiry < block.timestamp);
+        delegationApproverExpiry = bound(delegationApproverExpiry, 0, block.timestamp - 1);
+
+        console.log("timestamp: %s", block.timestamp);
+        console.log(stakerExpiry);
+        console.log(delegationApproverExpiry);
+
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -3049,6 +3033,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
+        cheats.assume(withdrawer != address(0));
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         _registerOperatorWithBaseDetails(defaultOperator);
         (
@@ -3093,7 +3078,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
-        cheats.assume(withdrawer != defaultOperator);
+        cheats.assume(withdrawer != defaultOperator && withdrawer != address(0));
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         _registerOperatorWithBaseDetails(defaultOperator);
         (
