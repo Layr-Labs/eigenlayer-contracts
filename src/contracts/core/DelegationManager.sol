@@ -630,7 +630,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                         });
                     }
                 } else {
-                    strategyManager.addShares(msg.sender, withdrawal.strategies[i], withdrawal.shares[i]);
+                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.shares[i]);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
                         _increaseOperatorShares({

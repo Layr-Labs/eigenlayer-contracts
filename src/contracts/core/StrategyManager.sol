@@ -178,10 +178,11 @@ contract StrategyManager is
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     function addShares(
         address staker,
+        IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external onlyDelegationManager {
-        _addShares(staker, strategy, shares);
+        _addShares(staker, token, strategy, shares);
     }
 
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
@@ -283,13 +284,14 @@ contract StrategyManager is
     /**
      * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
      * @param staker The address to add shares to
+     * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
      * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IStrategy strategy, uint256 shares) internal {
+    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
         // sanity checks on inputs
         require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
         require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
@@ -305,6 +307,8 @@ contract StrategyManager is
 
         // add the returned shares to their existing shares for this strategy
         stakerStrategyShares[staker][strategy] += shares;
+
+        emit Deposit(staker, token, strategy, shares);
     }
 
     /**
@@ -329,12 +333,11 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, strategy, shares);
+        _addShares(staker, token, strategy, shares);
 
         // Increase shares delegated to operator, if needed
         delegation.increaseDelegatedShares(staker, strategy, shares);
 
-        emit Deposit(staker, token, strategy, shares);
         return shares;
     }
 
