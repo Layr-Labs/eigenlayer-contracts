@@ -55,7 +55,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     *******************************************************************************/
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger and slasher.
+     * @dev Initializes the immutable addresses of the strategy manager and slasher.
      */
     constructor(
         IStrategyManager _strategyManager,
@@ -91,7 +91,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
      * @param registeringOperatorDetails is the `OperatorDetails` for the operator.
      * @param metadataURI is a URI for the operator's metadata, i.e. a link providing more details on the operator.
      *
-     * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themself".
+     * @dev Once an operator is registered, they cannot 'deregister' as an operator, and they will forever be considered "delegated to themselves".
      * @dev This function will revert if the caller attempts to set their `earningsReceiver` to address(0).
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
