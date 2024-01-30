@@ -140,6 +140,7 @@ contract EigenPodManager is
                 });
             }
         }
+        emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
     /**
@@ -180,6 +181,8 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
+        emit PodSharesUpdated(podOwner, int256(shares));
+
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
 
@@ -208,13 +211,14 @@ contract EigenPodManager is
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
+                emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
+                emit PodSharesUpdated(podOwner, int256(shares));
                 return;
             }
         }
-
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }

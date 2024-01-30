@@ -462,7 +462,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     }
 }
 
-contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
+contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {
 
     function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
         cheats.assume(invalidCaller != address(defaultPod));
@@ -494,6 +494,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         _initializePodWithShares(defaultStaker, scaledSharesBefore);
 
         // Update balance
+        cheats.expectEmit(true, true, true, true);
+        emit PodSharesUpdated(defaultStaker, scaledSharesDelta);
         cheats.prank(address(defaultPod));
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 
