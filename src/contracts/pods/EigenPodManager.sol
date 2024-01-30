@@ -211,11 +211,11 @@ contract EigenPodManager is
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
-                emit PodSharesUpdated(podOwner, currentShareDeficit);
+                emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
-                emit PodSharesUpdated(podOwner, shares);
+                emit PodSharesUpdated(podOwner, int256(shares));
                 return;
             }
         }

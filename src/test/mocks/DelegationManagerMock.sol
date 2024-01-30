@@ -168,10 +168,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function addShares(
         IStrategyManager strategyManager,
         address staker,
+        IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, strategy, shares);
+        strategyManager.addShares(staker, token, strategy, shares);
     }
 
     function removeShares(
