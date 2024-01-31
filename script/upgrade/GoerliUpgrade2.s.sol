@@ -12,6 +12,8 @@ import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
 import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "../../src/test/mocks/EmptyContract.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
@@ -26,7 +28,16 @@ import "forge-std/Test.sol";
 contract GoerliUpgrade2 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    string public deploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
+    string public deploymentOutputPath = string(bytes("script/output/M2_preprod_deployment_from_scratch.json"));
+
+    IDelayedWithdrawalRouter delayedWithdrawalRouter;
+    IDelegationManager delegation;
+    IEigenPodManager eigenPodManager;
+    IStrategyManager strategyManager;
+    ISlasher slasher;
+    IBeacon eigenPodBeacon;
+    EmptyContract emptyContract;
+    ProxyAdmin eigenLayerProxyAdmin;
 
     function run() external {
         // read and log the chainID
@@ -35,14 +46,18 @@ contract GoerliUpgrade2 is Script, Test {
 
         string memory config_data = vm.readFile(deploymentOutputPath);
 
-        IDelayedWithdrawalRouter delayedWithdrawalRouter = IDelayedWithdrawalRouter(stdJson.readAddress(config_data, ".addresses.delayedWithdrawalRouter"));
-        IDelegationManager delegation = IDelegationManager(stdJson.readAddress(config_data, ".addresses.delegation"));
-        IEigenPodManager eigenPodManager = IEigenPodManager(stdJson.readAddress(config_data, ".addresses.eigenPodManager"));
-        IStrategyManager strategyManager = IStrategyManager(stdJson.readAddress(config_data, ".addresses.strategyManager"));
-        ISlasher slasher = ISlasher(stdJson.readAddress(config_data, ".addresses.slasher"));
-        IBeacon eigenPodBeacon = IBeacon(stdJson.readAddress(config_data, ".addresses.eigenPodBeacon"));
+        delayedWithdrawalRouter = IDelayedWithdrawalRouter(stdJson.readAddress(config_data, ".addresses.delayedWithdrawalRouter"));
+        delegation = IDelegationManager(stdJson.readAddress(config_data, ".addresses.delegation"));
+        eigenPodManager = IEigenPodManager(stdJson.readAddress(config_data, ".addresses.eigenPodManager"));
+        strategyManager = IStrategyManager(stdJson.readAddress(config_data, ".addresses.strategyManager"));
+        slasher = ISlasher(stdJson.readAddress(config_data, ".addresses.slasher"));
+        eigenPodBeacon = IBeacon(stdJson.readAddress(config_data, ".addresses.eigenPodBeacon"));
+        emptyContract = EmptyContract(stdJson.readAddress(config_data, ".addresses.emptyContract"));
+        eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(config_data, ".addresses.eigenLayerProxyAdmin"));
 
         vm.startBroadcast();
+
+        address avsDirectory = address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""));
 
         address avsDirectoryImplementation = address(
             new AVSDirectory(
@@ -101,6 +116,8 @@ contract GoerliUpgrade2 is Script, Test {
 
         vm.stopBroadcast();
 
+        emit log_named_address("AVSDirectory", avsDirectory);
+        //   AVSDirectory: 
         emit log_named_address("AVSDirectoryImplementation", avsDirectoryImplementation);
         //   AVSDirectoryImplementation:
         emit log_named_address("DelegationImplementation", delegationImplementation);
