@@ -117,20 +117,12 @@ contract GoerliUpgrade2 is Script, Test {
         vm.stopBroadcast();
 
         emit log_named_address("AVSDirectory", avsDirectory);
-        //   AVSDirectory: 
         emit log_named_address("AVSDirectoryImplementation", avsDirectoryImplementation);
-        //   AVSDirectoryImplementation:
         emit log_named_address("DelegationImplementation", delegationImplementation);
-        //   DelegationImplementation: 
         emit log_named_address("SlasherImplementation", slasherImplementation);
-        //   SlasherImplementation: 
         emit log_named_address("StrategyManagerImplementation", strategyManagerImplementation);
-        //   StrategyManagerImplementation: 
         emit log_named_address("DelayedWithdrawalRouterImplementation", delayedWithdrawalRouterImplementation);
-        //   DelayedWithdrawalRouterImplementation: 
         emit log_named_address("EigenPodImplementation", eigenPodImplementation);
-        //   EigenPodImplementation: 
         emit log_named_address("EigenPodManagerImplementation", eigenPodManagerImplementation);
-        //   EigenPodManagerImplementation: 
     }
 }
