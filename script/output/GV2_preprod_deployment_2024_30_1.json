@@ -1,5 +1,6 @@
 {
   "addresses": {
+    "baseStrategyImplementation": "0xA548BF0106108A0c14779F3f1d8981517b8fA9D0",
     "delayedWithdrawalRouter": "0x9572e46797B7A07257314e587061dC46c4dfCE0E",
     "delayedWithdrawalRouterImplementation": "0xfD9F7b99794C64F62cbbF4780f7f32A2a83Ee834",
     "delegation": "0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332",
