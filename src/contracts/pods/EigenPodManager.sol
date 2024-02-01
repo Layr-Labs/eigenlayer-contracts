@@ -70,7 +70,6 @@ contract EigenPodManager is
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
-        denebForkTimestamp = type(uint64).max;
     }
 
     /**
