@@ -26,6 +26,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     
     // Address of pod for which proofs were generated
     address podAddress = address(0x49c486E3f4303bc11C02F952Fe5b08D0AB22D443);
+
+
+    bool IS_DENEB = false;
     
     // Constants
     // uint32 public constant WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -140,11 +143,6 @@ contract EigenPodUnitTests_Stake is EigenPodUnitTests, IEigenPodEvents {
     function testFuzz_stake_revert_notEigenPodManager(address invalidCaller) public {
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
         cheats.deal(invalidCaller, 32 ether);
-
-    bool public IS_DENEB;
-
-
-    Vm cheats = Vm(HEVM_ADDRESS);
 
         cheats.prank(invalidCaller);
         cheats.expectRevert("EigenPod.onlyEigenPodManager: not eigenPodManager");

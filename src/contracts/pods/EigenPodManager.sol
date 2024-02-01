@@ -44,8 +44,8 @@ contract EigenPodManager is
         _;
     }
 
-    modifier denebHardForkEnabled() {
-        require(!denebHardForkEnabled, "EigenPodManager.denebHardForkEnabled: Deneb hard fork is already enabled")
+    modifier denebForkEnabled() {
+        require(!denebForkEnabled, "EigenPodManager.denebForkEnabled: Deneb fork is already enabled");
         _;
     }
 
@@ -70,7 +70,7 @@ contract EigenPodManager is
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
-        denebHardForkTimestamp = type(uint64).max;
+        denebForkTimestamp = type(uint64).max;
     }
 
     /**
@@ -247,10 +247,10 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
-    function setDenebHardForkTimestamp(uint64 _denebForkTimestamp) external onlyOwner denebHardForkEnabled {
-        denebHardForkTimestamp = denebForkTimestamp;
-        denebHardForkEnabled = true;
-        emit DenebForkTimestampUpdated(denebHardForkTimestamp);
+    function setDenebForkTimestamp(uint64 _denebForkTimestamp) external onlyOwner denebForkEnabled {
+        denebForkTimestamp = denebForkTimestamp;
+        denebForkEnabled = true;
+        emit DenebForkTimestampUpdated(denebForkTimestamp);
     }
 
     // INTERNAL FUNCTIONS
