@@ -44,6 +44,11 @@ contract EigenPodManager is
         _;
     }
 
+    modifier denebHardForkEnabled() {
+        require(!denebHardForkEnabled, "EigenPodManager.denebHardForkEnabled: Deneb hard fork is already enabled")
+        _;
+    }
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -65,6 +70,7 @@ contract EigenPodManager is
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
+        denebHardForkTimestamp = type(uint64).max;
     }
 
     /**
@@ -239,6 +245,12 @@ contract EigenPodManager is
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external onlyOwner {
         _updateBeaconChainOracle(newBeaconChainOracle);
+    }
+
+    function setDenebHardForkTimestamp(uint64 _denebForkTimestamp) external onlyOwner denebHardForkEnabled {
+        denebHardForkTimestamp = denebForkTimestamp;
+        denebHardForkEnabled = true;
+        emit DenebForkTimestampUpdated(denebHardForkTimestamp);
     }
 
     // INTERNAL FUNCTIONS
