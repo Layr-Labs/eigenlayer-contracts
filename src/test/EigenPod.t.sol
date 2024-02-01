@@ -259,8 +259,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             )
         );
 
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
-
         cheats.deal(address(podOwner), 5 * stakeAmount);
 
         fuzzedAddressMapping[address(0)] = true;

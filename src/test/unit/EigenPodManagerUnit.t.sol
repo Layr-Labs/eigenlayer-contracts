@@ -180,7 +180,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         cheats.assume(denebForkTimestamp != 0);
         cheats.assume(denebForkTimestamp != type(uint64).max);
         cheats.prank(initialOwner);
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+
         cheats.expectEmit(true, true, true, true);
         emit DenebForkTimestampUpdated(denebForkTimestamp);
         eigenPodManager.setDenebForkTimestamp(denebForkTimestamp);
@@ -193,28 +193,10 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         cheats.assume(timestamp1 != type(uint64).max);
         cheats.assume(timestamp2 != type(uint64).max);
         cheats.prank(initialOwner);
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+
         eigenPodManager.setDenebForkTimestamp(timestamp1);
-        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set"));
+        cheats.expectRevert(bytes("EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once"));
         eigenPodManager.setDenebForkTimestamp(timestamp2);
-    }
-
-    function test_setDenebForkTimestamp_NotToUint64MaxImmediately(uint64 timestamp) public {
-        cheats.assume(timestamp != type(uint64).max);
-        cheats.assume(timestamp != 0);
-        cheats.prank(initialOwner);
-        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set"));
-        eigenPodManager.setDenebForkTimestamp(timestamp);
-    }
-
-    function test_setDenebForkTimestamp_ToUint64MaxNotImmediately(uint64 timestamp) public {
-        cheats.assume(timestamp != type(uint64).max);
-        cheats.assume(timestamp != 0);
-        cheats.prank(initialOwner);
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
-        eigenPodManager.setDenebForkTimestamp(timestamp);
-        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: denebForkTimestamp must not be set yet"));
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 }
 
