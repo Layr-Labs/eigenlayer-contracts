@@ -44,8 +44,13 @@ contract EigenPodManager is
         _;
     }
 
+    /**
+    * @notice Modifier to ensure that the deneb fork timestamp is not set
+    * @dev Note that this function is only ever meant to be called twice.  First, it will be called to set the timestamp
+    * to type(uint64).max, and then it will be called to set the timestamp to the actual timestamp
+    */
     modifier denebForkEnabled() {
-        require(!denebForkEnabled, "EigenPodManager.denebForkEnabled: Deneb fork is already enabled");
+        require(denebForkTimestamp == 0 || denebForkTimestamp == type(uint64).max, "EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set");
         _;
     }
 
@@ -246,9 +251,12 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
-    function setDenebForkTimestamp(uint64 _denebForkTimestamp) external onlyOwner denebForkEnabled {
-        denebForkTimestamp = denebForkTimestamp;
-        denebForkEnabled = true;
+    /**
+     * @notice Sets the timestamp of the Deneb fork.
+     * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
+     */
+    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner denebForkEnabled {
+        denebForkTimestamp = newDenebForkTimestamp;
         emit DenebForkTimestampUpdated(denebForkTimestamp);
     }
 
