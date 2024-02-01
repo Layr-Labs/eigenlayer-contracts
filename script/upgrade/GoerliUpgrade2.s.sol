@@ -57,14 +57,6 @@ contract GoerliUpgrade2 is Script, Test {
 
         vm.startBroadcast();
 
-        address avsDirectory = address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""));
-
-        address avsDirectoryImplementation = address(
-            new AVSDirectory(
-                delegation
-            )
-        );
-
         address delegationImplementation = address(
             new DelegationManager(
                 strategyManager,
@@ -116,8 +108,6 @@ contract GoerliUpgrade2 is Script, Test {
 
         vm.stopBroadcast();
 
-        emit log_named_address("AVSDirectory", avsDirectory);
-        emit log_named_address("AVSDirectoryImplementation", avsDirectoryImplementation);
         emit log_named_address("DelegationImplementation", delegationImplementation);
         emit log_named_address("SlasherImplementation", slasherImplementation);
         emit log_named_address("StrategyManagerImplementation", strategyManagerImplementation);
