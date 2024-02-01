@@ -114,5 +114,16 @@ contract GoerliUpgrade2 is Script, Test {
         emit log_named_address("DelayedWithdrawalRouterImplementation", delayedWithdrawalRouterImplementation);
         emit log_named_address("EigenPodImplementation", eigenPodImplementation);
         emit log_named_address("EigenPodManagerImplementation", eigenPodManagerImplementation);
+
+        /*
+        == Logs ==
+        You are deploying on ChainID: 5
+        DelegationImplementation: 0x934eB3E2b6D5C2E1601B29B7180026D71438F20D
+        SlasherImplementation: 0x05c235183e8b9dFb7113Cf92bbDc3f5085324158
+        StrategyManagerImplementation: 0xb9B69504f1a727E783F4B4248A115D56F4080DF8
+        DelayedWithdrawalRouterImplementation: 0x44a40C60857b4B420Ad3D8b9646FefEBF2D0dB86
+        EigenPodImplementation: 0x83cbB48391F428878Bc5DD97C9792a8dbCAa0729
+        EigenPodManagerImplementation: 0xEEdCC9dB001fB8429721FE21426F51f0Cdd329EC
+        */
     }
 }
