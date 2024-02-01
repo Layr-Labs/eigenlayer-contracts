@@ -118,6 +118,8 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
 
         // Set storage in EPM
         EigenPodManagerWrapper(address(eigenPodManager)).setPodAddress(podOwner, eigenPod);
+
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 }
 
@@ -632,10 +634,10 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
 
             return
                 BeaconChainProofs.WithdrawalProof(
-                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(getWithdrawalProofCapella()),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
-                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(getTimestampProofCapella()),
                     abi.encodePacked(getHistoricalSummaryProof()),
                     uint64(getBlockRootIndex()),
                     uint64(getHistoricalSummaryIndex()),

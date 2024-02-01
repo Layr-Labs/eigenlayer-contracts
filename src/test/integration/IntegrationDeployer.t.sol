@@ -272,6 +272,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Create mock beacon chain / proof gen interface
         beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle);
+
+
+
+        //set deneb fork timestamp
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

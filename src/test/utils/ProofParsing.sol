@@ -10,12 +10,14 @@ contract ProofParsing is Test {
 
     bytes32[18] blockHeaderProof;
     bytes32[3] slotProof;
-    bytes32[9] withdrawalProof;
+    bytes32[10] withdrawalProofDeneb;
+    bytes32[9] withdrawalProofCapella;
     bytes32[46] validatorProof;
     bytes32[44] historicalSummaryProof;
 
     bytes32[7] executionPayloadProof;
-    bytes32[4] timestampProofs;
+    bytes32[5] timestampProofsCapella;
+    bytes32[4] timestampProofsDeneb;
 
     bytes32 slotRoot;
     bytes32 executionPayloadRoot;
@@ -79,13 +81,23 @@ contract ProofParsing is Test {
         return executionPayloadProof;
     }
 
-    function getTimestampProof() public returns(bytes32[4] memory) {
+    function getTimestampProofDeneb() public returns(bytes32[5] memory) {
+        for (uint i = 0; i < 5; i++) {
+            prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
+            timestampProofsCapella[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return timestampProofsCapella;
+    }
+
+    function getTimestampProofCapella() public returns(bytes32[4] memory) {
         for (uint i = 0; i < 4; i++) {
             prefix = string.concat(".TimestampProof[", string.concat(vm.toString(i), "]"));
-            timestampProofs[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            timestampProofsDeneb[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return timestampProofs;
+        return timestampProofsDeneb;
     }
+
+
 
     function getBlockHeaderProof() public returns(bytes32[18] memory) {
         for (uint i = 0; i < 18; i++) {
@@ -112,12 +124,20 @@ contract ProofParsing is Test {
         return stateRootProof;
     }
 
-    function getWithdrawalProof() public returns(bytes32[9] memory) {
+    function getWithdrawalProofDeneb() public returns(bytes32[10] memory) {
+        for (uint i = 0; i < 10; i++) {
+            prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
+            withdrawalProofDeneb[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+        }
+        return withdrawalProofDeneb;
+    }
+
+    function getWithdrawalProofCapella() public returns(bytes32[9] memory) {
         for (uint i = 0; i < 9; i++) {
             prefix = string.concat(".WithdrawalProof[", string.concat(vm.toString(i), "]"));
-            withdrawalProof[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
+            withdrawalProofCapella[i] = (stdJson.readBytes32(proofConfigJson, prefix)); 
         }
-        return withdrawalProof;
+        return withdrawalProofCapella;
     }
 
     function getValidatorProof() public returns(bytes32[46] memory) {
