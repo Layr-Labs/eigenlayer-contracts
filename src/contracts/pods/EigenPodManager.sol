@@ -49,8 +49,13 @@ contract EigenPodManager is
     * @dev Note that this function is only ever meant to be called twice.  First, it will be called to set the timestamp
     * to type(uint64).max, and then it will be called to set the timestamp to the actual timestamp
     */
-    modifier denebForkEnabled() {
-        require(denebForkTimestamp == 0 || denebForkTimestamp == type(uint64).max, "EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set");
+    modifier denebForkEnabled(uint64 newDenebForkTimestamp) {
+        require(newDenebForkTimestamp != 0, "EigenPodManager.denebForkEnabled: cannot set newDenebForkTimestamp to 0");
+        if(newDenebForkTimestamp == type(uint64).max){
+            require(denebForkTimestamp == 0, "EigenPodManager.denebForkEnabled: denebForkTimestamp must not be set yet");
+        } else {
+            require(denebForkTimestamp ==type(uint64).max, "EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set");
+        }
         _;
     }
 
@@ -255,7 +260,7 @@ contract EigenPodManager is
      * @notice Sets the timestamp of the Deneb fork.
      * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
      */
-    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner denebForkEnabled {
+    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner denebForkEnabled(newDenebForkTimestamp) {
         denebForkTimestamp = newDenebForkTimestamp;
         emit DenebForkTimestampUpdated(denebForkTimestamp);
     }

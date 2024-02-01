@@ -5,6 +5,10 @@ interface IEigenPodManagerEvents {
     /// @notice Emitted to notify the update of the beaconChainOracle address
     event BeaconOracleUpdated(address indexed newOracleAddress);
 
+    /// @notice Emitted to notify that the denebForkTimestamp has been set
+    event DenebForkTimestampUpdated(uint64 denebForkTimestamp);
+
+
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
