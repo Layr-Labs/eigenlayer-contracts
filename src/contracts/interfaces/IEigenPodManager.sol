@@ -154,4 +154,9 @@ interface IEigenPodManager is IPausable {
      */
     function denebForkTimestamp() external view returns (uint64);
 
+     /**
+     * setting the deneb hard fork timestamp
+     */
+    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external;
+
 }
