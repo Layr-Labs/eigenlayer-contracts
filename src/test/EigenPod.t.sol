@@ -15,6 +15,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
+    uint64 public constant DENEB_FORK_TIMESTAMP_GOERLI = 1705473120;
+
 
     bytes pubkey =
         hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
@@ -507,7 +509,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     /// @notice This test is to ensure the full withdrawal flow works
     function testFullWithdrawalFlowDeneb() public returns (IEigenPod) {
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+        eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP_GOERLI);
         IS_DENEB = true;
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
