@@ -64,7 +64,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      */
     mapping(address => int256) public podOwnerShares;
 
-    uint64 public denebForkTimestamp;
+    uint64 internal _denebForkTimestamp;
 
     constructor(
         IETHPOSDeposit _ethPOS,
