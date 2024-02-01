@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/core/AVSDirectory.sol";
 
 import "../../src/contracts/strategies/StrategyBase.sol";
 
@@ -29,6 +30,8 @@ contract ExistingDeploymentParser is Script, Test {
     PauserRegistry public eigenLayerPauserReg;
     Slasher public slasher;
     Slasher public slasherImplementation;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
     DelegationManager public delegation;
     DelegationManager public delegationImplementation;
     StrategyManager public strategyManager;
@@ -71,6 +74,8 @@ contract ExistingDeploymentParser is Script, Test {
         slasherImplementation = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation"));
         delegation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegation"));
         delegationImplementation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationImplementation"));
+        avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
+        avsDirectoryImplementation = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation"));
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
         strategyManagerImplementation = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManagerImplementation"));
         eigenPodManager = EigenPodManager(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodManager"));

@@ -1,0 +1,33 @@
+{
+    "addresses": {
+      "baseStrategyImplementation": "0xA548BF0106108A0c14779F3f1d8981517b8fA9D0",
+      "blsPublicKeyCompendium": "0x663F1f6A8E4417b9dB3117821068DAD862395aF0",
+      "delayedWithdrawalRouter": "0x9572e46797B7A07257314e587061dC46c4dfCE0E",
+      "delayedWithdrawalRouterImplementation": "0xaDd6b52E063bE5CdeF6450F28D9CA038bDAB9A49",
+      "delegation": "0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332",
+      "delegationImplementation": "0x679cf51e303827c99e924bea05331101bF90B126",
+      "eigenLayerPauserReg": "0x94A2679B6A87ADb4e0CabA8E3E40f463C6062DeC",
+      "eigenLayerProxyAdmin": "0x555573Ff2B3b2731e69eeBAfb40a4EEA7fBaC54A",
+      "eigenPodBeacon": "0x38cBD4e08eA1840B91dA42fE02B55Abc89083bFB",
+      "eigenPodImplementation": "0x9CeE917f0f5d4123585A4B12906a8A65cFac1ac8",
+      "eigenPodManager": "0x33e42d539abFe9b387B27b0e467374Bbb76cf925",
+      "eigenPodManagerImplementation": "0x6A4855ab9a3924c8169f20a189272FFF3cd00b68",
+      "emptyContract": "0xb23633b2240D78502fA308B817C892b2d5778469",
+      "slasher": "0xF751E8C37ACd3AD5a35D5db03E57dB6F9AD0bDd0",
+      "slasherImplementation": "0xa02171440AfD8d5f09BaAB74Cd48b1401C47F2f9",
+      "strategies": {
+        "Liquid staked Ether 2.0": "0xed6DE3f2916d20Cb427fe7255194a05061319FFB",
+        "Rocket Pool ETH": "0xd421b2a340497545dA68AE53089d99b9Fe0493cD"
+      },
+      "strategyManager": "0xD309ADd2B269d522112DcEe0dCf0b0f04a09C29e",
+      "strategyManagerImplementation": "0xC10133A329A210f8DEbf597C8eF5907c95D673e9"
+    },
+    "chainInfo": {
+      "chainId": 5,
+      "deploymentBlock": 9729808
+    },
+    "parameters": {
+      "executorMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+      "operationsMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA"
+    }
+  }

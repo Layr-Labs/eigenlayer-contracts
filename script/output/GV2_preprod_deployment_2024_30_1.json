@@ -1,0 +1,30 @@
+{
+  "addresses": {
+    "baseStrategyImplementation": "0xA548BF0106108A0c14779F3f1d8981517b8fA9D0",
+    "delayedWithdrawalRouter": "0x9572e46797B7A07257314e587061dC46c4dfCE0E",
+    "delayedWithdrawalRouterImplementation": "0x44a40C60857b4B420Ad3D8b9646FefEBF2D0dB86",
+    "delegation": "0x45b4c4DAE69393f62e1d14C5fe375792DF4E6332",
+    "delegationImplementation": "0x934eB3E2b6D5C2E1601B29B7180026D71438F20D",
+    "eigenLayerPauserReg": "0x94A2679B6A87ADb4e0CabA8E3E40f463C6062DeC",
+    "eigenLayerProxyAdmin": "0x555573Ff2B3b2731e69eeBAfb40a4EEA7fBaC54A",
+    "eigenPodBeacon": "0x38cBD4e08eA1840B91dA42fE02B55Abc89083bFB",
+    "eigenPodImplementation": "0x83cbB48391F428878Bc5DD97C9792a8dbCAa0729",
+    "eigenPodManager": "0x33e42d539abFe9b387B27b0e467374Bbb76cf925",
+    "eigenPodManagerImplementation": "0xEEdCC9dB001fB8429721FE21426F51f0Cdd329EC",
+    "emptyContract": "0xb23633b2240D78502fA308B817C892b2d5778469",
+    "slasher": "0xF751E8C37ACd3AD5a35D5db03E57dB6F9AD0bDd0",
+    "slasherImplementation": "0x05c235183e8b9dFb7113Cf92bbDc3f5085324158",
+    "strategyManager": "0xD309ADd2B269d522112DcEe0dCf0b0f04a09C29e",
+    "strategyManagerImplementation": "0xb9B69504f1a727E783F4B4248A115D56F4080DF8",
+    "avsDirectory": "0x47eFB8e38656a805BC6B3b13FA331d34dcDeB374",
+    "avsDirectoryImplementation": "0x728111B10227F44E5e389e5650725948d1DCcE7A"
+  },
+  "chainInfo": {
+    "chainId": 5,
+    "deploymentBlock": 10469472
+  },
+  "parameters": {
+    "executorMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA",
+    "operationsMultisig": "0x27977e6E4426A525d055A587d2a0537b4cb376eA"
+  }
+}
