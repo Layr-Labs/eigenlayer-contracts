@@ -175,6 +175,47 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         // Check storage update
         assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
     }
+
+    function test_setDenebForkTimestamp(uint64 denebForkTimestamp) public {
+        cheats.assume(denebForkTimestamp != 0);
+        cheats.assume(denebForkTimestamp != type(uint64).max);
+        cheats.prank(initialOwner);
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+        cheats.expectEmit(true, true, true, true);
+        emit DenebForkTimestampUpdated(denebForkTimestamp);
+        eigenPodManager.setDenebForkTimestamp(denebForkTimestamp);
+        assertEq(eigenPodManager.denebForkTimestamp(), denebForkTimestamp, "fork timestamp not set correctly");
+    }
+
+    function test_setDenebForkTimestamp_Twice(uint64 timestamp1, uint64 timestamp2) public {
+        cheats.assume(timestamp1 != 0);
+        cheats.assume(timestamp2 != 0);
+        cheats.assume(timestamp1 != type(uint64).max);
+        cheats.assume(timestamp2 != type(uint64).max);
+        cheats.prank(initialOwner);
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+        eigenPodManager.setDenebForkTimestamp(timestamp1);
+        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set"));
+        eigenPodManager.setDenebForkTimestamp(timestamp2);
+    }
+
+    function test_setDenebForkTimestamp_NotToUint64MaxImmediately(uint64 timestamp) public {
+        cheats.assume(timestamp != type(uint64).max);
+        cheats.assume(timestamp != 0);
+        cheats.prank(initialOwner);
+        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set"));
+        eigenPodManager.setDenebForkTimestamp(timestamp);
+    }
+
+    function test_setDenebForkTimestamp_ToUint64MaxNotImmediately(uint64 timestamp) public {
+        cheats.assume(timestamp != type(uint64).max);
+        cheats.assume(timestamp != 0);
+        cheats.prank(initialOwner);
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+        eigenPodManager.setDenebForkTimestamp(timestamp);
+        cheats.expectRevert(bytes("EigenPodManager.denebForkEnabled: denebForkTimestamp must not be set yet"));
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
+    }
 }
 
 contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {

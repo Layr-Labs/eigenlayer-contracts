@@ -694,10 +694,16 @@ contract BeaconChainMock is Test {
         (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT
     );
 
-    uint immutable WITHDRAWAL_PROOF_LEN = 32 * (
-        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT + 
+    uint immutable WITHDRAWAL_PROOF_LEN_CAPELLA = 32 * (
+        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA + 
         BeaconChainProofs.WITHDRAWALS_TREE_HEIGHT + 1
     );
+
+    uint immutable WITHDRAWAL_PROOF_LEN_DENEB= 32 * (
+        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB + 
+        BeaconChainProofs.WITHDRAWALS_TREE_HEIGHT + 1
+    );
+
     uint immutable EXECPAYLOAD_PROOF_LEN = 32 * (
         BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT + 
         BeaconChainProofs.BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT
@@ -705,8 +711,11 @@ contract BeaconChainMock is Test {
     uint immutable SLOT_PROOF_LEN = 32 * (
         BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT
     );
-    uint immutable TIMESTAMP_PROOF_LEN = 32 * (
-        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT
+    uint immutable TIMESTAMP_PROOF_LEN_CAPELLA = 32 * (
+        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA
+    );
+    uint immutable TIMESTAMP_PROOF_LEN_DENEB = 32 * (
+        BeaconChainProofs.EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB
     );
     uint immutable HISTSUMMARY_PROOF_LEN = 32 * (
         BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT +
@@ -725,10 +734,10 @@ contract BeaconChainMock is Test {
         uint64 oracleTimestamp
     ) internal view returns (BeaconChainProofs.WithdrawalProof memory) {
         return BeaconChainProofs.WithdrawalProof({
-            withdrawalProof: new bytes(WITHDRAWAL_PROOF_LEN),
+            withdrawalProof: new bytes(WITHDRAWAL_PROOF_LEN_CAPELLA),
             slotProof: new bytes(SLOT_PROOF_LEN),
             executionPayloadProof: new bytes(EXECPAYLOAD_PROOF_LEN),
-            timestampProof: new bytes(TIMESTAMP_PROOF_LEN),
+            timestampProof: new bytes(TIMESTAMP_PROOF_LEN_CAPELLA),
             historicalSummaryBlockRootProof: new bytes(HISTSUMMARY_PROOF_LEN),
             blockRootIndex: 0,
             historicalSummaryIndex: 0,
