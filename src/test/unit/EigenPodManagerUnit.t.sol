@@ -177,7 +177,10 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
     }
 
     function test_setDenebForkTimestamp(uint64 denebForkTimestamp) public {
+        cheats.assume(denebForkTimestamp != 0);
+        cheats.assume(denebForkTimestamp != type(uint64).max);
         cheats.prank(initialOwner);
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
         cheats.expectEmit(true, true, true, true);
         emit DenebForkTimestampUpdated(denebForkTimestamp);
         eigenPodManager.setDenebForkTimestamp(denebForkTimestamp);
