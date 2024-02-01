@@ -246,20 +246,10 @@ contract EigenPodManager is
      * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
      */
     function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner {
-
-        /**
-        * @notice Modifier to ensure that the deneb fork timestamp is not set
-        * @dev Note that this function is only ever meant to be called twice.  First, it will be called to set the timestamp
-        * to type(uint64).max, and then it will be called to set the timestamp to the actual timestamp
-        */
-        require(newDenebForkTimestamp != 0, "EigenPodManager.denebForkEnabled: cannot set newDenebForkTimestamp to 0");
-        if(newDenebForkTimestamp == type(uint64).max){
-            require(denebForkTimestamp == 0, "EigenPodManager.denebForkEnabled: denebForkTimestamp must not be set yet");
-        } else {
-            require(denebForkTimestamp ==type(uint64).max, "EigenPodManager.denebForkEnabled: Deneb fork timestamp cannot be set");
-        }
+        require(newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0");
+        require(_denebForkTimestamp == 0, "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once");
         
-        denebForkTimestamp = newDenebForkTimestamp;
+        _denebForkTimestamp = newDenebForkTimestamp;
         emit DenebForkTimestampUpdated(denebForkTimestamp);
     }
 
@@ -351,5 +341,18 @@ contract EigenPodManager is
             "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
         );
         return stateRoot;
+    }
+
+    /**
+     * @notice Wrapper around the `_denebForkTimestamp` storage variable that returns type(uint64).max if the storage variable is unset.
+     * @dev This allows restricting the storage variable to be set once and only once.
+     */
+    function denebForkTimestamp() public view returns (uint64) {
+        uint64 timestamp = _denebForkTimestamp;
+        if (timestamp == 0) {
+            return type(uint64).max;
+        } else {
+            return timestamp;
+        }
     }
 }
