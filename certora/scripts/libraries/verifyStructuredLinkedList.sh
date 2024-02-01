@@ -9,6 +9,7 @@ certoraRun certora/harnesses/StructuredLinkedListHarness.sol \
     --verify StructuredLinkedListHarness:certora/specs/libraries/StructuredLinkedList.spec \
     --optimistic_loop \
     --prover_args '-optimisticFallback true' \
+    --parametric_contracts StructuredLinkedListHarness \
     $RULE \
     --rule_sanity \
     --loop_iter 3 \

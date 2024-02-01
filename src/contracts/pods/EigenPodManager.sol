@@ -72,7 +72,7 @@ contract EigenPodManager is
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
      * @dev Returns EigenPod address 
      */
-    function createPod() external returns (address) {
+    function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address) {
         require(!hasPod(msg.sender), "EigenPodManager.createPod: Sender already has a pod");
         // deploy a pod if the sender doesn't have one already
         IEigenPod pod = _deployPod();
@@ -87,7 +87,11 @@ contract EigenPodManager is
      * @param signature The validator's signature of the deposit data.
      * @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
      */
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable {
+    function stake(
+        bytes calldata pubkey, 
+        bytes calldata signature, 
+        bytes32 depositDataRoot
+    ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) {
         IEigenPod pod = ownerToPod[msg.sender];
         if (address(pod) == address(0)) {
             //deploy a pod if the sender doesn't have one already
@@ -136,6 +140,7 @@ contract EigenPodManager is
                 });
             }
         }
+        emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
     /**
@@ -176,6 +181,8 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
+        emit PodSharesUpdated(podOwner, int256(shares));
+
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
 
@@ -204,13 +211,14 @@ contract EigenPodManager is
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
+                emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
+                emit PodSharesUpdated(podOwner, int256(shares));
                 return;
             }
         }
-
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
@@ -235,7 +243,7 @@ contract EigenPodManager is
 
     // INTERNAL FUNCTIONS
 
-    function _deployPod() internal onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (IEigenPod) {
+    function _deployPod() internal returns (IEigenPod) {
         // check that the limit of EigenPods has not been hit, and increment the EigenPod count
         require(numPods + 1 <= maxPods, "EigenPodManager._deployPod: pod limit reached");
         ++numPods;

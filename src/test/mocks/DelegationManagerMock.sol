@@ -9,9 +9,6 @@ import "../../contracts/interfaces/IStrategyManager.sol";
 contract DelegationManagerMock is IDelegationManager, Test {
     mapping(address => bool) public isOperator;
     mapping(address => mapping(IStrategy => uint256)) public operatorShares;
-    IStakeRegistryStub public stakeRegistry;
-
-    function setStakeRegistry(IStakeRegistryStub _stakeRegistry) external {}
 
     function setIsOperator(address operator, bool _isOperatorReturnValue) external {
         isOperator[operator] = _isOperatorReturnValue;
@@ -28,6 +25,8 @@ contract DelegationManagerMock is IDelegationManager, Test {
     
     function updateOperatorMetadataURI(string calldata /*metadataURI*/) external pure {}
 
+    function updateAVSMetadataURI(string calldata /*metadataURI*/) external pure {}
+
     function delegateTo(address operator, SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
         delegatedTo[msg.sender] = operator;
     }
@@ -42,7 +41,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         bytes32 /*approverSalt*/
     ) external pure {}
 
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot) {
+    function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot) {
         delegatedTo[staker] = address(0);
         return withdrawalRoot;
     }
@@ -76,6 +75,22 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
+    function minWithdrawalDelayBlocks() external view returns (uint256) {
+        return 0;
+    }
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external view returns (uint256) {
+        return 0;
+    }
+
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public view returns (uint256) {
+        return 0;
+    }
+
     function isDelegated(address staker) external view returns (bool) {
         return (delegatedTo[staker] != address(0));
     }
@@ -103,7 +118,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function calculateStakerDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
         external pure returns (bytes32 stakerDigestHash) {}
 
-    function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/) external pure returns (bytes32 approverDigestHash) {}
+    function calculateApproverDigestHash(address /*staker*/, address /*operator*/, uint256 /*expiry*/)
+        external pure returns (bytes32 approverDigestHash) {}
+
+    function calculateOperatorAVSRegistrationDigestHash(address /*operator*/, address /*avs*/, bytes32 /*salt*/, uint256 /*expiry*/)
+        external pure returns (bytes32 digestHash) {}
 
     function DOMAIN_TYPEHASH() external view returns (bytes32) {}
 
@@ -111,11 +130,19 @@ contract DelegationManagerMock is IDelegationManager, Test {
 
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32) {}
 
+    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32) {}
+
     function domainSeparator() external view returns (bytes32) {}
 
     function cumulativeWithdrawalsQueued(address staker) external view returns (uint256) {}
 
     function calculateWithdrawalRoot(Withdrawal memory withdrawal) external pure returns (bytes32) {}
+
+    function registerOperatorToAVS(address operator, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {}
+
+    function deregisterOperatorFromAVS(address operator) external {}
+
+    function operatorSaltIsSpent(address avs, bytes32 salt) external view returns (bool) {}
 
    function queueWithdrawals(
         QueuedWithdrawalParams[] calldata queuedWithdrawalParams
@@ -141,10 +168,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function addShares(
         IStrategyManager strategyManager,
         address staker,
+        IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, strategy, shares);
+        strategyManager.addShares(staker, token, strategy, shares);
     }
 
     function removeShares(

@@ -6,7 +6,7 @@ on:
       - master
       - release-v*
       - formal-verification
-      - fix-ci-errors
+      - m2-mainnet
   pull_request: {}
   workflow_dispatch: {}
 
@@ -51,8 +51,6 @@ jobs:
           chmod +x /usr/local/bin/solc
       - name: Verify rule ${{ matrix.params }}
         run: |
-          touch certora/applyHarness.patch
-          make -C certora munged
           bash ${{ matrix.params }}
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}

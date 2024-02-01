@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         file: ${{fromJson(needs.prepare.outputs.matrix)}}
+      fail-fast: false
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -36,8 +37,11 @@ jobs:
       with:
         version: nightly
 
-    - name: Install forge dependencies
-      run: forge install
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build --sizes
+      id: build
 
     - name: Run forge test for the file
       run: forge test --match-path src/test/${{ matrix.file }} --no-match-contract FFI

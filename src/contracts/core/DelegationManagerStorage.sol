@@ -41,7 +41,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -75,12 +76,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     mapping(address => mapping(bytes32 => bool)) public delegationApproverSaltIsSpent;
 
     /**
-     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
-     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     * @notice Global minimum withdrawal delay for all strategy withdrawals.
+     * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
+     * In addition, we now also configure withdrawal delays on a per-strategy basis.
+     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed. 
+     * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
-    uint256 public withdrawalDelayBlocks;
+    uint256 public minWithdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;
@@ -89,8 +91,15 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
 
-    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    IStakeRegistryStub public stakeRegistry;
+    /// @notice Deprecated from an old Goerli release
+    /// See conversation here: https://github.com/Layr-Labs/eigenlayer-contracts/pull/365/files#r1417525270
+    address private __deprecated_stakeRegistry;
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
@@ -103,5 +112,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }

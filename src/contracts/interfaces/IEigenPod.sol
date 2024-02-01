@@ -138,11 +138,17 @@ interface IEigenPod {
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
 
+    /// @notice Returns the validatorInfo struct for the provided pubkey
+    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
+
     ///@notice mapping that tracks proven withdrawals
     function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
 
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
+
+    /// @notice This returns the status of a given validator pubkey
+    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
 
     /**
      * @notice This function verifies that the withdrawal credentials of validator(s) owned by the podOwner are pointed to
@@ -170,8 +176,7 @@ interface IEigenPod {
      * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
      * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
-     * @param balanceUpdateProofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
-     *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
+     * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
@@ -179,7 +184,7 @@ interface IEigenPod {
         uint64 oracleTimestamp,
         uint40[] calldata validatorIndices,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+        bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
     ) external;
 

@@ -2,16 +2,15 @@
 pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "forge-std/Test.sol";
 
-import "../../contracts/pods/EigenPodManager.sol";
-import "../../contracts/pods/EigenPodPausingConstants.sol";
+import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/pods/EigenPodPausingConstants.sol";
 
-import "../events/IEigenPodManagerEvents.sol";
-import "../utils/EigenLayerUnitTestSetup.sol";
-import "../harnesses/EigenPodManagerWrapper.sol";
-import "../mocks/EigenPodMock.sol";
-import "../mocks/ETHDepositMock.sol";
+import "src/test/events/IEigenPodManagerEvents.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
+import "src/test/harnesses/EigenPodManagerWrapper.sol";
+import "src/test/mocks/EigenPodMock.sol";
+import "src/test/mocks/ETHDepositMock.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     // Contracts Under Test: EigenPodManager
@@ -24,7 +23,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
     IETHPOSDeposit public ethPOSMock;
     IEigenPod public eigenPodMockImplementation;
     IBeacon public eigenPodBeacon; // Proxy for eigenPodMockImplementation
-    IStrategy public beaconChainETHStrategy;
     
     // Constants
     uint256 public constant GWEI_TO_WEI = 1e9;
@@ -64,9 +62,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
                 )
             )
         );
-
-        // Set beaconChainETHStrategy
-        beaconChainETHStrategy = eigenPodManager.beaconChainETHStrategy();
 
         // Set defaultPod
         defaultPod = eigenPodManager.getPod(defaultStaker);
@@ -294,7 +289,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_addShares(uint256 shares) public {
         // Fuzz inputs
         cheats.assume(defaultStaker != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        shares = shares - (shares % GWEI_TO_WEI); // Round down to nearest Gwei
         cheats.assume(int256(shares) >= 0);
 
         // Add shares
@@ -366,7 +361,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public filterFuzzedAddressInputs(podOwner) {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        cheats.assume(shares < type(uint256).max / 2);
+        shares = shares - (shares % GWEI_TO_WEI);  // Round down to nearest Gwei
+        assertTrue(int256(shares) % int256(GWEI_TO_WEI) == 0, "Shares must be a whole Gwei amount");
 
         // Initialize pod with shares
         _initializePodWithShares(podOwner, int256(shares));
@@ -465,10 +462,10 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     }
 }
 
-contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
+contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {
 
     function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
-        cheats.assume(invalidCaller != defaultStaker);
+        cheats.assume(invalidCaller != address(defaultPod));
         cheats.prank(invalidCaller);
         cheats.expectRevert("EigenPodManager.onlyEigenPod: not a pod");
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0);
@@ -497,6 +494,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         _initializePodWithShares(defaultStaker, scaledSharesBefore);
 
         // Update balance
+        cheats.expectEmit(true, true, true, true);
+        emit PodSharesUpdated(defaultStaker, scaledSharesDelta);
         cheats.prank(address(defaultPod));
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 

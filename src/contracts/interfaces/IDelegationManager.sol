@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./ISignatureUtils.sol";
-import "./IStakeRegistryStub.sol";
 import "./IStrategyManager.sol";
 
 /**
@@ -69,9 +68,6 @@ interface IDelegationManager is ISignatureUtils {
         // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
-
-    /// @notice Emitted when the StakeRegistry is set
-    event StakeRegistrySet(IStakeRegistryStub stakeRegistry);
 
     /**
      * Struct type used to specify an existing queued withdrawal. Rather than storing the entire struct, only a hash is stored.
@@ -143,9 +139,12 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
     event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
+    
+    /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
-    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+    /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -173,6 +172,7 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
      * @param metadataURI The URI for metadata associated with an operator
+     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function updateOperatorMetadataURI(string calldata metadataURI) external;
 
@@ -230,7 +230,7 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Reverts if the caller is not the staker, nor the operator who the staker is delegated to, nor the operator's specified "delegationApprover"
      * @dev Reverts if the `staker` is already undelegated.
      */
-    function undelegate(address staker) external returns (bytes32 withdrawalRoot);
+    function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot);
 
     /**
      * Allows a staker to withdraw some shares. Withdrawn shares/strategies are immediately removed
@@ -310,9 +310,6 @@ interface IDelegationManager is ISignatureUtils {
         uint256 shares
     ) external;
 
-    /// @notice the address of the StakeRegistry contract to call for stake updates when operator shares are changed
-    function stakeRegistry() external view returns (IStakeRegistryStub);
-
     /**
      * @notice returns the address of the operator that `staker` is delegated to.
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
@@ -339,6 +336,13 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Returns the stakerOptOutWindowBlocks for an operator
      */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
+
+    /**
+     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
+     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
+     * @param strategies The strategies to check withdrawal delays for
+     */
+    function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -368,6 +372,20 @@ interface IDelegationManager is ISignatureUtils {
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
     function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
+
+    /**
+     * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of blocks that must pass
+     * to withdraw a strategy is MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
+     */
+    function minWithdrawalDelayBlocks() external view returns (uint256);
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256);
 
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`

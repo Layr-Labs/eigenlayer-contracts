@@ -82,6 +82,7 @@ contract Deployer_M2 is Script, Test {
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     uint256 SLASHER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
+    uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
@@ -103,6 +104,7 @@ contract Deployer_M2 is Script, Test {
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
+        DELEGATION_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(config_data, ".delegation.init_withdrawal_delay_blocks");
         EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(
@@ -208,7 +210,8 @@ contract Deployer_M2 is Script, Test {
                 DelegationManager.initialize.selector,
                 executorMultisig,
                 eigenLayerPauserReg,
-                DELEGATION_INIT_PAUSED_STATUS
+                DELEGATION_INIT_PAUSED_STATUS,
+                DELEGATION_WITHDRAWAL_DELAY_BLOCKS
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -395,8 +398,9 @@ contract Deployer_M2 is Script, Test {
             "strategyManager: eigenPodManager address not set correctly"
         );
 
-        require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
-        require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasherContract.strategyManager() == strategyManager, "slasher: strategyManager not set correctly");
+        // require(slasherContract.delegation() == delegation, "slasher: delegation not set correctly");
 
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,
@@ -469,7 +473,8 @@ contract Deployer_M2 is Script, Test {
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
         require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
-        require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
@@ -486,7 +491,8 @@ contract Deployer_M2 is Script, Test {
             strategyManager.pauserRegistry() == eigenLayerPauserReg,
             "strategyManager: pauser registry not set correctly"
         );
-        require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
+        // removing slasher requirements because there is no slasher as part of m2-mainnet release
+        // require(slasher.pauserRegistry() == eigenLayerPauserReg, "slasher: pauser registry not set correctly");
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
             "eigenPodManager: pauser registry not set correctly"

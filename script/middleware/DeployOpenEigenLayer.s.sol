@@ -12,6 +12,7 @@ import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/core/AVSDirectory.sol";
 
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -56,6 +57,8 @@ contract DeployOpenEigenLayer is Script, Test {
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
     DelayedWithdrawalRouter public delayedWithdrawalRouterImplementation;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
@@ -77,7 +80,7 @@ contract DeployOpenEigenLayer is Script, Test {
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
-        // deploy proxy admin for ability to upgrade proxy contracts
+        // deploy proxy admin for the ability to upgrade proxy contracts
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         //deploy pauser registry
@@ -95,6 +98,9 @@ contract DeployOpenEigenLayer is Script, Test {
          */
         emptyContract = new EmptyContract();
         delegation = DelegationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         strategyManager = StrategyManager(
@@ -124,6 +130,7 @@ contract DeployOpenEigenLayer is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegation);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -139,7 +146,12 @@ contract DeployOpenEigenLayer is Script, Test {
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
-            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
+            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0, 0 /* withdrawalDelayBlocks */)
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),
