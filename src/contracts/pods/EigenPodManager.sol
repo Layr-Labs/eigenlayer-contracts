@@ -250,7 +250,7 @@ contract EigenPodManager is
         require(_denebForkTimestamp == 0, "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once");
         
         _denebForkTimestamp = newDenebForkTimestamp;
-        emit DenebForkTimestampUpdated(denebForkTimestamp);
+        emit DenebForkTimestampUpdated(newDenebForkTimestamp);
     }
 
     // INTERNAL FUNCTIONS
