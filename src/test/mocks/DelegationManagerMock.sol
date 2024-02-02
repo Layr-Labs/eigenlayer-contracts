@@ -87,6 +87,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {}
+
     function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public view returns (uint256) {
         return 0;
     }
