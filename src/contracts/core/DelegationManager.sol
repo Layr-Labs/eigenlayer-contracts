@@ -852,6 +852,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return _operatorDetails[operator].stakerOptOutWindowBlocks;
     }
 
+    /// @notice Given array of strategies, returns array of shares for the operator
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) public view returns (uint256[] memory) {
+        uint256[] memory shares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            shares[i] = operatorShares[operator][strategies[i]];
+        }
+        return shares;
+    }
+
     /**
      * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.

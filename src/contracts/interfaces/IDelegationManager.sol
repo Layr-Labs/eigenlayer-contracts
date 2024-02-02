@@ -337,6 +337,12 @@ interface IDelegationManager is ISignatureUtils {
      */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
 
+    /// @notice Given array of strategies, returns array of shares for the operator
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory);
+
     /**
      * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
      * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
