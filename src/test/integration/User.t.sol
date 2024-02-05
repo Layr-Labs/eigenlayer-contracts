@@ -325,7 +325,7 @@ contract User is Test {
 
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedWithdrawalStructsForStaker(address staker) internal returns (IDelegationManager.Withdrawal[] memory) {
+    function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManager.Withdrawal[] memory) {
         (IStrategy[] memory strategies, uint256[] memory shares)
             = delegationManager.getDelegatableShares(staker);
 
