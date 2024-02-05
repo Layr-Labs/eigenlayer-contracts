@@ -372,6 +372,7 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         assertEq(validatorInfo.restakedBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Restaked balance gwei should be max");
         assertGt(updatedShares - initialShares, 0, "Shares delta should be positive");
         assertEq(updatedShares, 32e18, "Shares should be 32ETH");
+        assertEq(newValidatorBalance, 32e9, "validator balance should be 32e9 Gwei");
     }
 
     function test_fullWithdrawal_excess32ETH() public {
@@ -536,9 +537,6 @@ contract EigenPod_PodManager_UnitTests_EigenPodManager is EigenPod_PodManager_Un
         uint64 oracleTimestamp = 0;
         _setOracleBlockRoot();
         cheats.warp(oracleTimestamp+=1);
-
-        // Save state for checks 
-        int256 initialShares = eigenPodManager.podOwnerShares(podOwner);
 
         // Act: Verify withdrawal credentials and record the balance update
         cheats.prank(podOwner);

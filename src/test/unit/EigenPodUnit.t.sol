@@ -844,7 +844,6 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 
         // Get params to check against
         uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
-        uint40 validatorIndex = uint40(getValidatorIndex());
         uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
         assertLt(withdrawalAmountGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Withdrawal amount should be greater than max restaked balance for this test");
 
@@ -859,7 +858,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 
         // Storage checks in _verifyAndProcessWithdrawal
         bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
-        // assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
 
         // Checks from  _processFullWithdrawal
         assertEq(eigenPod.withdrawableRestakedExecutionLayerGwei(), withdrawalAmountGwei, "Incorrect withdrawable restaked execution layer gwei");
