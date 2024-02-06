@@ -325,11 +325,9 @@ library BeaconChainProofs {
 
         {
             /**
-             * Next we verify the withdrawal fields against the blockRoot:
-             * First we compute the withdrawal_index relative to the blockRoot by concatenating the indexes of all the
-             * intermediate root indexes from the bottom of the sub trees (the withdrawal container) to the top, the blockRoot.
-             * Then we calculate merkleize the withdrawalFields container to calculate the the withdrawalRoot.
-             * Finally we verify the withdrawalRoot against the executionPayloadRoot.
+             * Next we verify the withdrawal fields against the executionPayloadRoot:
+             * First we compute the withdrawal_index, then we merkleize the 
+             * withdrawalFields container to calculate the the withdrawalRoot.
              *
              *
              * Note: Merkleization of the withdrawals root tree uses MerkleizeWithMixin, i.e., the length of the array is hashed with the root of
