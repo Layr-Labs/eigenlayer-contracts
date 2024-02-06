@@ -19,7 +19,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
     bytes32 public constant DEPOSIT_TYPEHASH =
-        keccak256("Deposit(address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
+        keccak256("Deposit(address staker,address strategy,address token,uint256 amount,uint256 nonce,uint256 expiry)");
     // maximum length of dynamic arrays in `stakerStrategyList` mapping, for sanity's sake
     uint8 internal constant MAX_STAKER_STRATEGY_LIST_LENGTH = 32;
 
