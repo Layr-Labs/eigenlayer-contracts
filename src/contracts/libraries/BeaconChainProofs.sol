@@ -235,7 +235,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
-        //Note: post deneb hard fork, the exection payload header fields increased, adding an extra level to the tree height
+        //Note: post deneb hard fork, the number of exection payload header fields increased from 15->17, adding an extra level to the tree height
         uint256 executionPayloadHeaderFieldTreeHeight = (getWithdrawalTimestamp(withdrawalProof) < denebForkTimestamp) ? EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA : EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB;
         require(
             withdrawalProof.withdrawalProof.length ==
@@ -325,12 +325,9 @@ library BeaconChainProofs {
 
         {
             /**
-             * Next we verify the withdrawal fields against the blockRoot:
-             * First we compute the withdrawal_index relative to the blockRoot by concatenating the indexes of all the
-             * intermediate root indexes from the bottom of the sub trees (the withdrawal container) to the top, the blockRoot.
-             * Then we calculate merkleize the withdrawalFields container to calculate the the withdrawalRoot.
-             * Finally we verify the withdrawalRoot against the executionPayloadRoot.
-             *
+             * Next we verify the withdrawal fields against the executionPayloadRoot:
+             * First we compute the withdrawal_index, then we merkleize the 
+             * withdrawalFields container to calculate the withdrawalRoot.
              *
              * Note: Merkleization of the withdrawals root tree uses MerkleizeWithMixin, i.e., the length of the array is hashed with the root of
              * the array.  Thus we shift the WITHDRAWALS_INDEX over by WITHDRAWALS_TREE_HEIGHT + 1 and not just WITHDRAWALS_TREE_HEIGHT.
