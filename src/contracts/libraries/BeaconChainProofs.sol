@@ -329,7 +329,6 @@ library BeaconChainProofs {
              * First we compute the withdrawal_index, then we merkleize the 
              * withdrawalFields container to calculate the the withdrawalRoot.
              *
-             *
              * Note: Merkleization of the withdrawals root tree uses MerkleizeWithMixin, i.e., the length of the array is hashed with the root of
              * the array.  Thus we shift the WITHDRAWALS_INDEX over by WITHDRAWALS_TREE_HEIGHT + 1 and not just WITHDRAWALS_TREE_HEIGHT.
              */
