@@ -153,7 +153,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, dummyToken, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, dummyToken, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -511,7 +511,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, strategy, token, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -582,7 +582,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, strategy, token, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -638,7 +638,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), dummyStrat, revertToken, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, dummyStrat, revertToken, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -713,7 +713,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, strategy, token, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 
@@ -753,7 +753,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         {
             bytes32 structHash = keccak256(
-                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strategy, token, amount, nonceBefore, expiry)
+                abi.encode(strategyManager.DEPOSIT_TYPEHASH(), staker, strategy, token, amount, nonceBefore, expiry)
             );
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
 

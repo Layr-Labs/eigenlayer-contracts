@@ -432,7 +432,7 @@ contract User_AltMethods is User {
                 // Get signature
                 uint256 nonceBefore = strategyManager.nonces(address(this));
                 bytes32 structHash = keccak256(
-                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
+                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
                 );
                 bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
                 bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data

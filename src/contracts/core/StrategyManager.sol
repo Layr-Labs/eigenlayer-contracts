@@ -146,7 +146,7 @@ contract StrategyManager is
         require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
         // calculate struct hash, then increment `staker`'s nonce
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, strategy, token, amount, nonce, expiry));
+        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, strategy, token, amount, nonce, expiry));
         unchecked {
             nonces[staker] = nonce + 1;
         }
