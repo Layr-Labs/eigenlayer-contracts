@@ -64,6 +64,8 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      */
     mapping(address => int256) public podOwnerShares;
 
+    uint64 internal _denebForkTimestamp;
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -83,5 +85,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 }

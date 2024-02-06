@@ -140,6 +140,7 @@ contract EigenPodManager is
                 });
             }
         }
+        emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
     /**
@@ -180,6 +181,8 @@ contract EigenPodManager is
         int256 updatedPodOwnerShares = currentPodOwnerShares + int256(shares);
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
+        emit PodSharesUpdated(podOwner, int256(shares));
+
         return uint256(_calculateChangeInDelegatableShares({sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares}));
     }
 
@@ -208,13 +211,14 @@ contract EigenPodManager is
             if (shares > currentShareDeficit) {
                 podOwnerShares[podOwner] = 0;
                 shares -= currentShareDeficit;
+                emit PodSharesUpdated(podOwner, int256(currentShareDeficit));
             // otherwise get rid of as much deficit as possible, and return early, since there is nothing left over to forward on
             } else {
                 podOwnerShares[podOwner] += int256(shares);
+                emit PodSharesUpdated(podOwner, int256(shares));
                 return;
             }
         }
-
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);
     }
@@ -235,6 +239,18 @@ contract EigenPodManager is
      */
     function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external onlyOwner {
         _updateBeaconChainOracle(newBeaconChainOracle);
+    }
+
+    /**
+     * @notice Sets the timestamp of the Deneb fork.
+     * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
+     */
+    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner {
+        require(newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0");
+        require(_denebForkTimestamp == 0, "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once");
+        
+        _denebForkTimestamp = newDenebForkTimestamp;
+        emit DenebForkTimestampUpdated(newDenebForkTimestamp);
     }
 
     // INTERNAL FUNCTIONS
@@ -325,5 +341,18 @@ contract EigenPodManager is
             "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
         );
         return stateRoot;
+    }
+
+    /**
+     * @notice Wrapper around the `_denebForkTimestamp` storage variable that returns type(uint64).max if the storage variable is unset.
+     * @dev This allows restricting the storage variable to be set once and only once.
+     */
+    function denebForkTimestamp() public view returns (uint64) {
+        uint64 timestamp = _denebForkTimestamp;
+        if (timestamp == 0) {
+            return type(uint64).max;
+        } else {
+            return timestamp;
+        }
     }
 }

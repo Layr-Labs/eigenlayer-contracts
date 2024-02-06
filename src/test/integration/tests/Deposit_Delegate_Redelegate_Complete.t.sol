@@ -151,9 +151,17 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
 
         // Complete last withdrawal as shares
-        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[withdrawals.length - 1]);
-        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[withdrawals.length - 1], strategies, shares, tokens, expectedTokens);
+        IERC20[] memory finalWithdrawaltokens = staker.completeWithdrawalAsTokens(withdrawals[withdrawals.length - 1]);
+        uint[] memory finalExpectedTokens = _calculateExpectedTokens(strategies, shares);
+        check_Withdrawal_AsTokens_State(
+            staker,
+            operator2,
+            withdrawals[withdrawals.length - 1],
+            strategies,
+            shares,
+            finalWithdrawaltokens,
+            finalExpectedTokens
+        );
     }
 
     function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public {

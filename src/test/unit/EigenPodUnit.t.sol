@@ -19,13 +19,16 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     EigenPod public eigenPod;
     EigenPod public podImplementation;
     IBeacon public eigenPodBeacon;
-
+    
     // Mocks
     IETHPOSDeposit public ethPOSDepositMock;
     IDelayedWithdrawalRouter public delayedWithdrawalRouterMock;
     
     // Address of pod for which proofs were generated
     address podAddress = address(0x49c486E3f4303bc11C02F952Fe5b08D0AB22D443);
+
+
+    bool IS_DENEB = false;
     
     // Constants
     // uint32 public constant WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -145,6 +148,7 @@ contract EigenPodUnitTests_Stake is EigenPodUnitTests, IEigenPodEvents {
         cheats.expectRevert("EigenPod.onlyEigenPodManager: not eigenPodManager");
         eigenPod.stake{value: 32 ether}(pubkey, signature, depositDataRoot);
     }
+
 
     function testFuzz_stake_revert_invalidValue(uint256 value) public {
         cheats.assume(value != 32 ether);
@@ -419,6 +423,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
     }
 
     function testFuzz_revert_invalidValidatorFields(address wrongWithdrawalAddress) public {
+        cheats.assume(wrongWithdrawalAddress != address(eigenPodHarness));
         // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _setWithdrawalCredentialParams();
@@ -839,7 +844,6 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 
         // Get params to check against
         uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
-        uint40 validatorIndex = uint40(getValidatorIndex());
         uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
         assertLt(withdrawalAmountGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Withdrawal amount should be greater than max restaked balance for this test");
 
@@ -854,7 +858,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
 
         // Storage checks in _verifyAndProcessWithdrawal
         bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
-        // assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
 
         // Checks from  _processFullWithdrawal
         assertEq(eigenPod.withdrawableRestakedExecutionLayerGwei(), withdrawalAmountGwei, "Incorrect withdrawable restaked execution layer gwei");
@@ -983,13 +987,14 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
-
+            bytes memory withdrawalProof = IS_DENEB ? abi.encodePacked(getWithdrawalProofDeneb()) : abi.encodePacked(getWithdrawalProofCapella());
+            bytes memory timestampProof = IS_DENEB ? abi.encodePacked(getTimestampProofDeneb()) : abi.encodePacked(getTimestampProofCapella());
             return
                 BeaconChainProofs.WithdrawalProof(
-                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(withdrawalProof),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
-                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(timestampProof),
                     abi.encodePacked(getHistoricalSummaryProof()),
                     uint64(getBlockRootIndex()),
                     uint64(getHistoricalSummaryIndex()),

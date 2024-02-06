@@ -444,7 +444,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManager.Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);

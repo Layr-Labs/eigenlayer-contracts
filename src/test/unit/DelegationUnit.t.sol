@@ -406,7 +406,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawalSingleStrat(
         address staker,
-        address operator,
         address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
@@ -445,7 +444,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawal(
         address staker,
-        address operator,
+        address /*operator*/,
         address withdrawer,
         uint256[] memory depositAmounts,
         uint256[] memory withdrawalAmounts
@@ -2923,7 +2922,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -2942,7 +2940,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -2970,7 +2967,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
     //         /* bytes32 withdrawalRoot */
     //     ) = _setUpCompleteQueuedWithdrawalSingleStrat({
     //         staker: defaultStaker,
-    //         operator: defaultOperator,
     //         withdrawer: defaultStaker,
     //         depositAmount: 100,
     //         withdrawalAmount: 100
@@ -2986,10 +2982,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
+            /*bytes32 withdrawalRoot*/
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -3005,7 +3000,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _registerOperatorWithBaseDetails(defaultOperator);
         (IDelegationManager.Withdrawal memory withdrawal, , ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -3042,7 +3036,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            operator: defaultOperator,
             withdrawer: withdrawer,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
@@ -3087,7 +3080,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            operator: defaultOperator,
             withdrawer: withdrawer,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
