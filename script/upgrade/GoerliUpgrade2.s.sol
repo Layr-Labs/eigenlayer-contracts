@@ -24,11 +24,11 @@ import "forge-std/Test.sol";
 // forge script script/upgrade/GoerliUpgrade2.s.sol:GoerliUpgrade2 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 
 // NOTE: ONLY WORKS ON GOERLI
-// CommitHash: 7257364d03d255ea8c855f36317ce0e892b78497
+// CommitHash: 6de01c6c16d6df44af15f0b06809dc160eac0ebf
 contract GoerliUpgrade2 is Script, Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    string public deploymentOutputPath = string(bytes("script/output/M2_preprod_deployment_from_scratch.json"));
+    string public deploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
 
     IDelayedWithdrawalRouter delayedWithdrawalRouter;
     IDelegationManager delegation;
@@ -118,12 +118,12 @@ contract GoerliUpgrade2 is Script, Test {
         /*
         == Logs ==
         You are deploying on ChainID: 5
-        DelegationImplementation: 0x934eB3E2b6D5C2E1601B29B7180026D71438F20D
-        SlasherImplementation: 0x05c235183e8b9dFb7113Cf92bbDc3f5085324158
-        StrategyManagerImplementation: 0xb9B69504f1a727E783F4B4248A115D56F4080DF8
-        DelayedWithdrawalRouterImplementation: 0x44a40C60857b4B420Ad3D8b9646FefEBF2D0dB86
-        EigenPodImplementation: 0x83cbB48391F428878Bc5DD97C9792a8dbCAa0729
-        EigenPodManagerImplementation: 0xEEdCC9dB001fB8429721FE21426F51f0Cdd329EC
+        DelegationImplementation: 0x56652542926444Ebce46Fd97aFd80824ed51e58C
+        SlasherImplementation: 0x89C5e6e98f79be658e830Ec66b61ED3EE910D262
+        StrategyManagerImplementation: 0x506C21f43e81D9d231d8A13831b42A2a2B5540E4
+        DelayedWithdrawalRouterImplementation: 0xE576731194EC3d8Ba92E7c2B578ea74238772878
+        EigenPodImplementation: 0x16a0d8aD2A2b12f3f47d0e8F5929F9840e29a426
+        EigenPodManagerImplementation: 0xDA9B60D3dC7adD40C0e35c628561Ff71C13a189f
         */
     }
 }
