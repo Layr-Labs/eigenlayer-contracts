@@ -32,6 +32,8 @@ contract StrategyManagerMock is
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
+    
+    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -77,6 +79,11 @@ contract StrategyManagerMock is
         sharesToReturn[staker] = _sharesToReturn;
     }
 
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external {
+        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
+        thirdPartyTransfersForbidden[strategy] = value;
+    }
+
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
@@ -106,8 +113,6 @@ contract StrategyManagerMock is
 
     /// @notice returns the enshrined beaconChainETH Strategy
     function beaconChainETHStrategy() external view returns (IStrategy) {}
-
-    function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool) {}
 
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
