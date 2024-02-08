@@ -76,9 +76,11 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * c) increases in the token balance of this contract through other effects – including token rebasing – may cause similar issues to (a) and (b).
      * @param amount The amount of `token` being deposited
      */
-    function _beforeDeposit(IERC20 /*token*/, uint256 amount) internal virtual override {
+    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
         require(amount <= maxPerDeposit, "StrategyBaseTVLLimits: max per deposit exceeded");
         require(_tokenBalance() <= maxTotalDeposits, "StrategyBaseTVLLimits: max deposits exceeded");
+
+        super._beforeDeposit(token, amount);
     }
 
     /**
