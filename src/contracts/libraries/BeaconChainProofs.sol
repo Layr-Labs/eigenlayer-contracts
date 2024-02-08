@@ -320,7 +320,7 @@ library BeaconChainProofs {
                 leaf: withdrawalProof.timestampRoot,
                 index: TIMESTAMP_INDEX
             }),
-            "BeaconChainProofs.verifyWithdrawal: Invalid blockNumber merkle proof"
+            "BeaconChainProofs.verifyWithdrawal: Invalid timestamp merkle proof"
         );
 
         {
