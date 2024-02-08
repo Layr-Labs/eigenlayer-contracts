@@ -217,7 +217,8 @@ The primary method concerning actively restaked validators is:
 * [`EigenPod.verifyBalanceUpdates`](#eigenpodverifybalanceupdates)
 
 #### `EigenPod.verifyBalanceUpdates`
-```
+
+```solidity
 function verifyBalanceUpdates(
     uint64 oracleTimestamp,
     uint40[] calldata validatorIndices,
