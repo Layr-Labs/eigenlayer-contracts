@@ -7,7 +7,7 @@ labels: task
 ---
 
 ## Description
-Add a summary and description. Link to any parent [feature requests](https://github.com/Layr-Labs/docs/blob/c78dbcd9a4b229e367f11725ee6758271a65bad3/.github/ISSUE_TEMPLATE/feature_request.md) or [bug reports](https://github.com/Layr-Labs/docs/blob/c78dbcd9a4b229e367f11725ee6758271a65bad3/.github/ISSUE_TEMPLATE/bug_report.md). 
+Add a summary and description. Link to any parent [feature requests](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/.github/ISSUE_TEMPLATE/feature_request.md) or [bug reports](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/.github/ISSUE_TEMPLATE/bug_report.md). 
 
 ### Action Items
 - [ ] An action item list describing the work to be done
