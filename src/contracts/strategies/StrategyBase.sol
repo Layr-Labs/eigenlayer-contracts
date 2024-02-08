@@ -90,6 +90,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
      * to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
+     * @dev Note that any validation of `token` is done inside `_beforeDeposit`. This can be overridden if needed.
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
     function deposit(
@@ -128,6 +129,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
+     * @dev Note that any validation of `token` is done inside `_beforeWithdrawal`. This can be overridden if needed.
      */
     function withdraw(
         address recipient,
