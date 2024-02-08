@@ -22,24 +22,10 @@ Below are the explanations of each individual proof function that we use to prov
         uint40 validatorIndex
     ) internal
 ```
-Verifies the proof of a provided [validator container](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator) against the beacon state root.  This proof can be used to verify any field in the validator container.  Below is a diagram that illustrates exactly how the proof is structured relative to the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate).  
+Verifies the proof of a provided [validator container](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator) against the beacon state root.  This proof can be used to verify any field in the validator container.  In the EigenPods system, this proof is used to prove a validator's withdrawal credentials as well as their effective balance.  Below is a diagram that illustrates exactly how the proof is structured relative to the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate).  
 
 ![Verify Validator Fields Proof Structure](../../images/Withdrawal_Credential_Proof.png)
 
-
-#### `BeaconChainProofs.verifyValidatorBalance`
-
-```solidity
-function verifyValidatorBalance(
-        bytes32 beaconStateRoot,
-        bytes32 balanceRoot,
-        bytes calldata validatorBalanceProof,
-        uint40 validatorIndex
-    ) internal
-```
-Verifies the proof of a [validator's](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator) balance against the beacon state root.  Validator's balances are stored separately in "balances" field of the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate), with each entry corresponding to the appropriate validator, based on index.  Below is a diagram that illustrates exactly how the proof is structured relative to the [beacon state object](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate).  
-
-![Verify Validator Fields Proof Structure](../../images/Balance_Proof.png)
 
 #### `BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot`
 
