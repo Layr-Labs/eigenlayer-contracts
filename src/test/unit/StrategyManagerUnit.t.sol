@@ -785,6 +785,19 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             memory expectedRevertMessage = "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted";
         _depositIntoStrategyWithSignature(staker, amount, type(uint256).max, expectedRevertMessage);
     }
+    
+    function testFuzz_Revert_WhenThirdPartyTransfersForbidden(uint256 amount, uint256 expiry) public {
+        // min shares must be minted on strategy
+        cheats.assume(amount >= 1);
+
+        cheats.prank(strategyManager.strategyWhitelister());
+        strategyManager.setThirdPartyTransfersForbidden(dummyStrat, true);
+
+        address staker = cheats.addr(privateKey);
+        // not expecting a revert, so input an empty string
+        string memory expectedRevertMessage = "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled";
+        _depositIntoStrategyWithSignature(staker, amount, expiry, expectedRevertMessage);
+    }
 }
 
 contract StrategyManagerUnitTests_removeShares is StrategyManagerUnitTests {
