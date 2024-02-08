@@ -217,13 +217,12 @@ The primary method concerning actively restaked validators is:
 * [`EigenPod.verifyBalanceUpdates`](#eigenpodverifybalanceupdates)
 
 #### `EigenPod.verifyBalanceUpdates`
-
-```solidity
+```
 function verifyBalanceUpdates(
     uint64 oracleTimestamp,
     uint40[] calldata validatorIndices,
     BeaconChainProofs.StateRootProof calldata stateRootProof,
-    BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+    bytes[] calldata validatorFieldsProofs,
     bytes32[][] calldata validatorFields
 ) 
     external 
