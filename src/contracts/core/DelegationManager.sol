@@ -288,6 +288,32 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return withdrawalRoots;
     }
 
+    // onlyWhenNotPaused probably needs to touch both enter/exit because this method both:
+    // - removes a pending withdrawal
+    // - adds a new pending withdrawal
+    function changeWithdrawer(
+        Withdrawal memory withdrawal,
+        address newDestination
+    ) public onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) returns (bytes32) {
+        require(newDestination != address(0), "changeWithdrawer: must provide valid withdrawal address");
+        
+        // Remove the old withdrawal from the queue
+        bytes32 oldWithdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        require(pendingWithdrawals[oldWithdrawalRoot], "changeWithdrawer: withdrawal is not in queue");
+
+        // Update the withdrawer address. All other fields are unchanged
+        withdrawal.withdrawer = newDestination;
+        bytes32 newWithdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        require(!pendingWithdrawals[newWithdrawalRoot], "changeWithdrawer: did not modify withdrawal");
+
+        // Replace the withdrawal in state
+        delete pendingWithdrawals[oldWithdrawalRoot];
+        pendingWithdrawals[newWithdrawalRoot] = true;
+        // TODO emit some event here?
+        
+        return newWithdrawalRoot;
+    }
+
     /**
      * @notice Used to complete the specified `withdrawal`. The caller must match `withdrawal.withdrawer`
      * @param withdrawal The Withdrawal to complete.
