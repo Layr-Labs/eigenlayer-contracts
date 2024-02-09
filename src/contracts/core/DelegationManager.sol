@@ -295,6 +295,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         Withdrawal memory withdrawal,
         address newDestination
     ) public onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) returns (bytes32) {
+        require(msg.sender == withdrawal.staker, "changeWithdrawal: caller must be originator");
         require(newDestination != address(0), "changeWithdrawer: must provide valid withdrawal address");
         
         // Remove the old withdrawal from the queue
