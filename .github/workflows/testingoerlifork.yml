@@ -1,0 +1,50 @@
+name: Run Goerli Fork Integration Tests
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get list of .t.sol files in src/test/integration
+      run: |
+        FILES=$(find src/test/integration/tests -type f -name '*.t.sol' | sed 's#src/test/integration/tests/##' | jq -R -s -c 'split("\n")[:-1]')
+        echo "::set-output name=matrix::$FILES"
+      id: set-matrix
+
+  run-tests:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file: ${{fromJson(needs.prepare.outputs.matrix)}}
+      fail-fast: false
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build --sizes
+      id: build
+
+    - name: Run forge test for the file
+      run: forge test --match-path src/test/integration/tests/${{ matrix.file }} --no-match-contract FFI -f $RPC_GOERLI
+      env:
+        RPC_GOERLI: ${{ secrets.RPC_GOERLI }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
