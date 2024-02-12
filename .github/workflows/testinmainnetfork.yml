@@ -44,6 +44,7 @@ jobs:
       id: build
 
     - name: Run forge test for the file
-      run: forge test --match-path src/test/integration/tests/${{ matrix.file }} --no-match-contract FFI -f $RPC_MAINNET
+      run: forge test --match-path src/test/integration/tests/${{ matrix.file }} --no-match-contract FFI -f ${{ secrets.RPC_MAINNET }}
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}

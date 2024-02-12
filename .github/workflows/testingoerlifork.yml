@@ -44,7 +44,7 @@ jobs:
       id: build
 
     - name: Run forge test for the file
-      run: forge test --match-path src/test/integration/tests/${{ matrix.file }} --no-match-contract FFI -f $RPC_GOERLI
+      run: forge test --match-path src/test/integration/tests/${{ matrix.file }} --no-match-contract FFI -f ${{ secrets.RPC_GOERLI }}
       env:
         RPC_GOERLI: ${{ secrets.RPC_GOERLI }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
