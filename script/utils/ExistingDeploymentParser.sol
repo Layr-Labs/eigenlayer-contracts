@@ -104,4 +104,37 @@ contract ExistingDeploymentParser is Script, Test {
         }
         */
     }
+
+    /**
+     * @notice Verify that constructor parameters are set correctly from implementation upgrades
+     * Should be called after calling _parseDeployedContracts and performing upgrades. Note these are just basic upgrade checks,
+     * and more detailed storage checks using script/validateStorage.ts and manual storage checks should also be performed.
+     */
+    function _verifyContractPointers() internal {
+        // verify DelegationManager contracts
+        require(delegationManager.strategyManager() == strategyManager, "DelegationManager.strategyManager not set");
+        require(delegationManager.slasher() == slasher, "DelegationManager.slasher not set");
+        require(delegationManager.eigenPodManager() == eigenPodManager, "DelegationManager.eigenPodManager not set");
+
+        // verify StrategyManager contracts
+        require(strategyManager.delegation() == delegationManager, "StrategyManager.delegationManager not set");
+        require(strategyManager.eigenPodManager() == eigenPodManager, "StrategyManager.eigenPodManager not set");
+        require(strategyManager.slasher() == slasher, "StrategyManager.slasher not set");
+
+        // verify EigenPodManager contracts
+        require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "EigenPodManager.eigenPodBeacon not set");
+        require(eigenPodManager.delegationManager() == delegationManager, "EigenPodManager.delegationManager not set");
+        require(eigenPodManager.strategyManager() == strategyManager, "EigenPodManager.strategyManager not set");
+        require(eigenPodManager.slasher() == slasher, "EigenPodManager.slasher not set");
+
+        // verify delayedWithdrawalRouter contracts
+        require(delayedWithdrawalRouter.eigenPodManager() == eigenPodManager, "DelayedWithdrawalRouter.eigenPodManager not set");
+
+        // verify eigenPod implementation contract
+        require(eigenPodImplementation.eigenPodManager() == eigenPodManager, "EigenPod.eigenPodManager not set");
+        require(eigenPodImplementation.delayedWithdrawalRouter() == delayedWithdrawalRouter, "EigenPod.delayedWithdrawalRouter not set");
+
+        // verify AVSDirectory contracts
+        require(avsDirectory.delegation() == delegationManager, "AVSDirectory.delegationManager not set");
+    }
 }

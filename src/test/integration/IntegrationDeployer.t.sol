@@ -73,6 +73,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint constant MAX_BALANCE = 5e6;
     uint constant GWEI_TO_WEI = 1e9;
 
+
+    // Paused Constants
+    // DelegationManager
+    uint8 internal constant PAUSED_NEW_DELEGATION = 0;
+    uint8 internal constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
+    uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
+    // StrategyManager
+    uint8 internal constant PAUSED_DEPOSITS = 0;
+    // EigenpodManager
+    uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
+    uint8 internal constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
+    uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
+    uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
+
     // Flags
     uint constant FLAG = 1;
 
@@ -123,15 +139,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function setUp() public virtual {
         string memory deploymentInfoPath;
         if (block.chainid == 1) {
-            _setUpMainnet();
+            deploymentInfoPath = "script/utils/Mainnet_current_deploy.config.json";
+            _setUpMainnet(deploymentInfoPath);
         } else if (block.chainid == 5) {
             deploymentInfoPath = "script/utils/Goerli_current_deploy.config.json";
             _setUpGoerli(deploymentInfoPath);
         } else if (block.chainid == 31337) {
             _setUpLocal();
         } else {
-            revert();
+            revert("Chain ID not supported");
         }
+        _verifyContractPointers();
     }
 
     function _setUpLocal() public virtual {
@@ -167,9 +185,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delayedWithdrawalRouter = DelayedWithdrawalRouter(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(
+        eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
@@ -177,7 +198,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             0
         );
 
-        eigenPodBeacon = new UpgradeableBeacon(address(pod));
+        eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -191,6 +212,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -258,6 +280,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 withdrawalDelayBlocks
             )
         );
+        // AVSDirectory
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                eigenLayerReputedMultisig, // initialOwner
+                eigenLayerPauserReg,
+                0 // initialPausedStatus
+            )
+        );
 
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
@@ -285,7 +318,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /**
      * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
-     * on Goerli. Setup for integration tests on goerli fork.
+     * on Goerli. Setup for integration tests on goerli fork. Note that beacon chain oracle and eth deposit contracts
+     * are mocked and pointed to different addresses for these tests.
      */
     function _setUpGoerli(string memory deploymentInfoPath) public virtual {
         _parseDeployedContracts(deploymentInfoPath);
@@ -303,8 +337,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
-
-        eigenPodBeacon = new UpgradeableBeacon(address(pod));
+        eigenPodBeacon.upgradeTo(address(pod));
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -318,6 +351,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             delegationManager
         );
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -345,6 +379,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation)
         );
+        // AVSDirectory
+        // todo, fix this upgrade call
+        // eigenLayerProxyAdmin.upgrade(
+        //     TransparentUpgradeableProxy(payable(address(avsDirectory))),
+        //     address(avsDirectoryImplementation)
+        // );
 
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
@@ -375,7 +415,119 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    function _setUpMainnet() public virtual {}
+    function _setUpMainnet(string memory deploymentInfoPath) public virtual {
+        _parseDeployedContracts(deploymentInfoPath);
+
+        cheats.startPrank(address(eigenLayerProxyAdmin.owner()));
+
+        ethPOSDeposit = new ETHPOSDepositMock();
+        beaconChainOracle = new BeaconChainOracleMock();
+
+        // Deploy EigenPod Contracts
+        pod = new EigenPod(
+            ethPOSDeposit,
+            delayedWithdrawalRouter,
+            eigenPodManager,
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            0
+        );
+        eigenPodBeacon.upgradeTo(address(pod));
+        // Deploy AVSDirectory, contract has not been deployed on mainnet yet
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        StrategyManager strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit,
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegationManager
+        );
+        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+
+        // Second, upgrade the proxy contracts to point to the implementations
+        // DelegationManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation)
+        );
+        // StrategyManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation)
+        );
+        // Slasher
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(slasher))),
+            address(slasherImplementation)
+        );
+        // EigenPodManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation)
+        );
+        // Delayed Withdrawal Router
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
+            address(delayedWithdrawalRouterImplementation)
+        );
+        // AVSDirectory, upgrade and initalized
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                executorMultisig,
+                eigenLayerPauserReg,
+                0 // initialPausedStatus
+            )
+        );
+
+        // Create base strategy implementation and deploy a few strategies
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+
+        cheats.stopPrank();
+
+        // Third, unpause core contracts
+        uint256 paused;
+        cheats.prank(delegationManager.owner());
+        delegationManager.unpause(0);
+
+        cheats.prank(eigenPodManager.owner());
+        eigenPodManager.unpause(0);
+
+        cheats.prank(strategyManager.owner());
+        strategyManager.unpause(0);
+
+        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
+        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
+        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+
+        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+        timeMachine = new TimeMachine();
+        timeMachine.setProofGenStartTime(2 hours);
+
+        // Create mock beacon chain / proof gen interface
+        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+        cheats.prank(eigenPodManager.owner());
+        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+
+        if (eigenPodManager.denebForkTimestamp() == 0) {
+            //set deneb fork timestamp if not set
+            cheats.prank(eigenPodManager.owner());
+            eigenPodManager.setDenebForkTimestamp(1705473120);
+        }
+    }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
