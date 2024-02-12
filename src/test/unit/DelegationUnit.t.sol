@@ -550,6 +550,23 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         );
     }
 
+    function testFuzz_setMinWithdrawalDelayBlocks_revert_notOwner(
+        address invalidCaller
+    ) public filterFuzzedAddressInputs(invalidCaller) {
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        delegationManager.setMinWithdrawalDelayBlocks(0);
+    }
+
+    function testFuzz_setMinWithdrawalDelayBlocks_revert_tooLarge(uint256 newMinWithdrawalDelayBlocks) external {
+        // filter fuzzed inputs to disallowed amounts
+        cheats.assume(newMinWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
+
+        // attempt to set the `minWithdrawalDelayBlocks` variable
+        cheats.expectRevert("DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS");
+        delegationManager.setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
+    }
+
     function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(
         uint256[] memory withdrawalDelayBlocks,
         uint256 invalidStrategyIndex
