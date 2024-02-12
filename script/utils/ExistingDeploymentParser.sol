@@ -32,8 +32,8 @@ contract ExistingDeploymentParser is Script, Test {
     Slasher public slasherImplementation;
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
-    DelegationManager public delegation;
-    DelegationManager public delegationImplementation;
+    DelegationManager public delegationManager;
+    DelegationManager public delegationManagerImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
     EigenPodManager public eigenPodManager;
@@ -41,6 +41,7 @@ contract ExistingDeploymentParser is Script, Test {
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
     DelayedWithdrawalRouter public delayedWithdrawalRouterImplementation;
     UpgradeableBeacon public eigenPodBeacon;
+    EigenPod pod;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
 
@@ -72,8 +73,8 @@ contract ExistingDeploymentParser is Script, Test {
         eigenLayerPauserReg = PauserRegistry(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg"));
         slasher = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasher"));
         slasherImplementation = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation"));
-        delegation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegation"));
-        delegationImplementation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationImplementation"));
+        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegation"));
+        delegationManagerImplementation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationImplementation"));
         avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
         avsDirectoryImplementation = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation"));
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
