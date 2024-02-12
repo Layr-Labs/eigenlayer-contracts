@@ -47,6 +47,7 @@ contract DelayedWithdrawalRouter is
             "DelayedWithdrawalRouter.constructor: _eigenPodManager cannot be zero address"
         );
         eigenPodManager = _eigenPodManager;
+        _disableInitializers();
     }
 
     function initialize(
