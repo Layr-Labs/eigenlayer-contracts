@@ -393,7 +393,27 @@ Called by the `EigenPodManager` when a Staker's shares decrease. This method is 
 
 ### System Configuration
 
+* [`DelegationManager.setMinWithdrawalDelayBlocks`](#setminwithdrawaldelayblocks)
 * [`DelegationManager.setStrategyWithdrawalDelayBlocks`](#setstrategywithdrawaldelayblocks)
+
+#### `setMinWithdrawalDelayBlocks`
+
+```solidity
+function setMinWithdrawalDelayBlocks(
+    uint256 newMinWithdrawalDelayBlocks
+) 
+    external 
+    onlyOwner
+```
+
+Allows the Owner to set the overall minimum withdrawal delay for withdrawals concerning any strategy. The total time required for a withdrawal to be completable is at least `minWithdrawalDelayBlocks`. If any of the withdrawal's strategies have a higher per-strategy withdrawal delay, the time required is the maximum of these per-strategy delays.
+
+*Effects*:
+* Sets the global `minWithdrawalDelayBlocks`
+
+*Requirements*:
+* Caller MUST be the Owner
+* The new value MUST NOT be greater than `MAX_WITHDRAWAL_DELAY_BLOCKS`
 
 #### `setStrategyWithdrawalDelayBlocks`
 

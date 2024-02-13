@@ -77,7 +77,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         _initializePauser(_pauserRegistry, initialPausedStatus);
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
         _transferOwnership(initialOwner);
-        _initializeMinWithdrawalDelayBlocks(_minWithdrawalDelayBlocks);
+        _setMinWithdrawalDelayBlocks(_minWithdrawalDelayBlocks);
         _setStrategyWithdrawalDelayBlocks(_strategies, _withdrawalDelayBlocks);
     }
 
@@ -424,6 +424,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
+     * @notice Owner-only function for modifying the value of the `minWithdrawalDelayBlocks` variable.
+     * @param newMinWithdrawalDelayBlocks new value of `minWithdrawalDelayBlocks`.
+     */
+    function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) external onlyOwner {
+        _setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
+    }
+
+    /**
      * @notice Called by owner to set the minimum withdrawal delay blocks for each passed in strategy
      * Note that the min number of blocks to complete a withdrawal of a strategy is 
      * MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
@@ -750,10 +758,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         }
     }
 
-    function _initializeMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {
+    function _setMinWithdrawalDelayBlocks(uint256 _minWithdrawalDelayBlocks) internal {
         require(
             _minWithdrawalDelayBlocks <= MAX_WITHDRAWAL_DELAY_BLOCKS,
-            "DelegationManager._initializeMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+            "DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
         );
         emit MinWithdrawalDelayBlocksSet(minWithdrawalDelayBlocks, _minWithdrawalDelayBlocks);
         minWithdrawalDelayBlocks = _minWithdrawalDelayBlocks;
