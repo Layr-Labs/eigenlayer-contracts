@@ -272,7 +272,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         for (uint256 i = 0; i < queuedWithdrawalParams.length; i++) {
             require(queuedWithdrawalParams[i].strategies.length == queuedWithdrawalParams[i].shares.length, "DelegationManager.queueWithdrawal: input length mismatch");
-            require(queuedWithdrawalParams[i].withdrawer != address(0), "DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+            require(queuedWithdrawalParams[i].withdrawer == msg.sender, "DelegationManager.queueWithdrawal: withdrawer must be staker");
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
