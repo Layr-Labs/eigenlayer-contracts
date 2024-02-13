@@ -226,20 +226,18 @@ function queueWithdrawals(
 
 Allows the caller to queue one or more withdrawals of their held shares across any strategy (in either/both the `EigenPodManager` or `StrategyManager`). If the caller is delegated to an Operator, the `shares` and `strategies` being withdrawn are immediately removed from that Operator's delegated share balances. Note that if the caller is an Operator, this still applies, as Operators are essentially delegated to themselves.
 
-`queueWithdrawals` works very similarly to `undelegate`, except that the caller is not undelegated, and also may:
-* Choose which strategies and how many shares to withdraw (as opposed to ALL shares/strategies)
-* Specify a `withdrawer` to receive withdrawn funds once the withdrawal is completed
+`queueWithdrawals` works very similarly to `undelegate`, except that the caller is not undelegated, and also may choose which strategies and how many shares to withdraw (as opposed to ALL shares/strategies).
 
 All shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
 
-Withdrawals can be completed by the `withdrawer` after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn. Withdrawals do not require the `withdrawer` to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
+Withdrawals can be completed by the caller after max(`minWithdrawalDelayBlocks`, `strategyWithdrawalDelayBlocks[strategy]`) such that `strategy` represents the queued strategies to be withdrawn. Withdrawals do not require the caller to "fully exit" from the system -- they may choose to receive their shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
 
-Note that for any `strategy` s.t `StrategyManager.thirdPartyTransfersForbidden(strategy) == true` the `withdrawer` must be the same address as the `staker` as this setting disallows users to deposit or withdraw on behalf of other users. (see [`thirdPartyTransfersForbidden`](./StrategyManager.md) for details). 
+Note that the `QueuedWithdrawalParams` struct has a `withdrawer` field. Originally, this was used to specify an address that the withdrawal would be credited to once completed. However, `queueWithdrawals` now requires that `withdrawer == msg.sender`. Any other input is rejected.
 
 *Effects*:
 * For each withdrawal:
     * If the caller is delegated to an Operator, that Operator's delegated balances are decreased according to the `strategies` and `shares` being withdrawn.
-    * A `Withdrawal` is queued for the `withdrawer`, tracking the strategies and shares being withdrawn
+    * A `Withdrawal` is queued for the caller, tracking the strategies and shares being withdrawn
         * The caller's withdrawal nonce is increased
         * The hash of the `Withdrawal` is marked as "pending"
     * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
@@ -250,8 +248,7 @@ Note that for any `strategy` s.t `StrategyManager.thirdPartyTransfersForbidden(s
 * For each withdrawal:
     * `strategies.length` MUST equal `shares.length`
     * `strategies.length` MUST NOT be equal to 0
-    * The `withdrawer` MUST NOT be 0
-    * For all strategies being withdrawn, the `withdrawer` MUST be the same address as the `staker` if `StrategyManager.thirdPartyTransfersForbidden(strategy) == true`
+    * The `withdrawer` MUST equal `msg.sender`
     * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
     * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
 
