@@ -127,6 +127,15 @@ contract AVSDirectory is
         emit AVSMetadataURIUpdated(msg.sender, metadataURI);
     }
 
+    /**
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     * @param salt A unique and single use value associated with the approver signature.
+     */
+    function cancelSalt(bytes32 salt) external {
+        require(!operatorSaltIsSpent[msg.sender][salt], "AVSDirectory.cancelSalt: cannot cancel spent salt");
+        operatorSaltIsSpent[msg.sender][salt] = true;
+    }
+
     /*******************************************************************************
                             VIEW FUNCTIONS
     *******************************************************************************/
