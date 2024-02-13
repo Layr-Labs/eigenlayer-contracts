@@ -271,4 +271,85 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         cheats.stopPrank();
     }
+
+    /// @notice Checks that cancelSalt updates the operatorSaltIsSpent mapping correctly
+    function testFuzz_cancelSalt(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        assertFalse(avsDirectory.operatorSaltIsSpent(operator, salt), "bad test setup");
+        assertFalse(avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "bad test setup");
+
+        cheats.prank(operator);
+        avsDirectory.cancelSalt(salt);
+
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt), "salt was not successfully cancelled");
+        assertFalse(avsDirectory.operatorSaltIsSpent(defaultAVS, salt), "salt should only be cancelled for the operator");
+
+        bytes32 newSalt; 
+        unchecked { newSalt = bytes32(uint(salt) + 1); }
+
+        assertFalse(salt == newSalt, "bad test setup");
+
+        cheats.prank(operator);
+        avsDirectory.cancelSalt(newSalt);
+
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, salt), "original salt should still be cancelled");
+        assertTrue(avsDirectory.operatorSaltIsSpent(operator, newSalt), "new salt should be cancelled");
+    }
+
+    /// @notice Verifies that registration fails when the salt has been cancelled via cancelSalt
+    function testFuzz_revert_whenRegisteringWithCancelledSalt(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+
+        cheats.prank(operator);
+        avsDirectory.cancelSalt(salt);
+
+        cheats.expectRevert("AVSDirectory.registerOperatorToAVS: salt already spent");
+        cheats.prank(defaultAVS);
+        avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+    }
+
+    /// @notice Verifies that an operator cannot cancel the same salt twice
+    function testFuzz_revert_whenSaltCancelledTwice(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+
+        cheats.startPrank(operator);
+        avsDirectory.cancelSalt(salt);
+
+        cheats.expectRevert("AVSDirectory.cancelSalt: cannot cancel spent salt");
+        avsDirectory.cancelSalt(salt);
+        cheats.stopPrank();
+    }
+
+    /// @notice Verifies that an operator cannot cancel the same salt twice
+    function testFuzz_revert_whenCancellingSaltUsedToRegister(bytes32 salt) public {
+        address operator = cheats.addr(delegationSignerPrivateKey);
+        assertFalse(delegationManager.isOperator(operator), "bad test setup");
+        _registerOperatorWithBaseDetails(operator);
+
+        uint256 expiry = type(uint256).max;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature =
+            _getOperatorSignature(delegationSignerPrivateKey, operator, defaultAVS, salt, expiry);
+
+        cheats.prank(defaultAVS);
+        avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+
+        cheats.prank(operator);
+        cheats.expectRevert("AVSDirectory.cancelSalt: cannot cancel spent salt");
+        avsDirectory.cancelSalt(salt);
+    }
 }

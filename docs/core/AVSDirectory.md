@@ -64,3 +64,17 @@ Allows the caller (an AVS) to deregister an `operator` with itself
 
 *As of M2*:
 * Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+
+#### `cancelSalt`
+
+```solidity
+function cancelSalt(bytes32 salt) external
+```
+
+Allows the caller (an Operator) to cancel a signature salt before it is used to register for an AVS.
+
+*Effects*:
+* Sets `operatorSaltIsSpent[msg.sender][salt]` to `true`
+
+*Requirements*:
+* Salt MUST NOT already be cancelled
