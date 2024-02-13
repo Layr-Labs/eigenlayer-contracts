@@ -2828,14 +2828,16 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
-    function test_Revert_WhenZeroAddressWithdrawer() public {
+    function test_Revert_WhenNotStakerWithdrawer(address withdrawer) public {
+        cheats.assume(withdrawer != defaultStaker);
+
         (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: address(0),
+            withdrawer: withdrawer,
             strategy: strategyMock,
             withdrawalAmount: 100
         });
-        cheats.expectRevert("DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+        cheats.expectRevert("DelegationManager.queueWithdrawal: withdrawer must be staker");
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -2977,6 +2979,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint256 randSalt
     ) public filterFuzzedAddressInputs(staker){
         cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
+        cheats.assume(staker != defaultOperator);
         uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
 
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts);
@@ -3033,7 +3036,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint256[] memory depositAmounts,
         uint256 randSalt
     ) public filterFuzzedAddressInputs(staker) {
-        cheats.assume(staker != withdrawer && withdrawer != address(0));
+        cheats.assume(staker != withdrawer);
         cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
         uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
 
@@ -3052,8 +3055,11 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         });
 
         // queueWithdrawals
+        // NOTE: Originally, you could queue a withdrawal to a different address, which would fail with a specific error
+        // if third party transfers were forbidden. Now, withdrawing to a different address is forbidden regardless
+        // of third party transfer status.
         cheats.expectRevert(
-            "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
+            "DelegationManager.queueWithdrawal: withdrawer must be staker"
         );
         cheats.prank(staker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -3247,12 +3253,10 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      */
     function test_completeQueuedWithdrawal_SingleStratWithdrawAsTokens(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
-        cheats.assume(withdrawer != address(0));
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         _registerOperatorWithBaseDetails(defaultOperator);
         (
@@ -3261,7 +3265,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            withdrawer: withdrawer,
+            withdrawer: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
         });
@@ -3271,7 +3275,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // completeQueuedWithdrawal
         cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
-        cheats.prank(withdrawer);
+        cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
@@ -3291,21 +3295,20 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      */
     function test_completeQueuedWithdrawal_SingleStratWithdrawAsShares(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
-        cheats.assume(withdrawer != defaultOperator && withdrawer != address(0));
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         _registerOperatorWithBaseDetails(defaultOperator);
+
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            withdrawer: withdrawer,
+            withdrawer: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
         });
@@ -3315,19 +3318,14 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // completeQueuedWithdrawal
         cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
-        cheats.prank(withdrawer);
+        cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
 
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
-        if (staker == withdrawer) {
-            // Since staker is delegated, operatorShares get incremented
-            assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
-        } else {
-            // Since withdrawer is not the staker and isn't delegated, staker's oeprator shares are unchanged
-            assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
-        }
+        // Since staker is delegated, operatorShares get incremented
+        assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
     }
 }
