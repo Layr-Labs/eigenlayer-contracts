@@ -23,7 +23,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice The EIP-712 typehash for the `DelegationApproval` struct used by the contract
     bytes32 public constant DELEGATION_APPROVAL_TYPEHASH =
-        keccak256("DelegationApproval(address staker,address operator,bytes32 salt,uint256 expiry)");
+        keccak256("DelegationApproval(address delegationApprover,address staker,address operator,bytes32 salt,uint256 expiry)");
 
     /**
      * @notice Original EIP-712 Domain separator for this contract.
