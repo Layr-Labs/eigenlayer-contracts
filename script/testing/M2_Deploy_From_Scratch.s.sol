@@ -12,6 +12,7 @@ import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/core/AVSDirectory.sol";
 
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -54,6 +55,8 @@ contract Deployer_M2 is Script, Test {
     DelegationManager public delegationImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -162,6 +165,9 @@ contract Deployer_M2 is Script, Test {
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         slasher = Slasher(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -192,6 +198,7 @@ contract Deployer_M2 is Script, Test {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
+        avsDirectoryImplementation = new AVSDirectory(delegation);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
@@ -203,17 +210,23 @@ contract Deployer_M2 is Script, Test {
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(delegation))),
-            address(delegationImplementation),
-            abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                DELEGATION_INIT_PAUSED_STATUS,
-                DELEGATION_WITHDRAWAL_DELAY_BLOCKS
-            )
-        );
+        {
+            IStrategy[] memory _strategies;
+            uint256[] memory _withdrawalDelayBlocks;
+            eigenLayerProxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(delegation))),
+                address(delegationImplementation),
+                abi.encodeWithSelector(
+                    DelegationManager.initialize.selector,
+                    executorMultisig,
+                    eigenLayerPauserReg,
+                    DELEGATION_INIT_PAUSED_STATUS,
+                    DELEGATION_WITHDRAWAL_DELAY_BLOCKS,
+                    _strategies,
+                    _withdrawalDelayBlocks
+                )
+            );
+        }
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),
             address(strategyManagerImplementation),
@@ -234,6 +247,11 @@ contract Deployer_M2 is Script, Test {
                 eigenLayerPauserReg,
                 SLASHER_INIT_PAUSED_STATUS
             )
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(eigenPodManager))),
@@ -330,6 +348,8 @@ contract Deployer_M2 is Script, Test {
         vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
         vm.serializeAddress(deployed_addresses, "delegation", address(delegation));
         vm.serializeAddress(deployed_addresses, "delegationImplementation", address(delegationImplementation));
+        vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
+        vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
