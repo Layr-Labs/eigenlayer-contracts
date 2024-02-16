@@ -20,7 +20,7 @@ methods {
 	// external calls to StrategyManager
     function _.getDeposits(address) external => DISPATCHER(true);
     function _.slasher() external => DISPATCHER(true);
-    function _.addShares(address,address,uint256) external => DISPATCHER(true);
+    function _.addShares(address,address,address,uint256) external => DISPATCHER(true);
     function _.removeShares(address,address,uint256) external => DISPATCHER(true);
     function _.withdrawSharesAsTokens(address, address, uint256, address) external => DISPATCHER(true);
 
@@ -97,7 +97,7 @@ definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
     || f.selector == sig:depositIntoStrategyWithSignature(address,address,uint256,address,uint256,bytes).selector
     || f.selector == sig:withdrawSharesAsTokens(address,address,uint256,address).selector
-    || f.selector == sig:addShares(address,address,uint256).selector;
+    || f.selector == sig:addShares(address,address,address,uint256).selector;
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerStrategyShares[staker][strategy]`) should only decrease when
@@ -129,7 +129,7 @@ rule newSharesIncreaseTotalShares(address strategy) {
     uint256 stakerStrategySharesBefore = get_stakerStrategyShares(e.msg.sender, strategy);
     uint256 totalSharesBefore = totalShares(strategy);
     if (
-        f.selector == sig:addShares(address, address, uint256).selector
+        f.selector == sig:addShares(address, address, address, uint256).selector
         || f.selector == sig:removeShares(address, address, uint256).selector
     ) {
         uint256 totalSharesAfter = totalShares(strategy);

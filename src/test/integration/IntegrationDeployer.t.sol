@@ -190,6 +190,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
+        IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        uint256[] memory initializeWithdrawalDelayBlocks = new uint256[](0);
         // DelegationManager
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -199,7 +201,9 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
                 0 /* initialPausedStatus */,
-                withdrawalDelayBlocks
+                withdrawalDelayBlocks,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         // StrategyManager
@@ -268,6 +272,11 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Create mock beacon chain / proof gen interface
         beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle);
+
+
+
+        //set deneb fork timestamp
+        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -286,9 +295,10 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
         cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(strategies);
+        strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
 
         // Add to lstStrats and allStrats
         lstStrats.push(strategy);

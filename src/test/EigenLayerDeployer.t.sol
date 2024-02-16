@@ -73,7 +73,9 @@ contract EigenLayerDeployer is Operators {
     uint256 public constant eigenTotalSupply = 1000e18;
     uint256 nonce = 69;
     uint256 public gasLimit = 750000;
-    uint256 initializedWithdrawalDelayBlocks = 0;
+    IStrategy[] public initializeStrategiesToSetDelayBlocks;
+    uint256[] public initializeWithdrawalDelayBlocks;
+    uint256 minWithdrawalDelayBlocks = 0;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint256 REQUIRED_BALANCE_WEI = 32 ether;
     uint64 MAX_PARTIAL_WTIHDRAWAL_AMOUNT_GWEI = 1 ether / 1e9;
@@ -270,7 +272,9 @@ contract EigenLayerDeployer is Operators {
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
-                initializedWithdrawalDelayBlocks
+                minWithdrawalDelayBlocks,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(

@@ -326,7 +326,14 @@ contract DelegationTests is EigenLayerTestHelper {
     ///         cannot be intitialized multiple times
     function testCannotInitMultipleTimesDelegation() public cannotReinit {
         //delegation has already been initialized in the Deployer test contract
-        delegation.initialize(address(this), eigenLayerPauserReg, 0, initializedWithdrawalDelayBlocks);
+        delegation.initialize(
+            address(this),
+            eigenLayerPauserReg,
+            0,
+            minWithdrawalDelayBlocks,
+            initializeStrategiesToSetDelayBlocks,
+            initializeWithdrawalDelayBlocks
+        );
     }
 
     /// @notice This function tests to ensure that a you can't register as a delegate multiple times
@@ -363,7 +370,14 @@ contract DelegationTests is EigenLayerTestHelper {
         //delegation has already been initialized in the Deployer test contract
         vm.prank(_attacker);
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegation.initialize(_attacker, eigenLayerPauserReg, 0, initializedWithdrawalDelayBlocks);
+        delegation.initialize(
+            _attacker,
+            eigenLayerPauserReg,
+            0,
+            0, // minWithdrawalDelayBLocks
+            initializeStrategiesToSetDelayBlocks,
+            initializeWithdrawalDelayBlocks
+        );
     }
 
     /// @notice This function tests that the earningsReceiver cannot be set to address(0)

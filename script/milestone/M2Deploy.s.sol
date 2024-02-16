@@ -325,8 +325,17 @@ contract M2Deploy is Script, Test {
             0
         );
 
+        IStrategy[] memory strategyArray = new IStrategy[](0);
+        uint256[] memory withdrawalDelayBlocksArray = new uint256[](0);
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        DelegationManager(address(delegation)).initialize(address(this), PauserRegistry(address(this)), 0, 0);
+        DelegationManager(address(delegation)).initialize(
+            address(this),
+            PauserRegistry(address(this)),
+            0, // initialPausedStatus
+            0, // minWithdrawalDelayBLocks
+            strategyArray,
+            withdrawalDelayBlocksArray
+        );
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         EigenPodManager(address(eigenPodManager)).initialize(

@@ -175,6 +175,29 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         // Check storage update
         assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
     }
+
+    function test_setDenebForkTimestamp(uint64 denebForkTimestamp) public {
+        cheats.assume(denebForkTimestamp != 0);
+        cheats.assume(denebForkTimestamp != type(uint64).max);
+        cheats.prank(initialOwner);
+
+        cheats.expectEmit(true, true, true, true);
+        emit DenebForkTimestampUpdated(denebForkTimestamp);
+        eigenPodManager.setDenebForkTimestamp(denebForkTimestamp);
+        assertEq(eigenPodManager.denebForkTimestamp(), denebForkTimestamp, "fork timestamp not set correctly");
+    }
+
+    function test_setDenebForkTimestamp_Twice(uint64 timestamp1, uint64 timestamp2) public {
+        cheats.assume(timestamp1 != 0);
+        cheats.assume(timestamp2 != 0);
+        cheats.assume(timestamp1 != type(uint64).max);
+        cheats.assume(timestamp2 != type(uint64).max);
+        cheats.prank(initialOwner);
+
+        eigenPodManager.setDenebForkTimestamp(timestamp1);
+        cheats.expectRevert(bytes("EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once"));
+        eigenPodManager.setDenebForkTimestamp(timestamp2);
+    }
 }
 
 contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {
@@ -289,7 +312,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_addShares(uint256 shares) public {
         // Fuzz inputs
         cheats.assume(defaultStaker != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        shares = shares - (shares % GWEI_TO_WEI); // Round down to nearest Gwei
         cheats.assume(int256(shares) >= 0);
 
         // Add shares
@@ -361,7 +384,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     function testFuzz_removeShares_zeroShares(address podOwner, uint256 shares) public filterFuzzedAddressInputs(podOwner) {
         // Constrain inputs
         cheats.assume(podOwner != address(0));
-        cheats.assume(shares % GWEI_TO_WEI == 0);
+        cheats.assume(shares < type(uint256).max / 2);
+        shares = shares - (shares % GWEI_TO_WEI);  // Round down to nearest Gwei
+        assertTrue(int256(shares) % int256(GWEI_TO_WEI) == 0, "Shares must be a whole Gwei amount");
 
         // Initialize pod with shares
         _initializePodWithShares(podOwner, int256(shares));
@@ -460,7 +485,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     }
 }
 
-contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
+contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests, IEigenPodManagerEvents {
 
     function testFuzz_recordBalanceUpdate_revert_notPod(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) deployPodForStaker(defaultStaker) {
         cheats.assume(invalidCaller != address(defaultPod));
@@ -492,6 +517,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         _initializePodWithShares(defaultStaker, scaledSharesBefore);
 
         // Update balance
+        cheats.expectEmit(true, true, true, true);
+        emit PodSharesUpdated(defaultStaker, scaledSharesDelta);
         cheats.prank(address(defaultPod));
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, scaledSharesDelta);
 

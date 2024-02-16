@@ -12,6 +12,7 @@ import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/core/AVSDirectory.sol";
 
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -56,6 +57,8 @@ contract DeployOpenEigenLayer is Script, Test {
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
     DelayedWithdrawalRouter public delayedWithdrawalRouterImplementation;
+    AVSDirectory public avsDirectory;
+    AVSDirectory public avsDirectoryImplementation;
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
@@ -97,6 +100,9 @@ contract DeployOpenEigenLayer is Script, Test {
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         strategyManager = StrategyManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -124,6 +130,7 @@ contract DeployOpenEigenLayer is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegation);
         strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         slasherImplementation = new Slasher(strategyManager, delegation);
         eigenPodManagerImplementation = new EigenPodManager(
@@ -136,10 +143,17 @@ contract DeployOpenEigenLayer is Script, Test {
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
+        IStrategy[] memory _strategies;
+        uint256[] memory _withdrawalDelayBlocks;
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
             address(delegationImplementation),
-            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0, 0 /* withdrawalDelayBlocks */)
+            abi.encodeWithSelector(DelegationManager.initialize.selector, executorMultisig, eigenLayerPauserReg, 0, 0, _strategies, _withdrawalDelayBlocks)
+        );
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, executorMultisig, eigenLayerPauserReg, 0)
         );
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(strategyManager))),

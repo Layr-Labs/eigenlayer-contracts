@@ -42,7 +42,10 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     address defaultOperator = address(this);
     address defaultAVS = address(this);
 
-    uint256 initializedWithdrawalDelayBlocks = 50400;
+    // 604800 seconds in week / 12 = 50,400 blocks
+    uint256 minWithdrawalDelayBlocks = 50400;
+    IStrategy[] public initializeStrategiesToSetDelayBlocks;
+    uint256[] public initializeWithdrawalDelayBlocks;
 
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -55,7 +58,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // Index for flag that pauses completing existing withdrawals when set.
     uint8 internal constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
 
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
@@ -66,6 +70,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         EigenLayerUnitTestSetup.setUp();
 
         // Deploy DelegationManager implmentation and proxy
+        initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
+        initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         delegationManager = DelegationManager(
             address(
@@ -77,7 +83,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        initializedWithdrawalDelayBlocks
+                        minWithdrawalDelayBlocks,
+                        initializeStrategiesToSetDelayBlocks,
+                        initializeWithdrawalDelayBlocks
                     )
                 )
             )
@@ -115,7 +123,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     ) internal returns (IStrategy[] memory) {
         uint256 numStrats = sharesAmounts.length;
         IStrategy[] memory strategies = new IStrategy[](numStrats);
+        uint256[] memory withdrawalDelayBlocks = new uint256[](strategies.length);
         for (uint8 i = 0; i < numStrats; i++) {
+            withdrawalDelayBlocks[i] = bound(uint256(keccak256(abi.encode(staker, i))), 0, MAX_WITHDRAWAL_DELAY_BLOCKS);
             ERC20PresetFixedSupply token = new ERC20PresetFixedSupply(
                 string(abi.encodePacked("Mock Token ", i)),
                 string(abi.encodePacked("MOCK", i)),
@@ -132,6 +142,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 )
             );
         }
+        delegationManager.setStrategyWithdrawalDelayBlocks(strategies, withdrawalDelayBlocks);
         strategyManagerMock.setDeposits(staker, strategies, sharesAmounts);
         return strategies;
     }
@@ -180,28 +191,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         }
         return stakerSignatureAndExpiry;
     }
-
-    /**
-     * @notice internal function for calculating a signature from the operator corresponding to `_operatorPrivateKey`, delegating them to
-     * the `operator`, and expiring at `expiry`.
-     */
-    function _getOperatorSignature(
-        uint256 _operatorPrivateKey,
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
-        operatorSignature.expiry = expiry;
-        operatorSignature.salt = salt;
-        {
-            bytes32 digestHash = delegationManager.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
-            (uint8 v, bytes32 r, bytes32 s) = cheats.sign(_operatorPrivateKey, digestHash);
-            operatorSignature.signature = abi.encodePacked(r, s, v);
-        }
-        return operatorSignature;
-    }
-
 
     // @notice Assumes operator does not have a delegation approver & staker != approver
     function _delegateToOperatorWhoAcceptsAllStakers(address staker, address operator) internal {
@@ -421,7 +410,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawalSingleStrat(
         address staker,
-        address operator,
         address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
@@ -452,6 +440,45 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return (withdrawal, tokens, withdrawalRoot);
     }
 
+        /**
+     * Deploy and deposit staker into a single strategy, then set up a queued withdrawal for the staker
+     * Assumptions: 
+     * - operator is already a registered operator.
+     * - withdrawalAmount <= depositAmount
+     */
+    function _setUpCompleteQueuedWithdrawalBeaconStrat(
+        address staker,
+        address withdrawer,
+        uint256 depositAmount,
+        uint256 withdrawalAmount
+    ) internal returns (IDelegationManager.Withdrawal memory, IERC20[] memory, bytes32) {
+        uint256[] memory depositAmounts = new uint256[](1);
+        depositAmounts[0] = depositAmount;
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        (
+            IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            IDelegationManager.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: staker,
+            withdrawer: withdrawer,
+            strategy: strategies[0],
+            withdrawalAmount: withdrawalAmount
+        });
+
+        cheats.prank(staker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+        // Set the current deposits to be the depositAmount - withdrawalAmount
+        uint256[] memory currentAmounts = new uint256[](1);
+        currentAmounts[0] = depositAmount - withdrawalAmount;
+        strategyManagerMock.setDeposits(staker, strategies, currentAmounts);
+
+        IERC20[] memory tokens;
+        // tokens[0] = strategies[0].underlyingToken();
+        return (withdrawal, tokens, withdrawalRoot);
+    }
+
     /**
      * Deploy and deposit staker into strategies, then set up a queued withdrawal for the staker
      * Assumptions: 
@@ -460,12 +487,17 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawal(
         address staker,
-        address operator,
         address withdrawer,
         uint256[] memory depositAmounts,
         uint256[] memory withdrawalAmounts
-    ) internal returns (IDelegationManager.Withdrawal memory, bytes32) {
+    ) internal returns (IDelegationManager.Withdrawal memory, IERC20[] memory, bytes32) {
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts);
+
+        IERC20[] memory tokens = new IERC20[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            tokens[i] = strategies[i].underlyingToken();
+        }
+
         (
             IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             IDelegationManager.Withdrawal memory withdrawal,
@@ -480,7 +512,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         cheats.prank(staker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
-        return (withdrawal, withdrawalRoot);
+        return (withdrawal, tokens, withdrawalRoot);
     }
 }
 
@@ -508,15 +540,53 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(address(this), pauserRegistry, 0, initializedWithdrawalDelayBlocks);
+        delegationManager.initialize(
+            address(this),
+            pauserRegistry,
+            0,
+            0, // minWithdrawalDelayBlocks
+            initializeStrategiesToSetDelayBlocks,
+            initializeWithdrawalDelayBlocks
+        );
     }
 
-    function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(uint256 withdrawalDelayBlocks) public {
-        cheats.assume(withdrawalDelayBlocks > MAX_WITHDRAWAL_DELAY_BLOCKS);
+    function testFuzz_setMinWithdrawalDelayBlocks_revert_notOwner(
+        address invalidCaller
+    ) public filterFuzzedAddressInputs(invalidCaller) {
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        delegationManager.setMinWithdrawalDelayBlocks(0);
+    }
+
+    function testFuzz_setMinWithdrawalDelayBlocks_revert_tooLarge(uint256 newMinWithdrawalDelayBlocks) external {
+        // filter fuzzed inputs to disallowed amounts
+        cheats.assume(newMinWithdrawalDelayBlocks > delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS());
+
+        // attempt to set the `minWithdrawalDelayBlocks` variable
+        cheats.expectRevert("DelegationManager._setMinWithdrawalDelayBlocks: _minWithdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS");
+        delegationManager.setMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks);
+    }
+
+    function testFuzz_initialize_Revert_WhenWithdrawalDelayBlocksTooLarge(
+        uint256[] memory withdrawalDelayBlocks,
+        uint256 invalidStrategyIndex
+    ) public {
+        // set withdrawalDelayBlocks to be too large
+        cheats.assume(withdrawalDelayBlocks.length > 0);
+        uint256 numStrats = withdrawalDelayBlocks.length;
+        IStrategy[] memory strategiesToSetDelayBlocks = new IStrategy[](numStrats);
+        for (uint256 i = 0; i < numStrats; i++) {
+            strategiesToSetDelayBlocks[i] = IStrategy(address(uint160(uint256(keccak256(abi.encode(strategyMock, i))))));
+        }
+
+        // set at least one index to be too large for withdrawalDelayBlocks
+        invalidStrategyIndex = invalidStrategyIndex % numStrats;
+        withdrawalDelayBlocks[invalidStrategyIndex] = MAX_WITHDRAWAL_DELAY_BLOCKS + 1;
+
         // Deploy DelegationManager implmentation and proxy
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
         cheats.expectRevert(
-            "DelegationManager._initializeWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
+            "DelegationManager._setStrategyWithdrawalDelayBlocks: _withdrawalDelayBlocks cannot be > MAX_WITHDRAWAL_DELAY_BLOCKS"
         );
         delegationManager = DelegationManager(
             address(
@@ -528,6 +598,8 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
+                        minWithdrawalDelayBlocks,
+                        strategiesToSetDelayBlocks,
                         withdrawalDelayBlocks
                     )
                 )
@@ -777,111 +849,6 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(metadataURI);
-    }
-}
-
-contract DelegationManagerUnitTests_operatorAVSRegisterationStatus is DelegationManagerUnitTests {
-    // @notice Tests that an avs who calls `updateAVSMetadataURI` will correctly see an `AVSMetadataURIUpdated` event emitted with their input
-    function testFuzz_UpdateAVSMetadataURI(string memory metadataURI) public {
-        // call `updateAVSMetadataURI` and check for event
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        cheats.prank(defaultAVS);
-        emit AVSMetadataURIUpdated(defaultAVS, metadataURI);
-        delegationManager.updateAVSMetadataURI(metadataURI);
-    }
-
-    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
-    function testFuzz_registerOperatorToAVS(bytes32 salt) public {
-        address operator = cheats.addr(delegationSignerPrivateKey);
-        assertFalse(delegationManager.isOperator(operator), "bad test setup");
-        _registerOperatorWithBaseDetails(operator);
-
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorAVSRegistrationStatusUpdated(operator, defaultAVS, OperatorAVSRegistrationStatus.REGISTERED);
-
-        uint256 expiry = type(uint256).max;
-
-        cheats.prank(defaultAVS);
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            delegationSignerPrivateKey,
-            operator,
-            defaultAVS,
-            salt,
-            expiry
-        );
-
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-    }
-
-    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
-    function testFuzz_revert_whenOperatorNotRegisteredToEigenLayerYet(bytes32 salt) public {
-        address operator = cheats.addr(delegationSignerPrivateKey);
-        assertFalse(delegationManager.isOperator(operator), "bad test setup");
-
-        cheats.prank(defaultAVS);
-        uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            delegationSignerPrivateKey,
-            operator,
-            defaultAVS,
-            salt,
-            expiry
-        );
-
-        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator not registered to EigenLayer yet");
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-    }
-
-    // @notice Verifies an operator registers fails when the signature is not from the operator
-    function testFuzz_revert_whenSignatureAddressIsNotOperator(bytes32 salt) public {
-        address operator = cheats.addr(delegationSignerPrivateKey);
-        assertFalse(delegationManager.isOperator(operator), "bad test setup");
-        _registerOperatorWithBaseDetails(operator);
-
-        uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            delegationSignerPrivateKey,
-            operator,
-            defaultAVS,
-            salt,
-            expiry
-        );
-
-        cheats.expectRevert("EIP1271SignatureUtils.checkSignature_EIP1271: signature not from signer");
-        cheats.prank(operator);
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-    }
-
-    // @notice Verifies an operator registers fails when the signature expiry already expires
-    function testFuzz_revert_whenExpiryHasExpired(bytes32 salt, uint256 expiry, ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) public {
-        address operator = cheats.addr(delegationSignerPrivateKey);
-        cheats.assume(operatorSignature.expiry < block.timestamp);
-
-        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator signature expired");
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-    }
-
-    // @notice Verifies an operator registers fails when it's already registered to the avs
-    function testFuzz_revert_whenOperatorAlreadyRegisteredToAVS(bytes32 salt) public {
-        address operator = cheats.addr(delegationSignerPrivateKey);
-        assertFalse(delegationManager.isOperator(operator), "bad test setup");
-        _registerOperatorWithBaseDetails(operator);
-
-        uint256 expiry = type(uint256).max;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
-            delegationSignerPrivateKey,
-            operator,
-            defaultAVS,
-            salt,
-            expiry
-        );
-
-        cheats.startPrank(defaultAVS);
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-
-        cheats.expectRevert("DelegationManager.registerOperatorToAVS: operator already registered");
-        delegationManager.registerOperatorToAVS(operator, operatorSignature);
-        cheats.stopPrank();
     }
 }
 
@@ -1194,9 +1161,9 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
-        cheats.assume(expiry < block.timestamp);
+        expiry = bound(expiry, 0, block.timestamp - 1);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1280,9 +1247,10 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
-        cheats.assume(expiry >= block.timestamp);
+        expiry = bound(expiry, block.timestamp + 1, type(uint256).max);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        cheats.assume(staker != defaultOperator);
+        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
+        cheats.assume(staker != defaultOperator && staker != delegationApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -1667,10 +1635,9 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         uint256 expiry
     ) public filterFuzzedAddressInputs(staker) {
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
         // filter to only *invalid* `expiry` values
-        cheats.assume(expiry < block.timestamp);
-
+        expiry = bound(expiry, 0, block.timestamp - 1);
         // filter inputs, since this will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -1921,7 +1888,7 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 expiry,
         bytes memory signature
     ) public filterFuzzedAddressInputs(staker) filterFuzzedAddressInputs(operator) {
-        cheats.assume(expiry < block.timestamp);
+        expiry = bound(expiry, 0, block.timestamp - 1);
         cheats.expectRevert("DelegationManager.delegateToBySignature: staker signature expired");
         ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry = ISignatureUtils.SignatureWithExpiry({
             signature: signature,
@@ -2058,12 +2025,18 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 stakerExpiry,
         uint256 delegationApproverExpiry
     ) public filterFuzzedAddressInputs(caller) {
-        // filter to only valid `stakerExpiry` values
-        cheats.assume(stakerExpiry >= block.timestamp);
         // roll to a very late timestamp
-        cheats.roll(type(uint256).max / 2);
+        skip(type(uint256).max / 2);
+
+        // filter to only valid `stakerExpiry` values
+        stakerExpiry = bound(stakerExpiry, block.timestamp + 1, type(uint256).max);
         // filter to only *invalid* `delegationApproverExpiry` values
-        cheats.assume(delegationApproverExpiry < block.timestamp);
+        delegationApproverExpiry = bound(delegationApproverExpiry, 0, block.timestamp - 1);
+
+        console.log("timestamp: %s", block.timestamp);
+        console.log(stakerExpiry);
+        console.log(delegationApproverExpiry);
+
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -2512,8 +2485,8 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
     ) public filterFuzzedAddressInputs(invalidCaller) {
         cheats.assume(invalidCaller != address(strategyManagerMock));
         cheats.assume(invalidCaller != address(eigenPodManagerMock));
+        cheats.assume(invalidCaller != address(eigenLayerProxyAdmin));
 
-        cheats.prank(invalidCaller);
         cheats.expectRevert("DelegationManager: onlyStrategyManagerOrEigenPodManager");
         delegationManager.increaseDelegatedShares(invalidCaller, strategyMock, shares);
     }
@@ -2538,7 +2511,7 @@ contract DelegationManagerUnitTests_ShareAdjustment is DelegationManagerUnitTest
         address staker,
         uint256 shares,
         bool delegateFromStakerToOperator
-    ) public {
+    ) public filterFuzzedAddressInputs(staker) {
         // filter inputs, since delegating to the operator will fail when the staker is already registered as an operator
         cheats.assume(staker != defaultOperator);
 
@@ -2727,7 +2700,7 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
     function testFuzz_undelegate_operatorCannotForceUndelegateThemself(
         address delegationApprover,
         bool callFromOperatorOrApprover
-    ) public {
+    ) public filterFuzzedAddressInputs(delegationApprover) {
         // register *this contract* as an operator with the default `delegationApprover`
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -2872,14 +2845,16 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
-    function test_Revert_WhenZeroAddressWithdrawer() public {
+    function test_Revert_WhenNotStakerWithdrawer(address withdrawer) public {
+        cheats.assume(withdrawer != defaultStaker);
+
         (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: address(0),
+            withdrawer: withdrawer,
             strategy: strategyMock,
             withdrawalAmount: 100
         });
-        cheats.expectRevert("DelegationManager.queueWithdrawal: must provide valid withdrawal address");
+        cheats.expectRevert("DelegationManager.queueWithdrawal: withdrawer must be staker");
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
@@ -3001,6 +2976,111 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(staker);
         assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
     }
+
+    /**
+     * @notice Verifies that `DelegationManager.queueWithdrawals` properly queues a withdrawal for the `withdrawer`
+     * with multiple strategies and sharesAmounts and with thirdPartyTransfersForbidden for one of the strategies.
+     * Queuing a withdrawal should pass as the `withdrawer` address is the same as the staker.
+     * 
+     * Depending on length sharesAmounts, deploys corresponding number of strategies
+     * and deposits sharesAmounts into each strategy for the staker and delegates to operator.
+     * For each strategy, withdrawAmount <= depositAmount
+     * - Asserts that staker is delegated to the operator
+     * - Asserts that shares for delegatedTo operator are decreased by `sharesAmount`
+     * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
+     * - Checks that event was emitted with correct withdrawalRoot and withdrawal
+     */
+    function testFuzz_queueWithdrawal_ThirdPartyTransfersForbidden(
+        address staker,
+        uint256[] memory depositAmounts,
+        uint256 randSalt
+    ) public filterFuzzedAddressInputs(staker){
+        cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
+        cheats.assume(staker != defaultOperator);
+        uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
+
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts);
+        // Randomly set strategy true for thirdPartyTransfersForbidden
+        uint256 randStrategyIndex = randSalt % strategies.length;
+        strategyManagerMock.setThirdPartyTransfersForbidden(strategies[randStrategyIndex], true);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        (
+            IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            IDelegationManager.Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawals({
+            staker: staker,
+            withdrawer: staker,
+            strategies: strategies,
+            withdrawalAmounts: withdrawalAmounts
+        });
+        // Before queueWithdrawal state values
+        uint256 nonceBefore = delegationManager.cumulativeWithdrawalsQueued(staker);
+        assertEq(delegationManager.delegatedTo(staker), defaultOperator, "staker should be delegated to operator");
+        uint256[] memory delegatedSharesBefore = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            delegatedSharesBefore[i] = delegationManager.operatorShares(defaultOperator, strategies[i]);
+        }
+
+        // queueWithdrawals
+        cheats.prank(staker);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit WithdrawalQueued(withdrawalRoot, withdrawal);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Post queueWithdrawal state values
+        for (uint256 i = 0; i < strategies.length; i++) {
+            assertEq(
+                delegatedSharesBefore[i] - withdrawalAmounts[i], // Shares before - withdrawal amount
+                delegationManager.operatorShares(defaultOperator, strategies[i]), // Shares after
+                "delegated shares not decreased correctly"
+            );
+        }
+        uint256 nonceAfter = delegationManager.cumulativeWithdrawalsQueued(staker);
+        assertEq(nonceBefore + 1, nonceAfter, "staker nonce should have incremented");
+    }
+
+    /**
+     * @notice Randomly selects one of the strategies to set thirdPartyTransfersForbidden to true.
+     * Verifies that `DelegationManager.queueWithdrawals` properly reverts a queuedWithdrawal since the `withdrawer`
+     * is not the same as the `staker`.
+     */
+    function testFuzz_queueWithdrawal_Revert_WhenThirdPartyTransfersForbidden(
+        address staker,
+        address withdrawer,
+        uint256[] memory depositAmounts,
+        uint256 randSalt
+    ) public filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != withdrawer);
+        cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
+        uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
+
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts);
+        // Randomly set strategy true for thirdPartyTransfersForbidden
+        uint256 randStrategyIndex = randSalt % strategies.length;
+        strategyManagerMock.setThirdPartyTransfersForbidden(strategies[randStrategyIndex], true);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
+        (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawals({
+            staker: staker,
+            withdrawer: withdrawer,
+            strategies: strategies,
+            withdrawalAmounts: withdrawalAmounts
+        });
+
+        // queueWithdrawals
+        // NOTE: Originally, you could queue a withdrawal to a different address, which would fail with a specific error
+        // if third party transfers were forbidden. Now, withdrawing to a different address is forbidden regardless
+        // of third party transfer status.
+        cheats.expectRevert(
+            "DelegationManager.queueWithdrawal: withdrawer must be staker"
+        );
+        cheats.prank(staker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+    }
 }
 
 contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManagerUnitTests {
@@ -3014,7 +3094,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -3033,7 +3112,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -3041,34 +3119,110 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
 
-        cheats.expectRevert("DelegationManager.completeQueuedAction: action is not in queue");
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: action is not in queue");
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
-    function test_Revert_WhenWithdrawalDelayBlocksNotPassed() public {
+    /**
+     * @notice should revert if minWithdrawalDelayBlocks has not passed, and if
+     * delegationManager.getWithdrawalDelay returns a value greater than minWithdrawalDelayBlocks
+     * then it should revert if the validBlockNumber has not passed either.
+     */
+    function test_Revert_WhenWithdrawalDelayBlocksNotPassed(
+        uint256[] memory depositAmounts,
+        uint256 randSalt,
+        bool receiveAsTokens
+    ) public {
+        cheats.assume(depositAmounts.length > 0 && depositAmounts.length <= 32);
+        uint256[] memory withdrawalAmounts = _fuzzWithdrawalAmounts(depositAmounts);
+        
         _registerOperatorWithBaseDetails(defaultOperator);
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
             /* bytes32 withdrawalRoot */
-        ) = _setUpCompleteQueuedWithdrawalSingleStrat({
+        ) = _setUpCompleteQueuedWithdrawal({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
-            depositAmount: 100,
-            withdrawalAmount: 100
+            depositAmounts: depositAmounts,
+            withdrawalAmounts: withdrawalAmounts
         });
-        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
-        cheats.expectRevert("DelegationManager.completeQueuedAction: withdrawalDelayBlocks period has not yet passed");
+        // prank as withdrawer address
+        cheats.startPrank(defaultStaker);
+
+        cheats.expectRevert(
+            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
+        );
+        cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
+
+        uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
+        if (validBlockNumber > minWithdrawalDelayBlocks) {
+            cheats.expectRevert(
+                "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+            );
+            cheats.roll(validBlockNumber - 1);
+            delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, receiveAsTokens);
+        }
+
+        cheats.stopPrank();
+    }
+
+    /**
+     * @notice should revert when the withdrawalDelayBlocks period has not yet passed for the
+     * beacon chain strategy
+     */
+    function test_Revert_WhenWithdrawalDelayBlocksNotPassed_BeaconStrat(
+        uint256 depositAmount,
+        uint256 withdrawalAmount,
+        uint256 beaconWithdrawalDelay
+    ) public {
+        cheats.assume(depositAmount > 1 && withdrawalAmount <= depositAmount);
+        beaconWithdrawalDelay = bound(beaconWithdrawalDelay, minWithdrawalDelayBlocks, MAX_WITHDRAWAL_DELAY_BLOCKS);
+        _registerOperatorWithBaseDetails(defaultOperator);
+        (
+            IDelegationManager.Withdrawal memory withdrawal,
+            IERC20[] memory tokens,
+            bytes32 withdrawalRoot
+        ) = _setUpCompleteQueuedWithdrawalBeaconStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            depositAmount: depositAmount,
+            withdrawalAmount: withdrawalAmount
+        });
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        uint256[] memory withdrawalDelayBlocks = new uint256[](1);
+        delegationManager.setStrategyWithdrawalDelayBlocks(withdrawal.strategies, withdrawalDelayBlocks);
+
+        // prank as withdrawer address
+        cheats.startPrank(defaultStaker);
+
+        cheats.expectRevert(
+            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
+        );
+        cheats.roll(block.number + minWithdrawalDelayBlocks - 1);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
+
+        uint256 validBlockNumber = delegationManager.getWithdrawalDelay(withdrawal.strategies);
+        if (validBlockNumber > minWithdrawalDelayBlocks) {
+            cheats.expectRevert(
+                "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
+            );
+            cheats.roll(validBlockNumber - 1);
+            delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
+        }
+
+        cheats.stopPrank();
     }
 
     function test_Revert_WhenNotCalledByWithdrawer() public {
@@ -3076,18 +3230,17 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
-            bytes32 withdrawalRoot
+            /*bytes32 withdrawalRoot*/
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
         });
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
-        cheats.expectRevert("DelegationManager.completeQueuedAction: only withdrawer can complete action");
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action");
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
     }
 
@@ -3095,7 +3248,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _registerOperatorWithBaseDetails(defaultOperator);
         (IDelegationManager.Withdrawal memory withdrawal, , ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            operator: defaultOperator,
             withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100
@@ -3103,9 +3255,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         IERC20[] memory tokens = new IERC20[](0);
-        cheats.expectRevert("DelegationManager.completeQueuedAction: input length mismatch");
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
+        cheats.expectRevert("DelegationManager._completeQueuedWithdrawal: input length mismatch");
         cheats.prank(defaultStaker);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
     }
 
@@ -3118,7 +3270,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      */
     function test_completeQueuedWithdrawal_SingleStratWithdrawAsTokens(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
@@ -3131,8 +3282,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            operator: defaultOperator,
-            withdrawer: withdrawer,
+            withdrawer: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
         });
@@ -3141,8 +3291,8 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
 
         // completeQueuedWithdrawal
-        cheats.prank(withdrawer);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
+        cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, true);
@@ -3162,22 +3312,20 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      */
     function test_completeQueuedWithdrawal_SingleStratWithdrawAsShares(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
-        cheats.assume(withdrawer != defaultOperator);
         cheats.assume(withdrawalAmount > 0 && withdrawalAmount <= depositAmount);
         _registerOperatorWithBaseDetails(defaultOperator);
+
         (
             IDelegationManager.Withdrawal memory withdrawal,
             IERC20[] memory tokens,
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            operator: defaultOperator,
-            withdrawer: withdrawer,
+            withdrawer: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount
         });
@@ -3186,20 +3334,15 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
 
         // completeQueuedWithdrawal
-        cheats.prank(withdrawer);
-        cheats.roll(block.number + initializedWithdrawalDelayBlocks);
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(withdrawal.strategies));
+        cheats.prank(staker);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit WithdrawalCompleted(withdrawalRoot);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0 /* middlewareTimesIndex */, false);
 
         uint256 operatorSharesAfter = delegationManager.operatorShares(defaultOperator, withdrawal.strategies[0]);
-        if (staker == withdrawer) {
-            // Since staker is delegated, operatorShares get incremented
-            assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
-        } else {
-            // Since withdrawer is not the staker and isn't delegated, staker's oeprator shares are unchanged
-            assertEq(operatorSharesAfter, operatorSharesBefore, "operator shares should be unchanged");
-        }
+        // Since staker is delegated, operatorShares get incremented
+        assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
     }
 }

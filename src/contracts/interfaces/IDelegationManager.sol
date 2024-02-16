@@ -100,12 +100,6 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
-    /// @notice Enum representing the status of an operator's registration with an AVS
-    enum OperatorAVSRegistrationStatus {
-        UNREGISTERED,       // Operator not registered to AVS
-        REGISTERED          // Operator registered to AVS
-    }
-
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
 
@@ -117,15 +111,6 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
      */
     event OperatorMetadataURIUpdated(address indexed operator, string metadataURI);
-
-    /**
-     * @notice Emitted when @param avs indicates that they are updating their MetadataURI string
-     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
-     */
-    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
-
-    /// @notice Emitted when an operator's registration status for an AVS is updated
-    event OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status);
 
     /// @notice Emitted whenever an operator's shares are increased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesIncreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
@@ -154,9 +139,12 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
     event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
+    
+    /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
 
-    /// @notice Emitted when the `withdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event WithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
+    /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
+    event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -187,13 +175,6 @@ interface IDelegationManager is ISignatureUtils {
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
     function updateOperatorMetadataURI(string calldata metadataURI) external;
-
-    /**
-     * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an AVS
-     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AVSMetadataURIUpdated` event
-     */
-    function updateAVSMetadataURI(string calldata metadataURI) external;
 
     /**
      * @notice Caller delegates their stake to an operator.
@@ -330,42 +311,6 @@ interface IDelegationManager is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by an avs to register an operator with the avs.
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
-     */
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
-
-    /**
-     * @notice Called by an avs to deregister an operator with the avs.
-     * @param operator The address of the operator to deregister.
-     */
-    function deregisterOperatorFromAVS(address operator) external;
-
-    /**
-     * @notice Returns whether or not the salt has already been used by the operator.
-     * @dev Salts is used in the `registerOperatorToAVS` function.
-     */
-    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
-
-    /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
-     * @param operator The account registering as an operator
-     * @param avs The AVS the operator is registering to
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
-     */
-    function calculateOperatorAVSRegistrationDigestHash(
-        address operator,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) external view returns (bytes32);
-
-    /**
      * @notice returns the address of the operator that `staker` is delegated to.
      * @notice Mapping: staker => operator whom the staker is currently delegated to.
      * @dev Note that returning address(0) indicates that the staker is not actively delegated to any operator.
@@ -391,6 +336,21 @@ interface IDelegationManager is ISignatureUtils {
      * @notice Returns the stakerOptOutWindowBlocks for an operator
      */
     function stakerOptOutWindowBlocks(address operator) external view returns (uint256);
+
+    /**
+     * @notice Given array of strategies, returns array of shares for the operator
+     */
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
+     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
+     * @param strategies The strategies to check withdrawal delays for
+     */
+    function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -424,10 +384,16 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * @dev Note that the withdrawal delay is not enforced on withdrawals of 'beaconChainETH', as the EigenPods have their own separate delay mechanic
-     * and we want to avoid stacking multiple enforced delays onto a single withdrawal.
+     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of blocks that must pass
+     * to withdraw a strategy is MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
      */
-    function withdrawalDelayBlocks() external view returns (uint256);
+    function minWithdrawalDelayBlocks() external view returns (uint256);
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256);
 
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
@@ -479,9 +445,6 @@ interface IDelegationManager is ISignatureUtils {
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
-
-    /// @notice The EIP-712 typehash for the Registration struct used by the contract
-    function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);
 
     /**
      * @notice Getter function for the current EIP-712 domain separator for this contract.

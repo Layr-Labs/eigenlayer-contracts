@@ -31,7 +31,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Shares
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, staker, withdrawals[i], strategies, shares);
@@ -64,7 +64,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Tokens
-        cheats.roll(block.number + delegationManager.withdrawalDelayBlocks());
+        _rollBlocksForCompleteWithdrawals(strategies);
         for (uint i = 0; i < withdrawals.length; i++) {
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);

@@ -20,7 +20,7 @@ The `EigenPodManager` is the entry point for this process, allowing Stakers to d
 
 `EigenPods` serve as the withdrawal credentials for one or more beacon chain validators controlled by a Staker. Their primary role is to validate beacon chain proofs for each of the Staker's validators. Beacon chain proofs are used to verify a validator's:
 * `EigenPod.verifyWithdrawalCredentials`: withdrawal credentials and effective balance
-* `EigenPod.verifyBalanceUpdates`: current balance
+* `EigenPod.verifyBalanceUpdates`: effective balance (when it changes)
 * `EigenPod.verifyAndProcessWithdrawals`: withdrawable epoch, and processed withdrawals within historical block summary
 
 See [/proofs](./proofs/) for detailed documentation on each of the state proofs used in these methods. Additionally, proofs are checked against a beacon chain block root supplied by Succinct's Telepathy protocol ([docs link](https://docs.telepathy.xyz/)).
@@ -223,7 +223,7 @@ function verifyBalanceUpdates(
     uint64 oracleTimestamp,
     uint40[] calldata validatorIndices,
     BeaconChainProofs.StateRootProof calldata stateRootProof,
-    BeaconChainProofs.BalanceUpdateProof[] calldata balanceUpdateProofs,
+    bytes[] calldata validatorFieldsProofs,
     bytes32[][] calldata validatorFields
 ) 
     external 

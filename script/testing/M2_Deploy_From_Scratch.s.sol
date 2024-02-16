@@ -378,7 +378,7 @@ contract Deployer_M2 is Script, Test {
     function _verifyContractsPointAtOneAnother(
         DelegationManager delegationContract,
         StrategyManager strategyManagerContract,
-        Slasher slasherContract,
+        Slasher /*slasherContract*/,
         EigenPodManager eigenPodManagerContract,
         DelayedWithdrawalRouter delayedWithdrawalRouterContract
     ) internal view {

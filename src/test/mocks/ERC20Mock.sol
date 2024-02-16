@@ -82,6 +82,11 @@ contract ERC20Mock is Context, IERC20 {
         return _allowances[owner][spender];
     }
 
+    function mint(address /*to*/, uint256 amount) public virtual {
+        address owner = _msgSender();
+        _mint(owner, amount);
+    }
+
     /**
      * @dev See {IERC20-approve}.
      *

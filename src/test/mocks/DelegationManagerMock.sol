@@ -75,7 +75,24 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
-    function withdrawalDelayBlocks() external pure returns (uint256) {
+    function minWithdrawalDelayBlocks() external pure returns (uint256) {
+        return 0;
+    }
+
+    /**
+     * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
+     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
+     */
+    function strategyWithdrawalDelayBlocks(IStrategy /*strategy*/) external pure returns (uint256) {
+        return 0;
+    }
+    
+    function getOperatorShares(
+        address operator,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[] memory) {}
+
+    function getWithdrawalDelay(IStrategy[] calldata /*strategies*/) public pure returns (uint256) {
         return 0;
     }
 
@@ -156,10 +173,11 @@ contract DelegationManagerMock is IDelegationManager, Test {
     function addShares(
         IStrategyManager strategyManager,
         address staker,
+        IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) external {
-        strategyManager.addShares(staker, strategy, shares);
+        strategyManager.addShares(staker, token, strategy, shares);
     }
 
     function removeShares(

@@ -23,8 +23,8 @@ contract DelayedWithdrawalRouter is
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
     uint256 public withdrawalDelayBlocks;
-    // the number of 12-second blocks in one week (60 * 60 * 24 * 7 / 12 = 50,400)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 50400;
+    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
+    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
 
     /// @notice The EigenPodManager contract of EigenLayer.
     IEigenPodManager public immutable eigenPodManager;
@@ -47,6 +47,7 @@ contract DelayedWithdrawalRouter is
             "DelayedWithdrawalRouter.constructor: _eigenPodManager cannot be zero address"
         );
         eigenPodManager = _eigenPodManager;
+        _disableInitializers();
     }
 
     function initialize(

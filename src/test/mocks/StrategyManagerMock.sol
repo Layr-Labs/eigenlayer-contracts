@@ -32,6 +32,8 @@ contract StrategyManagerMock is
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
+    
+    mapping(IStrategy => bool) public thirdPartyTransfersForbidden;
 
     function setAddresses(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher) external
     {
@@ -77,6 +79,11 @@ contract StrategyManagerMock is
         sharesToReturn[staker] = _sharesToReturn;
     }
 
+    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external {
+        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
+        thirdPartyTransfersForbidden[strategy] = value;
+    }
+
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
@@ -100,7 +107,7 @@ contract StrategyManagerMock is
 
     function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 
-    function addShares(address staker, IStrategy strategy, uint256 shares) external {}
+    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external {}
     
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external {}
 
@@ -109,7 +116,10 @@ contract StrategyManagerMock is
 
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata /*strategiesToWhitelist*/) external pure {}
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata /*strategiesToWhitelist*/,
+        bool[] calldata /*thirdPartyTransfersForbiddenValues*/
+    ) external pure {}
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}   
 

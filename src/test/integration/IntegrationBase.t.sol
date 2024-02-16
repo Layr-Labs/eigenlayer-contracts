@@ -444,7 +444,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManager.Withdrawal memory withdrawal,
+        IDelegationManager.Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -667,6 +667,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint curState = timeMachine.warpToLast();
         _;
         timeMachine.warpToPresent(curState);
+    }
+
+    /// @dev Given a list of strategies, roll the block number forward to the
+    /// a valid blocknumber to completeWithdrawals
+    function _rollBlocksForCompleteWithdrawals(IStrategy[] memory strategies) internal {
+        // uint256 blocksToRoll = delegationManager.minWithdrawalDelayBlocks();
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     uint256 withdrawalDelayBlocks = delegationManager.strategyWithdrawalDelayBlocks(strategies[i]);
+        //     if (withdrawalDelayBlocks > blocksToRoll) {
+        //         blocksToRoll = withdrawalDelayBlocks;
+        //     }
+        // }
+        cheats.roll(block.number + delegationManager.getWithdrawalDelay(strategies));
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot

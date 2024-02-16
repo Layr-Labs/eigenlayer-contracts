@@ -29,6 +29,9 @@ interface IEigenPodManager is IPausable {
     /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
     event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
 
+    /// @notice Emitted when the balance of an EigenPod is updated
+    event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
+
     /// @notice Emitted when a withdrawal of beacon chain ETH is completed
     event BeaconChainETHWithdrawalCompleted(
         address indexed podOwner,
@@ -38,6 +41,8 @@ interface IEigenPodManager is IPausable {
         address withdrawer,
         bytes32 withdrawalRoot
     );
+
+    event DenebForkTimestampUpdated(uint64 newValue);
 
     /**
      * @notice Creates an EigenPod for the sender.
@@ -143,4 +148,18 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+    /**
+     * @notice the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
+     */
+    function denebForkTimestamp() external view returns (uint64);
+
+     /**
+     * setting the deneb hard fork timestamp by the eigenPodManager owner
+     * @dev this function is designed to be called twice.  Once, it is set to type(uint64).max 
+     * prior to the actual deneb fork timestamp being set, and then the second time it is set 
+     * to the actual deneb fork timestamp.
+     */
+    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external;
+
 }

@@ -15,6 +15,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
     uint256 internal constant GWEI_TO_WEI = 1e9;
+    uint64 public constant DENEB_FORK_TIMESTAMP_GOERLI = 1705473120;
+
 
     bytes pubkey =
         hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
@@ -23,6 +25,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
 
     address podOwner = address(42000094993494);
+
+    bool public IS_DENEB;
 
     Vm cheats = Vm(HEVM_ADDRESS);
     DelegationManager public delegation;
@@ -53,6 +57,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     bytes32[] validatorFields;
 
     uint32 WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
+    IStrategy[] public initializeStrategiesToSetDelayBlocks;
+    uint256[] public initializeWithdrawalDelayBlocks;
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 RESTAKED_BALANCE_OFFSET_GWEI = 75e7;
     uint64 internal constant GOERLI_GENESIS_TIME = 1616508000;
@@ -205,7 +211,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 initialOwner,
                 pauserReg,
                 0 /*initialPausedStatus*/,
-                WITHDRAWAL_DELAY_BLOCKS
+                WITHDRAWAL_DELAY_BLOCKS,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -498,6 +506,37 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     }
 
     /// @notice This test is to ensure the full withdrawal flow works
+    function testFullWithdrawalFlowDeneb() public returns (IEigenPod) {
+        eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP_GOERLI);
+        IS_DENEB = true;
+        //this call is to ensure that validator 302913 has proven their withdrawalcreds
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        //Deneb: ./solidityProofGen/solidityProofGen "WithdrawalFieldsProof" 302913 271 8191 true false "data/deneb_goerli_block_header_7431952.json" "data/deneb_goerli_slot_7431952.json" "data/deneb_goerli_slot_7421952.json" "data/deneb_goerli_block_header_7421951.json" "data/deneb_goerli_block_7421951.json" "fullWithdrawalProof_Latest.json" false false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalDeneb.json");
+        return _proveWithdrawalForPod(newPod);
+    }
+
+    function testFullWithdrawalFlowCapellaWithdrawalAgainstDenebRoot() public returns (IEigenPod) {
+        IS_DENEB = false;
+        //this call is to ensure that validator 302913 has proven their withdrawalcreds
+        // ./solidityProofGen/solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/deneb_goerli_block_header_7431952.json" "data/deneb_goerli_slot_7431952.json" "data/goerli_slot_6397952.json" "data/goerli_block_header_6397852.json" "data/goerli_block_6397852.json" "fullWithdrawalProof_CapellaAgainstDeneb.json" false true
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        //Deneb: ./solidityProofGen/solidityProofGen "WithdrawalFieldsProof" 302913 271 8191 true false "data/deneb_goerli_block_header_7431952.json" "data/deneb_goerli_slot_7431952.json" "data/deneb_goerli_slot_7421952.json" "data/deneb_goerli_block_header_7421951.json" "data/deneb_goerli_block_7421951.json" "fullWithdrawalProof_Latest.json" false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalCapellaAgainstDenebRoot.json");
+        return _proveWithdrawalForPod(newPod);
+    }
+
     function testFullWithdrawalFlow() public returns (IEigenPod) {
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
@@ -831,7 +870,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                emit log("hello");
 
         IEigenPod newPod = _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
-        emit log("hello");
         //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
         // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
         // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
@@ -1471,7 +1509,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         uint64 withdrawalAmountGwei = Endian.fromLittleEndianUint64(
             withdrawalFields[BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX]
         );
-
+        emit log_named_uint("withdrawalAmountGwei", withdrawalAmountGwei);
         uint64 leftOverBalanceWEI = uint64(withdrawalAmountGwei - newPod.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR()) *
             uint64(GWEI_TO_WEI);
         cheats.deal(address(newPod), leftOverBalanceWEI);
@@ -1723,18 +1761,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
+        if(!IS_DENEB){
+            emit log("NOT DENEB");
+        }
+        bytes memory withdrawalProof = IS_DENEB ? abi.encodePacked(getWithdrawalProofDeneb()) : abi.encodePacked(getWithdrawalProofCapella());
+        bytes memory timestampProof = IS_DENEB ? abi.encodePacked(getTimestampProofDeneb()) : abi.encodePacked(getTimestampProofCapella());
         {
             bytes32 blockRoot = getBlockRoot();
             bytes32 slotRoot = getSlotRoot();
             bytes32 timestampRoot = getTimestampRoot();
             bytes32 executionPayloadRoot = getExecutionPayloadRoot();
-
             return
                 BeaconChainProofs.WithdrawalProof(
-                    abi.encodePacked(getWithdrawalProof()),
+                    abi.encodePacked(withdrawalProof),
                     abi.encodePacked(getSlotProof()),
                     abi.encodePacked(getExecutionPayloadProof()),
-                    abi.encodePacked(getTimestampProof()),
+                    abi.encodePacked(timestampProof),
                     abi.encodePacked(getHistoricalSummaryProof()),
                     uint64(getBlockRootIndex()),
                     uint64(getHistoricalSummaryIndex()),
@@ -1746,6 +1788,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
                 );
         }
     }
+    
 
     function _setOracleBlockRoot() internal {
         bytes32 latestBlockRoot = getLatestBlockRoot();
@@ -1774,7 +1817,7 @@ contract Relayer is Test {
         bytes32[] calldata withdrawalFields,
         BeaconChainProofs.WithdrawalProof calldata proofs
     ) public view {
-        BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs);
+        BeaconChainProofs.verifyWithdrawal(beaconStateRoot, withdrawalFields, proofs, type(uint64).max);
     }
 }
 

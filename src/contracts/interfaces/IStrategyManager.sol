@@ -22,6 +22,9 @@ interface IStrategyManager {
      */
     event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
 
+    /// @notice Emitted when `thirdPartyTransfersForbidden` is updated for a strategy and value by the owner
+    event UpdatedThirdPartyTransfersForbidden(IStrategy strategy, bool value);
+
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);
 
@@ -61,7 +64,7 @@ interface IStrategyManager {
      * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
      * targeting stakers who may be attempting to undelegate.
-     * @dev Cannot be called on behalf of a staker that is 'frozen' (this function will revert if the `staker` is frozen).
+     * @dev Cannot be called if thirdPartyTransfersForbidden is set to true for this strategy
      *
      *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
      *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
@@ -79,7 +82,7 @@ interface IStrategyManager {
     function removeShares(address staker, IStrategy strategy, uint256 shares) external;
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
-    function addShares(address staker, IStrategy strategy, uint256 shares) external;
+    function addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) external;
     
     /// @notice Used by the DelegationManager to convert withdrawn shares to tokens and send them to a recipient
     function withdrawSharesAsTokens(address recipient, IStrategy strategy, uint256 shares, IERC20 token) external;
@@ -99,8 +102,12 @@ interface IStrategyManager {
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
+     * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist) external;
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist,
+        bool[] calldata thirdPartyTransfersForbiddenValues
+    ) external;
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
@@ -119,6 +126,12 @@ interface IStrategyManager {
 
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
+
+    /**
+     * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
+     * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
+     */
+    function thirdPartyTransfersForbidden(IStrategy strategy) external view returns (bool);
 
 // LIMITED BACKWARDS-COMPATIBILITY FOR DEPRECATED FUNCTIONALITY
     // packed struct for queued withdrawals; helps deal with stack-too-deep errors
