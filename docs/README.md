@@ -2,7 +2,7 @@
 
 **EigenLayer M2 is a testnet-only release** that extends the functionality of EigenLayer M1 (which is live on both Goerli and mainnet).
 
-M1 enables very basic restaking: users that stake ETH natively or with a liquid staking token can opt-in to the M1 smart contracts, which currently support two basic operations: deposits and withdrawals. 
+M1 enables very basic restaking: users that restake ETH natively or with a liquid staking token can opt-in to the M1 smart contracts, which currently supports two basic operations: deposits and withdrawals. 
 
 M2 adds several features, the most important of which is the basic support needed to create an AVS<!--(*link: ["what is an AVS?"](https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md) TODO*)-->. The M2 release includes the first AVS, EigenDA <!--(*link: read more about EigenDA (TODO)*)-->. The other features of M2 support AVSs and pad out existing features of M1. A short list of new features includes:
 * Anyone can register as an operator
@@ -39,8 +39,8 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 | [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | 3 instances (for cbETH, rETH, stETH) | Transparent proxy | TODO |
 
 These contracts work together to enable restaking for LSTs:
-* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each of the 3 LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
-* `StrategyBaseTVLLimits` is deployed as three separate instances, one for each supported LST (cbETH, rETH, and stETH). When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
+* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into each LST-specific strategy, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
+* `StrategyBaseTVLLimits` is deployed as separate instances, one for each supported LST-specific strategy. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of "shares" in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
 
