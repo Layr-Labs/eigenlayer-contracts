@@ -17,6 +17,14 @@ This document provides an overview of system components, contracts, and user rol
     * [`AVSDirectory`](#avsdirectory)
     * [`Slasher`](#slasher)
 * [Roles and Actors](#roles-and-actors)
+* [Common User Flows](#common-user-flows)
+    * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
+    * [Delegating to an Operator](#delegating-to-an-operator)
+    * [Undelegating or Queueing a Withdrawal](#undelegating-or-queueing-a-withdrawal)
+    * [Completing a Withdrawal as Shares](#completing-a-withdrawal-as-shares)
+    * [Completing a Withdrawal as Tokens](#completing-a-withdrawal-as-tokens)
+    * [Withdrawal Processing: Validator Exits](#withdrawal-processing-validator-exits)
+    * [Withdrawal Processing: Partial Beacon Chain Withdrawals](#withdrawal-processing-partial-beacon-chain-withdrawals)
 
 ### System Components
 
@@ -117,3 +125,49 @@ An Operator is a user who helps run the software built on top of EigenLayer (AVS
 *Unimplemented as of M2:*
 * Operators earn fees as part of the services they provide
 * Operators may be slashed by the services they register with (if they misbehave)
+
+---
+
+#### Common User Flows
+
+##### Depositing Into EigenLayer
+
+Depositing into EigenLayer varies depending on whether the Staker is depositing Native ETH or LSTs:
+
+![.](./images/Staker%20Flow%20Diagrams/Depositing.png)
+
+##### Delegating to an Operator
+
+![.](./images/Staker%20Flow%20Diagrams/Delegating.png)
+
+##### Undelegating or Queueing a Withdrawal
+
+Undelegating from an Operator automatically queues a withdrawal that needs to go through the `DelegationManager's` withdrawal delay. Stakers that want to withdraw can choose to `undelegate`, or can simply call `queueWithdrawals` directly.
+
+![.](./images/Staker%20Flow%20Diagrams/Queue%20Withdrawal.png)
+
+##### Completing a Withdrawal as Shares
+
+This flow is mostly useful if a Staker wants to change which Operator they are delegated to. The Staker first needs to undelegate (see above). At this point, they can delegate to a different Operator. However, the new Operator will only be awarded shares once the Staker completes their queued withdrawal "as shares":
+
+![.](./images/Staker%20Flow%20Diagrams/Complete%20Withdrawal%20as%20Shares.png)
+
+##### Completing a Withdrawal as Tokens
+
+Completing a queued withdrawal as tokens is roughly the same for both native ETH and LSTs. 
+
+However, note that *before* a withdrawal can be completed, native ETH stakers will need to perform additional steps, detailed in the "Withdrawal Processing" diagrams below. 
+
+![.](./images/Staker%20Flow%20Diagrams/Complete%20Withdrawal%20as%20Tokens.png)
+
+##### Withdrawal Processing: Validator Exits
+
+If a Staker wants to fully withdraw from the beacon chain, they need to perform these additional steps before their withdrawal is completable:
+
+![.](./images/Staker%20Flow%20Diagrams/Validator%20Exits.png)
+
+##### Withdrawal Processing: Partial Beacon Chain Withdrawals
+
+If a Staker wants to withdraw consensus rewards from the beacon chain, they do NOT go through the `DelegationManager`. This is the only withdrawal type that is not initiated in the `DelegationManager`:
+
+![.](./images/Staker%20Flow%20Diagrams/Partial%20Withdrawals.png)
