@@ -40,6 +40,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // reused in various tests. in storage to help handle stack-too-deep errors
     address defaultStaker = cheats.addr(uint256(123_456_789));
     address defaultOperator = address(this);
+    address defaultApprover = cheats.addr(delegationSignerPrivateKey);
     address defaultAVS = address(this);
 
     // 604800 seconds in week / 12 = 50,400 blocks
@@ -106,6 +107,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         // Exclude delegation manager from fuzzed tests
         addressIsExcludedFromFuzzedInputs[address(delegationManager)] = true;
+        addressIsExcludedFromFuzzedInputs[defaultApprover] = true;
+
     }
 
     /**
@@ -271,14 +274,14 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     function _registerOperatorWithDelegationApprover(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
-            delegationApprover: cheats.addr(delegationSignerPrivateKey),
+            delegationApprover: defaultApprover,
             stakerOptOutWindowBlocks: 0
         });
         _registerOperator(operator, operatorDetails, emptyStringForMetadataURI);
     }
 
     function _registerOperatorWith1271DelegationApprover(address operator) internal returns (ERC1271WalletMock) {
-        address delegationSigner = cheats.addr(delegationSignerPrivateKey);
+        address delegationSigner = defaultApprover;
         /**
          * deploy a ERC1271WalletMock contract with the `delegationSigner` address as the owner,
          * so that we can create valid signatures from the `delegationSigner` for the contract to check when called
@@ -1196,12 +1199,11 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
     ) public filterFuzzedAddressInputs(staker) {
         // filter to only valid `expiry` values
         cheats.assume(expiry >= block.timestamp);
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         // filter inputs, since this will fail when the staker is already registered as an operator
         // staker also must not be the delegationApprover so that signature verification process takes place
         cheats.assume(staker != defaultOperator);
-        cheats.assume(staker != delegationApprover);
+        cheats.assume(staker != defaultApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -1249,8 +1251,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         // filter to only valid `expiry` values
         expiry = bound(expiry, block.timestamp + 1, type(uint256).max);
         // filter inputs, since this will fail when the staker is already registered as an operator
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
-        cheats.assume(staker != defaultOperator && staker != delegationApprover);
+        cheats.assume(staker != defaultOperator && staker != defaultApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
 
@@ -2735,11 +2736,10 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         address invalidCaller
     ) public filterFuzzedAddressInputs(invalidCaller) {
         address staker = address(0x123);
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
         // filter out addresses that are actually allowed to call the function
         cheats.assume(invalidCaller != staker);
         cheats.assume(invalidCaller != defaultOperator);
-        cheats.assume(invalidCaller != delegationApprover);
+        cheats.assume(invalidCaller != defaultApprover);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator);
@@ -2784,14 +2784,13 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
         bool callFromOperatorOrApprover
     ) public filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != defaultOperator);
-        address delegationApprover = cheats.addr(delegationSignerPrivateKey);
 
         _registerOperatorWithDelegationApprover(defaultOperator);
         _delegateToOperatorWhoRequiresSig(staker, defaultOperator, salt);
 
         address caller;
         if (callFromOperatorOrApprover) {
-            caller = delegationApprover;
+            caller = defaultApprover;
         } else {
             caller = defaultOperator;
         }
