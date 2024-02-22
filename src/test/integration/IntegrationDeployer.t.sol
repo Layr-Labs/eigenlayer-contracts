@@ -31,6 +31,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
+    // Fork ids for specific fork tests
+    uint256 mainnetForkBlock = 19_280_000;
+    uint256 mainnetForkId;
+    uint256 goerliForkBlock = 10_575_000;
+    uint256 goerliForkId;
+
     // Base strategy implementation in case we want to create more strategies later
     // StrategyBase baseStrategyImplementation;
 
@@ -88,6 +94,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
     uint8 internal constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
+    // DelayedWithdrawalRouter
+    uint8 internal constant PAUSED_DELAYED_WITHDRAWAL_CLAIMS = 0;
 
     // Flags
     uint constant FLAG = 1;
@@ -136,25 +144,39 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         userTypeToStr[ALT_METHODS] = "ALT_METHODS";
     }
 
+    /**
+     * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
+     * override this function to set the correct paths for the deployment info files.
+     * 
+     * This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
+     * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
+     */
     function setUp() public virtual {
         string memory deploymentInfoPath;
         if (block.chainid == 1) {
-            deploymentInfoPath = "script/utils/Mainnet_current_deploy.config.json";
-            _setUpMainnet(deploymentInfoPath);
+            deploymentInfoPath = "script/config/mainnet/Mainnet_current_deploy.config.json";
+            _parseDeployedContracts(deploymentInfoPath);
+            _upgradeMainnetContracts();
         } else if (block.chainid == 5) {
-            deploymentInfoPath = "script/utils/Goerli_current_deploy.config.json";
-            _setUpGoerli(deploymentInfoPath);
+            deploymentInfoPath = "script/config/goerli/Goerli_current_deploy.config.json";
+            _parseDeployedContracts(deploymentInfoPath);
+            _upgradeGoerliContracts();
         } else if (block.chainid == 31337) {
             _setUpLocal();
         } else {
             revert("Chain ID not supported");
         }
-        _verifyContractPointers();
+
+        // create mainnet fork that can be used later
+        mainnetForkId = cheats.createFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+        // create goerli fork that can be used later
+        goerliForkId = cheats.createFork(cheats.rpcUrl("goerli"), goerliForkBlock);
     }
 
     function _setUpLocal() public virtual {
         // Deploy ProxyAdmin
         eigenLayerProxyAdmin = new ProxyAdmin();
+        executorMultisig = address(eigenLayerProxyAdmin.owner());
 
         // Deploy PauserRegistry
         address[] memory pausers = new address[](1);
@@ -201,18 +223,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             slasher,
             delegationManager
         );
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -310,48 +332,45 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create mock beacon chain / proof gen interface
         beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
 
-
-
         //set deneb fork timestamp
         eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 
     /**
      * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
-     * on Goerli. Setup for integration tests on goerli fork. Note that beacon chain oracle and eth deposit contracts
-     * are mocked and pointed to different addresses for these tests.
+     * on Goerli. Setup for integration tests on Goerli fork.
+     * 
+     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
      */
-    function _setUpGoerli(string memory deploymentInfoPath) public virtual {
-        _parseDeployedContracts(deploymentInfoPath);
-
-        cheats.startPrank(address(eigenLayerProxyAdmin.owner()));
+    function _upgradeGoerliContracts() public virtual {
+        cheats.startPrank(address(executorMultisig));
 
         ethPOSDeposit = new ETHPOSDepositMock();
         beaconChainOracle = new BeaconChainOracleMock();
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(
+        eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
-        eigenPodBeacon.upgradeTo(address(pod));
+        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             slasher,
             delegationManager
         );
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -389,6 +408,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
 
+        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+        timeMachine = new TimeMachine();
+        timeMachine.setProofGenStartTime(2 hours);
+        cheats.stopPrank();
+
+        // Create mock beacon chain / proof gen interface
+        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+        cheats.prank(eigenPodManager.owner());
+        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+
+        if (eigenPodManager.denebForkTimestamp() == 0) {
+            //set deneb fork timestamp if not set
+            eigenPodManager.setDenebForkTimestamp(1705473120);
+        }
+
         cheats.stopPrank();
 
         _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
@@ -398,58 +432,47 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
-
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-        timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
-
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-
-        if (eigenPodManager.denebForkTimestamp() == 0) {
-            //set deneb fork timestamp if not set
-            cheats.prank(eigenPodManager.owner());
-            eigenPodManager.setDenebForkTimestamp(1705473120);
-        }
     }
 
-    function _setUpMainnet(string memory deploymentInfoPath) public virtual {
-        _parseDeployedContracts(deploymentInfoPath);
-
-        cheats.startPrank(address(eigenLayerProxyAdmin.owner()));
+    /**
+     * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
+     * on Mainnet. Setup for integration tests on mainnet fork.
+     * 
+     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
+     */
+    function _upgradeMainnetContracts() public virtual {
+        cheats.startPrank(address(executorMultisig));
 
         ethPOSDeposit = new ETHPOSDepositMock();
         beaconChainOracle = new BeaconChainOracleMock();
 
         // Deploy EigenPod Contracts
-        pod = new EigenPod(
+        eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
             MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
-        eigenPodBeacon.upgradeTo(address(pod));
+        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        StrategyManager strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        Slasher slasherImplementation = new Slasher(strategyManager, delegationManager);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             strategyManager,
             slasher,
             delegationManager
         );
-        DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -492,18 +515,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
 
-        cheats.stopPrank();
-
         // Third, unpause core contracts
-        uint256 paused;
-        cheats.prank(delegationManager.owner());
         delegationManager.unpause(0);
 
-        cheats.prank(eigenPodManager.owner());
         eigenPodManager.unpause(0);
 
-        cheats.prank(strategyManager.owner());
         strategyManager.unpause(0);
+
+        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+        timeMachine = new TimeMachine();
+        timeMachine.setProofGenStartTime(2 hours);
+
+        // Create mock beacon chain / proof gen interface
+        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+
+        if (eigenPodManager.denebForkTimestamp() == 0) {
+            //set deneb fork timestamp if not set
+            eigenPodManager.setDenebForkTimestamp(1705473120);
+        }
+        cheats.stopPrank();
 
         _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
         _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
@@ -512,21 +543,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
-
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-        timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
-
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-
-        if (eigenPodManager.denebForkTimestamp() == 0) {
-            //set deneb fork timestamp if not set
-            cheats.prank(eigenPodManager.owner());
-            eigenPodManager.setDenebForkTimestamp(1705473120);
-        }
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

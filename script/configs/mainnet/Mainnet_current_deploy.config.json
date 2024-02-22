@@ -22,10 +22,13 @@
   },
   "chainInfo": {
     "chainId": 1,
-    "deploymentBlock": 10497389
+    "deploymentBlock": 17445559
   },
   "parameters": {
-    "executorMultisig": "0x3d9C2c2B40d890ad53E27947402e977155CD2808",
-    "operationsMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6"
+    "communityMultisig": "0xFEA47018D632A77bA579846c840d5706705Dc598",
+    "executorMultisig": "0x369e6F597e22EaB55fFb173C6d9cD234BD699111",
+    "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
+    "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
+    "timelock": "0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF"
   }
 }

@@ -37,6 +37,7 @@ contract User is Test {
     BeaconChainMock beaconChain;
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
+    address podOwner;
     uint40[] validators;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -318,6 +319,22 @@ contract User is Test {
 
         return tokens;
     }
+
+    // function _createUserEigenPod(string memory name) internal {
+    //     if (block.chainid == 1) {
+    //         // Use an existing deployed eigenpod on mainnet
+    //         uint256 randIndex = keccak256(abi.encode(name)) % allEigenPods.length;
+    //         pod = EigenPod(payable(allEigenPods[randIndex]));
+    //         pod = EigenPod(payable(eigenPodManager.createPod()));
+
+    //         podOwner = eigenPodManager.ownerToPod();
+    //         int256 podOwnerShares = eigenPodManager.podOwnerShares(podOwner);
+
+    //         // overrwrite storage to set User as podOwner
+    //     } else {
+    //         pod = EigenPod(payable(eigenPodManager.createPod()));
+    //     }
+    // }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
