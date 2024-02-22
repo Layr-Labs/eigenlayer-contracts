@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "./utils/Allocator.sol";
 import "./EigenLayerParser.sol";
 
 contract Allocate is Script, DSTest, EigenLayerParser {
-    //performs basic deployment before each test
+    // performs basic deployment before each test
     function run() external {
         // read meta data from json
         parseEigenLayerParams();
@@ -20,7 +20,7 @@ contract Allocate is Script, DSTest, EigenLayerParser {
 
         address[] memory stakers = new address[](numStaker);
         // deployer allocate weth, eigen to staker
-        for (uint i = 0; i < numStaker ; ++i) {
+        for (uint256 i = 0; i < numStaker ; ++i) {
             address stakerAddr = stdJson.readAddress(configJson, string.concat(".staker[", string.concat(vm.toString(i), "].address")));
             stakers[i] = stakerAddr;
             emit log("stakerAddr");
@@ -31,7 +31,7 @@ contract Allocate is Script, DSTest, EigenLayerParser {
 
         address[] memory dispersers = new address[](numDis);
         // deployer allocate weth, eigen to disperser
-        for (uint i = 0; i < numDis ; ++i) {
+        for (uint256 i = 0; i < numDis ; ++i) {
             address disAddr = stdJson.readAddress(configJson, string.concat(".dis[", string.concat(vm.toString(i), "].address")));    
             dispersers[i] = disAddr;
             emit log("disAddr");
@@ -45,7 +45,7 @@ contract Allocate is Script, DSTest, EigenLayerParser {
 
 contract ProvisionWeth is Script, DSTest, EigenLayerParser {
     uint256 wethAmount = 100000000000000000000;
-    //performs basic deployment before each test
+    // performs basic deployment before each test
 
     function run() external {
         vm.startBroadcast();
@@ -60,7 +60,7 @@ contract ProvisionWeth is Script, DSTest, EigenLayerParser {
         weth.transfer(recipientAddr, wethAmount);
         payable(recipientAddr).transfer(1 ether);
         vm.stopBroadcast();
-        //approve dlsm
+        // approve dlsm
         vm.broadcast(recipientPrivKey);
         weth.approve(dlsm, type(uint256).max);
     }
