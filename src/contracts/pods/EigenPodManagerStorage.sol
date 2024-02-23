@@ -26,6 +26,9 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
 
+    /// @notice https://github.com/ethereum/go-ethereum/releases/tag/v1.13.12
+    uint64 public immutable denebForkTimestamp;
+
     /**
      * @notice Stored code of type(BeaconProxy).creationCode
      * @dev Maintained as a constant to solve an edge case - changes to OpenZeppelin's BeaconProxy code should not cause
@@ -64,20 +67,20 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      */
     mapping(address => int256) public podOwnerShares;
 
-    uint64 internal _denebForkTimestamp;
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
         ISlasher _slasher,
-        IDelegationManager _delegationManager
+        IDelegationManager _delegationManager,
+        uint64 _denebForkTimestamp
     ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         strategyManager = _strategyManager;
         slasher = _slasher;
         delegationManager = _delegationManager;
+        denebForkTimestamp = _denebForkTimestamp;
     }
 
     /**
@@ -85,5 +88,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[45] private __gap;
 }

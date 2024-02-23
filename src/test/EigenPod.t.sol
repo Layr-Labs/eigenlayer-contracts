@@ -188,7 +188,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             eigenPodBeacon,
             strategyManager,
             slasher,
-            delegation
+            delegation,
+            DENEB_FORK_TIMESTAMP_GOERLI
         );
 
         //ensuring that the address of eigenpodmanager doesn't change
@@ -507,7 +508,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     /// @notice This test is to ensure the full withdrawal flow works
     function testFullWithdrawalFlowDeneb() public returns (IEigenPod) {
-        eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP_GOERLI);
         IS_DENEB = true;
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"

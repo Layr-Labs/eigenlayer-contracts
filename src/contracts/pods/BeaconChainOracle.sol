@@ -15,7 +15,7 @@ contract BeaconChainOracle is IBeaconChainOracle
 
     function timestampToBlockRoot(uint256 timestamp) external returns (bytes32){
         (bool success, bytes memory data) = address(systemContract).call(abi.encodePacked(timestamp));
-        require(success, "Precompile call failed");
+        require(success, "BeaconChainOracle.timestampToBlockRoot: Precompile call failed");
         bytes32 blockRoot = abi.decode(data, (bytes32));
         emit OracleBlockRootAdded(timestamp, blockRoot);
         return blockRoot;

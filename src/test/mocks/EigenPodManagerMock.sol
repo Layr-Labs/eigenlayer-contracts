@@ -90,6 +90,4 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function denebForkTimestamp() external pure returns (uint64) {
         return type(uint64).max;
     }
-
-    function setDenebForkTimestamp(uint64 timestamp) external{}
 }

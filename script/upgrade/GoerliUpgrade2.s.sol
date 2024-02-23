@@ -102,7 +102,8 @@ contract GoerliUpgrade2 is Script, Test {
                 eigenPodBeacon,
                 strategyManager,
                 slasher,
-                delegation
+                delegation,
+                type(uint64).max
             )
         );
 

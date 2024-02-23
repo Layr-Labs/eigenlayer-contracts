@@ -77,7 +77,8 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
             eigenPodBeacon,
             strategyManagerMock,
             slasherMock,
-            delegationManagerMock
+            delegationManagerMock,
+            type(uint64).max
         );
 
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -118,8 +119,6 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
 
         // Set storage in EPM
         EigenPodManagerWrapper(address(eigenPodManager)).setPodAddress(podOwner, eigenPod);
-
-        eigenPodManager.setDenebForkTimestamp(type(uint64).max);
     }
 }
 

@@ -198,7 +198,8 @@ contract Deployer_M1 is Script, Test {
             eigenPodBeacon,
             strategyManager,
             slasher,
-            delegation
+            delegation,
+            type(uint64).max
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 

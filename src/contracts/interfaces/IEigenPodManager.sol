@@ -153,13 +153,4 @@ interface IEigenPodManager is IPausable {
      * @notice the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
      */
     function denebForkTimestamp() external view returns (uint64);
-
-     /**
-     * setting the deneb hard fork timestamp by the eigenPodManager owner
-     * @dev this function is designed to be called twice.  Once, it is set to type(uint64).max 
-     * prior to the actual deneb fork timestamp being set, and then the second time it is set 
-     * to the actual deneb fork timestamp.
-     */
-    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external;
-
 }

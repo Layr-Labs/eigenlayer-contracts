@@ -183,7 +183,8 @@ contract M2Deploy is Script, Test {
             eigenPodBeacon,
             strategyManager,
             slasher,
-            delegation
+            delegation,
+            type(uint64).max
         );
         eigenPodImplementation = new EigenPod({
             _ethPOS: ethPOS,

@@ -259,7 +259,8 @@ contract EigenLayerDeployer is Operators {
             eigenPodBeacon,
             strategyManager,
             slasher,
-            delegation
+            delegation,
+            type(uint64).max
         );
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 

@@ -49,8 +49,9 @@ contract EigenPodManager is
         IBeacon _eigenPodBeacon,
         IStrategyManager _strategyManager,
         ISlasher _slasher,
-        IDelegationManager _delegationManager
-    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _slasher, _delegationManager) {
+        IDelegationManager _delegationManager,
+        uint64 _denebForkTimestamp
+    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _strategyManager, _slasher, _delegationManager, _denebForkTimestamp) {
         _disableInitializers();
     }
 
@@ -241,18 +242,6 @@ contract EigenPodManager is
         _updateBeaconChainOracle(newBeaconChainOracle);
     }
 
-    /**
-     * @notice Sets the timestamp of the Deneb fork.
-     * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
-     */
-    function setDenebForkTimestamp(uint64 newDenebForkTimestamp) external onlyOwner {
-        require(newDenebForkTimestamp != 0, "EigenPodManager.setDenebForkTimestamp: cannot set newDenebForkTimestamp to 0");
-        require(_denebForkTimestamp == 0, "EigenPodManager.setDenebForkTimestamp: cannot set denebForkTimestamp more than once");
-        
-        _denebForkTimestamp = newDenebForkTimestamp;
-        emit DenebForkTimestampUpdated(newDenebForkTimestamp);
-    }
-
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal returns (IEigenPod) {
@@ -341,18 +330,5 @@ contract EigenPodManager is
             "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
         );
         return stateRoot;
-    }
-
-    /**
-     * @notice Wrapper around the `_denebForkTimestamp` storage variable that returns type(uint64).max if the storage variable is unset.
-     * @dev This allows restricting the storage variable to be set once and only once.
-     */
-    function denebForkTimestamp() public view returns (uint64) {
-        uint64 timestamp = _denebForkTimestamp;
-        if (timestamp == 0) {
-            return type(uint64).max;
-        } else {
-            return timestamp;
-        }
     }
 }
