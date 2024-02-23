@@ -522,6 +522,22 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return _proveWithdrawalForPod(newPod);
     }
 
+    /// @notice This test is to ensure the full withdrawal flow works
+    function testFullWithdrawalFlowDenebMainnet() public returns (IEigenPod) {
+        IS_DENEB = true;
+        //this call is to ensure that validator 302913 has proven their withdrawalcreds
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+        _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        //Deneb: ./solidityProofGen/solidityProofGen "WithdrawalFieldsProof" 302913 271 8191 true false "data/deneb_goerli_block_header_7431952.json" "data/deneb_goerli_slot_7431952.json" "data/deneb_goerli_slot_7421952.json" "data/deneb_goerli_block_header_7421951.json" "data/deneb_goerli_block_7421951.json" "fullWithdrawalProof_Latest.json" false false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalDenebMainnet.json");
+        return _proveWithdrawalForPod(newPod);
+    }
+
     function testFullWithdrawalFlowCapellaWithdrawalAgainstDenebRoot() public returns (IEigenPod) {
         IS_DENEB = false;
         //this call is to ensure that validator 302913 has proven their withdrawalcreds
