@@ -9,12 +9,19 @@ Parameters
 
 Licensor:             Layr Labs, Inc.
 
-Licensed Work:        EigenLayer Contracts
+Licensed Work:        EigenLayer Core Contracts
                       The Licensed Work is (c) 2023 Layr Labs, Inc.
 
 Additional Use Grant: None.
 
-Change Date:          2025-05-01 (May 1st, 2025)
+Change Dates:
+
+- All commits at or prior to commit 6de01c6c16d6df44af15f0b06809dc160eac0ebf
+(i.e. committed to this repository on or before February 6, 2024, the date of
+the [v0.2.1-goerli-m2](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.2.1-goerli-m2) release)
+have a change date of 2025-05-01 (May 1st, 2025)
+- All commits after 6de01c6c16d6df44af15f0b06809dc160eac0ebf (i.e. committed to this
+repository after February 6, 2024) have a change date of 2027-02-06 (February 6th, 2027)
 
 Change License:       MIT
 
