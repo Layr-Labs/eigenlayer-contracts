@@ -9,6 +9,7 @@ import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
+import "../interfaces/ISuccinctGateway.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice The ETH2 Deposit Contract
@@ -64,6 +65,10 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      */
     mapping(address => int256) public podOwnerShares;
 
+
+    /// @notice succinct's function gateway contract
+    ISuccinctGateway public succinctGateway;
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -83,5 +88,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 }

@@ -9,6 +9,7 @@ import "./IBeaconChainOracle.sol";
 import "./IPausable.sol";
 import "./ISlasher.sol";
 import "./IStrategy.sol";
+import "./ISuccinctGateway.sol";
 
 /**
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
@@ -39,6 +40,9 @@ interface IEigenPodManager is IPausable {
         bytes32 withdrawalRoot
     );
 
+    /// @notice Emitted when succinct gateway contract is updated
+    event SuccinctGatewayUpdated(address indexed newSuccinctGateway);
+    
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -143,4 +147,23 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+    function requestProofViaSuccinctGateway(
+        bytes32 FUNCTION_ID,
+        uint64 startSlot,
+        uint64 endSlot,
+        address podAddress,
+        bytes memory callbackData,
+        uint32 callbackGasLimit,
+        address podOwner
+    ) external payable;
+
+    function confirmProofVerification(
+        bytes32 FUNCTION_ID,
+        bytes calldata input
+    ) external returns (bytes memory);
+
+    function succinctGateway() external view returns (ISuccinctGateway);
+
+    function updateSuccinctGateway(ISuccinctGateway newSuccinctGateway) external;
 }

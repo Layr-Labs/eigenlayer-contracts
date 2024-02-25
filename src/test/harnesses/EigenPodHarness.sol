@@ -111,4 +111,6 @@ contract EPInternalFunctions is EigenPod {
     function setValidatorRestakedBalance(bytes32 pkhash, uint64 restakedBalanceGwei) public {
         _validatorPubkeyHashToInfo[pkhash].restakedBalanceGwei = restakedBalanceGwei;
     }
+
+
  }

@@ -49,11 +49,24 @@ interface IEigenPod {
         int256 sharesDeltaGwei;
     }
 
+    struct PartialWithdrawalProofRequest{
+        uint64 startTimestamp;
+        uint64 endTimestamp;
+        address recipient;
+        REQUEST_STATUS status;
+    }
 
     enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
         REDEEMED,
         PENDING,
         FAILED
+    }
+
+     enum REQUEST_STATUS {
+        DEFAULT, // state of request prior to pending
+        PENDING, // request is pending
+        FULFILLED, // request is fulfilled
+        CANCELLED // request is cancelled
     }
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
@@ -94,9 +107,21 @@ interface IEigenPod {
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
 
+    /// @notice Emitted when partial withdrawal proof is fulfilled
+    event PartialWithdrawalBatchProven(uint256 nonce, uint256 partialWithdrawalSum);
+
+    /// @notice Emitted when a partial withdrawal proof is requested from succinct
+    event PartialWithdrawalProofRequested(uint64 startTimestamp, uint64 endTimestamp, uint256 requestNonce);
+
+    /// @notice Emitted when a partial withdrawal proof  is cancelled
+    event PartialWithdrawalProofCancelled(uint256 requestNonce);
+
 
     /// @notice The max amount of eth, in gwei, that can be restaked per validator
     function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
+    
+    /// @notice Returns the genesis timestamp of the beacon chain
+    function GENESIS_TIME() external view returns (uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
@@ -215,4 +240,20 @@ interface IEigenPod {
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+
+    function requestPartialWithdrawalsProof(
+        uint64 oracleTimestamp,
+        uint64 endTimestamp,
+        address recipient,
+        uint32 callbackGasLimit
+    ) external payable;
+
+    function handleCallback(uint256 requestNonce, uint64 oracleTimestamp, uint64 startSlot, uint64 endSlot) external;
+    function cancelProofRequest(uint256 requestNonce) external;
+
+    function partialWithdrawalProofRequests(uint256 requestNonce) external returns(PartialWithdrawalProofRequest memory);
+
+    function timestampProvenUntil() external returns(uint64);
+
+    function requestNonce() external returns(uint256);
 }

@@ -26,6 +26,8 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup {
     
     // Address of pod for which proofs were generated
     address podAddress = address(0x49c486E3f4303bc11C02F952Fe5b08D0AB22D443);
+
+    uint256 GWEI_TO_WEI = 1e9;
     
     // Constants
     // uint32 public constant WITHDRAWAL_DELAY_BLOCKS = 7 days / 12 seconds;
@@ -417,6 +419,7 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
     }
 
     function testFuzz_revert_invalidValidatorFields(address wrongWithdrawalAddress) public {
+        cheats.assume(wrongWithdrawalAddress != address(eigenPod));
         // Set JSON and params
         setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
         _setWithdrawalCredentialParams();
