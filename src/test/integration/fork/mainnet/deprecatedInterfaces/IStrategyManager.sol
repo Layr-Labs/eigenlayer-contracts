@@ -6,12 +6,13 @@ import "src/contracts/interfaces/ISlasher.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 
 /**
+ * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
  * @title Interface for the primary entrypoint for funds into EigenLayer.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
-interface IStrategyManager {
+interface IStrategyManager_DeprecatedM1 {
     // packed struct for queued withdrawals; helps deal with stack-too-deep errors
     struct WithdrawerAndNonce {
         address withdrawer;
@@ -230,7 +231,7 @@ interface IStrategyManager {
         external
         pure
         returns (bytes32);
-    
+
     /**
      * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)

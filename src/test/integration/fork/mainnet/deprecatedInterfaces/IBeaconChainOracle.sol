@@ -2,11 +2,12 @@
 pragma solidity =0.8.12;
 
 /**
+ * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
  * @title Interface for the BeaconStateOracle contract.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-interface IBeaconChainOracle {
+interface IBeaconChainOracle_DeprecatedM1 {
     /// @notice Largest blockNumber that has been confirmed by the oracle.
     function latestConfirmedOracleBlockNumber() external view returns(uint64);
     /// @notice Mapping: Beacon Chain blockNumber => the Beacon Chain state root at the specified blockNumber.

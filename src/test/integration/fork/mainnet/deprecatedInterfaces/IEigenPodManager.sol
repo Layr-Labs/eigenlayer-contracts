@@ -4,15 +4,16 @@ pragma solidity =0.8.12;
 import "./IStrategyManager.sol";
 import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
-import "./IPausable.sol";
+import "src/contracts/interfaces/IPausable.sol";
 
 /**
+ * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
  * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 
-interface IEigenPodManager is IPausable {
+interface IEigenPodManager_DeprecatedM1 is IPausable {
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -61,22 +62,22 @@ interface IEigenPodManager is IPausable {
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
      */
-    function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
+    function updateBeaconChainOracle(IBeaconChainOracle_DeprecatedM1 newBeaconChainOracle) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns(IEigenPod);
+    function ownerToPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns(IEigenPod);
+    function getPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns(IBeaconChainOracle);    
+    function beaconChainOracle() external view returns(IBeaconChainOracle_DeprecatedM1);    
 
     /// @notice Returns the Beacon Chain state root at `blockNumber`. Reverts if the Beacon Chain state root at `blockNumber` has not yet been finalized.
     function getBeaconChainStateRoot(uint64 blockNumber) external view returns(bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
-    function strategyManager() external view returns(IStrategyManager);
+    function strategyManager() external view returns(IStrategyManager_DeprecatedM1);
 
     /// @notice EigenLayer's Slasher contract
     function slasher() external view returns(ISlasher);

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../libraries/BeaconChainProofs.sol";
+import "./BeaconChainProofs.sol";
 import "./IEigenPodManager.sol";
 import "./IBeaconChainOracle.sol";
 
 /**
+ * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
  * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
@@ -19,7 +20,7 @@ import "./IBeaconChainOracle.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-interface IEigenPod {
+interface IEigenPod_DeprecatedM1 {
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -71,7 +72,7 @@ interface IEigenPod {
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
     /// @notice The single EigenPodManager for EigenLayer
-    function eigenPodManager() external view returns (IEigenPodManager);
+    function eigenPodManager() external view returns (IEigenPodManager_DeprecatedM1);
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address);
@@ -99,7 +100,7 @@ interface IEigenPod {
     function verifyWithdrawalCredentialsAndBalance(
         uint64 oracleBlockNumber,
         uint40 validatorIndex,
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs memory proofs,
+        BeaconChainProofs_DeprecatedM1.ValidatorFieldsAndBalanceProofs memory proofs,
         bytes32[] calldata validatorFields
     ) external;
     
@@ -118,7 +119,7 @@ interface IEigenPod {
      */
     function verifyOvercommittedStake(
         uint40 validatorIndex,
-        BeaconChainProofs.ValidatorFieldsAndBalanceProofs calldata proofs,
+        BeaconChainProofs_DeprecatedM1.ValidatorFieldsAndBalanceProofs calldata proofs,
         bytes32[] calldata validatorFields,
         uint256 beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
@@ -134,7 +135,7 @@ interface IEigenPod {
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      */
     function verifyAndProcessWithdrawal(
-        BeaconChainProofs.WithdrawalProofs calldata withdrawalProofs, 
+        BeaconChainProofs_DeprecatedM1.WithdrawalProofs calldata withdrawalProofs, 
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
         bytes32[] calldata withdrawalFields,
