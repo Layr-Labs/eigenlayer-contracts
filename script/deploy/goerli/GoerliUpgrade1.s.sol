@@ -4,18 +4,18 @@ pragma solidity =0.8.12;
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 
-import "../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
+import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
+import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
-import "../../src/contracts/core/StrategyManager.sol";
-import "../../src/contracts/core/Slasher.sol";
-import "../../src/contracts/core/DelegationManager.sol";
+import "../../../src/contracts/core/StrategyManager.sol";
+import "../../../src/contracts/core/Slasher.sol";
+import "../../../src/contracts/core/DelegationManager.sol";
 
-import "../../src/contracts/strategies/StrategyBase.sol";
+import "../../../src/contracts/strategies/StrategyBase.sol";
 
-import "../../src/contracts/pods/EigenPod.sol";
-import "../../src/contracts/pods/EigenPodManager.sol";
-import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
+import "../../../src/contracts/pods/EigenPod.sol";
+import "../../../src/contracts/pods/EigenPodManager.sol";
+import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 
 import "forge-std/Script.sol";

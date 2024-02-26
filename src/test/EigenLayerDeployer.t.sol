@@ -107,7 +107,7 @@ contract EigenLayerDeployer is Operators {
 
     uint256 public initialBeaconChainOracleThreshold = 3;
 
-    string internal goerliDeploymentConfig = vm.readFile("script/output/M1_deployment_goerli_2023_3_23.json");
+    string internal goerliDeploymentConfig = vm.readFile("script/output/goerli/M1_deployment_goerli_2023_3_23.json");
 
     // addresses excluded from fuzzing due to abnormal behavior. TODO: @Sidu28 define this better and give it a clearer name
     mapping(address => bool) fuzzedAddressMapping;

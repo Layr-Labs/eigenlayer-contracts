@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../src/contracts/interfaces/IETHPOSDeposit.sol";
+import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
 
-import "../../src/contracts/core/StrategyManager.sol";
-import "../../src/contracts/core/Slasher.sol";
-import "../../src/contracts/core/DelegationManager.sol";
-import "../../src/contracts/core/AVSDirectory.sol";
+import "../../../src/contracts/core/StrategyManager.sol";
+import "../../../src/contracts/core/Slasher.sol";
+import "../../../src/contracts/core/DelegationManager.sol";
+import "../../../src/contracts/core/AVSDirectory.sol";
 
-import "../../src/contracts/pods/EigenPod.sol";
-import "../../src/contracts/pods/EigenPodManager.sol";
-import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
+import "../../../src/contracts/pods/EigenPod.sol";
+import "../../../src/contracts/pods/EigenPodManager.sol";
+import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "../../src/test/mocks/EmptyContract.sol";
+import "../../../src/test/mocks/EmptyContract.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
