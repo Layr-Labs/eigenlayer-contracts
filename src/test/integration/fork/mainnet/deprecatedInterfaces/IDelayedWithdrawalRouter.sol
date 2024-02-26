@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-interface IDelayedWithdrawalRouter {
+/// @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
+interface IDelayedWithdrawalRouter_DeprecatedM1 {
     // struct used to pack data into a single storage slot
     struct DelayedWithdrawal {
         uint224 amount;
