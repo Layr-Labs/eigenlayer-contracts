@@ -55,13 +55,11 @@ contract EigenPodManager is
     }
 
     function initialize(
-        uint256 _maxPods,
         IBeaconChainOracle _beaconChainOracle,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
-        _setMaxPods(_maxPods);
         _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
@@ -224,15 +222,6 @@ contract EigenPodManager is
     }
 
     /**
-     * Sets the maximum number of pods that can be deployed
-     * @param newMaxPods The new maximum number of pods that can be deployed
-     * @dev Callable by the unpauser of this contract
-     */
-    function setMaxPods(uint256 newMaxPods) external onlyUnpauser {
-        _setMaxPods(newMaxPods);
-    }
-
-    /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
@@ -256,8 +245,6 @@ contract EigenPodManager is
     // INTERNAL FUNCTIONS
 
     function _deployPod() internal returns (IEigenPod) {
-        // check that the limit of EigenPods has not been hit, and increment the EigenPod count
-        require(numPods + 1 <= maxPods, "EigenPodManager._deployPod: pod limit reached");
         ++numPods;
         // create the pod
         IEigenPod pod = IEigenPod(
@@ -279,12 +266,6 @@ contract EigenPodManager is
     function _updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) internal {
         beaconChainOracle = newBeaconChainOracle;
         emit BeaconOracleUpdated(address(newBeaconChainOracle));
-    }
-
-    /// @notice Internal setter for `maxPods` that also emits an event
-    function _setMaxPods(uint256 _maxPods) internal {
-        emit MaxPodsUpdated(maxPods, _maxPods);
-        maxPods = _maxPods;
     }
 
     /**

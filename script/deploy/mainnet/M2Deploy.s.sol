@@ -62,7 +62,6 @@ contract M2Deploy is Script, Test {
     uint256 public withdrawalDelayBlocks;
     bytes32 public delegationManagerDomainSeparator;
     uint256 public numPods;
-    uint256 public maxPods;
 
     // Pointers to pre-upgrade values for lstDepositor
     address public lstDepositor;
@@ -122,7 +121,6 @@ contract M2Deploy is Script, Test {
         withdrawalDelayBlocks = m1StrategyManager(address(strategyManager)).withdrawalDelayBlocks();
         delegationManagerDomainSeparator = IDelegationManagerV0(address(delegation)).DOMAIN_SEPARATOR();
         numPods = eigenPodManager.numPods();
-        maxPods = eigenPodManager.maxPods();
         delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         // Set chain-specific values
@@ -277,7 +275,7 @@ contract M2Deploy is Script, Test {
     // Call contracts to ensure that all simple view functions return the same values (e.g. the return value of `StrategyManager.delegation()` hasn’t changed)
     // StrategyManager: delegation, eigenPodManager, slasher, strategyWhitelister, withdrawalDelayBlocks all unchanged
     // DelegationManager: DOMAIN_SEPARATOR, strategyManager, slasher, eigenPodManager  all unchanged
-    // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods, maxPods  all unchanged
+    // EigenPodManager: ethPOS, eigenPodBeacon, strategyManager, slasher, beaconChainOracle, numPods  all unchanged
     // delegationManager is now correct (added immutable)
     // Call contracts to make sure they are still “initialized” (ensure that trying to call initializer reverts)
     function _verifyStorageSlots() internal view {
@@ -311,7 +309,6 @@ contract M2Deploy is Script, Test {
             "eigenPodManager.beaconChainOracle incorrect"
         );
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
-        require(eigenPodManager.maxPods() == maxPods, "eigenPodManager.maxPods incorrect");
         require(EigenPodManagerStorage(address(eigenPodManager)).delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
     }
 
@@ -339,7 +336,6 @@ contract M2Deploy is Script, Test {
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         EigenPodManager(address(eigenPodManager)).initialize(
-            0,
             IBeaconChainOracle(address(this)),
             address(this),
             PauserRegistry(address(this)),

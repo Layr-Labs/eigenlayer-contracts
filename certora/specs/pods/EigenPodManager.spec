@@ -46,7 +46,6 @@ methods {
     function slasher() external returns (address) envfree;
     function hasPod(address podOwner) external returns (bool) envfree;
     function numPods() external returns (uint256) envfree;
-    function maxPods() external returns (uint256) envfree;
     function podOwnerShares(address podOwner) external returns (int256) envfree;
     function beaconChainETHStrategy() external returns (address) envfree;
 

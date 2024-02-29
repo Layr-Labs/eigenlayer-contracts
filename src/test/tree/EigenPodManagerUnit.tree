@@ -6,8 +6,6 @@
 ├── when createPod called
 │   ├── given the user has already created a pod
 │   │   └── it should revert
-│   ├── given that the max number of pods has been deployed
-│   │   └── it should revert
 │   └── given the user has not created a pod
 │       └── it should deploy a pod
 ├── when stake is called
@@ -15,11 +13,6 @@
 │   │   └── it should deploy a pod
 │   └── given the user has already created a pod
 │       └── it should call stake on the eigenPod
-├── when setMaxPods is called
-│   ├── given the user is not the pauser
-│   │   └── it should revert
-│   └── given the user is the pauser
-│       └── it should set the max pods
 ├── when updateBeaconChainOracle is called
 │   ├── given the user is not the owner
 │   │   └── it should revert

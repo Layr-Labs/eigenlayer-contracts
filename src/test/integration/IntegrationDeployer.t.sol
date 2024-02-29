@@ -235,7 +235,6 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint).max, // maxPods
                 address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 pauserRegistry,
