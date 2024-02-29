@@ -255,4 +255,11 @@ interface IStrategyManager_DeprecatedM1 {
 
     /// @notice Returns the number of blocks that must pass between the time a withdrawal is queued and the time it can be completed
     function withdrawalDelayBlocks() external view returns (uint256);
+
+
+
+    /// VIEW FUNCTIONS FOR PUBLIC VARIABLES, NOT IN ORIGINAL INTERFACE
+    function withdrawalRootPending(bytes32 withdrawalRoot) external view returns (bool);
+
+    function numWithdrawalsQueued(address staker) external view returns (uint256);
 }
