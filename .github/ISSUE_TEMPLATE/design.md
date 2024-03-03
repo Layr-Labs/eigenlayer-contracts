@@ -15,7 +15,7 @@ Add a summary and description. What are we trying to do and why?
 - [ ] Get @ to review design
 - [ ] Discuss design and tradeoffs with @
 - [ ] Finalize the doc, and come to consensus
-- [ ] Create ticket for implementation and link the doc to it
+- [ ] Create a ticket for implementation and link the doc to it
 
 ### Blocking Issues
 Is anything blocking for this? (Does this depend on other unfinished designs or pending changes?)
