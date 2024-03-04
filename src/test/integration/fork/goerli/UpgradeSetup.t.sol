@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "src/test/integration/fork/goerli/IntegrationGoerliFork.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract IntegrationGoerliFork_UpgradeSetup is IntegrationGoerliFork {
 

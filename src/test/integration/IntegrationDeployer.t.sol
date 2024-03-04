@@ -23,7 +23,8 @@ import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 import "script/ExistingDeploymentParser.sol";
 
@@ -65,6 +66,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // be returned from `_randUser`.
     bytes assetTypes;
     bytes userTypes;
+    bytes forkTypes;
+    // Set only once in configRand
+    uint forkType;
 
     // Constants
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
@@ -109,6 +113,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// These are used with _configRand to determine what User contracts can be deployed
     uint constant DEFAULT = (FLAG << 0);
     uint constant ALT_METHODS = (FLAG << 1);
+    /// @dev Only used for mainnet fork tests, similarly for flag below
+    uint constant MAINNET_M1 = (FLAG << 2);
+    uint constant MAINNET_M1_ALT_METHODS = (FLAG << 3);
+
+    /// @dev Shadow Fork flags
+    /// These are used for upgrade integration testing. Can be 
+    uint constant LOCAL = (FLAG << 0);
+    uint constant MAINNET = (FLAG << 1);
 
     // /// @dev Withdrawal flags
     // /// These are used with _configRand to determine how a user conducts a withdrawal
@@ -149,25 +161,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
-        string memory deploymentInfoPath;
-        if (block.chainid == 1) {
-            deploymentInfoPath = "script/configs/mainnet/Mainnet_current_deploy.config.json";
-            _parseDeployedContracts(deploymentInfoPath);
-            _upgradeMainnetContracts();
-        } else if (block.chainid == 5) {
-            deploymentInfoPath = "script/configs/goerli/Goerli_current_deploy.config.json";
-            _parseDeployedContracts(deploymentInfoPath);
-            _upgradeGoerliContracts();
-        } else if (block.chainid == 31337) {
-            _setUpLocal();
-        } else {
-            revert("Chain ID not supported");
-        }
-
         // create mainnet fork that can be used later
         mainnetForkId = cheats.createFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
         // create goerli fork that can be used later
-        goerliForkId = cheats.createFork(cheats.rpcUrl("goerli"), goerliForkBlock);
+        // goerliForkId = cheats.createFork(cheats.rpcUrl("goerli"), goerliForkBlock);
     }
 
     function _setUpLocal() public virtual {
@@ -513,9 +510,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Third, unpause core contracts
         delegationManager.unpause(0);
-
         eigenPodManager.unpause(0);
-
         strategyManager.unpause(0);
 
         // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
@@ -571,7 +566,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _configRand(
         uint24 _randomSeed, 
         uint _assetTypes,
-        uint _userTypes
+        uint _userTypes,
+        uint _forkTypes
     ) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
@@ -581,6 +577,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
+        forkTypes = _bitmapToBytes(_forkTypes);
 
         emit log("_configRand: Users will be initialized with these asset types:");
         for (uint i = 0; i < assetTypes.length; i++) {
@@ -592,8 +589,48 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             emit log(userTypeToStr[uint(uint8(userTypes[i]))]);
         }
 
+        emit log("_configRand: Tests will be shadow forked based on these fork types");
+        for (uint i = 0; i < assetTypes.length; i++) {
+            emit log(assetTypeToStr[uint(uint8(forkTypes[i]))]);
+        }
+
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
+        assertTrue(forkTypes.length != 0, "_configRand: no fork types selected");
+
+        _configEigenLayerContracts();
+    }
+
+    /**
+     * Depending on the forkType, either deploy contracts locally or parse existing contracts
+     * on from network.
+     * Note for non LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
+     */
+    function _configEigenLayerContracts() internal {
+        forkType = _randForkType();
+
+        if (forkType == LOCAL) {
+            _setUpLocal();
+        } else if (forkType == MAINNET) {
+            cheats.selectFork(mainnetForkId);
+            string memory deploymentInfoPath = "script/configs/mainnet/Mainnet_current_deploy.config.json";
+            _parseDeployedContracts(deploymentInfoPath);
+        } else {
+            revert("_configEigenlayerContracts: unimplemented forkType");
+        }
+    }
+
+    /**
+     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
+     * unpausing all contracts. 
+     * Should be called at some point in test after _configEigenLayerContracts has been called.
+     */
+    function _upgradeEigenLayerContracts() internal {
+        if (forkType == MAINNET) {
+            _upgradeMainnetContracts();
+        } else if (forkType != LOCAL) {
+            revert("_upgradeEigenlayerContracts: unimplemented forkType");
+        }
     }
 
     /**
@@ -601,7 +638,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * 
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(string memory name) internal returns (User, uint, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -611,14 +648,30 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         
         // Create User contract based on deposit type:
         User user;
-        if (userType == DEFAULT) {
+        if (forkType == LOCAL) {
             user = new User(name);
-        } else if (userType == ALT_METHODS) {
-            // User will use nonstandard methods like:
-            // `delegateToBySignature` and `depositIntoStrategyWithSignature`
-            user = User(new User_AltMethods(name));
+
+            if (userType == DEFAULT) {
+                user = new User(name);
+            } else if (userType == ALT_METHODS) {
+                // User will use nonstandard methods like:
+                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                user = User(new User_AltMethods(name));
+            } else {
+                revert("_randUser: unimplemented userType");
+            }
+        } else if (forkType == MAINNET) {
+            if (userType == DEFAULT) {
+                user = User(new User_M1(name));
+            } else if (userType == ALT_METHODS) {
+                // User will use nonstandard methods like:
+                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                user = User(new User_M1_AltMethods(name));
+            } else {
+                revert("_randUser: unimplemented userType");
+            }
         } else {
-            revert("_randUser: unimplemented userType");
+            revert("_randUser: unimplemented forkType");
         }
 
         // For the specific asset selection we made, get a random assortment of
@@ -627,7 +680,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         _printUserInfo(assetType, userType, strategies, tokenBalances);
 
-        return (user, strategies, tokenBalances);
+        return (user, userType, strategies, tokenBalances);
     }
 
     /// @dev For a given `assetType`, select a random assortment of strategies and assets
@@ -750,7 +803,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint userType = uint(uint8(userTypes[idx]));
 
         return userType;
-    }  
+    }
+
+    function _randForkType() internal returns (uint) {
+        uint idx = _randUint({ min: 0, max: forkTypes.length - 1 });
+        uint userType = uint(uint8(userTypes[idx]));
+
+        return userType;
+    }
 
     /**
      * @dev Converts a bitmap into an array of bytes
