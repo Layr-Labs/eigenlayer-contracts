@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
 
@@ -29,8 +30,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
         string memory stakerName = string.concat("- Staker", numStakers.toString());
         numStakers++;
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
-        
+        (User staker, uint userType, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
+        // Initializes user with M1 mainnet if fork type
+        if (forkType == MAINNET_M1) {
+            _initUser_M1(staker, userType);
+        }
+
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
         return (staker, strategies, tokenBalances);
@@ -40,7 +45,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         string memory operatorName = string.concat("- Operator", numOperators.toString());
         numOperators++;
 
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
+        (User operator, uint userType, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
         
         operator.registerAsOperator();
         operator.depositIntoEigenlayer(strategies, tokenBalances);
@@ -50,6 +55,28 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
 
         return (operator, strategies, tokenBalances);
+    }
+
+    /**
+     * If User type is M1 mainnet, then we need to initialize the user from M1 mainnet
+     * before upgrading.
+     */
+    function _initUser_M1(User user, uint userType) internal {
+        uint assetType = _randAssetType();
+        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        /**
+         * _dealRandAssets deals native ETH strategy shares, last element will be ETH, remove from
+         * strategies and tokenBalances if so
+         */
+        if (strategies[strategies.length - 1] == BEACONCHAIN_ETH_STRAT) {
+            strategies = _getPoppedStrategiesArray(strategies);
+            tokenBalances = _getPoppedBalancesArray(tokenBalances);
+        }
+        /**
+         * Will be either User_M1 or User_M1_AltMethods for depositing into EigenLayer
+         */
+        User_M1(payable(address(user))).depositIntoEigenlayer_M1(strategies, tokenBalances);
+        assert_Snap_Added_StakerShares(user, strategies, tokenBalances, "_initUser_M1: failed to award shares to staker");
     }
 
     /** 
@@ -800,5 +827,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return shares;
+    }
+
+    function _getPoppedStrategiesArray(IStrategy[] memory strategies) internal returns (IStrategy[] memory) {
+        IStrategy[] memory poppedStrategies = new IStrategy[](strategies.length - 1);
+        for (uint i = 0; i < poppedStrategies.length; i++) {
+            poppedStrategies[i] = strategies[i];
+        }
+        return poppedStrategies;
+    }
+
+    function _getPoppedBalancesArray(uint[] memory balances) internal returns (uint[] memory) {
+        uint[] memory poppedBalances = new uint[](balances.length - 1);
+        for (uint i = 0; i < poppedBalances.length; i++) {
+            poppedBalances[i] = balances[i];
+        }
+        return poppedBalances;
     }
 }

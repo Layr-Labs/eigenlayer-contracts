@@ -2,21 +2,21 @@
 pragma solidity ^0.8.12;
 
 import "src/test/integration/IntegrationChecks.t.sol";
-import "src/test/integration/User.t.sol";
 import "src/test/integration/fork/mainnet/deprecatedInterfaces/IEigenPod.sol";
 import "src/test/integration/fork/mainnet/deprecatedInterfaces/IEigenPodManager.sol";
 import "src/test/integration/fork/mainnet/deprecatedInterfaces/IStrategyManager.sol";
 import "src/test/integration/fork/mainnet/deprecatedInterfaces/IDelayedWithdrawalRouter.sol";
-import "src/test/integration/fork/mainnet/User_M1.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 contract IntegrationMainnetFork is IntegrationCheckUtils {
     using Strings for *;
 
     // M1 contracts with deprecated interfaces
-    IStrategyManager_DeprecatedM1 strategyManager_depM1;
-    IEigenPodManager_DeprecatedM1 eigenPodManager_depM1;
-    IEigenPod_DeprecatedM1 eigenPod_depM1;
-    IDelayedWithdrawalRouter_DeprecatedM1 delayedWithdrawalRouter_depM1;
+    IStrategyManager_DeprecatedM1 strategyManager_M1;
+    IEigenPodManager_DeprecatedM1 eigenPodManager_M1;
+    IEigenPod_DeprecatedM1 eigenPod_M1;
+    IDelayedWithdrawalRouter_DeprecatedM1 delayedWithdrawalRouter_M1;
 
     // Select mainnet fork id
     function setUp() public virtual override {
@@ -94,10 +94,10 @@ contract IntegrationMainnetFork is IntegrationCheckUtils {
      * ExistingDeploymentParse._parseDeployedContracts has already parsed existing contracts on mainnet
      */
     function _parseDeployedContractsAsM1() internal {
-        strategyManager_depM1 = IStrategyManager_DeprecatedM1(address(strategyManager));
-        eigenPodManager_depM1 = IEigenPodManager_DeprecatedM1(address(eigenPodManager));
-        eigenPod_depM1 = IEigenPod_DeprecatedM1(address(eigenPodImplementation));
-        delayedWithdrawalRouter_depM1 = IDelayedWithdrawalRouter_DeprecatedM1(address(delayedWithdrawalRouter));
+        strategyManager_M1 = IStrategyManager_DeprecatedM1(address(strategyManager));
+        eigenPodManager_M1 = IEigenPodManager_DeprecatedM1(address(eigenPodManager));
+        eigenPod_M1 = IEigenPod_DeprecatedM1(address(eigenPodImplementation));
+        delayedWithdrawalRouter_M1 = IDelayedWithdrawalRouter_DeprecatedM1(address(delayedWithdrawalRouter));
     }
 
     // function _randUser
