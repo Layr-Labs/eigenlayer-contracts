@@ -14,13 +14,12 @@ interface IPaymentCoordinator {
 
     /// STRUCTS ///
 	struct RangePayment {
-        address avs;
 		IStrategy strategy;
 		IERC20 token;
 		uint256 amount;
 		uint256 startRangeTimestamp;
-		uint256 endRangeTimestamp;
-        bool toOperatorSet;
+        // duration in seconds
+		uint256 duration;
 	}
 
     /// EVENTS ///
@@ -32,11 +31,14 @@ interface IPaymentCoordinator {
     /// @notice The address of the entity that can update the contract with new merkle roots
     function claimingManager() external view returns (IClaimingManager);
 
+    // @notice The owner of this contract
+    function owner() external view returns (address);
+
     /// @notice The interval in seconds at which the calculation for range payment distribution is done. ranges must be aligned to multiples of this interval
-    function CALCULATION_INTERVAL_SECONDS() external view returns (uint32);
+    function calculationIntervalSeconds() external view returns (uint32);
 
     /// @notice The maximum amount of time that a range payment can end in the future
-    function MAX_FUTURE_RANGE_END() external view returns (uint32);
+    function MAX_DURATION() external view returns (uint32);
 
     /// @notice The lower bound for the start of a range payment
     function LOWER_BOUND_START_RANGE() external view returns (uint32);
@@ -51,11 +53,18 @@ interface IPaymentCoordinator {
     function initialize(address initialOwner) external;
     
     /**
-     * @notice Creates a new range payment on behalf of an AVS
+     * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
+     * set of stakers delegated to operators who are registered to the `avs`
      * @param rangePayment The range payment being created
-     * @dev The end time of the range must be at most 3 months in the future
-     * @dev The start time of the range must be after the configured lower bound
-     * @dev The tokens are sent to the claiming manager contract
+     * @param avs The ServiceManager of the AVS on behalf of which the payment is being made
+     * @dev The duration of the `rangePayment` cannot exceed `MAX_DURATION`
+     * @dev The tokens are sent to the `claimingManager` contract
      */
-	function payForRange(RangePayment calldata rangePayment) external;
+	function payForRange(RangePayment calldata rangePayment, address avs) external;
+
+    /**
+     * @notice similar to `payForRange` except the payment is split amongst *all* stakers
+     * rather than just those delegated to operators who are registered to a single avs
+     */
+    function payAllForRange(RangePayment calldata rangePayment, address avs) external;
 }

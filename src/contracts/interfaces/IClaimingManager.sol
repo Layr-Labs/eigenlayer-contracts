@@ -13,33 +13,42 @@ interface IClaimingManager {
     /// STRUCTS ///
 
     struct DistributionRoot {
-        uint32 activatedAfter; // timestamp after which the root can be claimed against
-        bytes32 root; // merkle root of the distribution
+        // timestamp after which the root can be claimed against
+        uint32 activatedAfter;
+        // merkle root of the distribution
+        bytes32 root;
+    }
+
+    struct MerkleLeaf {
+        IERC20 token; 
+        uint256 amount;
+        // Explicit recipient of the claim
+        address recipient;
     }
 
     struct PaymentMerkleClaim {
-        IERC20 token; 
-        uint256 amount;
-        address recipient; // Explicit recipient of the claim
+        MerkleLeaf leaf;
 
-        uint32 rootIndex; // The index of the root in the list of roots for this token
-        uint32 leafIndex; // The index of the leaf in the merkle tree for this root
+        // The index of the root in the list of roots
+        uint32 rootIndex;
+        // The index of the leaf in the merkle tree for this root
+        uint32 leafIndex;
 
         bytes proof;
     }
 
     /// EVENTS /// 
 
-    event PaymentUpdaterSet(address oldPaymentUpdater, address newPaymentUpdater);
+    event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    event RecipientSet(address account, address recipient);
+    event RecipientSet(address indexed account, address indexed recipient);
     event RootSubmitted(bytes32 root, uint32 paymentsCalculatedUntilTimestamp, uint32 activatedAfter);
-    event PaymentClaimed(IERC20 token, address recipient, uint256 amount);
+    event PaymentClaimed(MerkleLeaf leaf);
     
     /// VIEW FUNCTIONS ///
 
-    /// @notice The address of the entity that can update the contract with new merkle roots
+    /// @notice The address to which payments are forwarded
     function paymentUpdater() external view returns (address);
 
     /// @notice Delay in timestamp before a posted root can be claimed against
@@ -53,6 +62,12 @@ interface IClaimingManager {
 
     /// @notice the commission for all operators across all avss
     function globalCommissionBips() external view returns (uint16);
+
+    /// @notice returns the hash of the leaf
+    function findLeafHash(MerkleLeaf calldata leaf) external view returns (bytes32);
+
+    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
+    function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
 
     /// EXTERNAL FUNCTIONS ///
 
