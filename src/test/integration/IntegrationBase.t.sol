@@ -30,7 +30,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         string memory stakerName = string.concat("- Staker", numStakers.toString());
         numStakers++;
 
-        (User staker, uint userType, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
 
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
@@ -53,7 +53,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         if (forkType == MAINNET && !isUpgraded) {
             // Create an operator for M1
-            (operator, , , ) = _randUser(operatorName);
+            (operator, , ) = _randUser(operatorName);
             // deal with random assets of only LSTS
             (strategies, tokenBalances) = _dealRandAssets_M1(operator);
 
@@ -61,7 +61,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
         } else {
-            (operator, , strategies, tokenBalances) = _randUser(operatorName);
+            (operator, strategies, tokenBalances) = _randUser(operatorName);
 
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);

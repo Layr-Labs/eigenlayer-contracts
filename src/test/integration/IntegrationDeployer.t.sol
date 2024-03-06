@@ -694,7 +694,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * 
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser(string memory name) internal returns (User, uint, IStrategy[] memory, uint[] memory) {
+    function _randUser(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -736,7 +736,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         _printUserInfo(assetType, userType, strategies, tokenBalances);
 
-        return (user, userType, strategies, tokenBalances);
+        return (user, strategies, tokenBalances);
     }
 
     /// @dev For a given `assetType`, select a random assortment of strategies and assets
@@ -829,6 +829,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             tokenBalances[i] = balance;
             strategies[i] = strat;
         }
+
+        return (strategies, tokenBalances);
     }
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
