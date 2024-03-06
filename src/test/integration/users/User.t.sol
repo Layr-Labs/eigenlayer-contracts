@@ -13,6 +13,8 @@ import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
+
 
 interface IUserDeployer {
     function delegationManager() external view returns (DelegationManager);
@@ -20,6 +22,7 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
+    function beaconChainOracle() external view returns (address);
 }
 
 contract User is Test {
@@ -35,6 +38,7 @@ contract User is Test {
     /// @dev Native restaker state vars
 
     BeaconChainMock beaconChain;
+    BeaconChainOracleMock beaconChainOracle;
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
     uint40[] validators;
@@ -54,7 +58,8 @@ contract User is Test {
         timeMachine = deployer.timeMachine();
                 
         beaconChain = deployer.beaconChain();
-        pod = EigenPod(payable(eigenPodManager.createPod()));
+        beaconChainOracle = BeaconChainOracleMock(deployer.beaconChainOracle());
+        _createPod();
 
         NAME = name;
     }
@@ -86,6 +91,11 @@ contract User is Test {
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
         emit log(_name(".depositIntoEigenlayer"));
 
+        // For M1 deployed pods, hasRestaked is set to False
+        if (!pod.hasRestaked()) {
+            activateRestaking();
+        }
+
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             uint tokenBalance = tokenBalances[i];
@@ -105,9 +115,7 @@ contract User is Test {
                             balanceWei: 32 ether,
                             withdrawalCreds: _podWithdrawalCredentials()
                         });
-                    
                     validators.push(newValidatorIndex);
-
                     pod.verifyWithdrawalCredentials({
                         oracleTimestamp: proofs.oracleTimestamp,
                         stateRootProof: proofs.stateRootProof,
@@ -268,6 +276,17 @@ contract User is Test {
         return _completeQueuedWithdrawal(withdrawal, false);
     }
 
+    /// @notice We set the proof generation start time to be after the timestamp that pod restaking is activated
+    /// We do this to prevent proofIsForValidTimestamp modifier from reverting
+    function activateRestaking() public {
+        pod.activateRestaking();
+        // To ensure oracle proof timestamp is greater than pod.mostRecentWithdrawalTimestamp
+        cheats.warp(block.timestamp + 10);
+        timeMachine.createSnapshot();
+        timeMachine.setProofGenStartTime(2 hours);
+        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
+    }
+
     function _completeQueuedWithdrawal(
         IDelegationManager.Withdrawal memory withdrawal, 
         bool receiveAsTokens
@@ -317,6 +336,10 @@ contract User is Test {
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
 
         return tokens;
+    }
+
+    function _createPod() internal virtual {
+        pod = EigenPod(payable(eigenPodManager.createPod()));
     }
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {

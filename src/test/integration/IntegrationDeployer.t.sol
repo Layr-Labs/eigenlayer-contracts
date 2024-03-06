@@ -13,6 +13,7 @@ import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/Slasher.sol";
 import "src/contracts/strategies/StrategyBase.sol";
+import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/DelayedWithdrawalRouter.sol";
@@ -33,6 +34,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // Fork ids for specific fork tests
+    bool isUpgraded;
     uint256 mainnetForkBlock = 19_280_000;
     uint256 mainnetForkId;
     uint256 goerliForkBlock = 10_575_000;
@@ -113,9 +115,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// These are used with _configRand to determine what User contracts can be deployed
     uint constant DEFAULT = (FLAG << 0);
     uint constant ALT_METHODS = (FLAG << 1);
-    /// @dev Only used for mainnet fork tests, similarly for flag below
-    uint constant MAINNET_M1 = (FLAG << 2);
-    uint constant MAINNET_M1_ALT_METHODS = (FLAG << 3);
 
     /// @dev Shadow Fork flags
     /// These are used for upgrade integration testing. Can be 
@@ -142,6 +141,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     mapping(uint => string) assetTypeToStr;
     mapping(uint => string) userTypeToStr;
+    mapping(uint => string) forkTypeToStr;
 
     constructor () {
         assetTypeToStr[NO_ASSETS] = "NO_ASSETS";
@@ -151,6 +151,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         
         userTypeToStr[DEFAULT] = "DEFAULT";
         userTypeToStr[ALT_METHODS] = "ALT_METHODS";
+
+        forkTypeToStr[LOCAL] = "LOCAL";
+        forkTypeToStr[MAINNET] = "MAINNET";
     }
 
     /**
@@ -161,6 +164,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
+        isUpgraded = false;
         // create mainnet fork that can be used later
         mainnetForkId = cheats.createFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
         // create goerli fork that can be used later
@@ -322,7 +326,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
         timeMachine = new TimeMachine();
         timeMachine.setProofGenStartTime(2 hours);
-
         // Create mock beacon chain / proof gen interface
         beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
 
@@ -402,13 +405,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
 
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-        timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
         cheats.stopPrank();
 
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
         cheats.prank(eigenPodManager.owner());
         eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
 
@@ -438,7 +436,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.startPrank(address(executorMultisig));
 
         ethPOSDeposit = new ETHPOSDepositMock();
-        beaconChainOracle = new BeaconChainOracleMock();
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
@@ -514,23 +511,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-        timeMachine = new TimeMachine();
-        timeMachine.setProofGenStartTime(2 hours);
-
-        // Create mock beacon chain / proof gen interface
-        beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
         eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+        timeMachine.setProofGenStartTime(2 hours);
+        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
         if (eigenPodManager.denebForkTimestamp() == 0) {
             //set deneb fork timestamp if not set
             eigenPodManager.setDenebForkTimestamp(1705473120);
         }
         cheats.stopPrank();
-
-        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -555,8 +544,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         IStrategy[] memory strategies = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         strategies[0] = strategy;
-        cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
+
+        if (forkType == MAINNET) {
+            cheats.prank(strategyManager.strategyWhitelister());
+            IStrategyManager_DeprecatedM1(address(strategyManager)).addStrategiesToDepositWhitelist(strategies);
+            cheats.prank(eigenLayerPauserReg.unpauser());
+            StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint256).max, type(uint256).max);
+        } else {
+            cheats.prank(strategyManager.strategyWhitelister());
+            strategyManager.addStrategiesToDepositWhitelist(strategies, _thirdPartyTransfersForbiddenValues);
+        }
 
         // Add to lstStrats and allStrats
         lstStrats.push(strategy);
@@ -591,8 +588,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         emit log("_configRand: Tests will be shadow forked based on these fork types");
-        for (uint i = 0; i < assetTypes.length; i++) {
-            emit log(assetTypeToStr[uint(uint8(forkTypes[i]))]);
+        for (uint i = 0; i < forkTypes.length; i++) {
+            emit log(forkTypeToStr[uint(uint8(forkTypes[i]))]);
         }
 
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
@@ -612,13 +609,30 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         if (forkType == LOCAL) {
             _setUpLocal();
+            // Set Upgraded as local setup deploys most up to date contracts
+            isUpgraded = true;
         } else if (forkType == MAINNET) {
             cheats.selectFork(mainnetForkId);
             string memory deploymentInfoPath = "script/configs/mainnet/Mainnet_current_deploy.config.json";
             _parseDeployedContracts(deploymentInfoPath);
+
+            // Unpause to enable deposits and withdrawals for initializing random user state
+            cheats.prank(eigenLayerPauserReg.unpauser());
+            strategyManager.unpause(0);
+
+            _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
+            _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
+            _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
+
+            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+            timeMachine = new TimeMachine();
+            beaconChainOracle = new BeaconChainOracleMock();
+            // Create mock beacon chain / proof gen interface
+            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
         } else {
             revert("_configEigenlayerContracts: unimplemented forkType");
         }
+
     }
 
     /**
@@ -628,9 +642,51 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      */
     function _upgradeEigenLayerContracts() internal {
         if (forkType == MAINNET) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
             _upgradeMainnetContracts();
-        } else if (forkType != LOCAL) {
-            revert("_upgradeEigenlayerContracts: unimplemented forkType");
+            isUpgraded = true;
+        }
+    }
+
+    /**
+     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
+     * unpausing all contracts. 
+     * Should be called at some point in test after _configEigenLayerContracts has been called.
+     */
+    function _upgradeEigenLayerContracts(User staker, User operator) internal {
+        if (forkType == MAINNET) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
+            _upgradeMainnetContracts();
+
+            // Enable restaking for stakers' pods
+            staker.activateRestaking();
+            // Now register users that are supposed to be Operators
+            operator.registerAsOperator();
+            isUpgraded = true;
+        }
+    }
+
+    /**
+     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
+     * unpausing all contracts. 
+     * Should be called at some point in test after _configEigenLayerContracts has been called.
+     * @param stakers - array of stakers to activate restaking for that were setup before upgrade
+     * @param operators - array of operators to register that were setup before upgrade
+     */
+    function _upgradeEigenLayerContracts(User[] memory stakers, User[] memory operators) internal {
+        if (forkType == MAINNET) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
+            _upgradeMainnetContracts();
+
+            // Enable restaking for stakers' pods
+            for (uint i; i < stakers.length; i++) {
+                stakers[i].activateRestaking();
+            }
+            // Now register users that are supposed to be Operators
+            for (uint i; i < operators.length; i++) {
+                operators[i].registerAsOperator();
+            }
+            isUpgraded = true;
         }
     }
 
@@ -693,7 +749,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
     function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
-
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
 
@@ -701,7 +756,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategies = new IStrategy[](0);
             tokenBalances = new uint[](0);
         } else if (assetType == HOLDS_LST) {
-
+            assetType = HOLDS_LST;
             // Select a random number of assets
             uint numAssets = _randUint({ min: 1, max: lstStrats.length });
 
@@ -712,10 +767,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             for (uint i = 0; i < numAssets; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                
                 uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
                 StdCheats.deal(address(underlyingToken), address(user), balance);
-
                 tokenBalances[i] = balance;
                 strategies[i] = strat;
             }
@@ -758,6 +811,25 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         return (strategies, tokenBalances);
+    }
+
+    /// @dev By default will have a assetType of HOLDS_LST
+    function _dealRandAssets_M1(User user) internal returns (IStrategy[] memory, uint[] memory) {
+        // Select a random number of assets
+        uint numAssets = _randUint({ min: 1, max: lstStrats.length });
+
+        IStrategy[] memory strategies = new IStrategy[](numAssets);
+        uint[] memory tokenBalances = new uint[](numAssets);
+
+        // For each asset, award the user a random balance of the underlying token
+        for (uint i = 0; i < numAssets; i++) {
+            IStrategy strat = lstStrats[i];
+            IERC20 underlyingToken = strat.underlyingToken();
+            uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+            StdCheats.deal(address(underlyingToken), address(user), balance);
+            tokenBalances[i] = balance;
+            strategies[i] = strat;
+        }
     }
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
@@ -808,9 +880,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     function _randForkType() internal returns (uint) {
         uint idx = _randUint({ min: 0, max: forkTypes.length - 1 });
-        uint userType = uint(uint8(userTypes[idx]));
+        uint randForkType = uint(uint8(forkTypes[idx]));
 
-        return userType;
+        return randForkType;
     }
 
     /**
@@ -842,6 +914,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         emit log("Creating user:");
         emit log_named_string("assetType: ", assetTypeToStr[assetType]);
         emit log_named_string("userType: ", userTypeToStr[userType]);
+        emit log_named_string("forkType: ", forkTypeToStr[forkType]);
 
         emit log_named_uint("num assets: ", strategies.length);
 

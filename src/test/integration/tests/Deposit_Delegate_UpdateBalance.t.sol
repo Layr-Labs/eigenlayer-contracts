@@ -17,7 +17,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and staker with some underlying assets
@@ -27,6 +27,9 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts(staker, operator);
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
