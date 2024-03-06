@@ -260,8 +260,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         //     "EigenPod.verifyBalanceUpdates: specified timestamp is too far in past"
         // );
 
-        // Check for a partial withdrawal checkpoint using this oracle timestamp
-        (bool activeCheckpoint, Checkpoint memory checkpoint) = _getCheckpoint(oracleTimestamp);
+        // Check for a relevant partial withdrawal checkpoint using the oracle timestamp
+        // For balance updates, we update the current checkpoint only if the oracle timestamp
+        // is equal to the checkpoint timestamp
+        bool updateCheckpoint = currentCheckpointTimestamp == oracleTimestamp;
+        Checkpoint memory checkpoint = currentCheckpoint;
 
         // Get the cached beacon state root for this timestamp, or validate `stateRootProof`
         bytes32 beaconStateRoot = _getOrValidateStateRoot(oracleTimestamp, stateRootProof);
@@ -282,7 +285,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
 
             // If we're working on a partial withdrawal checkpoint and we haven't seen
             // this validator yet, mark the validator as proven
-            if (activeCheckpoint && !validatorProven[oracleTimestamp][pubkeyHash]) {
+            if (updateCheckpoint && !validatorProven[oracleTimestamp][pubkeyHash]) {
                 validatorProven[oracleTimestamp][pubkeyHash] = true;
                 checkpoint.proofsRemaining--;
             }
@@ -294,7 +297,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // If this oracle timestamp concerns a partial withdrawal checkpoint, update the stored checkpoint
-        if (activeCheckpoint) {
+        if (updateCheckpoint) {
             // If we've proven the pod's entire validator set, we're done with this checkpoint.
             // Delete the current checkpoint and withdraw the eligible balance.
             if (checkpoint.proofsRemaining == 0) {
@@ -332,8 +335,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyAndProcessWithdrawals: inputs must be same length"
         );
 
-        // Check for a partial withdrawal checkpoint using this oracle timestamp
-        (bool activeCheckpoint, Checkpoint memory checkpoint) = _getCheckpoint(oracleTimestamp);
+        // Check for a relevant partial withdrawal checkpoint using the oracle timestamp
+        // For full withdrawals, we update a checkpoint if our withdrawal proof is older
+        // than the checkpoint
+        bool updateCheckpoint = currentCheckpointTimestamp >= oracleTimestamp;
+        Checkpoint memory checkpoint = currentCheckpoint;
 
         // Get the cached beacon state root for this timestamp, or validate `stateRootProof`
         bytes32 beaconStateRoot = _getOrValidateStateRoot(oracleTimestamp, stateRootProof);
@@ -354,11 +360,13 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             withdrawalSummary.amountToQueueGwei += verifiedWithdrawal.amountToQueueGwei;
             withdrawalSummary.sharesDeltaGwei += verifiedWithdrawal.sharesDeltaGwei;
 
-            // If we're working on a partial withdrawal checkpoint and we haven't seen
-            // this validator yet, mark the validator as proven
-            if (activeCheckpoint && !validatorProven[oracleTimestamp][pubkeyHash]) {
+            // If we created a checkpoint after this validator was exited from the beacon chain
+            // and we haven't seen a proof for this validator, mark them as proven and decrement
+            // their `amountToQueueGwei` from the checkpoint's eligible balance
+            if (updateCheckpoint && !validatorProven[oracleTimestamp][pubkeyHash]) {
                 validatorProven[oracleTimestamp][pubkeyHash] = true;
                 checkpoint.proofsRemaining--;
+                checkpoint.eligibleBalance -= verifiedWithdrawal.amountToQueueGwei;
             }
         }
 
@@ -368,10 +376,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
 
         // If this oracle timestamp concerns a partial withdrawal checkpoint, update the stored checkpoint
-        if (activeCheckpoint) {
-            // Remove any full withdrawals from the checkpoint's eligible balance
-            checkpoint.eligibleBalance -= uint232(withdrawalSummary.amountToQueueGwei * GWEI_TO_WEI);
-
+        if (updateCheckpoint) {
             // If we've proven the pod's entire validator set, we're done with this checkpoint.
             // Delete the current checkpoint and withdraw the eligible balance.
             if (checkpoint.proofsRemaining == 0) {
@@ -584,7 +589,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         });
 
         // Proofs complete - update this validator's status, record its proven balance, and save in state:
-        activeValidatorCount++;
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
@@ -596,9 +600,17 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         }
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
-        // Record this validator as proven so it can't be used within an existing partial
-        // withdrawal checkpoint
-        validatorProven[oracleTimestamp][validatorPubkeyHash] = true;
+        activeValidatorCount++;
+        // If we created a checkpoint after this validator was created on chain,
+        // mark the validator as "proven" so that it won't be counted towards
+        // the checkpoint's `proofsRemaining` if a balance proof is submitted
+        // 
+        // Note: we don't need to decrement proofsRemaining because that value only
+        // accounted for validators that were in the ACTIVE state at the time the
+        // checkpoint was created.
+        if (currentCheckpointTimestamp >= oracleTimestamp) {
+            validatorProven[currentCheckpointTimestamp][validatorPubkeyHash] = true;
+        }
 
         emit ValidatorRestaked(validatorIndex);
         emit ValidatorBalanceUpdated(validatorIndex, oracleTimestamp, validatorInfo.restakedBalanceGwei);
@@ -777,14 +789,6 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, podOwner, withdrawalAmountGwei);
  
         return verifiedWithdrawal;
-    }
-
-    /// @dev Checks if we have an active partial withdrawal checkpoint for the given `oracleTimestamp`
-    ///      If we do, returns true and loads the checkpoint from state.
-    function _getCheckpoint(uint64 oracleTimestamp) internal view returns (bool isActive, Checkpoint memory c) {
-        if (oracleTimestamp != 0 && oracleTimestamp == currentCheckpointTimestamp) {
-            return (true, currentCheckpoint);
-        }
     }
 
     /// @dev Checks if we have a cached beaconStateRoot proven for this `oracleTimestamp`.
