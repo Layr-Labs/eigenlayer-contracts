@@ -696,23 +696,25 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint64 withdrawalTimestamp = withdrawalProof.getWithdrawalTimestamp();
 
         /**
-         * Withdrawal processing should only be performed for "ACTIVE" or "WITHDRAWN" validators.
-         * (WITHDRAWN is allowed because technically you can deposit to a validator even after it exits)
+         * Withdrawal processing should only be performed for "ACTIVE" validators
+         * WITHDRAWN validators will have their ETH automatically sent to this contract
+         * and can exit these funds via the partial withdrawal flow.
          */
         require(
             _validatorPubkeyHashToInfo[validatorPubkeyHash].status == VALIDATOR_STATUS.ACTIVE,
-            "EigenPod._verifyAndProcessWithdrawal: Validator never proven to have withdrawal credentials pointed to this contract"
+            "EigenPod._verifyAndProcessWithdrawal: validator is not active"
+        );
+
+        // We should be proving a full withdrawal from the beacon chain
+        require(
+            withdrawalProof.getWithdrawalEpoch() >= validatorFields.getWithdrawableEpoch(),
+            "Must prove full withdrawal"
         );
 
         // Ensure we don't process the same withdrawal twice
         require(
             !provenWithdrawal[validatorPubkeyHash][withdrawalTimestamp],
             "EigenPod._verifyAndProcessWithdrawal: withdrawal has already been proven for this timestamp"
-        );
-
-        require(
-            withdrawalProof.getWithdrawalEpoch() >= validatorFields.getWithdrawableEpoch(),
-            "Must prove full withdrawal"
         );
 
         provenWithdrawal[validatorPubkeyHash][withdrawalTimestamp] = true;
@@ -736,53 +738,41 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         });
 
         uint64 withdrawalAmountGwei = withdrawalFields.getWithdrawalAmountGwei();
-        
+
         /**
-         * First, determine withdrawal amounts. We need to know:
-         * 1. How much can be withdrawn immediately
-         * 2. How much needs to be withdrawn via the EigenLayer withdrawal queue
+         * Determine how much of this withdrawal was "backing" the pod's shares.
+         * This amount can be withdrawn by the DelegationManager's withdrawal
+         * queue. Any remainder should be withdrawn via the pod's partial withdrawal
+         * flow.
          */
 
         uint64 amountToQueueGwei;
-
         if (withdrawalAmountGwei > MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) {
             amountToQueueGwei = MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
         } else {
             amountToQueueGwei = withdrawalAmountGwei;
         }
- 
-        /**
-         * If the withdrawal is for more than the max per-validator balance, we mark 
-         * the max as "withdrawable" via the queue, and withdraw the excess immediately
-         */
- 
-        VerifiedWithdrawal memory verifiedWithdrawal;
-        verifiedWithdrawal.amountToQueueGwei = amountToQueueGwei;
-        withdrawableRestakedExecutionLayerGwei += amountToQueueGwei;
-         
-        /**
-         * Next, calculate the change in number of shares this validator is "backing":
-         * - Anything that needs to go through the withdrawal queue IS backed
-         * - Anything immediately withdrawn IS NOT backed
-         *
-         * This means that this validator is currently backing `amountToQueueGwei` shares.
-         */
- 
+
+        // Calculate the change in the number of shares this validator is backing
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
-        verifiedWithdrawal.sharesDeltaGwei = _calculateSharesDelta({
-            newAmountGwei: amountToQueueGwei,
-            previousAmountGwei: validatorInfo.restakedBalanceGwei
+        VerifiedWithdrawal memory verifiedWithdrawal = VerifiedWithdrawal({
+            amountToQueueGwei: amountToQueueGwei,
+            sharesDeltaGwei: _calculateSharesDelta({
+                newAmountGwei: amountToQueueGwei,
+                previousAmountGwei: validatorInfo.restakedBalanceGwei
+            })
         });
  
         /**
          * Finally, the validator is fully withdrawn. Update their status and place in state:
          */
- 
+
         validatorInfo.restakedBalanceGwei = 0;
-        validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
-        activeValidatorCount--;
- 
+        validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN; 
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
+
+        activeValidatorCount--;
+        withdrawableRestakedExecutionLayerGwei += amountToQueueGwei;
  
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, podOwner, withdrawalAmountGwei);
  
