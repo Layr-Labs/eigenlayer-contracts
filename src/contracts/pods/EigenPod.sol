@@ -205,7 +205,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         uint256 eligibleBalance = 
             address(this).balance 
                 - nonBeaconChainETHBalanceWei 
-                - withdrawableRestakedExecutionLayerGwei;
+                - (withdrawableRestakedExecutionLayerGwei * GWEI_TO_WEI);
         require(eligibleBalance != 0, "No eligible balance to withdraw");
 
         // If we have no active validators, there are no additional steps needed!
