@@ -31,52 +31,47 @@ abstract contract IntegrationBase is IntegrationDeployer {
         numStakers++;
 
         (User staker, uint userType, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
-        // Initializes user with M1 mainnet if fork type
-        if (forkType == MAINNET_M1) {
-            _initUser_M1(staker, userType);
-        }
 
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
         return (staker, strategies, tokenBalances);
     }
 
+    /**
+     * @dev Create a new operator according to configured random variants.
+     * This user will immediately deposit their randomized assets into eigenlayer.
+     * @notice If forktype is mainnet and not upgraded, then the operator will only randomize LSTs assets and deposit them
+     * as ETH podowner shares are not available yet. 
+     */
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
         string memory operatorName = string.concat("- Operator", numOperators.toString());
         numOperators++;
 
-        (User operator, uint userType, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
-        
-        operator.registerAsOperator();
-        operator.depositIntoEigenlayer(strategies, tokenBalances);
+        User operator;
+        IStrategy[] memory strategies;
+        uint[] memory tokenBalances;
 
-        assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
-        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        if (forkType == MAINNET && !isUpgraded) {
+            // Create an operator for M1
+            (operator, , , ) = _randUser(operatorName);
+            // deal with random assets of only LSTS
+            (strategies, tokenBalances) = _dealRandAssets_M1(operator);
+
+            User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
+        } else {
+            (operator, , strategies, tokenBalances) = _randUser(operatorName);
+
+            operator.registerAsOperator();
+            operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
+            assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        }
 
         return (operator, strategies, tokenBalances);
-    }
-
-    /**
-     * If User type is M1 mainnet, then we need to initialize the user from M1 mainnet
-     * before upgrading.
-     */
-    function _initUser_M1(User user, uint userType) internal {
-        uint assetType = _randAssetType();
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
-        /**
-         * _dealRandAssets deals native ETH strategy shares, last element will be ETH, remove from
-         * strategies and tokenBalances if so
-         */
-        if (strategies[strategies.length - 1] == BEACONCHAIN_ETH_STRAT) {
-            strategies = _getPoppedStrategiesArray(strategies);
-            tokenBalances = _getPoppedBalancesArray(tokenBalances);
-        }
-        /**
-         * Will be either User_M1 or User_M1_AltMethods for depositing into EigenLayer
-         */
-        User_M1(payable(address(user))).depositIntoEigenlayer_M1(strategies, tokenBalances);
-        assert_Snap_Added_StakerShares(user, strategies, tokenBalances, "_initUser_M1: failed to award shares to staker");
     }
 
     /** 
@@ -827,21 +822,5 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return shares;
-    }
-
-    function _getPoppedStrategiesArray(IStrategy[] memory strategies) internal returns (IStrategy[] memory) {
-        IStrategy[] memory poppedStrategies = new IStrategy[](strategies.length - 1);
-        for (uint i = 0; i < poppedStrategies.length; i++) {
-            poppedStrategies[i] = strategies[i];
-        }
-        return poppedStrategies;
-    }
-
-    function _getPoppedBalancesArray(uint[] memory balances) internal returns (uint[] memory) {
-        uint[] memory poppedBalances = new uint[](balances.length - 1);
-        for (uint i = 0; i < poppedBalances.length; i++) {
-            poppedBalances[i] = balances[i];
-        }
-        return poppedBalances;
     }
 }
