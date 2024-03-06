@@ -750,7 +750,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          */
  
         VerifiedWithdrawal memory verifiedWithdrawal;
-        verifiedWithdrawal.amountToQueueGwei = uint256(withdrawalAmountGwei - amountToQueueGwei);
+        verifiedWithdrawal.amountToQueueGwei = amountToQueueGwei;
         withdrawableRestakedExecutionLayerGwei += amountToQueueGwei;
          
         /**
