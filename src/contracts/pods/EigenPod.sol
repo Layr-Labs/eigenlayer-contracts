@@ -366,7 +366,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             if (updateCheckpoint && !validatorProven[oracleTimestamp][pubkeyHash]) {
                 validatorProven[oracleTimestamp][pubkeyHash] = true;
                 checkpoint.proofsRemaining--;
-                checkpoint.eligibleBalance -= verifiedWithdrawal.amountToQueueGwei;
+                checkpoint.eligibleBalance -= uint232(verifiedWithdrawal.amountToQueueGwei * GWEI_TO_WEI);
             }
         }
 
