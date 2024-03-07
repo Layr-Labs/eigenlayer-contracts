@@ -419,14 +419,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
 
-        /**
-         * Withdrawal credential proof should not be "stale" (older than VERIFY_BALANCE_UPDATE_WINDOW_SECONDS) as we are doing a balance check here
-         * The validator container persists as the state evolves and even after the validator exits. So we can use a more "fresh" credential proof within
-         * the VERIFY_BALANCE_UPDATE_WINDOW_SECONDS window, not just the first proof where the validator container is registered in the state.
-         */
+        // Withdrawal credential proof should not be "stale" (older than the current checkpoint)
+        // NOTE: validator also cannot have an exit epoch set (see `_verifyWithdrawalCredentials`)
         require(
-            oracleTimestamp + VERIFY_BALANCE_UPDATE_WINDOW_SECONDS >= block.timestamp,
-            "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
+            oracleTimestamp >= currentCheckpointTimestamp,
+            "Cannot prove withdrawal credentials from before checkpoint timestamp"
         );
 
         // Get the cached beacon state root for this timestamp, or validate `stateRootProof`
@@ -551,16 +548,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         bytes32 validatorPubkeyHash = validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
 
+        // Ensure the `validatorFields` we're proving have the correct withdrawal credentials
+        require(
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
+            "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"
+        );
+
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
         require(
             validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
             "EigenPod.verifyCorrectWithdrawalCredentials: Validator must be inactive to prove withdrawal credentials"
         );
 
-        // Ensure the `validatorFields` we're proving have the correct withdrawal credentials
+        // Ensure we're not proving a validator who has exited (or will exit soon)
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
-            "EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"
+            !validatorFields.hasInitiatedExit(), 
+            "cannot prove withdrawal credentials for exited validator"
         );
 
         /**

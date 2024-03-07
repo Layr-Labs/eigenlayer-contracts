@@ -55,6 +55,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
+    uint256 internal constant VALIDATOR_EXIT_EPOCH_INDEX = 6;
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
 
     // in execution payload header
@@ -77,6 +78,10 @@ library BeaconChainProofs {
 
     /// @notice Number of seconds per epoch: 384 == 32 slots/epoch * 12 seconds/slot 
     uint64 internal constant SECONDS_PER_EPOCH = SLOTS_PER_EPOCH * SECONDS_PER_SLOT;
+
+    /// @notice When a validator is created on the beacon chain, its status epochs
+    /// are all initially set to this value
+    uint64 internal constant FAR_FUTURE_EPOCH = type(uint64).max;
 
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
 
@@ -373,6 +378,14 @@ library BeaconChainProofs {
     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
+    }
+
+    /**
+     * @dev Returns true if the validator has initiated an exit by any means, including being slashed
+     */
+    function hasInitiatedExit(bytes32[] memory validatorFields) internal pure returns (bool) {
+        return
+            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]) == FAR_FUTURE_EPOCH;
     }
 
     /**
