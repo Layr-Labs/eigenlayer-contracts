@@ -37,8 +37,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint256 mainnetForkBlock = 19_280_000;
     uint256 mainnetForkId;
-    uint256 goerliForkBlock = 10_575_000;
-    uint256 goerliForkId;
+    uint constant DENEB_FORK_TIMESTAMP = 1705473120;
 
 
     TimeMachine public timeMachine;
@@ -117,7 +116,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint constant ALT_METHODS = (FLAG << 1);
 
     /// @dev Shadow Fork flags
-    /// These are used for upgrade integration testing. Can be 
+    /// These are used for upgrade integration testing.
     uint constant LOCAL = (FLAG << 0);
     uint constant MAINNET = (FLAG << 1);
 
@@ -335,99 +334,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /**
      * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
-     * on Goerli. Setup for integration tests on Goerli fork.
-     * 
-     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
-     */
-    function _upgradeGoerliContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
-        ethPOSDeposit = new ETHPOSDepositMock();
-        beaconChainOracle = new BeaconChainOracleMock();
-
-        // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(
-            ethPOSDeposit,
-            delayedWithdrawalRouter,
-            eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            0
-        );
-        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-
-        // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegationManager
-        );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
-
-        // Second, upgrade the proxy contracts to point to the implementations
-        // DelegationManager
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation)
-        );
-        // StrategyManager
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(strategyManager))),
-            address(strategyManagerImplementation)
-        );
-        // Slasher
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(slasher))),
-            address(slasherImplementation)
-        );
-        // EigenPodManager
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
-        );
-        // Delayed Withdrawal Router
-        eigenLayerProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
-            address(delayedWithdrawalRouterImplementation)
-        );
-        // AVSDirectory
-        // todo, fix this upgrade call
-        // eigenLayerProxyAdmin.upgrade(
-        //     TransparentUpgradeableProxy(payable(address(avsDirectory))),
-        //     address(avsDirectoryImplementation)
-        // );
-
-        // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
-
-        cheats.stopPrank();
-
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-
-        if (eigenPodManager.denebForkTimestamp() == 0) {
-            //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(1705473120);
-        }
-
-        cheats.stopPrank();
-
-        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
-
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
-    }
-
-    /**
-     * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
      * on Mainnet. Setup for integration tests on mainnet fork.
      * 
      * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
@@ -517,7 +423,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         if (eigenPodManager.denebForkTimestamp() == 0) {
             //set deneb fork timestamp if not set
-            eigenPodManager.setDenebForkTimestamp(1705473120);
+            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
         }
         cheats.stopPrank();
 
@@ -596,15 +502,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
         assertTrue(forkTypes.length != 0, "_configRand: no fork types selected");
 
-        _configEigenLayerContracts();
+        // Use forkType to deploy contracts locally or fetch from mainnet
+        _deployOrFetchContracts();
     }
 
     /**
      * Depending on the forkType, either deploy contracts locally or parse existing contracts
-     * on from network.
-     * Note for non LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
+     * from network.
+     *
+     * Note: for non-LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
      */
-    function _configEigenLayerContracts() internal {
+    function _deployOrFetchContracts() internal {
         forkType = _randForkType();
 
         if (forkType == LOCAL) {
@@ -632,13 +540,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         } else {
             revert("_configEigenlayerContracts: unimplemented forkType");
         }
-
     }
 
     /**
      * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
      * unpausing all contracts. 
-     * Should be called at some point in test after _configEigenLayerContracts has been called.
      */
     function _upgradeEigenLayerContracts() internal {
         if (forkType == MAINNET) {
@@ -651,7 +557,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /**
      * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
      * unpausing all contracts. 
-     * Should be called at some point in test after _configEigenLayerContracts has been called.
      */
     function _upgradeEigenLayerContracts(User staker, User operator) internal {
         if (forkType == MAINNET) {
@@ -669,7 +574,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /**
      * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
      * unpausing all contracts. 
-     * Should be called at some point in test after _configEigenLayerContracts has been called.
      * @param stakers - array of stakers to activate restaking for that were setup before upgrade
      * @param operators - array of operators to register that were setup before upgrade
      */

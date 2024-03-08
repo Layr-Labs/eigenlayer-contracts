@@ -279,6 +279,8 @@ contract User is Test {
     /// @notice We set the proof generation start time to be after the timestamp that pod restaking is activated
     /// We do this to prevent proofIsForValidTimestamp modifier from reverting
     function activateRestaking() public {
+        emit log(_name(".activateRestaking"));
+        
         pod.activateRestaking();
         // To ensure oracle proof timestamp is greater than pod.mostRecentWithdrawalTimestamp
         cheats.warp(block.timestamp + 10);
