@@ -37,7 +37,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint256 mainnetForkBlock = 19_280_000;
     uint256 mainnetForkId;
-    uint constant DENEB_FORK_TIMESTAMP = 1705473120;
+    uint64 constant DENEB_FORK_TIMESTAMP = 1705473120;
 
 
     TimeMachine public timeMachine;
