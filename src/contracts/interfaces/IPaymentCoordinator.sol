@@ -12,10 +12,13 @@ import "./IStrategy.sol";
 interface IPaymentCoordinator {
 
     /// STRUCTS ///
+    struct StrategyAndMultiplier {
+        IStrategy strategy;
+        uint96 multiplier;
+    }
 	struct RangePayment {
-        IStrategy[] strategies;
-        // relative weights of shares in the strategies
-        uint256[] weights;
+        // Strategies & relative weights of shares in the strategies
+        StrategyAndMultiplier strategiesAndMultlipliers;
         IERC20 token;
         uint256 amount;
         uint256 startTimestamp;
@@ -30,7 +33,7 @@ interface IPaymentCoordinator {
         bytes32 root;
     }
 
-    struct MerkleLeaf {
+    struct ClaimsTreeMerkleLeaf {
         IERC20 token; 
         uint256 amount;
         // Explicit recipient of the claim
@@ -38,23 +41,25 @@ interface IPaymentCoordinator {
     }
 
     struct PaymentMerkleClaim {
-        MerkleLeaf leaf;
+        ClaimsTreeMerkleLeaf[] leaves;
         // The index of the root in the list of roots
         uint32 rootIndex;
-        // The index of the leaf in the merkle tree for this root
-        uint32 leafIndex;
-        bytes proof;
+        // proof of the claimaint's account root in the Merkle tree
+        bytes accountTreeProof;
+        // The indices and proofs of the leafs in the claimaint's merkle tree for this root
+        uint32[] leafIndices;
+        bytes[] tokenTreeProofs;
     }
 
     /// EVENTS ///
 
-    event RangePaymentCreated(RangePayment rangePayment);
+    event RangePaymentCreated(address indexed avs, RangePayment rangePayment);
     event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event RecipientSet(address indexed account, address indexed recipient);
     event RootSubmitted(bytes32 root, uint32 paymentsCalculatedUntilTimestamp, uint32 activatedAfter);
-    event PaymentClaimed(MerkleLeaf leaf);
+    event PaymentClaimed(ClaimsTreeMerkleLeaf leaf);
 
     /// VIEW FUNCTIONS ///
 
@@ -89,7 +94,7 @@ interface IPaymentCoordinator {
     function globalOperatorCommissionBips() external view returns (uint16);
 
     /// @notice returns the hash of the leaf
-    function findLeafHash(MerkleLeaf calldata leaf) external view returns (bytes32);
+    function calculateLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external view returns (bytes32);
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
@@ -99,11 +104,12 @@ interface IPaymentCoordinator {
     /**
      * @notice Initializes the contract
      * @param initialOwner The address of the initial owner of the contract
+     * @param _paymentUpdater The address of the initial `paymentUpdater`
      * @param _activationDelay Delay in timestamp before a posted root can be claimed against
      * @param _globalCommissionBips The commission for all operators across all avss
      * @dev Only callable once
      */
-    function initialize(address initialOwner, uint32 _activationDelay, uint16 _globalCommissionBips) external;
+    function initialize(address initialOwner, address _paymentUpdater, uint32 _activationDelay, uint16 _globalCommissionBips) external;
     
     /**
      * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
@@ -115,7 +121,7 @@ interface IPaymentCoordinator {
      * @dev This function will revert if the `rangePayment` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-	function payForRange(RangePayment calldata rangePayment) external;
+    function payForRange(RangePayment calldata rangePayment) external;
 
     /**
      * @notice similar to `payForRange` except the payment is split amongst *all* stakers
@@ -123,6 +129,11 @@ interface IPaymentCoordinator {
      */
     function payAllForRange(RangePayment calldata rangePayment) external;
 
+    /**
+     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
+     * @dev Only callable by the contract owner
+     */
+    function setPaymentUpdater(address _paymentUpdater) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
@@ -155,8 +166,8 @@ interface IPaymentCoordinator {
     function submitRoot(bytes32 root, uint32 paymentsCalculatedUntilTimestamp) external;
 
     /**
-     * @notice Claims payments for the given claims
-     * @param claims The claims to be processed
+     * @notice Claim payments for the given claim
+     * @param claim The claims to be processed
      */
-    function processClaims(PaymentMerkleClaim[] calldata claims) external;
+    function processClaims(PaymentMerkleClaim calldata claim) external;
 }
