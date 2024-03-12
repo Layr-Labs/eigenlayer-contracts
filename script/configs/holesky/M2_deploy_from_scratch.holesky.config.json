@@ -28,7 +28,7 @@
     ]
   },
   "strategyManager": {
-    "init_strategy_whitelister": "",
+    "init_strategy_whitelister": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
     "init_paused_status": 0
   },
   "delegationManager": {
@@ -47,7 +47,7 @@
   },
   "eigenPodManager": {
     "init_paused_status": 0,
-    "deneb_fork_timestamp": "1707323664"
+    "deneb_fork_timestamp": "1707305664"
   },
   "delayedWithdrawalRouter": {
     "init_paused_status": 0,
