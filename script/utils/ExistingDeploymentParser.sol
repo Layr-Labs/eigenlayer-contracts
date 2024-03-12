@@ -24,6 +24,12 @@ import "../../src/test/mocks/EmptyContract.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
+struct StrategyUnderlyingTokenConfig {
+    address tokenAddress;
+    string tokenName;
+    string tokenSymbol;
+}
+
 contract ExistingDeploymentParser is Script, Test {
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;
@@ -54,9 +60,12 @@ contract ExistingDeploymentParser is Script, Test {
 
     // strategies deployed
     StrategyBase[] public deployedStrategyArray;
+    // Strategies to Deploy
+    uint256 numStrategiesToDeploy;
+    StrategyUnderlyingTokenConfig[] public strategiesToDeploy;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
-    IETHPOSDeposit public ethPOSDeposit;
+    // IETHPOSDeposit public ethPOSDeposit;
 
     // // IMMUTABLES TO SET
     // uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -75,6 +84,7 @@ contract ExistingDeploymentParser is Script, Test {
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 EIGENPOD_MANAGER_MAX_PODS;
+    uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
@@ -83,6 +93,10 @@ contract ExistingDeploymentParser is Script, Test {
 
     // one week in blocks -- 50400
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
+
+    // Strategy Deployment
+    uint256 STRATEGY_MAX_PER_DEPOSIT;
+    uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
     /// @notice use for parsing already deployed EigenLayer contracts
     function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal {
@@ -178,13 +192,33 @@ contract ExistingDeploymentParser is Script, Test {
         require(configChainId == currentChainId, "You are on the wrong chain for this config");
 
         // read beacon oracle
-        beaconOracle = IBeaconChainOracle(stdJson.readAddress(initialDeploymentData, ".addresses.beaconOracleAddress"));
+        beaconOracle = IBeaconChainOracle(stdJson.readAddress(initialDeploymentData, ".beaconOracleAddress"));
 
         // read all of the deployed addresses
         executorMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.executorMultisig");
         operationsMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.operationsMultisig");
         communityMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.communityMultisig");
         pauserMultisig = stdJson.readAddress(initialDeploymentData, ".multisig_addresses.pauserMultisig");
+
+        // Strategies to Deploy, load strategy list
+        numStrategiesToDeploy = stdJson.readUint(initialDeploymentData, ".strategies.numStrategies");
+        STRATEGY_MAX_PER_DEPOSIT = stdJson.readUint(initialDeploymentData, ".strategies.MAX_PER_DEPOSIT");
+        STRATEGY_MAX_TOTAL_DEPOSITS = stdJson.readUint(initialDeploymentData, ".strategies.MAX_TOTAL_DEPOSITS");
+        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+            // Form the key for the current element
+            string memory key = string.concat(".strategies.strategiesToDeploy[", vm.toString(i), "]");
+
+            // Use parseJson with the key to get the value for the current element
+            bytes memory tokenInfoBytes = stdJson.parseRaw(initialDeploymentData, key);
+
+            // Decode the token information into the Token struct
+            StrategyUnderlyingTokenConfig memory tokenInfo = abi.decode(
+                tokenInfoBytes,
+                (StrategyUnderlyingTokenConfig)
+            );
+
+            strategiesToDeploy.push(tokenInfo);
+        }
 
         // Read initialize params for upgradeable contracts
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
@@ -208,6 +242,10 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
         );
+        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(stdJson.readUint(
+            initialDeploymentData,
+            ".eigenPodManager.deneb_fork_timestamp"
+        ));
 
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
@@ -487,7 +525,7 @@ contract ExistingDeploymentParser is Script, Test {
         emit log_named_uint("DELEGATION_MANAGER_INIT_PAUSED_STATUS", DELEGATION_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("AVS_DIRECTORY_INIT_PAUSED_STATUS", AVS_DIRECTORY_INIT_PAUSED_STATUS);
         emit log_named_uint("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
-        emit log_named_uint("EIGENPOD_MANAGER_MAX_PODS", EIGENPOD_MANAGER_MAX_PODS);
+        emit log_named_uint("EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP", EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
         emit log_named_uint("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
         emit log_named_uint(
             "EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR",
@@ -502,9 +540,93 @@ contract ExistingDeploymentParser is Script, Test {
             "DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS",
             DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS
         );
+
+        emit log_string("==== Strategies to Deploy ====");
+        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+            // Decode the token information into the Token struct
+            StrategyUnderlyingTokenConfig memory tokenInfo = strategiesToDeploy[i];
+
+            strategiesToDeploy.push(tokenInfo);
+            emit log_named_address("TOKEN ADDRESS", tokenInfo.tokenAddress);
+            emit log_named_string("TOKEN NAME", tokenInfo.tokenName);
+            emit log_named_string("TOKEN SYMBOL", tokenInfo.tokenSymbol);
+        }
     }
 
-    function logContractAddresses() public {
-        emit log_string("==== Contract Addresses from Deployment/Upgrade ====");
+    /**
+     * @notice Log contract addresses and write to output json file
+     */
+    function logAndOutputContractAddresses(string memory outputPath) public {
+        // WRITE JSON DATA
+        string memory parent_object = "parent object";
+
+        string memory deployed_strategies = "strategies";
+        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+            vm.serializeAddress(deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
+        }
+        string memory deployed_strategies_output = numStrategiesToDeploy == 0
+            ? ""
+            : vm.serializeAddress(
+                deployed_strategies,
+                strategiesToDeploy[numStrategiesToDeploy - 1].tokenSymbol,
+                address(deployedStrategyArray[numStrategiesToDeploy - 1])
+            );
+
+        string memory deployed_addresses = "addresses";
+        vm.serializeAddress(deployed_addresses, "eigenLayerProxyAdmin", address(eigenLayerProxyAdmin));
+        vm.serializeAddress(deployed_addresses, "eigenLayerPauserReg", address(eigenLayerPauserReg));
+        vm.serializeAddress(deployed_addresses, "slasher", address(slasher));
+        vm.serializeAddress(deployed_addresses, "slasherImplementation", address(slasherImplementation));
+        vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
+        vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
+        vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
+        vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationManagerImplementation));
+        vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
+        vm.serializeAddress(
+            deployed_addresses,
+            "strategyManagerImplementation",
+            address(strategyManagerImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
+        vm.serializeAddress(
+            deployed_addresses,
+            "eigenPodManagerImplementation",
+            address(eigenPodManagerImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "delayedWithdrawalRouter", address(delayedWithdrawalRouter));
+        vm.serializeAddress(
+            deployed_addresses,
+            "delayedWithdrawalRouterImplementation",
+            address(delayedWithdrawalRouterImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "beaconOracle", address(beaconOracle));
+        vm.serializeAddress(deployed_addresses, "eigenPodBeacon", address(eigenPodBeacon));
+        vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
+        vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
+        vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
+        string memory deployed_addresses_output = vm.serializeString(
+            deployed_addresses,
+            "strategies",
+            deployed_strategies_output
+        );
+
+        string memory parameters = "parameters";
+        vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
+        vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
+        vm.serializeAddress(parameters, "communityMultisig", communityMultisig);
+        vm.serializeAddress(parameters, "pauserMultisig", pauserMultisig);
+        string memory parameters_output = vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
+
+        string memory chain_info = "chainInfo";
+        vm.serializeUint(chain_info, "deploymentBlock", block.number);
+        string memory chain_info_output = vm.serializeUint(chain_info, "chainId", block.chainid);
+
+        // serialize all the data
+        vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
+        vm.serializeString(parent_object, chain_info, chain_info_output);
+        string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
+
+        vm.writeJson(finalJson, outputPath);
+
     }
 }
