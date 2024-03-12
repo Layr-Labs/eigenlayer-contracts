@@ -460,6 +460,10 @@ contract ExistingDeploymentParser is Script, Test {
             strategyManager.paused() == STRATEGY_MANAGER_INIT_PAUSED_STATUS,
             "strategyManager: init paused status set incorrectly"
         );
+        require(
+            strategyManager.strategyWhitelister() == operationsMultisig,
+            "strategyManager: strategyWhitelister not set correctly"
+        );
         // EigenPodManager
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
