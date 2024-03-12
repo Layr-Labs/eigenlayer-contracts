@@ -20,6 +20,14 @@ contract EPInternalFunctions is EigenPod, Test {
         _GENESIS_TIME
     ) {}
 
+    function getActiveValidatorCount() public view returns (uint256) {
+        return activeValidatorCount;
+    }
+
+    function setActiveValidatorCount(uint _count) public {
+        activeValidatorCount = _count;
+    }
+
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
         bytes32 beaconStateRoot,

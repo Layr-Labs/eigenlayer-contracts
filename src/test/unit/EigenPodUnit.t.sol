@@ -453,6 +453,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         uint64 effectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
         assertGt(effectiveBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Proof file has an effective balance less than 32 ETH");
 
+        uint activeValidatorCountBefore = eigenPodHarness.getActiveValidatorCount();
+
         // Verify withdrawal credentials
         vm.expectEmit(true, true, true, true);
         emit ValidatorRestaked(validatorIndex);
@@ -467,6 +469,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         );
 
         // Checks
+        uint activeValidatorCountAfter = eigenPodHarness.getActiveValidatorCount();
+        assertEq(activeValidatorCountAfter, activeValidatorCountBefore + 1, "active validator count should increase when proving withdrawal credentials");
         assertEq(restakedBalanceWei, uint256(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR) * uint256(1e9), "Returned restaked balance gwei should be max");
         _assertWithdrawalCredentialsSet(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR);
     }
@@ -479,6 +483,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         // Check that restaked balance less than 32 ETH
         uint64 effectiveBalanceGwei = validatorFields.getEffectiveBalanceGwei();
         assertLt(effectiveBalanceGwei, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, "Proof file has an effective balance greater than 32 ETH");
+
+        uint activeValidatorCountBefore = eigenPodHarness.getActiveValidatorCount();
 
         // Verify withdrawal credentials
         vm.expectEmit(true, true, true, true);
@@ -494,6 +500,8 @@ contract EigenPodUnitTests_VerifyWithdrawalCredentialsTests is EigenPodHarnessSe
         );
 
         // Checks
+        uint activeValidatorCountAfter = eigenPodHarness.getActiveValidatorCount();
+        assertEq(activeValidatorCountAfter, activeValidatorCountBefore + 1, "active validator count should increase when proving withdrawal credentials");
         assertEq(restakedBalanceWei, uint256(effectiveBalanceGwei) * uint256(1e9), "Returned restaked balance gwei incorrect");
         _assertWithdrawalCredentialsSet(effectiveBalanceGwei);
     }
@@ -920,9 +928,18 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
             mostRecentBalanceUpdateTimestamp: 0,
             status: IEigenPod.VALIDATOR_STATUS.ACTIVE
         });
+
+        // Since we're withdrawing using an ACTIVE validator, ensure we have
+        // a validator count to decrement
+        uint activeValidatorCountBefore = 1 + eigenPodHarness.getActiveValidatorCount();
+        eigenPodHarness.setActiveValidatorCount(activeValidatorCountBefore);
         
-        // Process full withdrawal
+        // Process full withdrawal.
         IEigenPod.VerifiedWithdrawal memory vw = eigenPodHarness.processFullWithdrawal(0, pubkeyHash, 0, podOwner, withdrawalAmount, validatorInfo);
+
+        // Validate that our activeValidatorCount decreased
+        uint activeValidatorCountAfter = eigenPodHarness.getActiveValidatorCount();
+        assertEq(activeValidatorCountAfter, activeValidatorCountBefore - 1, "active validator count should decrease when withdrawing active validator");
 
         // Get expected amounts based on withdrawalAmount
         uint64 amountETHToQueue;

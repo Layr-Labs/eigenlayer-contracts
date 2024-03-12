@@ -91,8 +91,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
     uint256 public nonBeaconChainETHBalanceWei;
 
-     /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
+    /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
+
+    /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
+    uint256 activeValidatorCount;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");
@@ -479,6 +482,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         });
 
         // Proofs complete - update this validator's status, record its proven balance, and save in state:
+        activeValidatorCount++;
         validatorInfo.status = VALIDATOR_STATUS.ACTIVE;
         validatorInfo.validatorIndex = validatorIndex;
         validatorInfo.mostRecentBalanceUpdateTimestamp = oracleTimestamp;
@@ -697,9 +701,12 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
          * Finally, the validator is fully withdrawn. Update their status and place in state:
          */
 
-        validatorInfo.restakedBalanceGwei = 0;
-        validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
+        if (validatorInfo.status != VALIDATOR_STATUS.WITHDRAWN) {
+            activeValidatorCount--;
+            validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
+        }
 
+        validatorInfo.restakedBalanceGwei = 0;        
         _validatorPubkeyHashToInfo[validatorPubkeyHash] = validatorInfo;
 
         emit FullWithdrawalRedeemed(validatorIndex, withdrawalTimestamp, recipient, withdrawalAmountGwei);
