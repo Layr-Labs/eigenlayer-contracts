@@ -129,7 +129,7 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
                 executorMultisig, //initialOwner
-                executorMultisig, //initial whitelister
+                STRATEGY_MANAGER_WHITELISTER, //initial whitelister
                 eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )

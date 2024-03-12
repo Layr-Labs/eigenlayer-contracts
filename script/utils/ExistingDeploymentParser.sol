@@ -74,6 +74,7 @@ contract ExistingDeploymentParser is Script, Test {
     /// @notice Initialization Params for first initial deployment scripts
     // StrategyManager
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
+    uint256 STRATEGY_MANAGER_WHITELISTER;
     // SLasher
     uint256 SLASHER_INIT_PAUSED_STATUS;
     // DelegationManager
@@ -225,6 +226,8 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".strategyManager.init_paused_status"
         );
+        STRATEGY_MANAGER_WHITELISTER = stdJson.readUint(initialDeploymentData, ".strategyManager.init_strategy_whitelister");
+        // Slasher
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
         // DelegationManager
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(
@@ -521,6 +524,7 @@ contract ExistingDeploymentParser is Script, Test {
         emit log_named_address("pauserMultisig", pauserMultisig);
 
         emit log_named_uint("STRATEGY_MANAGER_INIT_PAUSED_STATUS", STRATEGY_MANAGER_INIT_PAUSED_STATUS);
+        emit log_named_uint("STRATEGY_MANAGER_WHITELISTER", STRATEGY_MANAGER_WHITELISTER);
         emit log_named_uint("SLASHER_INIT_PAUSED_STATUS", SLASHER_INIT_PAUSED_STATUS);
         emit log_named_uint(
             "DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS",
