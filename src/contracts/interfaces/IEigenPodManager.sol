@@ -26,9 +26,6 @@ interface IEigenPodManager is IPausable {
     /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
     event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
 
-    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
-    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
-
     /// @notice Emitted when the balance of an EigenPod is updated
     event PodSharesUpdated(address indexed podOwner, int256 sharesDelta);
 
@@ -106,9 +103,6 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Returns the number of EigenPods that have been created
     function numPods() external view returns (uint256);
-
-    /// @notice Returns the maximum number of EigenPods that can be created
-    function maxPods() external view returns (uint256);
 
     /**
      * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.

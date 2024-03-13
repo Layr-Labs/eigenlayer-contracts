@@ -527,23 +527,8 @@ This method loops over up to `maxNumberOfDelayedWithdrawalsToClaim` withdrawals,
 
 ### System Configuration
 
-* [`EigenPodManager.setMaxPods`](#eigenpodmanagersetmaxpods)
 * [`EigenPodManager.updateBeaconChainOracle`](#eigenpodmanagerupdatebeaconchainoracle)
 * [`DelayedWithdrawalRouter.setWithdrawalDelayBlocks`](#delayedwithdrawalroutersetwithdrawaldelayblocks)
-
-#### `EigenPodManager.setMaxPods`
-
-```solidity
-function setMaxPods(uint256 newMaxPods) external onlyUnpauser
-```
-
-Allows the unpauser to update the maximum number of `EigenPods` that the `EigenPodManager` can create.
-
-*Effects*:
-* Updates `EigenPodManager.maxPods`
-
-*Requirements*:
-* Caller MUST be the unpauser
 
 #### `EigenPodManager.updateBeaconChainOracle`
 

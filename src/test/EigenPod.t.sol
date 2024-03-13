@@ -76,9 +76,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     /// @notice Emitted to notify a deposit of beacon chain ETH recorded in the strategy manager
     event BeaconChainETHDeposited(address indexed podOwner, uint256 amount);
 
-    /// @notice Emitted when `maxPods` value is updated from `previousValue` to `newValue`
-    event MaxPodsUpdated(uint256 previousValue, uint256 newValue);
-
     // EIGENPOD EVENTS
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
@@ -238,7 +235,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max, // maxPods
                 beaconChainOracle,
                 initialOwner,
                 pauserReg,
@@ -1334,37 +1330,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         require(numPodsAfter == numPodsBefore + 1, "numPods did not increment correctly");
     }
 
-    // verifies that the `maxPods` variable is enforced on the `EigenPod.stake` function
-    function test_maxPodsEnforcementOnStake(
-        bytes calldata _pubkey,
-        bytes calldata _signature,
-        bytes32 _depositDataRoot
-    ) public {
-        // set pod limit to current number of pods
-        cheats.startPrank(unpauser);
-        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods());
-        cheats.stopPrank();
-
-        cheats.startPrank(podOwner);
-        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
-        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
-        cheats.stopPrank();
-
-        // set pod limit to *one more than* current number of pods
-        cheats.startPrank(unpauser);
-        EigenPodManager(address(eigenPodManager)).setMaxPods(EigenPodManager(address(eigenPodManager)).numPods() + 1);
-        cheats.stopPrank();
-
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
-
-        cheats.startPrank(podOwner);
-        // successful call
-        cheats.expectEmit(true, true, true, true, address(newPod));
-        emit EigenPodStaked(_pubkey);
-        eigenPodManager.stake{value: 32 ether}(_pubkey, _signature, _depositDataRoot);
-        cheats.stopPrank();
-    }
-
     // verifies that the `numPod` variable increments correctly on a succesful call to the `EigenPod.createPod` function
     function test_incrementNumPodsOnCreatePod() public {
         uint256 numPodsBefore = EigenPodManager(address(eigenPodManager)).numPods();
@@ -1377,53 +1342,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.createPod();
         cheats.expectRevert(bytes("EigenPodManager.createPod: Sender already has a pod"));
         eigenPodManager.createPod();
-    }
-
-    // verifies that the `maxPods` variable is enforced on the `EigenPod.createPod` function
-    function test_maxPodsEnforcementOnCreatePod() public {
-        // set pod limit to current number of pods
-        cheats.startPrank(unpauser);
-        uint256 previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
-        uint256 newValue = EigenPodManager(address(eigenPodManager)).numPods();
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit MaxPodsUpdated(previousValue, newValue);
-        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
-        cheats.stopPrank();
-
-        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
-        eigenPodManager.createPod();
-
-        // set pod limit to *one more than* current number of pods
-        cheats.startPrank(unpauser);
-        previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
-        newValue = EigenPodManager(address(eigenPodManager)).numPods() + 1;
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit MaxPodsUpdated(previousValue, newValue);
-        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
-        cheats.stopPrank();
-
-        // successful call
-        eigenPodManager.createPod();
-    }
-
-    function test_setMaxPods(uint256 newValue) public {
-        cheats.startPrank(unpauser);
-        uint256 previousValue = EigenPodManager(address(eigenPodManager)).maxPods();
-        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
-        emit MaxPodsUpdated(previousValue, newValue);
-        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
-        cheats.stopPrank();
-
-        require(EigenPodManager(address(eigenPodManager)).maxPods() == newValue, "maxPods value not set correctly");
-    }
-
-    function test_setMaxPods_RevertsWhenNotCalledByUnpauser(address notUnpauser) public fuzzedAddress(notUnpauser) {
-        cheats.assume(notUnpauser != unpauser);
-        uint256 newValue = 0;
-        cheats.startPrank(notUnpauser);
-        cheats.expectRevert("msg.sender is not permissioned as unpauser");
-        EigenPodManager(address(eigenPodManager)).setMaxPods(newValue);
-        cheats.stopPrank();
     }
 
     function test_validatorPubkeyToInfo() external {

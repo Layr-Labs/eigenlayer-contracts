@@ -416,7 +416,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max,
                 beaconChainOracleAddress,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,

@@ -53,7 +53,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         EigenPodManager.initialize.selector,
-                        type(uint256).max /*maxPods*/,
                         IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
                         initialOwner,
                         pauserRegistry,
@@ -111,7 +110,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialization() public {
         // Check max pods, beacon chain, owner, and pauser
-        assertEq(eigenPodManager.maxPods(), type(uint256).max, "Initialization: max pods incorrect");
         assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))), "Initialization: beacon chain oracle incorrect");
         assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
         assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
@@ -127,35 +125,16 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialize_revert_alreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        eigenPodManager.initialize(type(uint256).max /*maxPods*/,
+        eigenPodManager.initialize(
             IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
             initialOwner,
             pauserRegistry,
             0 /*initialPausedStatus*/);
     }
 
-    function testFuzz_setMaxPods_revert_notUnpauser(address notUnpauser) public filterFuzzedAddressInputs(notUnpauser) {
-        cheats.assume(notUnpauser != unpauser);
-        cheats.prank(notUnpauser);
-        cheats.expectRevert("msg.sender is not permissioned as unpauser");
-        eigenPodManager.setMaxPods(0);
-    }
-
     /*******************************************************************************
                                      Setters
     *******************************************************************************/
-
-    function test_setMaxPods() public {
-        // Set max pods
-        uint256 newMaxPods = 0;
-        cheats.expectEmit(true, true, true, true);
-        emit MaxPodsUpdated(eigenPodManager.maxPods(), newMaxPods);
-        cheats.prank(unpauser);
-        eigenPodManager.setMaxPods(newMaxPods);
-
-        // Check storage update
-        assertEq(eigenPodManager.maxPods(), newMaxPods, "Max pods not updated");
-    }
 
     function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != initialOwner);
@@ -218,27 +197,6 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEi
 
     function test_createPod_revert_alreadyCreated() public deployPodForStaker(defaultStaker) {
         cheats.expectRevert("EigenPodManager.createPod: Sender already has a pod");
-        eigenPodManager.createPod();
-    }
-
-    function test_createPod_revert_maxPodsUint256() public {
-        // Write numPods into storage. Num pods is at slot 153
-        bytes32 slot = bytes32(uint256(153)); 
-        bytes32 value = bytes32(eigenPodManager.maxPods());
-        cheats.store(address(eigenPodManager), slot, value);
-
-        // Expect revert on pod creation
-        cheats.expectRevert(); // Arithmetic overflow/underflow  
-        eigenPodManager.createPod();
-    }
-
-    function test_createPod_revert_maxPodsNontUint256() public {
-        // Set max pods to a small value - 0
-        cheats.prank(unpauser);
-        eigenPodManager.setMaxPods(0);
-
-        // Expect revert on pod creation
-        cheats.expectRevert("EigenPodManager._deployPod: pod limit reached");
         eigenPodManager.createPod();
     }
 }

@@ -50,8 +50,9 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice The number of EigenPods that have been deployed
     uint256 public numPods;
 
-    /// @notice The maximum number of EigenPods that can be deployed
-    uint256 public maxPods;
+    /// @notice Deprecated from old mainnet release. Was initially used to limit growth early on but there is no longer
+    /// a maximum number of EigenPods that can be deployed.
+    uint256 private __deprecated_maxPods;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**

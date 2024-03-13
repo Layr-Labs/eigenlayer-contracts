@@ -85,7 +85,6 @@ contract EigenPod_PodManager_UnitTests is EigenLayerUnitTestSetup {
             address(eigenPodManagerWrapper),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max /*maxPods*/,
                 beaconChainOracle,
                 initialOwner,
                 pauserRegistry,
@@ -228,9 +227,7 @@ contract EigenPod_PodManager_UnitTests_EigenPod is EigenPod_PodManager_UnitTests
     function test_stake_podAlreadyDeployed(bytes memory signature, bytes32 depositDataRoot) public {
         uint256 stakeAmount = 32e18;
 
-        uint256 maxPods = eigenPodManager.maxPods();
         uint256 numPods = eigenPodManager.numPods();
-        emit log_named_uint("maxPods", maxPods);
         emit log_named_uint("numPods", numPods);
 
         cheats.startPrank(podOwner);

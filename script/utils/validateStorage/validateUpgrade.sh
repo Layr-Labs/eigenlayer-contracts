@@ -69,7 +69,7 @@ echo "Comparing storage layouts..."
 # Add -k operator if present
 if [ ! -k "$1" ]; then
   echo "Keeping old storage layout files"
-  eval "npx ts-node script/upgrade/validateStorage.ts --old onChainLayout.csv --new localLayout.csv --keep"
+  eval "npx ts-node script/utils/validateStorage/validateStorage.ts --old onChainLayout.csv --new localLayout.csv --keep"
 else
-  eval "npx ts-node script/upgrade/validateStorage.ts --old onChainLayout.csv --new localLayout.csv"
+  eval "npx ts-node script/utils/validateStorage/validateStorage.ts --old onChainLayout.csv --new localLayout.csv"
 fi
