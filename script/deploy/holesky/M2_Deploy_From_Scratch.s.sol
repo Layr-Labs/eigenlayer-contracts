@@ -10,7 +10,7 @@ import "../../utils/ExistingDeploymentParser.sol";
  * 
  */
 contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
-    function run() external {
+    function run() external virtual {
         _parseInitialDeploymentParams("script/configs/holesky/M2_deploy_from_scratch.holesky.config.json");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
