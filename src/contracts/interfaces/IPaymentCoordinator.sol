@@ -64,7 +64,7 @@ interface IPaymentCoordinator {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event RecipientSet(address indexed account, address indexed recipient);
-    event RootSubmitted(bytes32 root, uint32 paymentCalculationStartTimestamp, uint32 paymentCalculationEndTimestamp, uint32 activatedAf);
+    event RootSubmitted(bytes32 root, uint32 paymentCalculationStartTimestamp, uint32 paymentCalculationEndTimestamp, uint32 activatedAt);
     event PaymentClaimed(ClaimsTreeMerkleLeaf leaf);
 
     /// VIEW FUNCTIONS ///
