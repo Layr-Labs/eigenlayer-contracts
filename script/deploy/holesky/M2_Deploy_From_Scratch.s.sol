@@ -151,7 +151,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint).max, // maxPods
                 beaconOracle,
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,

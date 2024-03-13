@@ -84,7 +84,6 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
-    uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
     // EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
@@ -401,7 +400,6 @@ contract ExistingDeploymentParser is Script, Test {
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         eigenPodManager.initialize(
-            EIGENPOD_MANAGER_MAX_PODS,
             beaconOracle,
             address(0),
             eigenLayerPauserReg,
@@ -428,7 +426,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
-    function _verifyInitializationParams() internal {
+    function _verifyInitializationParams() internal view {
         // AVSDirectory
         require(
             avsDirectory.pauserRegistry() == eigenLayerPauserReg,
