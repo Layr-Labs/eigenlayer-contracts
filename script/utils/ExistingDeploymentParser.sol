@@ -99,7 +99,7 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
     /// @notice use for parsing already deployed EigenLayer contracts
-    function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal {
+    function _parseDeployedContracts(string memory existingDeploymentInfoPath) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
@@ -179,7 +179,7 @@ contract ExistingDeploymentParser is Script, Test {
 
     /// @notice use for deploying a new set of EigenLayer contracts
     /// Note that this does require multisigs to already be deployed
-    function _parseInitialDeploymentParams(string memory initialDeploymentParamsPath) internal {
+    function _parseInitialDeploymentParams(string memory initialDeploymentParamsPath) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         emit log_named_uint("You are parsing on ChainID", currentChainId);
@@ -270,7 +270,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Ensure contracts point at each other correctly via constructors
-    function _verifyContractPointers() internal view {
+    function _verifyContractPointers() internal virtual view {
         // AVSDirectory
         require(
             avsDirectory.delegation() == delegationManager,
@@ -322,7 +322,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice verify implementations for Transparent Upgradeable Proxies
-    function _verifyImplementations() internal view {
+    function _verifyImplementations() internal virtual view {
         require(
             eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
                 address(avsDirectoryImplementation),
@@ -378,7 +378,7 @@ contract ExistingDeploymentParser is Script, Test {
      * initialization params if this is the first deployment.
      * @param isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool isInitialDeployment) internal {
+    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual{
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -426,7 +426,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
-    function _verifyInitializationParams() internal view {
+    function _verifyInitializationParams() internal virtual view {
         // AVSDirectory
         require(
             avsDirectory.pauserRegistry() == eigenLayerPauserReg,
