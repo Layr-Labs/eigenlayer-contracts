@@ -8,17 +8,22 @@ import "./IStrategy.sol";
  * @title Interface for the `IPaymentCoordinator` contract.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice Allows AVSs to make "Range Payments", which get distributed amongst the AVSs' confirmed
+ * Operators and the Stakers delegated to those Operators.
+ * Calculations are performed based on the completed Range Payments, with the results posted in
+ * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IPaymentCoordinator {
 
     /// STRUCTS ///
     struct StrategyAndMultiplier {
         IStrategy strategy;
+        // weight used to compare shares in multiple strategies against one another
         uint96 multiplier;
     }
-	struct RangePayment {
+    struct RangePayment {
         // Strategies & relative weights of shares in the strategies
-        StrategyAndMultiplier strategiesAndMultlipliers;
+        StrategyAndMultiplier[] strategiesAndMultlipliers;
         IERC20 token;
         uint256 amount;
         uint256 startTimestamp;
@@ -36,8 +41,8 @@ interface IPaymentCoordinator {
     struct ClaimsTreeMerkleLeaf {
         IERC20 token; 
         uint256 amount;
-        // Explicit recipient of the claim
-        address recipient;
+        // The staker or operator who earned these tokens
+        address earner;
     }
 
     struct PaymentMerkleClaim {
@@ -45,6 +50,7 @@ interface IPaymentCoordinator {
         // The index of the root in the list of roots
         uint32 rootIndex;
         // proof of the claimaint's account root in the Merkle tree
+        uint32 accountIndex;
         bytes accountTreeProof;
         // The indices and proofs of the leafs in the claimaint's merkle tree for this root
         uint32[] leafIndices;
@@ -58,7 +64,7 @@ interface IPaymentCoordinator {
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event RecipientSet(address indexed account, address indexed recipient);
-    event RootSubmitted(bytes32 root, uint32 paymentsCalculatedUntilTimestamp, uint32 activatedAfter);
+    event RootSubmitted(bytes 32root, uint32 paymentCalculationStartTimestamp, uint32 paymentCalculationEndTimestamp, uint32 activatedAf);
     event PaymentClaimed(ClaimsTreeMerkleLeaf leaf);
 
     /// VIEW FUNCTIONS ///
@@ -153,7 +159,7 @@ interface IPaymentCoordinator {
      * @notice Sets the address of the entity that can claim payments on behalf of the account
      * @param account The account whose recipient is being set
      * @param recipient The address of the entity that can claim payments on behalf of the account
-     * @dev Only callable by the account or their paymentRecipient
+     * @dev Only callable by the `account`
      */
     function setRecipient(address account, address recipient) external;
 
