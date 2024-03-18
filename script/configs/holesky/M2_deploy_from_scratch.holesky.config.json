@@ -9,9 +9,8 @@
     "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
     "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
   },
-  "numStrategies": 2,
   "strategies": {
-    "numStrategies": 2,
+    "numStrategies": 3,
     "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
     "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
     "strategiesToDeploy": [
@@ -24,6 +23,11 @@
         "token_address": "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
         "token_name": "Rocket Pool ETH",
         "token_symbol": "rETH"
+      },
+      {
+        "token_address": "0x94373a4919B3240D86eA41593D5eBa789FEF3848",
+        "token_name": "Wrapped Ether",
+        "token_symbol": "WETH"
       }
     ]
   },
