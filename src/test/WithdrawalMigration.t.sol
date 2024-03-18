@@ -19,7 +19,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
     address private constant _CBETH_ADDRESS = 0xBe9895146f7AF43049ca1c1AE358B0541Ea49704;
 
     // Block to fork from, must be before M1 upgrade
-    uint256 private constant _M1_BLOCK_FORK = 19460000;
+    uint256 private constant _M1_BLOCK_FORK = 18322601;
 
     IM1StrategyManager m1StrategyManager = IM1StrategyManager(_M1_STRATEGY_MANAGER);
     ProxyAdmin m1EigenLayerProxyAdmin = ProxyAdmin(_M1_EIGENLAYER_PROXY_ADMIN);
