@@ -16,7 +16,7 @@ ghost mapping(uint256 => bool) connectsToHead {
     init_state axiom connectsToHead[0] == true;
 }
 
-hook Sstore currentContract.listStorage.list[KEY uint256 node][KEY bool direction] uint256 link (uint256 old_link) STORAGE {
+hook Sstore currentContract.listStorage.list[KEY uint256 node][KEY bool direction] uint256 link (uint256 old_link) {
     connectsToHead[link] = connectsToHead[node];
     connectsToHead[old_link] = old_link == 0;
 }

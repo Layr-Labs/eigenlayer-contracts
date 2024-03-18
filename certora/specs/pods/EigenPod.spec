@@ -168,7 +168,7 @@ ghost mathint sumOfValidatorRestakedbalancesWei {
     init_state axiom sumOfValidatorRestakedbalancesWei == 0;
 }
 
-hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) STORAGE {
+hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restakedBalanceGwei uint64 newValue (uint64 oldValue) {
     sumOfValidatorRestakedbalancesWei = (
         sumOfValidatorRestakedbalancesWei + 
         to_mathint(newValue) * 1000000000 -

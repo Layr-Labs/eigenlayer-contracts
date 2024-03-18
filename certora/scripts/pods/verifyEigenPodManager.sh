@@ -10,7 +10,7 @@ certoraRun certora/harnesses/EigenPodManagerHarness.sol \
     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify EigenPodManagerHarness:certora/specs/pods/EigenPodManager.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --optimistic_fallback \
     --optimistic_hashing \
     --parametric_contracts EigenPodManagerHarness \
     $RULE \

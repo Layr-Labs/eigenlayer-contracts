@@ -12,7 +12,7 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify StrategyManagerHarness:certora/specs/core/StrategyManager.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --optimistic_fallback \
     --optimistic_hashing \
     --parametric_contracts StrategyManagerHarness \
     $RULE \
