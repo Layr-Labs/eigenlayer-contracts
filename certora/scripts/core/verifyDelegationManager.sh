@@ -11,7 +11,7 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     src/contracts/core/Slasher.sol src/contracts/permissions/PauserRegistry.sol \
     --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --optimistic_fallback \
     --optimistic_hashing \
     --parametric_contracts DelegationManagerHarness \
     $RULE \

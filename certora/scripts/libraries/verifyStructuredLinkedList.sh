@@ -8,7 +8,7 @@ solc-select use 0.8.12
 certoraRun certora/harnesses/StructuredLinkedListHarness.sol \
     --verify StructuredLinkedListHarness:certora/specs/libraries/StructuredLinkedList.spec \
     --optimistic_loop \
-    --prover_args '-optimisticFallback true' \
+    --optimistic_fallback \
     --parametric_contracts StructuredLinkedListHarness \
     $RULE \
     --rule_sanity \
