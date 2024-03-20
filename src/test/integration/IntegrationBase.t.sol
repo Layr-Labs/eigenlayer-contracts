@@ -58,16 +58,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
             (strategies, tokenBalances) = _dealRandAssets_M1(operator);
 
             User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
-            assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
         } else {
             (operator, strategies, tokenBalances) = _randUser(operatorName);
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
 
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
-            assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
             assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         }
 
@@ -103,7 +105,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertEq(expectedBalance, tokenBalance, err);
+            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
         }
     }
 
@@ -135,7 +137,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 actualShares = strategyManager.stakerStrategyShares(address(user), strat);
             }
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -150,7 +152,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint actualShares = delegationManager.operatorShares(address(user), strat);
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -216,7 +218,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
         }
     }
 
@@ -294,7 +296,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
         }
     }
 

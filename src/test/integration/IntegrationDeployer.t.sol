@@ -37,6 +37,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint256 mainnetForkBlock = 19_280_000;
     uint256 mainnetForkId;
+    uint256 holeskyForkBLock = 1_167_100;
+    uint256 holeskyForkId;
     uint64 constant DENEB_FORK_TIMESTAMP = 1705473120;
 
 
@@ -50,6 +52,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IStrategy[] ethStrats;   // only has one strat tbh
     IStrategy[] allStrats; // just a combination of the above 2 lists
     IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
+
+    // If a token is in this mapping, then we will ignore this LST as it causes issues with reading balanceOf
+    mapping(address => bool) public tokensNotTested;
 
     // Mock Contracts to deploy
     ETHPOSDepositMock ethPOSDeposit;
@@ -73,7 +78,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Constants
     uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
-    uint64 constant GOERLI_GENESIS_TIME = 1616508000;
 
     IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
     IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
@@ -119,6 +123,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// These are used for upgrade integration testing.
     uint constant LOCAL = (FLAG << 0);
     uint constant MAINNET = (FLAG << 1);
+    uint constant HOLESKY = (FLAG << 2);
 
     // /// @dev Withdrawal flags
     // /// These are used with _configRand to determine how a user conducts a withdrawal
@@ -153,6 +158,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         forkTypeToStr[LOCAL] = "LOCAL";
         forkTypeToStr[MAINNET] = "MAINNET";
+        forkTypeToStr[HOLESKY] = "HOLESKY";
+
+        address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
+        address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+        address OETH_Mainnet = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
+        address osETH_Mainnet = 0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38;
+        tokensNotTested[stETH_Holesky] = true;
+        tokensNotTested[stETH_Mainnet] = true;
+        tokensNotTested[OETH_Mainnet] = true;
+        tokensNotTested[osETH_Mainnet] = true;
     }
 
     /**
@@ -166,8 +181,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         isUpgraded = false;
         // create mainnet fork that can be used later
         mainnetForkId = cheats.createFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
-        // create goerli fork that can be used later
-        // goerliForkId = cheats.createFork(cheats.rpcUrl("goerli"), goerliForkBlock);
+        // create holesky fork that can be used later
+        holeskyForkId = cheats.createFork(cheats.rpcUrl("holesky"), holeskyForkBLock);
     }
 
     function _setUpLocal() public virtual {
@@ -431,6 +446,106 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(NATIVE_ETH);
     }
 
+    /**
+     * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
+     * on Holesky. Setup for integration tests on Holesky fork.
+     * 
+     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
+     */
+    function _upgradeHoleskyContracts() public virtual {
+        cheats.startPrank(address(executorMultisig));
+
+        ethPOSDeposit = new ETHPOSDepositMock();
+
+        // Deploy EigenPod Contracts
+        eigenPodImplementation = new EigenPod(
+            ethPOSDeposit,
+            delayedWithdrawalRouter,
+            eigenPodManager,
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            0
+        );
+        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+        // Deploy AVSDirectory, contract has not been deployed on mainnet yet
+        avsDirectory = AVSDirectory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
+        slasherImplementation = new Slasher(strategyManager, delegationManager);
+        eigenPodManagerImplementation = new EigenPodManager(
+            ethPOSDeposit,
+            eigenPodBeacon,
+            strategyManager,
+            slasher,
+            delegationManager
+        );
+        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager);
+
+        // Second, upgrade the proxy contracts to point to the implementations
+        // DelegationManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation)
+        );
+        // StrategyManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation)
+        );
+        // Slasher
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(slasher))),
+            address(slasherImplementation)
+        );
+        // EigenPodManager
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation)
+        );
+        // Delayed Withdrawal Router
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
+            address(delayedWithdrawalRouterImplementation)
+        );
+        // AVSDirectory, upgrade and initalized
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation),
+            abi.encodeWithSelector(
+                AVSDirectory.initialize.selector,
+                executorMultisig,
+                eigenLayerPauserReg,
+                0 // initialPausedStatus
+            )
+        );
+
+        // Create base strategy implementation and deploy a few strategies
+        baseStrategyImplementation = new StrategyBase(strategyManager);
+
+        // Third, unpause core contracts
+        delegationManager.unpause(0);
+        eigenPodManager.unpause(0);
+        strategyManager.unpause(0);
+
+        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+        timeMachine.setProofGenStartTime(2 hours);
+        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
+
+        if (eigenPodManager.denebForkTimestamp() == 0) {
+            //set deneb fork timestamp if not set
+            eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
+        }
+        cheats.stopPrank();
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+    }
+
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
     function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner) internal {
@@ -527,15 +642,64 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             cheats.prank(eigenLayerPauserReg.unpauser());
             strategyManager.unpause(0);
 
-            _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
-            _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
-            _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
+            // Add deployed strategies to lstStrats and allStrats
+            for (uint i; i < deployedStrategyArray.length; i++) {
+                IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+
+                if (tokensNotTested[address(strategy.underlyingToken())]) {
+                    continue;
+                }
+
+                // Add to lstStrats and allStrats
+                lstStrats.push(strategy);
+                allStrats.push(strategy);
+                allTokens.push(strategy.underlyingToken());
+            }
 
             // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
             timeMachine = new TimeMachine();
             beaconChainOracle = new BeaconChainOracleMock();
             // Create mock beacon chain / proof gen interface
             beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+        } else if (forkType == HOLESKY) {
+            cheats.selectFork(holeskyForkId);
+            string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deploy.config.json";
+            _parseDeployedContracts(deploymentInfoPath);
+
+            // Add deployed strategies to lstStrats and allStrats
+            for (uint i; i < deployedStrategyArray.length; i++) {
+                IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+
+                if (tokensNotTested[address(strategy.underlyingToken())]) {
+                    continue;
+                }
+
+                // Add to lstStrats and allStrats
+                lstStrats.push(strategy);
+                allStrats.push(strategy);
+                allTokens.push(strategy.underlyingToken());
+            }
+
+            // Update deposit contract to be a mock
+            ethPOSDeposit = new ETHPOSDepositMock();
+            eigenPodImplementation = new EigenPod(
+                ethPOSDeposit,
+                eigenPodImplementation.delayedWithdrawalRouter(),
+                eigenPodImplementation.eigenPodManager(),
+                eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
+                0
+            );
+            // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
+            timeMachine = new TimeMachine();
+            beaconChainOracle = new BeaconChainOracleMock();
+            // Create mock beacon chain / proof gen interface
+            beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
+
+            cheats.startPrank(executorMultisig);
+            eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+            eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
+            cheats.stopPrank();
+
         } else {
             revert("_configEigenlayerContracts: unimplemented forkType");
         }
@@ -549,6 +713,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         if (forkType == MAINNET) {
             require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
             _upgradeMainnetContracts();
+            isUpgraded = true;
+        } else if (forkType == HOLESKY) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
+            _upgradeHoleskyContracts();
             isUpgraded = true;
         }
     }
@@ -566,6 +734,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             staker.activateRestaking();
             // Now register users that are supposed to be Operators
             operator.registerAsOperator();
+            isUpgraded = true;
+        } else if (forkType == HOLESKY) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
+            _upgradeHoleskyContracts();
+
             isUpgraded = true;
         }
     }
@@ -589,6 +762,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             for (uint i; i < operators.length; i++) {
                 operators[i].registerAsOperator();
             }
+            isUpgraded = true;
+        } else if (forkType == HOLESKY) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
+            _upgradeHoleskyContracts();
+
             isUpgraded = true;
         }
     }
@@ -630,6 +808,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
+
+        } else if (forkType == HOLESKY) {
+            // User deployment for Holesky is exact same as holesky.
+            // Current Holesky deployment is up to date and no deprecated interfaces have been added.
+
+            user = new User(name);
+
+            if (userType == DEFAULT) {
+                user = new User(name);
+            } else if (userType == ALT_METHODS) {
+                // User will use nonstandard methods like:
+                // `delegateToBySignature` and `depositIntoStrategyWithSignature`
+                user = User(new User_AltMethods(name));
+            } else {
+                revert("_randUser: unimplemented userType");
+            }
         } else {
             revert("_randUser: unimplemented forkType");
         }
@@ -637,7 +831,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // For the specific asset selection we made, get a random assortment of
         // strategies and deal the user some corresponding underlying token balances
         (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
-
         _printUserInfo(assetType, userType, strategies, tokenBalances);
 
         return (user, strategies, tokenBalances);
@@ -654,7 +847,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
-
         if (assetType == NO_ASSETS) {
             strategies = new IStrategy[](0);
             tokenBalances = new uint[](0);
@@ -662,7 +854,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             assetType = HOLDS_LST;
             // Select a random number of assets
             uint numAssets = _randUint({ min: 1, max: lstStrats.length });
-
             strategies = new IStrategy[](numAssets);
             tokenBalances = new uint[](numAssets);
 
@@ -671,6 +862,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
                 uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+
                 StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
                 strategies[i] = strat;
@@ -694,10 +886,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             for (uint i = 0; i < numLSTs; i++) {
                 IStrategy strat = lstStrats[i];
                 IERC20 underlyingToken = strat.underlyingToken();
-                
                 uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
-                StdCheats.deal(address(underlyingToken), address(user), balance);
 
+                StdCheats.deal(address(underlyingToken), address(user), balance);
                 tokenBalances[i] = balance;
                 strategies[i] = strat;
             }
@@ -729,6 +920,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             IStrategy strat = lstStrats[i];
             IERC20 underlyingToken = strat.underlyingToken();
             uint balance = _randUint({ min: MIN_BALANCE, max: MAX_BALANCE });
+
             StdCheats.deal(address(underlyingToken), address(user), balance);
             tokenBalances[i] = balance;
             strategies[i] = strat;

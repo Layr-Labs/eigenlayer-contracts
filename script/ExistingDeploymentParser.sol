@@ -5,20 +5,21 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/core/Slasher.sol";
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/AVSDirectory.sol";
+import "../src/contracts/core/StrategyManager.sol";
+import "../src/contracts/core/Slasher.sol";
+import "../src/contracts/core/DelegationManager.sol";
+import "../src/contracts/core/AVSDirectory.sol";
 
-import "src/contracts/strategies/StrategyBase.sol";
+import "../src/contracts/strategies/StrategyBase.sol";
+import "../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
-import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-import "src/contracts/pods/DelayedWithdrawalRouter.sol";
+import "../src/contracts/pods/EigenPod.sol";
+import "../src/contracts/pods/EigenPodManager.sol";
+import "../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
-import "src/contracts/permissions/PauserRegistry.sol";
+import "../src/contracts/permissions/PauserRegistry.sol";
 
-import "src/test/mocks/EmptyContract.sol";
+import "../src/test/mocks/EmptyContract.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -72,6 +73,7 @@ contract ExistingDeploymentParser is Script, Test {
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
     DelayedWithdrawalRouter public delayedWithdrawalRouterImplementation;
+    IBeaconChainOracle public beaconOracle;
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
@@ -91,6 +93,7 @@ contract ExistingDeploymentParser is Script, Test {
     address pauserMultisig;
 
     // strategies deployed
+    uint256 numStrategiesDeployed;
     StrategyBase[] public deployedStrategyArray;
     // Strategies to Deploy
     uint256 numStrategiesToDeploy;
@@ -144,8 +147,8 @@ contract ExistingDeploymentParser is Script, Test {
         eigenLayerPauserReg = PauserRegistry(stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerPauserReg"));
         slasher = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasher"));
         slasherImplementation = Slasher(stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation"));
-        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegation"));
-        delegationManagerImplementation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationImplementation"));
+        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager"));
+        delegationManagerImplementation = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation"));
         avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
         avsDirectoryImplementation = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation"));
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
@@ -158,6 +161,17 @@ contract ExistingDeploymentParser is Script, Test {
         eigenPodImplementation = EigenPod(payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation")));
         baseStrategyImplementation = StrategyBase(stdJson.readAddress(existingDeploymentData, ".addresses.baseStrategyImplementation"));
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
+
+        // Strategies Deployed, load strategy list
+        numStrategiesDeployed = stdJson.readUint(existingDeploymentData, ".numStrategies");
+        for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
+            // Form the key for the current element
+            string memory key = string.concat(".addresses.strategyAddresses[", vm.toString(i), "]");
+
+            // Use the key and parse the strategy address
+            address strategyAddress = abi.decode(stdJson.parseRaw(existingDeploymentData, key), (address));
+            deployedStrategyArray.push(StrategyBase(strategyAddress));
+        }
 
         return EigenLayerContracts({
             eigenLayerProxyAdmin: eigenLayerProxyAdmin,
@@ -179,20 +193,19 @@ contract ExistingDeploymentParser is Script, Test {
             baseStrategyImplementation: baseStrategyImplementation
         });
 
-        /*
-        commented out -- needs JSON formatting of the form:
-        strategies": [
-      {"WETH": "0x7CA911E83dabf90C90dD3De5411a10F1A6112184"},
-      {"rETH": "0x879944A8cB437a5f8061361f82A6d4EED59070b5"},
-      {"tsETH": "0xcFA9da720682bC4BCb55116675f16F503093ba13"},
-      {"wstETH": "0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff"}]
-        // load strategy list
-        bytes memory strategyListRaw = stdJson.parseRaw(existingDeploymentData, ".addresses.strategies");
-        address[] memory strategyList = abi.decode(strategyListRaw, (address[]));
-        for (uint256 i = 0; i < strategyList.length; ++i) {
-            deployedStrategyArray.push(StrategyBase(strategyList[i]));
-        }
-        */
+        
+        // // commented out -- needs JSON formatting of the form:
+        // // strategies": [
+        // // {"WETH": "0x7CA911E83dabf90C90dD3De5411a10F1A6112184"},
+        // // {"rETH": "0x879944A8cB437a5f8061361f82A6d4EED59070b5"},
+        // // {"tsETH": "0xcFA9da720682bC4BCb55116675f16F503093ba13"},
+        // // {"wstETH": "0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff"}]
+        // // load strategy list
+        // bytes memory strategyListRaw = stdJson.parseRaw(existingDeploymentData, ".addresses.strategies");
+        // address[] memory strategyList = abi.decode(strategyListRaw, (address[]));
+        // for (uint256 i = 0; i < strategyList.length; ++i) {
+        //     deployedStrategyArray.push(StrategyBase(strategyList[i]));
+        // }
     }
 
     function _parseDeployedEigenPods(string memory existingDeploymentInfoPath) internal returns (DeployedEigenPods memory) {

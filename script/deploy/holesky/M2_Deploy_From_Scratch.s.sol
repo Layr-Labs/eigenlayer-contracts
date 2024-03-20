@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import "../../utils/ExistingDeploymentParser.sol";
+import "../../ExistingDeploymentParser.sol";
 
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky

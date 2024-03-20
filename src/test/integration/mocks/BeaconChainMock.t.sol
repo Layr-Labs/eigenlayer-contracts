@@ -198,21 +198,17 @@ contract BeaconChainMock is Test {
         proof.validatorFields[0][BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = 
             _toLittleEndianUint64(validator.effectiveBalanceGwei);
 
-        emit log("10");
         // Calculate beaconStateRoot using validator index and an empty proof:
         proof.validatorFieldsProofs = new bytes[](1);
         proof.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
         bytes32 validatorRoot = Merkle.merkleizeSha256(proof.validatorFields[0]);
-        emit log("11");
         uint index = _calcValProofIndex(validator.validatorIndex);
-        emit log("12");
 
         bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
             proof: proof.validatorFieldsProofs[0],
             leaf: validatorRoot,
             index: index
         });
-        emit log("13");
 
         // Calculate blockRoot using beaconStateRoot and an empty proof:
         bytes memory blockRootProof = new bytes(BLOCKROOT_PROOF_LEN);
@@ -221,27 +217,18 @@ contract BeaconChainMock is Test {
             leaf: beaconStateRoot,
             index: BeaconChainProofs.STATE_ROOT_INDEX
         });
-        emit log("14");
 
         proof.stateRootProof = BeaconChainProofs.StateRootProof({
             beaconStateRoot: beaconStateRoot,
             proof: blockRootProof
         });
 
-        emit log("15");
-
         // Send the block root to the oracle and increment timestamp:
         proof.oracleTimestamp = uint64(nextTimestamp);
-        console.log("NEXT TIMESTAMP: ", nextTimestamp);
 
-        console.log("ORACLE ADRESS IN BEACONCHAIN MOCK");
-        console.log(address(oracle));
-        
         oracle.setBlockRoot(nextTimestamp, blockRoot);
         nextTimestamp++;
 
-        emit log("16");
-        
         return proof;
     }
     

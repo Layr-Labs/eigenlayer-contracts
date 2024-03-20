@@ -62,6 +62,12 @@ contract User is Test {
         _createPod();
 
         NAME = name;
+
+        // To ensure oracle proof timestamp is greater than pod.mostRecentWithdrawalTimestamp
+        cheats.warp(block.timestamp + 10);
+        timeMachine.createSnapshot();
+        timeMachine.setProofGenStartTime(2 hours);
+        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
     }
 
     modifier createSnapshot() virtual {
