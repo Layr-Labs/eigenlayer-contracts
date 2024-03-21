@@ -805,6 +805,30 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
     }
 
+    // regression test for off-by-one error
+    function test_verifyAndProcessWithdrawal_atLastestWithdrawalTimestamp() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        // set the `mostRecentWithdrawalTimestamp` to be equal to the withdrawal timestamp
+        eigenPodHarness.setMostRecentWithdrawalTimestamp(withdrawalTimestamp);
+
+        // Process withdrawal
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Verify storage
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+    }
+
     /// @notice Tests processing a full withdrawal > MAX_RESTAKED_GWEI_PER_VALIDATOR
     function test_processFullWithdrawal_excess32ETH() public setWithdrawalCredentialsExcess {
         // Set JSON & params

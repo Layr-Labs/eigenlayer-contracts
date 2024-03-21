@@ -120,4 +120,8 @@ contract EPInternalFunctions is EigenPod, Test {
     function setValidatorRestakedBalance(bytes32 pkhash, uint64 restakedBalanceGwei) public {
         _validatorPubkeyHashToInfo[pkhash].restakedBalanceGwei = restakedBalanceGwei;
     }
+
+    function setMostRecentWithdrawalTimestamp(uint64 _mostRecentWithdrawalTimestamp) public {
+        mostRecentWithdrawalTimestamp = _mostRecentWithdrawalTimestamp;
+    }
  }
