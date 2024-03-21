@@ -345,45 +345,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testDeployEigenPodTooSoon() public {
-        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
-
-        IEigenPod newPod = eigenPodManager.getPod(podOwner);
-
-        cheats.startPrank(podOwner);
-        
-
-        cheats.expectEmit(true, true, true, true, address(newPod));
-        emit EigenPodStaked(pubkey);
-        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
-
-        uint64 timestamp = 0;
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        validatorFieldsArray[0] = getValidatorFields();
-        bytes[] memory proofsArray = new bytes[](1);
-        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
-
-        cheats.startPrank(podOwner);
-        cheats.expectRevert(
-            bytes(
-                "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"
-            )
-        );
-        newPod.verifyWithdrawalCredentials(
-            timestamp,
-            stateRootProofStruct,
-            validatorIndices,
-            proofsArray,
-            validatorFieldsArray
-        );
-        cheats.stopPrank();
-    }
-
     function testWithdrawNonBeaconChainETHBalanceWei() public {
         IEigenPod pod = testDeployAndVerifyNewEigenPod();
 

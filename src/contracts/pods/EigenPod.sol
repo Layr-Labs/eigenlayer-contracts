@@ -118,11 +118,11 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         _;
     }
 
-    /// @notice Checks that `timestamp` is strictly greater than the value stored in `mostRecentWithdrawalTimestamp`
+    /// @notice Checks that `timestamp` is greater than or equal to the value stored in `mostRecentWithdrawalTimestamp`
     modifier proofIsForValidTimestamp(uint64 timestamp) {
         require(
-            timestamp > mostRecentWithdrawalTimestamp,
-            "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"
+            timestamp >= mostRecentWithdrawalTimestamp,
+            "EigenPod.proofIsForValidTimestamp: beacon chain proof must be at or after mostRecentWithdrawalTimestamp"
         );
         _;
     }

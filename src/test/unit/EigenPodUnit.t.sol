@@ -731,7 +731,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         eigenPodHarness.activateRestaking();
 
         // Expect revert
-        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp");
+        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be at or after mostRecentWithdrawalTimestamp");
         eigenPodHarness.verifyAndProcessWithdrawal(
             beaconStateRoot,
             withdrawalToProve,
@@ -803,6 +803,50 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
         uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
         assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+    }
+
+    // regression test for off-by-one error
+    function test_verifyAndProcessWithdrawal_atLatestWithdrawalTimestamp() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        // set the `mostRecentWithdrawalTimestamp` to be equal to the withdrawal timestamp
+        eigenPodHarness.setMostRecentWithdrawalTimestamp(withdrawalTimestamp);
+
+        // Process withdrawal
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
+
+        // Verify storage
+        bytes32 validatorPubKeyHash = validatorFields.getPubkeyHash();
+        assertTrue(eigenPodHarness.provenWithdrawal(validatorPubKeyHash, withdrawalTimestamp), "Withdrawal not set to proven");
+    }
+
+    function test_revert_verifyAndProcessWithdrawal_beforeLatestWithdrawalTimestamp() public setWithdrawalCredentialsExcess {
+        // Set JSON & params
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+        _setWithdrawalProofParams();
+
+        uint64 withdrawalTimestamp = withdrawalToProve.getWithdrawalTimestamp();
+        // set the `mostRecentWithdrawalTimestamp` to just after the withdrawal timestamp
+        eigenPodHarness.setMostRecentWithdrawalTimestamp(withdrawalTimestamp + 1);
+
+        // Process withdrawal, expect revert
+        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be at or after mostRecentWithdrawalTimestamp");
+        eigenPodHarness.verifyAndProcessWithdrawal(
+            beaconStateRoot,
+            withdrawalToProve,
+            validatorFieldsProof,
+            validatorFields,
+            withdrawalFields
+        );
     }
 
     /// @notice Tests processing a full withdrawal > MAX_RESTAKED_GWEI_PER_VALIDATOR
