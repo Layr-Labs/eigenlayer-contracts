@@ -371,7 +371,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.startPrank(podOwner);
         cheats.expectRevert(
             bytes(
-                "EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp"
+                "EigenPod.proofIsForValidTimestamp: beacon chain proof must be at or after mostRecentWithdrawalTimestamp"
             )
         );
         newPod.verifyWithdrawalCredentials(

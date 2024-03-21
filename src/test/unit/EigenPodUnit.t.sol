@@ -731,7 +731,7 @@ contract EigenPodUnitTests_WithdrawalTests is EigenPodHarnessSetup, ProofParsing
         eigenPodHarness.activateRestaking();
 
         // Expect revert
-        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be for timestamp after mostRecentWithdrawalTimestamp");
+        cheats.expectRevert("EigenPod.proofIsForValidTimestamp: beacon chain proof must be at or after mostRecentWithdrawalTimestamp");
         eigenPodHarness.verifyAndProcessWithdrawal(
             beaconStateRoot,
             withdrawalToProve,
