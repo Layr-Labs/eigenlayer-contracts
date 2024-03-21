@@ -110,7 +110,7 @@ The current mainnet deployment is our M1 release, and is from a much older versi
 
 ### Current Testnet Deployment
 
-The current testnet deployment is on holesky, and is from our M2 beta release. You can view the deployed contract addresses below, or check out the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky) branch.
+The current testnet deployment is on holesky, and is from our M2 beta release. You can view the deployed contract addresses below, or check out the code itself on the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky) branch.
 
 | Name | Solidity | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | -------- | 
