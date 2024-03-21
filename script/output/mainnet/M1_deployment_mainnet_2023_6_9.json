@@ -1,6 +1,9 @@
 {
   "addresses": {
+    "avsDirectory": "0x0000000000000000000000000000000000000000",
+    "avsDirectoryImplementation": "0x0000000000000000000000000000000000000000",
     "baseStrategyImplementation": "0xdfdA04f980bE6A64E3607c95Ca26012Ab9aA46d3",
+    "beaconOracleAddress": "0x0000000000000000000000000000000000000000",
     "delayedWithdrawalRouter": "0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8",
     "delayedWithdrawalRouterImplementation": "0x44Bcb0E01CD0C5060D4Bb1A07b42580EF983E2AF",
     "delegation": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A",

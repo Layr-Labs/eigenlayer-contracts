@@ -475,8 +475,34 @@ contract ExistingDeploymentParser is Script, Test {
             eigenPodManager.paused() == EIGENPOD_MANAGER_INIT_PAUSED_STATUS,
             "eigenPodManager: init paused status set incorrectly"
         );
+        require(
+            eigenPodManager.denebForkTimestamp() == EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP,
+            "eigenPodManager: denebForkTimestamp not set correctly"
+        );
+        require(
+            eigenPodManager.beaconChainOracle() == beaconOracle,
+            "eigenPodManager: beaconChainOracle not set correctly"
+        );
+        require(
+            eigenPodManager.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
+            "eigenPodManager: ethPOS not set correctly"
+        );
         // EigenPodBeacon
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
+        // EigenPodImplementation
+        require(
+            eigenPodImplementation.GENESIS_TIME() == EIGENPOD_GENESIS_TIME,
+            "eigenPodImplementation: GENESIS TIME not set correctly"
+        );
+        require(
+            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
+        );
+        require(
+            eigenPodImplementation.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
+            "eigenPodImplementation: ethPOS not set correctly"
+        );
         // DelayedWithdrawalRouter
         require(
             delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg,
