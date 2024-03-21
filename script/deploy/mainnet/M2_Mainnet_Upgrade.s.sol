@@ -35,7 +35,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         _verifyContractsInitialized({isInitialDeployment: true});
         _verifyInitializationParams();
 
-        logAndOutputContractAddresses("script/output/mainnet/M2_mainnet_upgrade.mainnet.config.json");
+        logAndOutputContractAddresses("script/output/mainnet/M2_mainnet_upgrade.output.json");
     }
 
     /**
