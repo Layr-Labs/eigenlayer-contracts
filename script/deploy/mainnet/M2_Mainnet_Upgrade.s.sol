@@ -145,10 +145,9 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         // TODO: fill in correct addresses
         // simulate deploying contracts
         _deployImplementationContracts();
-        // confirmed correct address
-        address beaconChainOracle = 0x343907185b71aDF0eBa9567538314396aa985442;
 
         Tx[] memory txs = new Tx[](11);
+        // upgrade the DelegationManager, Slasher, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
         txs[0] = Tx(
             address(eigenLayerProxyAdmin),
             0,
@@ -208,41 +207,40 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             )
         );
 
-        // unpause everything on DelegationManager
-        txs[6] = Tx(
-            address(delegationManager), 
-            0, // value
-            abi.encodeWithSelector(Pausable.unpause.selector, 0)
-        );
-
         // set the min withdrawal delay blocks on the DelegationManager
-        txs[7] = Tx(
+        txs[6] = Tx(
             address(delegationManager), 
             0, // value
             abi.encodeWithSelector(DelegationManager.setMinWithdrawalDelayBlocks.selector, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS)
         );
 
-        // unpause everything on EigenPodManager
-        txs[8] = Tx(
-            address(eigenPodManager), 
-            0, // value
-            abi.encodeWithSelector(Pausable.unpause.selector, 0)
-        );
-
         // set beacon chain oracle on EigenPodManager
-        txs[9] = Tx(
+        txs[7] = Tx(
             address(eigenPodManager), 
             0, // value
-            abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, IBeaconChainOracle(beaconChainOracle))
+            abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, beaconOracle)
         );
 
         // set Deneb fork timestamp on EigenPodManager
-        txs[10] = Tx(
+        txs[8] = Tx(
             address(eigenPodManager), 
             0, // value
             abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
         );
 
+        // unpause everything on DelegationManager
+        txs[9] = Tx(
+            address(delegationManager), 
+            0, // value
+            abi.encodeWithSelector(Pausable.unpause.selector, 0)
+        );
+
+        // unpause everything on EigenPodManager
+        txs[10] = Tx(
+            address(eigenPodManager), 
+            0, // value
+            abi.encodeWithSelector(Pausable.unpause.selector, 0)
+        );
 
         bytes memory calldata_to_multisend_contract = abi.encodeWithSelector(MultiSendCallOnly.multiSend.selector, encodeMultisendTxs(txs));
         emit log_named_bytes("calldata_to_multisend_contract", calldata_to_multisend_contract);
