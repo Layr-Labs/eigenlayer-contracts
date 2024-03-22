@@ -139,12 +139,8 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
     uint256 timelockEta = 1712214000;
 
     function test_queueUpgrade() external {
-        _parseDeployedContracts("script/output/mainnet/M1_deployment_mainnet_2023_6_9.json");
+        _parseDeployedContracts("script/output/mainnet/M2_mainnet_upgrade.output.json");
         _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
-
-        // TODO: fill in correct addresses
-        // simulate deploying contracts
-        _deployImplementationContracts();
 
         Tx[] memory txs = new Tx[](11);
         // upgrade the DelegationManager, Slasher, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
