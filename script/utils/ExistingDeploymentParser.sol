@@ -57,6 +57,7 @@ contract ExistingDeploymentParser is Script, Test {
     address operationsMultisig;
     address communityMultisig;
     address pauserMultisig;
+    address timelock;
 
     // strategies deployed
     StrategyBase[] public deployedStrategyArray;
@@ -116,6 +117,7 @@ contract ExistingDeploymentParser is Script, Test {
         operationsMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.operationsMultisig");
         communityMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.communityMultisig");
         pauserMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.pauserMultisig");
+        timelock = stdJson.readAddress(existingDeploymentData, ".parameters.timelock");
 
         eigenLayerProxyAdmin = ProxyAdmin(
             stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin")

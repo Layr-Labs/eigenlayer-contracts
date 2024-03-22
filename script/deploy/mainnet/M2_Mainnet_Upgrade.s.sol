@@ -2,6 +2,8 @@
 pragma solidity =0.8.12;
 
 import "../../utils/ExistingDeploymentParser.sol";
+import "../../utils/TimelockEncoding.sol";
+import "../../utils/Multisend.sol";
 
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
@@ -126,5 +128,157 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
         vm.stopPrank();
+    }
+}
+
+contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
+    Vm cheats = Vm(HEVM_ADDRESS);
+
+    // Thurs Apr 04 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
+    uint256 timelockEta = 1712214000;
+
+    function test_queueUpgrade() external {
+        _parseDeployedContracts("script/output/mainnet/M1_deployment_mainnet_2023_6_9.json");
+        _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
+
+        // TODO: fill in correct addresses
+        address newDelegationImplementation = address(emptyContract);
+        address newSlasherImplementation = address(emptyContract);
+        address newStrategyManagerImplementation = address(emptyContract); 
+        address newDelayedWithdrawalRouterImplementation = address(emptyContract); 
+        address newEigenPodManagerImplementation = address(emptyContract); 
+        address newEigenPodImplementation = address(emptyContract);
+        // confirmed correct address
+        address beaconChainOracle = 0x343907185b71aDF0eBa9567538314396aa985442;
+
+        Tx[] memory txs = new Tx[](9);
+        txs[0] = Tx(
+            address(eigenLayerProxyAdmin),
+            0,
+            abi.encodeWithSelector(
+                ProxyAdmin.upgrade.selector, 
+                TransparentUpgradeableProxy(payable(address(delegationManager))), 
+                newDelegationImplementation
+            )
+        );
+
+        txs[1] = Tx(
+            address(eigenLayerProxyAdmin),
+            0,
+            abi.encodeWithSelector(
+                ProxyAdmin.upgrade.selector, 
+                TransparentUpgradeableProxy(payable(address(slasher))), 
+                newSlasherImplementation
+            )
+        );
+
+        txs[2] = Tx(
+            address(eigenLayerProxyAdmin),
+            0,
+            abi.encodeWithSelector(
+                ProxyAdmin.upgrade.selector, 
+                TransparentUpgradeableProxy(payable(address(strategyManager))), 
+                newStrategyManagerImplementation
+            )
+        );
+
+        txs[3] = Tx(
+            address(eigenLayerProxyAdmin),
+            0,
+            abi.encodeWithSelector(
+                ProxyAdmin.upgrade.selector, 
+                TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
+                newDelayedWithdrawalRouterImplementation
+            )
+        );
+
+        txs[4] = Tx(
+            address(eigenLayerProxyAdmin),
+            0,
+            abi.encodeWithSelector(
+                ProxyAdmin.upgrade.selector, 
+                TransparentUpgradeableProxy(payable(address(eigenPodManager))), 
+                newEigenPodManagerImplementation
+            )
+        );
+
+        txs[5] = Tx(
+            address(eigenPodBeacon),
+            0,
+            abi.encodeWithSelector(
+                UpgradeableBeacon.upgradeTo.selector, 
+                newEigenPodImplementation
+            )
+        );
+
+        // unpause everything on DelegationManager
+        txs[6] = Tx(
+            address(delegationManager), 
+            0, // value
+            abi.encodeWithSelector(Pausable.unpause.selector, 0)
+        );
+
+        // unpause everything on EigenPodManager
+        txs[7] = Tx(
+            address(eigenPodManager), 
+            0, // value
+            abi.encodeWithSelector(Pausable.unpause.selector, 0)
+        );
+
+        // set beacon chain oracle
+        txs[8] = Tx(
+            address(eigenPodManager), 
+            0, // value
+            abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, IBeaconChainOracle(beaconChainOracle))
+        );
+
+        bytes memory calldata_to_multisend_contract = abi.encodeWithSelector(MultiSendCallOnly.multiSend.selector, encodeMultisendTxs(txs));
+        emit log_named_bytes("calldata_to_multisend_contract", calldata_to_multisend_contract);
+
+        bytes memory final_calldata_to_executor_multisig = encodeForExecutor({
+            // call to executor will be from the timelock
+            from: timelock,
+            // performing many operations at the same time
+            executorMultisig: executorMultisig,
+            // value to send in tx
+            value: 0,
+            // calldata for the operation
+            data: calldata_to_multisend_contract,
+            // operation type (for performing many operations at the same time)
+            operation: ISafe.Operation.DelegateCall
+        });
+
+        (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) = encodeForTimelock({
+            // the timelock itself
+            timelock: timelock,
+            // address to be called from the timelock
+            to: executorMultisig,
+            // value to send in tx
+            value: 0,
+            // calldata for the operation
+            data: final_calldata_to_executor_multisig,
+            // time at which the tx will become executable
+            timelockEta: timelockEta
+
+        });
+
+        bytes32 expectedTxHash = getTxHash({
+            target: executorMultisig,
+            _value: 0,
+            _data: final_calldata_to_executor_multisig,
+            eta: timelockEta
+        });
+
+        cheats.prank(operationsMultisig);
+        timelock.call(calldata_to_timelock_queuing_action);
+
+        require(ITimelock(timelock).queuedTransactions(expectedTxHash), "expectedTxHash not queued");
+    }
+
+    function getTxHash(address target, uint256 _value, bytes memory _data, uint256 eta) public pure returns (bytes32) {
+        // empty bytes
+        bytes memory signature;
+        bytes32 txHash = keccak256(abi.encode(target, _value, signature, _data, eta));
+        return txHash;        
     }
 }
