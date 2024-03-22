@@ -31,7 +31,7 @@
   },
   "eigenPod": {
     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": 32000000000000000000,
-    "GENESIS_TIME": 1606824000
+    "GENESIS_TIME": 1606824023
   },
   "eigenPodManager": {
     "init_paused_status": 0,
