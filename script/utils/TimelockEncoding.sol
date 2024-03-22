@@ -19,11 +19,10 @@ contract TimelockEncoding is Test {
     // empty string, just encode all the data in 'timelockData'
     string timelockSignature;
 
-
+    // appropriate address on mainnet, Holesky, and many other chains
     address multiSendCallOnly = 0x40A2aCCbd92BCA938b02010E17A5b8929b49130D;
 
     function encodeForTimelock(
-        address timelock,
         address to,
         uint256 value,
         bytes memory data,
@@ -35,7 +34,7 @@ contract TimelockEncoding is Test {
             timelockSignature,
             data,
             timelockEta
-            );
+        );
 
         emit log_named_bytes("calldata_to_timelock_queuing_action", calldata_to_timelock_queuing_action);
 
@@ -54,11 +53,12 @@ contract TimelockEncoding is Test {
 
     function encodeForExecutor(
         address from,
-        address executorMultisig,
+        address to,
         uint256 value,
         bytes memory data,
         ISafe.Operation operation
     ) public returns (bytes memory) {
+        // encode the "signature" required by the Safe
         bytes1 v = bytes1(uint8(1));
         bytes32 r = bytes32(uint256(uint160(from)));
         bytes32 s;
@@ -66,7 +66,7 @@ contract TimelockEncoding is Test {
         emit log_named_bytes("sig", sig);
 
         bytes memory final_calldata_to_executor_multisig = abi.encodeWithSelector(ISafe.execTransaction.selector,
-            executorMultisig,
+            to,
             value,
             data,
             operation,

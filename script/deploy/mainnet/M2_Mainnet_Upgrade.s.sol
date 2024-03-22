@@ -131,6 +131,7 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
     }
 }
 
+// forge t --mt test_queueUpgrade --fork-url $RPC_MAINNET -vvvv
 contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
     Vm cheats = Vm(HEVM_ADDRESS);
 
@@ -142,23 +143,19 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
 
         // TODO: fill in correct addresses
-        address newDelegationImplementation = address(emptyContract);
-        address newSlasherImplementation = address(emptyContract);
-        address newStrategyManagerImplementation = address(emptyContract); 
-        address newDelayedWithdrawalRouterImplementation = address(emptyContract); 
-        address newEigenPodManagerImplementation = address(emptyContract); 
-        address newEigenPodImplementation = address(emptyContract);
+        // simulate deploying contracts
+        _deployImplementationContracts();
         // confirmed correct address
         address beaconChainOracle = 0x343907185b71aDF0eBa9567538314396aa985442;
 
-        Tx[] memory txs = new Tx[](9);
+        Tx[] memory txs = new Tx[](11);
         txs[0] = Tx(
             address(eigenLayerProxyAdmin),
             0,
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
                 TransparentUpgradeableProxy(payable(address(delegationManager))), 
-                newDelegationImplementation
+                delegationManagerImplementation
             )
         );
 
@@ -168,7 +165,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
                 TransparentUpgradeableProxy(payable(address(slasher))), 
-                newSlasherImplementation
+                slasherImplementation
             )
         );
 
@@ -178,7 +175,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
                 TransparentUpgradeableProxy(payable(address(strategyManager))), 
-                newStrategyManagerImplementation
+                strategyManagerImplementation
             )
         );
 
@@ -188,7 +185,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
                 TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))), 
-                newDelayedWithdrawalRouterImplementation
+                delayedWithdrawalRouterImplementation
             )
         );
 
@@ -198,7 +195,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             abi.encodeWithSelector(
                 ProxyAdmin.upgrade.selector, 
                 TransparentUpgradeableProxy(payable(address(eigenPodManager))), 
-                newEigenPodManagerImplementation
+                eigenPodManagerImplementation
             )
         );
 
@@ -207,7 +204,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             0,
             abi.encodeWithSelector(
                 UpgradeableBeacon.upgradeTo.selector, 
-                newEigenPodImplementation
+                eigenPodImplementation
             )
         );
 
@@ -218,19 +215,34 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             abi.encodeWithSelector(Pausable.unpause.selector, 0)
         );
 
-        // unpause everything on EigenPodManager
+        // set the min withdrawal delay blocks on the DelegationManager
         txs[7] = Tx(
+            address(delegationManager), 
+            0, // value
+            abi.encodeWithSelector(DelegationManager.setMinWithdrawalDelayBlocks.selector, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS)
+        );
+
+        // unpause everything on EigenPodManager
+        txs[8] = Tx(
             address(eigenPodManager), 
             0, // value
             abi.encodeWithSelector(Pausable.unpause.selector, 0)
         );
 
-        // set beacon chain oracle
-        txs[8] = Tx(
+        // set beacon chain oracle on EigenPodManager
+        txs[9] = Tx(
             address(eigenPodManager), 
             0, // value
             abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, IBeaconChainOracle(beaconChainOracle))
         );
+
+        // set Deneb fork timestamp on EigenPodManager
+        txs[10] = Tx(
+            address(eigenPodManager), 
+            0, // value
+            abi.encodeWithSelector(EigenPodManager.setDenebForkTimestamp.selector, EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP)
+        );
+
 
         bytes memory calldata_to_multisend_contract = abi.encodeWithSelector(MultiSendCallOnly.multiSend.selector, encodeMultisendTxs(txs));
         emit log_named_bytes("calldata_to_multisend_contract", calldata_to_multisend_contract);
@@ -239,7 +251,7 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             // call to executor will be from the timelock
             from: timelock,
             // performing many operations at the same time
-            executorMultisig: executorMultisig,
+            to: multiSendCallOnly,
             // value to send in tx
             value: 0,
             // calldata for the operation
@@ -249,8 +261,6 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         });
 
         (bytes memory calldata_to_timelock_queuing_action, bytes memory calldata_to_timelock_executing_action) = encodeForTimelock({
-            // the timelock itself
-            timelock: timelock,
             // address to be called from the timelock
             to: executorMultisig,
             // value to send in tx
@@ -268,11 +278,25 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             _data: final_calldata_to_executor_multisig,
             eta: timelockEta
         });
+        emit log_named_bytes32("expectedTxHash", expectedTxHash);
 
         cheats.prank(operationsMultisig);
-        timelock.call(calldata_to_timelock_queuing_action);
+        (bool success, ) = timelock.call(calldata_to_timelock_queuing_action);
+        require(success, "call to timelock queuing action failed");
 
         require(ITimelock(timelock).queuedTransactions(expectedTxHash), "expectedTxHash not queued");
+
+        // test performing the upgrade
+        cheats.warp(timelockEta);
+        cheats.prank(operationsMultisig);
+        (success, ) = timelock.call(calldata_to_timelock_executing_action);
+        require(success, "call to timelock executing action failed");
+
+        // Check correctness after upgrade
+        _verifyContractPointers();
+        _verifyImplementations();
+        _verifyContractsInitialized({isInitialDeployment: true});
+        _verifyInitializationParams();
     }
 
     function getTxHash(address target, uint256 _value, bytes memory _data, uint256 eta) public pure returns (bytes32) {
