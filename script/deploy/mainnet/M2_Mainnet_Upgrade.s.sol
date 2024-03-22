@@ -8,9 +8,9 @@ import "../../utils/Multisend.sol";
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
  * anvil --fork-url $RPC_MAINNET
- * forge script script/deploy/mainnet/M2_Mainnet_Upgrade.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv
+ * forge script script/deploy/mainnet/M2_Mainnet_Upgrade.s.sol:M2_Mainnet_Upgrade --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv
  * 
- * forge script script/deploy/mainnet/M2_Mainnet_Upgrade.s.sol --rpc-url $RPC_MAINNET --private-key $PRIVATE_KEY --broadcast -vvvv
+ * forge script script/deploy/mainnet/M2_Mainnet_Upgrade.s.sol:M2_Mainnet_Upgrade --rpc-url $RPC_MAINNET --private-key $PRIVATE_KEY --broadcast -vvvv
  *
  */
 contract M2_Mainnet_Upgrade is ExistingDeploymentParser {

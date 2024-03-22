@@ -498,7 +498,8 @@ contract ExistingDeploymentParser is Script, Test {
         );
         require(
             eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
+            && EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
             "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
         );
         require(
