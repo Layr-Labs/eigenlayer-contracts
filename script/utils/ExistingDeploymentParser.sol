@@ -57,6 +57,7 @@ contract ExistingDeploymentParser is Script, Test {
     address operationsMultisig;
     address communityMultisig;
     address pauserMultisig;
+    address timelock;
 
     // strategies deployed
     StrategyBase[] public deployedStrategyArray;
@@ -116,6 +117,7 @@ contract ExistingDeploymentParser is Script, Test {
         operationsMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.operationsMultisig");
         communityMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.communityMultisig");
         pauserMultisig = stdJson.readAddress(existingDeploymentData, ".parameters.pauserMultisig");
+        timelock = stdJson.readAddress(existingDeploymentData, ".parameters.timelock");
 
         eigenLayerProxyAdmin = ProxyAdmin(
             stdJson.readAddress(existingDeploymentData, ".addresses.eigenLayerProxyAdmin")
@@ -475,8 +477,35 @@ contract ExistingDeploymentParser is Script, Test {
             eigenPodManager.paused() == EIGENPOD_MANAGER_INIT_PAUSED_STATUS,
             "eigenPodManager: init paused status set incorrectly"
         );
+        require(
+            eigenPodManager.denebForkTimestamp() == EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP,
+            "eigenPodManager: denebForkTimestamp not set correctly"
+        );
+        require(
+            eigenPodManager.beaconChainOracle() == beaconOracle,
+            "eigenPodManager: beaconChainOracle not set correctly"
+        );
+        require(
+            eigenPodManager.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
+            "eigenPodManager: ethPOS not set correctly"
+        );
         // EigenPodBeacon
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
+        // EigenPodImplementation
+        require(
+            eigenPodImplementation.GENESIS_TIME() == EIGENPOD_GENESIS_TIME,
+            "eigenPodImplementation: GENESIS TIME not set correctly"
+        );
+        require(
+            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
+            && EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
+            "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
+        );
+        require(
+            eigenPodImplementation.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
+            "eigenPodImplementation: ethPOS not set correctly"
+        );
         // DelayedWithdrawalRouter
         require(
             delayedWithdrawalRouter.pauserRegistry() == eigenLayerPauserReg,
