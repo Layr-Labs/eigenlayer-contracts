@@ -135,8 +135,8 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
 contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    // Thurs Apr 04 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
-    uint256 timelockEta = 1712214000;
+    // Thurs Apr 08 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
+    uint256 timelockEta = 1712559600;
 
     function test_queueUpgrade() external {
         _parseDeployedContracts("script/output/mainnet/M2_mainnet_upgrade.output.json");
