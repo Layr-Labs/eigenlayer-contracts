@@ -9,23 +9,11 @@
     "executorMultisig": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
     "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
   },
-  "numStrategies": 2,
   "strategies": {
-    "numStrategies": 2,
+    "numStrategies": 0,
     "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
     "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
-    "strategiesToDeploy": [
-      {
-        "token_address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
-        "token_name": "Liquid staked Ether 2.0",
-        "token_symbol": "stETH"
-      },
-      {
-        "token_address": "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
-        "token_name": "Rocket Pool ETH",
-        "token_symbol": "rETH"
-      }
-    ]
+    "strategiesToDeploy": []
   },
   "strategyManager": {
     "init_strategy_whitelister": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",

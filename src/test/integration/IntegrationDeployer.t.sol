@@ -356,6 +356,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.startPrank(address(executorMultisig));
 
         ethPOSDeposit = new ETHPOSDepositMock();
+        ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
@@ -465,6 +466,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.startPrank(address(executorMultisig));
 
         ethPOSDeposit = new ETHPOSDepositMock();
+        ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(

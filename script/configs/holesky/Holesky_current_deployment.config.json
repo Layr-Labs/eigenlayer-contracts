@@ -40,7 +40,7 @@
     "strategyManager": "0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6",
     "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18"
   },
-  "numStrategies": 3,
+  "numStrategies": 8,
   "chainInfo": {
     "chainId": 17000,
     "deploymentBlock": 1167041
