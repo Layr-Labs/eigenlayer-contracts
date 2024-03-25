@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
@@ -46,7 +47,7 @@ contract BeaconChainMock is Test {
     }
     
     uint40 nextValidatorIndex = 0;
-    uint64 nextTimestamp;
+    uint64 public nextTimestamp;
     
     // Sequential list of created Validators
     // Validator[] validators;
@@ -55,14 +56,16 @@ contract BeaconChainMock is Test {
     mapping(uint40 => Validator) validators;
 
     BeaconChainOracleMock oracle;
+    EigenPodManager eigenPodManager;
 
     /// @dev All withdrawals are processed with index == 0
     uint64 constant WITHDRAWAL_INDEX = 0;
     uint constant GWEI_TO_WEI = 1e9;
     
-    constructor(TimeMachine timeMachine, BeaconChainOracleMock beaconChainOracle) {
+    constructor(TimeMachine timeMachine, BeaconChainOracleMock beaconChainOracle, EigenPodManager _eigenPodManager) {
         nextTimestamp = timeMachine.proofGenStartTime();
         oracle = beaconChainOracle;
+        eigenPodManager = _eigenPodManager;
     }
     
     /**
@@ -157,6 +160,10 @@ contract BeaconChainMock is Test {
         return update;
     }
 
+    function setNextTimestamp(uint64 timestamp) public {
+        nextTimestamp = timestamp;
+    }
+
     function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
@@ -218,9 +225,10 @@ contract BeaconChainMock is Test {
 
         // Send the block root to the oracle and increment timestamp:
         proof.oracleTimestamp = uint64(nextTimestamp);
+
         oracle.setBlockRoot(nextTimestamp, blockRoot);
         nextTimestamp++;
-        
+
         return proof;
     }
     
@@ -733,11 +741,20 @@ contract BeaconChainMock is Test {
         uint64 withdrawalIndex,
         uint64 oracleTimestamp
     ) internal view returns (BeaconChainProofs.WithdrawalProof memory) {
+        uint256 withdrawalProofLength;
+        uint256 timestampProofLength;
+        if (block.timestamp > eigenPodManager.denebForkTimestamp()) {
+            withdrawalProofLength = WITHDRAWAL_PROOF_LEN_DENEB;
+            timestampProofLength = TIMESTAMP_PROOF_LEN_DENEB;
+        } else {
+            withdrawalProofLength = WITHDRAWAL_PROOF_LEN_CAPELLA;
+            timestampProofLength = TIMESTAMP_PROOF_LEN_CAPELLA;
+        }
         return BeaconChainProofs.WithdrawalProof({
-            withdrawalProof: new bytes(WITHDRAWAL_PROOF_LEN_CAPELLA),
+            withdrawalProof: new bytes(withdrawalProofLength),
             slotProof: new bytes(SLOT_PROOF_LEN),
             executionPayloadProof: new bytes(EXECPAYLOAD_PROOF_LEN),
-            timestampProof: new bytes(TIMESTAMP_PROOF_LEN_CAPELLA),
+            timestampProof: new bytes(timestampProofLength),
             historicalSummaryBlockRootProof: new bytes(HISTSUMMARY_PROOF_LEN),
             blockRootIndex: 0,
             historicalSummaryIndex: 0,

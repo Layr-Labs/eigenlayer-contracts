@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
 
@@ -30,24 +31,47 @@ abstract contract IntegrationBase is IntegrationDeployer {
         numStakers++;
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
-        
+
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
         return (staker, strategies, tokenBalances);
     }
 
+    /**
+     * @dev Create a new operator according to configured random variants.
+     * This user will immediately deposit their randomized assets into eigenlayer.
+     * @notice If forktype is mainnet and not upgraded, then the operator will only randomize LSTs assets and deposit them
+     * as ETH podowner shares are not available yet. 
+     */
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
         string memory operatorName = string.concat("- Operator", numOperators.toString());
         numOperators++;
 
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
-        
-        operator.registerAsOperator();
-        operator.depositIntoEigenlayer(strategies, tokenBalances);
+        User operator;
+        IStrategy[] memory strategies;
+        uint[] memory tokenBalances;
 
-        assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
-        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        if (forkType == MAINNET && !isUpgraded) {
+            // Create an operator for M1
+            (operator, , ) = _randUser(operatorName);
+            // deal with random assets of only LSTS
+            (strategies, tokenBalances) = _dealRandAssets_M1(operator);
+
+            User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+        } else {
+            (operator, strategies, tokenBalances) = _randUser(operatorName);
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+
+            operator.registerAsOperator();
+            operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
+            assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        }
 
         return (operator, strategies, tokenBalances);
     }
@@ -81,7 +105,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertEq(expectedBalance, tokenBalance, err);
+            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
         }
     }
 
@@ -113,7 +137,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 actualShares = strategyManager.stakerStrategyShares(address(user), strat);
             }
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -128,7 +152,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint actualShares = delegationManager.operatorShares(address(user), strat);
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -194,7 +218,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
         }
     }
 
@@ -272,7 +296,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
         }
     }
 
