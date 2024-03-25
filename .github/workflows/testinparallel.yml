@@ -47,4 +47,5 @@ jobs:
       run: forge test --match-path src/test/${{ matrix.file }} --no-match-contract FFI
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
