@@ -35,7 +35,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint256 mainnetForkBlock = 19_280_000;
+    uint256 mainnetForkBlock = 19_514_250;
     uint256 mainnetForkId;
     uint256 holeskyForkBLock = 1_213_950;
     uint256 holeskyForkId;
@@ -371,24 +371,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             0
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-        // Deploy AVSDirectory, contract has not been deployed on mainnet yet
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-
-        // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenPodManager, slasher);
-        slasherImplementation = new Slasher(strategyManager, delegationManager);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            strategyManager,
-            slasher,
-            delegationManager
-        );
-        delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager
@@ -416,29 +398,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(delayedWithdrawalRouter))),
             address(delayedWithdrawalRouterImplementation)
         );
-        // AVSDirectory, upgrade and initalized
-        eigenLayerProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplementation),
-            abi.encodeWithSelector(
-                AVSDirectory.initialize.selector,
-                executorMultisig,
-                eigenLayerPauserReg,
-                0 // initialPausedStatus
-            )
-        );
-
-        // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager);
-
-        // Upgrade All deployed strategy contracts to new base strategy
-        for (uint i = 0; i < numStrategiesDeployed; i++) {
-            // Upgrade existing strategy
-            eigenLayerProxyAdmin.upgrade(
-                TransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
-                address(baseStrategyImplementation)
-            );
-        }
 
         // Third, unpause core contracts
         delegationManager.unpause(0);
