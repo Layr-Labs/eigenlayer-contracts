@@ -10,24 +10,34 @@
     "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
   },
   "strategies": {
-    "numStrategies": 3,
+    "numStrategies": 5,
     "MAX_PER_DEPOSIT": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
     "MAX_TOTAL_DEPOSITS": 115792089237316195423570985008687907853269984665640564039457584007913129639935,
     "strategiesToDeploy": [
       {
-        "token_address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
-        "token_name": "Liquid staked Ether 2.0",
-        "token_symbol": "stETH"
+        "token_address": "0x1d8b30cC38Dba8aBce1ac29Ea27d9cFd05379A09",
+        "token_name": "Liquid Staked ETH",
+        "token_symbol": "lsETH"
       },
       {
-        "token_address": "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
-        "token_name": "Rocket Pool ETH",
-        "token_symbol": "rETH"
+        "token_address": "0x17845EA6a9BfD2caF1b9E558948BB4999dF2656e",
+        "token_name": "Frax Ether",
+        "token_symbol": "frxETH"
       },
       {
-        "token_address": "0x94373a4919B3240D86eA41593D5eBa789FEF3848",
-        "token_name": "Wrapped Ether",
-        "token_symbol": "WETH"
+        "token_address": "0xB4F5fc289a778B80392b86fa70A7111E5bE0F859",
+        "token_name": "ETHx",
+        "token_symbol": "ETHx"
+      },
+      {
+        "token_address": "0xF603c5A3F774F05d4D848A9bB139809790890864",
+        "token_name": "Staked ETH",
+        "token_symbol": "osETH"
+      },
+      {
+        "token_address": "0x8720095Fa5739Ab051799211B146a2EEE4Dd8B37",
+        "token_name": "Coinbase Wrapped Staked ETH",
+        "token_symbol": "cbETH"
       }
     ]
   },
@@ -37,7 +47,7 @@
   },
   "delegationManager": {
     "init_paused_status": 0,
-    "init_minWithdrawalDelayBlocks": 50400
+    "init_minWithdrawalDelayBlocks": 10
   },
   "avsDirectory": {
     "init_paused_status": 0
@@ -55,7 +65,7 @@
   },
   "delayedWithdrawalRouter": {
     "init_paused_status": 0,
-    "init_withdrawalDelayBlocks": 50400
+    "init_withdrawalDelayBlocks": 10
   },
   "ethPOSDepositAddress": "0x4242424242424242424242424242424242424242",
   "beaconOracleAddress": "0x4C116BB629bff7A8373c2378bBd919f8349B8f25"
