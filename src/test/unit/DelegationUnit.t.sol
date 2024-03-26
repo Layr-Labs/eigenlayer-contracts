@@ -2854,6 +2854,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             withdrawalAmount: 100
         });
         cheats.expectRevert("DelegationManager.queueWithdrawal: withdrawer must be staker");
+        cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
