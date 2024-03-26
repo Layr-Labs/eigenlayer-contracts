@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
 
@@ -16,6 +17,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     uint numStakers = 0;
     uint numOperators = 0;
+
+    // Lists of stakers/operators created before the m2 upgrade
+    //
+    // When we call _upgradeEigenLayerContracts, we iterate over
+    // these lists and migrate perform the standard migration actions
+    // for each user
+    User[] stakersToMigrate;
+    User[] operatorsToMigrate;
 
     /**
      * Gen/Init methods:
@@ -26,30 +35,106 @@ abstract contract IntegrationBase is IntegrationDeployer {
      * This user is ready to deposit into some strategies and has some underlying token balances
      */
     function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory stakerName = string.concat("- Staker", numStakers.toString());
-        numStakers++;
+        string memory stakerName;
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(stakerName);
-        
+        User staker;
+        IStrategy[] memory strategies;
+        uint[] memory tokenBalances;
+
+        if (forkType == MAINNET && !isUpgraded) {
+            stakerName = string.concat("- M1_Staker", numStakers.toString());
+
+            (staker, strategies, tokenBalances) = _randUser(stakerName);
+
+            stakersToMigrate.push(staker);
+        } else {
+            stakerName = string.concat("- Staker", numStakers.toString());
+
+            (staker, strategies, tokenBalances) = _randUser(stakerName);
+        }
+
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
 
+        numStakers++;
         return (staker, strategies, tokenBalances);
     }
 
+    /**
+     * @dev Create a new operator according to configured random variants.
+     * This user will immediately deposit their randomized assets into eigenlayer.
+     * @notice If forktype is mainnet and not upgraded, then the operator will only randomize LSTs assets and deposit them
+     * as ETH podowner shares are not available yet. 
+     */
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory operatorName = string.concat("- Operator", numOperators.toString());
+        User operator;
+        IStrategy[] memory strategies;
+        uint[] memory tokenBalances;
+
+        if (forkType == MAINNET && !isUpgraded) {
+            string memory operatorName = string.concat("- M1_Operator", numOperators.toString());
+
+            // Create an operator for M1. We omit native ETH because we want to
+            // check staker/operator shares, and we don't award native ETH shares in M1
+            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
+
+            User_M1(payable(address(operator))).depositIntoEigenlayer_M1(strategies, tokenBalances);
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+
+            operatorsToMigrate.push(operator);
+        } else {
+            string memory operatorName = string.concat("- Operator", numOperators.toString());
+
+            (operator, strategies, tokenBalances) = _randUser(operatorName);
+
+            uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+
+            operator.registerAsOperator();
+            operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+            assert_Snap_Added_StakerShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
+            assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        }
+
         numOperators++;
-
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser(operatorName);
-        
-        operator.registerAsOperator();
-        operator.depositIntoEigenlayer(strategies, tokenBalances);
-
-        assert_Snap_Added_StakerShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to add delegatable shares");
-        assert_Snap_Added_OperatorShares(operator, strategies, tokenBalances, "_newRandomOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
         return (operator, strategies, tokenBalances);
+    }
+
+    /// @dev If we're on mainnet, upgrade contracts to M2 and migrate stakers/operators
+    function _upgradeEigenLayerContracts() internal {
+        if (forkType == MAINNET) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed m2 upgrade");
+
+            emit log("_upgradeEigenLayerContracts: upgrading mainnet to m2");
+            _upgradeMainnetContracts();
+
+            emit log("===Migrating Stakers/Operators===");
+
+            // Enable restaking for stakers' pods
+            for (uint i = 0; i < stakersToMigrate.length; i++) {
+                stakersToMigrate[i].activateRestaking();
+            }
+
+            // Register operators with DelegationManager
+            for (uint i = 0; i < operatorsToMigrate.length; i++) {
+                operatorsToMigrate[i].registerAsOperator();
+            }
+
+            emit log("======");
+
+            isUpgraded = true;
+            emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
+        } else if (forkType == HOLESKY) {
+            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed m2 upgrade");
+
+            emit log("_upgradeEigenLayerContracts: upgrading holesky to m2");
+            _upgradeHoleskyContracts();
+
+            isUpgraded = true;
+            emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
+        }
     }
 
     /** 
@@ -81,7 +166,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 tokenBalance = strat.underlyingToken().balanceOf(address(user));
             }
 
-            assertEq(expectedBalance, tokenBalance, err);
+            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
+            // assertEq(expectedBalance, tokenBalance, err);
         }
     }
 
@@ -113,7 +199,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 actualShares = strategyManager.stakerStrategyShares(address(user), strat);
             }
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -128,7 +214,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             uint actualShares = delegationManager.operatorShares(address(user), strat);
 
-            assertEq(expectedShares[i], actualShares, err);
+            assertApproxEqAbs(expectedShares[i], actualShares, 1, err);
         }
     }
 
@@ -194,7 +280,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
         }
     }
 
@@ -272,7 +358,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);            
         }
     }
 

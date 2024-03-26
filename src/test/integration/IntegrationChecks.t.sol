@@ -2,7 +2,8 @@
 pragma solidity =0.8.12;
 
 import "src/test/integration/IntegrationBase.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/integration/users/User_M1.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {

@@ -30,6 +30,12 @@ struct StrategyUnderlyingTokenConfig {
     string tokenSymbol;
 }
 
+struct DeployedEigenPods {
+    address[] multiValidatorPods;
+    address[] singleValidatorPods;
+    address[] inActivePods;
+}
+
 contract ExistingDeploymentParser is Script, Test {
     // EigenLayer Contracts
     ProxyAdmin public eigenLayerProxyAdmin;
@@ -51,6 +57,13 @@ contract ExistingDeploymentParser is Script, Test {
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
 
+    // EigenPods deployed
+    address[] public multiValidatorPods;
+    address[] public singleValidatorPods;
+    address[] public inActivePods;
+    // All eigenpods is just single array list of above eigenPods
+    address[] public allEigenPods;
+
     EmptyContract public emptyContract;
 
     address executorMultisig;
@@ -60,17 +73,11 @@ contract ExistingDeploymentParser is Script, Test {
     address timelock;
 
     // strategies deployed
+    uint256 numStrategiesDeployed;
     StrategyBase[] public deployedStrategyArray;
     // Strategies to Deploy
     uint256 numStrategiesToDeploy;
     StrategyUnderlyingTokenConfig[] public strategiesToDeploy;
-
-    // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
-    // IETHPOSDeposit public ethPOSDeposit;
-
-    // // IMMUTABLES TO SET
-    // uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
-    // uint64 GOERLI_GENESIS_TIME = 1616508000;
 
     /// @notice Initialization Params for first initial deployment scripts
     // StrategyManager
@@ -163,20 +170,37 @@ contract ExistingDeploymentParser is Script, Test {
         );
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
 
-        /*
-        commented out -- needs JSON formatting of the form:
-        strategies": [
-      {"WETH": "0x7CA911E83dabf90C90dD3De5411a10F1A6112184"},
-      {"rETH": "0x879944A8cB437a5f8061361f82A6d4EED59070b5"},
-      {"tsETH": "0xcFA9da720682bC4BCb55116675f16F503093ba13"},
-      {"wstETH": "0x13760F50a9d7377e4F20CB8CF9e4c26586c658ff"}]
-        // load strategy list
-        bytes memory strategyListRaw = stdJson.parseRaw(existingDeploymentData, ".addresses.strategies");
-        address[] memory strategyList = abi.decode(strategyListRaw, (address[]));
-        for (uint256 i = 0; i < strategyList.length; ++i) {
-            deployedStrategyArray.push(StrategyBase(strategyList[i]));
+        // Strategies Deployed, load strategy list
+        numStrategiesDeployed = stdJson.readUint(existingDeploymentData, ".numStrategies");
+        for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
+            // Form the key for the current element
+            string memory key = string.concat(".addresses.strategyAddresses[", vm.toString(i), "]");
+
+            // Use the key and parse the strategy address
+            address strategyAddress = abi.decode(stdJson.parseRaw(existingDeploymentData, key), (address));
+            deployedStrategyArray.push(StrategyBase(strategyAddress));
         }
-        */
+    }
+
+    function _parseDeployedEigenPods(string memory existingDeploymentInfoPath) internal returns (DeployedEigenPods memory) {
+        uint256 currentChainId = block.chainid;
+
+        // READ JSON CONFIG DATA
+        string memory existingDeploymentData = vm.readFile(existingDeploymentInfoPath);
+
+        // check that the chainID matches the one in the config
+        uint256 configChainId = stdJson.readUint(existingDeploymentData, ".chainInfo.chainId");
+        require(configChainId == currentChainId, "You are on the wrong chain for this config");
+
+        multiValidatorPods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.multiValidatorPods");
+        singleValidatorPods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.singleValidatorPods");
+        inActivePods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.inActivePods");
+        allEigenPods = stdJson.readAddressArray(existingDeploymentData, ".eigenPods.allEigenPods");
+        return DeployedEigenPods({
+            multiValidatorPods: multiValidatorPods,
+            singleValidatorPods: singleValidatorPods,
+            inActivePods: inActivePods
+        });
     }
 
     /// @notice use for deploying a new set of EigenLayer contracts

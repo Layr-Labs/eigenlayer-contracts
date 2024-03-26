@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "src/test/integration/IntegrationChecks.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
     
@@ -11,12 +11,14 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
-
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
@@ -48,12 +50,15 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);

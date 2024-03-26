@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import "src/test/integration/IntegrationChecks.t.sol";
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
 
@@ -20,7 +20,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -34,6 +35,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -79,7 +83,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -93,6 +98,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -141,7 +149,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -155,6 +164,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -203,7 +215,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -217,6 +230,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
@@ -271,7 +287,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: NO_ASSETS | HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
+            _userTypes: DEFAULT | ALT_METHODS,
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create a staker and operator
@@ -281,6 +298,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
+
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
