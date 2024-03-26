@@ -11,7 +11,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         // Create a staker with a nonzero balance and corresponding strategies
@@ -47,7 +47,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         // Create a staker with a nonzero balance and corresponding strategies

@@ -446,10 +446,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         strategyManager.unpause(0);
 
         eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-        timeMachine.setProofGenStartTime(2 hours);
+        timeMachine.setProofGenStartTime(0);
         beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
-        if (eigenPodManager.denebForkTimestamp() == 0) {
+        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
             //set deneb fork timestamp if not set
             eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
         }
@@ -556,10 +556,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         strategyManager.unpause(0);
 
         eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-        timeMachine.setProofGenStartTime(2 hours);
+        timeMachine.setProofGenStartTime(0);
         beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
-        if (eigenPodManager.denebForkTimestamp() == 0) {
+        if (eigenPodManager.denebForkTimestamp() == type(uint64).max) {
             //set deneb fork timestamp if not set
             eigenPodManager.setDenebForkTimestamp(DENEB_FORK_TIMESTAMP);
         }
@@ -653,6 +653,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _deployOrFetchContracts() internal {
         forkType = _randForkType();
 
+        emit log_named_string("_deployOrFetchContracts selected fork for test", forkTypeToStr[forkType]);
+
         if (forkType == LOCAL) {
             _setUpLocal();
             // Set Upgraded as local setup deploys most up to date contracts
@@ -730,72 +732,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /**
-     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
-     * unpausing all contracts. 
-     */
-    function _upgradeEigenLayerContracts() internal {
-        if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeMainnetContracts();
-            isUpgraded = true;
-        } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeHoleskyContracts();
-            isUpgraded = true;
-        }
-    }
-
-    /**
-     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
-     * unpausing all contracts. 
-     */
-    function _upgradeEigenLayerContracts(User staker, User operator) internal {
-        if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeMainnetContracts();
-
-            // Enable restaking for stakers' pods
-            staker.activateRestaking();
-            // Now register users that are supposed to be Operators
-            operator.registerAsOperator();
-            isUpgraded = true;
-        } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeHoleskyContracts();
-
-            isUpgraded = true;
-        }
-    }
-
-    /**
-     * For non LOCAL forkTypes, upgrade contracts to current implementations as well as
-     * unpausing all contracts. 
-     * @param stakers - array of stakers to activate restaking for that were setup before upgrade
-     * @param operators - array of operators to register that were setup before upgrade
-     */
-    function _upgradeEigenLayerContracts(User[] memory stakers, User[] memory operators) internal {
-        if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeMainnetContracts();
-
-            // Enable restaking for stakers' pods
-            for (uint i; i < stakers.length; i++) {
-                stakers[i].activateRestaking();
-            }
-            // Now register users that are supposed to be Operators
-            for (uint i; i < operators.length; i++) {
-                operators[i].registerAsOperator();
-            }
-            isUpgraded = true;
-        } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already upgraded");
-            _upgradeHoleskyContracts();
-
-            isUpgraded = true;
-        }
-    }
-
-    /**
      * @dev Create a new User with a random config using the range defined in `_configRand`
      * 
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
@@ -808,7 +744,47 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint assetType = _randAssetType();
         uint userType = _randUserType();
         
-        // Create User contract based on deposit type:
+        // Deploy new User contract
+        User user = _genRandUser(name, userType);
+
+        // For the specific asset selection we made, get a random assortment of
+        // strategies and deal the user some corresponding underlying token balances
+        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+
+        _printUserInfo(name, assetType, userType, strategies, tokenBalances);
+        return (user, strategies, tokenBalances);
+    }
+
+    /// @dev Create a new user without native ETH. See _randUser above for standard usage
+    function _randUser_NoETH(string memory name) internal returns (User, IStrategy[] memory, uint[] memory) {
+        // For the new user, select what type of assets they'll have and whether
+        // they'll use `xWithSignature` methods.
+        //
+        // The values selected here are in the ranges configured via `_configRand`
+        uint userType = _randUserType();
+
+        // Pick the user's asset distribution, removing "native ETH" as an option
+        // I'm sorry if this eventually leads to a bug that's really hard to track down
+        uint assetType = _randAssetType();
+        if (assetType == HOLDS_ETH) {
+            assetType = NO_ASSETS;
+        } else if (assetType == HOLDS_ALL) {
+            assetType = HOLDS_LST;
+        }
+        
+        // Deploy new User contract
+        User user = _genRandUser(name, userType);
+
+        // For the specific asset selection we made, get a random assortment of
+        // strategies and deal the user some corresponding underlying token balances
+        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+
+        _printUserInfo(name, assetType, userType, strategies, tokenBalances);
+        return (user, strategies, tokenBalances);
+    }
+
+    function _genRandUser(string memory name, uint userType) internal returns (User) {
+        // Create User contract based on userType:
         User user;
         if (forkType == LOCAL) {
             user = new User(name);
@@ -852,12 +828,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             revert("_randUser: unimplemented forkType");
         }
 
-        // For the specific asset selection we made, get a random assortment of
-        // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
-        _printUserInfo(assetType, userType, strategies, tokenBalances);
-
-        return (user, strategies, tokenBalances);
+        return user;
     }
 
     /// @dev For a given `assetType`, select a random assortment of strategies and assets
@@ -1026,16 +997,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _printUserInfo(
+        string memory name,
         uint assetType, 
         uint userType, 
         IStrategy[] memory strategies, 
         uint[] memory tokenBalances
     ) internal {
 
-        emit log("Creating user:");
-        emit log_named_string("assetType: ", assetTypeToStr[assetType]);
-        emit log_named_string("userType: ", userTypeToStr[userType]);
-        emit log_named_string("forkType: ", forkTypeToStr[forkType]);
+        emit log("===Created User===");
+        emit log_named_string("Name", name);
+        emit log_named_string("assetType", assetTypeToStr[assetType]);
+        emit log_named_string("userType", userTypeToStr[userType]);
+        emit log_named_string("forkType", forkTypeToStr[forkType]);
 
         emit log_named_uint("num assets: ", strategies.length);
 
@@ -1052,5 +1025,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 emit log_named_uint("token balance: ", tokenBalances[i]);
             }
         }
+
+        emit log("==================");
     }
 }
