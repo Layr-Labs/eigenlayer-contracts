@@ -202,7 +202,7 @@ library BeaconChainProofs {
             "BeaconChainProofs.verifyWithdrawal: historicalSummaryIndex is too large"
         );
 
-        //Note: post deneb hard fork, the number of exection payload header fields increased from 15->17, adding an extra level to the tree height
+        //Note: post deneb hard fork, the number of execution payload header fields increased from 15->17, adding an extra level to the tree height
         uint256 executionPayloadHeaderFieldTreeHeight = (getWithdrawalTimestamp(withdrawalProof) < denebForkTimestamp) ? EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_CAPELLA : EXECUTION_PAYLOAD_HEADER_FIELD_TREE_HEIGHT_DENEB;
         require(
             withdrawalProof.withdrawalProof.length ==

@@ -45,7 +45,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
-        // Deploy DelegationManager implmentation and proxy
+        // Deploy DelegationManager implementation and proxy
         initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
         initializeWithdrawalDelayBlocks = new uint256[](0);
         delegationManagerImplementation = new DelegationManager(strategyManagerMock, slasherMock, eigenPodManagerMock);
@@ -194,7 +194,7 @@ contract AVSDirectoryUnitTests_operatorAVSRegisterationStatus is AVSDirectoryUni
         avsDirectory.updateAVSMetadataURI(metadataURI);
     }
 
-    // @notice Verifies an operator registers successfull to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
+    // @notice Verifies an operator registers successfully to avs and see an `OperatorAVSRegistrationStatusUpdated` event emitted
     function testFuzz_registerOperatorToAVS(bytes32 salt) public {
         address operator = cheats.addr(delegationSignerPrivateKey);
         assertFalse(delegationManager.isOperator(operator), "bad test setup");
