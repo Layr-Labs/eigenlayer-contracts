@@ -62,12 +62,6 @@ contract User is Test {
         _createPod();
 
         NAME = name;
-
-        // To ensure oracle proof timestamp is greater than pod.mostRecentWithdrawalTimestamp
-        cheats.warp(block.timestamp + 10);
-        timeMachine.createSnapshot();
-        timeMachine.setProofGenStartTime(2 hours);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
     }
 
     modifier createSnapshot() virtual {
@@ -97,11 +91,6 @@ contract User is Test {
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
         emit log(_name(".depositIntoEigenlayer"));
 
-        // For M1 deployed pods, hasRestaked is set to False
-        if (!pod.hasRestaked()) {
-            activateRestaking();
-        }
-
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             uint tokenBalance = tokenBalances[i];
@@ -121,7 +110,9 @@ contract User is Test {
                             balanceWei: 32 ether,
                             withdrawalCreds: _podWithdrawalCredentials()
                         });
+
                     validators.push(newValidatorIndex);
+                    emit log_named_uint("oracle timestamp", proofs.oracleTimestamp);
                     pod.verifyWithdrawalCredentials({
                         oracleTimestamp: proofs.oracleTimestamp,
                         stateRootProof: proofs.stateRootProof,
@@ -284,15 +275,14 @@ contract User is Test {
 
     /// @notice We set the proof generation start time to be after the timestamp that pod restaking is activated
     /// We do this to prevent proofIsForValidTimestamp modifier from reverting
-    function activateRestaking() public {
+    function activateRestaking() public createSnapshot {
         emit log(_name(".activateRestaking"));
         
+        emit log_named_uint("pre-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
+
         pod.activateRestaking();
-        // To ensure oracle proof timestamp is greater than pod.mostRecentWithdrawalTimestamp
-        cheats.warp(block.timestamp + 10);
-        timeMachine.createSnapshot();
-        timeMachine.setProofGenStartTime(2 hours);
-        beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
+
+        emit log_named_uint("post-activation, most recent wd timestamp", pod.mostRecentWithdrawalTimestamp());
     }
 
     function _completeQueuedWithdrawal(

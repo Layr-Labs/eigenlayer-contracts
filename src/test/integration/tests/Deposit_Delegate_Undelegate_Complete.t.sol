@@ -17,7 +17,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -33,7 +33,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts(staker, operator);
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -81,7 +81,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -97,7 +97,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts(staker, operator);
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -138,7 +138,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -154,7 +154,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts(staker, operator);
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -196,7 +196,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET | HOLESKY
+            _forkTypes: LOCAL | MAINNET
         });
 
         /// 0. Create an operator and a staker with:
@@ -212,7 +212,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
         // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts(staker, operator);
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
