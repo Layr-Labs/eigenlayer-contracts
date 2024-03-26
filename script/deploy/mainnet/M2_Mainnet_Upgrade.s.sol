@@ -135,16 +135,12 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
 contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    // Thurs Apr 04 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
-    uint256 timelockEta = 1712214000;
+    // Thurs Apr 08 2024 12:00:00 GMT-0700 (Pacific Daylight Time)
+    uint256 timelockEta = 1712559600;
 
     function test_queueUpgrade() external {
-        _parseDeployedContracts("script/output/mainnet/M1_deployment_mainnet_2023_6_9.json");
+        _parseDeployedContracts("script/output/mainnet/M2_mainnet_upgrade.output.json");
         _parseInitialDeploymentParams("script/configs/mainnet/M2_mainnet_upgrade.config.json");
-
-        // TODO: fill in correct addresses
-        // simulate deploying contracts
-        _deployImplementationContracts();
 
         Tx[] memory txs = new Tx[](11);
         // upgrade the DelegationManager, Slasher, StrategyManager, DelayedWithdrawalRouter, EigenPodManager, & EigenPod contracts
@@ -267,7 +263,6 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
             data: final_calldata_to_executor_multisig,
             // time at which the tx will become executable
             timelockEta: timelockEta
-
         });
 
         bytes32 expectedTxHash = getTxHash({
@@ -295,6 +290,50 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         _verifyImplementations();
         _verifyContractsInitialized({isInitialDeployment: true});
         _verifyInitializationParams();
+        _postUpgradeChecks();
+    }
+
+    function _postUpgradeChecks() internal {
+        // check that LST deposits are paused
+        address rETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+        address rETH_Strategy = 0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2;
+        uint256 amount = 1e18;
+        cheats.prank(rETH);
+        // this works because rETH has more than 1 ETH of its own token at its address :)
+        IERC20(rETH).transfer(address(this), amount);
+        IERC20(rETH).approve(address(strategyManager), amount);
+        cheats.expectRevert("Pausable: index is paused");
+        strategyManager.depositIntoStrategy({
+            strategy: IStrategy(rETH_Strategy),
+            token: IERC20(rETH),
+            amount: amount
+        });
+
+        // unpause LST deposits and check that a deposit works
+        cheats.prank(executorMultisig);
+        strategyManager.unpause(0);
+        strategyManager.depositIntoStrategy({
+            strategy: IStrategy(rETH_Strategy),
+            token: IERC20(rETH),
+            amount: amount
+        });
+
+        // check that EigenPod proofs are live (although this still reverts later in the call)
+        EigenPod existingEigenPod = EigenPod(payable(0x0b347D5E38296277E829CE1D8C6b82e4c63C2Df3));
+        BeaconChainProofs.StateRootProof memory stateRootProof;
+        uint40[] memory validatorIndices;
+        bytes[] memory validatorFieldsProofs;
+        bytes32[][] memory validatorFields;
+        cheats.startPrank(existingEigenPod.podOwner());
+        existingEigenPod.activateRestaking();
+        cheats.expectRevert("EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized");
+        existingEigenPod.verifyWithdrawalCredentials(
+            uint64(block.timestamp),
+            stateRootProof,
+            validatorIndices,
+            validatorFieldsProofs,
+            validatorFields
+        );
     }
 
     function getTxHash(address target, uint256 _value, bytes memory _data, uint256 eta) public pure returns (bytes32) {

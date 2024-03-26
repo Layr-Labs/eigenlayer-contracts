@@ -129,9 +129,9 @@ contract ExistingDeploymentParser is Script, Test {
         slasherImplementation = Slasher(
             stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation")
         );
-        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegation"));
+        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager"));
         delegationManagerImplementation = DelegationManager(
-            stdJson.readAddress(existingDeploymentData, ".addresses.delegationImplementation")
+            stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation")
         );
         avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
         avsDirectoryImplementation = AVSDirectory(
@@ -152,7 +152,7 @@ contract ExistingDeploymentParser is Script, Test {
             stdJson.readAddress(existingDeploymentData, ".addresses.delayedWithdrawalRouterImplementation")
         );
         beaconOracle = IBeaconChainOracle(
-            stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracleAddress")
+            stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracle")
         );
         eigenPodBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodBeacon"));
         eigenPodImplementation = EigenPod(
@@ -650,6 +650,7 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
         vm.serializeAddress(parameters, "communityMultisig", communityMultisig);
         vm.serializeAddress(parameters, "pauserMultisig", pauserMultisig);
+        vm.serializeAddress(parameters, "timelock", timelock);
         string memory parameters_output = vm.serializeAddress(parameters, "operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";
