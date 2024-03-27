@@ -24,10 +24,7 @@ jobs:
   run-tests:
     needs: prepare
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        file: ${{fromJson(needs.prepare.outputs.matrix)}}
-      fail-fast: false
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -43,8 +40,8 @@ jobs:
         forge build --sizes
       id: build
 
-    - name: Run forge test for the file
-      run: forge test --match-path src/test/${{ matrix.file }} --no-match-contract FFI
+    - name: Run forge test for all files
+      run: forge test --no-match-contract FFI
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
