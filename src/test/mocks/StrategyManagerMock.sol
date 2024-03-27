@@ -84,6 +84,8 @@ contract StrategyManagerMock is
         thirdPartyTransfersForbidden[strategy] = value;
     }
 
+    function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool) {}
+
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
