@@ -127,6 +127,9 @@ interface IStrategyManager {
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
 
+    /// @notice Returns bool for whether or not `strategy` is whitelisted for deposit
+    function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool);
+
     /**
      * @notice Returns bool for whether or not `strategy` enables credit transfers. i.e enabling
      * depositIntoStrategyWithSignature calls or queueing withdrawals to a different address than the staker.
