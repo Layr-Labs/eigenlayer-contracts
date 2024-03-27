@@ -73,6 +73,8 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRangePaymentHash;
+    /// @notice Mapping: address => bool to check if the address is permissioned to submit payAllForRange
+    mapping(address => bool) public isPayAllForRangeSubmitter;
 
     constructor(
         IAVSDirectory _avsDirectory,

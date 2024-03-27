@@ -22,6 +22,7 @@ interface IPaymentCoordinator {
         // weight used to compare shares in multiple strategies against one another
         uint96 multiplier;
     }
+
     struct RangePayment {
         // Strategies & relative weights of shares in the strategies
         StrategyAndMultiplier[] strategiesAndMultlipliers;
@@ -61,7 +62,9 @@ interface IPaymentCoordinator {
     /// EVENTS ///
 
     event RangePaymentCreated(address indexed avs, bytes32 rangePaymentHash, RangePayment rangePayment);
+    event RangePaymentForAllCreated(address indexed submitter, bytes32 rangePaymentHash, RangePayment rangePayment);
     event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
+    event PayAllForRangeSubmitterSet(address indexed payAllForRangeSubmitter, bool indexed oldValue, bool indexed newValue);
     event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
     event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
