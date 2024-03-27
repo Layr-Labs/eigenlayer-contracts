@@ -71,8 +71,8 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
 
     /// @notice Mapping: recipient => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
-
-    mapping(bytes32 => bool) public isRangePaymentHash;
+    /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isRangePaymentHash;
 
     constructor(
         IAVSDirectory _avsDirectory,

@@ -63,6 +63,7 @@ interface IPaymentCoordinator {
     event RangePaymentCreated(address indexed avs, bytes32 rangePaymentHash, RangePayment rangePayment);
     event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
     event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
+    event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event RecipientSet(address indexed account, address indexed recipient);
     event RootSubmitted(
@@ -111,23 +112,6 @@ interface IPaymentCoordinator {
     /// EXTERNAL FUNCTIONS ///
 
     /**
-     * @notice Initializes the contract
-     * @param initialOwner The address of the initial owner of the contract
-     * @param _paymentUpdater The address of the initial `paymentUpdater`
-     * @param _activationDelay Delay in timestamp before a posted root can be claimed against
-     * @param _globalCommissionBips The commission for all operators across all avss
-     * @dev Only callable once
-     */
-    function initialize(
-        address initialOwner,
-        IPauserRegistry _pauserRegistry,
-        uint256 initialPausedStatus,
-        address _paymentUpdater,
-        uint64 _activationDelay,
-        uint16 _globalCommissionBips
-    ) external;
-
-    /**
      * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
      * @param rangePayments The range payments being created
@@ -143,7 +127,7 @@ interface IPaymentCoordinator {
      * @notice similar to `payForRange` except the payment is split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs
      */
-    function payAllForRange(RangePayment calldata rangePayment) external;
+    function payAllForRange(RangePayment[] calldata rangePayment) external;
 
     /**
      * @notice Sets the permissioned `paymentUpdater` address which can post new roots

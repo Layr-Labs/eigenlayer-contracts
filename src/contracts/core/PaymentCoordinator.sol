@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/libraries/EIP1271SignatureUtils.sol";
 import "src/contracts/permissions/Pausable.sol";
@@ -16,8 +17,7 @@ import "src/contracts/core/PaymentCoordinatorStorage.sol";
  * @notice  This is the contract for payments in EigenLayer. The main functionalities of this contract are
  * - enabling any ERC20 payments from AVSs to their operators and stakers for a given time range
  * - allowing stakers and operators to claim their earnings including a commission bips for operators
- * - allowing the protocol
- * -
+ * - allowing the protocol to provide ERC20 tokens to stakers over a specified time range
  */
 contract PaymentCoordinator is
     Initializable,
@@ -26,13 +26,18 @@ contract PaymentCoordinator is
     ReentrancyGuardUpgradeable,
     PaymentCoordinatorStorage
 {
-    // @dev Index for flag that pauses
+    using SafeERC20 for IERC20;
+
+    /// @dev Index for flag that pauses payForRange payments
     uint8 internal constant PAUSED_PAY_FOR_RANGE = 0;
 
-    // @dev Index for flag that pauses
-    uint8 internal constant PAUSED_CLAIM_PAYMENTS = 1;
+    /// @dev Index for flag that pauses payAllForRange payments
+    uint8 internal constant PAUSED_PAY_ALL_FOR_RANGE = 1;
 
-    // @dev Chain ID at the time of contract deployment
+    /// @dev Index for flag that pauses
+    uint8 internal constant PAUSED_CLAIM_PAYMENTS = 2;
+
+    /// @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
     /// @dev Sets the immutable variables for the contract
@@ -69,6 +74,7 @@ contract PaymentCoordinator is
         uint256 initialPausedStatus,
         address _paymentUpdater,
         uint64 _activationDelay,
+        uint64 _calculationIntervalSeconds,
         uint16 _globalCommissionBips
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
@@ -76,6 +82,7 @@ contract PaymentCoordinator is
         _transferOwnership(initialOwner);
         _setPaymentUpdater(_paymentUpdater);
         _setActivationDelay(_activationDelay);
+        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
@@ -119,10 +126,11 @@ contract PaymentCoordinator is
                 );
             }
 
-            bytes32 rangePaymentHash = keccak256(abi.encode(rangePayment));
-            isRangePaymentHash[rangePaymentHash] = true;
+            // Set hash of rangePayment in mapping
+            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
+            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
 
-            IERC20(rangePayment.token).transferFrom(rangePayment.from, address(this), rangePayment.amount);
+            rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
             emit RangePaymentCreated(msg.sender, rangePaymentHash, rangePayment);
         }
     }
@@ -131,7 +139,9 @@ contract PaymentCoordinator is
      * @notice similar to `payForRange` except the payment is split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs
      */
-    function payAllForRange(RangePayment calldata rangePayment) external {}
+    function payAllForRange(
+        RangePayment[] calldata rangePayment
+    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) {}
 
     /**
      * @notice Claim payments for the given claim
@@ -167,7 +177,15 @@ contract PaymentCoordinator is
      * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
      */
     function setCalculationIntervalSeconds(uint64 _calculationIntervalSeconds) external onlyOwner {
-        calculationIntervalSeconds = _calculationIntervalSeconds;
+        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
+    }
+
+    /**
+     * @notice Set a new value for retroactivePaymentsEnabled. Only callable by owner
+     * @param _retroactivePaymentsEnabled The new value for retroactivePaymentsEnabled
+     */
+    function setRetroactivePaymentsEnabled(bool _retroactivePaymentsEnabled) external onlyOwner {
+        retroactivePaymentsEnabled = _retroactivePaymentsEnabled;
     }
 
     /**
@@ -200,6 +218,11 @@ contract PaymentCoordinator is
     function _setActivationDelay(uint64 _activationDelay) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
+    }
+
+    function _setCalculationIntervalSeconds(uint64 _calculationIntervalSeconds) internal {
+        emit CalculationIntervalSecondsSet(calculationIntervalSeconds, _calculationIntervalSeconds);
+        calculationIntervalSeconds = _calculationIntervalSeconds;
     }
 
     function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {
