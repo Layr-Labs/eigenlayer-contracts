@@ -27,7 +27,6 @@ interface IPaymentCoordinator {
         // Strategies & relative weights of shares in the strategies
         StrategyAndMultiplier[] strategiesAndMultlipliers;
         IERC20 token;
-        address from;
         uint256 amount;
         uint64 startTimestamp;
         uint64 duration;

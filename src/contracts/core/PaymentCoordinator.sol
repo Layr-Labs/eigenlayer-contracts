@@ -160,7 +160,7 @@ contract PaymentCoordinator is
         bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
         isRangePaymentHash[msg.sender][rangePaymentHash] = true;
 
-        rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
+        rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
         return rangePaymentHash;
     }
 
