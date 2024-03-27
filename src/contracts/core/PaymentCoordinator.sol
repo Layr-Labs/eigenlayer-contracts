@@ -107,7 +107,11 @@ contract PaymentCoordinator is
     function payForRange(
         RangePayment[] calldata rangePayments
     ) external onlyWhenNotPaused(PAUSED_PAY_FOR_RANGE) nonReentrant {
-        _payForRange(rangePayments);
+        for (uint256 i = 0; i < rangePayments.length; i++) {
+            RangePayment calldata rangePayment = rangePayments[i];
+            bytes32 rangePaymentHash = _payForRange(rangePayment);
+            emit RangePaymentCreated(msg.sender, rangePaymentHash, rangePayment);
+        }
     }
 
     /**
@@ -117,84 +121,47 @@ contract PaymentCoordinator is
     function payAllForRange(
         RangePayment[] calldata rangePayments
     ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter {
-        _payAllForRange(rangePayments);
-    }
-
-    function _payForRange(RangePayment[] calldata rangePayments) internal {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
-
-            require(
-                rangePayment.strategiesAndMultlipliers.length > 0,
-                "PaymentCoordinator.payForRange: no strategies set"
-            );
-            require(rangePayment.amount > 0, "PaymentCoordinator.payForRange: amount cannot be 0");
-            require(
-                rangePayment.duration <= MAX_PAYMENT_DURATION,
-                "PaymentCoordinator.payForRange: duration exceeds MAX_PAYMENT_DURATION"
-            );
-            require(
-                rangePayment.duration % calculationIntervalSeconds == 0,
-                "PaymentCoordinator.payForRange: duration must be a multiple of calculationIntervalSeconds"
-            );
-            // If retroactive payments enabled must at least be past LOWER_BOUND_START_RANGE,
-            // otherwise should start earliest at current block timestamp
-            require(
-                (retroactivePaymentsEnabled && rangePayment.startTimestamp >= LOWER_BOUND_START_RANGE) ||
-                    rangePayment.startTimestamp >= block.timestamp,
-                "PaymentCoordinator.payForRange: invalid startTimestamp set"
-            );
-
-            // Require rangePayment is for whitelisted strategies
-            for (uint256 j = 0; j < rangePayment.strategiesAndMultlipliers.length; j++) {
-                IStrategy strategy = rangePayment.strategiesAndMultlipliers[j].strategy;
-                require(
-                    strategyManager.strategyIsWhitelistedForDeposit(strategy),
-                    "PaymentCoordinator.payForRange: strategy not whitelisted for deposit"
-                );
-            }
-
-            // Set hash of rangePayment in mapping
-            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
-            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
-
-            rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
-            emit RangePaymentCreated(msg.sender, rangePaymentHash, rangePayment);
-        }
-    }
-
-    function _payAllForRange(RangePayment[] calldata rangePayments) internal {
-        for (uint256 i = 0; i < rangePayments.length; i++) {
-            RangePayment calldata rangePayment = rangePayments[i];
-
-            require(
-                rangePayment.strategiesAndMultlipliers.length > 0,
-                "PaymentCoordinator.payForRange: no strategies set"
-            );
-            require(rangePayment.amount > 0, "PaymentCoordinator.payForRange: amount cannot be 0");
-            require(
-                rangePayment.duration <= MAX_PAYMENT_DURATION,
-                "PaymentCoordinator.payAllForRange: duration exceeds MAX_PAYMENT_DURATION"
-            );
-            require(
-                rangePayment.duration % calculationIntervalSeconds == 0,
-                "PaymentCoordinator.payAllForRange: duration must be a multiple of calculationIntervalSeconds"
-            );
-            // If retroactive payments enabled must at least be past LOWER_BOUND_START_RANGE,
-            // otherwise should start earliest at current block timestamp
-            require(
-                (retroactivePaymentsEnabled && rangePayment.startTimestamp >= LOWER_BOUND_START_RANGE) ||
-                    rangePayment.startTimestamp >= block.timestamp,
-                "PaymentCoordinator.payAllForRange: invalid startTimestamp set"
-            );
-
-            // Set hash of rangePayment in mapping
-            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
-            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
-
-            rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
+            bytes32 rangePaymentHash = _payForRange(rangePayment);
             emit RangePaymentForAllCreated(msg.sender, rangePaymentHash, rangePayment);
         }
+    }
+
+    function _payForRange(RangePayment calldata rangePayment) internal returns (bytes32) {
+        require(rangePayment.strategiesAndMultlipliers.length > 0, "PaymentCoordinator.payForRange: no strategies set");
+        require(rangePayment.amount > 0, "PaymentCoordinator.payForRange: amount cannot be 0");
+        require(
+            rangePayment.duration <= MAX_PAYMENT_DURATION,
+            "PaymentCoordinator.payForRange: duration exceeds MAX_PAYMENT_DURATION"
+        );
+        require(
+            rangePayment.duration % calculationIntervalSeconds == 0,
+            "PaymentCoordinator.payForRange: duration must be a multiple of calculationIntervalSeconds"
+        );
+        // If retroactive payments enabled must at least be past LOWER_BOUND_START_RANGE,
+        // otherwise should start earliest at current block timestamp
+        require(
+            (retroactivePaymentsEnabled && rangePayment.startTimestamp >= LOWER_BOUND_START_RANGE) ||
+                rangePayment.startTimestamp >= block.timestamp,
+            "PaymentCoordinator.payForRange: invalid startTimestamp set"
+        );
+
+        // Require rangePayment is for whitelisted strategies
+        for (uint256 j = 0; j < rangePayment.strategiesAndMultlipliers.length; j++) {
+            IStrategy strategy = rangePayment.strategiesAndMultlipliers[j].strategy;
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(strategy),
+                "PaymentCoordinator.payForRange: strategy not whitelisted for deposit"
+            );
+        }
+
+        // Set hash of rangePayment in mapping
+        bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
+        isRangePaymentHash[msg.sender][rangePaymentHash] = true;
+
+        rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
+        return rangePaymentHash;
     }
 
     /**
