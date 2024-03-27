@@ -40,6 +40,19 @@ contract PaymentCoordinator is
     /// @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
 
+    modifier onlyPaymentUpdater() {
+        require(msg.sender == paymentUpdater, "PaymentCoordinator: caller is not the paymentUpdater");
+        _;
+    }
+
+    modifier onlyPayAllForRangeSubmitter() {
+        require(
+            isPayAllForRangeSubmitter[msg.sender],
+            "PaymentCoordinator: caller is not a valid payAllForRange submitter"
+        );
+        _;
+    }
+
     /// @dev Sets the immutable variables for the contract
     constructor(
         IAVSDirectory _avsDirectory,
@@ -97,10 +110,25 @@ contract PaymentCoordinator is
         _payForRange(rangePayments);
     }
 
+    /**
+     * @notice similar to `payForRange` except the payment is split amongst *all* stakers
+     * rather than just those delegated to operators who are registered to a single avs
+     */
+    function payAllForRange(
+        RangePayment[] calldata rangePayments
+    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter {
+        _payAllForRange(rangePayments);
+    }
+
     function _payForRange(RangePayment[] calldata rangePayments) internal {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
 
+            require(
+                rangePayment.strategiesAndMultlipliers.length > 0,
+                "PaymentCoordinator.payForRange: no strategies set"
+            );
+            require(rangePayment.amount > 0, "PaymentCoordinator.payForRange: amount cannot be 0");
             require(
                 rangePayment.duration <= MAX_PAYMENT_DURATION,
                 "PaymentCoordinator.payForRange: duration exceeds MAX_PAYMENT_DURATION"
@@ -135,13 +163,39 @@ contract PaymentCoordinator is
         }
     }
 
-    /**
-     * @notice similar to `payForRange` except the payment is split amongst *all* stakers
-     * rather than just those delegated to operators who are registered to a single avs
-     */
-    function payAllForRange(
-        RangePayment[] calldata rangePayment
-    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) {}
+    function _payAllForRange(RangePayment[] calldata rangePayments) internal {
+        for (uint256 i = 0; i < rangePayments.length; i++) {
+            RangePayment calldata rangePayment = rangePayments[i];
+
+            require(
+                rangePayment.strategiesAndMultlipliers.length > 0,
+                "PaymentCoordinator.payForRange: no strategies set"
+            );
+            require(rangePayment.amount > 0, "PaymentCoordinator.payForRange: amount cannot be 0");
+            require(
+                rangePayment.duration <= MAX_PAYMENT_DURATION,
+                "PaymentCoordinator.payAllForRange: duration exceeds MAX_PAYMENT_DURATION"
+            );
+            require(
+                rangePayment.duration % calculationIntervalSeconds == 0,
+                "PaymentCoordinator.payAllForRange: duration must be a multiple of calculationIntervalSeconds"
+            );
+            // If retroactive payments enabled must at least be past LOWER_BOUND_START_RANGE,
+            // otherwise should start earliest at current block timestamp
+            require(
+                (retroactivePaymentsEnabled && rangePayment.startTimestamp >= LOWER_BOUND_START_RANGE) ||
+                    rangePayment.startTimestamp >= block.timestamp,
+                "PaymentCoordinator.payAllForRange: invalid startTimestamp set"
+            );
+
+            // Set hash of rangePayment in mapping
+            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
+            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
+
+            rangePayment.token.safeTransferFrom(rangePayment.from, address(this), rangePayment.amount);
+            emit RangePaymentForAllCreated(msg.sender, rangePaymentHash, rangePayment);
+        }
+    }
 
     /**
      * @notice Claim payments for the given claim
@@ -163,7 +217,7 @@ contract PaymentCoordinator is
      * @param paymentsCalculatedUntilTimestamp The timestamp until which payments have been calculated
      * @dev Only callable by the paymentUpdater
      */
-    function submitRoot(bytes32 root, uint32 paymentsCalculatedUntilTimestamp) external {}
+    function submitRoot(bytes32 root, uint32 paymentsCalculatedUntilTimestamp) external onlyPaymentUpdater {}
 
     /// @notice returns the hash of the leaf
     function calculateLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external view returns (bytes32) {}
@@ -213,6 +267,12 @@ contract PaymentCoordinator is
      */
     function setPaymentUpdater(address _paymentUpdater) external onlyOwner {
         _setPaymentUpdater(_paymentUpdater);
+    }
+
+    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external onlyOwner {
+        bool prevValue = isPayAllForRangeSubmitter[_submitter];
+        emit PayAllForRangeSubmitterSet(_submitter, prevValue, _newValue);
+        isPayAllForRangeSubmitter[_submitter] = _newValue;
     }
 
     function _setActivationDelay(uint64 _activationDelay) internal {
