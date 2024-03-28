@@ -2757,6 +2757,8 @@ contract DelegationManagerUnitTests_Undelegate is DelegationManagerUnitTests {
      * Emits a `StakerUndelegated` event
      */
     function testFuzz_undelegate_noDelegateableShares(address staker) public filterFuzzedAddressInputs(staker) {
+        cheats.assume(staker != defaultOperator);
+        
         // register *this contract* as an operator and delegate from the `staker` to them
         _registerOperatorWithBaseDetails(defaultOperator);
         _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
