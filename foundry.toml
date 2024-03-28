@@ -34,4 +34,4 @@ tab_width = 4
 # See more config options https://github.com/gakonst/foundry/tree/master/config
 
 [profile.forktest.fuzz]
-runs=10
+runs=20
