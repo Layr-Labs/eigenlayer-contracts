@@ -67,10 +67,12 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     bool public retroactivePaymentsEnabled;
 
     /// @notice Mapping: account => the address of the entity to which new payments are directed on behalf of the account
-    mapping(address => address) public recipientOf;
+    mapping(address => address) public claimerFor;
 
-    /// @notice Mapping: recipient => token => total amount claimed
+    /// @notice Mapping: claimer => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
+    /// @notice Used for unique rangePaymentHashes
+    uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRangePaymentHash;
     /// @notice Mapping: address => bool to check if the address is permissioned to submit payAllForRange

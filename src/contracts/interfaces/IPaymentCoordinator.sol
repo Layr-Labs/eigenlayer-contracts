@@ -67,7 +67,7 @@ interface IPaymentCoordinator {
     event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
     event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    event RecipientSet(address indexed account, address indexed recipient);
+    event ClaimerForSet(address indexed account, address indexed claimer);
     event RootSubmitted(
         bytes32 root,
         uint32 paymentCalculationStartTimestamp,
@@ -97,10 +97,10 @@ interface IPaymentCoordinator {
     function activationDelay() external view returns (uint64);
 
     /// @notice Mapping: account => the address of the entity to which new payments are directed on behalf of the account
-    function recipientOf(address account) external view returns (address);
+    function claimerFor(address account) external view returns (address);
 
-    /// @notice Mapping: recipient => token => total amount claimed
-    function cumulativeClaimed(address recipient, IERC20 token) external view returns (uint256);
+    /// @notice Mapping: claimer => token => total amount claimed
+    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
     /// @notice the commission for all operators across all avss
     function globalOperatorCommissionBips() external view returns (uint16);
@@ -153,11 +153,11 @@ interface IPaymentCoordinator {
 
     /**
      * @notice Sets the address of the entity that can claim payments on behalf of the account
-     * @param account The account whose recipient is being set
-     * @param recipient The address of the entity that can claim payments on behalf of the account
+     * @param account The account whose claimer is being set
+     * @param claimer The address of the entity that can claim payments on behalf of the account
      * @dev Only callable by the `account`
      */
-    function setRecipient(address account, address recipient) external;
+    function setClaimer(address account, address claimer) external;
 
     /**
      * @notice Creates a new distribution root
