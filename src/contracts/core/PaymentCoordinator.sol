@@ -157,7 +157,8 @@ contract PaymentCoordinator is
         }
 
         // Set hash of rangePayment in mapping
-        bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, rangePayment));
+        bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
+        paymentNonce++;
         isRangePaymentHash[msg.sender][rangePaymentHash] = true;
 
         rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
@@ -172,11 +173,11 @@ contract PaymentCoordinator is
 
     /**
      * @notice Sets the address of the entity that can claim payments on behalf of the account
-     * @param account The account whose recipient is being set
-     * @param recipient The address of the entity that can claim payments on behalf of the account
+     * @param account The account whose claimer is being set
+     * @param claimer The address of the entity that can claim payments on behalf of the account
      * @dev Only callable by the `account`
      */
-    function setRecipient(address account, address recipient) external {}
+    function setClaimer(address account, address claimer) external {}
 
     /**
      * @notice Creates a new distribution root
