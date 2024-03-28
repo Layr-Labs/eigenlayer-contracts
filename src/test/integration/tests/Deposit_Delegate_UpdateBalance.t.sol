@@ -16,8 +16,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
         _configRand({
             _randomSeed: _random,
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS,
-            _forkTypes: LOCAL | MAINNET
+            _userTypes: DEFAULT | ALT_METHODS
         });
 
         /// 0. Create an operator and staker with some underlying assets

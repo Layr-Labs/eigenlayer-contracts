@@ -40,9 +40,24 @@ jobs:
         forge build --sizes
       id: build
 
-    - name: Run forge test for all files
-      run: forge test --no-match-contract FFI
+    - name: Run unit tests
+      run: forge test --no-match-contract FFI --no-match-contract Integration
       env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+    - name: Run integration tests
+      run: forge test --match-contract Integration
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+    - name: Run integration mainnet fork tests
+      run: forge test --match-contract Integration
+      env:
+        FOUNDRY_PROFILE: "forktest"
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}

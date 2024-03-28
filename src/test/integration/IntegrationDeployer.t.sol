@@ -72,8 +72,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // be returned from `_randUser`.
     bytes assetTypes;
     bytes userTypes;
-    bytes forkTypes;
-    // Set only once in configRand
+    // Set only once in setUp, if FORK_MAINNET env is set
     uint forkType;
 
     // Constants
@@ -183,10 +182,31 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      */
     function setUp() public virtual {
         isUpgraded = false;
-        // create mainnet fork that can be used later
-        mainnetForkId = cheats.createFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
-        // create holesky fork that can be used later
-        holeskyForkId = cheats.createFork(cheats.rpcUrl("holesky"), holeskyForkBLock);
+
+        /**
+         * env FOUNDRY_PROFILE=forktest forge t --mc Integration
+         *
+         * Running foundry like this will trigger the fork test profile,
+         * lowering fuzz runs and using a remote RPC to test against mainnet state
+         */
+        bool forkMainnet = 
+            _hash("forktest") ==
+            _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+
+        if (forkMainnet) {
+            emit log("setUp: running tests against mainnet fork");
+            emit log_named_string("- using RPC url", cheats.rpcUrl("mainnet"));
+            emit log_named_uint("- forking at block", mainnetForkBlock);
+
+            cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+            forkType = MAINNET;
+        } else {
+            emit log("setUp: running tests locally");
+
+            forkType = LOCAL;
+        }
+
+        _deployOrFetchContracts();
     }
 
     function _setUpLocal() public virtual {
@@ -608,8 +628,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _configRand(
         uint24 _randomSeed, 
         uint _assetTypes,
-        uint _userTypes,
-        uint _forkTypes
+        uint _userTypes
     ) internal {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
@@ -619,7 +638,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
-        forkTypes = _bitmapToBytes(_forkTypes);
 
         emit log("_configRand: Users will be initialized with these asset types:");
         for (uint i = 0; i < assetTypes.length; i++) {
@@ -631,17 +649,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             emit log(userTypeToStr[uint(uint8(userTypes[i]))]);
         }
 
-        emit log("_configRand: Tests will be shadow forked based on these fork types");
-        for (uint i = 0; i < forkTypes.length; i++) {
-            emit log(forkTypeToStr[uint(uint8(forkTypes[i]))]);
-        }
-
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
-        assertTrue(forkTypes.length != 0, "_configRand: no fork types selected");
-
-        // Use forkType to deploy contracts locally or fetch from mainnet
-        _deployOrFetchContracts();
     }
 
     /**
@@ -651,16 +660,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note: for non-LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
      */
     function _deployOrFetchContracts() internal {
-        forkType = _randForkType();
-
-        emit log_named_string("_deployOrFetchContracts selected fork for test", forkTypeToStr[forkType]);
+        emit log_named_string("_deployOrFetchContracts using fork for test", forkTypeToStr[forkType]);
 
         if (forkType == LOCAL) {
             _setUpLocal();
             // Set Upgraded as local setup deploys most up to date contracts
             isUpgraded = true;
         } else if (forkType == MAINNET) {
-            cheats.selectFork(mainnetForkId);
+            // cheats.selectFork(mainnetForkId);
             string memory deploymentInfoPath = "script/configs/mainnet/Mainnet_current_deployment.config.json";
             _parseDeployedContracts(deploymentInfoPath);
 
@@ -688,7 +695,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             // Create mock beacon chain / proof gen interface
             beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
         } else if (forkType == HOLESKY) {
-            cheats.selectFork(holeskyForkId);
+            revert("_deployOrFetchContracts - holesky tests currently broken sorry");
+            // cheats.selectFork(holeskyForkId);
             string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
             _parseDeployedContracts(deploymentInfoPath);
 
@@ -727,7 +735,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             cheats.stopPrank();
 
         } else {
-            revert("_configEigenlayerContracts: unimplemented forkType");
+            revert("_deployOrFetchContracts: unimplemented forkType");
         }
     }
 
@@ -970,13 +978,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _randForkType() internal returns (uint) {
-        uint idx = _randUint({ min: 0, max: forkTypes.length - 1 });
-        uint randForkType = uint(uint8(forkTypes[idx]));
-
-        return randForkType;
-    }
-
     /**
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
@@ -1027,5 +1028,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         emit log("==================");
+    }
+
+    /// @dev Helper because solidity syntax is exhausting
+    function _hash(string memory s) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(s));
     }
 }
