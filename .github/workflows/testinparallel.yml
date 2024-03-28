@@ -24,6 +24,8 @@ jobs:
   run-tests:
     needs: prepare
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
 
     steps:
     - name: Checkout code
