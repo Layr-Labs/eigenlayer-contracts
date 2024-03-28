@@ -41,7 +41,7 @@ jobs:
       id: build
 
     - name: Run unit tests
-      run: forge test --no-match-contract FFI --no-match-contract Integration
+      run: forge test --no-match-contract Integration
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
