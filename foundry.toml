@@ -17,6 +17,7 @@ optimizer_runs = 200
 via_ir = false
 # Override the Solidity version (this overrides `auto_detect_solc`)
 solc_version = '0.8.12'
+evm_version="shanghai"
 
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"
