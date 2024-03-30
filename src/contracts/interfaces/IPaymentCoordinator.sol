@@ -199,8 +199,12 @@ interface IPaymentCoordinator {
     ) external;
 
     /**
-     * @notice Claim payments for the given claim
-     * @param claim The claims to be processed
+     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex])
+     * @param claim The PaymentMerkleClaim to be processed.
+     * Contains the root index, earner, payment leaves, and required proofs
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the payments.
      */
     function processClaim(PaymentMerkleClaim calldata claim) external;
 }
