@@ -113,6 +113,7 @@ contract PaymentCoordinator is
     /**
      * @notice similar to `payForRange` except the payment is split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs
+     * @param rangePayments The range payments being created
      */
     function payAllForRange(
         RangePayment[] calldata rangePayments
@@ -125,13 +126,20 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Claim payments for the given claim
-     * @param claim The claim to be processed
+     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex])
+     * @param claim The PaymentMerkleClaim to be processed.
+     * Contains the root index, earner, payment leaves, and required proofs
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the payments.
      */
     function processClaim(PaymentMerkleClaim calldata claim) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
         _processClaim(claim);
     }
 
+    /**
+     * @notice Create a RangePayment. Called from both `payForRange` and `payAllForRange`
+     */
     function _payForRange(RangePayment calldata rangePayment) internal returns (bytes32) {
         bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
         require(
