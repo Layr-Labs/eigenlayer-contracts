@@ -138,7 +138,10 @@ contract PaymentCoordinator is
             !isRangePaymentHash[msg.sender][rangePaymentHash],
             "PaymentCoordinator._payForRange: range payment hash already submitted"
         );
-        require(rangePayment.strategiesAndMultlipliers.length > 0, "PaymentCoordinator.payForRange: no strategies set");
+        require(
+            rangePayment.strategiesAndMultlipliers.length > 0,
+            "PaymentCoordinator._payForRange: no strategies set"
+        );
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
         require(
             rangePayment.duration <= MAX_PAYMENT_DURATION,
@@ -190,7 +193,10 @@ contract PaymentCoordinator is
      */
     function _processClaim(PaymentMerkleClaim calldata claim) internal onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
         DistributionRoot memory root = distributionRoots[claim.rootIndex];
-        require(block.timestamp > root.activatedAt, "PaymentCoordinator._processClaim: root not activated yet");
+        require(
+            block.timestamp > root.activatedAt + activationDelay,
+            "PaymentCoordinator._processClaim: root not activated yet"
+        );
 
         // If claimerFor earner is not set, claimer is default the earner. Else set to claimerFor
         address claimer = claimerFor[claim.earner] == address(0) ? claim.earner : claimerFor[claim.earner];
