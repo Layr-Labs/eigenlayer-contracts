@@ -33,8 +33,12 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     // Config Variables
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
     uint64 MAX_PAYMENT_DURATION = 86400 * 70;
-    /// @notice Lower bound start range is March 25, 12:00:00 UTC
-    uint64 LOWER_BOUND_START_RANGE = 1711368000;
+    
+    /// @notice Lower bound start range is 3 months into the past
+    uint64 LOWER_BOUND_START_RANGE = 86400 * 90;
+    /// @notice Upper bound start range is 1 month into the future
+    uint64 UPPER_BOUND_START_RANGE = 86400 * 30;
+
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint64 activationDelay = 86400 * 7;
     /// @notice intervals(epochs) are 2 weeks
@@ -54,13 +58,11 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
         // Deploy PaymentCoordinator proxy and implementation
         paymentCoordinatorImplementation = new PaymentCoordinator(
-            avsDirectoryMock,
             delegationManagerMock,
-            eigenPodManagerMock,
             strategyManagerMock,
-            slasherMock,
             MAX_PAYMENT_DURATION,
-            LOWER_BOUND_START_RANGE
+            LOWER_BOUND_START_RANGE,
+            UPPER_BOUND_START_RANGE
         );
         paymentCoordinator = PaymentCoordinator(
             address(
