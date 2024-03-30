@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
 
-
 /**
  * @title Interface for the `IPaymentCoordinator` contract.
  * @author Layr Labs, Inc.
@@ -33,48 +32,67 @@ interface IPaymentCoordinator {
     }
 
     struct DistributionRoot {
-        // timestamp after which the root can be claimed against
-        uint64 activatedAfter;
         // merkle root of the distribution
         bytes32 root;
+        // The timestamp which calculated payments started
+        uint64 paymentCalculationStartTimestamp;
+        // The timestamp until which payments have been calculated
+        uint64 paymentCalculationEndTimestamp;
+        // timestamp at which the root can be claimed against
+        uint64 activatedAt;
     }
 
     struct ClaimsTreeMerkleLeaf {
         IERC20 token;
-        uint256 amount;
-        // The staker or operator who earned these tokens
-        address earner;
+        uint256 cumulativeEarnings;
     }
 
     struct PaymentMerkleClaim {
-        ClaimsTreeMerkleLeaf[] leaves;
         // The index of the root in the list of roots
         uint32 rootIndex;
-        // proof of the claimaint's account root in the Merkle tree
-        uint32 accountIndex;
-        bytes accountTreeProof;
+        address earner;
+        // proof of the earner's account root in the Merkle tree
+        uint32 earnerIndex;
+        bytes earnerTreeProof;
         // The indices and proofs of the leafs in the claimaint's merkle tree for this root
+        bytes32 earnerTokenRoot;
         uint32[] leafIndices;
         bytes[] tokenTreeProofs;
+        ClaimsTreeMerkleLeaf[] leaves;
     }
 
     /// EVENTS ///
 
-    event RangePaymentCreated(address indexed avs, bytes32 rangePaymentHash, RangePayment rangePayment);
-    event RangePaymentForAllCreated(address indexed submitter, bytes32 rangePaymentHash, RangePayment rangePayment);
+    event RangePaymentCreated(
+        address indexed avs,
+        uint256 indexed paymentNonce,
+        bytes32 indexed rangePaymentHash,
+        RangePayment rangePayment
+    );
+    event RangePaymentForAllCreated(
+        address indexed submitter,
+        uint256 indexed paymentNonce,
+        bytes32 indexed rangePaymentHash,
+        RangePayment rangePayment
+    );
     event PaymentUpdaterSet(address indexed oldPaymentUpdater, address indexed newPaymentUpdater);
-    event PayAllForRangeSubmitterSet(address indexed payAllForRangeSubmitter, bool indexed oldValue, bool indexed newValue);
+    event PayAllForRangeSubmitterSet(
+        address indexed payAllForRangeSubmitter,
+        bool indexed oldValue,
+        bool indexed newValue
+    );
     event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
     event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
-    event ClaimerForSet(address indexed account, address indexed claimer);
-    event RootSubmitted(
-        bytes32 root,
-        uint32 paymentCalculationStartTimestamp,
-        uint32 paymentCalculationEndTimestamp,
-        uint32 activatedAt
+    event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+    event DistributionRootSubmitted(
+        uint32 indexed rootIndex,
+        bytes32 indexed root,
+        uint64 paymentCalculationStartTimestamp,
+        uint64 paymentCalculationEndTimestamp,
+        uint64 activatedAt
     );
-    event PaymentClaimed(ClaimsTreeMerkleLeaf leaf);
+    event PaymentClaimed(bytes32 indexed root, bytes32 indexed earnerTokenRoot, ClaimsTreeMerkleLeaf leaf);
 
     /// VIEW FUNCTIONS ///
 
@@ -96,8 +114,8 @@ interface IPaymentCoordinator {
     /// @notice Delay in timestamp before a posted root can be claimed against
     function activationDelay() external view returns (uint64);
 
-    /// @notice Mapping: account => the address of the entity to which new payments are directed on behalf of the account
-    function claimerFor(address account) external view returns (address);
+    /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
+    function claimerFor(address earner) external view returns (address);
 
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
@@ -152,24 +170,31 @@ interface IPaymentCoordinator {
     function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
 
     /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the account
-     * @param account The account whose claimer is being set
-     * @param claimer The address of the entity that can claim payments on behalf of the account
-     * @dev Only callable by the `account`
+     * @notice Sets the address of the entity that can claim payments on behalf of the earner
+     * @param earner The earner whose claimer is being set
+     * @param claimer The address of the entity that can claim payments on behalf of the earner
+     * @dev Only callable by the `earner`
      */
-    function setClaimer(address account, address claimer) external;
+    function setClaimer(address earner, address claimer) external;
 
     /**
      * @notice Creates a new distribution root
      * @param root The merkle root of the distribution
-     * @param paymentsCalculatedUntilTimestamp The timestamp until which payments have been calculated
+     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
+     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
+     * @param activatedAt timestamp at which that the root can be claimed against
      * @dev Only callable by the paymentUpdater
      */
-    function submitRoot(bytes32 root, uint32 paymentsCalculatedUntilTimestamp) external;
+    function submitRoot(
+        bytes32 root,
+        uint64 paymentCalculationStartTimestamp,
+        uint64 paymentCalculationEndTimestamp,
+        uint64 activatedAt
+    ) external;
 
     /**
      * @notice Claim payments for the given claim
      * @param claim The claims to be processed
      */
-    function processClaims(PaymentMerkleClaim calldata claim) external;
+    function processClaim(PaymentMerkleClaim calldata claim) external;
 }
