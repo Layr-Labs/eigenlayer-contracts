@@ -138,6 +138,38 @@ contract PaymentCoordinator is
     }
 
     /**
+     * @notice Creates a new distribution root
+     * @param root The merkle root of the distribution
+     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
+     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
+     * @param activatedAt timestamp at which that the root can be claimed against
+     * @dev Only callable by the paymentUpdater
+     */
+    function submitRoot(
+        bytes32 root,
+        uint64 paymentCalculationStartTimestamp,
+        uint64 paymentCalculationEndTimestamp,
+        uint64 activatedAt
+    ) external onlyPaymentUpdater {
+        uint32 rootIndex = uint32(distributionRoots.length);
+        distributionRoots.push(
+            DistributionRoot({
+                root: root,
+                activatedAt: activatedAt,
+                paymentCalculationStartTimestamp: paymentCalculationStartTimestamp,
+                paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
+            })
+        );
+        emit DistributionRootSubmitted(
+            rootIndex,
+            root,
+            paymentCalculationStartTimestamp,
+            paymentCalculationEndTimestamp,
+            activatedAt
+        );
+    }
+
+    /**
      * @notice Create a RangePayment. Called from both `payForRange` and `payAllForRange`
      */
     function _payForRange(RangePayment calldata rangePayment) internal returns (bytes32) {
@@ -206,7 +238,7 @@ contract PaymentCoordinator is
             "PaymentCoordinator._processClaim: root not activated yet"
         );
 
-        // If claimerFor earner is not set, claimer is default the earner. Else set to claimerFor
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
         address claimer = claimerFor[claim.earner] == address(0) ? claim.earner : claimerFor[claim.earner];
         require(msg.sender == claimer, "PaymentCoordinator._processClaim: caller is not valid claimer");
         require(
@@ -291,7 +323,7 @@ contract PaymentCoordinator is
         ClaimsTreeMerkleLeaf calldata tokenLeaf
     ) internal view {
         // Verify inclusion of token leaf
-        bytes32 tokenLeafHash = sha256(abi.encode(tokenLeaf));
+        bytes32 tokenLeafHash = calculateTokenLeafHash(tokenLeaf);
         require(
             Merkle.verifyInclusionSha256({
                 root: earnerTokenRoot,
@@ -321,7 +353,7 @@ contract PaymentCoordinator is
         bytes32 earnerTokenRoot
     ) internal view {
         // Verify inclusion of earner leaf
-        bytes32 earnerLeafHash = sha256(abi.encodePacked(earner, earnerTokenRoot));
+        bytes32 earnerLeafHash = calculateEarnerLeafHash(earner, earnerTokenRoot);
         require(
             Merkle.verifyInclusionSha256({
                 root: root,
@@ -346,43 +378,56 @@ contract PaymentCoordinator is
         emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
-    /**
-     * @notice Creates a new distribution root
-     * @param root The merkle root of the distribution
-     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
-     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param activatedAt timestamp at which that the root can be claimed against
-     * @dev Only callable by the paymentUpdater
-     */
-    function submitRoot(
-        bytes32 root,
-        uint64 paymentCalculationStartTimestamp,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
-    ) external onlyPaymentUpdater {
-        uint32 rootIndex = uint32(distributionRoots.length);
-        distributionRoots.push(
-            DistributionRoot({
-                root: root,
-                activatedAt: activatedAt,
-                paymentCalculationStartTimestamp: paymentCalculationStartTimestamp,
-                paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
-            })
-        );
-        emit DistributionRootSubmitted(
-            rootIndex,
-            root,
-            paymentCalculationStartTimestamp,
-            paymentCalculationEndTimestamp,
-            activatedAt
-        );
+    /// @notice return the hash of the earner's leaf
+    function calculateEarnerLeafHash(address earner, bytes32 earnerTokenRoot) public pure returns (bytes32) {
+        return sha256(abi.encode(earner, earnerTokenRoot));
     }
 
-    /// @notice returns the hash of the leaf
-    function calculateLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external view returns (bytes32) {}
+    /// @notice returns the hash of the earner's token leaf
+    function calculateTokenLeafHash(ClaimsTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+        return sha256(abi.encode(leaf));
+    }
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
-    function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool) {}
+    function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool) {
+        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+        require(
+            block.timestamp > root.activatedAt + activationDelay,
+            "PaymentCoordinator._processClaim: root not activated yet"
+        );
+
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address claimer = claimerFor[claim.earner] == address(0) ? claim.earner : claimerFor[claim.earner];
+        require(msg.sender == claimer, "PaymentCoordinator._processClaim: caller is not valid claimer");
+        require(
+            claim.leafIndices.length == claim.tokenTreeProofs.length,
+            "PaymentCoordinator._processClaim: leafIndices and tokenProofs length mismatch"
+        );
+        require(
+            claim.tokenTreeProofs.length == claim.leaves.length,
+            "PaymentCoordinator._processClaim: tokenTreeProofs and leaves length mismatch"
+        );
+
+        // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
+        _verifyEarnerClaimProof({
+            root: root.root,
+            earnerLeafIndex: claim.earnerIndex,
+            earnerProof: claim.earnerTreeProof,
+            earner: claim.earner,
+            earnerTokenRoot: claim.earnerTokenRoot
+        });
+        // For each of the tokenLeaf proofs, verify inclusion of token tree leaf again the earnerTokenRoot
+        for (uint256 i = 0; i < claim.leafIndices.length; ++i) {
+            _verifyTokenClaimProof({
+                earnerTokenRoot: claim.earnerTokenRoot,
+                tokenLeafIndex: claim.leafIndices[i],
+                tokenProof: claim.tokenTreeProofs[i],
+                tokenLeaf: claim.leaves[i]
+            });
+        }
+        
+        return true;
+    }
 
     /**
      * @notice Set a new value for calculationIntervalSeconds. Only callable by owner

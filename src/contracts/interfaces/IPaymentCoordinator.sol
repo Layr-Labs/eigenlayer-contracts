@@ -129,8 +129,11 @@ interface IPaymentCoordinator {
     /// @notice the commission for all operators across all avss
     function globalOperatorCommissionBips() external view returns (uint16);
 
-    /// @notice returns the hash of the leaf
-    function calculateLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external view returns (bytes32);
+    /// @notice return the hash of the earner's leaf
+    function calculateEarnerLeafHash(address earner, bytes32 earnerTokenRoot) external pure returns (bytes32);
+
+    /// @notice returns the hash of the earner's token leaf
+    function calculateTokenLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
@@ -154,6 +157,31 @@ interface IPaymentCoordinator {
      * rather than just those delegated to operators who are registered to a single avs
      */
     function payAllForRange(RangePayment[] calldata rangePayment) external;
+
+    /**
+     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex])
+     * @param claim The PaymentMerkleClaim to be processed.
+     * Contains the root index, earner, payment leaves, and required proofs
+     * @dev only callable by the valid claimer, that is
+     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
+     * claimerFor[claim.earner] can claim the payments.
+     */
+    function processClaim(PaymentMerkleClaim calldata claim) external;
+
+    /**
+     * @notice Creates a new distribution root
+     * @param root The merkle root of the distribution
+     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
+     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
+     * @param activatedAt timestamp at which that the root can be claimed against
+     * @dev Only callable by the paymentUpdater
+     */
+    function submitRoot(
+        bytes32 root,
+        uint64 paymentCalculationStartTimestamp,
+        uint64 paymentCalculationEndTimestamp,
+        uint64 activatedAt
+    ) external;
 
     /**
      * @notice Sets the permissioned `paymentUpdater` address which can post new roots
@@ -182,29 +210,4 @@ interface IPaymentCoordinator {
      * @dev Only callable by the `earner`
      */
     function setClaimer(address earner, address claimer) external;
-
-    /**
-     * @notice Creates a new distribution root
-     * @param root The merkle root of the distribution
-     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
-     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param activatedAt timestamp at which that the root can be claimed against
-     * @dev Only callable by the paymentUpdater
-     */
-    function submitRoot(
-        bytes32 root,
-        uint64 paymentCalculationStartTimestamp,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
-    ) external;
-
-    /**
-     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex])
-     * @param claim The PaymentMerkleClaim to be processed.
-     * Contains the root index, earner, payment leaves, and required proofs
-     * @dev only callable by the valid claimer, that is
-     * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
-     * claimerFor[claim.earner] can claim the payments.
-     */
-    function processClaim(PaymentMerkleClaim calldata claim) external;
 }
