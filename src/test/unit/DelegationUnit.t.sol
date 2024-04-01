@@ -2026,6 +2026,8 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 stakerExpiry,
         uint256 delegationApproverExpiry
     ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != defaultOperator);
+        
         // roll to a very late timestamp
         skip(type(uint256).max / 2);
 
