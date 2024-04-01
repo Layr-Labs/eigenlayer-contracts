@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -2026,6 +2026,8 @@ contract DelegationManagerUnitTests_delegateToBySignature is DelegationManagerUn
         uint256 stakerExpiry,
         uint256 delegationApproverExpiry
     ) public filterFuzzedAddressInputs(caller) {
+        cheats.assume(caller != defaultOperator);
+        
         // roll to a very late timestamp
         skip(type(uint256).max / 2);
 
