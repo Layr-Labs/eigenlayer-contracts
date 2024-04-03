@@ -38,6 +38,16 @@ contract PrintUtils is Test {
         ));
     }
 
+    function _logSection(string memory name, address a) internal {
+        emit log(string.concat(
+            SECTION_DELIMITER,
+            name.cyan(),
+            ": ",
+            a.yellow().dim(),
+            SECTION_DELIMITER
+        ));
+    }
+
     function _logAction(string memory name, string memory action) internal {
         emit log_named_string(
             name.cyan(),

@@ -18,6 +18,7 @@ import "src/test/inspector/PrintUtils.t.sol";
 
 interface ITargetDeployer {
     function whitelistedStrategies() external view returns (StrategyBase[] memory);
+    function isUpgraded() external view returns (bool);
 }
 
 struct HeldAsset {
@@ -79,6 +80,18 @@ contract Target is Test, PrintUtils {
             underlyingToken.approve(address(strategyManager), asset.tokens);
             strategyManager.depositIntoStrategy(asset.strategy, underlyingToken, asset.tokens);
         }
+    }
+
+    function deployEigenPod() public action("deployEigenPod") {
+        // M2 expects an address return value, M1 does not
+        // So we call the method directly and don't parse the return
+        bytes4 selector = eigenPodManager.createPod.selector;
+
+        address(eigenPodManager).call(abi.encodeWithSelector(selector, ""));
+    }
+
+    function activateRestaking() public action("activateRestaking") {
+        pod.activateRestaking();
     }
 
     function queueWithdrawals_M1() public action("queueWithdrawals_M1") {
@@ -159,14 +172,16 @@ contract Target is Test, PrintUtils {
     function logBasicInfo() public {
         _logHeader(name, address(this));
 
-        address _pod = address(pod);
-
         _logEth("ETH balance", address(this).balance);
 
-        // Basic info - EigenPod
+        // EigenPod info
+        address _pod = address(pod);
+
         _log("Has EigenPod", _pod != address(0));
         if (_pod != address(0)) {
-            _log("- pod", _pod);
+            _logSection("EigenPod", _pod);
+            _logEth("Pod ETH balance", _pod.balance);
+            _log("Has Restaked", pod.hasRestaked());
         }
 
         // LST strategy shares and underlying tokens
@@ -195,7 +210,7 @@ contract Target is Test, PrintUtils {
                     IStrategyManager.DeprecatedStruct_QueuedWithdrawal memory qw = queuedWithdrawals_M1[i];
     
                     bytes32 withdrawalRoot = strategyManager.calculateWithdrawalRoot(qw);
-                    _log("- withdrawalRoot", withdrawalRoot);
+                    _log("withdrawalRoot", withdrawalRoot);
                     _log("- pending", strategyManager.withdrawalRootPending(withdrawalRoot));
                     _log("- strategy", _stratName(qw.strategies[0]));
                     _log("- shares", qw.shares[0]);
@@ -212,7 +227,7 @@ contract Target is Test, PrintUtils {
                     IDelegationManager.Withdrawal memory qw = queuedWithdrawals[i];
     
                     bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(qw);
-                    _log("- withdrawalRoot", withdrawalRoot);
+                    _log("withdrawalRoot", withdrawalRoot);
                     _log("- pending", delegationManager.pendingWithdrawals(withdrawalRoot));
                     _log("- strategy", _stratName(qw.strategies[0]));
                     _log("- shares", qw.shares[0]);
@@ -225,9 +240,16 @@ contract Target is Test, PrintUtils {
         }
     }
 
-    function _updateAssets() internal {
-        delete assets;
+    function hasEigenPod() public view returns (bool) {
+        return address(pod) != address(0);
+    }
 
+    function _updateAssets() internal {
+        if (eigenPodManager.hasPod(address(this))) {
+            pod = eigenPodManager.getPod(address(this));
+        }
+
+        delete assets;
         for (uint i = 0; i < whitelistedStrategies.length; i++) {
             StrategyBase strat = whitelistedStrategies[i];
             IERC20 underlying = strat.underlyingToken();

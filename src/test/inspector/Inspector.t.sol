@@ -20,7 +20,7 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
 
     Vm cheats = Vm(HEVM_ADDRESS);
 
-    bool isUpgraded = false;
+    bool public isUpgraded = false;
 
     uint targetNonce;
 
@@ -61,6 +61,28 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         
         // Migrate m1 withdrawals to delegationManager
         t.migrateM1Withdrawals();
+        inspect(t);
+    }
+
+    function test_MigrateEigenPod() public {
+        // Some dude from etherscan hehe
+        Target t = _target(0xf151FeC20505fAf3E6a7E6AA1654e53e23b42CEE);
+        inspect(t);
+
+        // Deploy a pod for the user
+        if (!t.hasEigenPod()) {
+            t.deployEigenPod();
+            inspect(t);
+        }
+
+        // Send a little ETH to the pod
+        _fundPod(t.pod());
+        inspect(t);
+
+        // Upgrade to m2
+        _upgradeMainnet();
+        
+        t.activateRestaking();
         inspect(t);
     }
 
@@ -199,6 +221,13 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
 
         cheats.stopPrank();
         _log("Paused strategyManager!");
+        _log("");
+    }
+
+    function _fundPod(IEigenPod pod) internal {
+        address _pod = address(pod);
+        _log("Minting 1 eth to pod", _pod);
+        cheats.deal(_pod, 1 ether);
         _log("");
     }
 
