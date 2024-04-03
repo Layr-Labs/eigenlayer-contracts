@@ -90,6 +90,10 @@ contract PrintUtils is Test {
         emit log_named_string(name, value.yellow());
     }
 
+    function _logDim(string memory name, address value) internal {
+        emit log_named_string(name.dim(), value.yellow().dim());
+    }
+
     function _log(string memory name, bytes32 value) internal {
         emit log_named_bytes32(name, value);
     }

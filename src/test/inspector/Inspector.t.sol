@@ -31,15 +31,15 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
     }
 
     function test_M2Upgrade() public {
+        inspect(delegationManager);
         inspect(strategyManager);
         inspect(eigenPodManager);
-        inspect(delegationManager);
 
         _upgradeMainnet();
 
+        inspect(delegationManager);
         inspect(strategyManager);
         inspect(eigenPodManager);
-        inspect(delegationManager);
     }
 
     function test_MigrateM1Withdrawal() public {
@@ -83,6 +83,9 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
     function inspect(StrategyManager sm) internal {
         _logHeader("StrategyManager", address(sm));
 
+        address impl = eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(sm))));
+
+        _logDim("Implementation", impl);
         _log("Pause status", sm.paused());
         _log("- PAUSED_DEPOSITS", sm.paused(0));
         _log("");
@@ -90,6 +93,13 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
 
     function inspect(EigenPodManager em) internal {
         _logHeader("EigenPodManager", address(em));
+
+        address impl = eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(em))));
+        _logDim("Implementation", impl);
+
+        address beaconImpl = em.eigenPodBeacon().implementation();
+        _logDim("Beacon Implementation", beaconImpl);
+        _logDim("Beacon Chain Oracle", address(em.beaconChainOracle()));
 
         _log("Pause status", em.paused());
         _log("- PAUSED_NEW_EIGENPODS", em.paused(0));
@@ -99,16 +109,33 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         _log("- PAUSED_EIGENPODS_VERIFY_WITHDRAWAL", em.paused(4));
         _log("- PAUSED_NON_PROOF_WITHDRAWALS", em.paused(5));
 
+        if (isUpgraded) {
+            _logSection("New Variables in M2");
+            _log("EigenPod - Max Balance (Gwei)", EigenPod(payable(beaconImpl)).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR());
+            _log("EigenPod - Genesis Timestamp", EigenPod(payable(beaconImpl)).GENESIS_TIME());
+            _log("EPManager - Deneb Timestamp", em.denebForkTimestamp());
+        }
+
         _log("");
     }
 
     function inspect(DelegationManager dm) internal {
         _logHeader("DelegationManager", address(dm));
 
+        address impl = eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(dm))));
+        _logDim("Implementation", impl);
+
         _log("Pause status", dm.paused());
         _log("- PAUSED_NEW_DELEGATION", dm.paused(0));
         _log("- PAUSED_ENTER_WITHDRAWAL_QUEUE", dm.paused(1));
         _log("- PAUSED_EXIT_WITHDRAWAL_QUEUE", dm.paused(2));
+
+        if (isUpgraded) {
+            _logSection("New Variables in M2");
+            uint minWithdrawalDelayBlocks = dm.minWithdrawalDelayBlocks();
+            _log("minWithdrawalDelay (blocks)", minWithdrawalDelayBlocks);
+            _log("minWithdrawalDelay (days)", (minWithdrawalDelayBlocks * 12) / 1 days);
+        }
 
         _log("");
     }
@@ -206,6 +233,8 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
             data: TimelockHelper.EXEC_DATA,
             eta: TimelockHelper.ETA
         });
+
+        isUpgraded = true;
 
         _log("");
     }
