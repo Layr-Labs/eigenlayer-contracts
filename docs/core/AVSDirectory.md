@@ -4,7 +4,7 @@
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
-| [`AVSDirectory.sol`](../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
+| [`AVSDirectory.sol`](../../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
 
 The `AVSDirectory` handles interactions between AVSs and the EigenLayer core contracts. Once registered as an Operator in EigenLayer core (via the `DelegationManager`), Operators can register with one or more AVSs (via the AVS's contracts) to begin providing services to them offchain. As a part of registering with an AVS, the AVS will record this registration in the core contracts by calling into the `AVSDirectory`.
 
