@@ -58,7 +58,7 @@ interface IPaymentCoordinator {
         bytes earnerTreeProof;
         EarnerTreeMerkleLeaf earnerLeaf;
         // The indices and proofs of the leafs in the claimaint's merkle tree for this root
-        uint32[] leafIndices;
+        uint32[] tokenIndices;
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }

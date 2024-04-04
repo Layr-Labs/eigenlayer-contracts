@@ -16,12 +16,23 @@
     "strategiesToDeploy": []
   },
   "strategyManager": {
-    "init_strategy_whitelister": "0xfaEF7338b7490b9E272d80A1a39f4657cAf2b97d",
+    "init_strategy_whitelister": "0x28Ade60640fdBDb2609D8d8734D1b5cBeFc0C348",
     "init_paused_status": 0
   },
   "delegationManager": {
     "init_paused_status": 0,
-    "init_minWithdrawalDelayBlocks": 50400
+    "init_minWithdrawalDelayBlocks": 10
+  },
+  "paymentCoordinator": {
+    "init_paused_status": 0,
+    "MAX_PAYMENT_DURATION": 6048000,
+    "MAX_RETROACTIVE_LENGTH": 7776000,
+    "MAX_FUTURE_LENGTH": 2592000,
+    "GENESIS_PAYMENT_TIMESTAMP": 1712092632,
+    "payment_updater_address": "0xDA29BB71669f46F2a779b4b62f03644A84eE3479",
+    "activation_delay": 604800,
+    "calculation_interval_seconds": 604800,
+    "global_operator_commission_bips": 0
   },
   "avsDirectory": {
     "init_paused_status": 0
@@ -39,7 +50,7 @@
   },
   "delayedWithdrawalRouter": {
     "init_paused_status": 0,
-    "init_withdrawalDelayBlocks": 50400
+    "init_withdrawalDelayBlocks": 10
   },
   "ethPOSDepositAddress": "0x4242424242424242424242424242424242424242",
   "beaconOracleAddress": "0x4C116BB629bff7A8373c2378bBd919f8349B8f25"
