@@ -58,15 +58,17 @@ contract PaymentCoordinator is
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
         uint64 _maxPaymentDuration,
-        uint64 _LOWER_BOUND_START_RANGE,
-        uint64 _UPPER_BOUND_START_RANGE
+        uint64 _MAX_RETROACTIVE_LENGTH,
+        uint64 _MAX_FUTURE_LENGTH,
+        uint64 _GENESIS_PAYMENT_TIMESTAMP
     )
         PaymentCoordinatorStorage(
             _delegationManager,
             _strategyManager,
             _maxPaymentDuration,
-            _LOWER_BOUND_START_RANGE,
-            _UPPER_BOUND_START_RANGE
+            _MAX_RETROACTIVE_LENGTH,
+            _MAX_FUTURE_LENGTH,
+            _GENESIS_PAYMENT_TIMESTAMP
         )
     {
         _disableInitializers();
@@ -106,7 +108,8 @@ contract PaymentCoordinator is
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
             bytes32 rangePaymentHash = _payForRange(rangePayment);
-            emit RangePaymentCreated(msg.sender, paymentNonce, rangePaymentHash, rangePayment);
+            // paymentNonce - 1 as the nonce is incremented in _payForRange
+            emit RangePaymentCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
         }
     }
 
@@ -121,7 +124,8 @@ contract PaymentCoordinator is
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
             bytes32 rangePaymentHash = _payForRange(rangePayment);
-            emit RangePaymentForAllCreated(msg.sender, paymentNonce, rangePaymentHash, rangePayment);
+            // paymentNonce - 1 as the nonce is incremented in _payForRange
+            emit RangePaymentForAllCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
         }
     }
 
@@ -140,14 +144,12 @@ contract PaymentCoordinator is
     /**
      * @notice Creates a new distribution root
      * @param root The merkle root of the distribution
-     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
      * @param activatedAt timestamp at which that the root can be claimed against
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationStartTimestamp,
         uint64 paymentCalculationEndTimestamp,
         uint64 activatedAt
     ) external onlyPaymentUpdater {
@@ -156,14 +158,12 @@ contract PaymentCoordinator is
             DistributionRoot({
                 root: root,
                 activatedAt: activatedAt,
-                paymentCalculationStartTimestamp: paymentCalculationStartTimestamp,
                 paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
             })
         );
         emit DistributionRootSubmitted(
             rootIndex,
             root,
-            paymentCalculationStartTimestamp,
             paymentCalculationEndTimestamp,
             activatedAt
         );
@@ -179,7 +179,7 @@ contract PaymentCoordinator is
             "PaymentCoordinator._payForRange: range payment hash already submitted"
         );
         require(
-            rangePayment.strategiesAndMultlipliers.length > 0,
+            rangePayment.strategiesAndMultipliers.length > 0,
             "PaymentCoordinator._payForRange: no strategies set"
         );
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
@@ -193,7 +193,8 @@ contract PaymentCoordinator is
         );
         if (retroactivePaymentsEnabled) {
             require(
-                block.timestamp - LOWER_BOUND_START_RANGE <= rangePayment.startTimestamp,
+                block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&
+                    GENESIS_PAYMENT_TIMESTAMP <= rangePayment.startTimestamp,
                 "PaymentCoordinator._payForRange: startTimestamp too far in the past"
             );
         } else {
@@ -203,13 +204,13 @@ contract PaymentCoordinator is
             );
         }
         require(
-            rangePayment.startTimestamp <= block.timestamp + UPPER_BOUND_START_RANGE,
+            rangePayment.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
             "PaymentCoordinator._payForRange: startTimestamp too far in the future"
         );
 
         // Require rangePayment is for whitelisted strategy or beaconChainETHStrategy
-        for (uint256 j = 0; j < rangePayment.strategiesAndMultlipliers.length; j++) {
-            IStrategy strategy = rangePayment.strategiesAndMultlipliers[j].strategy;
+        for (uint256 j = 0; j < rangePayment.strategiesAndMultipliers.length; j++) {
+            IStrategy strategy = rangePayment.strategiesAndMultipliers[j].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) ||
                     strategy == delegationManager.beaconChainETHStrategy(),
@@ -239,14 +240,18 @@ contract PaymentCoordinator is
         );
 
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earner] == address(0) ? claim.earner : claimerFor[claim.earner];
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address claimer = claimerFor[claim.earnerLeaf.earner];
+        if (claimer == address(0)) {
+            claimer = claim.earnerLeaf.earner;
+        }
         require(msg.sender == claimer, "PaymentCoordinator._processClaim: caller is not valid claimer");
         require(
             claim.leafIndices.length == claim.tokenTreeProofs.length,
             "PaymentCoordinator._processClaim: leafIndices and tokenProofs length mismatch"
         );
         require(
-            claim.tokenTreeProofs.length == claim.leaves.length,
+            claim.tokenTreeProofs.length == claim.tokenLeaves.length,
             "PaymentCoordinator._processClaim: tokenTreeProofs and leaves length mismatch"
         );
 
@@ -255,17 +260,15 @@ contract PaymentCoordinator is
             root: root.root,
             earnerLeafIndex: claim.earnerIndex,
             earnerProof: claim.earnerTreeProof,
-            earner: claim.earner,
-            earnerTokenRoot: claim.earnerTokenRoot
+            earnerLeaf: claim.earnerLeaf
         });
         // For each of the tokenLeaf proofs, verify inclusion of token tree leaf again the earnerTokenRoot
         for (uint256 i = 0; i < claim.leafIndices.length; ++i) {
             _processTokenClaim({
-                earnerTokenRoot: claim.earnerTokenRoot,
+                earnerLeaf: claim.earnerLeaf,
                 tokenLeafIndex: claim.leafIndices[i],
                 tokenProof: claim.tokenTreeProofs[i],
-                tokenLeaf: claim.leaves[i],
-                earner: claim.earner,
+                tokenLeaf: claim.tokenLeaves[i],
                 claimer: claimer,
                 root: root.root
             });
@@ -274,26 +277,25 @@ contract PaymentCoordinator is
 
     /**
      * @notice Verify a token claim and transfer claimable amount to the claimer
-     * @param earnerTokenRoot root hash of the earner token subtree
+     * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
      * @param tokenLeafIndex index of the token leaf
      * @param tokenProof proof of the token leaf in the earner token subtree
      * @param tokenLeaf token leaf to be verified
-     * @param earner address of earner account
      * @param claimer address of the entity that can claim payments on behalf of the earner,
      * can be earner account itself or be set to a different address by the earner
+     * @param root distribution root that should be read from storage
      */
     function _processTokenClaim(
-        bytes32 earnerTokenRoot,
+        EarnerTreeMerkleLeaf calldata earnerLeaf,
         uint32 tokenLeafIndex,
         bytes calldata tokenProof,
-        ClaimsTreeMerkleLeaf calldata tokenLeaf,
-        address earner,
+        TokenTreeMerkleLeaf calldata tokenLeaf,
         address claimer,
         bytes32 root
     ) internal {
         // Verify token proof
         _verifyTokenClaimProof({
-            earnerTokenRoot: earnerTokenRoot,
+            earnerTokenRoot: earnerLeaf.earnerTokenRoot,
             tokenLeafIndex: tokenLeafIndex,
             tokenProof: tokenProof,
             tokenLeaf: tokenLeaf
@@ -301,11 +303,11 @@ contract PaymentCoordinator is
 
         // Calculate amount to claim and update cumulativeClaimed
         // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
-        uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earner][tokenLeaf.token];
-        cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+        uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token];
+        cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
         tokenLeaf.token.safeTransfer(claimer, claimAmount);
-        emit PaymentClaimed(root, earnerTokenRoot, tokenLeaf);
+        emit PaymentClaimed(root, tokenLeaf);
     }
 
     /**
@@ -320,12 +322,12 @@ contract PaymentCoordinator is
         bytes32 earnerTokenRoot,
         uint32 tokenLeafIndex,
         bytes calldata tokenProof,
-        ClaimsTreeMerkleLeaf calldata tokenLeaf
+        TokenTreeMerkleLeaf calldata tokenLeaf
     ) internal view {
         // Verify inclusion of token leaf
         bytes32 tokenLeafHash = calculateTokenLeafHash(tokenLeaf);
         require(
-            Merkle.verifyInclusionSha256({
+            Merkle.verifyInclusionKeccak({
                 root: earnerTokenRoot,
                 index: tokenLeafIndex,
                 proof: tokenProof,
@@ -342,20 +344,18 @@ contract PaymentCoordinator is
      * @param root distribution root that should be read from storage
      * @param earnerLeafIndex index of the earner leaf
      * @param earnerProof proof of the earners account root in the merkle tree
-     * @param earner address of earner account.
-     * @param earnerTokenRoot root hash of the token subtree for the earner.
+     * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
      */
     function _verifyEarnerClaimProof(
         bytes32 root,
         uint32 earnerLeafIndex,
         bytes calldata earnerProof,
-        address earner,
-        bytes32 earnerTokenRoot
+        EarnerTreeMerkleLeaf calldata earnerLeaf
     ) internal view {
         // Verify inclusion of earner leaf
-        bytes32 earnerLeafHash = calculateEarnerLeafHash(earner, earnerTokenRoot);
+        bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
         require(
-            Merkle.verifyInclusionSha256({
+            Merkle.verifyInclusionKeccak({
                 root: root,
                 index: earnerLeafIndex,
                 proof: earnerProof,
@@ -379,13 +379,13 @@ contract PaymentCoordinator is
     }
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(address earner, bytes32 earnerTokenRoot) public pure returns (bytes32) {
-        return sha256(abi.encode(earner, earnerTokenRoot));
+    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+        return keccak256(abi.encode(leaf));
     }
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(ClaimsTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
-        return sha256(abi.encode(leaf));
+    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+        return keccak256(abi.encode(leaf));
     }
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
@@ -397,14 +397,17 @@ contract PaymentCoordinator is
         );
 
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earner] == address(0) ? claim.earner : claimerFor[claim.earner];
+        address claimer = claimerFor[claim.earnerLeaf.earner];
+        if (claimer == address(0)) {
+            claimer = claim.earnerLeaf.earner;
+        }
         require(msg.sender == claimer, "PaymentCoordinator._processClaim: caller is not valid claimer");
         require(
             claim.leafIndices.length == claim.tokenTreeProofs.length,
             "PaymentCoordinator._processClaim: leafIndices and tokenProofs length mismatch"
         );
         require(
-            claim.tokenTreeProofs.length == claim.leaves.length,
+            claim.tokenTreeProofs.length == claim.tokenLeaves.length,
             "PaymentCoordinator._processClaim: tokenTreeProofs and leaves length mismatch"
         );
 
@@ -413,19 +416,18 @@ contract PaymentCoordinator is
             root: root.root,
             earnerLeafIndex: claim.earnerIndex,
             earnerProof: claim.earnerTreeProof,
-            earner: claim.earner,
-            earnerTokenRoot: claim.earnerTokenRoot
+            earnerLeaf: claim.earnerLeaf
         });
         // For each of the tokenLeaf proofs, verify inclusion of token tree leaf again the earnerTokenRoot
         for (uint256 i = 0; i < claim.leafIndices.length; ++i) {
             _verifyTokenClaimProof({
-                earnerTokenRoot: claim.earnerTokenRoot,
+                earnerTokenRoot: claim.earnerLeaf.earnerTokenRoot,
                 tokenLeafIndex: claim.leafIndices[i],
                 tokenProof: claim.tokenTreeProofs[i],
-                tokenLeaf: claim.leaves[i]
+                tokenLeaf: claim.tokenLeaves[i]
             });
         }
-        
+
         return true;
     }
 

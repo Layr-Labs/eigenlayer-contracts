@@ -9,6 +9,7 @@ import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
+import "../../src/contracts/core/PaymentCoordinator.sol";
 
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
@@ -48,6 +49,8 @@ contract ExistingDeploymentParser is Script, Test {
     DelegationManager public delegationManagerImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
+    PaymentCoordinator public paymentCoordinator;
+    PaymentCoordinator public paymentCoordinatorImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -136,7 +139,9 @@ contract ExistingDeploymentParser is Script, Test {
         slasherImplementation = Slasher(
             stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation")
         );
-        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager"));
+        delegationManager = DelegationManager(
+            stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager")
+        );
         delegationManagerImplementation = DelegationManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation")
         );
@@ -158,9 +163,7 @@ contract ExistingDeploymentParser is Script, Test {
         delayedWithdrawalRouterImplementation = DelayedWithdrawalRouter(
             stdJson.readAddress(existingDeploymentData, ".addresses.delayedWithdrawalRouterImplementation")
         );
-        beaconOracle = IBeaconChainOracle(
-            stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracle")
-        );
+        beaconOracle = IBeaconChainOracle(stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracle"));
         eigenPodBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodBeacon"));
         eigenPodImplementation = EigenPod(
             payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation"))
@@ -251,7 +254,10 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".strategyManager.init_paused_status"
         );
-        STRATEGY_MANAGER_WHITELISTER = stdJson.readAddress(initialDeploymentData, ".strategyManager.init_strategy_whitelister");
+        STRATEGY_MANAGER_WHITELISTER = stdJson.readAddress(
+            initialDeploymentData,
+            ".strategyManager.init_strategy_whitelister"
+        );
         // Slasher
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
         // DelegationManager
@@ -270,10 +276,9 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
         );
-        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(stdJson.readUint(
-            initialDeploymentData,
-            ".eigenPodManager.deneb_fork_timestamp"
-        ));
+        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(
+            stdJson.readUint(initialDeploymentData, ".eigenPodManager.deneb_fork_timestamp")
+        );
 
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
@@ -296,7 +301,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Ensure contracts point at each other correctly via constructors
-    function _verifyContractPointers() internal virtual view {
+    function _verifyContractPointers() internal view virtual {
         // AVSDirectory
         require(
             avsDirectory.delegation() == delegationManager,
@@ -348,7 +353,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice verify implementations for Transparent Upgradeable Proxies
-    function _verifyImplementations() internal virtual view {
+    function _verifyImplementations() internal view virtual {
         require(
             eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
                 address(avsDirectoryImplementation),
@@ -404,7 +409,7 @@ contract ExistingDeploymentParser is Script, Test {
      * initialization params if this is the first deployment.
      * @param isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual{
+    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -425,12 +430,7 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        eigenPodManager.initialize(
-            beaconOracle,
-            address(0),
-            eigenLayerPauserReg,
-            EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-        );
+        eigenPodManager.initialize(beaconOracle, address(0), eigenLayerPauserReg, EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         // DelayedWithdrawalRouter
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         delayedWithdrawalRouter.initialize(
@@ -452,7 +452,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
-    function _verifyInitializationParams() internal virtual view {
+    function _verifyInitializationParams() internal view virtual {
         // AVSDirectory
         require(
             avsDirectory.pauserRegistry() == eigenLayerPauserReg,
@@ -522,8 +522,8 @@ contract ExistingDeploymentParser is Script, Test {
         );
         require(
             eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
-            && EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR &&
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
             "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
         );
         require(
@@ -621,7 +621,11 @@ contract ExistingDeploymentParser is Script, Test {
 
         string memory deployed_strategies = "strategies";
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
-            vm.serializeAddress(deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
+            vm.serializeAddress(
+                deployed_strategies,
+                strategiesToDeploy[i].tokenSymbol,
+                address(deployedStrategyArray[i])
+            );
         }
         string memory deployed_strategies_output = numStrategiesToDeploy == 0
             ? ""
@@ -639,12 +643,22 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
-        vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationManagerImplementation));
+        vm.serializeAddress(
+            deployed_addresses,
+            "delegationManagerImplementation",
+            address(delegationManagerImplementation)
+        );
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
             "strategyManagerImplementation",
             address(strategyManagerImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "paymentCoordinator", address(paymentCoordinator));
+        vm.serializeAddress(
+            deployed_addresses,
+            "paymentCoordinatorImplementation",
+            address(paymentCoordinatorImplementation)
         );
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
         vm.serializeAddress(
@@ -687,6 +701,5 @@ contract ExistingDeploymentParser is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
 
         vm.writeJson(finalJson, outputPath);
-
     }
 }

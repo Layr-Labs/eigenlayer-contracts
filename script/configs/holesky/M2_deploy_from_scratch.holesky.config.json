@@ -23,6 +23,9 @@
     "init_paused_status": 0,
     "init_minWithdrawalDelayBlocks": 50400
   },
+  "paymentCoordinator": {
+
+  },
   "avsDirectory": {
     "init_paused_status": 0
   },
