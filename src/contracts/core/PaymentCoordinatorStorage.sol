@@ -23,8 +23,12 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     uint64 public immutable MAX_PAYMENT_DURATION;
-    uint64 public immutable LOWER_BOUND_START_RANGE;
-    uint64 public immutable UPPER_BOUND_START_RANGE;
+    /// @notice max amount of time that a payment can start in the past
+    uint64 public immutable MAX_RETROACTIVE_LENGTH;
+    /// @notice max amount of time that a payment can start in the future
+    uint64 public immutable MAX_FUTURE_LENGTH;
+    /// @notice absolute min timestamp that a payment can start at
+    uint64 public immutable GENESIS_PAYMENT_TIMESTAMP;
 
     /// @notice The elegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
@@ -77,14 +81,16 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,  
         uint64 _MAX_PAYMENT_DURATION,
-        uint64 _LOWER_BOUND_START_RANGE,
-        uint64 _UPPER_BOUND_START_RANGE
+        uint64 _MAX_RETROACTIVE_LENGTH,
+        uint64 _MAX_FUTURE_LENGTH,
+        uint64 _GENESIS_PAYMENT_TIMESTAMP
     ) {
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         MAX_PAYMENT_DURATION = _MAX_PAYMENT_DURATION;
-        LOWER_BOUND_START_RANGE = _LOWER_BOUND_START_RANGE;
-        UPPER_BOUND_START_RANGE = _UPPER_BOUND_START_RANGE;
+        MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
+        MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
+        GENESIS_PAYMENT_TIMESTAMP = _GENESIS_PAYMENT_TIMESTAMP;
     }
 
     /**

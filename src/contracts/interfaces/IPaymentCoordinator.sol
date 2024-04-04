@@ -24,7 +24,7 @@ interface IPaymentCoordinator {
 
     struct RangePayment {
         // Strategies & relative weights of shares in the strategies
-        StrategyAndMultiplier[] strategiesAndMultlipliers;
+        StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         uint256 amount;
         uint64 startTimestamp;
@@ -34,15 +34,18 @@ interface IPaymentCoordinator {
     struct DistributionRoot {
         // merkle root of the distribution
         bytes32 root;
-        // The timestamp which calculated payments started
-        uint64 paymentCalculationStartTimestamp;
         // The timestamp until which payments have been calculated
         uint64 paymentCalculationEndTimestamp;
         // timestamp at which the root can be claimed against
         uint64 activatedAt;
     }
 
-    struct ClaimsTreeMerkleLeaf {
+    struct EarnerTreeMerkleLeaf {
+        address earner;
+        bytes32 earnerTokenRoot;
+    }
+
+    struct TokenTreeMerkleLeaf {
         IERC20 token;
         uint256 cumulativeEarnings;
     }
@@ -50,15 +53,14 @@ interface IPaymentCoordinator {
     struct PaymentMerkleClaim {
         // The index of the root in the list of roots
         uint32 rootIndex;
-        address earner;
-        // proof of the earner's account root in the Merkle tree
+        // proof of the earner's account root in the Earner Merkle tree
         uint32 earnerIndex;
         bytes earnerTreeProof;
+        EarnerTreeMerkleLeaf earnerLeaf;
         // The indices and proofs of the leafs in the claimaint's merkle tree for this root
-        bytes32 earnerTokenRoot;
         uint32[] leafIndices;
         bytes[] tokenTreeProofs;
-        ClaimsTreeMerkleLeaf[] leaves;
+        TokenTreeMerkleLeaf[] tokenLeaves;
     }
 
     /// EVENTS ///
@@ -92,13 +94,11 @@ interface IPaymentCoordinator {
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint64 paymentCalculationStartTimestamp,
         uint64 paymentCalculationEndTimestamp,
         uint64 activatedAt
     );
-    /// @notice earnerTokenRoot is the specific earner root hash that the claim is proven aganst.
-    /// root is the DistributionRoot of that the earner subtree is included in.
-    event PaymentClaimed(bytes32 indexed root, bytes32 indexed earnerTokenRoot, ClaimsTreeMerkleLeaf leaf);
+    /// @notice root is one of the submitted distribution roots that was claimed against
+    event PaymentClaimed(bytes32 indexed root, TokenTreeMerkleLeaf leaf);
 
     /// VIEW FUNCTIONS ///
 
@@ -114,8 +114,14 @@ interface IPaymentCoordinator {
     /// @notice The maximum amount of time that a range payment can end in the future
     function MAX_PAYMENT_DURATION() external view returns (uint64);
 
-    /// @notice The lower bound for the start of a range payment
-    function LOWER_BOUND_START_RANGE() external view returns (uint64);
+    /// @notice max amount of time that a payment can start in the past
+    function MAX_RETROACTIVE_LENGTH() external view returns (uint64);
+
+    /// @notice max amount of time that a payment can start in the future
+    function MAX_FUTURE_LENGTH() external view returns (uint64);
+
+    /// @notice absolute min timestamp that a payment can start at
+    function GENESIS_PAYMENT_TIMESTAMP() external view returns (uint64);
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     function activationDelay() external view returns (uint64);
@@ -130,10 +136,10 @@ interface IPaymentCoordinator {
     function globalOperatorCommissionBips() external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(address earner, bytes32 earnerTokenRoot) external pure returns (bytes32);
+    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
 
     /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(ClaimsTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
+    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
@@ -171,14 +177,12 @@ interface IPaymentCoordinator {
     /**
      * @notice Creates a new distribution root
      * @param root The merkle root of the distribution
-     * @param paymentCalculationStartTimestamp The start timestamp which payments have been calculated from
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
      * @param activatedAt timestamp at which that the root can be claimed against
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationStartTimestamp,
         uint64 paymentCalculationEndTimestamp,
         uint64 activatedAt
     ) external;
