@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true
 
       # install foundry to run forge script. Should we run forge script in a container instead?
       - name: Install Foundry
