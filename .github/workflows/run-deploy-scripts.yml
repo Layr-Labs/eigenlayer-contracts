@@ -1,0 +1,38 @@
+name: Run Deploy Scripts
+# We run the deploy scripts just to make sure they work
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      # install foundry to run forge script. Should we run forge script in a container instead?
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Start Anvil chain
+        # need to start Anvil chain with -d to let the container run in the background
+        # if we start with 'anvil &' instead, the process stops when the step ends
+        run: docker run -d --rm -p 8545:8545 --entrypoint anvil ghcr.io/foundry-rs/foundry:nightly-5b7e4cb3c882b28f3c32ba580de27ce7381f415a --host 0.0.0.0
+
+      - name: Wait for Anvil chain to start
+        run: sleep 3
+
+      # Run Forge script against the Anvil chain
+      - name: Run M2_Deploy_From_Scratch
+        run: |
+          forge script script/deploy/devnet/M2_Deploy_From_Scratch.s.sol --rpc-url http://localhost:8545 \
+            --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast \
+            --sig "run(string memory configFileName)" -- M2_deploy_from_scratch.anvil.config.json

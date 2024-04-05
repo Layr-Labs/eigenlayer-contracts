@@ -6,24 +6,24 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "../../src/contracts/interfaces/IETHPOSDeposit.sol";
-import "../../src/contracts/interfaces/IBeaconChainOracle.sol";
+import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
+import "../../../src/contracts/interfaces/IBeaconChainOracle.sol";
 
-import "../../src/contracts/core/StrategyManager.sol";
-import "../../src/contracts/core/Slasher.sol";
-import "../../src/contracts/core/DelegationManager.sol";
-import "../../src/contracts/core/AVSDirectory.sol";
+import "../../../src/contracts/core/StrategyManager.sol";
+import "../../../src/contracts/core/Slasher.sol";
+import "../../../src/contracts/core/DelegationManager.sol";
+import "../../../src/contracts/core/AVSDirectory.sol";
 
-import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
-import "../../src/contracts/pods/EigenPod.sol";
-import "../../src/contracts/pods/EigenPodManager.sol";
-import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
+import "../../../src/contracts/pods/EigenPod.sol";
+import "../../../src/contracts/pods/EigenPodManager.sol";
+import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 
-import "../../src/contracts/permissions/PauserRegistry.sol";
+import "../../../src/contracts/permissions/PauserRegistry.sol";
 
-import "../../src/test/mocks/EmptyContract.sol";
-import "../../src/test/mocks/ETHDepositMock.sol";
+import "../../../src/test/mocks/EmptyContract.sol";
+import "../../../src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -87,20 +87,19 @@ contract Deployer_M2 is Script, Test {
     uint256 DELEGATION_INIT_PAUSED_STATUS;
     uint256 DELEGATION_WITHDRAWAL_DELAY_BLOCKS;
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
-    uint256 EIGENPOD_MANAGER_MAX_PODS;
     uint256 DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS;
 
     // one week in blocks -- 50400
     uint32 STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS;
     uint32 DELAYED_WITHDRAWAL_ROUTER_INIT_WITHDRAWAL_DELAY_BLOCKS;
 
-    function run(string memory configFile) external {
+    function run(string memory configFileName) external {
         // read and log the chainID
         uint256 chainId = block.chainid;
         emit log_named_uint("You are deploying on ChainID", chainId);
 
         // READ JSON CONFIG DATA
-        deployConfigPath = string(bytes(string.concat("script/testing/", configFile)));
+        deployConfigPath = string(bytes(string.concat("script/configs/devnet/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
 
@@ -108,7 +107,6 @@ contract Deployer_M2 is Script, Test {
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".slasher.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
         DELEGATION_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(config_data, ".delegation.init_withdrawal_delay_blocks");
-        EIGENPOD_MANAGER_MAX_PODS = stdJson.readUint(config_data, ".eigenPodManager.max_pods");
         EIGENPOD_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".eigenPodManager.init_paused_status");
         DELAYED_WITHDRAWAL_ROUTER_INIT_PAUSED_STATUS = stdJson.readUint(
             config_data,
@@ -258,7 +256,6 @@ contract Deployer_M2 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                EIGENPOD_MANAGER_MAX_PODS,
                 IBeaconChainOracle(address(0)),
                 executorMultisig,
                 eigenLayerPauserReg,
@@ -392,7 +389,7 @@ contract Deployer_M2 is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
         // TODO: should output to different file depending on configFile passed to run()
         //       so that we don't override mainnet output by deploying to goerli for eg.
-        vm.writeJson(finalJson, "script/output/M2_from_scratch_deployment_data.json");
+        vm.writeJson(finalJson, "script/output/devnet/M2_from_scratch_deployment_data.json");
     }
 
     function _verifyContractsPointAtOneAnother(
@@ -495,7 +492,7 @@ contract Deployer_M2 is Script, Test {
         require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
         // removing slasher requirements because there is no slasher as part of m2-mainnet release
         // require(slasher.owner() == executorMultisig, "slasher: owner not set correctly");
-        require(eigenPodManager.owner() == executorMultisig, "delegation: owner not set correctly");
+        require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");

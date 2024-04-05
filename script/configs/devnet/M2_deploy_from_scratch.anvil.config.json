@@ -15,7 +15,6 @@
           "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR": "32000000000"
      },
      "eigenPodManager": {
-          "max_pods": 0,
           "init_paused_status": 30
      },
      "delayedWithdrawalRouter": {
