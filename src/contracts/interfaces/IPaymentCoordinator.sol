@@ -213,5 +213,5 @@ interface IPaymentCoordinator {
      * @param claimer The address of the entity that can claim payments on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimer(address earner, address claimer) external;
+    function setClaimerFor(address earner, address claimer) external;
 }
