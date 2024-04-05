@@ -120,7 +120,7 @@ contract PaymentCoordinator is
      */
     function payAllForRange(
         RangePayment[] calldata rangePayments
-    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter {
+    ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter nonReentrant {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
             bytes32 rangePaymentHash = _payForRange(rangePayment);
@@ -269,6 +269,45 @@ contract PaymentCoordinator is
         emit PaymentClaimed(root, tokenLeaf);
     }
 
+    function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {
+        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+        require(block.timestamp >= root.activatedAt, "PaymentCoordinator._checkClaim: root not activated yet");
+
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address claimer = claimerFor[claim.earnerLeaf.earner];
+        if (claimer == address(0)) {
+            claimer = claim.earnerLeaf.earner;
+        }
+        require(msg.sender == claimer, "PaymentCoordinator._checkClaim: caller is not valid claimer");
+        require(
+            claim.tokenIndices.length == claim.tokenTreeProofs.length,
+            "PaymentCoordinator._checkClaim: tokenIndices and tokenProofs length mismatch"
+        );
+        require(
+            claim.tokenTreeProofs.length == claim.tokenLeaves.length,
+            "PaymentCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
+        );
+
+        // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
+        _verifyEarnerClaimProof({
+            root: root.root,
+            earnerLeafIndex: claim.earnerIndex,
+            earnerProof: claim.earnerTreeProof,
+            earnerLeaf: claim.earnerLeaf
+        });
+        // For each of the tokenLeaf proofs, verify inclusion of token tree leaf again the earnerTokenRoot
+        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
+            _verifyTokenClaimProof({
+                earnerTokenRoot: claim.earnerLeaf.earnerTokenRoot,
+                tokenLeafIndex: claim.tokenIndices[i],
+                tokenProof: claim.tokenTreeProofs[i],
+                tokenLeaf: claim.tokenLeaves[i]
+            });
+        }
+
+        return true;
+    }
+
     /**
      * @notice verify inclusion of the token claim proof in the earner token root hash (earnerTokenRoot).
      * The token leaf comprises of the IERC20 token and cumulativeAmount of earnings.
@@ -324,52 +363,13 @@ contract PaymentCoordinator is
         );
     }
 
-    function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {
-        DistributionRoot memory root = distributionRoots[claim.rootIndex];
-        require(block.timestamp >= root.activatedAt, "PaymentCoordinator._processClaim: root not activated yet");
-
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earnerLeaf.earner];
-        if (claimer == address(0)) {
-            claimer = claim.earnerLeaf.earner;
-        }
-        require(msg.sender == claimer, "PaymentCoordinator._processClaim: caller is not valid claimer");
-        require(
-            claim.tokenIndices.length == claim.tokenTreeProofs.length,
-            "PaymentCoordinator._processClaim: tokenIndices and tokenProofs length mismatch"
-        );
-        require(
-            claim.tokenTreeProofs.length == claim.tokenLeaves.length,
-            "PaymentCoordinator._processClaim: tokenTreeProofs and leaves length mismatch"
-        );
-
-        // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
-        _verifyEarnerClaimProof({
-            root: root.root,
-            earnerLeafIndex: claim.earnerIndex,
-            earnerProof: claim.earnerTreeProof,
-            earnerLeaf: claim.earnerLeaf
-        });
-        // For each of the tokenLeaf proofs, verify inclusion of token tree leaf again the earnerTokenRoot
-        for (uint256 i = 0; i < claim.tokenIndices.length; ++i) {
-            _verifyTokenClaimProof({
-                earnerTokenRoot: claim.earnerLeaf.earnerTokenRoot,
-                tokenLeafIndex: claim.tokenIndices[i],
-                tokenProof: claim.tokenTreeProofs[i],
-                tokenLeaf: claim.tokenLeaves[i]
-            });
-        }
-
-        return true;
-    }
-
     /**
      * @notice Sets the address of the entity that can claim payments on behalf of the earner
      * @param earner The earner whose claimer is being set
      * @param claimer The address of the entity that can claim payments on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimer(address earner, address claimer) external {
+    function setClaimerFor(address earner, address claimer) external {
         require(msg.sender == earner, "PaymentCoordinator.setClaimer: caller is not the earner");
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
@@ -384,11 +384,6 @@ contract PaymentCoordinator is
     /// @notice returns the hash of the earner's token leaf
     function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
         return keccak256(abi.encode(leaf));
-    }
-
-    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
-    function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool) {
-        return _checkClaim(claim);
     }
 
     /**
@@ -459,6 +454,21 @@ contract PaymentCoordinator is
     function _setPaymentUpdater(address _paymentUpdater) internal {
         emit PaymentUpdaterSet(paymentUpdater, _paymentUpdater);
         paymentUpdater = _paymentUpdater;
+    }
+
+    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
+    function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
+        return _checkClaim(claim);
+    }
+
+    /// @notice loop through distribution roots from reverse and return hash
+    function getRootIndexFromHash(bytes32 rootHash) public view returns (uint32) {
+        for (uint32 i = uint32(distributionRoots.length); i > 0; i--) {
+            if (distributionRoots[i - 1].root == rootHash) {
+                return i - 1;
+            }
+        }
+        revert("PaymentCoordinator.getRootIndexFromHash: root not found");
     }
 
     /**
