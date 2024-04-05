@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "src/test/integration/User.t.sol";
+import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationCheckUtils {
@@ -15,6 +15,8 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
 
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Staker deposits into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -48,6 +50,8 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
 
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Staker deposits into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);

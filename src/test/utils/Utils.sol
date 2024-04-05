@@ -1,4 +1,4 @@
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "src/contracts/strategies/StrategyBase.sol";
