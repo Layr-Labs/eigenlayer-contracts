@@ -17,6 +17,15 @@ import "src/test/mocks/Reenterer.sol";
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
 contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordinatorEvents {
+    // used for stack too deep
+    struct FuzzPayForRange {
+        address avs;
+        bool retroactivePaymentsEnabled;
+        uint256 startTimestamp;
+        uint256 duration;
+        uint256 amount;
+    }
+
     // Contract under test
     PaymentCoordinator public paymentCoordinator;
     PaymentCoordinator public paymentCoordinatorImplementation;
@@ -49,6 +58,8 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     uint64 calculationIntervalSeconds = 86400 * 14;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
+
+    IERC20[] paymentTokens;
 
     // PaymentCoordinator Constants
 
@@ -158,16 +169,22 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     }
 
     /// @notice deploy token to owner and approve paymentCoordinator. Used for deploying payment tokens
-    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal returns (IERC20[] memory) {
+    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal {
         cheats.startPrank(owner);
-        IERC20[] memory tokens = new IERC20[](numTokens);
         for (uint256 i = 0; i < numTokens; ++i) {
             IERC20 token = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, owner);
-            tokens[i] = token;
+            paymentTokens.push(token);
             token.approve(address(paymentCoordinator), mockTokenInitialSupply);
         }
         cheats.stopPrank();
-        return tokens;
+    }
+
+    function _getBalanceForTokens(IERC20[] memory tokens, address holder) internal returns (uint256[] memory) {
+        uint256[] memory balances = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; ++i) {
+            balances[i] = tokens[i].balanceOf(holder);
+        }
+        return balances;
     }
 
     function _maxTimestamp(uint64 timestamp1, uint64 timestamp2) internal returns (uint64) {
@@ -255,7 +272,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         address targetToUse = address(paymentCoordinator);
         uint256 msgValueToUse = 0;
 
-        IERC20[] memory dummyTokens = _deployMockPaymentTokens(address(this), 1);
+        _deployMockPaymentTokens(address(this), 1);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
         rangePayments[0] = IPaymentCoordinator.RangePayment({
@@ -609,6 +626,9 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         });
 
         // 3. call payForRange() with expected event emitted
+        uint256 avsBalanceBefore = paymentToken.balanceOf(avs);
+        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(address(paymentCoordinator));
+
         cheats.startPrank(avs);
         paymentToken.approve(address(paymentCoordinator), amount);
         uint256 currPaymentNonce = paymentCoordinator.paymentNonce();
@@ -621,6 +641,16 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         assertTrue(paymentCoordinator.isRangePaymentHash(avs, rangePaymentHash), "Range payment hash not submitted");
         assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(), "Payment nonce not incremented");
+        assertEq(
+            avsBalanceBefore - amount,
+            paymentToken.balanceOf(avs),
+            "AVS balance not decremented by amount of range payment"
+        );
+        assertEq(
+            paymentCoordinatorBalanceBefore + amount,
+            paymentToken.balanceOf(address(paymentCoordinator)),
+            "PaymentCoordinator balance not incremented by amount of range payment"
+        );
     }
 
     /**
@@ -631,39 +661,42 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
      * - token balances before and after of avs and paymentCoordinator
      */
     function testFuzz_payForRange_MultiplePayments(
-        address avs,
-        bool retroactivePaymentsEnabled,
-        uint256 startTimestamp,
-        uint256 duration,
-        uint256 amount,
+        FuzzPayForRange memory param,
         uint256 numPayments
-    ) public filterFuzzedAddressInputs(avs) {
+    ) public filterFuzzedAddressInputs(param.avs) {
         cheats.assume(2 <= numPayments && numPayments <= 10);
-        cheats.assume(avs != address(0));
+        cheats.assume(param.avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
+        paymentCoordinator.setRetroactivePaymentsEnabled(param.retroactivePaymentsEnabled);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
         uint256 startPaymentNonce = paymentCoordinator.paymentNonce();
-        IERC20[] memory paymentTokens = _deployMockPaymentTokens(avs, numPayments);
+        _deployMockPaymentTokens(param.avs, numPayments);
+
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(paymentTokens, param.avs);
+        uint256[] memory paymentCoordinatorBalancesBefore = _getBalanceForTokens(
+            paymentTokens,
+            address(paymentCoordinator)
+        );
+        uint256[] memory amounts = new uint256[](numPayments);
 
         // Create multiple range payments and their expected event
         for (uint256 i = 0; i < numPayments; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, mockTokenInitialSupply);
-            duration = bound(duration + i, 0, MAX_PAYMENT_DURATION);
-            duration = duration - (duration % calculationIntervalSeconds);
-            startTimestamp;
-            if (retroactivePaymentsEnabled) {
-                startTimestamp = bound(
-                    startTimestamp + i,
+            param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
+            amounts[i] = param.amount;
+            param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
+            param.duration = param.duration - (param.duration % calculationIntervalSeconds);
+            if (param.retroactivePaymentsEnabled) {
+                param.startTimestamp = bound(
+                    param.startTimestamp + i,
                     uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
                     block.timestamp + uint256(MAX_FUTURE_LENGTH)
                 );
             } else {
-                startTimestamp = bound(
-                    startTimestamp + i,
+                param.startTimestamp = bound(
+                    param.startTimestamp + i,
                     block.timestamp,
                     block.timestamp + uint256(MAX_FUTURE_LENGTH)
                 );
@@ -673,20 +706,20 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: paymentTokens[i],
-                amount: amount,
-                startTimestamp: uint64(startTimestamp),
-                duration: uint64(duration)
+                amount: param.amount,
+                startTimestamp: uint64(param.startTimestamp),
+                duration: uint64(param.duration)
             });
             rangePayments[i] = rangePayment;
 
             // 3. expected event emitted for this rangePayment
-            rangePaymentHashes[i] = keccak256(abi.encode(avs, startPaymentNonce + i, rangePayments[i]));
+            rangePaymentHashes[i] = keccak256(abi.encode(param.avs, startPaymentNonce + i, rangePayments[i]));
             cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit RangePaymentCreated(avs, startPaymentNonce + i, rangePaymentHashes[i], rangePayments[i]);
+            emit RangePaymentCreated(param.avs, startPaymentNonce + i, rangePaymentHashes[i], rangePayments[i]);
         }
 
         // 4. call payForRange()
-        cheats.prank(avs);
+        cheats.prank(param.avs);
         paymentCoordinator.payForRange(rangePayments);
 
         // 5. Check for paymentNonce() and rangePaymentHashes being set
@@ -698,8 +731,18 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         for (uint256 i = 0; i < numPayments; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentHash(avs, rangePaymentHashes[i]),
+                paymentCoordinator.isRangePaymentHash(param.avs, rangePaymentHashes[i]),
                 "Range payment hash not submitted"
+            );
+            assertEq(
+                avsBalancesBefore[i] - amounts[i],
+                paymentTokens[i].balanceOf(param.avs),
+                "AVS balance not decremented by amount of range payment"
+            );
+            assertEq(
+                paymentCoordinatorBalancesBefore[i] + amounts[i],
+                paymentTokens[i].balanceOf(address(paymentCoordinator)),
+                "PaymentCoordinator balance not incremented by amount of range payment"
             );
         }
     }
@@ -725,7 +768,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         address targetToUse = address(paymentCoordinator);
         uint256 msgValueToUse = 0;
 
-        IERC20[] memory dummyTokens = _deployMockPaymentTokens(address(this), 1);
+        _deployMockPaymentTokens(address(this), 1);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
         rangePayments[0] = IPaymentCoordinator.RangePayment({
@@ -759,7 +802,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
      * - correct event emitted
      * - payment nonce incrementation by 1, and range payment hash being set in storage.
      * - range payment hash being set in storage
-     * - token balance before and after of avs and paymentCoordinator
+     * - token balance before and after of payAllForRangeSubmitter and paymentCoordinator
      */
     function testFuzz_payAllForRange_SinglePayment(
         bool retroactivePaymentsEnabled,
@@ -802,6 +845,9 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         });
 
         // 3. call payForRange() with expected event emitted
+        uint256 submitterBalanceBefore = paymentToken.balanceOf(payAllSubmitter);
+        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(address(paymentCoordinator));
+
         cheats.startPrank(payAllSubmitter);
         paymentToken.approve(address(paymentCoordinator), amount);
         uint256 currPaymentNonce = paymentCoordinator.paymentNonce();
@@ -817,6 +863,16 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             "Range payment hash not submitted"
         );
         assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(), "Payment nonce not incremented");
+        assertEq(
+            submitterBalanceBefore - amount,
+            paymentToken.balanceOf(payAllSubmitter),
+            "PayAllForRange Submitter balance not decremented by amount of range payment"
+        );
+        assertEq(
+            paymentCoordinatorBalanceBefore + amount,
+            paymentToken.balanceOf(address(paymentCoordinator)),
+            "PaymentCoordinator balance not incremented by amount of range payment"
+        );
     }
 
     /**
@@ -824,40 +880,41 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
      * - correct event emitted
      * - payment nonce incrementation by numPayments, and range payment hashes being set in storage.
      * - range payment hash being set in storage
-     * - token balances before and after of avs and paymentCoordinator
+     * - token balances before and after of payAllForRange submitter and paymentCoordinator
      */
-    function testFuzz_payForRange_MultiplePayments(
-        bool retroactivePaymentsEnabled,
-        uint256 startTimestamp,
-        uint256 duration,
-        uint256 amount,
-        uint256 numPayments
-    ) public {
+    function testFuzz_payAllForRange_MultiplePayments(FuzzPayForRange memory param, uint256 numPayments) public {
         cheats.assume(2 <= numPayments && numPayments <= 10);
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
+        paymentCoordinator.setRetroactivePaymentsEnabled(param.retroactivePaymentsEnabled);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
         uint256 startPaymentNonce = paymentCoordinator.paymentNonce();
-        IERC20[] memory paymentTokens = _deployMockPaymentTokens(payAllSubmitter, numPayments);
+        _deployMockPaymentTokens(payAllSubmitter, numPayments);
+
+        uint256[] memory submitterBalancesBefore = _getBalanceForTokens(paymentTokens, payAllSubmitter);
+        uint256[] memory paymentCoordinatorBalancesBefore = _getBalanceForTokens(
+            paymentTokens,
+            address(paymentCoordinator)
+        );
+        uint256[] memory amounts = new uint256[](numPayments);
 
         // Create multiple range payments and their expected event
         for (uint256 i = 0; i < numPayments; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
-            amount = bound(amount + i, 1, mockTokenInitialSupply);
-            duration = bound(duration + i, 0, MAX_PAYMENT_DURATION);
-            duration = duration - (duration % calculationIntervalSeconds);
-            startTimestamp;
-            if (retroactivePaymentsEnabled) {
-                startTimestamp = bound(
-                    startTimestamp + i,
+            param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
+            amounts[i] = param.amount;
+            param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
+            param.duration = param.duration - (param.duration % calculationIntervalSeconds);
+            if (param.retroactivePaymentsEnabled) {
+                param.startTimestamp = bound(
+                    param.startTimestamp + i,
                     uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
                     block.timestamp + uint256(MAX_FUTURE_LENGTH)
                 );
             } else {
-                startTimestamp = bound(
-                    startTimestamp + i,
+                param.startTimestamp = bound(
+                    param.startTimestamp + i,
                     block.timestamp,
                     block.timestamp + uint256(MAX_FUTURE_LENGTH)
                 );
@@ -867,9 +924,9 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: paymentTokens[i],
-                amount: amount,
-                startTimestamp: uint64(startTimestamp),
-                duration: uint64(duration)
+                amount: amounts[i],
+                startTimestamp: uint64(param.startTimestamp),
+                duration: uint64(param.duration)
             });
             rangePayments[i] = rangePayment;
 
@@ -899,6 +956,16 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             assertTrue(
                 paymentCoordinator.isRangePaymentHash(payAllSubmitter, rangePaymentHashes[i]),
                 "Range payment hash not submitted"
+            );
+            assertEq(
+                submitterBalancesBefore[i] - amounts[i],
+                paymentTokens[i].balanceOf(payAllSubmitter),
+                "PayAllForRange Submitter balance not decremented by amount of range payment"
+            );
+            assertEq(
+                paymentCoordinatorBalancesBefore[i] + amounts[i],
+                paymentTokens[i].balanceOf(address(paymentCoordinator)),
+                "PaymentCoordinator balance not incremented by amount of range payment"
             );
         }
     }
