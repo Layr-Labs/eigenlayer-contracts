@@ -153,7 +153,7 @@ contract PaymentCoordinator is
         uint64 paymentCalculationEndTimestamp,
         uint64 activatedAt
     ) external onlyPaymentUpdater {
-        require(activatedAt >= block.timestamp, "PaymentCoordinator.submitRoot: activatedAt can't be in the past");
+        require(activatedAt >= block.timestamp, "PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
         activatedAt = activatedAt + activationDelay;
         uint32 rootIndex = uint32(distributionRoots.length);
         distributionRoots.push(
@@ -247,12 +247,13 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Verify a token claim and transfer claimable amount to the claimer
+     * @notice Transfer claimable amount to the claimer
      * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
      * @param tokenLeaf token leaf to be claimed
      * @param claimer address of the entity that can claim payments on behalf of the earner,
      * can be earner account itself or be set to a different address by the earner
      * @param root distribution root that should be read from storage
+     * @dev This function assumes the claim has already been checked and verified
      */
     function _processTokenClaim(
         EarnerTreeMerkleLeaf calldata earnerLeaf,
