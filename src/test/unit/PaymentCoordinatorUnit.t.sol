@@ -990,11 +990,12 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.prank(paymentUpdater);
         cheats.assume(activatedAt < block.timestamp);
 
-        cheats.expectRevert("PaymentCoordinator.submitRoot: activatedAt can't be in the past");
+        cheats.expectRevert("PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
         paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
     }
 
     /// @notice submits root with correct values and adds to root storage array
+    /// - checks activatedAt has added activationDelay
     function testFuzz_submitRoot() public {}
 }
 
