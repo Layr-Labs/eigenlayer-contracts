@@ -4,6 +4,8 @@ out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
 gas_reports = ["*"]
+# ignore upgrade testing in scripts by default
+no_match_test = "queueUpgrade"
 
 # A list of ignored solc error codes
 
@@ -18,5 +20,18 @@ solc_version = '0.8.12'
 
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"
+holesky = "${RPC_HOLESKY}"
+
+[fmt]
+bracket_spacing = false
+int_types = "long"
+line_length = 120
+multiline_func_header = "params_first"
+number_underscore = "thousands"
+quote_style = "double"
+tab_width = 4
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config
+
+[profile.forktest.fuzz]
+runs=20

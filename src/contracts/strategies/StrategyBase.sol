@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
@@ -39,7 +39,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * incurring reasonably small losses to depositors
      */
     uint256 internal constant SHARES_OFFSET = 1e3;
-    /** 
+    /**
      * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
@@ -72,7 +72,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Sets the `underlyingToken` and `pauserRegistry` for the strategy.
-    function _initializeStrategyBase(IERC20 _underlyingToken, IPauserRegistry _pauserRegistry) internal onlyInitializing {
+    function _initializeStrategyBase(
+        IERC20 _underlyingToken,
+        IPauserRegistry _pauserRegistry
+    ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
         _initializePauser(_pauserRegistry, UNPAUSE_ALL);
     }
@@ -87,20 +90,15 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * (as performed in the StrategyManager's deposit functions). In particular, setting the `underlyingToken` of this contract
      * to be a fee-on-transfer token will break the assumption that the amount this contract *received* of the token is equal to
      * the amount that was input when the transfer was performed (i.e. the amount transferred 'out' of the depositor's balance).
+     * @dev Note that any validation of `token` is done inside `_beforeDeposit`. This can be overridden if needed.
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
-    function deposit(IERC20 token, uint256 amount)
-        external
-        virtual
-        override
-        onlyWhenNotPaused(PAUSED_DEPOSITS)
-        onlyStrategyManager
-        returns (uint256 newShares)
-    {
+    function deposit(
+        IERC20 token,
+        uint256 amount
+    ) external virtual override onlyWhenNotPaused(PAUSED_DEPOSITS) onlyStrategyManager returns (uint256 newShares) {
         // call hook to allow for any pre-deposit logic
         _beforeDeposit(token, amount);
-
-        require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
 
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
@@ -125,24 +123,21 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /**
-     * @notice Used to withdraw tokens from this Strategy, to the `depositor`'s address
-     * @param depositor is the address to receive the withdrawn funds
+     * @notice Used to withdraw tokens from this Strategy, to the `recipient`'s address
+     * @param recipient is the address to receive the withdrawn funds
      * @param token is the ERC20 token being transferred out
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
+     * @dev Note that any validation of `token` is done inside `_beforeWithdrawal`. This can be overridden if needed.
      */
-    function withdraw(address depositor, IERC20 token, uint256 amountShares)
-        external
-        virtual
-        override
-        onlyWhenNotPaused(PAUSED_WITHDRAWALS)
-        onlyStrategyManager
-    {
+    function withdraw(
+        address recipient,
+        IERC20 token,
+        uint256 amountShares
+    ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager {
         // call hook to allow for any pre-withdrawal logic
-        _beforeWithdrawal(depositor, token, amountShares);
-        
-        require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
+        _beforeWithdrawal(recipient, token, amountShares);
 
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
@@ -165,24 +160,38 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
 
-        underlyingToken.safeTransfer(depositor, amountToSend);
+        _afterWithdrawal(recipient, token, amountToSend);
     }
-
 
     /**
      * @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
      * @param token The token being deposited
      * @param amount The amount of `token` being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 amount)  internal virtual {}
+    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual {
+        require(token == underlyingToken, "StrategyBase.deposit: Can only deposit underlyingToken");
+    }
 
     /**
      * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
-     * @param depositor The address that will receive the withdrawn tokens
+     * @param recipient The address that will receive the withdrawn tokens
      * @param token The token being withdrawn
      * @param amountShares The amount of shares being withdrawn
      */
-    function _beforeWithdrawal(address depositor, IERC20 token, uint256 amountShares) internal virtual {}
+    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual {
+        require(token == underlyingToken, "StrategyBase.withdraw: Can only withdraw the strategy token");
+    }
+
+    /**
+     * @notice Transfers tokens to the recipient after a withdrawal is processed
+     * @dev Called in the external `withdraw` function after all logic is executed
+     * @param recipient The destination of the tokens
+     * @param token The ERC20 being transferred
+     * @param amountToSend The amount of `token` to transfer
+     */
+    function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual {
+        token.safeTransfer(recipient, amountToSend);
+    }
 
     /**
      * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex

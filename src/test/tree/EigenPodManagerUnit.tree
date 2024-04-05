@@ -1,0 +1,86 @@
+├── EigenPodManager Tree (*** denotes that integration tests are needed to validate path)
+├── when contract is deployed and initialized
+│   └── it should properly set storage
+├── when initialize called again
+│   └── it should revert
+├── when createPod called
+│   ├── given the user has already created a pod
+│   │   └── it should revert
+│   └── given the user has not created a pod
+│       └── it should deploy a pod
+├── when stake is called
+│   ├── given the user has not created a pod
+│   │   └── it should deploy a pod
+│   └── given the user has already created a pod
+│       └── it should call stake on the eigenPod
+├── when updateBeaconChainOracle is called
+│   ├── given the user is not the owner
+│   │   └── it should revert
+│   └── given the user is the owner 
+│       └── it should set the beacon chain oracle
+├── when addShares is called
+│   ├── given that the caller is not the delegationManager
+│   │   └── it should revert
+│   ├── given that the podOwner address is 0
+│   │   └── it should revert
+│   ├── given that the shares amount is negative
+│   │   └── it should revert
+│   ├── given that the shares is not a whole gwei amount
+│   │   └── it should revert
+│   └── given that all of the above conditions are satisfied
+│       └── it should update the podOwnerShares
+├── when removeShares is called
+│   ├── given that the caller is not the delegationManager
+│   │   └── it should revert
+│   ├── given that the shares amount is negative
+│   │   └── it should revert
+│   ├── given that the shares is not a whole gwei amount
+│   │   └── it should revert
+│   ├── given that removing shares results in the pod owner having negative shares
+│   │   └── it should revert
+│   └── given that all of the above conditions are satisfied
+│       └── it should update the podOwnerShares
+├── when withdrawSharesAsTokens is called
+│   ├── given that the podOwner is address 0
+│   │   └── it should revert
+│   ├── given that the destination is address 0
+│   │   └── it should revert
+│   ├── given that the shares amount is negative
+│   │   └── it should revert
+│   ├── given that the shares is not a whole gwei amount
+│   │   └── it should revert
+│   ├── given that the current podOwner shares are negative
+│   │   ├── given that the shares to withdraw are larger in magnitude than the shares of the podOwner
+│   │   │   └── it should set the podOwnerShares to 0 and decrement shares to withdraw by the share deficit
+│   │   └── given that the shares to withdraw are smaller in magnitude than shares of the podOwner
+│   │       └── it should increment the podOwner shares by the shares to withdraw
+│   └── given that the pod owner shares are positive
+│       └── it should withdraw restaked ETH from the eigenPod
+├── when shares are adjusted
+│   ├── given that sharesBefore is negative or 0
+│   │   ├── given that sharesAfter is negative or zero
+│   │   │   └── the change in delegateable shares should be 0
+│   │   └── given that sharesAfter is positive
+│   │       └── the change in delegateable shares should be positive
+│   └── given that sharesBefore is positive
+│       ├── given that sharesAfter is negative or zero
+│       │   └── the change in delegateable shares is negative sharesBefore
+│       └── given that sharesAfter is positive
+│           └── the change in delegateable shares is the difference between sharesAfter and sharesBefore
+└── when recordBeaconChainETHBalanceUpdate is called
+    ├── given that the podOwner's eigenPod is not the caller
+    │   └── it should revert
+    ├── given that the podOwner is a zero address
+    │   └── it should revert
+    ├── given that sharesDelta is not a whole gwei amount
+    │   ├── it should revert
+    │   └── given that the shares delta is valid
+    │       └── it should update the podOwnerShares
+    ├── given that the change in delegateable shares is positive ***
+    │   └── it should increase delegated shares on the delegationManager
+    ├── given that the change in delegateable shares is negative ***
+    │   └── it should decrease delegated shares on the delegationManager
+    ├── given that the change in delegateable shares is 0 ***
+    │   └── it should only update the podOwnerShares
+    └── given that the function is reentered ***
+        └── it should revert

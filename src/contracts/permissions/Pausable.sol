@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "../interfaces/IPausable.sol";
 
@@ -27,17 +27,8 @@ contract Pausable is IPausable {
     /// @dev whether or not the contract is currently paused
     uint256 private _paused;
 
-    uint256 constant internal UNPAUSE_ALL = 0;
-    uint256 constant internal PAUSE_ALL = type(uint256).max;
-
-    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
-    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
-
-    /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
-    event Paused(address indexed account, uint256 newPausedStatus);
-
-    /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
-    event Unpaused(address indexed account, uint256 newPausedStatus);
+    uint256 internal constant UNPAUSE_ALL = 0;
+    uint256 internal constant PAUSE_ALL = type(uint256).max;
 
     /// @notice
     modifier onlyPauser() {
@@ -102,7 +93,10 @@ contract Pausable is IPausable {
      */
     function unpause(uint256 newPausedStatus) external onlyUnpauser {
         // verify that the `newPausedStatus` does not *flip* any bits (i.e. doesn't pause anything, all 0 bits remain)
-        require(((~_paused) & (~newPausedStatus)) == (~_paused), "Pausable.unpause: invalid attempt to pause functionality");
+        require(
+            ((~_paused) & (~newPausedStatus)) == (~_paused),
+            "Pausable.unpause: invalid attempt to pause functionality"
+        );
         _paused = newPausedStatus;
         emit Unpaused(msg.sender, newPausedStatus);
     }
@@ -125,7 +119,10 @@ contract Pausable is IPausable {
 
     /// internal function for setting pauser registry
     function _setPauserRegistry(IPauserRegistry newPauserRegistry) internal {
-        require(address(newPauserRegistry) != address(0), "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address");
+        require(
+            address(newPauserRegistry) != address(0),
+            "Pausable._setPauserRegistry: newPauserRegistry cannot be the zero address"
+        );
         emit PauserRegistrySet(pauserRegistry, newPauserRegistry);
         pauserRegistry = newPauserRegistry;
     }

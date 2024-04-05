@@ -1,0 +1,48 @@
+{
+     "multisig_addresses": {
+          "communityMultisig": "0xB499Be0490Fe8e9382101b8a747BCC88e346f84b",
+          "operationsMultisig": "0x040353E9d057689b77DF275c07FFe1A46b98a4a6",
+          "executorMultisig": "0x3d9C2c2B40d890ad53E27947402e977155CD2808",
+          "timelock": "0xA7e72a0564ebf25Fa082Fc27020225edeAF1796E"
+     },
+     "strategies": [
+                    {
+                         "token_address": "0x",
+                         "token_name": "Mock WETH (MOCK WETH)",
+                         "token_symbol": "WETH"
+                    },
+                    {
+                         "token_address": "0x",
+                         "token_name": "Mock EIGEN (MOCK EIGEN)",
+                         "token_symbol": "EIGEN"
+                    }
+               ],
+     "strategyManager":
+          {
+               "withdrawalDelayBlocks": 10,
+               "init_paused_status": 0,
+               "init_withdrawal_delay_blocks": 10
+          },
+     "eigenPod":
+          {
+               "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
+               "REQUIRED_BALANCE_WEI": "32000000000000000000"
+          },
+     "eigenPodManager":
+          {
+               "init_paused_status": 30
+          },
+     "delayedWithdrawalRouter":
+          {
+               "init_paused_status": 0,
+               "init_withdrawal_delay_blocks": 50400
+          },
+     "slasher":
+          {
+               "init_paused_status": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+          },
+     "delegation":
+          {
+               "init_paused_status": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+          }
+}

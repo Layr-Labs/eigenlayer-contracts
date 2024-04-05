@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.8.0) (token/ERC20/ERC20.sol)
 
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -82,6 +82,11 @@ contract ERC20Mock is Context, IERC20 {
         return _allowances[owner][spender];
     }
 
+    function mint(address /*to*/, uint256 amount) public virtual {
+        address owner = _msgSender();
+        _mint(owner, amount);
+    }
+
     /**
      * @dev See {IERC20-approve}.
      *
@@ -113,7 +118,6 @@ contract ERC20Mock is Context, IERC20 {
      * `amount`.
      */
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
-        _mint(from, amount);
         _transfer(from, to, amount);
         return true;
     }
@@ -138,10 +142,9 @@ contract ERC20Mock is Context, IERC20 {
 
         _beforeTokenTransfer(from, to, amount);
 
-        uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        _mint(from, amount);
         unchecked {
-            _balances[from] = fromBalance - amount;
+            _balances[from] = _balances[from] - amount;
             // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
             // decrementing then incrementing.
             _balances[to] += amount;
@@ -165,7 +168,6 @@ contract ERC20Mock is Context, IERC20 {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _totalSupply += amount;
-        _balances[account] += amount;
         unchecked {
             // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
             _balances[account] += amount;

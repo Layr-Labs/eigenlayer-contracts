@@ -1,0 +1,111 @@
+├── StrategyManagerUnit.t.sol (*** denotes that integration tests are needed to validate path)
+├── initialize
+|   ├── given that initialized is only called once
+│   │   └── it should set the storage variables correctly (owner, strategyWhitelister, pauserRegistry)
+│   └── given that initialize is called again
+│       └── it should revert
+├── depositIntoStrategy()
+│   ├── given that deposits paused
+│   │   └── it should revert
+│   ├── given the function is re-entered
+│   │   └── it should revert
+│   ├── given that the strategy is not whitelisted
+│   │   └── it should revert
+│   ├── given the token safeTransferFrom() reverts
+│   │   └── it should revert
+│   └── given that token safeTransferFrom() succeeds
+│       ├── given the staker has existing shares in strategy (not first deposit)
+│       │   └── it should increase shares, nonce. while stakerStrategyListLength is unchanged
+│       ├── given the staker has no existing shares in strategy (first deposit)
+│       │   └── stakerStrategyListLength increases by 1 and shares increase
+│       ├── given the staker has delegated to a operator ***
+│       │   └── it should deposit successfully with shares increase, including delegated shares
+│       └── given the staker is not delegated
+│           └── it should deposit successfully with shares increase
+├── depositIntoStrategyWithSignature()
+│   ├── given that deposits paused
+│   │   └── it should revert
+│   ├── given the function is re-entered
+│   │   └── it should revert
+│   ├── given the signature expired
+│   │   └── it should revert
+│   ├── given that deposits paused and strategy not whitelisted
+│   │   └── it should revert
+│   ├── given the staker is a EOA
+│   │   ├── given the signature verification fails
+│   │   │   └── it should revert
+│   │   └── given the signature verification succeeds
+│   │       ├── given the token safeTransferFrom reverts
+│   │       │   └── it should revert
+│   │       └── given the token safeTransferFrom succeeds
+│   │           ├── given that the staker has delegated to a operator ***
+│   │           │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│   │           └── given that the staker is not delegated
+│   │               └── it should deposit successfully with shares and nonce increase
+│   └── given the staker is a contract
+│       ├── given the contract isn't EIP1271 compliant
+│       │   └── it should revert
+│       ├── given the signature verification fails, isValidSignature() return != EIP1271_MAGICVALUE
+│       │   └── it should revert
+│       └── given the signature verification succeeds, isValidSignature() returns EIP1271_MAGICVALUE
+│           ├── given the token safeTransferFrom reverts
+│           │   └── it should revert
+│           └── given the token safeTransferFrom succeeds
+│               ├── given the staker has delegated to a operator ***
+│               │   └── it should deposit successfully with shares and nonce increase, including delegated shares
+│               └── given the staker is not delegated
+│                   └── it should deposit successfully with shares and nonce increase
+├── removeShares()
+│   ├── given not called by DelegationManager
+│   │   └── it should revert
+│   ├── given the share amount is 0
+│   │   └── it should revert
+│   ├── given the share amount is too high, higher than deposited amount
+│   │   └── it should revert
+│   ├── given the share amount is equal to the deposited amount
+│   │   └── staker shares should be 0 with decremented stakerStrategyListLength
+│   └── given the share amount is less than the deposited amount
+│       └── staker shares should now be deposited - shares amount, unchanged stakerStrategyListLength
+├── addShares()
+│   ├── given not called by DelegationManager
+│   │   └── it should revert
+│   ├── given the share amount is 0
+│   │   └── it should revert
+│   ├── given the staker is 0 address
+│   │   └── it should revert
+│   ├── given adding shares with 0 existing shares
+│   │   └── it should increase shares and increment stakerStrategyListLength
+│   ├── given adding shares with 0 existing shares and staker has MAX_STAKER_STRATEGY_LIST_LENGTH 
+│   │   └── it should revert
+│   └── given the adding shares with > 0 existing shares
+│       └── it should increase shares, unchanged stakerStrategyListLength
+├── withdrawSharesAsTokens()
+│   ├── given not called by DelegationManager
+│   │   └── it should revert
+│   └── given that deposited strategy is called
+│   │   └── it should withdraw tokens from strategy with token balanceOf() update
+├── setStrategyWhitelister()
+│   ├── given not called by owner
+│   │   └── it should revert
+│   └── given called by owner address
+│       └── it should update strategyWhitelister address
+├── addStrategiesToDepositWhitelist()
+│   ├── given not called by strategyWhitelister address
+│   │   └── it should revert
+│   └── given the strategyWhitelister address is called
+│       ├── given adding one single strategy that is already whitelisted
+│       │   └── it should not emit StrategyAddedToDepositWhitelist with mapping still true
+│       ├── given adding one single strategy
+│       │   └── it should whitelist the new strategy with mapping set to true
+│       └── given adding multiple strategies to whitelist
+│           └── it should whitelist all new strategies with mappings set to true
+└── removeStrategiesFromDepositWhitelist()
+    ├── given not called by strategyWhitelister address
+    │   └── it should revert
+    └── given called by strategyWhitelister address
+        ├── given removing one single strategy that is not whitelisted
+        │   └── it shouldn't emit StrategyRemovedFromDepositWhitelist with mapping still false
+        ├── given removing one single strategy
+        │   └── it should de-whitelist the new strategy with mapping set to false
+        └── given removing multiple strategies to whitelist
+            └── it should de-whitelist all specified strategies with mappings set to false

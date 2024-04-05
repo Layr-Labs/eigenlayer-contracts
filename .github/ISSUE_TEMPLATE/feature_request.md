@@ -11,7 +11,7 @@ User stories are often expressed in a simple sentence, structured as follows: 'A
 
 **Actions**
 - [ ] An action item list describing the work to be done
-- [ ] Link to all of the related tasks needed to complete the feature. See the [tasks](https://github.com/Layr-Labs/docs/blob/949bd6b4ddd0ef08880c6775c2d9a6222e2e7eb3/.github/ISSUE_TEMPLATE/task.md) template.
+- [ ] Link to all of the related tasks needed to complete the feature. See the [tasks](https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/.github/ISSUE_TEMPLATE/task.md) template.
 - [ ] Include everything in the definition of done e.g. unit tests and documentation
 
 **Acceptance criteria**

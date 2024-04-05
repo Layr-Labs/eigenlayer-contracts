@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "./EigenLayerTestHelper.t.sol";
 import "../contracts/core/StrategyManagerStorage.sol";
@@ -16,217 +16,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // if first deposit amount to base strategy is too small, it will revert. ignore that case here.
         cheats.assume(amountToDeposit >= 1);
         return _testDepositWeth(getOperatorAddress(0), amountToDeposit);
-    }
-
-    function testPreventSlashing() public {
-        //use preexisting helper function to set up a withdrawal
-        address middleware = address(0xdeadbeef);
-        address staker = getOperatorAddress(0);
-        uint256 depositAmount = 1 ether;
-        IStrategy strategy = wethStrat;
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = strategy;
-
-        //invalid token
-        IERC20[] memory tokensArray = new IERC20[](1);
-        tokensArray[0] = IERC20(address(0));
-        
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = depositAmount - 1 gwei; //leave some shares behind so we don't get undelegation issues
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        address withdrawer = staker;
-
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
-
-        ( ,queuedWithdrawal) = _createQueuedWithdrawal(staker, 
-                                true,
-                                depositAmount,
-                                strategyArray,
-                                shareAmounts,
-                                strategyIndexes,
-                                withdrawer
-                                );
-
-        cheats.startPrank(staker);
-        //opt in staker to restake for the two middlewares we are using
-        slasher.optIntoSlashing(middleware);
-        cheats.stopPrank();
-
-        //move ahead a block after queuing the withdrawal
-        cheats.roll(2);
-
-        cheats.startPrank(middleware);
-        // stake update with updateBlock = 2, serveUntilBlock = 5
-        uint32 serveUntilBlock = 5;
-        slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
-        cheats.stopPrank();
-
-        cheats.roll(6);
-
-        // freeze the staker
-        cheats.startPrank(middleware);
-        slasher.freezeOperator(staker);
-        cheats.stopPrank();
-
-        // attempt to slash - reverts
-        cheats.startPrank(strategyManager.owner());
-        cheats.expectRevert("StrategyBase.withdraw: Can only withdraw the strategy token");
-        strategyManager.slashQueuedWithdrawal(address(slasher), queuedWithdrawal, tokensArray, emptyUintArray);
-        cheats.stopPrank();
-
-        //staker is unfrozen at a future date
-        address[] memory addressArray = new address[](1);
-        addressArray[0] = staker;
-        cheats.startPrank(slasher.owner());
-        slasher.resetFrozenStatus(addressArray);
-        cheats.stopPrank();
-
-        // staker can still withdraw shares
-        cheats.startPrank(staker);
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, 0, false);
-        cheats.stopPrank();
-    }
-
-    function testWithdrawalSequences() public {
-        //use preexisting helper function to set up a withdrawal
-        address middleware = address(0xdeadbeef);
-        address middleware_2 = address(0x009849);
-        address staker = getOperatorAddress(0);
-        IStrategyManager.QueuedWithdrawal memory queuedWithdrawal;
-        
-        uint256 depositAmount = 1 ether;
-        IStrategy strategy = wethStrat;
-        IERC20 underlyingToken = weth;
-        IStrategy[] memory strategyArray = new IStrategy[](1);
-        strategyArray[0] = strategy;
-        IERC20[] memory tokensArray = new IERC20[](1);
-        tokensArray[0] = underlyingToken;
-        {
-        uint256[] memory shareAmounts = new uint256[](1);
-        shareAmounts[0] = depositAmount - 1 gwei; //leave some shares behind so we don't get undelegation issues
-        uint256[] memory strategyIndexes = new uint256[](1);
-        strategyIndexes[0] = 0;
-        address withdrawer = staker;
-        
-        {   
-            assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
-            _testRegisterAsOperator(staker, IDelegationTerms(staker));
-            assertTrue(
-                delegation.isDelegated(staker), "_createQueuedWithdrawal: staker isn't delegated when they should be"
-            );
-        
-            //make deposit in WETH strategy
-            uint256 amountDeposited = _testDepositWeth(staker, depositAmount);
-            // We can't withdraw more than we deposit
-            if (shareAmounts[0] > amountDeposited) {
-                cheats.expectRevert("StrategyManager._removeShares: shareAmount too high");
-            }
-        }
-
-        
-            cheats.startPrank(staker);
-            //opt in staker to restake for the two middlewares we are using
-            slasher.optIntoSlashing(middleware);
-            slasher.optIntoSlashing(middleware_2);
-            cheats.stopPrank();
-
-            cheats.startPrank(middleware);
-            // first stake update with updateBlock = 1, serveUntilBlock = 5
-      
-            uint32 serveUntilBlock = 5;
-            slasher.recordFirstStakeUpdate(staker, serveUntilBlock);
-            cheats.stopPrank();
-            //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
-            
-
-            cheats.startPrank(middleware_2);
-            // first stake update with updateBlock = 1, serveUntilBlock = 6
-            slasher.recordFirstStakeUpdate(staker, serveUntilBlock+1);
-            cheats.stopPrank();
-            //check middlewareTimes entry is correct
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 1) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 1) == 6, "middleware serveUntil update incorrect");
-            //check old entry has not changed
-            require(slasher.getMiddlewareTimesIndexBlock(staker, 0) == 1, "middleware updateBlock update incorrect");
-            require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 0) == 5, "middleware serveUntil update incorrect");
-
-            //move ahead a block before queuing the withdrawal
-            cheats.roll(2);
-            //cheats.startPrank(staker);
-            //queue the withdrawal
-            ( ,queuedWithdrawal) = _createOnlyQueuedWithdrawal(staker, 
-                                true,
-                                depositAmount,
-                                strategyArray,
-                                tokensArray,
-                                shareAmounts,
-                                strategyIndexes,
-                                withdrawer
-                                );
-        
-            }
-        //Because the staker has queued a withdrawal both currently staked middlewares must issued an update as required for the completion of the withdrawal
-        //to be realistic we move ahead a block before updating middlewares
-        cheats.roll(3);
-
-        cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntilBlock = 7
-        uint32 serveUntilBlock = 7;
-        uint32 updateBlock = 3;
-        uint256 insertAfter = 1;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
-        cheats.stopPrank();
-        //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 2) == 1, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 2) == 7, "middleware serveUntil update incorrect");
-
-        cheats.startPrank(middleware_2);
-        // stake update with updateBlock = 3, serveUntilBlock = 10
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock+3, insertAfter);
-        cheats.stopPrank();
-        //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 3) == 3, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 3) == 10, "middleware serveUntil update incorrect");
-
-        cheats.startPrank(middleware);
-        // stake update with updateBlock = 3, serveUntilBlock = 7
-        serveUntilBlock = 7;
-        updateBlock = 3;
-        insertAfter = 2;
-        slasher.recordStakeUpdate(staker, updateBlock, serveUntilBlock, insertAfter);
-        cheats.stopPrank();
-        //check middlewareTimes entry is correct
-        require(slasher.getMiddlewareTimesIndexBlock(staker, 4) == 3, "middleware updateBlock update incorrect");
-        require(slasher.getMiddlewareTimesIndexServeUntilBlock(staker, 4) == 10, "middleware serveUntil update incorrect");
-
-        //move timestamp to 6, one middleware is past serveUntilBlock but the second middleware is still using the restaked funds.
-        cheats.warp(8);
-        //Also move the current block ahead one
-        cheats.roll(4);
-        
-        cheats.startPrank(staker);
-        //when called with the correct middlewareTimesIndex the call reverts
-
-        slasher.getMiddlewareTimesIndexBlock(staker, 3);
-        
-        
-        {
-        uint256 correctMiddlewareTimesIndex = 4;
-        cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, correctMiddlewareTimesIndex, false);
-        }
-
-        //When called with a stale index the call should also revert.
-        {
-        uint256 staleMiddlewareTimesIndex = 2;
-        cheats.expectRevert("StrategyManager.completeQueuedWithdrawal: shares pending withdrawal are still slashable");
-        strategyManager.completeQueuedWithdrawal(queuedWithdrawal, tokensArray, staleMiddlewareTimesIndex, false);
-        }
-        
-        
     }
 
 
@@ -262,8 +51,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("StrategyBase.deposit: Can only deposit underlyingToken"));
@@ -298,8 +88,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(nonexistentStrategy);
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert();
@@ -311,8 +102,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = wethStrat;
-        strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         cheats.expectRevert(bytes("StrategyBase.deposit: newShares cannot be zero"));
@@ -323,8 +115,8 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
      /**
      * @notice Modified from existing _createQueuedWithdrawal, skips delegation and deposit steps so that we can isolate the withdrawal step
      * @notice Creates a queued withdrawal from `staker`, queues a withdrawal using
-     * `strategyManager.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
-     * @notice After initiating a queued withdrawal, this test checks that `strategyManager.canCompleteQueuedWithdrawal` immediately returns the correct
+     * `delegation.queueWithdrawal(strategyIndexes, strategyArray, tokensArray, shareAmounts, withdrawer)`
+     * @notice After initiating a queued withdrawal, this test checks that `delegation.canCompleteQueuedWithdrawal` immediately returns the correct
      * response depending on whether `staker` is delegated or not.
      * @param staker The address to initiate the queued withdrawal
      * @param amountToDeposit The amount of WETH to deposit
@@ -336,34 +128,39 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         IStrategy[] memory strategyArray,
         IERC20[] memory /*tokensArray*/,
         uint256[] memory shareAmounts,
-        uint256[] memory strategyIndexes,
+        uint256[] memory /*strategyIndexes*/,
         address withdrawer
     )
-        internal returns(bytes32 withdrawalRoot, IStrategyManager.QueuedWithdrawal memory queuedWithdrawal)
+        internal returns(bytes32 withdrawalRoot, IDelegationManager.Withdrawal memory queuedWithdrawal)
     {
         require(amountToDeposit >= shareAmounts[0], "_createQueuedWithdrawal: sanity check failed");
 
-        IStrategyManager.WithdrawerAndNonce memory withdrawerAndNonce = IStrategyManager.WithdrawerAndNonce({
-            withdrawer: withdrawer,
-            nonce: uint96(strategyManager.numWithdrawalsQueued(staker))
-        });
-
-        queuedWithdrawal = IStrategyManager.QueuedWithdrawal({
+        queuedWithdrawal = IDelegationManager.Withdrawal({
             strategies: strategyArray,
             shares: shareAmounts,
-            depositor: staker,
-            withdrawerAndNonce: withdrawerAndNonce,
-            delegatedAddress: delegation.delegatedTo(staker),
-            withdrawalStartBlock: uint32(block.number)
+            staker: staker,
+            withdrawer: withdrawer,
+            nonce: delegation.cumulativeWithdrawalsQueued(staker),
+            delegatedTo: delegation.delegatedTo(staker),
+            startBlock: uint32(block.number)
         });
 
+
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
         
+        params[0] = IDelegationManager.QueuedWithdrawalParams({
+            strategies: strategyArray,
+            shares: shareAmounts,
+            withdrawer: withdrawer
+        });
+
+        bytes32[] memory withdrawalRoots = new bytes32[](1);
 
         //queue the withdrawal
         cheats.startPrank(staker);
-        withdrawalRoot = strategyManager.queueWithdrawal(strategyIndexes, strategyArray, shareAmounts, withdrawer, true);
+        withdrawalRoots = delegation.queueWithdrawals(params);
         cheats.stopPrank();
-        return (withdrawalRoot, queuedWithdrawal);
+        return (withdrawalRoots[0], queuedWithdrawal);
      }
         
         
@@ -484,8 +281,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
+            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = oneWeiFeeOnTransferTokenStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
     
@@ -529,8 +327,12 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         uint64 amountToDeposit = 1e12;
 
         // shadow-fork mainnet
-        uint256 forkId = cheats.createFork("mainnet");
-        cheats.selectFork(forkId);
+        try cheats.createFork("mainnet") returns (uint256 forkId) {
+            cheats.selectFork(forkId);
+        // If RPC_MAINNET ENV not set, default to this mainnet RPC endpoint
+        } catch  {
+            cheats.createSelectFork("https://eth.llamarpc.com");
+        }
 
         // cast mainnet stETH address to IERC20 interface
         // IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
@@ -564,21 +366,16 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        {
-            address[] memory initialOracleSignersArray = new address[](0);
-            beaconChainOracle = new BeaconChainOracle(eigenLayerReputedMultisig, initialBeaconChainOracleThreshold, initialOracleSignersArray);
-        }
-
         ethPOSDeposit = new ETHPOSDepositMock();
-        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, REQUIRED_BALANCE_WEI);
+        pod = new EigenPod(ethPOSDeposit, delayedWithdrawalRouter, eigenPodManager, MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(pod));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher);
+        DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
-        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher);
+        EigenPodManager eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         eigenLayerProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(delegation))),
@@ -587,7 +384,10 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 DelegationManager.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/
+                0 /*initialPausedStatus*/,
+                minWithdrawalDelayBlocks,
+                initializeStrategiesToSetDelayBlocks,
+                initializeWithdrawalDelayBlocks
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -598,8 +398,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 eigenLayerReputedMultisig,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
-                0/*initialPausedStatus*/,
-                0/*withdrawalDelayBlocks*/
+                0/*initialPausedStatus*/
             )
         );
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -617,8 +416,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                type(uint256).max,
-                beaconChainOracle,
+                beaconChainOracleAddress,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0/*initialPausedStatus*/
@@ -653,8 +451,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         {
             cheats.startPrank(strategyManager.strategyWhitelister());
             IStrategy[] memory _strategy = new IStrategy[](1);
+            bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
             _strategy[0] = stethStrategy;
-            strategyManager.addStrategiesToDepositWhitelist(_strategy);
+            strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
             cheats.stopPrank();
         }
 
@@ -697,8 +496,9 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
         // whitelist the strategy for deposit
         cheats.startPrank(strategyManager.strategyWhitelister());
         IStrategy[] memory _strategy = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = IStrategy(_strategyBase);
-        _strategyManager.addStrategiesToDepositWhitelist(_strategy);
+        _strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
         cheats.stopPrank();
 
         return _strategyManager;

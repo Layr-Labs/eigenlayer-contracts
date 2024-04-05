@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -21,14 +21,14 @@ interface IStrategy {
     function deposit(IERC20 token, uint256 amount) external returns (uint256);
 
     /**
-     * @notice Used to withdraw tokens from this Strategy, to the `depositor`'s address
-     * @param depositor is the address to receive the withdrawn funds
+     * @notice Used to withdraw tokens from this Strategy, to the `recipient`'s address
+     * @param recipient is the address to receive the withdrawn funds
      * @param token is the ERC20 token being transferred out
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
      */
-    function withdraw(address depositor, IERC20 token, uint256 amountShares) external;
+    function withdraw(address recipient, IERC20 token, uint256 amountShares) external;
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
@@ -54,7 +54,13 @@ interface IStrategy {
      */
     function userUnderlying(address user) external returns (uint256);
 
-     /**
+    /**
+     * @notice convenience function for fetching the current total shares of `user` in this strategy, by
+     * querying the `strategyManager` contract
+     */
+    function shares(address user) external view returns (uint256);
+
+    /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token

@@ -1,29 +1,29 @@
-using StrategyManager as strategyManager
+using StrategyManager as strategyManager;
 methods {
     // external calls to StrategyManager
-    stakerStrategyShares(address, address) returns (uint256) => DISPATCHER(true)
+    function _.stakerStrategyShares(address, address) external => DISPATCHER(true);
     
     // external calls to PauserRegistry
-    pauser() returns (address) => DISPATCHER(true)
-	unpauser() returns (address) => DISPATCHER(true)
+    function _.isPauser(address) external => DISPATCHER(true);
+	function _.unpauser() external => DISPATCHER(true);
 
     // external calls to ERC20
-    balanceOf(address) returns (uint256) => DISPATCHER(true)
-    transfer(address, uint256) returns (bool) => DISPATCHER(true)
-    transferFrom(address, address, uint256) returns (bool) => DISPATCHER(true)
+    function _.balanceOf(address) external => DISPATCHER(true);
+    function _.transfer(address, uint256) external => DISPATCHER(true);
+    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
 
 	// external calls from StrategyManager to Slasher
-    isFrozen(address) returns (bool) => DISPATCHER(true)
-	canWithdraw(address,uint32,uint256) returns (bool) => DISPATCHER(true)
+    function _.isFrozen(address) external => DISPATCHER(true);
+	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
 
     // envfree functions
-    totalShares() returns (uint256) envfree
-    underlyingToken() returns (address) envfree
-    sharesToUnderlyingView(uint256) returns (uint256) envfree
-    sharesToUnderlying(uint256) returns (uint256) envfree
-    underlyingToSharesView(uint256) returns (uint256) envfree
-    underlyingToShares(uint256) returns (uint256) envfree
-    shares(address) returns (uint256) envfree
+    function totalShares() external returns (uint256) envfree;
+    function underlyingToken() external returns (address) envfree;
+    function sharesToUnderlyingView(uint256) external returns (uint256) envfree;
+    function sharesToUnderlying(uint256) external returns (uint256) envfree;
+    function underlyingToSharesView(uint256) external returns (uint256) envfree;
+    function underlyingToShares(uint256) external returns (uint256) envfree;
+    function shares(address) external returns (uint256) envfree;
 }
 
 // // idea based on OpenZeppelin invariant -- see https://github.com/OpenZeppelin/openzeppelin-contracts/blob/formal-verification/certora/specs/ERC20.spec#L8-L22

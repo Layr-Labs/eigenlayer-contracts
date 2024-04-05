@@ -1,0 +1,61 @@
+{
+     "multisig_addresses": {
+          "communityMultisig": "0xFEA47018D632A77bA579846c840d5706705Dc598",
+          "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
+          "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
+          "executorMultisig": "0x369e6F597e22EaB55fFb173C6d9cD234BD699111",
+          "timelock": "0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF"
+     },
+     "strategies": [
+                    {
+                         "token_address": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                         "token_name": "Coinbase Wrapped Staked ETH",
+                         "token_symbol": "cbETH",
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
+                    },
+                    {
+                         "token_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+                         "token_name": "Liquid staked Ether 2.0",
+                         "token_symbol": "stETH",
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
+                    },
+                    {
+                         "token_address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                         "token_name": "Rocket Pool ETH",
+                         "token_symbol": "rETH",
+                         "max_per_deposit": 0,
+                         "max_deposits": 0
+                    }
+               ],
+     "strategyManager":
+          {
+               "init_paused_status": 0,
+               "init_withdrawal_delay_blocks": 50400
+          },
+     "eigenPod":
+          {
+               "PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS": 50400,
+               "REQUIRED_BALANCE_WEI": "32000000000000000000"
+          },
+     "eigenPodManager":
+          {    
+               "max_pods": 0,
+               "init_paused_status": 30
+          },
+     "delayedWithdrawalRouter":
+          {
+               "init_paused_status": 0,
+               "init_withdrawal_delay_blocks": 50400
+          },
+     "slasher":
+          {
+               "init_paused_status": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+          },
+     "delegation":
+          {
+               "init_paused_status": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+          },
+     "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+ }

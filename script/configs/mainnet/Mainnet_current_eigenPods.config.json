@@ -1,0 +1,46 @@
+{
+  "chainInfo": {
+    "chainId": 1,
+    "deploymentBlock": 19285000
+  },
+  "eigenPods": {
+    "multiValidators": [
+      "0x2641c2ded63a0c640629f5edf1189e0f53c06561",
+      "0xa345dcb63f984ed1c6d1a8901e0cdbd13b2b4d19",
+      "0x7fb3d3801883341a02ddd1beb2e624a278e87930",
+      "0x2f5cb052d397d0b628299a9d4cfc49a5019c4170",
+      "0xdb678e1056acd7db74507b921a6295c3d586ece9"
+    ],
+    "singleValidators": [
+      "0xc149531419db43b8cc0d4f2f2ce1700ae46f4c8a",
+      "0x61340dcc5aef625ded27f21e5068916ad334dad0",
+      "0x722e2350a55e6b617e66983b4b91d47fe9e9403e",
+      "0x49213606dc1953eae3b733187fed9e7307edd55b",
+      "0xa8fc63e72288b79009f7b5952760114513efc700"
+    ],
+    "inActive": [
+      "0xcbb42f0d320056453c497867119814c59615daeb",
+      "0xd6e50e7f6250ca26d5d5033138ad09cfe2aaeacb",
+      "0xe18c1447804563af9647cf8c879f35ced8172c1f",
+      "0x38de067514c77fed61630bb77ecc24f2adb73ff4",
+      "0xc3f9bbd74ded6b2bc2ff8b5c693fcbabf2e24efd"
+    ],
+    "allEigenPods": [
+      "0x2641c2ded63a0c640629f5edf1189e0f53c06561",
+      "0xa345dcb63f984ed1c6d1a8901e0cdbd13b2b4d19",
+      "0x7fb3d3801883341a02ddd1beb2e624a278e87930",
+      "0x2f5cb052d397d0b628299a9d4cfc49a5019c4170",
+      "0xdb678e1056acd7db74507b921a6295c3d586ece9",
+      "0xc149531419db43b8cc0d4f2f2ce1700ae46f4c8a",
+      "0x61340dcc5aef625ded27f21e5068916ad334dad0",
+      "0x722e2350a55e6b617e66983b4b91d47fe9e9403e",
+      "0x49213606dc1953eae3b733187fed9e7307edd55b",
+      "0xa8fc63e72288b79009f7b5952760114513efc700",
+      "0xcbb42f0d320056453c497867119814c59615daeb",
+      "0xd6e50e7f6250ca26d5d5033138ad09cfe2aaeacb",
+      "0xe18c1447804563af9647cf8c879f35ced8172c1f",
+      "0x38de067514c77fed61630bb77ecc24f2adb73ff4",
+      "0xc3f9bbd74ded6b2bc2ff8b5c693fcbabf2e24efd"
+    ]
+  }
+}

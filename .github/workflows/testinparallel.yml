@@ -1,0 +1,65 @@
+name: Run Parallel
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get list of .t.sol files in src/test
+      run: |
+        FILES=$(find src/test -type f -name '*.t.sol' | sed 's#src/test/##' | jq -R -s -c 'split("\n")[:-1]')
+        echo "::set-output name=matrix::$FILES"
+      id: set-matrix
+
+  run-tests:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build --sizes
+      id: build
+
+    - name: Run unit tests
+      run: forge test --no-match-contract Integration
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+    - name: Run integration tests
+      run: forge test --match-contract Integration
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+    - name: Run integration mainnet fork tests
+      run: forge test --match-contract Integration
+      env:
+        FOUNDRY_PROFILE: "forktest"
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+        CHAIN_ID: ${{ secrets.CHAIN_ID }}

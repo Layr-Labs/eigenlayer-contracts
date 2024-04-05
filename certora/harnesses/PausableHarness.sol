@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
-import "../munged/permissions/Pausable.sol";
+import "../../src/contracts/permissions/Pausable.sol";
 
 contract PausableHarness is Pausable {
     // getters

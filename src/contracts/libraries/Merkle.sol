@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 // Adapted from OpenZeppelin Contracts (last updated v4.8.0) (utils/cryptography/MerkleProof.sol)
 
-pragma solidity =0.8.12;
+pragma solidity ^0.8.0;
 
 /**
  * @dev These functions deal with verification of Merkle Tree proofs.
@@ -21,9 +21,9 @@ library Merkle {
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
-     * hash matches the root of the tree. The tree is built assuming `leaf` is 
+     * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
-     * 
+     *
      * Note this is for a Merkle tree using the keccak/sha3 hash function
      */
     function verifyInclusionKeccak(
@@ -38,18 +38,25 @@ library Merkle {
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
-     * hash matches the root of the tree. The tree is built assuming `leaf` is 
+     * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
-     * 
+     *
      * _Available since v4.4._
-     * 
+     *
      * Note this is for a Merkle tree using the keccak/sha3 hash function
      */
-    function processInclusionProofKeccak(bytes memory proof, bytes32 leaf, uint256 index) internal pure returns (bytes32) {
-        require(proof.length != 0 && proof.length % 32 == 0, "Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32");
+    function processInclusionProofKeccak(
+        bytes memory proof,
+        bytes32 leaf,
+        uint256 index
+    ) internal pure returns (bytes32) {
+        require(
+            proof.length != 0 && proof.length % 32 == 0,
+            "Merkle.processInclusionProofKeccak: proof length should be a non-zero multiple of 32"
+        );
         bytes32 computedHash = leaf;
-        for (uint256 i = 32; i <= proof.length; i+=32) {
-            if(index % 2 == 0) {
+        for (uint256 i = 32; i <= proof.length; i += 32) {
+            if (index % 2 == 0) {
                 // if ith bit of index is 0, then computedHash is a left sibling
                 assembly {
                     mstore(0x00, computedHash)
@@ -64,7 +71,7 @@ library Merkle {
                     mstore(0x20, computedHash)
                     computedHash := keccak256(0x00, 0x40)
                     index := div(index, 2)
-                }            
+                }
             }
         }
         return computedHash;
@@ -73,9 +80,9 @@ library Merkle {
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
-     * hash matches the root of the tree. The tree is built assuming `leaf` is 
+     * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
-     * 
+     *
      * Note this is for a Merkle tree using the sha256 hash function
      */
     function verifyInclusionSha256(
@@ -90,23 +97,32 @@ library Merkle {
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
-     * hash matches the root of the tree. The tree is built assuming `leaf` is 
+     * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
      *
      * _Available since v4.4._
-     * 
+     *
      * Note this is for a Merkle tree using the sha256 hash function
      */
-    function processInclusionProofSha256(bytes memory proof, bytes32 leaf, uint256 index) internal view returns (bytes32) {
-        require(proof.length != 0 && proof.length % 32 == 0, "Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32");
+    function processInclusionProofSha256(
+        bytes memory proof,
+        bytes32 leaf,
+        uint256 index
+    ) internal view returns (bytes32) {
+        require(
+            proof.length != 0 && proof.length % 32 == 0,
+            "Merkle.processInclusionProofSha256: proof length should be a non-zero multiple of 32"
+        );
         bytes32[1] memory computedHash = [leaf];
-        for (uint256 i = 32; i <= proof.length; i+=32) {
-            if(index % 2 == 0) {
+        for (uint256 i = 32; i <= proof.length; i += 32) {
+            if (index % 2 == 0) {
                 // if ith bit of index is 0, then computedHash is a left sibling
                 assembly {
                     mstore(0x00, mload(computedHash))
                     mstore(0x20, mload(add(proof, i)))
-                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {revert(0, 0)}
+                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {
+                        revert(0, 0)
+                    }
                     index := div(index, 2)
                 }
             } else {
@@ -114,9 +130,11 @@ library Merkle {
                 assembly {
                     mstore(0x00, mload(add(proof, i)))
                     mstore(0x20, mload(computedHash))
-                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {revert(0, 0)}
+                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {
+                        revert(0, 0)
+                    }
                     index := div(index, 2)
-                }            
+                }
             }
         }
         return computedHash[0];
@@ -127,25 +145,23 @@ library Merkle {
      @param leaves the leaves of the merkle tree
      @return The computed Merkle root of the tree.
      @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
-     */ 
-    function merkleizeSha256(
-        bytes32[] memory leaves
-    ) internal pure returns (bytes32) {
+     */
+    function merkleizeSha256(bytes32[] memory leaves) internal pure returns (bytes32) {
         //there are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
         //create a layer to store the internal nodes
         bytes32[] memory layer = new bytes32[](numNodesInLayer);
         //fill the layer with the pairwise hashes of the leaves
-        for (uint i = 0; i < numNodesInLayer; i++) {
-            layer[i] = sha256(abi.encodePacked(leaves[2*i], leaves[2*i+1]));
+        for (uint256 i = 0; i < numNodesInLayer; i++) {
+            layer[i] = sha256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
         }
         //the next layer above has half as many nodes
         numNodesInLayer /= 2;
         //while we haven't computed the root
         while (numNodesInLayer != 0) {
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            for (uint i = 0; i < numNodesInLayer; i++) {
-                layer[i] = sha256(abi.encodePacked(layer[2*i], layer[2*i+1]));
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
+                layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
             //the next layer above has half as many nodes
             numNodesInLayer /= 2;

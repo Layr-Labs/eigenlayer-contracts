@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 /**
  * @title Interface for the BeaconStateOracle contract.
@@ -26,7 +26,7 @@ interface IBeaconChainOracleMock {
     function totalOracleSigners() external view returns(uint256);
 
 
-    function setBeaconChainStateRoot(bytes32 beaconChainStateRoot) external;
+    function setOracleBlockRootAtTimestamp(bytes32 beaconChainStateRoot) external;
 
 
     /**

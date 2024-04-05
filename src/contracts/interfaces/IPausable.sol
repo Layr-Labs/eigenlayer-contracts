@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity >=0.5.0;
 
 import "../interfaces/IPauserRegistry.sol";
 
@@ -21,8 +21,17 @@ import "../interfaces/IPauserRegistry.sol";
  */
 
 interface IPausable {
+    /// @notice Emitted when the `pauserRegistry` is set to `newPauserRegistry`.
+    event PauserRegistrySet(IPauserRegistry pauserRegistry, IPauserRegistry newPauserRegistry);
+
+    /// @notice Emitted when the pause is triggered by `account`, and changed to `newPausedStatus`.
+    event Paused(address indexed account, uint256 newPausedStatus);
+
+    /// @notice Emitted when the pause is lifted by `account`, and changed to `newPausedStatus`.
+    event Unpaused(address indexed account, uint256 newPausedStatus);
+    
     /// @notice Address of the `PauserRegistry` contract that this contract defers to for determining access control (for pausing).
-    function pauserRegistry() external view returns (IPauserRegistry); 
+    function pauserRegistry() external view returns (IPauserRegistry);
 
     /**
      * @notice This function is used to pause an EigenLayer contract's functionality.
