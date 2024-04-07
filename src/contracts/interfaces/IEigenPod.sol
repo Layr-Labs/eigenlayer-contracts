@@ -142,7 +142,7 @@ interface IEigenPod {
     function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
 
     ///@notice mapping that tracks proven withdrawals
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
+    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slotTimestamp) external view returns (bool);
 
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
