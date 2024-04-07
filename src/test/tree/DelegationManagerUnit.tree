@@ -16,7 +16,7 @@
 │       │   └── it should revert
 │       ├── it should set the operator delegated to itself and emit a StakerDelegated event
 │       ├── given the caller has delegateable shares
-│       │   └── it should increase the operator's shares and and emit an OperatorSharesIncreased event
+│       │   └── it should increase the operator's shares and emit an OperatorSharesIncreased event
 │       └── it should push an operator stake update
 │           └── it should emit an OperatorRegistered event and OperatorMetadataURIUpdated event
 ├── when modifyOperatorDetails is called
