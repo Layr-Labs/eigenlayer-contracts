@@ -30,6 +30,25 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         _parseDeployedContracts(MAINNET_DEPLOY_INFO_PATH);
     }
 
+    function test_UpgradeStatus() public {
+        _logSection("Checking M2 Upgrade Status");
+
+        bool isQueued = _isUpgradeQueued();
+
+        if (!isQueued) {
+            _logGreen("Upgrade status", "complete!");
+            isUpgraded = true;
+        } else {
+            _logYellow("Upgrade status", "queued");
+        }
+
+        _log("Inspecting contracts");
+
+        inspect(delegationManager);
+        inspect(strategyManager);
+        inspect(eigenPodManager);
+    }
+
     function test_M2Upgrade() public {
         inspect(delegationManager);
         inspect(strategyManager);
@@ -236,9 +255,35 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
     }
 
     function _upgradeMainnet() internal {
-        _logSection("Executing Queued M2 Upgrade");
+        _logSection("Checking Queued M2 Upgrade");
 
-        ITimelock _timelock = ITimelock(timelock);
+        if (_isUpgradeQueued()) {
+            if (block.timestamp < TimelockHelper.ETA) {
+                _log("Warping to ETA");
+                cheats.warp(TimelockHelper.ETA);
+            } else {
+                _logGreen("Upgrade is executable (ETA)");
+            }
+
+            _logAction("operationsMultisig", "timelock.executeTransaction");
+            cheats.prank(operationsMultisig);
+            ITimelock(timelock).executeTransaction({
+                target: executorMultisig,
+                value: 0,
+                signature: "",
+                data: TimelockHelper.EXEC_DATA,
+                eta: TimelockHelper.ETA
+            });
+        } else {
+            _log("Already upgraded to M2!");
+        }
+
+        isUpgraded = true;
+        
+        _log("");
+    }
+
+    function _isUpgradeQueued() internal returns (bool) {
 
         bytes32 queuedTxn = keccak256(abi.encode(
             executorMultisig,
@@ -248,23 +293,11 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
             TimelockHelper.ETA
         ));
 
-        _log("Upgrade is queued", _timelock.queuedTransactions(queuedTxn));
+        _log("Checking queued transaction hash", queuedTxn);
+        _log("- ETA", TimelockHelper.ETA);
+        bool isQueued = ITimelock(timelock).queuedTransactions(queuedTxn);
+        _log("- Upgrade is queued", isQueued);
 
-        _log("Warping to ETA");
-        cheats.warp(TimelockHelper.ETA);
-
-        _logAction("operationsMultisig", "timelock.executeTransaction");
-        cheats.prank(operationsMultisig);
-        _timelock.executeTransaction({
-            target: executorMultisig,
-            value: 0,
-            signature: "",
-            data: TimelockHelper.EXEC_DATA,
-            eta: TimelockHelper.ETA
-        });
-
-        isUpgraded = true;
-
-        _log("");
+        return isQueued;
     }
 }

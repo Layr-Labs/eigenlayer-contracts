@@ -88,6 +88,18 @@ contract PrintUtils is Test {
         emit log(s);
     }
 
+    function _logGreen(string memory s) internal {
+        emit log(s.green());
+    }
+
+    function _logGreen(string memory s, string memory value) internal {
+        emit log_named_string(s, value.green());
+    }
+
+    function _logYellow(string memory s, string memory value) internal {
+        emit log_named_string(s, value.yellow());
+    }
+
     function _log(string memory name, string memory value) internal {
         emit log_named_string(name, value);
     }
@@ -105,7 +117,7 @@ contract PrintUtils is Test {
     }
 
     function _log(string memory name, bytes32 value) internal {
-        emit log_named_bytes32(name, value);
+        emit log_named_string(name, value.dimBytes32());
     }
 
     function _log(string memory name, bool value) internal {
