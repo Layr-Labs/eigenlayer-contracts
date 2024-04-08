@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
@@ -42,11 +42,35 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
             _logYellow("Upgrade status", "queued");
         }
 
-        _log("Inspecting contracts");
+        _log("");
+        _log("Inspecting contracts...");
+        _log("");
 
         inspect(delegationManager);
         inspect(strategyManager);
         inspect(eigenPodManager);
+
+        // Test various contract functions
+        if (isUpgraded) {
+            // Some dude from etherscan hehe
+            Target t = inspect(0xf151FeC20505fAf3E6a7E6AA1654e53e23b42CEE);
+
+            _unpauseStrategyManager();
+            t.depositIntoEigenlayer();
+            _pauseStrategyManager();
+            inspect(t);
+
+            t.registerAsOperator();
+            inspect(t);
+
+            t.queueWithdrawals();
+            inspect(t);
+
+            _log("Rolling to completable block");
+            cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks() + 1);
+            t.completeQueuedWithdrawalsAsShares();
+            inspect(t);
+        }
     }
 
     function test_M2Upgrade() public {
@@ -239,7 +263,7 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         strategyManager.pause(1);
 
         cheats.stopPrank();
-        _log("Paused strategyManager!");
+        _log("Paused strategyManager deposits!");
         _log("");
     }
 

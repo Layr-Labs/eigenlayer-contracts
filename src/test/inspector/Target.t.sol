@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 
@@ -29,6 +29,8 @@ struct HeldAsset {
 
 contract Target is Test, PrintUtils {
 
+    Vm cheats = Vm(HEVM_ADDRESS);
+
     EigenPodManager immutable eigenPodManager;
     StrategyManager immutable strategyManager;
     DelegationManager immutable delegationManager;
@@ -41,6 +43,7 @@ contract Target is Test, PrintUtils {
     IEigenPod public pod;
 
     HeldAsset[] assets;
+    HeldAsset[] delegatedAssets;
 
     IDelegationManager.Withdrawal[] queuedWithdrawals;
     IStrategyManager.DeprecatedStruct_QueuedWithdrawal[] queuedWithdrawals_M1;
@@ -70,6 +73,13 @@ contract Target is Test, PrintUtils {
         _updateAssets();
     }
 
+    function registerAsOperator() public action("registerAsOperator") {
+        delegationManager.registerAsOperator({
+            registeringOperatorDetails: IDelegationManager.OperatorDetails(address(this), address(0), 0),
+            metadataURI: "XDLMAO"
+        });
+    }
+
     /// @dev Deposit all held assets into EigenLayer
     /// NOTE: native ETH currently not supported
     function depositIntoEigenlayer() public action("depositIntoEigenLayer") {
@@ -94,10 +104,71 @@ contract Target is Test, PrintUtils {
         pod.activateRestaking();
     }
 
+    function queueWithdrawals() public action("queueWithdrawals") {
+        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+
+        params[0].strategies = new IStrategy[](assets.length);
+        params[0].shares = new uint[](assets.length);
+        params[0].withdrawer = address(this);
+
+        for (uint i = 0; i < assets.length; i++) {
+            params[0].strategies[i] = assets[0].strategy;
+            params[0].shares[i] = assets[0].shares;
+        }
+
+        queuedWithdrawals.push(IDelegationManager.Withdrawal({
+            staker: address(this),
+            delegatedTo: delegationManager.delegatedTo(address(this)),
+            withdrawer: address(this),
+            nonce: delegationManager.cumulativeWithdrawalsQueued(address(this)),
+            startBlock: uint32(block.number),
+            strategies: params[0].strategies,
+            shares: params[0].shares
+        }));
+
+        delegationManager.queueWithdrawals(params);
+    }
+
+    function completeQueuedWithdrawalsAsTokens() public action("completeQueuedWithdrawals (tokens)") {
+        for (uint i = 0; i < queuedWithdrawals.length; i++) {
+            IStrategy[] memory strats = queuedWithdrawals[i].strategies;
+            IERC20[] memory tokens = new IERC20[](strats.length);
+
+            for (uint j = 0; j < tokens.length; j++) {
+                tokens[j] = strats[j].underlyingToken();
+            }
+
+            delegationManager.completeQueuedWithdrawal({
+                withdrawal: queuedWithdrawals[i],
+                tokens: tokens,
+                middlewareTimesIndex: 0,
+                receiveAsTokens: true
+            });
+        }
+    }
+
+    function completeQueuedWithdrawalsAsShares() public action("completeQueuedWithdrawals (shares)") {
+        for (uint i = 0; i < queuedWithdrawals.length; i++) {
+            IStrategy[] memory strats = queuedWithdrawals[i].strategies;
+            IERC20[] memory tokens = new IERC20[](strats.length);
+
+            for (uint j = 0; j < tokens.length; j++) {
+                tokens[j] = strats[j].underlyingToken();
+            }
+
+            delegationManager.completeQueuedWithdrawal({
+                withdrawal: queuedWithdrawals[i],
+                tokens: tokens,
+                middlewareTimesIndex: 0,
+                receiveAsTokens: false
+            });
+        }
+    }
+
     function queueWithdrawals_M1() public action("queueWithdrawals_M1") {
         for (uint i = 0; i < assets.length; i++) {
             HeldAsset memory asset = assets[i];
-            IERC20 underlyingToken = asset.strategy.underlyingToken();
+            // IERC20 underlyingToken = asset.strategy.underlyingToken();
 
             // Get the index of the strategy in stakerStrategyList
             uint index = type(uint).max;
@@ -172,7 +243,9 @@ contract Target is Test, PrintUtils {
     function logBasicInfo() public {
         _logHeader(name, address(this));
 
+        // Basic info
         _logEth("ETH balance", address(this).balance);
+        _log("Is operator", delegationManager.isOperator(address(this)));
 
         // EigenPod info
         address _pod = address(pod);
@@ -195,6 +268,18 @@ contract Target is Test, PrintUtils {
                 _log(_stratName(asset.strategy));
                 _log("- shares", asset.shares);
                 _log("- tokens", asset.tokens);
+            }
+        }
+
+        _logSection("Delegated Assets");
+        if (delegatedAssets.length == 0) {
+            _log("No delegated assets.");
+        } else {
+            for (uint i = 0; i < delegatedAssets.length; i++) {
+                HeldAsset memory asset = delegatedAssets[i];
+
+                _log(_stratName(asset.strategy));
+                _log("- shares", asset.shares);
             }
         }
 
@@ -250,17 +335,28 @@ contract Target is Test, PrintUtils {
         }
 
         delete assets;
+        delete delegatedAssets;
+        
         for (uint i = 0; i < whitelistedStrategies.length; i++) {
             StrategyBase strat = whitelistedStrategies[i];
             IERC20 underlying = strat.underlyingToken();
 
-            uint shares = strategyManager.stakerStrategyShares(address(this), strat);
+            uint userShares = strategyManager.stakerStrategyShares(address(this), strat);
+            uint operatorShares = delegationManager.operatorShares(address(this), strat);
             uint tokens = underlying.balanceOf(address(this));
 
-            if (shares != 0 || tokens != 0) {
+            if (userShares != 0 || tokens != 0) {
                 assets.push(HeldAsset({
                     strategy: strat,
-                    shares: shares,
+                    shares: userShares,
+                    tokens: tokens
+                }));
+            }
+
+            if (operatorShares != 0) {
+                delegatedAssets.push(HeldAsset({
+                    strategy: strat,
+                    shares: operatorShares,
                     tokens: tokens
                 }));
             }

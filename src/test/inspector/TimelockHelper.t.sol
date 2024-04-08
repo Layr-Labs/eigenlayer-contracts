@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 interface ITimelock {
     function executeTransaction(address target, uint value, string memory signature, bytes memory data, uint eta) external returns (bytes memory);
