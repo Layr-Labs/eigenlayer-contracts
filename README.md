@@ -87,7 +87,7 @@ surya mdreport surya_report.md ./src/contracts/**/*.sol
 
 ### Current Mainnet Deployment
 
-The current mainnet deployment is our M1 release, and is from a much older version of this repo. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet) branch.
+The current mainnet deployment is our M2 release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet) branch.
 
 | Name | Solidity | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | -------- | 
