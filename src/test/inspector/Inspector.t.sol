@@ -30,6 +30,46 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         _parseDeployedContracts(MAINNET_DEPLOY_INFO_PATH);
     }
 
+    address constant BEACON_ROOTS_ADDRESS = address(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
+
+    function test_4788_Oracle() public {
+        _logSection("Current Block Info");
+
+        _log("block.timestamp", block.timestamp);
+        _log("block.number", block.number);
+
+        _log("");
+
+        (bool success, bytes memory data) = BEACON_ROOTS_ADDRESS.staticcall(abi.encode(uint(block.timestamp)));
+        require(success, "beacon root call failed");
+
+        bytes32 parentHash = abi.decode(data, (bytes32));
+        _log("beacon GET (block.timestamp)", parentHash);
+
+        uint i = 12;
+        while(true) {
+            (success, data) = BEACON_ROOTS_ADDRESS.staticcall(abi.encode(uint(block.timestamp) - i));
+            require(success, string.concat("call failed at timestamp minus ", i.toString()));
+
+            bytes32 hash = abi.decode(data, (bytes32));
+            // _log("beacon GET (block.timestamp)", parentHash);
+            if (hash == parentHash) {
+                _log(string.concat("same hash for timestamp minus ", i.toString()), true);
+            } else {
+                _log(string.concat("same hash for timestamp minus ", i.toString()), false);
+                _log(string.concat("beacon GET timestamp - ", i.toString()), hash);
+                break;
+            }
+
+            if (i > 100) {
+                _log("what");
+                break;
+            }
+
+            i+=12;
+        }
+    }
+
     function test_UpgradeStatus() public {
         _logSection("Checking M2 Upgrade Status");
 
