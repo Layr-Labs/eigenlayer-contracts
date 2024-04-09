@@ -73,7 +73,7 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 * Sets `OperatorDetails` for the Operator in question
 * Delegates the Operator to itself
 * If the Operator has shares in the `EigenPodManager`, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
-* For each of the three strategies in the `StrategyManager`, if the Operator holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
+* For each of the strategies in the `StrategyManager`, if the Operator holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
 
 *Requirements*:
 * Caller MUST NOT already be an Operator
@@ -132,7 +132,7 @@ Allows the caller (a Staker) to delegate their shares to an Operator. Delegation
 *Effects*:
 * Records the Staker as being delegated to the Operator
 * If the Staker has shares in the `EigenPodManager`, the `DelegationManager` adds these shares to the Operator's shares for the beacon chain ETH strategy.
-* For each of the three strategies in the `StrategyManager`, if the Staker holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
+* For each of the strategies in the `StrategyManager`, if the Staker holds shares in that strategy they are added to the Operator's shares under the corresponding strategy.
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
