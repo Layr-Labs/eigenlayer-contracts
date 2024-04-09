@@ -2,7 +2,7 @@
 
 ## EigenLayer M2 Docs
 
-**EigenLayer M2** extends the functionality of EigenLayer M1 (which is live on mainnet). M2 is currently on the Goerli testnet, and will eventually be released on mainnet. 
+**EigenLayer M2** Is the currently deployed release of EigenLayer on Holesky Testnet and Mainnet. It extends the extends the functionality of EigenLayer M1.
 
 This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
