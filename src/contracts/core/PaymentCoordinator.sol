@@ -324,7 +324,7 @@ contract PaymentCoordinator is
         uint32 tokenLeafIndex,
         bytes calldata tokenProof,
         TokenTreeMerkleLeaf calldata tokenLeaf
-    ) internal view {
+    ) internal pure {
         // Verify inclusion of token leaf
         bytes32 tokenLeafHash = calculateTokenLeafHash(tokenLeaf);
         require(
@@ -352,7 +352,7 @@ contract PaymentCoordinator is
         uint32 earnerLeafIndex,
         bytes calldata earnerProof,
         EarnerTreeMerkleLeaf calldata earnerLeaf
-    ) internal view {
+    ) internal pure {
         // Verify inclusion of earner leaf
         bytes32 earnerLeafHash = calculateEarnerLeafHash(earnerLeaf);
         require(
