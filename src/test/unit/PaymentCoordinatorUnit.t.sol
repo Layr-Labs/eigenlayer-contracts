@@ -10,6 +10,7 @@ import "src/contracts/strategies/StrategyBase.sol";
 import "src/test/events/IPaymentCoordinatorEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/Reenterer.sol";
+import "src/test/mocks/ERC20Mock.sol";
 
 /**
  * @notice Unit testing of the PaymentCoordinator contract
@@ -78,7 +79,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     address defaultClaimer = address(1002);
     address payAllSubmitter = address(1003);
 
-    function setUp() public override {
+    function setUp() public virtual override {
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
@@ -159,6 +160,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         );
 
         paymentCoordinator.setPayAllForRangeSubmitter(payAllSubmitter, true);
+        paymentCoordinator.setPaymentUpdater(paymentUpdater);
 
         // Exclude from fuzzed tests
         addressIsExcludedFromFuzzedInputs[address(paymentCoordinator)] = true;
@@ -169,7 +171,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     }
 
     /// @notice deploy token to owner and approve paymentCoordinator. Used for deploying payment tokens
-    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal {
+    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal virtual {
         cheats.startPrank(owner);
         for (uint256 i = 0; i < numTokens; ++i) {
             IERC20 token = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, owner);
@@ -190,23 +192,76 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     function _maxTimestamp(uint64 timestamp1, uint64 timestamp2) internal returns (uint64) {
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
+
+    function _assertPaymentClaimedEvents(bytes32 root, IPaymentCoordinator.PaymentMerkleClaim memory claim) internal {
+        for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+            emit PaymentClaimed(root, claim.tokenLeaves[i]);
+        }
+    }
+
+    /// @notice given address and array of payment tokens, return array of cumulativeClaimed amonts
+    function _getCumulativeClaimed(
+        address earner,
+        IPaymentCoordinator.PaymentMerkleClaim memory claim
+    ) internal returns (uint256[] memory) {
+        uint256[] memory totalClaimed = new uint256[](claim.tokenLeaves.length);
+
+        for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
+            totalClaimed[i] = paymentCoordinator.cumulativeClaimed(earner, claim.tokenLeaves[i].token);
+        }
+
+        return totalClaimed;
+    }
+
+    /// @notice given a claim, return the new cumulativeEarnings for each token
+    function _getCumulativeEarnings(
+        IPaymentCoordinator.PaymentMerkleClaim memory claim
+    ) internal returns (uint256[] memory) {
+        uint256[] memory earnings = new uint256[](claim.tokenLeaves.length);
+
+        for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
+            earnings[i] = claim.tokenLeaves[i].cumulativeEarnings;
+        }
+
+        return earnings;
+    }
+
+    function _getClaimTokenBalances(
+        address earner,
+        IPaymentCoordinator.PaymentMerkleClaim memory claim
+    ) internal returns (uint256[] memory) {
+        uint256[] memory balances = new uint256[](claim.tokenLeaves.length);
+
+        for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
+            balances[i] = claim.tokenLeaves[i].token.balanceOf(earner);
+        }
+
+        return balances;
+    }
 }
 
 contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorUnitTests {
     function testFuzz_setClaimerFor(address earner, address claimer) public filterFuzzedAddressInputs(earner) {
-        cheats.prank(earner);
+        cheats.startPrank(earner);
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit ClaimerForSet(earner, paymentCoordinator.claimerFor(earner), claimer);
         paymentCoordinator.setClaimerFor(earner, claimer);
         assertEq(claimer, paymentCoordinator.claimerFor(earner), "claimerFor not set");
+        cheats.stopPrank();
     }
 
     function testFuzz_setCalculationIntervalSeconds(uint64 intervalSeconds) public {
-        cheats.prank(paymentCoordinator.owner());
+        cheats.startPrank(paymentCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit CalculationIntervalSecondsSet(paymentCoordinator.calculationIntervalSeconds(), intervalSeconds);
         paymentCoordinator.setCalculationIntervalSeconds(intervalSeconds);
         assertEq(
             intervalSeconds,
             paymentCoordinator.calculationIntervalSeconds(),
             "calculationIntervalSeconds not set"
         );
+        cheats.stopPrank();
     }
 
     function testFuzz_setRetroactivePaymentsEnabled(bool retroactivePaymentsEnabled) public {
@@ -220,35 +275,47 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
     }
 
     function testFuzz_setActivationDelay(uint64 activationDelay) public {
-        cheats.prank(paymentCoordinator.owner());
+        cheats.startPrank(paymentCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit ActivationDelaySet(paymentCoordinator.activationDelay(), activationDelay);
         paymentCoordinator.setActivationDelay(activationDelay);
         assertEq(activationDelay, paymentCoordinator.activationDelay(), "activationDelay not set");
+        cheats.stopPrank();
     }
 
     function testFuzz_setGlobalOperatorCommission(uint16 globalCommissionBips) public {
-        cheats.prank(paymentCoordinator.owner());
+        cheats.startPrank(paymentCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit GlobalCommissionBipsSet(paymentCoordinator.globalOperatorCommissionBips(), globalCommissionBips);
         paymentCoordinator.setGlobalOperatorCommission(globalCommissionBips);
         assertEq(
             globalCommissionBips,
             paymentCoordinator.globalOperatorCommissionBips(),
             "globalOperatorCommissionBips not set"
         );
+        cheats.stopPrank();
     }
 
     function testFuzz_setPaymentUpdater(address newPaymentUpdater) public {
-        cheats.prank(paymentCoordinator.owner());
+        cheats.startPrank(paymentCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit PaymentUpdaterSet(paymentCoordinator.paymentUpdater(), newPaymentUpdater);
         paymentCoordinator.setPaymentUpdater(newPaymentUpdater);
         assertEq(newPaymentUpdater, paymentCoordinator.paymentUpdater(), "paymentUpdater not set");
+        cheats.stopPrank();
     }
 
     function testFuzz_setPayAllForRangeSubmitter(address submitter, bool newValue) public {
-        cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setPayAllForRangeSubmitter(defaultClaimer, newValue);
+        cheats.startPrank(paymentCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit PayAllForRangeSubmitterSet(submitter, paymentCoordinator.isPayAllForRangeSubmitter(submitter), newValue);
+        paymentCoordinator.setPayAllForRangeSubmitter(submitter, newValue);
         assertEq(
             newValue,
-            paymentCoordinator.isPayAllForRangeSubmitter(defaultClaimer),
+            paymentCoordinator.isPayAllForRangeSubmitter(submitter),
             "isPayAllForRangeSubmitter not set"
         );
+        cheats.stopPrank();
     }
 }
 
@@ -706,7 +773,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: paymentTokens[i],
-                amount: param.amount,
+                amount: amounts[i],
                 startTimestamp: uint64(param.startTimestamp),
                 duration: uint64(param.duration)
             });
@@ -996,7 +1063,560 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot() public {}
+    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) public {
+        // fuzz avoiding overflows and valid activatedAt values
+        cheats.assume(activatedAt >= block.timestamp);
+        cheats.assume(activatedAt < type(uint64).max - paymentCoordinator.activationDelay());
+
+        uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
+
+        // cheats.prank(paymentUpdater);
+        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
+        emit DistributionRootSubmitted(
+            expectedRootIndex,
+            root,
+            paymentCalculationEndTimestamp,
+            activatedAt + paymentCoordinator.activationDelay()
+        );
+        cheats.prank(paymentUpdater);
+        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
+
+        (
+            bytes32 submittedRoot,
+            uint64 submittedPaymentCalculationEndTimestamp,
+            uint64 submittedActivatedAt
+        ) = paymentCoordinator.distributionRoots(expectedRootIndex);
+
+        assertEq(
+            expectedRootIndex,
+            paymentCoordinator.getDistributionRootsLength() - 1,
+            "root not added to roots array"
+        );
+        assertEq(
+            activatedAt + paymentCoordinator.activationDelay(),
+            submittedActivatedAt,
+            "activatedAt not added activationDelay"
+        );
+        assertEq(root, submittedRoot, "root not set");
+        assertEq(
+            paymentCalculationEndTimestamp,
+            submittedPaymentCalculationEndTimestamp,
+            "paymentCalculationEndTimestamp not set"
+        );
+    }
+
+    /// @notice Submits multiple roots and checks root index from hash is correct
+    function testFuzz_getRootIndexFromHash(bytes32 root, uint16 numRoots, uint256 index) public {
+        cheats.assume(numRoots > 0 && numRoots < 100);
+        cheats.assume(index < numRoots);
+
+        bytes32[] memory roots = new bytes32[](numRoots);
+        cheats.startPrank(paymentUpdater);
+        for (uint16 i = 0; i < numRoots; ++i) {
+            roots[i] = keccak256(abi.encodePacked(root, i));
+            paymentCoordinator.submitRoot(
+                roots[i],
+                uint64(block.timestamp),
+                uint64(block.timestamp) + paymentCoordinator.activationDelay()
+            );
+        }
+        cheats.stopPrank();
+
+        assertEq(index, paymentCoordinator.getRootIndexFromHash(roots[index]), "root index not found");
+    }
 }
 
-contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests {}
+/// @notice Tests for sets of JSON data with different distribution roots
+contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests {
+    /// @notice earner address used for proofs
+    address earner = 0xF2288D736d27C1584Ebf7be5f52f9E4d47251AeE;
+
+    /// @notice mock token bytecode
+    bytes mockTokenBytecode;
+
+    uint64 prevRootCalculationEndTimestamp;
+
+    // Temp storage for managing stack in _parseProofData
+    bytes32 root;
+    uint32 earnerIndex;
+    bytes earnerTreeProof;
+    address proofEarner;
+    bytes32 earnerTokenRoot;
+
+    function setUp() public virtual override {
+        PaymentCoordinatorUnitTests.setUp();
+
+        // Create mock token to use bytecode later to etch
+        IERC20 mockToken = new ERC20Mock();
+        mockTokenBytecode = address(mockToken).code;
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3
+    /// Limit fuzz runs to speed up tests since these require reading from JSON
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_LatestRoot(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+            .distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        // Claim against root and check balances before/after, and check it matches the difference between
+        // cumulative claimed and earned.
+        cheats.startPrank(claimer);
+        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+        uint256[] memory earnings = _getCumulativeEarnings(claim);
+        uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+        _assertPaymentClaimedEvents(root, claim);
+        paymentCoordinator.processClaim(claim);
+
+        uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+        for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+            assertEq(
+                earnings[i] - totalClaimedBefore[i],
+                tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                "Token balance not incremented by earnings amount"
+            );
+        }
+
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against an old root that isn't the latest
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_OldRoot(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+            .distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        // Claim against root and check balances before/after, and check it matches the difference between
+        // cumulative claimed and earned.
+        cheats.startPrank(claimer);
+        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+        uint256[] memory earnings = _getCumulativeEarnings(claim);
+        uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+        _assertPaymentClaimedEvents(root, claim);
+        paymentCoordinator.processClaim(claim);
+
+        uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+        for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+            assertEq(
+                earnings[i] - totalClaimedBefore[i],
+                tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                "Token balance not incremented by earnings amount"
+            );
+        }
+
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against all roots in order, rootIndex 0, 1, 2
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_Sequential(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        // 1. Claim against first root
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+                .distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+
+        // 2. Claim against second root
+        claim = claims[1];
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+                .distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+
+        // 3. Claim against third and latest root
+        claim = claims[2];
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+                .distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+    }
+
+    /// @notice Claim against rootIndex 0 and claim again. Balances should not increment.
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_ReuseSameClaimAgain(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        // 1. Claim against first root
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+                .distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+
+        // 2. Claim against first root again
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+                .distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(earnings[i], totalClaimedBefore[i], "totalClaimed should not be incremented");
+
+                assertEq(tokenBalancesBefore[i], tokenBalancesAfter[i], "token balance should not be incremented");
+            }
+
+            cheats.stopPrank();
+        }
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3 but modify some of the leaf values
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_Revert_WhenInvalidTokenClaim(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+            .distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        // Modify Earnings
+        claim.tokenLeaves[0].cumulativeEarnings = 1e20;
+        claim.tokenLeaves[1].cumulativeEarnings = 1e20;
+
+        // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
+        cheats.startPrank(claimer);
+
+        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid token claim proof");
+        assertFalse(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid token claim proof");
+        paymentCoordinator.processClaim(claim);
+
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3 but modify some of the leaf values
+    /// forge-config: default.fuzz.runs = 10
+    function testFuzz_processClaim_Revert_WhenInvalidEarnerClaim(
+        bool setClaimerFor,
+        address claimerFor,
+        address invalidEarner
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
+            .distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        // Modify Earner
+        claim.earnerLeaf.earner = invalidEarner;
+        cheats.prank(invalidEarner);
+        paymentCoordinator.setClaimerFor(invalidEarner, claimer);
+
+        // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
+        cheats.startPrank(claimer);
+
+        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        assertFalse(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        paymentCoordinator.processClaim(claim);
+
+        cheats.stopPrank();
+    }
+
+    /// @notice Set address with ERC20Mock bytecode and mint amount to paymentCoordinator for
+    /// balance for testing processClaim()
+    function _setAddressAsERC20(address randAddress, uint256 mintAmount) internal {
+        cheats.etch(randAddress, mockTokenBytecode);
+        ERC20Mock(randAddress).mint(address(paymentCoordinator), mintAmount);
+    }
+
+    /// @notice parse proofs from json file and submitRoot()
+    function _parseProofData(string memory filePath) internal returns (IPaymentCoordinator.PaymentMerkleClaim memory) {
+        cheats.readFile(filePath);
+
+        string memory claimProofData = cheats.readFile(filePath);
+
+        // Parse PaymentMerkleClaim
+        root = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
+        earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerIndex"), (uint32));
+        earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerTreeProof"), (bytes));
+        proofEarner = stdJson.readAddress(claimProofData, ".EarnerLeaf.Earner");
+        require(earner == proofEarner, "earner in test and json file do not match");
+        earnerTokenRoot = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerLeaf.EarnerTokenRoot"), (bytes32));
+        uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".TokenLeavesNum");
+        uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".TokenTreeProofsNum");
+
+        IPaymentCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IPaymentCoordinator.TokenTreeMerkleLeaf[](
+            numTokenLeaves
+        );
+        uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
+        for (uint256 i = 0; i < numTokenLeaves; ++i) {
+            string memory tokenKey = string.concat(".TokenLeaves[", cheats.toString(i), "].Token");
+            string memory amountKey = string.concat(".TokenLeaves[", cheats.toString(i), "].CumulativeEarnings");
+            string memory leafIndicesKey = string.concat(".LeafIndices[", cheats.toString(i), "]");
+
+            IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
+            uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
+            tokenLeaves[i] = IPaymentCoordinator.TokenTreeMerkleLeaf({
+                token: token,
+                cumulativeEarnings: cumulativeEarnings
+            });
+            tokenIndices[i] = uint32(stdJson.readUint(claimProofData, leafIndicesKey));
+
+            /// DeployCode ERC20 to Token Address
+            // deployCodeTo("ERC20PresetFixedSupply.sol", address(tokenLeaves[i].token));
+            _setAddressAsERC20(address(token), cumulativeEarnings);
+        }
+        bytes[] memory tokenTreeProofs = new bytes[](numTokenTreeProofs);
+        for (uint256 i = 0; i < numTokenTreeProofs; ++i) {
+            string memory tokenTreeProofKey = string.concat(".TokenTreeProofs[", cheats.toString(i), "]");
+            tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
+        }
+
+        uint64 rootCalculationEndTimestamp = uint64(block.timestamp) - 86400;
+        uint64 activatedAt = uint64(block.timestamp) + 86400 * 7;
+        prevRootCalculationEndTimestamp = rootCalculationEndTimestamp;
+
+        uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
+
+        cheats.prank(paymentUpdater);
+        paymentCoordinator.submitRoot(root, prevRootCalculationEndTimestamp, activatedAt);
+
+        IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
+            rootIndex: rootIndex,
+            earnerIndex: earnerIndex,
+            earnerTreeProof: earnerTreeProof,
+            earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
+            tokenIndices: tokenIndices,
+            tokenTreeProofs: tokenTreeProofs,
+            tokenLeaves: tokenLeaves
+        });
+
+        return newClaim;
+    }
+
+    function _parseAllProofs() internal returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](3);
+
+        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root1.json");
+        claims[1] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root2.json");
+        claims[2] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root3.json");
+
+        return claims;
+    }
+}

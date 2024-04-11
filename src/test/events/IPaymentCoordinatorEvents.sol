@@ -35,7 +35,6 @@ interface IPaymentCoordinatorEvents {
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint64 paymentCalculationStartTimestamp,
         uint64 paymentCalculationEndTimestamp,
         uint64 activatedAt
     );

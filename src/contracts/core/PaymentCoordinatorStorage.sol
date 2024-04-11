@@ -70,6 +70,9 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
 
     /// @notice Mapping: claimer => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
+
+    /// @notice Timestamp for latest submitted payment range
+    uint64 public latestPaymentRangeTimestamp;
     /// @notice Used for unique rangePaymentHashes
     uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
@@ -98,5 +101,5 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[41] private __gap;
+    uint256[40] private __gap;
 }
