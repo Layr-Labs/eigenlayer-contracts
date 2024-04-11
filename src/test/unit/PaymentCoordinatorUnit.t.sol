@@ -181,7 +181,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         cheats.stopPrank();
     }
 
-    function _getBalanceForTokens(IERC20[] memory tokens, address holder) internal returns (uint256[] memory) {
+    function _getBalanceForTokens(IERC20[] memory tokens, address holder) internal view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; ++i) {
             balances[i] = tokens[i].balanceOf(holder);
@@ -189,7 +189,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         return balances;
     }
 
-    function _maxTimestamp(uint64 timestamp1, uint64 timestamp2) internal returns (uint64) {
+    function _maxTimestamp(uint64 timestamp1, uint64 timestamp2) internal pure returns (uint64) {
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
@@ -204,7 +204,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     function _getCumulativeClaimed(
         address earner,
         IPaymentCoordinator.PaymentMerkleClaim memory claim
-    ) internal returns (uint256[] memory) {
+    ) internal view returns (uint256[] memory) {
         uint256[] memory totalClaimed = new uint256[](claim.tokenLeaves.length);
 
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
@@ -217,7 +217,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     /// @notice given a claim, return the new cumulativeEarnings for each token
     function _getCumulativeEarnings(
         IPaymentCoordinator.PaymentMerkleClaim memory claim
-    ) internal returns (uint256[] memory) {
+    ) internal pure returns (uint256[] memory) {
         uint256[] memory earnings = new uint256[](claim.tokenLeaves.length);
 
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
@@ -230,7 +230,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     function _getClaimTokenBalances(
         address earner,
         IPaymentCoordinator.PaymentMerkleClaim memory claim
-    ) internal returns (uint256[] memory) {
+    ) internal view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](claim.tokenLeaves.length);
 
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
@@ -1137,7 +1137,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
     uint64 prevRootCalculationEndTimestamp;
 
     // Temp storage for managing stack in _parseProofData
-    bytes32 root;
+    bytes32 merkleRoot;
     uint32 earnerIndex;
     bytes earnerTreeProof;
     address proofEarner;
@@ -1173,8 +1173,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-            .distributionRoots(rootIndex);
+        (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1223,8 +1222,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-            .distributionRoots(rootIndex);
+        (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1275,8 +1273,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-                .distributionRoots(rootIndex);
+            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1308,8 +1305,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[1];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-                .distributionRoots(rootIndex);
+            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1341,8 +1337,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[2];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-                .distributionRoots(rootIndex);
+            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1394,8 +1389,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-                .distributionRoots(rootIndex);
+            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1426,8 +1420,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 2. Claim against first root again
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-                .distributionRoots(rootIndex);
+            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1475,8 +1468,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-            .distributionRoots(rootIndex);
+        (, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earnings
@@ -1517,8 +1509,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) = paymentCoordinator
-            .distributionRoots(rootIndex);
+        (, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earner
@@ -1552,7 +1543,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         string memory claimProofData = cheats.readFile(filePath);
 
         // Parse PaymentMerkleClaim
-        root = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
+        merkleRoot = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
         earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerIndex"), (uint32));
         earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerTreeProof"), (bytes));
         proofEarner = stdJson.readAddress(claimProofData, ".EarnerLeaf.Earner");
@@ -1595,7 +1586,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(root, prevRootCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp, activatedAt);
 
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
             rootIndex: rootIndex,
