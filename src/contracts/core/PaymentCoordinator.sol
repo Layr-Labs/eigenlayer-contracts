@@ -111,6 +111,7 @@ contract PaymentCoordinator is
             // paymentNonce - 1 as the nonce is incremented in _payForRange
             emit RangePaymentCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
         }
+        latestPaymentRangeTimestamp = uint64(block.timestamp);
     }
 
     /**
@@ -127,6 +128,7 @@ contract PaymentCoordinator is
             // paymentNonce - 1 as the nonce is incremented in _payForRange
             emit RangePaymentForAllCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
         }
+        latestPaymentRangeTimestamp = uint64(block.timestamp);
     }
 
     /**
@@ -379,12 +381,12 @@ contract PaymentCoordinator is
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
-        return keccak256(abi.encode(leaf));
+        return keccak256(abi.encodePacked(leaf.earner, leaf.earnerTokenRoot));
     }
 
     /// @notice returns the hash of the earner's token leaf
     function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
-        return keccak256(abi.encode(leaf));
+        return keccak256(abi.encodePacked(leaf.token, leaf.cumulativeEarnings));
     }
 
     /**
@@ -460,6 +462,10 @@ contract PaymentCoordinator is
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
         return _checkClaim(claim);
+    }
+
+    function getDistributionRootsLength() public view returns (uint256) {
+        return distributionRoots.length;
     }
 
     /// @notice loop through distribution roots from reverse and return hash
