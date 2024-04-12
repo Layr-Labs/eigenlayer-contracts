@@ -29,14 +29,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     uint256 internal constant SHARE_CONVERSION_SCALE = 1e18;
 
     // an amount of shares over this will cause overflow when multiplying by `SHARE_CONVERSION_SCALE`
-    uint256 internal constant MAX_VALID_SHARES = type(uint256).max / SHARE_CONVERSION_SCALE;
+    uint256 internal constant MAX_VALID_SHARES = type(uint96).max;
 
     uint256 internal BIPS_FACTOR = 10000;
 
     // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
-    // uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / BIPS_FACTOR;
-    // TODO: note this is not even used yet
-    uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / 10000;
+    uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / (MAX_VALID_SHARES * SHARE_CONVERSION_SCALE);
 
     function getEpochFromTimestamp(uint256 timestamp) public pure returns (int256) {
         return (int256(timestamp) - int256(EPOCH_GENESIS_TIMESTAMP)) / int256(EPOCH_LENGTH_SECONDS);
@@ -48,19 +46,42 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // operator => strategy => epoch in which the strategy was last slashed
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
-    mapping(address => mapping(IStrategy => int256)) public lastSlashed;
+    mapping(address => mapping(IStrategy => int256[])) public slashedEpochHistory;
+    function lastSlashed(address operator, IStrategy strategy) public view returns (int256) {
+        uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
+        if (slashedEpochHistoryLength == 0) {
+            return 0;
+        } else {
+            return slashedEpochHistory[operator][strategy][slashedEpochHistoryLength - 1];
+        }
+    }
 
     // operator => strategy => epoch => share scalingFactor (in "SHARE_CONVERSION_SCALE", i.e. scalingFactor = SHARE_CONVERSION_SCALE indicates a scalingFactor of "1")
     mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public shareScalingFactor;
 
     function currentShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
-        int256 lastSlashedEpoch = lastSlashed[operator][strategy];
+        int256 lastSlashedEpoch = lastSlashed(operator, strategy);
         uint256 scalingFactor = shareScalingFactor[operator][strategy][lastSlashedEpoch];
         // deal with default case of operator never having been slashed
         if (scalingFactor == 0) {
             scalingFactor = SHARE_CONVERSION_SCALE;
         }
         return scalingFactor;
+    }
+
+    // TODO: this is a "naive" search since it brute-force backwards searches; we might technically want a binary search for completeness
+    function shareScalingFactorSearch(address operator, IStrategy strategy, int256 epoch) public view returns (uint256) {
+        uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
+        if (slashedEpochHistoryLength == 0 || epoch < 0) {
+            return 0;
+        } else {
+            for (uint256 i = slashedEpochHistoryLength - 1; i > 0; --i) {
+                if (slashedEpochHistory[operator][strategy][i] <= epoch) {
+                    int256 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
+                    return shareScalingFactor[operator][strategy][correctEpochForLookup];
+                }
+            }
+        }
     }
 
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
@@ -74,13 +95,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
         require(bipsToSlash < BIPS_FACTOR, "cannot slash more than 99.99% in a single epoch");
-        int256 lastSlashedEpoch = lastSlashed[operator][strategy];
+        int256 lastSlashedEpoch = lastSlashed(operator, strategy);
         require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
-        // TODO: note this does a duplicate lookup on lastSlashedEpoch. however, the code clarity is better this way
+        // TODO: note this does a duplicate lookup on lastSlashedEpoch. however, the code clarity is perhaps better this way
         uint256 scalingFactorBefore = currentShareScalingFactor(operator, strategy);
         uint256 scalingFactorAfter;
         // deal with edge case of operator being slashed repeatedly, inflating scalingFactor to max uint size
-        if (type(uint256).max / scalingFactorBefore >= bipsToSlash) {
+        if (MAX_SCALING_FACTOR / scalingFactorBefore >= bipsToSlash) {
             scalingFactorAfter = type(uint256).max;
         } else {
             scalingFactorAfter = scalingFactorBefore * BIPS_FACTOR / (BIPS_FACTOR - bipsToSlash);
@@ -89,10 +110,23 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // note that division must be done before multiplication here, to avoid risk of overflow
         uint256 _operatorSharesAfter = (_operatorSharesBefore / scalingFactorAfter) * scalingFactorBefore;
         // update storage to reflect the slashing
-        lastSlashed[operator][strategy] = epoch;
+        slashedEpochHistory[operator][strategy].push(epoch);
         _operatorShares[operator][strategy] = _operatorSharesAfter;
         shareScalingFactor[operator][strategy][epoch] = scalingFactorAfter;
         // TODO: events!
+    }
+
+    function convertSharesOnWithdrawalCompletion(
+        address operator,
+        IStrategy strategy,
+        uint256 shares,
+        int256 queuedEpoch,
+        int256 completableEpoch
+    ) public view returns (uint256) {
+        uint256 scalingFactorWhenQueued = shareScalingFactorSearch(operator, strategy, queuedEpoch);
+        uint256 scalingFactorWhenCompleteable = shareScalingFactorSearch(operator, strategy, completableEpoch);
+        // note that division must be done before multiplication here, to avoid risk of overflow
+        return (shares / scalingFactorWhenCompleteable) * scalingFactorWhenQueued;
     }
 
 
