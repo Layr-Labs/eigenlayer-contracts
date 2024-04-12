@@ -107,11 +107,17 @@ contract PaymentCoordinator is
     ) external onlyWhenNotPaused(PAUSED_PAY_FOR_RANGE) nonReentrant {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
-            bytes32 rangePaymentHash = _payForRange(rangePayment);
-            // paymentNonce - 1 as the nonce is incremented in _payForRange
-            emit RangePaymentCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
+            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
+            require(
+                !isRangePaymentHash[msg.sender][rangePaymentHash],
+                "PaymentCoordinator._payForRange: range payment hash already submitted"
+            );
+            isRangePaymentHash[msg.sender][rangePaymentHash] = true;
+
+            _payForRange(rangePayment);
+            emit RangePaymentCreated(msg.sender, paymentNonce, rangePaymentHash, rangePayment);
+            paymentNonce++;
         }
-        latestPaymentRangeTimestamp = uint64(block.timestamp);
     }
 
     /**
@@ -124,11 +130,17 @@ contract PaymentCoordinator is
     ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter nonReentrant {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
-            bytes32 rangePaymentHash = _payForRange(rangePayment);
-            // paymentNonce - 1 as the nonce is incremented in _payForRange
-            emit RangePaymentForAllCreated(msg.sender, paymentNonce - 1, rangePaymentHash, rangePayment);
+            bytes32 rangePaymentForAllHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
+            require(
+                !isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash],
+                "PaymentCoordinator._payForRange: range payment hash already submitted"
+            );
+            isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash] = true;
+
+            _payForRange(rangePayment);
+            emit RangePaymentForAllCreated(msg.sender, paymentNonce, rangePaymentForAllHash, rangePayment);
+            paymentNonce++;
         }
-        latestPaymentRangeTimestamp = uint64(block.timestamp);
     }
 
     /**
@@ -156,6 +168,10 @@ contract PaymentCoordinator is
         uint64 activatedAt
     ) external onlyPaymentUpdater {
         require(activatedAt >= block.timestamp, "PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
+        require(
+            paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
+            "PaymentCoordinator.submitRoot: new root must be for newer calculated period"
+        );
         activatedAt = activatedAt + activationDelay;
         uint32 rootIndex = uint32(distributionRoots.length);
         distributionRoots.push(
@@ -171,12 +187,7 @@ contract PaymentCoordinator is
     /**
      * @notice Create a RangePayment. Called from both `payForRange` and `payAllForRange`
      */
-    function _payForRange(RangePayment calldata rangePayment) internal returns (bytes32) {
-        bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
-        require(
-            !isRangePaymentHash[msg.sender][rangePaymentHash],
-            "PaymentCoordinator._payForRange: range payment hash already submitted"
-        );
+    function _payForRange(RangePayment calldata rangePayment) internal {
         require(rangePayment.strategiesAndMultipliers.length > 0, "PaymentCoordinator._payForRange: no strategies set");
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
         require(
@@ -187,24 +198,18 @@ contract PaymentCoordinator is
             rangePayment.duration % calculationIntervalSeconds == 0,
             "PaymentCoordinator._payForRange: duration must be a multiple of calculationIntervalSeconds"
         );
-        if (retroactivePaymentsEnabled) {
-            require(
-                block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&
-                    GENESIS_PAYMENT_TIMESTAMP <= rangePayment.startTimestamp,
-                "PaymentCoordinator._payForRange: startTimestamp too far in the past"
-            );
-        } else {
-            require(
-                block.timestamp <= rangePayment.startTimestamp,
-                "PaymentCoordinator._payForRange: startTimestamp cannot be in the past"
-            );
-        }
+        require(
+            block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&
+                GENESIS_PAYMENT_TIMESTAMP <= rangePayment.startTimestamp,
+            "PaymentCoordinator._payForRange: startTimestamp too far in the past"
+        );
         require(
             rangePayment.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH,
             "PaymentCoordinator._payForRange: startTimestamp too far in the future"
         );
 
         // Require rangePayment is for whitelisted strategy or beaconChainETHStrategy
+        address currAddress = address(0);
         for (uint256 j = 0; j < rangePayment.strategiesAndMultipliers.length; j++) {
             IStrategy strategy = rangePayment.strategiesAndMultipliers[j].strategy;
             require(
@@ -212,14 +217,14 @@ contract PaymentCoordinator is
                     strategy == delegationManager.beaconChainETHStrategy(),
                 "PaymentCoordinator._payForRange: invalid strategy considered"
             );
+            require(
+                currAddress < address(strategy),
+                "PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates"
+            );
+            currAddress = address(strategy);
         }
 
-        // Set hash of rangePayment in mapping
-        isRangePaymentHash[msg.sender][rangePaymentHash] = true;
-        paymentNonce++;
-
         rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
-        return rangePaymentHash;
     }
 
     /**
@@ -229,15 +234,13 @@ contract PaymentCoordinator is
      * @dev only callable by claimerFor[claim.earner]
      */
     function _processClaim(PaymentMerkleClaim calldata claim) internal onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
-        require(
-            _checkClaim(claim),
-            "PaymentCoordinator._processClaim: claim does not pass the check"
-        );
-
+        require(_checkClaim(claim), "PaymentCoordinator._processClaim: claim does not pass the check");
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
         address claimer = claimerFor[claim.earnerLeaf.earner];
         if (claimer == address(0)) {
             claimer = claim.earnerLeaf.earner;
         }
+        require(msg.sender == claimer, "PaymentCoordinator._checkClaim: caller is not valid claimer");
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             _processTokenClaim({
                 earnerLeaf: claim.earnerLeaf,
@@ -275,13 +278,6 @@ contract PaymentCoordinator is
     function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {
         DistributionRoot memory root = distributionRoots[claim.rootIndex];
         require(block.timestamp >= root.activatedAt, "PaymentCoordinator._checkClaim: root not activated yet");
-
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earnerLeaf.earner];
-        if (claimer == address(0)) {
-            claimer = claim.earnerLeaf.earner;
-        }
-        require(msg.sender == claimer, "PaymentCoordinator._checkClaim: caller is not valid claimer");
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
             "PaymentCoordinator._checkClaim: tokenIndices and tokenProofs length mismatch"
@@ -368,12 +364,11 @@ contract PaymentCoordinator is
 
     /**
      * @notice Sets the address of the entity that can claim payments on behalf of the earner
-     * @param earner The earner whose claimer is being set
      * @param claimer The address of the entity that can claim payments on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address earner, address claimer) external {
-        require(msg.sender == earner, "PaymentCoordinator.setClaimer: caller is not the earner");
+    function setClaimerFor(address claimer) external {
+        address earner = msg.sender;
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
         emit ClaimerForSet(earner, prevClaimer, claimer);
@@ -396,14 +391,6 @@ contract PaymentCoordinator is
      */
     function setCalculationIntervalSeconds(uint64 _calculationIntervalSeconds) external onlyOwner {
         _setCalculationIntervalSeconds(_calculationIntervalSeconds);
-    }
-
-    /**
-     * @notice Set a new value for retroactivePaymentsEnabled. Only callable by owner
-     * @param _retroactivePaymentsEnabled The new value for retroactivePaymentsEnabled
-     */
-    function setRetroactivePaymentsEnabled(bool _retroactivePaymentsEnabled) external onlyOwner {
-        retroactivePaymentsEnabled = _retroactivePaymentsEnabled;
     }
 
     /**

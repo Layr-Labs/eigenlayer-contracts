@@ -208,10 +208,9 @@ interface IPaymentCoordinator {
     function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
 
     /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the earner
-     * @param earner The earner whose claimer is being set
+     * @notice Sets the address of the entity that can claim payments on behalf of the earner (msg.sender)
      * @param claimer The address of the entity that can claim payments on behalf of the earner
      * @dev Only callable by the `earner`
      */
-    function setClaimerFor(address earner, address claimer) external;
+    function setClaimerFor(address claimer) external;
 }

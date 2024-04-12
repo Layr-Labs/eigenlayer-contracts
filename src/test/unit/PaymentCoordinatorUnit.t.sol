@@ -21,7 +21,6 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     // used for stack too deep
     struct FuzzPayForRange {
         address avs;
-        bool retroactivePaymentsEnabled;
         uint256 startTimestamp;
         uint256 duration;
         uint256 amount;
@@ -44,19 +43,19 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
     // Config Variables
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
-    uint64 MAX_PAYMENT_DURATION = 86400 * 70;
+    uint64 MAX_PAYMENT_DURATION = 70 days;
 
     /// @notice Lower bound start range is 3 months into the past
-    uint64 MAX_RETROACTIVE_LENGTH = 86400 * 90;
+    uint64 MAX_RETROACTIVE_LENGTH = 90 days;
     /// @notice Upper bound start range is 1 month into the future
-    uint64 MAX_FUTURE_LENGTH = 86400 * 30;
+    uint64 MAX_FUTURE_LENGTH = 30 days;
     /// @notice absolute min timestamp that a payment can start at
     uint64 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
 
     /// @notice Delay in timestamp before a posted root can be claimed against
-    uint64 activationDelay = 86400 * 7;
+    uint64 activationDelay = 7 days;
     /// @notice intervals(epochs) are 2 weeks
-    uint64 calculationIntervalSeconds = 86400 * 14;
+    uint64 calculationIntervalSeconds = 14 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
@@ -113,8 +112,8 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
         // Deploy mock token and strategy
         token1 = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, address(this));
-        token1 = new ERC20PresetFixedSupply("jeo boden", "MOCK2", mockTokenInitialSupply, address(this));
-        token1 = new ERC20PresetFixedSupply("pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this));
+        token2 = new ERC20PresetFixedSupply("jeo boden", "MOCK2", mockTokenInitialSupply, address(this));
+        token3 = new ERC20PresetFixedSupply("pepe wif avs", "MOCK3", mockTokenInitialSupply, address(this));
 
         strategyImplementation = new StrategyBase(strategyManagerMock);
         strategyMock1 = StrategyBase(
@@ -144,19 +143,24 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
                 )
             )
         );
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = strategyMock1;
+        strategies[1] = strategyMock2;
+        strategies[2] = strategyMock3;
+        strategies = _sortArrayAsc(strategies);
 
-        strategyManagerMock.setStrategyWhitelist(strategyMock1, true);
-        strategyManagerMock.setStrategyWhitelist(strategyMock2, true);
-        strategyManagerMock.setStrategyWhitelist(strategyMock3, true);
+        strategyManagerMock.setStrategyWhitelist(strategies[0], true);
+        strategyManagerMock.setStrategyWhitelist(strategies[1], true);
+        strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategyMock1)), 1e18)
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategyMock2)), 2e18)
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategyMock3)), 3e18)
+            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
 
         paymentCoordinator.setPayAllForRangeSubmitter(payAllSubmitter, true);
@@ -239,6 +243,21 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
         return balances;
     }
+
+    /// @dev Sort to ensure that the array is in ascending order for strategies
+    function _sortArrayAsc(IStrategy[] memory arr) internal pure returns (IStrategy[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (address(arr[i]) > address(arr[j])) {
+                    IStrategy temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
 }
 
 contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorUnitTests {
@@ -246,7 +265,7 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.startPrank(earner);
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit ClaimerForSet(earner, paymentCoordinator.claimerFor(earner), claimer);
-        paymentCoordinator.setClaimerFor(earner, claimer);
+        paymentCoordinator.setClaimerFor(claimer);
         assertEq(claimer, paymentCoordinator.claimerFor(earner), "claimerFor not set");
         cheats.stopPrank();
     }
@@ -264,14 +283,11 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setRetroactivePaymentsEnabled(bool retroactivePaymentsEnabled) public {
-        cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
-        assertEq(
-            retroactivePaymentsEnabled,
-            paymentCoordinator.retroactivePaymentsEnabled(),
-            "retroactivePaymentsEnabled not set"
-        );
+    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(address caller, uint64 intervalSeconds) public {
+        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        paymentCoordinator.setCalculationIntervalSeconds(intervalSeconds);
     }
 
     function testFuzz_setActivationDelay(uint64 activationDelay) public {
@@ -281,6 +297,13 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         paymentCoordinator.setActivationDelay(activationDelay);
         assertEq(activationDelay, paymentCoordinator.activationDelay(), "activationDelay not set");
         cheats.stopPrank();
+    }
+
+    function testFuzz_setActivationDelay_Revert_WhenNotOwner(address caller, uint64 activationDelay) public {
+        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        paymentCoordinator.setActivationDelay(activationDelay);
     }
 
     function testFuzz_setGlobalOperatorCommission(uint16 globalCommissionBips) public {
@@ -296,6 +319,16 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
+    function testFuzz_setGlobalOperatorCommission_Revert_WhenNotOwner(
+        address caller,
+        uint16 globalCommissionBips
+    ) public {
+        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        paymentCoordinator.setGlobalOperatorCommission(globalCommissionBips);
+    }
+
     function testFuzz_setPaymentUpdater(address newPaymentUpdater) public {
         cheats.startPrank(paymentCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
@@ -303,6 +336,13 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         paymentCoordinator.setPaymentUpdater(newPaymentUpdater);
         assertEq(newPaymentUpdater, paymentCoordinator.paymentUpdater(), "paymentUpdater not set");
         cheats.stopPrank();
+    }
+
+    function testFuzz_setPaymentUpdater_Revert_WhenNotOwner(address caller, address newPaymentUpdater) public {
+        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        paymentCoordinator.setPaymentUpdater(newPaymentUpdater);
     }
 
     function testFuzz_setPayAllForRangeSubmitter(address submitter, bool newValue) public {
@@ -316,6 +356,17 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
             "isPayAllForRangeSubmitter not set"
         );
         cheats.stopPrank();
+    }
+
+    function testFuzz_setPayAllForRangeSubmitter_Revert_WhenNotOwner(
+        address caller,
+        address submitter,
+        bool newValue
+    ) public {
+        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.prank(caller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        paymentCoordinator.setPayAllForRangeSubmitter(submitter, newValue);
     }
 }
 
@@ -360,30 +411,23 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     // Revert with 0 length strats and multipliers
     function testFuzz_Revert_WhenEmptyStratsAndMultipliers(
         address avs,
-        bool retroactivePaymentsEnabled,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -402,32 +446,61 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         paymentCoordinator.payForRange(rangePayments);
     }
 
+    function testFuzz_Revert_WhenDuplicateStrategies(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public filterFuzzedAddressInputs(avs) {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        amount = bound(amount, 1, mockTokenInitialSupply);
+        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = duration - (duration % calculationIntervalSeconds);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
+
+        // 2. Create range payment input param
+        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        IPaymentCoordinator.StrategyAndMultiplier[] memory dupStratsAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
+        dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
+        dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
+        rangePayments[0] = IPaymentCoordinator.RangePayment({
+            strategiesAndMultipliers: dupStratsAndMultipliers,
+            token: paymentToken,
+            amount: amount,
+            startTimestamp: uint64(startTimestamp),
+            duration: uint64(duration)
+        });
+
+        // 3. call payForRange() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert("PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates");
+        paymentCoordinator.payForRange(rangePayments);
+    }
+
     // Revert with exceeding max duration
     function testFuzz_Revert_WhenExceedingMaxDuration(
         address avs,
-        bool retroactivePaymentsEnabled,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, MAX_PAYMENT_DURATION + 1, type(uint64).max);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -448,30 +521,23 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     // Revert with invalid interval seconds
     function testFuzz_Revert_WhenInvalidIntervalSeconds(
         address avs,
-        bool retroactivePaymentsEnabled,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         cheats.assume(duration % calculationIntervalSeconds != 0);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -491,40 +557,6 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         paymentCoordinator.payForRange(rangePayments);
     }
 
-    // Revert with retroactive payments disable and set to past
-    function testFuzz_Revert_WhenRetroactivePaymentsDisabled(
-        address avs,
-        uint256 startTimestamp,
-        uint256 duration,
-        uint256 amount
-    ) public filterFuzzedAddressInputs(avs) {
-        cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(false);
-
-        // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp = bound(startTimestamp, block.timestamp - uint256(MAX_RETROACTIVE_LENGTH), block.timestamp - 1);
-
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
-            amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
-        });
-
-        // 3. call payForRange() with expected revert
-        cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: startTimestamp cannot be in the past");
-        paymentCoordinator.payForRange(rangePayments);
-    }
-
     // Revert with retroactive payments enabled and set too far in past
     // - either before genesis payment timestamp
     // - before max retroactive length
@@ -537,7 +569,6 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(true);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         fuzzBlockTimestamp = bound(fuzzBlockTimestamp, uint256(MAX_RETROACTIVE_LENGTH), block.timestamp);
@@ -578,7 +609,6 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(true);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
@@ -606,30 +636,23 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     // Revert with non whitelisted strategy
     function testFuzz_Revert_WhenInvalidStrategy(
         address avs,
-        bool retroactivePaymentsEnabled,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -657,30 +680,23 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
      */
     function testFuzz_payForRange_SinglePayment(
         address avs,
-        bool retroactivePaymentsEnabled,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -734,7 +750,6 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         cheats.assume(2 <= numPayments && numPayments <= 10);
         cheats.assume(param.avs != address(0));
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(param.retroactivePaymentsEnabled);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
@@ -755,19 +770,11 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             amounts[i] = param.amount;
             param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
-            if (param.retroactivePaymentsEnabled) {
-                param.startTimestamp = bound(
-                    param.startTimestamp + i,
-                    uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                    block.timestamp + uint256(MAX_FUTURE_LENGTH)
-                );
-            } else {
-                param.startTimestamp = bound(
-                    param.startTimestamp + i,
-                    block.timestamp,
-                    block.timestamp + uint256(MAX_FUTURE_LENGTH)
-                );
-            }
+            param.startTimestamp = bound(
+                param.startTimestamp + i,
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+                block.timestamp + uint256(MAX_FUTURE_LENGTH)
+            );
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
@@ -871,14 +878,8 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
      * - range payment hash being set in storage
      * - token balance before and after of payAllForRangeSubmitter and paymentCoordinator
      */
-    function testFuzz_payAllForRange_SinglePayment(
-        bool retroactivePaymentsEnabled,
-        uint256 startTimestamp,
-        uint256 duration,
-        uint256 amount
-    ) public {
+    function testFuzz_payAllForRange_SinglePayment(uint256 startTimestamp, uint256 duration, uint256 amount) public {
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(retroactivePaymentsEnabled);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply(
@@ -890,16 +891,11 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp;
-        if (retroactivePaymentsEnabled) {
-            startTimestamp = bound(
-                startTimestamp,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                block.timestamp + uint256(MAX_FUTURE_LENGTH)
-            );
-        } else {
-            startTimestamp = bound(startTimestamp, block.timestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH));
-        }
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -926,7 +922,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         cheats.stopPrank();
 
         assertTrue(
-            paymentCoordinator.isRangePaymentHash(payAllSubmitter, rangePaymentHash),
+            paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHash),
             "Range payment hash not submitted"
         );
         assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(), "Payment nonce not incremented");
@@ -952,7 +948,6 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
     function testFuzz_payAllForRange_MultiplePayments(FuzzPayForRange memory param, uint256 numPayments) public {
         cheats.assume(2 <= numPayments && numPayments <= 10);
         cheats.prank(paymentCoordinator.owner());
-        paymentCoordinator.setRetroactivePaymentsEnabled(param.retroactivePaymentsEnabled);
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
@@ -973,19 +968,11 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             amounts[i] = param.amount;
             param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
-            if (param.retroactivePaymentsEnabled) {
-                param.startTimestamp = bound(
-                    param.startTimestamp + i,
-                    uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
-                    block.timestamp + uint256(MAX_FUTURE_LENGTH)
-                );
-            } else {
-                param.startTimestamp = bound(
-                    param.startTimestamp + i,
-                    block.timestamp,
-                    block.timestamp + uint256(MAX_FUTURE_LENGTH)
-                );
-            }
+            param.startTimestamp = bound(
+                param.startTimestamp + i,
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+                block.timestamp + uint256(MAX_FUTURE_LENGTH)
+            );
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
@@ -1021,7 +1008,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
 
         for (uint256 i = 0; i < numPayments; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentHash(payAllSubmitter, rangePaymentHashes[i]),
+                paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHashes[i]),
                 "Range payment hash not submitted"
             );
             assertEq(
@@ -1065,12 +1052,12 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
     /// - checks activatedAt has added activationDelay
     function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) public {
         // fuzz avoiding overflows and valid activatedAt values
+        cheats.assume(paymentCalculationEndTimestamp > paymentCoordinator.currPaymentCalculationEndTimestamp());
         cheats.assume(activatedAt >= block.timestamp);
         cheats.assume(activatedAt < type(uint64).max - paymentCoordinator.activationDelay());
 
         uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
-        // cheats.prank(paymentUpdater);
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit DistributionRootSubmitted(
             expectedRootIndex,
@@ -1162,7 +1149,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1211,7 +1198,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1260,7 +1247,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1376,7 +1363,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1457,7 +1444,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1498,7 +1485,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(earner, claimerFor);
+            paymentCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
@@ -1514,8 +1501,6 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
 
         // Modify Earner
         claim.earnerLeaf.earner = invalidEarner;
-        cheats.prank(invalidEarner);
-        paymentCoordinator.setClaimerFor(invalidEarner, claimer);
 
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);

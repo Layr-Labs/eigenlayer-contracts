@@ -62,8 +62,6 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     uint64 public activationDelay;
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
-    /// @notice Payments must start at earliest now except unless retroactive payments enabled
-    bool public retroactivePaymentsEnabled;
 
     /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
     mapping(address => address) public claimerFor;
@@ -71,12 +69,14 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice Mapping: claimer => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
-    /// @notice Timestamp for latest submitted payment range
-    uint64 public latestPaymentRangeTimestamp;
+    /// @notice Timestamp for last submitted 
+    uint64 public currPaymentCalculationEndTimestamp;
     /// @notice Used for unique rangePaymentHashes
     uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
     mapping(address => mapping(bytes32 => bool)) public isRangePaymentHash;
+    /// @notice Mapping: avs => rangePaymentForALlHash => bool to check if range payment hash for all has been submitted
+    mapping(address => mapping(bytes32 => bool)) public isRangePaymentForAllHash;
     /// @notice Mapping: address => bool to check if the address is permissioned to submit payAllForRange
     mapping(address => bool) public isPayAllForRangeSubmitter;
 
@@ -101,5 +101,5 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }
