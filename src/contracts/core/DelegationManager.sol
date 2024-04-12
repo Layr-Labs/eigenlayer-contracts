@@ -35,9 +35,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
     // uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / BIPS_FACTOR;
+    // TODO: note this is not even used yet
     uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / 10000;
 
-    function getEpochFromTimestamp(uint256 timestamp) public view returns (int256) {
+    function getEpochFromTimestamp(uint256 timestamp) public pure returns (int256) {
         return (int256(timestamp) - int256(EPOCH_GENESIS_TIMESTAMP)) / int256(EPOCH_LENGTH_SECONDS);
     }
 
@@ -45,41 +46,54 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return getEpochFromTimestamp(block.timestamp);
     }
 
-    // operator => strategy => epoch => amount confirmed to be slashed in epoch (in bips)
-    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public slashedBips;
-
     // operator => strategy => epoch in which the strategy was last slashed
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
     mapping(address => mapping(IStrategy => int256)) public lastSlashed;
 
-    // operator => strategy => share scalingFactor (in "SHARE_CONVERSION_SCALE", i.e. scalingFactor = SHARE_CONVERSION_SCALE indicates a scalingFactor of "1")
-    mapping(address => mapping(IStrategy => uint256)) public shareScalingFactor;
+    // operator => strategy => epoch => share scalingFactor (in "SHARE_CONVERSION_SCALE", i.e. scalingFactor = SHARE_CONVERSION_SCALE indicates a scalingFactor of "1")
+    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public shareScalingFactor;
 
-    function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
-        uint256 scalingFactor = shareScalingFactor[operator][strategy];
+    function currentShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
+        int256 lastSlashedEpoch = lastSlashed[operator][strategy];
+        uint256 scalingFactor = shareScalingFactor[operator][strategy][lastSlashedEpoch];
         // deal with default case of operator never having been slashed
         if (scalingFactor == 0) {
-            return _operatorShares[operator][strategy];
-        } else {
-            return _operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE / scalingFactor;
+            scalingFactor = SHARE_CONVERSION_SCALE;
         }
+        return scalingFactor;
+    }
+
+    function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
+        uint256 scalingFactor = currentShareScalingFactor(operator, strategy);
+        return _operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE / scalingFactor;
+    }
+
+    function convertStrategySharesToInternalOperatorShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
+        return currentShareScalingFactor(operator, strategy) * shares;
     }
 
     function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
         require(bipsToSlash < BIPS_FACTOR, "cannot slash more than 99.99% in a single epoch");
-        slashedBips[operator][strategy][epoch] = bipsToSlash;
-        lastSlashed[operator][strategy] = epoch;
-        uint256 shareScalingFactorBefore = shareScalingFactor[operator][strategy];
-        uint256 newShareScalingFactor;
-        if (shareScalingFactorBefore >= MAX_SCALING_FACTOR) {
-            newShareScalingFactor = type(uint256).max;
+        int256 lastSlashedEpoch = lastSlashed[operator][strategy];
+        require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
+        // TODO: note this does a duplicate lookup on lastSlashedEpoch. however, the code clarity is better this way
+        uint256 scalingFactorBefore = currentShareScalingFactor(operator, strategy);
+        uint256 scalingFactorAfter;
+        // deal with edge case of operator being slashed repeatedly, inflating scalingFactor to max uint size
+        if (type(uint256).max / scalingFactorBefore >= bipsToSlash) {
+            scalingFactorAfter = type(uint256).max;
         } else {
-            newShareScalingFactor = shareScalingFactorBefore * BIPS_FACTOR / (BIPS_FACTOR - bipsToSlash);
+            scalingFactorAfter = scalingFactorBefore * BIPS_FACTOR / (BIPS_FACTOR - bipsToSlash);
         }
-        shareScalingFactor[operator][strategy] = newShareScalingFactor;
+        uint256 _operatorSharesBefore = _operatorShares[operator][strategy];
+        // note that division must be done before multiplication here, to avoid risk of overflow
+        uint256 _operatorSharesAfter = (_operatorSharesBefore / scalingFactorAfter) * scalingFactorBefore;
+        // update storage to reflect the slashing
+        lastSlashed[operator][strategy] = epoch;
+        _operatorShares[operator][strategy] = _operatorSharesAfter;
+        shareScalingFactor[operator][strategy][epoch] = scalingFactorAfter;
+        // TODO: events!
     }
-
-
 
 
 
