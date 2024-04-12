@@ -1090,6 +1090,11 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             submittedPaymentCalculationEndTimestamp,
             "paymentCalculationEndTimestamp not set"
         );
+        assertEq(
+            paymentCoordinator.currPaymentCalculationEndTimestamp(),
+            paymentCalculationEndTimestamp,
+            "currPaymentCalculationEndTimestamp not set"
+        );
     }
 
     /// @notice Submits multiple roots and checks root index from hash is correct
@@ -1101,11 +1106,14 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.startPrank(paymentUpdater);
         for (uint16 i = 0; i < numRoots; ++i) {
             roots[i] = keccak256(abi.encodePacked(root, i));
+
+            uint64 activationDelay = uint64(block.timestamp) + paymentCoordinator.activationDelay();
             paymentCoordinator.submitRoot(
                 roots[i],
                 uint64(block.timestamp),
-                uint64(block.timestamp) + paymentCoordinator.activationDelay()
+                activationDelay
             );
+            cheats.warp(activationDelay);
         }
         cheats.stopPrank();
 
@@ -1564,9 +1572,10 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
         }
 
-        uint64 rootCalculationEndTimestamp = uint64(block.timestamp) - 86400;
+        uint64 rootCalculationEndTimestamp = uint64(block.timestamp);
         uint64 activatedAt = uint64(block.timestamp) + 86400 * 7;
         prevRootCalculationEndTimestamp = rootCalculationEndTimestamp;
+        cheats.warp(activatedAt);
 
         uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
