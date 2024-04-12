@@ -37,7 +37,7 @@ struct BalanceUpdate {
 
 contract BeaconChainMock is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     struct Validator {
         bytes32 pubkeyHash;

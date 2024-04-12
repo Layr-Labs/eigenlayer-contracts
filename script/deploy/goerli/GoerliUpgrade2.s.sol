@@ -26,7 +26,7 @@ import "forge-std/Test.sol";
 // NOTE: ONLY WORKS ON GOERLI
 // CommitHash: 6de01c6c16d6df44af15f0b06809dc160eac0ebf
 contract GoerliUpgrade2 is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     string public deploymentOutputPath = string(bytes("script/output/M1_deployment_goerli_2023_3_23.json"));
 

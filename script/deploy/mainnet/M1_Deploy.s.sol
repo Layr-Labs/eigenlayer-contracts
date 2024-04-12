@@ -33,7 +33,7 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/M1_Deploy.s.sol:Deployer_M1 --rpc-url $RPC_URL  --private-key $PRIVATE_KEY --broadcast -vvvv
 contract Deployer_M1 is Script, Test {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // struct used to encode token info in config file
     struct StrategyConfig {

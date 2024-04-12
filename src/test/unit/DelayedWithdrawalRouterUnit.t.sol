@@ -15,7 +15,7 @@ import "forge-std/Test.sol";
 
 contract DelayedWithdrawalRouterUnitTests is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;

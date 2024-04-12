@@ -27,7 +27,7 @@ interface IUserDeployer {
 
 contract User is Test {
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     DelegationManager delegationManager;
     StrategyManager strategyManager;

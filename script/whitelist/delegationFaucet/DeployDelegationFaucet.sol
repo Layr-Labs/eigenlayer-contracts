@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./DelegationFaucet.sol";
 
 import "forge-std/Script.sol";
+import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
 /**
@@ -19,7 +20,7 @@ import "forge-std/StdJson.sol";
  * - StrategyBase to be added to the StrategyManager whitelist
  * - DelegationFaucet contract
  */
-contract DeployDelegationFaucet is Script, DSTest {
+contract DeployDelegationFaucet is Script, Test {
     // EigenLayer contracts
     ProxyAdmin public eigenLayerProxyAdmin;
     PauserRegistry public eigenLayerPauserReg;

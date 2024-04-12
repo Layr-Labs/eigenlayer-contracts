@@ -33,7 +33,7 @@ import "./mocks/BeaconChainOracleMock.sol";
 import "forge-std/Test.sol";
 
 contract EigenLayerDeployer is Operators {
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
 
     // EigenLayer contracts
     ProxyAdmin public eigenLayerProxyAdmin;

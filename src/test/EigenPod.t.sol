@@ -28,7 +28,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     bool public IS_DENEB;
 
-    Vm cheats = Vm(HEVM_ADDRESS);
+    Vm cheats = Vm(VM_ADDRESS);
     DelegationManager public delegation;
     IStrategyManager public strategyManager;
     Slasher public slasher;
