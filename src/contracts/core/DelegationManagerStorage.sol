@@ -51,7 +51,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * (operator's shares in delegation manager) = sum (shares above zero of all stakers delegated to operator)
      * = sum (delegateable shares of all stakers delegated to the operator)
      */
-    mapping(address => mapping(IStrategy => uint256)) public operatorShares;
+    // TODO: note this has been renamed (with leading underscore) + made internal
+    mapping(address => mapping(IStrategy => uint256)) internal _operatorShares;
 
     /**
      * @notice Mapping: operator => OperatorDetails struct

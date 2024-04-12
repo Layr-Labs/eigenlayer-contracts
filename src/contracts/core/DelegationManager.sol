@@ -19,6 +19,74 @@ import "./DelegationManagerStorage.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage, ReentrancyGuardUpgradeable {
+
+    // TODO: set this based on payments epochs
+    uint256 public constant EPOCH_GENESIS_TIMESTAMP = 1606824000;
+
+    // TODO: define appropriately
+    uint256 public constant EPOCH_LENGTH_SECONDS = 2 weeks;
+
+    uint256 internal constant SHARE_CONVERSION_SCALE = 1e18;
+
+    // an amount of shares over this will cause overflow when multiplying by `SHARE_CONVERSION_SCALE`
+    uint256 internal constant MAX_VALID_SHARES = type(uint256).max / SHARE_CONVERSION_SCALE;
+
+    uint256 internal BIPS_FACTOR = 10000;
+
+    // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
+    // uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / BIPS_FACTOR;
+    uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / 10000;
+
+    function getEpochFromTimestamp(uint256 timestamp) public view returns (int256) {
+        return (int256(timestamp) - int256(EPOCH_GENESIS_TIMESTAMP)) / int256(EPOCH_LENGTH_SECONDS);
+    }
+
+    function currentEpoch() public view returns (int256) {
+        return getEpochFromTimestamp(block.timestamp);
+    }
+
+    // operator => strategy => epoch => amount confirmed to be slashed in epoch (in bips)
+    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public slashedBips;
+
+    // operator => strategy => epoch in which the strategy was last slashed
+    // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
+    mapping(address => mapping(IStrategy => int256)) public lastSlashed;
+
+    // operator => strategy => share scalingFactor (in "SHARE_CONVERSION_SCALE", i.e. scalingFactor = SHARE_CONVERSION_SCALE indicates a scalingFactor of "1")
+    mapping(address => mapping(IStrategy => uint256)) public shareScalingFactor;
+
+    function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
+        uint256 scalingFactor = shareScalingFactor[operator][strategy];
+        // deal with default case of operator never having been slashed
+        if (scalingFactor == 0) {
+            return _operatorShares[operator][strategy];
+        } else {
+            return _operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE / scalingFactor;
+        }
+    }
+
+    function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
+        require(bipsToSlash < BIPS_FACTOR, "cannot slash more than 99.99% in a single epoch");
+        slashedBips[operator][strategy][epoch] = bipsToSlash;
+        lastSlashed[operator][strategy] = epoch;
+        uint256 shareScalingFactorBefore = shareScalingFactor[operator][strategy];
+        uint256 newShareScalingFactor;
+        if (shareScalingFactorBefore >= MAX_SCALING_FACTOR) {
+            newShareScalingFactor = type(uint256).max;
+        } else {
+            newShareScalingFactor = shareScalingFactorBefore * BIPS_FACTOR / (BIPS_FACTOR - bipsToSlash);
+        }
+        shareScalingFactor[operator][strategy] = newShareScalingFactor;
+    }
+
+
+
+
+
+
+
+
+
     // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -659,14 +727,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-        operatorShares[operator][strategy] += shares;
+        _operatorShares[operator][strategy] += shares;
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
 
     // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
     function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         // This will revert on underflow, so no check needed
-        operatorShares[operator][strategy] -= shares;
+        _operatorShares[operator][strategy] -= shares;
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
 
@@ -867,7 +935,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) public view returns (uint256[] memory) {
         uint256[] memory shares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            shares[i] = operatorShares[operator][strategies[i]];
+            shares[i] = _operatorShares[operator][strategies[i]];
         }
         return shares;
     }
