@@ -181,6 +181,7 @@ contract PaymentCoordinator is
                 paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
             })
         );
+        currPaymentCalculationEndTimestamp = paymentCalculationEndTimestamp;
         emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt);
     }
 
