@@ -167,7 +167,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         public filterFuzzedAddressInputs(recipient)
     {
         // filter contracts out of fuzzed recipient input, since most don't implement a payable fallback function
-        cheats.assume(!Address.isContract(recipient));
+        cheats.assume(recipient.code.length == 0);
         // filter out precompile addresses (they won't accept delayedWithdrawal either)
         cheats.assume(uint160(recipient) > 256);
         // filter fuzzed inputs to avoid running out of gas & excessive test run-time
@@ -236,7 +236,7 @@ contract DelayedWithdrawalRouterUnitTests is Test {
         cheats.assume(delayedWithdrawalAmount != 0);
         cheats.assume(delayedWithdrawalsToCreate > 5);
         // filter contracts out of fuzzed recipient input, since most don't implement a payable fallback function
-        cheats.assume(!Address.isContract(recipient));
+        cheats.assume(recipient.code.length == 0);
         // filter out precompile addresses (they won't accept delayedWithdrawal either)
         cheats.assume(uint160(recipient) > 256);
         // filter fuzzed inputs to avoid running out of gas & excessive test run-time

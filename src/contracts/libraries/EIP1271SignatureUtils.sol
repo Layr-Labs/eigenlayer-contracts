@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
@@ -26,7 +25,7 @@ library EIP1271SignatureUtils {
          * indicating their intention for this action
          * 2) if `signer` is a contract, then `signature` must will be checked according to EIP-1271
          */
-        if (Address.isContract(signer)) {
+        if (signer.code.length > 0) {
             require(
                 IERC1271(signer).isValidSignature(digestHash, signature) == EIP1271_MAGICVALUE,
                 "EIP1271SignatureUtils.checkSignature_EIP1271: ERC1271 signature verification failed"
