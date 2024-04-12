@@ -9,6 +9,7 @@ import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
+import "../../src/contracts/core/PaymentCoordinator.sol";
 
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
@@ -48,6 +49,8 @@ contract ExistingDeploymentParser is Script, Test {
     DelegationManager public delegationManagerImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
+    PaymentCoordinator public paymentCoordinator;
+    PaymentCoordinator public paymentCoordinatorImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -90,6 +93,16 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
+    // PaymentCoordinator
+    uint256 PAYMENT_COORDINATOR_INIT_PAUSED_STATUS;
+    uint64 PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION;
+    uint64 PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH;
+    uint64 PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH;
+    uint64 PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
+    address PAYMENT_COORDINATOR_UPDATER;
+    uint64 PAYMENT_COORDINATOR_ACTIVATION_DELAY;
+    uint64 PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+    uint64 PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
@@ -136,13 +149,21 @@ contract ExistingDeploymentParser is Script, Test {
         slasherImplementation = Slasher(
             stdJson.readAddress(existingDeploymentData, ".addresses.slasherImplementation")
         );
-        delegationManager = DelegationManager(stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager"));
+        delegationManager = DelegationManager(
+            stdJson.readAddress(existingDeploymentData, ".addresses.delegationManager")
+        );
         delegationManagerImplementation = DelegationManager(
             stdJson.readAddress(existingDeploymentData, ".addresses.delegationManagerImplementation")
         );
         avsDirectory = AVSDirectory(stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectory"));
         avsDirectoryImplementation = AVSDirectory(
             stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation")
+        );
+        paymentCoordinator = PaymentCoordinator(
+            stdJson.readAddress(existingDeploymentData, ".addresses.paymentCoordinator")
+        );
+        paymentCoordinatorImplementation = PaymentCoordinator(
+            stdJson.readAddress(existingDeploymentData, ".addresses.paymentCoordinatorImplementation")
         );
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
         strategyManagerImplementation = StrategyManager(
@@ -158,9 +179,7 @@ contract ExistingDeploymentParser is Script, Test {
         delayedWithdrawalRouterImplementation = DelayedWithdrawalRouter(
             stdJson.readAddress(existingDeploymentData, ".addresses.delayedWithdrawalRouterImplementation")
         );
-        beaconOracle = IBeaconChainOracle(
-            stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracle")
-        );
+        beaconOracle = IBeaconChainOracle(stdJson.readAddress(existingDeploymentData, ".addresses.beaconOracle"));
         eigenPodBeacon = UpgradeableBeacon(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodBeacon"));
         eigenPodImplementation = EigenPod(
             payable(stdJson.readAddress(existingDeploymentData, ".addresses.eigenPodImplementation"))
@@ -171,7 +190,7 @@ contract ExistingDeploymentParser is Script, Test {
         emptyContract = EmptyContract(stdJson.readAddress(existingDeploymentData, ".addresses.emptyContract"));
 
         // Strategies Deployed, load strategy list
-        numStrategiesDeployed = stdJson.readUint(existingDeploymentData, ".numStrategies");
+        numStrategiesDeployed = stdJson.readUint(existingDeploymentData, ".addresses.numStrategiesDeployed");
         for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
             // Form the key for the current element
             string memory key = string.concat(".addresses.strategyAddresses[", vm.toString(i), "]");
@@ -251,7 +270,10 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".strategyManager.init_paused_status"
         );
-        STRATEGY_MANAGER_WHITELISTER = stdJson.readAddress(initialDeploymentData, ".strategyManager.init_strategy_whitelister");
+        STRATEGY_MANAGER_WHITELISTER = stdJson.readAddress(
+            initialDeploymentData,
+            ".strategyManager.init_strategy_whitelister"
+        );
         // Slasher
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
         // DelegationManager
@@ -263,6 +285,23 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".delegationManager.init_paused_status"
         );
+        // PaymentCoordinator
+        PAYMENT_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(
+            initialDeploymentData,
+            ".paymentCoordinator.init_paused_status"
+        );
+        PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_PAYMENT_DURATION"));
+        PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_RETROACTIVE_LENGTH"));
+        PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_FUTURE_LENGTH"));
+        PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP"));
+        PAYMENT_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".paymentCoordinator.payment_updater_address");
+        PAYMENT_COORDINATOR_ACTIVATION_DELAY = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.activation_delay"));
+        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint64(
+            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.calculation_interval_seconds")
+        );
+        PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint64(
+            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.global_operator_commission_bips")
+        );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
         // EigenPodManager
@@ -270,10 +309,9 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".eigenPodManager.init_paused_status"
         );
-        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(stdJson.readUint(
-            initialDeploymentData,
-            ".eigenPodManager.deneb_fork_timestamp"
-        ));
+        EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP = uint64(
+            stdJson.readUint(initialDeploymentData, ".eigenPodManager.deneb_fork_timestamp")
+        );
 
         // EigenPod
         EIGENPOD_GENESIS_TIME = uint64(stdJson.readUint(initialDeploymentData, ".eigenPod.GENESIS_TIME"));
@@ -296,11 +334,20 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Ensure contracts point at each other correctly via constructors
-    function _verifyContractPointers() internal virtual view {
+    function _verifyContractPointers() internal view virtual {
         // AVSDirectory
         require(
             avsDirectory.delegation() == delegationManager,
             "avsDirectory: delegationManager address not set correctly"
+        );
+        // PaymentCoordinator
+        require(
+            paymentCoordinator.delegationManager() == delegationManager,
+            "paymentCoordinator: delegationManager address not set correctly"
+        );
+        require(
+            paymentCoordinator.strategyManager() == strategyManager,
+            "paymentCoordinator: strategyManager address not set correctly"
         );
         // DelegationManager
         require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");
@@ -348,11 +395,17 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice verify implementations for Transparent Upgradeable Proxies
-    function _verifyImplementations() internal virtual view {
+    function _verifyImplementations() internal view virtual {
         require(
             eigenLayerProxyAdmin.getProxyImplementation(TransparentUpgradeableProxy(payable(address(avsDirectory)))) ==
                 address(avsDirectoryImplementation),
             "avsDirectory: implementation set incorrectly"
+        );
+        require(
+            eigenLayerProxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(paymentCoordinator)))
+            ) == address(paymentCoordinatorImplementation),
+            "paymentCoordinator: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
@@ -404,10 +457,21 @@ contract ExistingDeploymentParser is Script, Test {
      * initialization params if this is the first deployment.
      * @param isInitialDeployment True if this is the first deployment of contracts from scratch
      */
-    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual{
+    function _verifyContractsInitialized(bool isInitialDeployment) internal virtual {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
+        // PaymentCoordinator
+        vm.expectRevert(bytes("Initializable: contract is already initialized"));
+        paymentCoordinator.initialize(
+            address(0),
+            eigenLayerPauserReg,
+            0, // initialPausedStatus
+            address(0), // paymentUpdater
+            0, // activationDelay
+            0, // calculationIntervalSeconds
+            0 // globalCommissionBips
+        );
         // DelegationManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         IStrategy[] memory initializeStrategiesToSetDelayBlocks = new IStrategy[](0);
@@ -425,12 +489,7 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        eigenPodManager.initialize(
-            beaconOracle,
-            address(0),
-            eigenLayerPauserReg,
-            EIGENPOD_MANAGER_INIT_PAUSED_STATUS
-        );
+        eigenPodManager.initialize(beaconOracle, address(0), eigenLayerPauserReg, EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         // DelayedWithdrawalRouter
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         delayedWithdrawalRouter.initialize(
@@ -452,7 +511,7 @@ contract ExistingDeploymentParser is Script, Test {
     }
 
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
-    function _verifyInitializationParams() internal virtual view {
+    function _verifyInitializationParams() internal view virtual {
         // AVSDirectory
         require(
             avsDirectory.pauserRegistry() == eigenLayerPauserReg,
@@ -462,6 +521,51 @@ contract ExistingDeploymentParser is Script, Test {
         require(
             avsDirectory.paused() == AVS_DIRECTORY_INIT_PAUSED_STATUS,
             "avsdirectory: init paused status set incorrectly"
+        );
+        // PaymentCoordinator
+        require(
+            paymentCoordinator.pauserRegistry() == eigenLayerPauserReg,
+            "paymentCoordinator: pauser registry not set correctly"
+        );
+        // require(
+        //     paymentCoordinator.owner() == executorMultisig,
+        //     "paymentCoordinator: owner not set correctly"
+        // );
+        require(
+            paymentCoordinator.paused() == PAYMENT_COORDINATOR_INIT_PAUSED_STATUS,
+            "paymentCoordinator: init paused status set incorrectly"
+        );
+        require(
+            paymentCoordinator.MAX_PAYMENT_DURATION() == PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION,
+            "paymentCoordinator: maxPaymentDuration not set correctly"
+        );
+        require(
+            paymentCoordinator.MAX_RETROACTIVE_LENGTH() == PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            "paymentCoordinator: maxRetroactiveLength not set correctly"
+        );
+        require(
+            paymentCoordinator.MAX_FUTURE_LENGTH() == PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH,
+            "paymentCoordinator: maxFutureLength not set correctly"
+        );
+        require(
+            paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP() == PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP,
+            "paymentCoordinator: genesisPaymentTimestamp not set correctly"
+        );
+        require(
+            paymentCoordinator.paymentUpdater() == PAYMENT_COORDINATOR_UPDATER,
+            "paymentCoordinator: paymentUpdater not set correctly"
+        );
+        require(
+            paymentCoordinator.activationDelay() == PAYMENT_COORDINATOR_ACTIVATION_DELAY,
+            "paymentCoordinator: activationDelay not set correctly"
+        );
+        require(
+            paymentCoordinator.calculationIntervalSeconds() == PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            "paymentCoordinator: calculationIntervalSeconds not set correctly"
+        );
+        require(
+            paymentCoordinator.globalOperatorCommissionBips() == PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,
+            "paymentCoordinator: globalCommissionBips not set correctly"
         );
         // DelegationManager
         require(
@@ -487,10 +591,18 @@ contract ExistingDeploymentParser is Script, Test {
             strategyManager.paused() == STRATEGY_MANAGER_INIT_PAUSED_STATUS,
             "strategyManager: init paused status set incorrectly"
         );
-        require(
-            strategyManager.strategyWhitelister() == operationsMultisig,
-            "strategyManager: strategyWhitelister not set correctly"
-        );
+        if (block.chainid == 1) {
+            require(
+                strategyManager.strategyWhitelister() == operationsMultisig,
+                "strategyManager: strategyWhitelister not set correctly"
+            );
+        } else if (block.chainid == 17000) {
+            // On holesky, for ease of whitelisting we set to executorMultisig
+            require(
+                strategyManager.strategyWhitelister() == executorMultisig,
+                "strategyManager: strategyWhitelister not set correctly"
+            );    
+        }
         // EigenPodManager
         require(
             eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
@@ -522,8 +634,8 @@ contract ExistingDeploymentParser is Script, Test {
         );
         require(
             eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
-            && EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR &&
+                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
             "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
         );
         require(
@@ -583,6 +695,8 @@ contract ExistingDeploymentParser is Script, Test {
         );
         emit log_named_uint("DELEGATION_MANAGER_INIT_PAUSED_STATUS", DELEGATION_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("AVS_DIRECTORY_INIT_PAUSED_STATUS", AVS_DIRECTORY_INIT_PAUSED_STATUS);
+        emit log_named_uint("PAYMENT_COORDINATOR_INIT_PAUSED_STATUS", PAYMENT_COORDINATOR_INIT_PAUSED_STATUS);
+        // todo log all payment coordinator params
         emit log_named_uint("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP", EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
         emit log_named_uint("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
@@ -621,7 +735,11 @@ contract ExistingDeploymentParser is Script, Test {
 
         string memory deployed_strategies = "strategies";
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
-            vm.serializeAddress(deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
+            vm.serializeAddress(
+                deployed_strategies,
+                strategiesToDeploy[i].tokenSymbol,
+                address(deployedStrategyArray[i])
+            );
         }
         string memory deployed_strategies_output = numStrategiesToDeploy == 0
             ? ""
@@ -639,12 +757,22 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "avsDirectory", address(avsDirectory));
         vm.serializeAddress(deployed_addresses, "avsDirectoryImplementation", address(avsDirectoryImplementation));
         vm.serializeAddress(deployed_addresses, "delegationManager", address(delegationManager));
-        vm.serializeAddress(deployed_addresses, "delegationManagerImplementation", address(delegationManagerImplementation));
+        vm.serializeAddress(
+            deployed_addresses,
+            "delegationManagerImplementation",
+            address(delegationManagerImplementation)
+        );
         vm.serializeAddress(deployed_addresses, "strategyManager", address(strategyManager));
         vm.serializeAddress(
             deployed_addresses,
             "strategyManagerImplementation",
             address(strategyManagerImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "paymentCoordinator", address(paymentCoordinator));
+        vm.serializeAddress(
+            deployed_addresses,
+            "paymentCoordinatorImplementation",
+            address(paymentCoordinatorImplementation)
         );
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
         vm.serializeAddress(
@@ -687,6 +815,5 @@ contract ExistingDeploymentParser is Script, Test {
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
 
         vm.writeJson(finalJson, outputPath);
-
     }
 }
