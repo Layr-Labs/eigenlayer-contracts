@@ -56,10 +56,12 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice The interval in seconds at which the calculation for range payment distribution is done.
     /// @dev Payment durations must be multiples of this interval.
     uint32 public calculationIntervalSeconds;
-
-    /// Slot 4
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 public activationDelay;
+    /// @notice Timestamp for last submitted 
+    uint32 public currPaymentCalculationEndTimestamp;
+
+    /// Slot 4
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
 
@@ -69,8 +71,8 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice Mapping: claimer => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
-    /// @notice Timestamp for last submitted 
-    uint32 public currPaymentCalculationEndTimestamp;
+    // /// @notice Timestamp for last submitted 
+    // uint32 public currPaymentCalculationEndTimestamp;
     /// @notice Used for unique rangePaymentHashes
     uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
@@ -101,5 +103,5 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[40] private __gap;
 }
