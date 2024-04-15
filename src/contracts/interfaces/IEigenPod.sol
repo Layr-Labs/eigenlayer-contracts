@@ -189,23 +189,6 @@ interface IEigenPod {
     ) external;
 
     /**
-     * @notice This function records full and partial withdrawals on behalf of one of the Ethereum validators for this EigenPod
-     * @param oracleTimestamp is the timestamp of the oracle slot that the withdrawal is being proven against
-     * @param withdrawalProofs is the information needed to check the veracity of the block numbers and withdrawals being proven
-     * @param validatorFieldsProofs is the proof of the validator's fields' in the validator tree
-     * @param withdrawalFields are the fields of the withdrawals being proven
-     * @param validatorFields are the fields of the validators being proven
-     */
-    function verifyAndProcessWithdrawals(
-        uint64 oracleTimestamp,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields
-    ) external;
-
-    /**
      * @notice Called by the pod owner to activate restaking by withdrawing
      * all existing ETH from the pod and preventing further withdrawals via
      * "withdrawBeforeRestaking()"
