@@ -159,21 +159,18 @@ contract PaymentCoordinator is
      * @notice Creates a new distribution root
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param activatedAt timestamp at which that the root can be claimed against
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
+        uint64 paymentCalculationEndTimestamp
     ) external onlyPaymentUpdater {
-        require(activatedAt >= block.timestamp, "PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
         require(
             paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
             "PaymentCoordinator.submitRoot: new root must be for newer calculated period"
         );
-        activatedAt = activatedAt + activationDelay;
         uint32 rootIndex = uint32(distributionRoots.length);
+        uint64 activatedAt = uint64(block.timestamp) + activationDelay;
         distributionRoots.push(
             DistributionRoot({
                 root: root,
@@ -198,6 +195,10 @@ contract PaymentCoordinator is
         require(
             rangePayment.duration % calculationIntervalSeconds == 0,
             "PaymentCoordinator._payForRange: duration must be a multiple of calculationIntervalSeconds"
+        );
+        require(
+            rangePayment.startTimestamp % calculationIntervalSeconds == 0,
+            "PaymentCoordinator._payForRange: startTimestamp must be a multiple of calculationIntervalSeconds"
         );
         require(
             block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&

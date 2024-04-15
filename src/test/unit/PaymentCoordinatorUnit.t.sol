@@ -45,10 +45,10 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
     uint64 MAX_PAYMENT_DURATION = 70 days;
 
-    /// @notice Lower bound start range is 3 months into the past
-    uint64 MAX_RETROACTIVE_LENGTH = 90 days;
-    /// @notice Upper bound start range is 1 month into the future
-    uint64 MAX_FUTURE_LENGTH = 30 days;
+    /// @notice Lower bound start range is ~3 months into the past, multiple of calculationIntervalSeconds
+    uint64 MAX_RETROACTIVE_LENGTH = 84 days;
+    /// @notice Upper bound start range is ~1 month into the future, multiple of calculationIntervalSeconds
+    uint64 MAX_FUTURE_LENGTH = 28 days;
     /// @notice absolute min timestamp that a payment can start at
     uint64 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
 
@@ -362,7 +362,7 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         address caller,
         address submitter,
         bool newValue
-    ) public {
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -425,9 +425,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -459,13 +462,17 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        IPaymentCoordinator.StrategyAndMultiplier[] memory dupStratsAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
+        IPaymentCoordinator.StrategyAndMultiplier[]
+            memory dupStratsAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
         dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
         rangePayments[0] = IPaymentCoordinator.RangePayment({
@@ -478,7 +485,9 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         // 3. call payForRange() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates");
+        cheats.expectRevert(
+            "PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates"
+        );
         paymentCoordinator.payForRange(rangePayments);
     }
 
@@ -498,9 +507,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = bound(duration, MAX_PAYMENT_DURATION + 1, type(uint64).max);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -535,9 +547,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         cheats.assume(duration % calculationIntervalSeconds != 0);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -583,6 +598,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             0,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -615,7 +631,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
         duration = duration - (duration % calculationIntervalSeconds);
-        startTimestamp = bound(startTimestamp, block.timestamp + uint256(MAX_FUTURE_LENGTH) + 1, type(uint64).max);
+        startTimestamp = bound(
+            startTimestamp,
+            block.timestamp + uint256(MAX_FUTURE_LENGTH) + 1 + calculationIntervalSeconds,
+            type(uint64).max
+        );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -650,9 +671,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -694,9 +718,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -772,9 +799,12 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                    calculationIntervalSeconds -
+                    1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % calculationIntervalSeconds);
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
@@ -893,9 +923,12 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                calculationIntervalSeconds -
+                1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
+        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -970,9 +1003,12 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)),
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                    calculationIntervalSeconds -
+                    1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % calculationIntervalSeconds);
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
@@ -1033,40 +1069,22 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.prank(invalidPaymentUpdater);
 
         cheats.expectRevert("PaymentCoordinator: caller is not the paymentUpdater");
-        paymentCoordinator.submitRoot(bytes32(0), 0, 0);
-    }
-
-    function testFuzz_Revert_WhenActivatedAtInPast(
-        bytes32 root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
-    ) public {
-        cheats.prank(paymentUpdater);
-        cheats.assume(activatedAt < block.timestamp);
-
-        cheats.expectRevert("PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(bytes32(0), 0);
     }
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) public {
+    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp) public {
         // fuzz avoiding overflows and valid activatedAt values
         cheats.assume(paymentCalculationEndTimestamp > paymentCoordinator.currPaymentCalculationEndTimestamp());
-        cheats.assume(activatedAt >= block.timestamp);
-        cheats.assume(activatedAt < type(uint64).max - paymentCoordinator.activationDelay());
 
         uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
+        uint64 activatedAt = uint64(block.timestamp) + paymentCoordinator.activationDelay();
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit DistributionRootSubmitted(
-            expectedRootIndex,
-            root,
-            paymentCalculationEndTimestamp,
-            activatedAt + paymentCoordinator.activationDelay()
-        );
+        emit DistributionRootSubmitted(expectedRootIndex, root, paymentCalculationEndTimestamp, activatedAt);
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp);
 
         (
             bytes32 submittedRoot,
@@ -1079,11 +1097,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             paymentCoordinator.getDistributionRootsLength() - 1,
             "root not added to roots array"
         );
-        assertEq(
-            activatedAt + paymentCoordinator.activationDelay(),
-            submittedActivatedAt,
-            "activatedAt not added activationDelay"
-        );
+        assertEq(activatedAt, submittedActivatedAt, "activatedAt not correct");
         assertEq(root, submittedRoot, "root not set");
         assertEq(
             paymentCalculationEndTimestamp,
@@ -1108,11 +1122,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             roots[i] = keccak256(abi.encodePacked(root, i));
 
             uint64 activationDelay = uint64(block.timestamp) + paymentCoordinator.activationDelay();
-            paymentCoordinator.submitRoot(
-                roots[i],
-                uint64(block.timestamp),
-                activationDelay
-            );
+            paymentCoordinator.submitRoot(roots[i], uint64(block.timestamp));
             cheats.warp(activationDelay);
         }
         cheats.stopPrank();
@@ -1573,14 +1583,14 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         uint64 rootCalculationEndTimestamp = uint64(block.timestamp);
-        uint64 activatedAt = uint64(block.timestamp) + 86400 * 7;
+        uint64 activatedAt = uint64(block.timestamp) + paymentCoordinator.activationDelay();
         prevRootCalculationEndTimestamp = rootCalculationEndTimestamp;
         cheats.warp(activatedAt);
 
         uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp);
 
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
             rootIndex: rootIndex,
