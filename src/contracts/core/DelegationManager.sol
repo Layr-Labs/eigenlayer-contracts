@@ -86,11 +86,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint256 scalingFactor = currentShareScalingFactor(operator, strategy);
-        return _operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE / scalingFactor;
+        return (_operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE) / scalingFactor;
     }
 
     function convertStrategySharesToInternalOperatorShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
-        return currentShareScalingFactor(operator, strategy) * shares;
+        return (currentShareScalingFactor(operator, strategy) * shares) / SHARE_CONVERSION_SCALE;
+    }
+
+    function convertInternalOperatorSharesToStrategyShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
+        return (shares * SHARE_CONVERSION_SCALE) / currentShareScalingFactor(operator, strategy);
     }
 
     function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
@@ -775,14 +779,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-        _operatorShares[operator][strategy] += shares;
+        uint256 currentOperatorShares = operatorShares(operator, strategy);
+        require(currentOperatorShares + shares <= MAX_VALID_SHARES, "cannot exceed max share amount");
+        _operatorShares[operator][strategy] += convertStrategySharesToInternalOperatorShares(operator, strategy, shares);
+        // TODO: should this event change?
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
 
     // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
     function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         // This will revert on underflow, so no check needed
-        _operatorShares[operator][strategy] -= shares;
+        _operatorShares[operator][strategy] -= convertStrategySharesToInternalOperatorShares(operator, strategy, shares);
+        // TODO: should this event change?
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
 
