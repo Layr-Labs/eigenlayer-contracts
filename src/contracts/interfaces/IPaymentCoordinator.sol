@@ -144,6 +144,12 @@ interface IPaymentCoordinator {
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
 
+    /// @notice Timestamp for last submitted 
+    function currPaymentCalculationEndTimestamp() external view returns (uint64);
+
+    /// @notice loop through distribution roots from reverse and return hash
+    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
+
     /// EXTERNAL FUNCTIONS ///
 
     /**
@@ -178,13 +184,11 @@ interface IPaymentCoordinator {
      * @notice Creates a new distribution root
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param activatedAt timestamp at which that the root can be claimed against
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
+        uint64 paymentCalculationEndTimestamp
     ) external;
 
     /**

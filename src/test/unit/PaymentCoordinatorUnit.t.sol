@@ -1033,28 +1033,14 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.prank(invalidPaymentUpdater);
 
         cheats.expectRevert("PaymentCoordinator: caller is not the paymentUpdater");
-        paymentCoordinator.submitRoot(bytes32(0), 0, 0);
-    }
-
-    function testFuzz_Revert_WhenActivatedAtInPast(
-        bytes32 root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
-    ) public {
-        cheats.prank(paymentUpdater);
-        cheats.assume(activatedAt < block.timestamp);
-
-        cheats.expectRevert("PaymentCoordinator.submitRoot: activatedAt cannot be in the past");
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(bytes32(0), 0);
     }
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp, uint64 activatedAt) public {
+    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp) public {
         // fuzz avoiding overflows and valid activatedAt values
         cheats.assume(paymentCalculationEndTimestamp > paymentCoordinator.currPaymentCalculationEndTimestamp());
-        cheats.assume(activatedAt >= block.timestamp);
-        cheats.assume(activatedAt < type(uint64).max - paymentCoordinator.activationDelay());
 
         uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
@@ -1063,10 +1049,10 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             expectedRootIndex,
             root,
             paymentCalculationEndTimestamp,
-            activatedAt + paymentCoordinator.activationDelay()
+            uint64(block.timestamp) + paymentCoordinator.activationDelay()
         );
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp);
 
         (
             bytes32 submittedRoot,
@@ -1080,7 +1066,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             "root not added to roots array"
         );
         assertEq(
-            activatedAt + paymentCoordinator.activationDelay(),
+            block.timestamp + paymentCoordinator.activationDelay(),
             submittedActivatedAt,
             "activatedAt not added activationDelay"
         );
@@ -1110,8 +1096,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             uint64 activationDelay = uint64(block.timestamp) + paymentCoordinator.activationDelay();
             paymentCoordinator.submitRoot(
                 roots[i],
-                uint64(block.timestamp),
-                activationDelay
+                uint64(block.timestamp)
             );
             cheats.warp(activationDelay);
         }
@@ -1580,7 +1565,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp, activatedAt);
+        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp);
 
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
             rootIndex: rootIndex,
