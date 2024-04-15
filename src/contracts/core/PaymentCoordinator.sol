@@ -57,10 +57,10 @@ contract PaymentCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
-        uint64 _maxPaymentDuration,
-        uint64 _MAX_RETROACTIVE_LENGTH,
-        uint64 _MAX_FUTURE_LENGTH,
-        uint64 _GENESIS_PAYMENT_TIMESTAMP
+        uint32 _maxPaymentDuration,
+        uint32 _MAX_RETROACTIVE_LENGTH,
+        uint32 _MAX_FUTURE_LENGTH,
+        uint32 _GENESIS_PAYMENT_TIMESTAMP
     )
         PaymentCoordinatorStorage(
             _delegationManager,
@@ -84,8 +84,8 @@ contract PaymentCoordinator is
         IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus,
         address _paymentUpdater,
-        uint64 _activationDelay,
-        uint64 _calculationIntervalSeconds,
+        uint32 _activationDelay,
+        uint32 _calculationIntervalSeconds,
         uint16 _globalCommissionBips
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
@@ -163,14 +163,14 @@ contract PaymentCoordinator is
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationEndTimestamp
+        uint32 paymentCalculationEndTimestamp
     ) external onlyPaymentUpdater {
         require(
             paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
             "PaymentCoordinator.submitRoot: new root must be for newer calculated period"
         );
         uint32 rootIndex = uint32(distributionRoots.length);
-        uint64 activatedAt = uint64(block.timestamp) + activationDelay;
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         distributionRoots.push(
             DistributionRoot({
                 root: root,
@@ -391,7 +391,7 @@ contract PaymentCoordinator is
      * Payment durations must be multiples of this interval
      * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
      */
-    function setCalculationIntervalSeconds(uint64 _calculationIntervalSeconds) external onlyOwner {
+    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external onlyOwner {
         _setCalculationIntervalSeconds(_calculationIntervalSeconds);
     }
 
@@ -400,7 +400,7 @@ contract PaymentCoordinator is
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint64 _activationDelay) external onlyOwner {
+    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
         _setActivationDelay(_activationDelay);
     }
 
@@ -428,12 +428,12 @@ contract PaymentCoordinator is
         isPayAllForRangeSubmitter[_submitter] = _newValue;
     }
 
-    function _setActivationDelay(uint64 _activationDelay) internal {
+    function _setActivationDelay(uint32 _activationDelay) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
     }
 
-    function _setCalculationIntervalSeconds(uint64 _calculationIntervalSeconds) internal {
+    function _setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) internal {
         emit CalculationIntervalSecondsSet(calculationIntervalSeconds, _calculationIntervalSeconds);
         calculationIntervalSeconds = _calculationIntervalSeconds;
     }

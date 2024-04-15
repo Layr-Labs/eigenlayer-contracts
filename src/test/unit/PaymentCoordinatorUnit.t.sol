@@ -43,19 +43,19 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
     // Config Variables
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
-    uint64 MAX_PAYMENT_DURATION = 70 days;
+    uint32 MAX_PAYMENT_DURATION = 70 days;
 
     /// @notice Lower bound start range is ~3 months into the past, multiple of calculationIntervalSeconds
-    uint64 MAX_RETROACTIVE_LENGTH = 84 days;
+    uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     /// @notice Upper bound start range is ~1 month into the future, multiple of calculationIntervalSeconds
-    uint64 MAX_FUTURE_LENGTH = 28 days;
+    uint32 MAX_FUTURE_LENGTH = 28 days;
     /// @notice absolute min timestamp that a payment can start at
-    uint64 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
+    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
 
     /// @notice Delay in timestamp before a posted root can be claimed against
-    uint64 activationDelay = 7 days;
+    uint32 activationDelay = 7 days;
     /// @notice intervals(epochs) are 2 weeks
-    uint64 calculationIntervalSeconds = 14 days;
+    uint32 calculationIntervalSeconds = 14 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
@@ -193,7 +193,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         return balances;
     }
 
-    function _maxTimestamp(uint64 timestamp1, uint64 timestamp2) internal pure returns (uint64) {
+    function _maxTimestamp(uint32 timestamp1, uint32 timestamp2) internal pure returns (uint32) {
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
@@ -270,7 +270,7 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setCalculationIntervalSeconds(uint64 intervalSeconds) public {
+    function testFuzz_setCalculationIntervalSeconds(uint32 intervalSeconds) public {
         cheats.startPrank(paymentCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit CalculationIntervalSecondsSet(paymentCoordinator.calculationIntervalSeconds(), intervalSeconds);
@@ -283,14 +283,14 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(address caller, uint64 intervalSeconds) public {
+    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(address caller, uint32 intervalSeconds) public {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
         paymentCoordinator.setCalculationIntervalSeconds(intervalSeconds);
     }
 
-    function testFuzz_setActivationDelay(uint64 activationDelay) public {
+    function testFuzz_setActivationDelay(uint32 activationDelay) public {
         cheats.startPrank(paymentCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit ActivationDelaySet(paymentCoordinator.activationDelay(), activationDelay);
@@ -299,7 +299,7 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setActivationDelay_Revert_WhenNotOwner(address caller, uint64 activationDelay) public {
+    function testFuzz_setActivationDelay_Revert_WhenNotOwner(address caller, uint32 activationDelay) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -397,7 +397,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
-            startTimestamp: uint64(block.timestamp),
+            startTimestamp: uint32(block.timestamp),
             duration: 0
         });
 
@@ -425,7 +425,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -439,8 +439,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: emptyStratsAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -462,7 +462,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -479,8 +479,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: dupStratsAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -504,10 +504,10 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, MAX_PAYMENT_DURATION + 1, type(uint64).max);
+        duration = bound(duration, MAX_PAYMENT_DURATION + 1, type(uint32).max);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -520,8 +520,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -547,7 +547,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         cheats.assume(duration % calculationIntervalSeconds != 0);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -560,8 +560,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -596,7 +596,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         startTimestamp = bound(
             startTimestamp,
             0,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
@@ -606,8 +606,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -634,7 +634,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         startTimestamp = bound(
             startTimestamp,
             block.timestamp + uint256(MAX_FUTURE_LENGTH) + 1 + calculationIntervalSeconds,
-            type(uint64).max
+            type(uint32).max
         );
         startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
 
@@ -644,8 +644,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected revert
@@ -671,7 +671,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -685,8 +685,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected event emitted
@@ -718,7 +718,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -731,8 +731,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected event emitted
@@ -799,7 +799,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                     calculationIntervalSeconds -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -811,8 +811,8 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: paymentTokens[i],
                 amount: amounts[i],
-                startTimestamp: uint64(param.startTimestamp),
-                duration: uint64(param.duration)
+                startTimestamp: uint32(param.startTimestamp),
+                duration: uint32(param.duration)
             });
             rangePayments[i] = rangePayment;
 
@@ -879,7 +879,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
-            startTimestamp: uint64(block.timestamp),
+            startTimestamp: uint32(block.timestamp),
             duration: 0
         });
 
@@ -923,7 +923,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         duration = duration - (duration % calculationIntervalSeconds);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 calculationIntervalSeconds -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -936,8 +936,8 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: paymentToken,
             amount: amount,
-            startTimestamp: uint64(startTimestamp),
-            duration: uint64(duration)
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
         });
 
         // 3. call payForRange() with expected event emitted
@@ -1003,7 +1003,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             param.duration = param.duration - (param.duration % calculationIntervalSeconds);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint64(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                     calculationIntervalSeconds -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
@@ -1015,8 +1015,8 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
                 token: paymentTokens[i],
                 amount: amounts[i],
-                startTimestamp: uint64(param.startTimestamp),
-                duration: uint64(param.duration)
+                startTimestamp: uint32(param.startTimestamp),
+                duration: uint32(param.duration)
             });
             rangePayments[i] = rangePayment;
 
@@ -1074,12 +1074,12 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot(bytes32 root, uint64 paymentCalculationEndTimestamp) public {
+    function testFuzz_submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) public {
         // fuzz avoiding overflows and valid activatedAt values
         cheats.assume(paymentCalculationEndTimestamp > paymentCoordinator.currPaymentCalculationEndTimestamp());
 
         uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
-        uint64 activatedAt = uint64(block.timestamp) + paymentCoordinator.activationDelay();
+        uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
         emit DistributionRootSubmitted(expectedRootIndex, root, paymentCalculationEndTimestamp, activatedAt);
@@ -1088,8 +1088,8 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
 
         (
             bytes32 submittedRoot,
-            uint64 submittedPaymentCalculationEndTimestamp,
-            uint64 submittedActivatedAt
+            uint32 submittedPaymentCalculationEndTimestamp,
+            uint32 submittedActivatedAt
         ) = paymentCoordinator.distributionRoots(expectedRootIndex);
 
         assertEq(
@@ -1121,8 +1121,8 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         for (uint16 i = 0; i < numRoots; ++i) {
             roots[i] = keccak256(abi.encodePacked(root, i));
 
-            uint64 activationDelay = uint64(block.timestamp) + paymentCoordinator.activationDelay();
-            paymentCoordinator.submitRoot(roots[i], uint64(block.timestamp));
+            uint32 activationDelay = uint32(block.timestamp) + paymentCoordinator.activationDelay();
+            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp));
             cheats.warp(activationDelay);
         }
         cheats.stopPrank();
@@ -1139,7 +1139,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
     /// @notice mock token bytecode
     bytes mockTokenBytecode;
 
-    uint64 prevRootCalculationEndTimestamp;
+    uint32 prevRootCalculationEndTimestamp;
 
     // Temp storage for managing stack in _parseProofData
     bytes32 merkleRoot;
@@ -1178,7 +1178,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1227,7 +1227,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
@@ -1278,7 +1278,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1310,7 +1310,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[1];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1342,7 +1342,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[2];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1394,7 +1394,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1425,7 +1425,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 2. Claim against first root again
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
@@ -1473,7 +1473,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earnings
@@ -1514,7 +1514,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint64 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earner
@@ -1582,8 +1582,8 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
         }
 
-        uint64 rootCalculationEndTimestamp = uint64(block.timestamp);
-        uint64 activatedAt = uint64(block.timestamp) + paymentCoordinator.activationDelay();
+        uint32 rootCalculationEndTimestamp = uint32(block.timestamp);
+        uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
         prevRootCalculationEndTimestamp = rootCalculationEndTimestamp;
         cheats.warp(activatedAt);
 

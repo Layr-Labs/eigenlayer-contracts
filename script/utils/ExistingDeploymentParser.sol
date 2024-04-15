@@ -95,14 +95,14 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
     // PaymentCoordinator
     uint256 PAYMENT_COORDINATOR_INIT_PAUSED_STATUS;
-    uint64 PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION;
-    uint64 PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH;
-    uint64 PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH;
-    uint64 PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
+    uint32 PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION;
+    uint32 PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH;
+    uint32 PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH;
+    uint32 PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
     address PAYMENT_COORDINATOR_UPDATER;
-    uint64 PAYMENT_COORDINATOR_ACTIVATION_DELAY;
-    uint64 PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
-    uint64 PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 PAYMENT_COORDINATOR_ACTIVATION_DELAY;
+    uint32 PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+    uint32 PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
@@ -290,16 +290,16 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".paymentCoordinator.init_paused_status"
         );
-        PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_PAYMENT_DURATION"));
-        PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_RETROACTIVE_LENGTH"));
-        PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_FUTURE_LENGTH"));
-        PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP"));
+        PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_PAYMENT_DURATION"));
+        PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_RETROACTIVE_LENGTH"));
+        PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_FUTURE_LENGTH"));
+        PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP"));
         PAYMENT_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".paymentCoordinator.payment_updater_address");
-        PAYMENT_COORDINATOR_ACTIVATION_DELAY = uint64(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.activation_delay"));
-        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint64(
+        PAYMENT_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.activation_delay"));
+        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
             stdJson.readUint(initialDeploymentData, ".paymentCoordinator.calculation_interval_seconds")
         );
-        PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint64(
+        PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
             stdJson.readUint(initialDeploymentData, ".paymentCoordinator.global_operator_commission_bips")
         );
         // AVSDirectory

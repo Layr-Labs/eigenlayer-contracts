@@ -27,16 +27,16 @@ interface IPaymentCoordinatorEvents {
         bool indexed oldValue,
         bool indexed newValue
     );
-    event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
-    event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
+    event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
+    event CalculationIntervalSecondsSet(uint32 oldCalculationIntervalSeconds, uint32 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
+        uint32 paymentCalculationEndTimestamp,
+        uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
     event PaymentClaimed(bytes32 indexed root, IPaymentCoordinator.TokenTreeMerkleLeaf leaf);

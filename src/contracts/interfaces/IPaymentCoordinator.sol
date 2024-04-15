@@ -27,17 +27,17 @@ interface IPaymentCoordinator {
         StrategyAndMultiplier[] strategiesAndMultipliers;
         IERC20 token;
         uint256 amount;
-        uint64 startTimestamp;
-        uint64 duration;
+        uint32 startTimestamp;
+        uint32 duration;
     }
 
     struct DistributionRoot {
         // merkle root of the distribution
         bytes32 root;
         // The timestamp until which payments have been calculated
-        uint64 paymentCalculationEndTimestamp;
+        uint32 paymentCalculationEndTimestamp;
         // timestamp at which the root can be claimed against
-        uint64 activatedAt;
+        uint32 activatedAt;
     }
 
     struct EarnerTreeMerkleLeaf {
@@ -86,16 +86,16 @@ interface IPaymentCoordinator {
         bool indexed oldValue,
         bool indexed newValue
     );
-    event ActivationDelaySet(uint64 oldActivationDelay, uint64 newActivationDelay);
-    event CalculationIntervalSecondsSet(uint64 oldCalculationIntervalSeconds, uint64 newCalculationIntervalSeconds);
+    event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
+    event CalculationIntervalSecondsSet(uint32 oldCalculationIntervalSeconds, uint32 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array 
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint64 paymentCalculationEndTimestamp,
-        uint64 activatedAt
+        uint32 paymentCalculationEndTimestamp,
+        uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
     event PaymentClaimed(bytes32 indexed root, TokenTreeMerkleLeaf leaf);
@@ -109,22 +109,22 @@ interface IPaymentCoordinator {
      * @notice The interval in seconds at which the calculation for range payment distribution is done.
      * @dev Payment durations must be multiples of this interval.
      */
-    function calculationIntervalSeconds() external view returns (uint64);
+    function calculationIntervalSeconds() external view returns (uint32);
 
     /// @notice The maximum amount of time that a range payment can end in the future
-    function MAX_PAYMENT_DURATION() external view returns (uint64);
+    function MAX_PAYMENT_DURATION() external view returns (uint32);
 
     /// @notice max amount of time that a payment can start in the past
-    function MAX_RETROACTIVE_LENGTH() external view returns (uint64);
+    function MAX_RETROACTIVE_LENGTH() external view returns (uint32);
 
     /// @notice max amount of time that a payment can start in the future
-    function MAX_FUTURE_LENGTH() external view returns (uint64);
+    function MAX_FUTURE_LENGTH() external view returns (uint32);
 
     /// @notice absolute min timestamp that a payment can start at
-    function GENESIS_PAYMENT_TIMESTAMP() external view returns (uint64);
+    function GENESIS_PAYMENT_TIMESTAMP() external view returns (uint32);
 
     /// @notice Delay in timestamp before a posted root can be claimed against
-    function activationDelay() external view returns (uint64);
+    function activationDelay() external view returns (uint32);
 
     /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
     function claimerFor(address earner) external view returns (address);
@@ -182,7 +182,7 @@ interface IPaymentCoordinator {
      */
     function submitRoot(
         bytes32 root,
-        uint64 paymentCalculationEndTimestamp
+        uint32 paymentCalculationEndTimestamp
     ) external;
 
     /**
@@ -196,7 +196,7 @@ interface IPaymentCoordinator {
      * @param _activationDelay Delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      */
-    function setActivationDelay(uint64 _activationDelay) external;
+    function setActivationDelay(uint32 _activationDelay) external;
 
     /**
      * @notice Sets the global commission for all operators across all avss

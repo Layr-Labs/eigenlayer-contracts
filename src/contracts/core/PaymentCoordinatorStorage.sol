@@ -22,13 +22,13 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-    uint64 public immutable MAX_PAYMENT_DURATION;
+    uint32 public immutable MAX_PAYMENT_DURATION;
     /// @notice max amount of time that a payment can start in the past
-    uint64 public immutable MAX_RETROACTIVE_LENGTH;
+    uint32 public immutable MAX_RETROACTIVE_LENGTH;
     /// @notice max amount of time that a payment can start in the future
-    uint64 public immutable MAX_FUTURE_LENGTH;
+    uint32 public immutable MAX_FUTURE_LENGTH;
     /// @notice absolute min timestamp that a payment can start at
-    uint64 public immutable GENESIS_PAYMENT_TIMESTAMP;
+    uint32 public immutable GENESIS_PAYMENT_TIMESTAMP;
 
     /// @notice The elegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
@@ -55,11 +55,11 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     address public paymentUpdater;
     /// @notice The interval in seconds at which the calculation for range payment distribution is done.
     /// @dev Payment durations must be multiples of this interval.
-    uint64 public calculationIntervalSeconds;
+    uint32 public calculationIntervalSeconds;
 
     /// Slot 4
     /// @notice Delay in timestamp before a posted root can be claimed against
-    uint64 public activationDelay;
+    uint32 public activationDelay;
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
 
@@ -70,7 +70,7 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
     /// @notice Timestamp for last submitted 
-    uint64 public currPaymentCalculationEndTimestamp;
+    uint32 public currPaymentCalculationEndTimestamp;
     /// @notice Used for unique rangePaymentHashes
     uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
@@ -83,10 +83,10 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,  
-        uint64 _MAX_PAYMENT_DURATION,
-        uint64 _MAX_RETROACTIVE_LENGTH,
-        uint64 _MAX_FUTURE_LENGTH,
-        uint64 _GENESIS_PAYMENT_TIMESTAMP
+        uint32 _MAX_PAYMENT_DURATION,
+        uint32 _MAX_RETROACTIVE_LENGTH,
+        uint32 _MAX_FUTURE_LENGTH,
+        uint32 _GENESIS_PAYMENT_TIMESTAMP
     ) {
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
