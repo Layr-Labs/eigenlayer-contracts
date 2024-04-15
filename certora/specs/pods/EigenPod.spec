@@ -71,7 +71,6 @@ methods {
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external returns (IEigenPod.ValidatorInfo) envfree;
     function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external returns (bool) envfree;
     function validatorStatus(bytes32 pubkeyHash) external returns (IEigenPod.VALIDATOR_STATUS) envfree;
-    function delayedWithdrawalRouter() external returns (address) envfree;
     function nonBeaconChainETHBalanceWei() external returns (uint256) envfree;
 
     // harnessed functions

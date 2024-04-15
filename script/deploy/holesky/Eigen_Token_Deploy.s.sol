@@ -96,7 +96,7 @@ contract Eigen_Token_Deploy is Script, Test {
         tokenProxyAdmin.transferOwnership(operationsMultisig);
     }
 
-    function _verifyDeployment() internal {
+    function _verifyDeployment() internal view {
         require(EIGEN.totalSupply() == TOTAL_SUPPLY, "Eigen_Token_Deploy: total supply mismatch");
         require(bEIGEN.totalSupply() == TOTAL_SUPPLY, "Eigen_Token_Deploy: total supply mismatch");
 

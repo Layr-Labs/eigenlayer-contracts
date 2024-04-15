@@ -5,8 +5,6 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPod.sol";
 
 contract EigenPodMock is IEigenPod, Test {
-    /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns(uint64) {}
 
     function nonBeaconChainETHBalanceWei() external view returns(uint256) {}
 
@@ -42,13 +40,35 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {}
 
-
-    ///@notice mapping that tracks proven withdrawals
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool) {}
-
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS) {}
 
+    /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
+    function activeValidatorCount() external view returns (uint256) {}
+
+    /// @notice The timestamp of the last checkpoint finalized
+    function lastCheckpointTimestamp() external view returns (uint64) {}
+
+    /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
+    function currentCheckpointTimestamp() external view returns (uint64) {}
+
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() external view returns (Checkpoint memory) {}
+
+    function checkpointBalanceExitedGwei(uint64) external view returns (uint64) {}
+
+    function startCheckpoint(bool revertIfNoBalance) external {}
+
+    function verifyCheckpointProofs(
+        BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
+        BeaconChainProofs.BalanceProof[] calldata proofs
+    ) external {}
+
+    function verifyStaleBalance(
+        uint64 beaconTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.ValidatorProof calldata proof
+    ) external {}
 
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
@@ -56,24 +76,6 @@ contract EigenPodMock is IEigenPod, Test {
         uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
-    ) external {}
-
-    
-    function verifyBalanceUpdates(
-        uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields
-    ) external {}
-
-    function verifyAndProcessWithdrawals(
-        uint64 oracleTimestamp,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields
     ) external {}
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
@@ -88,6 +90,16 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
 
+    function setProofSubmitter(address newProofSubmitter) external {}
+
+    function proofSubmitter() external view returns (address) {}
+
     function validatorStatus(bytes calldata pubkey) external view returns (VALIDATOR_STATUS){}
     function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory){}
+
+    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
+    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
+    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
+    /// will revert.
+    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {}
 }
