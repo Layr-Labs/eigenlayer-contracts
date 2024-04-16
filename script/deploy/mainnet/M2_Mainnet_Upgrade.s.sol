@@ -66,7 +66,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             delayedWithdrawalRouter,
             eigenPodManager,
-            EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             EIGENPOD_GENESIS_TIME
         );
         delegationManagerImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
@@ -124,7 +123,6 @@ contract M2_Mainnet_Upgrade is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
 
         eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
-        eigenPodManager.updateBeaconChainOracle(beaconOracle);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
         vm.stopPrank();
@@ -211,11 +209,11 @@ contract Queue_M2_Upgrade is M2_Mainnet_Upgrade, TimelockEncoding {
         );
 
         // set beacon chain oracle on EigenPodManager
-        txs[7] = Tx(
-            address(eigenPodManager), 
-            0, // value
-            abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, beaconOracle)
-        );
+        // txs[7] = Tx(
+        //     address(eigenPodManager), 
+        //     0, // value
+        //     abi.encodeWithSelector(EigenPodManager.updateBeaconChainOracle.selector, beaconOracle)
+        // );
 
         // set Deneb fork timestamp on EigenPodManager
         txs[8] = Tx(

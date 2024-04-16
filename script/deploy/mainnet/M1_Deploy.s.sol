@@ -183,7 +183,6 @@ contract Deployer_M1 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            uint64(MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR),
             GOERLI_GENESIS_TIME
         );
 
@@ -239,8 +238,6 @@ contract Deployer_M1 is Script, Test {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                EIGENPOD_MANAGER_MAX_PODS,
-                IBeaconChainOracle(address(0)),
                 executorMultisig,
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
@@ -540,11 +537,6 @@ contract Deployer_M1 is Script, Test {
         require(
             strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly"
-        );
-
-        require(
-            eigenPodManager.beaconChainOracle() == IBeaconChainOracle(address(0)),
-            "eigenPodManager: eigenPodBeacon contract address not set correctly"
         );
 
         require(

@@ -55,12 +55,10 @@ contract EigenPodManager is
     }
 
     function initialize(
-        IBeaconChainOracle _beaconChainOracle,
         address initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initPausedStatus
     ) external initializer {
-        _updateBeaconChainOracle(_beaconChainOracle);
         _transferOwnership(initialOwner);
         _initializePauser(_pauserRegistry, _initPausedStatus);
     }
@@ -139,6 +137,34 @@ contract EigenPodManager is
             }
         }
         emit PodSharesUpdated(podOwner, sharesDelta);
+    }
+
+    /**
+     * @dev Changes the `podOwner's` stale validator count by `countDelta`. The stale validator
+     * count can be used as an additional weighting mechanism to determine a staker or operator's shares.
+     * @param podOwner the pod owner whose stale validator count is being updated
+     * @param countDelta the change in `podOwner's` stale validator count as a signed integer
+     * @dev Callable only by the `podOwner's` EigenPod contract
+     */
+    function updateStaleValidatorCount(
+        address podOwner,
+        int256 countDelta
+    ) external onlyEigenPod(podOwner) {
+        require(podOwner != address(0), "EigenPodManager.updateStaleValidatorCount: podOwner cannot be zero address");
+        require(countDelta != 0, "EigenPodManager.updateStaleValidatorCount: invalid countDelta");
+
+        uint256 currentCount = staleValidatorCount[podOwner];
+        uint256 deltaAbs = uint256(countDelta);
+
+        if (countDelta < 0) {
+            require(deltaAbs <= currentCount, "EigenPodManager.updateStaleValidatorCount: applying countDelta would make count negative");
+
+            staleValidatorCount[podOwner] -= deltaAbs;
+        } else {
+            staleValidatorCount[podOwner] += deltaAbs;
+        }
+
+        // TODO emit event
     }
 
     /**
@@ -222,15 +248,6 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Updates the oracle contract that provides the beacon chain state root
-     * @param newBeaconChainOracle is the new oracle contract being pointed to
-     * @dev Callable only by the owner of this contract (i.e. governance)
-     */
-    function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external onlyOwner {
-        _updateBeaconChainOracle(newBeaconChainOracle);
-    }
-
-    /**
      * @notice Sets the timestamp of the Deneb fork.
      * @param newDenebForkTimestamp is the new timestamp of the Deneb fork
      */
@@ -260,12 +277,6 @@ contract EigenPodManager is
         ownerToPod[msg.sender] = pod;
         emit PodDeployed(address(pod), msg.sender);
         return pod;
-    }
-
-    /// @notice Internal setter for `beaconChainOracle` that also emits an event
-    function _updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) internal {
-        beaconChainOracle = newBeaconChainOracle;
-        emit BeaconOracleUpdated(address(newBeaconChainOracle));
     }
 
     /**
@@ -314,14 +325,24 @@ contract EigenPodManager is
         return address(ownerToPod[podOwner]) != address(0);
     }
 
-    /// @notice Returns the Beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32) {
-        bytes32 stateRoot = beaconChainOracle.timestampToBlockRoot(timestamp);
+    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
+    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
+    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
+    /// will revert.
+    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {
         require(
-            stateRoot != bytes32(0),
-            "EigenPodManager.getBlockRootAtTimestamp: state root at timestamp not yet finalized"
+            block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
+            "EigenPodManager.getParentBlockRoot: timestamp out of range"
         );
-        return stateRoot;
+
+        (bool success, bytes memory result) =
+            BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
+
+        if (success && result.length > 0) {
+            return abi.decode(result, (bytes32));
+        } else {
+            revert("EigenPodManager.getParentBlockRoot: invalid block root returned");
+        }
     }
 
     /**

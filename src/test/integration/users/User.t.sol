@@ -114,7 +114,7 @@ contract User is Test {
                     validators.push(newValidatorIndex);
                     emit log_named_uint("oracle timestamp", proofs.oracleTimestamp);
                     pod.verifyWithdrawalCredentials({
-                        oracleTimestamp: proofs.oracleTimestamp,
+                        beaconTimestamp: proofs.oracleTimestamp,
                         stateRootProof: proofs.stateRootProof,
                         validatorIndices: proofs.validatorIndices,
                         validatorFieldsProofs: proofs.validatorFieldsProofs,
@@ -131,37 +131,38 @@ contract User is Test {
 
     function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
         emit log(_name(".updateBalances"));
+        revert("fail - placeholder");
 
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-            int delta = tokenDeltas[i];
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     IStrategy strat = strategies[i];
+        //     int delta = tokenDeltas[i];
 
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                // TODO - right now, we just grab the first validator
-                uint40 validator = getUpdatableValidator();
-                BalanceUpdate memory update = beaconChain.updateBalance(validator, delta);
+        //     if (strat == BEACONCHAIN_ETH_STRAT) {
+        //         // TODO - right now, we just grab the first validator
+        //         uint40 validator = getUpdatableValidator();
+        //         BalanceUpdate memory update = beaconChain.updateBalance(validator, delta);
 
-                int sharesBefore = eigenPodManager.podOwnerShares(address(this));
+        //         int sharesBefore = eigenPodManager.podOwnerShares(address(this));
 
-                pod.verifyBalanceUpdates({
-                    oracleTimestamp: update.oracleTimestamp,
-                    validatorIndices: update.validatorIndices,
-                    stateRootProof: update.stateRootProof,
-                    validatorFieldsProofs: update.validatorFieldsProofs,
-                    validatorFields: update.validatorFields
-                });
+        //         pod.verifyBalanceUpdates({
+        //             oracleTimestamp: update.oracleTimestamp,
+        //             validatorIndices: update.validatorIndices,
+        //             stateRootProof: update.stateRootProof,
+        //             validatorFieldsProofs: update.validatorFieldsProofs,
+        //             validatorFields: update.validatorFields
+        //         });
 
-                int sharesAfter = eigenPodManager.podOwnerShares(address(this));
+        //         int sharesAfter = eigenPodManager.podOwnerShares(address(this));
 
-                emit log_named_int("pod owner shares before: ", sharesBefore);
-                emit log_named_int("pod owner shares after: ", sharesAfter);
-            } else {
-                uint tokens = uint(delta);
-                IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokens);
-                strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
-            }
-        }
+        //         emit log_named_int("pod owner shares before: ", sharesBefore);
+        //         emit log_named_int("pod owner shares after: ", sharesAfter);
+        //     } else {
+        //         uint tokens = uint(delta);
+        //         IERC20 underlyingToken = strat.underlyingToken();
+        //         underlyingToken.approve(address(strategyManager), tokens);
+        //         strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
+        //     }
+        // }
     }
 
     /// @dev Delegate to the operator without a signature
@@ -301,30 +302,31 @@ contract User is Test {
                 if (receiveAsTokens) {
                     
                     emit log("exiting validators and processing withdrawals...");
-                    
-                    uint numValidators = validators.length;
-                    for (uint j = 0; j < numValidators; j++) {
-                        emit log_named_uint("exiting validator ", j);
+                    revert("fail - placeholder");
 
-                        uint40 validatorIndex = validators[j];
-                        BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
+                    // uint numValidators = validators.length;
+                    // for (uint j = 0; j < numValidators; j++) {
+                    //     emit log_named_uint("exiting validator ", j);
 
-                        uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
+                    //     uint40 validatorIndex = validators[j];
+                    //     BeaconWithdrawal memory proofs = beaconChain.exitValidator(validatorIndex);
 
-                        pod.verifyAndProcessWithdrawals({
-                            oracleTimestamp: proofs.oracleTimestamp,
-                            stateRootProof: proofs.stateRootProof,
-                            withdrawalProofs: proofs.withdrawalProofs,
-                            validatorFieldsProofs: proofs.validatorFieldsProofs,
-                            validatorFields: proofs.validatorFields,
-                            withdrawalFields: proofs.withdrawalFields
-                        });
+                    //     uint64 withdrawableBefore = pod.withdrawableRestakedExecutionLayerGwei();
 
-                        uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+                    //     pod.verifyAndProcessWithdrawals({
+                    //         oracleTimestamp: proofs.oracleTimestamp,
+                    //         stateRootProof: proofs.stateRootProof,
+                    //         withdrawalProofs: proofs.withdrawalProofs,
+                    //         validatorFieldsProofs: proofs.validatorFieldsProofs,
+                    //         validatorFields: proofs.validatorFields,
+                    //         withdrawalFields: proofs.withdrawalFields
+                    //     });
 
-                        emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
-                        emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
-                    }
+                    //     uint64 withdrawableAfter = pod.withdrawableRestakedExecutionLayerGwei();
+
+                    //     emit log_named_uint("pod withdrawable before: ", withdrawableBefore);
+                    //     emit log_named_uint("pod withdrawable after: ", withdrawableAfter);
+                    // }
                 }
             } else {
                 tokens[i] = strat.underlyingToken();
@@ -438,7 +440,7 @@ contract User_AltMethods is User {
                     validators.push(newValidatorIndex);
 
                     pod.verifyWithdrawalCredentials({
-                        oracleTimestamp: proofs.oracleTimestamp,
+                        beaconTimestamp: proofs.oracleTimestamp,
                         stateRootProof: proofs.stateRootProof,
                         validatorIndices: proofs.validatorIndices,
                         validatorFieldsProofs: proofs.validatorFieldsProofs,
