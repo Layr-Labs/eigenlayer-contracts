@@ -21,6 +21,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod {
+
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -38,22 +39,14 @@ interface IEigenPod {
         VALIDATOR_STATUS status;
     }
 
-    /**
-     * @notice struct used to store amounts related to proven withdrawals in memory. Used to help
-     * manage stack depth and optimize the number of external calls, when batching withdrawal operations.
-     */
-    struct VerifiedWithdrawal {
-        // amount to send to a podOwner from a proven withdrawal
-        uint256 amountToSendGwei;
-        // difference in shares to be recorded in the eigenPodManager, as a result of the withdrawal
-        int256 sharesDeltaGwei;
-    }
+    struct Checkpoint {
+        bytes32 beaconBlockRoot;
+        bytes32 beaconStateRoot;
 
+        uint256 podBalanceGwei;
+        int256 balanceDeltas;
 
-    enum PARTIAL_WITHDRAWAL_CLAIM_STATUS {
-        REDEEMED,
-        PENDING,
-        FAILED
+        uint256 proofsRemaining;
     }
 
     /// @notice Emitted when an ETH validator stakes via this eigenPod
@@ -66,22 +59,6 @@ interface IEigenPod {
     //  is the validator's balance that is credited on EigenLayer.
     event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
 
-    /// @notice Emitted when an ETH validator is prove to have withdrawn from the beacon chain
-    event FullWithdrawalRedeemed(
-        uint40 validatorIndex,
-        uint64 withdrawalTimestamp,
-        address indexed recipient,
-        uint64 withdrawalAmountGwei
-    );
-
-    /// @notice Emitted when a partial withdrawal claim is successfully redeemed
-    event PartialWithdrawalRedeemed(
-        uint40 validatorIndex,
-        uint64 withdrawalTimestamp,
-        address indexed recipient,
-        uint64 partialWithdrawalAmountGwei
-    );
-
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
 
@@ -93,10 +70,6 @@ interface IEigenPod {
 
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
-
-
-    /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns (uint64);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
@@ -141,9 +114,6 @@ interface IEigenPod {
     /// @notice Returns the validatorInfo struct for the provided pubkey
     function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
 
-    ///@notice mapping that tracks proven withdrawals
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool);
-
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
 
@@ -169,24 +139,6 @@ interface IEigenPod {
         bytes32[][] calldata validatorFields
     )
         external;
-
-    /**
-     * @notice This function records an update (either increase or decrease) in the pod's balance in the StrategyManager.  
-               It also verifies a merkle proof of the validator's current beacon chain balance.  
-     * @param oracleTimestamp The oracleTimestamp whose state root the `proof` will be proven against.
-     *        Must be within `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` of the current block.
-     * @param validatorIndices is the list of indices of the validators being proven, refer to consensus specs 
-     * @param validatorFieldsProofs proofs against the `beaconStateRoot` for each validator in `validatorFields`
-     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
-     * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     */
-    function verifyBalanceUpdates(
-        uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields
-    ) external;
 
     /**
      * @notice Called by the pod owner to activate restaking by withdrawing
