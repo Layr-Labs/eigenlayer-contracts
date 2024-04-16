@@ -70,6 +70,20 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         }
     }
 
+    function test_UnpauseDeposits() public {
+        _logSection("Checking unpause transaction");
+
+        inspect(delegationManager);
+        inspect(strategyManager);
+        inspect(eigenPodManager);
+
+        _unpauseDeposits();
+
+        inspect(delegationManager);
+        inspect(strategyManager);
+        inspect(eigenPodManager);
+    }
+
     function test_UpgradeStatus() public {
         _logSection("Checking M2 Upgrade Status");
 
@@ -322,9 +336,9 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
         _logSection("Checking Queued M2 Upgrade");
 
         if (_isUpgradeQueued()) {
-            if (block.timestamp < TimelockHelper.ETA) {
+            if (block.timestamp < TimelockHelper.ETA_M2_UPGRADE) {
                 _log("Warping to ETA");
-                cheats.warp(TimelockHelper.ETA);
+                cheats.warp(TimelockHelper.ETA_M2_UPGRADE);
             } else {
                 _logGreen("Upgrade is executable (ETA)");
             }
@@ -335,8 +349,8 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
                 target: executorMultisig,
                 value: 0,
                 signature: "",
-                data: TimelockHelper.EXEC_DATA,
-                eta: TimelockHelper.ETA
+                data: TimelockHelper.EXEC_DATA_M2_UPGRADE,
+                eta: TimelockHelper.ETA_M2_UPGRADE
             });
         } else {
             _log("Already upgraded to M2!");
@@ -353,14 +367,60 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
             executorMultisig,
             uint(0),
             "",
-            TimelockHelper.EXEC_DATA,
-            TimelockHelper.ETA
+            TimelockHelper.EXEC_DATA_M2_UPGRADE,
+            TimelockHelper.ETA_M2_UPGRADE
         ));
 
         _log("Checking queued transaction hash", queuedTxn);
-        _log("- ETA", TimelockHelper.ETA);
+        _log("- ETA", TimelockHelper.ETA_M2_UPGRADE);
         bool isQueued = ITimelock(timelock).queuedTransactions(queuedTxn);
         _log("- Upgrade is queued", isQueued);
+
+        return isQueued;
+    }
+
+    function _unpauseDeposits() internal {
+        if (_isUnpauseQueued()) {
+            if (block.timestamp < TimelockHelper.ETA_UNPAUSE_DEPOSITS) {
+                _log("Warping to ETA");
+                cheats.warp(TimelockHelper.ETA_UNPAUSE_DEPOSITS);
+            } else {
+                _logGreen("Unpause is executable (ETA)");
+            }
+
+            _logAction("operationsMultisig", "timelock.executeTransaction");
+            cheats.prank(operationsMultisig);
+            ITimelock(timelock).executeTransaction({
+                target: executorMultisig,
+                value: 0,
+                signature: "",
+                data: TimelockHelper.EXEC_DATA_UNPAUSE_DEPOSITS,
+                eta: TimelockHelper.ETA_UNPAUSE_DEPOSITS
+            });
+
+            _log("Unpaused deposits!");
+        } else {
+            _log("Already unpaused deposits!");
+        }
+        
+        _log("");
+    }
+
+    function _isUnpauseQueued() internal returns (bool) {
+        bytes32 queuedTxn = keccak256(abi.encode(
+            executorMultisig,
+            uint(0),
+            "",
+            TimelockHelper.EXEC_DATA_UNPAUSE_DEPOSITS,
+            TimelockHelper.ETA_UNPAUSE_DEPOSITS
+        ));
+
+        _log("Checking queued transaction hash", queuedTxn);
+        _log("- ETA", TimelockHelper.ETA_UNPAUSE_DEPOSITS);
+        bool isQueued = ITimelock(timelock).queuedTransactions(queuedTxn);
+        _log("- Unpause is queued", isQueued);
+
+        _log("");
 
         return isQueued;
     }
