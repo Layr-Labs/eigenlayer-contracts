@@ -9,7 +9,7 @@ import "src/test/utils/EigenLayerUnitTestBase.sol";
 
 abstract contract EigenLayerUnitTestSetup is EigenLayerUnitTestBase {
     // Declare Mocks
-    StrategyManagerMock strategyManagerMock;
+    StrategyManagerMock public strategyManagerMock;
     DelegationManagerMock public delegationManagerMock;
     SlasherMock public slasherMock;
     EigenPodManagerMock public eigenPodManagerMock;
