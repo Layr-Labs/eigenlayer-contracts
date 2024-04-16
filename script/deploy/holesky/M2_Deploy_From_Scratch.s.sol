@@ -76,7 +76,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             IETHPOSDeposit(ETHPOSDepositAddress),
             delayedWithdrawalRouter,
             eigenPodManager,
-            EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             EIGENPOD_GENESIS_TIME
         );
 
@@ -151,7 +150,6 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                beaconOracle,
                 msg.sender, // initialOwner is msg.sender for now to set forktimestamp later
                 eigenLayerPauserReg,
                 EIGENPOD_MANAGER_INIT_PAUSED_STATUS
