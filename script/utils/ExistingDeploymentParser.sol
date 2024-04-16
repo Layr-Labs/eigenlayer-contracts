@@ -11,6 +11,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 
+import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../src/contracts/strategies/EigenStrategy.sol";
@@ -63,6 +64,9 @@ contract ExistingDeploymentParser is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
+    StrategyFactory public strategyFactory;
+    StrategyFactory public strategyFactoryImplementation;
+    UpgradeableBeacon public strategyBeacon;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;

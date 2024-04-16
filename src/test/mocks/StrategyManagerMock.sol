@@ -123,9 +123,14 @@ contract StrategyManagerMock is
     // function withdrawalDelayBlocks() external view returns (uint256) {}
 
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata /*strategiesToWhitelist*/,
-        bool[] calldata /*thirdPartyTransfersForbiddenValues*/
-    ) external pure {}
+        IStrategy[] calldata strategiesToWhitelist,
+        bool[] calldata thirdPartyTransfersForbiddenValues
+    ) external {
+        for (uint256 i = 0; i < strategiesToWhitelist.length; ++i) {
+            strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
+            thirdPartyTransfersForbidden[strategiesToWhitelist[i]] = thirdPartyTransfersForbiddenValues[i];
+        }
+    }
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
 }

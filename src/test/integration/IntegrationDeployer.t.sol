@@ -12,6 +12,7 @@ import "forge-std/Test.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/Slasher.sol";
+import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/pods/EigenPodManager.sol";
@@ -246,6 +247,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        strategyFactory = StrategyFactory(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(
@@ -271,6 +275,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
         avsDirectoryImplementation = new AVSDirectory(delegationManager);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager);
 
         // Third, upgrade the proxy contracts to point to the implementations
         uint256 withdrawalDelayBlocks = 7 days / 12 seconds;
@@ -348,13 +353,37 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 0 // initialPausedStatus
             )
         );
-
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager);
 
-        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this)); // initialSupply, owner
-        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this)); // initialSupply, owner
+        // Create a proxy beacon for base strategy implementation
+        strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
+
+        // Strategy Factory, upgrade and initalized
+        eigenLayerProxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(strategyFactory))),
+            address(strategyFactoryImplementation),
+            abi.encodeWithSelector(
+                StrategyFactory.initialize.selector,
+                eigenLayerReputedMultisig,
+                IPauserRegistry(address(eigenLayerPauserReg)),
+                0, // initial paused status
+                IBeacon(strategyBeacon)
+            )
+        );
+        
+        cheats.prank(eigenLayerReputedMultisig);
+        strategyManager.setStrategyWhitelister(address(strategyFactory));
+
+        // Normal deployments
+        _newStrategyAndToken("Strategy1Token", "str1", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("Strategy2Token", "str2", 10e50, address(this), false); // initialSupply, owner
+        _newStrategyAndToken("Strategy3Token", "str3", 10e50, address(this), false); // initialSupply, owner
+        
+        // Factory deployments
+        _newStrategyAndToken("Strategy4Token", "str4", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("Strategy5Token", "str5", 10e50, address(this), true); // initialSupply, owner
+        _newStrategyAndToken("Strategy6Token", "str6", 10e50, address(this), true); // initialSupply, owner
 
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
@@ -592,17 +621,28 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
-    function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner) internal {
+    function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner, bool useFactory) internal {
         IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner); 
-        StrategyBase strategy = StrategyBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+        
+        StrategyBase strategy;
+
+        if (useFactory) {
+            strategy = StrategyBase(
+                address(
+                    strategyFactory.deployNewStrategy(underlyingToken)
                 )
-            )
-        );
+            );
+        } else {
+            strategy = StrategyBase(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(baseStrategyImplementation),
+                        address(eigenLayerProxyAdmin),
+                        abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken, eigenLayerPauserReg)
+                    )
+                )
+            );
+        }
 
         // Whitelist strategy
         IStrategy[] memory strategies = new IStrategy[](1);

@@ -49,11 +49,13 @@ See full documentation in [`/core/EigenPodManager.md`](./core/EigenPodManager.md
 | File | Type | Proxy |
 | -------- | -------- | -------- |
 | [`StrategyManager.sol`](../src/contracts/core/StrategyManager.sol) | Singleton | Transparent proxy |
-| [`StrategyBaseTVLLimits.sol`](../src/contracts/strategies/StrategyBaseTVLLimits.sol) | One instance per supported LST | Transparent proxy |
+| [`StrategyFactory.sol`](../../src/contracts/core/StrategyFactory.sol) | Singleton | Transparent proxy |
+| [`StrategyBaseTVLLimits.sol`](../../src/contracts/strategies/StrategyBaseTVLLimits.sol) | Instanced, one per supported token | - Strategies deployed outside the `StrategyFactory` use transparent proxies <br /> - Anything deployed via the `StrategyFactory` uses a Beacon proxy |
 
-These contracts work together to enable restaking for LSTs:
-* The `StrategyManager` acts as the entry and exit point for LSTs in EigenLayer. It handles deposits into LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
-* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported LST. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
+These contracts work together to enable restaking for ERC20 tokens supported by EigenLayer:
+* The `StrategyManager` acts as the entry and exit point for any supported tokens in EigenLayer. It handles deposits into LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
+* `StrategyFactory` allows anyone to deploy strategies to support deposits/withdrawals for new ERC20 tokens
+* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported token. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
 

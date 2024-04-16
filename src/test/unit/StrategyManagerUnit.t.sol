@@ -9,6 +9,7 @@ import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/ERC20_SetTransferReverting_Mock.sol";
 import "src/test/mocks/Reverter.sol";
 import "src/test/mocks/Reenterer.sol";
+import "src/test/mocks/MockDecimals.sol";
 import "src/test/events/IStrategyManagerEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
@@ -367,7 +368,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
 
     function test_Revert_WhenTokenSafeTransferFromReverts() external {
         // replace 'dummyStrat' with one that uses a reverting token
-        dummyToken = IERC20(address(new Reverter()));
+        dummyToken = IERC20(address(new ReverterWithDecimals()));
         dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
@@ -390,8 +391,8 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
     }
 
     function test_Revert_WhenTokenDoesNotExist() external {
-        // replace 'dummyStrat' with one that uses a non-existent token
-        dummyToken = IERC20(address(5678));
+        // replace 'dummyStrat' with one that uses a non-existent token, but will pass the initializer decimals check
+        dummyToken = IERC20(address(new MockDecimals()));
         dummyStrat = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
 
         // whitelist the strategy for deposit
@@ -408,7 +409,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         IStrategy strategy = dummyStrat;
 
         cheats.prank(staker);
-        cheats.expectRevert("Address: call to non-contract");
+        cheats.expectRevert("SafeERC20: low-level call failed");
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
@@ -46,6 +47,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     uint256 internal constant BALANCE_OFFSET = 1e3;
 
+    /**
+     * @notice The maximum total shares for a given strategy
+     * @dev This constant prevents overflow in offchain services for rewards
+     */
+    uint256 internal constant MAX_TOTAL_SHARES = 1e38 - 1;
+
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
@@ -78,6 +85,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     ) internal onlyInitializing {
         underlyingToken = _underlyingToken;
         _initializePauser(_pauserRegistry, UNPAUSE_ALL);
+        emit StrategyTokenSet(underlyingToken, IERC20Metadata(address(_underlyingToken)).decimals());
     }
 
     /**
@@ -119,6 +127,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // update total share amount to account for deposit
         totalShares = (priorTotalShares + newShares);
+
+        require(totalShares <= MAX_TOTAL_SHARES, "StrategyBase.deposit: totalShares exceeds `MAX_TOTAL_SHARES`");
+
+        // emit exchange rate
+        _emitExchangeRate(virtualTokenBalance, totalShares + SHARES_OFFSET);
+
         return newShares;
     }
 
@@ -159,6 +173,9 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
+
+        // emit exchange rate
+        _emitExchangeRate(virtualTokenBalance - amountToSend, totalShares + SHARES_OFFSET);
 
         _afterWithdrawal(recipient, token, amountToSend);
     }
@@ -281,6 +298,13 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     // slither-disable-next-line dead-code
     function _tokenBalance() internal view virtual returns (uint256) {
         return underlyingToken.balanceOf(address(this));
+    }
+
+    /// @notice Internal function used to emit the exchange rate of the strategy in wad (18 decimals)
+    /// @dev Tokens that do not have 18 decimals must have offchain services scale the exchange rate down to proper magnitude
+    function _emitExchangeRate(uint256 virtualTokenBalance, uint256 virtualTotalShares) internal {
+        // Emit asset over shares ratio.
+        emit ExchangeRateEmitted((1e18 * virtualTokenBalance) / virtualTotalShares);
     }
 
     /**
