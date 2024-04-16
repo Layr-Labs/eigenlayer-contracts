@@ -22,7 +22,7 @@ abstract contract EigenPodStorage is IEigenPod {
     bool public hasRestaked;
 
     /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that timestamp
-    mapping(bytes32 => mapping(uint64 => bool)) public provenWithdrawal;
+    mapping(bytes32 => mapping(uint64 => bool)) public __deprecated_provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
@@ -31,15 +31,27 @@ abstract contract EigenPodStorage is IEigenPod {
     uint256 public nonBeaconChainETHBalanceWei;
 
     /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
-    uint64 public sumOfPartialWithdrawalsClaimedGwei;
+    uint64 __deprecated_sumOfPartialWithdrawalsClaimedGwei;
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
-    uint256 activeValidatorCount;
+    uint256 public activeValidatorCount;
+
+    /// @notice The timestamp of the last checkpoint finalized
+    uint64 public lastFinalizedCheckpoint;
+
+    /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
+    uint64 public currentCheckpointTimestamp;
+
+    /// @notice The current checkpoint, if there is one active
+    Checkpoint public currentCheckpoint;
+
+    /// @notice Maps pubkey hash -> whether a validator has been marked "stale"
+    mapping(bytes32 => bool) public isValidatorStale;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[37] private __gap;
 }

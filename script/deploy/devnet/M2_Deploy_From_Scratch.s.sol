@@ -187,7 +187,6 @@ contract Deployer_M2 is Script, Test {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             GOERLI_GENESIS_TIME
         );
 
@@ -561,19 +560,10 @@ contract Deployer_M2 is Script, Test {
         // require(delayedWithdrawalRouter.withdrawalDelayBlocks() == 7 days / 12 seconds,
         //     "delayedWithdrawalRouter: withdrawalDelayBlocks initialized incorrectly");
         // uint256 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32 ether;
-        require(
-            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
-            "eigenPod: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR initialized incorrectly"
-        );
 
         require(
             strategyManager.strategyWhitelister() == operationsMultisig,
             "strategyManager: strategyWhitelister address not set correctly"
-        );
-
-        require(
-            eigenPodManager.beaconChainOracle() == IBeaconChainOracle(address(0)),
-            "eigenPodManager: eigenPodBeacon contract address not set correctly"
         );
 
         require(

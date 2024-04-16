@@ -53,7 +53,6 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         EigenPodManager.initialize.selector,
-                        IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
                         initialOwner,
                         pauserRegistry,
                         0 /*initialPausedStatus*/
@@ -110,7 +109,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialization() public {
         // Check max pods, beacon chain, owner, and pauser
-        assertEq(address(eigenPodManager.beaconChainOracle()), address(IBeaconChainOracle(address(0))), "Initialization: beacon chain oracle incorrect");
         assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
         assertEq(address(eigenPodManager.pauserRegistry()), address(pauserRegistry), "Initialization: pauser registry incorrect");
         assertEq(eigenPodManager.paused(), 0, "Initialization: paused value not 0");
@@ -126,7 +124,6 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
     function test_initialize_revert_alreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         eigenPodManager.initialize(
-            IBeaconChainOracle(address(0)) /*beaconChainOracle*/,
             initialOwner,
             pauserRegistry,
             0 /*initialPausedStatus*/);
@@ -136,24 +133,24 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
                                      Setters
     *******************************************************************************/
 
-    function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
-        cheats.assume(notOwner != initialOwner);
-        cheats.prank(notOwner);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(address(1)));
-    }
+    // function testFuzz_updateBeaconChainOracle_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
+    //     cheats.assume(notOwner != initialOwner);
+    //     cheats.prank(notOwner);
+    //     cheats.expectRevert("Ownable: caller is not the owner");
+    //     eigenPodManager.updateBeaconChainOracle(IBeaconChainOracle(address(1)));
+    // }
 
-    function test_updateBeaconChainOracle() public {
-        // Set new beacon chain oracle
-        IBeaconChainOracle newBeaconChainOracle = IBeaconChainOracle(address(1));
-        cheats.prank(initialOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit BeaconOracleUpdated(address(newBeaconChainOracle));
-        eigenPodManager.updateBeaconChainOracle(newBeaconChainOracle);
+    // function test_updateBeaconChainOracle() public {
+    //     // Set new beacon chain oracle
+    //     IBeaconChainOracle newBeaconChainOracle = IBeaconChainOracle(address(1));
+    //     cheats.prank(initialOwner);
+    //     cheats.expectEmit(true, true, true, true);
+    //     emit BeaconOracleUpdated(address(newBeaconChainOracle));
+    //     eigenPodManager.updateBeaconChainOracle(newBeaconChainOracle);
 
-        // Check storage update
-        assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
-    }
+    //     // Check storage update
+    //     assertEq(address(eigenPodManager.beaconChainOracle()), address(newBeaconChainOracle), "Beacon chain oracle not updated");
+    // }
 
     function test_setDenebForkTimestamp(uint64 denebForkTimestamp) public {
         cheats.assume(denebForkTimestamp != 0);
