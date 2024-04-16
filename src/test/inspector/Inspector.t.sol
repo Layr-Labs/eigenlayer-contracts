@@ -71,14 +71,18 @@ contract Inspector is ExistingDeploymentParser, PrintUtils, ITargetDeployer {
     }
 
     function test_UnpauseDeposits() public {
-        _logSection("Checking unpause transaction");
+        _log("Inspecting contracts");
+        _log("");
 
         inspect(delegationManager);
         inspect(strategyManager);
         inspect(eigenPodManager);
 
+        _logSection("Checking unpause transaction");
         _unpauseDeposits();
 
+        _log("Inspecting contracts");
+        _log("");
         inspect(delegationManager);
         inspect(strategyManager);
         inspect(eigenPodManager);
