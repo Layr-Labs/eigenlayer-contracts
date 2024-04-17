@@ -11,6 +11,11 @@ import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
+
+    /*******************************************************************************
+                               CONSTANTS / IMMUTABLES
+    *******************************************************************************/
+
     /// @notice The ETH2 Deposit Contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -40,8 +45,19 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /// @notice Oracle contract that provides updates to the beacon chain's state
-    IBeaconChainOracle public beaconChainOracle;
+    /// @notice The address of the EIP-4788 beacon block root oracle
+    /// (See https://eips.ethereum.org/EIPS/eip-4788)
+    address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+
+    /// @notice The length of the EIP-4799 beacon block root ring buffer
+    uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
+
+    /*******************************************************************************
+                                   STATE VARIABLES
+    *******************************************************************************/
+
+    /// @notice [DEPRECATED] Previously used to query beacon block roots. We now use eip-4788 directly
+    IBeaconChainOracle internal __deprecated_beaconChainOracle;
 
     /// @notice Pod owner to deployed EigenPod address
     mapping(address => IEigenPod) public ownerToPod;
@@ -50,7 +66,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice The number of EigenPods that have been deployed
     uint256 public numPods;
 
-    /// @notice Deprecated from old mainnet release. Was initially used to limit growth early on but there is no longer
+    /// @notice [DEPRECATED] Was initially used to limit growth early on but there is no longer
     /// a maximum number of EigenPods that can be deployed.
     uint256 private __deprecated_maxPods;
 

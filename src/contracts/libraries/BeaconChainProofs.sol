@@ -55,6 +55,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_PUBKEY_INDEX = 0;
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
+    uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
     uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
 
     // in execution payload header
@@ -89,6 +90,11 @@ library BeaconChainProofs {
     struct BalanceProof {
         bytes32 pubkeyHash;
         bytes32 balanceRoot;
+        bytes proof;
+    }
+
+    struct ValidatorProof {
+        bytes32[] validatorFields;
         bytes proof;
     }
 
@@ -236,6 +242,13 @@ library BeaconChainProofs {
     function getEffectiveBalanceGwei(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
             Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_BALANCE_INDEX]);
+    }
+
+    /**
+     * @dev Returns true IFF the validator is marked slashed
+     */
+    function getSlashStatus(bytes32[] memory validatorFields) internal pure returns (bool) {
+        return validatorFields[VALIDATOR_SLASHED_INDEX] != 0;
     }
 
     /**
