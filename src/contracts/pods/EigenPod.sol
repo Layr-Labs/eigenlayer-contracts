@@ -28,8 +28,13 @@ import "./EigenPodStorage.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants {
-    
+contract EigenPod is 
+    Initializable, 
+    ReentrancyGuardUpgradeable, 
+    EigenPodPausingConstants, 
+    EigenPodStorage 
+{
+
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
