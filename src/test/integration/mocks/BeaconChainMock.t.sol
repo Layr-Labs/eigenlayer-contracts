@@ -18,22 +18,22 @@ struct CredentialsProofs {
     bytes32[][] validatorFields;
 }
 
-struct BeaconWithdrawal {
-    uint64 oracleTimestamp;
-    BeaconChainProofs.StateRootProof stateRootProof;
-    BeaconChainProofs.WithdrawalProof[] withdrawalProofs;
-    bytes[] validatorFieldsProofs;
-    bytes32[][] validatorFields;
-    bytes32[][] withdrawalFields;
-}
+// struct BeaconWithdrawal {
+//     uint64 oracleTimestamp;
+//     BeaconChainProofs.StateRootProof stateRootProof;
+//     BeaconChainProofs.WithdrawalProof[] withdrawalProofs;
+//     bytes[] validatorFieldsProofs;
+//     bytes32[][] validatorFields;
+//     bytes32[][] withdrawalFields;
+// }
 
-struct BalanceUpdate {
-    uint64 oracleTimestamp;
-    BeaconChainProofs.StateRootProof stateRootProof;
-    uint40[] validatorIndices;
-    bytes[] validatorFieldsProofs;
-    bytes32[][] validatorFields;
-}
+// struct BalanceUpdate {
+//     uint64 oracleTimestamp;
+//     BeaconChainProofs.StateRootProof stateRootProof;
+//     uint40[] validatorIndices;
+//     bytes[] validatorFieldsProofs;
+//     bytes32[][] validatorFields;
+// }
 
 contract BeaconChainMock is Test {
 
@@ -116,49 +116,49 @@ contract BeaconChainMock is Test {
      * Additionally, it will send the withdrawal amount to the validator's withdrawal
      * destination.
      */
-    function exitValidator(uint40 validatorIndex) public returns (BeaconWithdrawal memory) {
-        emit log_named_uint("- BeaconChain.exitValidator: ", validatorIndex);
+    // function exitValidator(uint40 validatorIndex) public returns (BeaconWithdrawal memory) {
+    //     emit log_named_uint("- BeaconChain.exitValidator: ", validatorIndex);
 
-        Validator memory validator = validators[validatorIndex];
+    //     Validator memory validator = validators[validatorIndex];
 
-        // Get the withdrawal amount and destination
-        uint amountToWithdraw = validator.effectiveBalanceGwei * GWEI_TO_WEI;
-        address destination = _toAddress(validator.withdrawalCreds);
+    //     // Get the withdrawal amount and destination
+    //     uint amountToWithdraw = validator.effectiveBalanceGwei * GWEI_TO_WEI;
+    //     address destination = _toAddress(validator.withdrawalCreds);
 
-        // Generate exit proofs for a full exit
-        BeaconWithdrawal memory withdrawal = _genExitProof(validator);
+    //     // Generate exit proofs for a full exit
+    //     BeaconWithdrawal memory withdrawal = _genExitProof(validator);
 
-        // Update state - set validator balance to zero and send balance to withdrawal destination
-        validators[validatorIndex].effectiveBalanceGwei = 0;
-        cheats.deal(destination, destination.balance + amountToWithdraw);
+    //     // Update state - set validator balance to zero and send balance to withdrawal destination
+    //     validators[validatorIndex].effectiveBalanceGwei = 0;
+    //     cheats.deal(destination, destination.balance + amountToWithdraw);
 
-        return withdrawal;
-    }
+    //     return withdrawal;
+    // }
 
     /**
      * Note: `delta` is expected to be a raw token amount. This method will convert the delta to Gwei
      */
-    function updateBalance(uint40 validatorIndex, int delta) public returns (BalanceUpdate memory) {
-        delta /= int(GWEI_TO_WEI);
+    // function updateBalance(uint40 validatorIndex, int delta) public returns (BalanceUpdate memory) {
+    //     delta /= int(GWEI_TO_WEI);
         
-        emit log_named_uint("- BeaconChain.updateBalance for validator: ", validatorIndex);
-        emit log_named_int("- BeaconChain.updateBalance delta gwei: ", delta);
+    //     emit log_named_uint("- BeaconChain.updateBalance for validator: ", validatorIndex);
+    //     emit log_named_int("- BeaconChain.updateBalance delta gwei: ", delta);
         
-        // Apply delta and update validator balance in state
-        uint64 newBalance;
-        if (delta <= 0) {
-            newBalance = validators[validatorIndex].effectiveBalanceGwei - uint64(uint(-delta));
-        } else {
-            newBalance = validators[validatorIndex].effectiveBalanceGwei + uint64(uint(delta));
-        }
-        validators[validatorIndex].effectiveBalanceGwei = newBalance;
+    //     // Apply delta and update validator balance in state
+    //     uint64 newBalance;
+    //     if (delta <= 0) {
+    //         newBalance = validators[validatorIndex].effectiveBalanceGwei - uint64(uint(-delta));
+    //     } else {
+    //         newBalance = validators[validatorIndex].effectiveBalanceGwei + uint64(uint(delta));
+    //     }
+    //     validators[validatorIndex].effectiveBalanceGwei = newBalance;
         
-        // Generate balance update proof
-        Validator memory validator = validators[validatorIndex];
-        BalanceUpdate memory update = _genBalanceUpdateProof(validator);
+    //     // Generate balance update proof
+    //     Validator memory validator = validators[validatorIndex];
+    //     BalanceUpdate memory update = _genBalanceUpdateProof(validator);
 
-        return update;
-    }
+    //     return update;
+    // }
 
     function setNextTimestamp(uint64 timestamp) public {
         nextTimestamp = timestamp;
@@ -259,145 +259,145 @@ contract BeaconChainMock is Test {
      * roots are calculated and the final beaconBlockRoot can be calculated and sent to the
      * oracle.
      */
-    function _genExitProof(Validator memory validator) internal returns (BeaconWithdrawal memory) {
-        BeaconWithdrawal memory withdrawal;
-        uint64 withdrawalEpoch = uint64(block.timestamp);
+    // function _genExitProof(Validator memory validator) internal returns (BeaconWithdrawal memory) {
+    //     BeaconWithdrawal memory withdrawal;
+    //     uint64 withdrawalEpoch = uint64(block.timestamp);
 
-        // Get a new, unique timestamp for queries to the oracle
-        withdrawal.oracleTimestamp = uint64(nextTimestamp);
-        nextTimestamp++;
+    //     // Get a new, unique timestamp for queries to the oracle
+    //     withdrawal.oracleTimestamp = uint64(nextTimestamp);
+    //     nextTimestamp++;
 
-        // Initialize proof arrays
-        BeaconChainProofs.WithdrawalProof memory withdrawalProof = _initWithdrawalProof({
-            withdrawalEpoch: withdrawalEpoch,
-            withdrawalIndex: WITHDRAWAL_INDEX,
-            oracleTimestamp: withdrawal.oracleTimestamp
-        });
+    //     // Initialize proof arrays
+    //     BeaconChainProofs.WithdrawalProof memory withdrawalProof = _initWithdrawalProof({
+    //         withdrawalEpoch: withdrawalEpoch,
+    //         withdrawalIndex: WITHDRAWAL_INDEX,
+    //         oracleTimestamp: withdrawal.oracleTimestamp
+    //     });
 
-        // Calculate withdrawalFields and record the validator's index and withdrawal amount
-        withdrawal.withdrawalFields = new bytes32[][](1);
-        withdrawal.withdrawalFields[0] = new bytes32[](2 ** BeaconChainProofs.WITHDRAWAL_FIELD_TREE_HEIGHT);
-        withdrawal.withdrawalFields[0][BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX] =
-            _toLittleEndianUint64(validator.validatorIndex);
-        withdrawal.withdrawalFields[0][BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX] =
-            _toLittleEndianUint64(validator.effectiveBalanceGwei);
+    //     // Calculate withdrawalFields and record the validator's index and withdrawal amount
+    //     withdrawal.withdrawalFields = new bytes32[][](1);
+    //     withdrawal.withdrawalFields[0] = new bytes32[](2 ** BeaconChainProofs.WITHDRAWAL_FIELD_TREE_HEIGHT);
+    //     withdrawal.withdrawalFields[0][BeaconChainProofs.WITHDRAWAL_VALIDATOR_INDEX_INDEX] =
+    //         _toLittleEndianUint64(validator.validatorIndex);
+    //     withdrawal.withdrawalFields[0][BeaconChainProofs.WITHDRAWAL_VALIDATOR_AMOUNT_INDEX] =
+    //         _toLittleEndianUint64(validator.effectiveBalanceGwei);
 
-        {
-            /**
-             * Generate proofs then root for subtree:
-             * 
-             * executionPayloadRoot
-             * - timestampRoot         (withdrawalProof.timestampProof)
-             * - withdrawalFieldsRoot  (withdrawalProof.withdrawalProof)
-             */            
-            withdrawalProof.executionPayloadRoot = _genExecPayloadProofs({ 
-                withdrawalProof: withdrawalProof,
-                withdrawalRoot: Merkle.merkleizeSha256(withdrawal.withdrawalFields[0])
-            });
-        }
+    //     {
+    //         /**
+    //          * Generate proofs then root for subtree:
+    //          * 
+    //          * executionPayloadRoot
+    //          * - timestampRoot         (withdrawalProof.timestampProof)
+    //          * - withdrawalFieldsRoot  (withdrawalProof.withdrawalProof)
+    //          */            
+    //         withdrawalProof.executionPayloadRoot = _genExecPayloadProofs({ 
+    //             withdrawalProof: withdrawalProof,
+    //             withdrawalRoot: Merkle.merkleizeSha256(withdrawal.withdrawalFields[0])
+    //         });
+    //     }
 
-        {
-            /**
-             * Generate proofs then root for subtree:
-             * 
-             * blockRoot (historical summaries)
-             * - slotRoot             (withdrawalProof.slotProof)
-             * - executionPayloadRoot (withdrawalProof.executionPayloadProof)
-             */
-            withdrawalProof.blockRoot = _genBlockRootProofs({ 
-                withdrawalProof: withdrawalProof
-            });
-        }
+    //     {
+    //         /**
+    //          * Generate proofs then root for subtree:
+    //          * 
+    //          * blockRoot (historical summaries)
+    //          * - slotRoot             (withdrawalProof.slotProof)
+    //          * - executionPayloadRoot (withdrawalProof.executionPayloadProof)
+    //          */
+    //         withdrawalProof.blockRoot = _genBlockRootProofs({ 
+    //             withdrawalProof: withdrawalProof
+    //         });
+    //     }
 
-        // validatorFields
-        withdrawal.validatorFields = new bytes32[][](1);
-        withdrawal.validatorFields[0] = new bytes32[](2 ** BeaconChainProofs.VALIDATOR_FIELD_TREE_HEIGHT);
-        withdrawal.validatorFields[0][BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = validator.pubkeyHash;
-        withdrawal.validatorFields[0][BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX] = 
-            _toLittleEndianUint64(withdrawalEpoch);
+    //     // validatorFields
+    //     withdrawal.validatorFields = new bytes32[][](1);
+    //     withdrawal.validatorFields[0] = new bytes32[](2 ** BeaconChainProofs.VALIDATOR_FIELD_TREE_HEIGHT);
+    //     withdrawal.validatorFields[0][BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = validator.pubkeyHash;
+    //     withdrawal.validatorFields[0][BeaconChainProofs.VALIDATOR_WITHDRAWABLE_EPOCH_INDEX] = 
+    //         _toLittleEndianUint64(withdrawalEpoch);
         
-        withdrawal.validatorFieldsProofs = new bytes[](1);
-        withdrawal.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
+    //     withdrawal.validatorFieldsProofs = new bytes[](1);
+    //     withdrawal.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
 
-        {
-            /**
-             * Generate proofs then root for subtree:
-             *
-             * beaconStateRoot
-             * - validatorFieldsRoot               (withdrawal.validatorFieldsProofs[0])
-             * - blockRoot (historical summaries)  (withdrawalProof.historicalSummaryBlockRootProof)
-             */
-            withdrawal.stateRootProof.beaconStateRoot = _genBeaconStateRootProofs({ 
-                withdrawalProof: withdrawalProof,
-                validatorFieldsProof: withdrawal.validatorFieldsProofs[0],
-                validatorIndex: validator.validatorIndex,
-                validatorRoot: Merkle.merkleizeSha256(withdrawal.validatorFields[0])
-            });
-        }
+    //     {
+    //         /**
+    //          * Generate proofs then root for subtree:
+    //          *
+    //          * beaconStateRoot
+    //          * - validatorFieldsRoot               (withdrawal.validatorFieldsProofs[0])
+    //          * - blockRoot (historical summaries)  (withdrawalProof.historicalSummaryBlockRootProof)
+    //          */
+    //         withdrawal.stateRootProof.beaconStateRoot = _genBeaconStateRootProofs({ 
+    //             withdrawalProof: withdrawalProof,
+    //             validatorFieldsProof: withdrawal.validatorFieldsProofs[0],
+    //             validatorIndex: validator.validatorIndex,
+    //             validatorRoot: Merkle.merkleizeSha256(withdrawal.validatorFields[0])
+    //         });
+    //     }
 
-        withdrawal.withdrawalProofs = new BeaconChainProofs.WithdrawalProof[](1);
-        withdrawal.withdrawalProofs[0] = withdrawalProof;
+    //     withdrawal.withdrawalProofs = new BeaconChainProofs.WithdrawalProof[](1);
+    //     withdrawal.withdrawalProofs[0] = withdrawalProof;
 
-        // Calculate beaconBlockRoot using beaconStateRoot and an empty proof:
-        withdrawal.stateRootProof.proof = new bytes(BLOCKROOT_PROOF_LEN);
-        bytes32 beaconBlockRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawal.stateRootProof.proof,
-            leaf: withdrawal.stateRootProof.beaconStateRoot,
-            index: BeaconChainProofs.STATE_ROOT_INDEX
-        });
+    //     // Calculate beaconBlockRoot using beaconStateRoot and an empty proof:
+    //     withdrawal.stateRootProof.proof = new bytes(BLOCKROOT_PROOF_LEN);
+    //     bytes32 beaconBlockRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawal.stateRootProof.proof,
+    //         leaf: withdrawal.stateRootProof.beaconStateRoot,
+    //         index: BeaconChainProofs.STATE_ROOT_INDEX
+    //     });
 
-        // Send the block root to the oracle
-        oracle.setBlockRoot(withdrawal.oracleTimestamp, beaconBlockRoot);
-        return withdrawal;
-    }
+    //     // Send the block root to the oracle
+    //     oracle.setBlockRoot(withdrawal.oracleTimestamp, beaconBlockRoot);
+    //     return withdrawal;
+    // }
 
-    function _genBalanceUpdateProof(Validator memory validator) internal returns (BalanceUpdate memory) {
-        BalanceUpdate memory update;
+    // function _genBalanceUpdateProof(Validator memory validator) internal returns (BalanceUpdate memory) {
+    //     BalanceUpdate memory update;
 
-        update.validatorIndices = new uint40[](1);
-        update.validatorIndices[0] = validator.validatorIndex;
+    //     update.validatorIndices = new uint40[](1);
+    //     update.validatorIndices[0] = validator.validatorIndex;
 
-        // Create validatorFields showing the balance update
-        update.validatorFields = new bytes32[][](1);
-        update.validatorFields[0] = new bytes32[](2 ** BeaconChainProofs.VALIDATOR_FIELD_TREE_HEIGHT);
-        update.validatorFields[0][BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = validator.pubkeyHash;
-        update.validatorFields[0][BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = 
-            bytes32(validator.withdrawalCreds);
-        update.validatorFields[0][BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = 
-            _toLittleEndianUint64(validator.effectiveBalanceGwei);
+    //     // Create validatorFields showing the balance update
+    //     update.validatorFields = new bytes32[][](1);
+    //     update.validatorFields[0] = new bytes32[](2 ** BeaconChainProofs.VALIDATOR_FIELD_TREE_HEIGHT);
+    //     update.validatorFields[0][BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = validator.pubkeyHash;
+    //     update.validatorFields[0][BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = 
+    //         bytes32(validator.withdrawalCreds);
+    //     update.validatorFields[0][BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = 
+    //         _toLittleEndianUint64(validator.effectiveBalanceGwei);
 
-        // Calculate beaconStateRoot using validator index and an empty proof:
-        update.validatorFieldsProofs = new bytes[](1);
-        update.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
-        bytes32 validatorRoot = Merkle.merkleizeSha256(update.validatorFields[0]);
-        uint index = _calcValProofIndex(validator.validatorIndex);
+    //     // Calculate beaconStateRoot using validator index and an empty proof:
+    //     update.validatorFieldsProofs = new bytes[](1);
+    //     update.validatorFieldsProofs[0] = new bytes(VAL_FIELDS_PROOF_LEN);
+    //     bytes32 validatorRoot = Merkle.merkleizeSha256(update.validatorFields[0]);
+    //     uint index = _calcValProofIndex(validator.validatorIndex);
 
-        bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
-            proof: update.validatorFieldsProofs[0],
-            leaf: validatorRoot,
-            index: index
-        });
+    //     bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
+    //         proof: update.validatorFieldsProofs[0],
+    //         leaf: validatorRoot,
+    //         index: index
+    //     });
 
-        // Calculate blockRoot using beaconStateRoot and an empty proof:
-        bytes memory blockRootProof = new bytes(BLOCKROOT_PROOF_LEN);
-        bytes32 blockRoot = Merkle.processInclusionProofSha256({
-            proof: blockRootProof,
-            leaf: beaconStateRoot,
-            index: BeaconChainProofs.STATE_ROOT_INDEX
-        });
+    //     // Calculate blockRoot using beaconStateRoot and an empty proof:
+    //     bytes memory blockRootProof = new bytes(BLOCKROOT_PROOF_LEN);
+    //     bytes32 blockRoot = Merkle.processInclusionProofSha256({
+    //         proof: blockRootProof,
+    //         leaf: beaconStateRoot,
+    //         index: BeaconChainProofs.STATE_ROOT_INDEX
+    //     });
 
-        update.stateRootProof = BeaconChainProofs.StateRootProof({
-            beaconStateRoot: beaconStateRoot,
-            proof: blockRootProof
-        });
+    //     update.stateRootProof = BeaconChainProofs.StateRootProof({
+    //         beaconStateRoot: beaconStateRoot,
+    //         proof: blockRootProof
+    //     });
 
-        // Send the block root to the oracle and increment timestamp:
-        update.oracleTimestamp = uint64(nextTimestamp);
-        oracle.setBlockRoot(nextTimestamp, blockRoot);
-        nextTimestamp++;
+    //     // Send the block root to the oracle and increment timestamp:
+    //     update.oracleTimestamp = uint64(nextTimestamp);
+    //     oracle.setBlockRoot(nextTimestamp, blockRoot);
+    //     nextTimestamp++;
         
-        return update;
-    }
+    //     return update;
+    // }
 
     /**
      * @dev Generates converging merkle proofs for timestampRoot and withdrawalRoot
@@ -408,49 +408,49 @@ contract BeaconChainMock is Test {
      *
      * @return executionPayloadRoot
      */
-    function _genExecPayloadProofs(
-        BeaconChainProofs.WithdrawalProof memory withdrawalProof,
-        bytes32 withdrawalRoot
-    ) internal view returns (bytes32) {
+    // function _genExecPayloadProofs(
+    //     BeaconChainProofs.WithdrawalProof memory withdrawalProof,
+    //     bytes32 withdrawalRoot
+    // ) internal view returns (bytes32) {
 
-        uint withdrawalProofIndex = 
-            (BeaconChainProofs.WITHDRAWALS_INDEX << (BeaconChainProofs.WITHDRAWALS_TREE_HEIGHT + 1)) |
-            uint(withdrawalProof.withdrawalIndex);
+    //     uint withdrawalProofIndex = 
+    //         (BeaconChainProofs.WITHDRAWALS_INDEX << (BeaconChainProofs.WITHDRAWALS_TREE_HEIGHT + 1)) |
+    //         uint(withdrawalProof.withdrawalIndex);
 
-        /**
-         * Generate merkle proofs for timestampRoot and withdrawalRoot
-         * that converge at or before executionPayloadRoot.
-         * 
-         * timestampProof length: 4
-         * withdrawalProof length: 9
-         */
-        _genConvergentProofs({
-            shortProof: withdrawalProof.timestampProof,
-            shortIndex: BeaconChainProofs.TIMESTAMP_INDEX,
-            shortLeaf: withdrawalProof.timestampRoot,
-            longProof: withdrawalProof.withdrawalProof,
-            longIndex: withdrawalProofIndex,
-            longLeaf: withdrawalRoot
-        });
+    //     /**
+    //      * Generate merkle proofs for timestampRoot and withdrawalRoot
+    //      * that converge at or before executionPayloadRoot.
+    //      * 
+    //      * timestampProof length: 4
+    //      * withdrawalProof length: 9
+    //      */
+    //     _genConvergentProofs({
+    //         shortProof: withdrawalProof.timestampProof,
+    //         shortIndex: BeaconChainProofs.TIMESTAMP_INDEX,
+    //         shortLeaf: withdrawalProof.timestampRoot,
+    //         longProof: withdrawalProof.withdrawalProof,
+    //         longIndex: withdrawalProofIndex,
+    //         longLeaf: withdrawalRoot
+    //     });
 
-        // Use generated proofs to calculate tree root and verify both proofs
-        // result in the same root:
-        bytes32 execPayloadRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawalProof.timestampProof,
-            leaf: withdrawalProof.timestampRoot,
-            index: BeaconChainProofs.TIMESTAMP_INDEX
-        });
+    //     // Use generated proofs to calculate tree root and verify both proofs
+    //     // result in the same root:
+    //     bytes32 execPayloadRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawalProof.timestampProof,
+    //         leaf: withdrawalProof.timestampRoot,
+    //         index: BeaconChainProofs.TIMESTAMP_INDEX
+    //     });
 
-        bytes32 expectedRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawalProof.withdrawalProof,
-            leaf: withdrawalRoot,
-            index: withdrawalProofIndex
-        });
+    //     bytes32 expectedRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawalProof.withdrawalProof,
+    //         leaf: withdrawalRoot,
+    //         index: withdrawalProofIndex
+    //     });
 
-        require(execPayloadRoot == expectedRoot, "_genExecPayloadProofs: mismatched roots");
+    //     require(execPayloadRoot == expectedRoot, "_genExecPayloadProofs: mismatched roots");
         
-        return execPayloadRoot;
-    }
+    //     return execPayloadRoot;
+    // }
 
     /**
      * @dev Generates converging merkle proofs for slotRoot and executionPayloadRoot
@@ -461,49 +461,49 @@ contract BeaconChainMock is Test {
      *
      * @return historical summary block root
      */
-    function _genBlockRootProofs(
-        BeaconChainProofs.WithdrawalProof memory withdrawalProof
-    ) internal view returns (bytes32) {
+    // function _genBlockRootProofs(
+    //     BeaconChainProofs.WithdrawalProof memory withdrawalProof
+    // ) internal view returns (bytes32) {
 
-        uint slotRootIndex = BeaconChainProofs.SLOT_INDEX;
-        uint execPayloadIndex = 
-            (BeaconChainProofs.BODY_ROOT_INDEX << BeaconChainProofs.BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT) |
-            BeaconChainProofs.EXECUTION_PAYLOAD_INDEX;
+    //     uint slotRootIndex = BeaconChainProofs.SLOT_INDEX;
+    //     uint execPayloadIndex = 
+    //         (BeaconChainProofs.BODY_ROOT_INDEX << BeaconChainProofs.BEACON_BLOCK_BODY_FIELD_TREE_HEIGHT) |
+    //         BeaconChainProofs.EXECUTION_PAYLOAD_INDEX;
 
-        /**
-         * Generate merkle proofs for slotRoot and executionPayloadRoot
-         * that converge at or before block root.
-         * 
-         * slotProof length: 3
-         * executionPayloadProof length: 7
-         */
-        _genConvergentProofs({
-            shortProof: withdrawalProof.slotProof,
-            shortIndex: slotRootIndex,
-            shortLeaf: withdrawalProof.slotRoot,
-            longProof: withdrawalProof.executionPayloadProof,
-            longIndex: execPayloadIndex,
-            longLeaf: withdrawalProof.executionPayloadRoot
-        });
+    //     /**
+    //      * Generate merkle proofs for slotRoot and executionPayloadRoot
+    //      * that converge at or before block root.
+    //      * 
+    //      * slotProof length: 3
+    //      * executionPayloadProof length: 7
+    //      */
+    //     _genConvergentProofs({
+    //         shortProof: withdrawalProof.slotProof,
+    //         shortIndex: slotRootIndex,
+    //         shortLeaf: withdrawalProof.slotRoot,
+    //         longProof: withdrawalProof.executionPayloadProof,
+    //         longIndex: execPayloadIndex,
+    //         longLeaf: withdrawalProof.executionPayloadRoot
+    //     });
 
-        // Use generated proofs to calculate tree root and verify both proofs
-        // result in the same root:
-        bytes32 blockRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawalProof.slotProof,
-            leaf: withdrawalProof.slotRoot,
-            index: slotRootIndex
-        });
+    //     // Use generated proofs to calculate tree root and verify both proofs
+    //     // result in the same root:
+    //     bytes32 blockRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawalProof.slotProof,
+    //         leaf: withdrawalProof.slotRoot,
+    //         index: slotRootIndex
+    //     });
 
-        bytes32 expectedRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawalProof.executionPayloadProof,
-            leaf: withdrawalProof.executionPayloadRoot,
-            index: execPayloadIndex
-        });
+    //     bytes32 expectedRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawalProof.executionPayloadProof,
+    //         leaf: withdrawalProof.executionPayloadRoot,
+    //         index: execPayloadIndex
+    //     });
 
-        require(blockRoot == expectedRoot, "_genBlockRootProofs: mismatched roots");
+    //     require(blockRoot == expectedRoot, "_genBlockRootProofs: mismatched roots");
         
-        return blockRoot;
-    }
+    //     return blockRoot;
+    // }
 
     /**
      * @dev Generates converging merkle proofs for block root and validatorRoot
@@ -514,49 +514,49 @@ contract BeaconChainMock is Test {
      *
      * @return beaconStateRoot
      */
-    function _genBeaconStateRootProofs(
-        BeaconChainProofs.WithdrawalProof memory withdrawalProof,
-        bytes memory validatorFieldsProof,
-        uint40 validatorIndex, 
-        bytes32 validatorRoot
-    ) internal view returns (bytes32) {
-        uint blockHeaderIndex = _calcBlockHeaderIndex(withdrawalProof);
-        uint validatorProofIndex = _calcValProofIndex(validatorIndex);
+    // function _genBeaconStateRootProofs(
+    //     BeaconChainProofs.WithdrawalProof memory withdrawalProof,
+    //     bytes memory validatorFieldsProof,
+    //     uint40 validatorIndex, 
+    //     bytes32 validatorRoot
+    // ) internal view returns (bytes32) {
+    //     uint blockHeaderIndex = _calcBlockHeaderIndex(withdrawalProof);
+    //     uint validatorProofIndex = _calcValProofIndex(validatorIndex);
 
-        /**
-         * Generate merkle proofs for validatorRoot and blockRoot
-         * that converge at or before beaconStateRoot.
-         * 
-         * historicalSummaryBlockRootProof length: 44
-         * validatorFieldsProof length: 46
-         */
-        _genConvergentProofs({
-            shortProof: withdrawalProof.historicalSummaryBlockRootProof,
-            shortIndex: blockHeaderIndex,
-            shortLeaf: withdrawalProof.blockRoot,
-            longProof: validatorFieldsProof,
-            longIndex: validatorProofIndex,
-            longLeaf: validatorRoot
-        });
+    //     /**
+    //      * Generate merkle proofs for validatorRoot and blockRoot
+    //      * that converge at or before beaconStateRoot.
+    //      * 
+    //      * historicalSummaryBlockRootProof length: 44
+    //      * validatorFieldsProof length: 46
+    //      */
+    //     _genConvergentProofs({
+    //         shortProof: withdrawalProof.historicalSummaryBlockRootProof,
+    //         shortIndex: blockHeaderIndex,
+    //         shortLeaf: withdrawalProof.blockRoot,
+    //         longProof: validatorFieldsProof,
+    //         longIndex: validatorProofIndex,
+    //         longLeaf: validatorRoot
+    //     });
 
-        // Use generated proofs to calculate tree root and verify both proofs
-        // result in the same root:
-        bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
-            proof: withdrawalProof.historicalSummaryBlockRootProof,
-            leaf: withdrawalProof.blockRoot,
-            index: blockHeaderIndex
-        });
+    //     // Use generated proofs to calculate tree root and verify both proofs
+    //     // result in the same root:
+    //     bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
+    //         proof: withdrawalProof.historicalSummaryBlockRootProof,
+    //         leaf: withdrawalProof.blockRoot,
+    //         index: blockHeaderIndex
+    //     });
 
-        bytes32 expectedRoot = Merkle.processInclusionProofSha256({
-            proof: validatorFieldsProof,
-            leaf: validatorRoot,
-            index: validatorProofIndex
-        });
+    //     bytes32 expectedRoot = Merkle.processInclusionProofSha256({
+    //         proof: validatorFieldsProof,
+    //         leaf: validatorRoot,
+    //         index: validatorProofIndex
+    //     });
 
-        require(beaconStateRoot == expectedRoot, "_genBeaconStateRootProofs: mismatched roots");
+    //     require(beaconStateRoot == expectedRoot, "_genBeaconStateRootProofs: mismatched roots");
         
-        return beaconStateRoot;
-    }
+    //     return beaconStateRoot;
+    // }
 
     /**
      * @dev Generates converging merkle proofs given two leaves and empty proofs. 
@@ -736,43 +736,43 @@ contract BeaconChainMock is Test {
         BeaconChainProofs.BLOCK_ROOTS_TREE_HEIGHT + 1
     );
 
-    function _initWithdrawalProof(
-        uint64 withdrawalEpoch, 
-        uint64 withdrawalIndex,
-        uint64 oracleTimestamp
-    ) internal view returns (BeaconChainProofs.WithdrawalProof memory) {
-        uint256 withdrawalProofLength;
-        uint256 timestampProofLength;
-        if (block.timestamp > eigenPodManager.denebForkTimestamp()) {
-            withdrawalProofLength = WITHDRAWAL_PROOF_LEN_DENEB;
-            timestampProofLength = TIMESTAMP_PROOF_LEN_DENEB;
-        } else {
-            withdrawalProofLength = WITHDRAWAL_PROOF_LEN_CAPELLA;
-            timestampProofLength = TIMESTAMP_PROOF_LEN_CAPELLA;
-        }
-        return BeaconChainProofs.WithdrawalProof({
-            withdrawalProof: new bytes(withdrawalProofLength),
-            slotProof: new bytes(SLOT_PROOF_LEN),
-            executionPayloadProof: new bytes(EXECPAYLOAD_PROOF_LEN),
-            timestampProof: new bytes(timestampProofLength),
-            historicalSummaryBlockRootProof: new bytes(HISTSUMMARY_PROOF_LEN),
-            blockRootIndex: 0,
-            historicalSummaryIndex: 0,
-            withdrawalIndex: withdrawalIndex,
-            blockRoot: bytes32(0),
-            slotRoot: _toLittleEndianUint64(withdrawalEpoch * BeaconChainProofs.SLOTS_PER_EPOCH),
-            timestampRoot: _toLittleEndianUint64(oracleTimestamp),
-            executionPayloadRoot: bytes32(0)
-        });
-    }
+    // function _initWithdrawalProof(
+    //     uint64 withdrawalEpoch, 
+    //     uint64 withdrawalIndex,
+    //     uint64 oracleTimestamp
+    // ) internal view returns (BeaconChainProofs.WithdrawalProof memory) {
+    //     uint256 withdrawalProofLength;
+    //     uint256 timestampProofLength;
+    //     if (block.timestamp > eigenPodManager.denebForkTimestamp()) {
+    //         withdrawalProofLength = WITHDRAWAL_PROOF_LEN_DENEB;
+    //         timestampProofLength = TIMESTAMP_PROOF_LEN_DENEB;
+    //     } else {
+    //         withdrawalProofLength = WITHDRAWAL_PROOF_LEN_CAPELLA;
+    //         timestampProofLength = TIMESTAMP_PROOF_LEN_CAPELLA;
+    //     }
+    //     return BeaconChainProofs.WithdrawalProof({
+    //         withdrawalProof: new bytes(withdrawalProofLength),
+    //         slotProof: new bytes(SLOT_PROOF_LEN),
+    //         executionPayloadProof: new bytes(EXECPAYLOAD_PROOF_LEN),
+    //         timestampProof: new bytes(timestampProofLength),
+    //         historicalSummaryBlockRootProof: new bytes(HISTSUMMARY_PROOF_LEN),
+    //         blockRootIndex: 0,
+    //         historicalSummaryIndex: 0,
+    //         withdrawalIndex: withdrawalIndex,
+    //         blockRoot: bytes32(0),
+    //         slotRoot: _toLittleEndianUint64(withdrawalEpoch * BeaconChainProofs.SLOTS_PER_EPOCH),
+    //         timestampRoot: _toLittleEndianUint64(oracleTimestamp),
+    //         executionPayloadRoot: bytes32(0)
+    //     });
+    // }
 
-    function _calcBlockHeaderIndex(BeaconChainProofs.WithdrawalProof memory withdrawalProof) internal view returns (uint) {
-        return 
-            HIST_SUMMARIES_PROOF_INDEX |
-            (uint(withdrawalProof.historicalSummaryIndex) << (BeaconChainProofs.BLOCK_ROOTS_TREE_HEIGHT + 1)) |
-            (BeaconChainProofs.BLOCK_SUMMARY_ROOT_INDEX << BeaconChainProofs.BLOCK_ROOTS_TREE_HEIGHT) |
-            uint(withdrawalProof.blockRootIndex);
-    }
+    // function _calcBlockHeaderIndex(BeaconChainProofs.WithdrawalProof memory withdrawalProof) internal view returns (uint) {
+    //     return 
+    //         HIST_SUMMARIES_PROOF_INDEX |
+    //         (uint(withdrawalProof.historicalSummaryIndex) << (BeaconChainProofs.BLOCK_ROOTS_TREE_HEIGHT + 1)) |
+    //         (BeaconChainProofs.BLOCK_SUMMARY_ROOT_INDEX << BeaconChainProofs.BLOCK_ROOTS_TREE_HEIGHT) |
+    //         uint(withdrawalProof.blockRootIndex);
+    // }
 
     function _calcValProofIndex(uint40 validatorIndex) internal pure returns (uint) {
         return 

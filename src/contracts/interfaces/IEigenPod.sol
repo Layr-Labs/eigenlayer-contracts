@@ -44,7 +44,7 @@ interface IEigenPod {
         bytes32 beaconStateRoot;
 
         uint256 podBalanceGwei;
-        int256 balanceDeltas;
+        int256 balanceDeltasGwei;
 
         uint256 proofsRemaining;
     }

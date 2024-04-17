@@ -5,8 +5,6 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IEigenPod.sol";
 
 contract EigenPodMock is IEigenPod, Test {
-    /// @notice The max amount of eth, in gwei, that can be restaked per validator
-    function MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() external view returns(uint64) {}
 
     function nonBeaconChainETHBalanceWei() external view returns(uint256) {}
 
@@ -42,10 +40,6 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {}
 
-
-    ///@notice mapping that tracks proven withdrawals
-    function provenWithdrawal(bytes32 validatorPubkeyHash, uint64 slot) external view returns (bool) {}
-
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS) {}
 
@@ -56,24 +50,6 @@ contract EigenPodMock is IEigenPod, Test {
         uint40[] calldata validatorIndices,
         bytes[] calldata withdrawalCredentialProofs,
         bytes32[][] calldata validatorFields
-    ) external {}
-
-    
-    function verifyBalanceUpdates(
-        uint64 oracleTimestamp,
-        uint40[] calldata validatorIndices,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields
-    ) external {}
-
-    function verifyAndProcessWithdrawals(
-        uint64 oracleTimestamp,
-        BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.WithdrawalProof[] calldata withdrawalProofs,
-        bytes[] calldata validatorFieldsProofs,
-        bytes32[][] calldata validatorFields,
-        bytes32[][] calldata withdrawalFields
     ) external {}
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false

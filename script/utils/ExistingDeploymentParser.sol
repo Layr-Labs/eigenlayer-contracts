@@ -426,7 +426,6 @@ contract ExistingDeploymentParser is Script, Test {
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         eigenPodManager.initialize(
-            beaconOracle,
             address(0),
             eigenLayerPauserReg,
             EIGENPOD_MANAGER_INIT_PAUSED_STATUS
@@ -506,10 +505,6 @@ contract ExistingDeploymentParser is Script, Test {
             "eigenPodManager: denebForkTimestamp not set correctly"
         );
         require(
-            eigenPodManager.beaconChainOracle() == beaconOracle,
-            "eigenPodManager: beaconChainOracle not set correctly"
-        );
-        require(
             eigenPodManager.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
             "eigenPodManager: ethPOS not set correctly"
         );
@@ -519,12 +514,6 @@ contract ExistingDeploymentParser is Script, Test {
         require(
             eigenPodImplementation.GENESIS_TIME() == EIGENPOD_GENESIS_TIME,
             "eigenPodImplementation: GENESIS TIME not set correctly"
-        );
-        require(
-            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR
-            && EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
-            "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
         );
         require(
             eigenPodImplementation.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),

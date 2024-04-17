@@ -18,8 +18,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function stake(bytes calldata /*pubkey*/, bytes calldata /*signature*/, bytes32 /*depositDataRoot*/) external payable {}
 
     function recordBeaconChainETHBalanceUpdate(address /*podOwner*/, int256 /*sharesDelta*/) external pure {}
-    
-    function updateBeaconChainOracle(IBeaconChainOracle /*newBeaconChainOracle*/) external pure {}
 
     function ownerToPod(address /*podOwner*/) external pure returns(IEigenPod) {
         return IEigenPod(address(0));
@@ -27,14 +25,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function getPod(address podOwner) external pure returns(IEigenPod) {
         return IEigenPod(podOwner);
-    }
-
-    function beaconChainOracle() external pure returns(IBeaconChainOracle) {
-        return IBeaconChainOracle(address(0));
-    }   
-
-    function getBlockRootAtTimestamp(uint64 /*timestamp*/) external pure returns(bytes32) {
-        return bytes32(0);
     }
 
     function strategyManager() external pure returns(IStrategyManager) {
@@ -83,6 +73,12 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
     function removeShares(address podOwner, uint256 shares) external {}
 
     function numPods() external view returns (uint256) {}
+
+    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {
+        return bytes32(0);
+    }
+
+    function updateStaleValidatorCount(address, int256) external {}
 
     function denebForkTimestamp() external pure returns (uint64) {
         return type(uint64).max;

@@ -139,6 +139,13 @@ contract EigenPodManager is
         emit PodSharesUpdated(podOwner, sharesDelta);
     }
 
+    /**
+     * @dev Changes the `podOwner's` stale validator count by `countDelta`. The stale validator
+     * count can be used as an additional weighting mechanism to determine a staker or operator's shares.
+     * @param podOwner the pod owner whose stale validator count is being updated
+     * @param countDelta the change in `podOwner's` stale validator count as a signed integer
+     * @dev Callable only by the `podOwner's` EigenPod contract
+     */
     function updateStaleValidatorCount(
         address podOwner,
         int256 countDelta

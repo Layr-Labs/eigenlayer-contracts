@@ -252,7 +252,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
 
@@ -319,7 +318,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             address(eigenPodManagerImplementation),
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
-                address(beaconChainOracle),
                 eigenLayerReputedMultisig, // initialOwner
                 eigenLayerPauserReg,
                 0 // initialPausedStatus
@@ -387,7 +385,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
@@ -465,7 +462,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
         timeMachine.setProofGenStartTime(0);
         beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
@@ -497,7 +493,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ethPOSDeposit,
             delayedWithdrawalRouter,
             eigenPodManager,
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
             0
         );
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
@@ -575,7 +570,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManager.unpause(0);
         strategyManager.unpause(0);
 
-        eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
         timeMachine.setProofGenStartTime(0);
         beaconChain.setNextTimestamp(timeMachine.proofGenStartTime());
 
@@ -720,7 +714,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 ethPOSDeposit,
                 eigenPodImplementation.delayedWithdrawalRouter(),
                 eigenPodImplementation.eigenPodManager(),
-                eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
                 0
             );
             // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
@@ -731,7 +724,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
             cheats.startPrank(executorMultisig);
             eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-            eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
             cheats.stopPrank();
 
         } else {

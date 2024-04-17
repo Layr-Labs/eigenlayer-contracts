@@ -36,6 +36,8 @@ library BeaconChainProofs {
     uint256 internal constant WITHDRAWAL_FIELD_TREE_HEIGHT = 2;
 
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
+    //refer to the eigenlayer-cli proof library.  Despite being the same dimensions as the validator tree, the balance tree is merkleized differently
+    uint256 internal constant BALANCE_TREE_HEIGHT = 38;
 
     // MAX_WITHDRAWALS_PER_PAYLOAD = 2**4, making tree height = 4
     uint256 internal constant WITHDRAWALS_TREE_HEIGHT = 4;
@@ -49,6 +51,7 @@ library BeaconChainProofs {
     uint256 internal constant BODY_ROOT_INDEX = 4;
     // in beacon state https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/beacon-chain.md#beaconstate
     uint256 internal constant VALIDATOR_TREE_ROOT_INDEX = 11;
+    uint256 internal constant BALANCE_INDEX = 12;
     uint256 internal constant HISTORICAL_SUMMARIES_INDEX = 27;
 
     // in validator https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -56,7 +59,7 @@ library BeaconChainProofs {
     uint256 internal constant VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX = 1;
     uint256 internal constant VALIDATOR_BALANCE_INDEX = 2;
     uint256 internal constant VALIDATOR_SLASHED_INDEX = 3;
-    uint256 internal constant VALIDATOR_WITHDRAWABLE_EPOCH_INDEX = 7;
+    uint256 internal constant VALIDATOR_EXIT_EPOCH_INDEX = 6;
 
     // in execution payload header
     uint256 internal constant TIMESTAMP_INDEX = 9;
@@ -80,6 +83,8 @@ library BeaconChainProofs {
     uint64 internal constant SECONDS_PER_EPOCH = SLOTS_PER_EPOCH * SECONDS_PER_SLOT;
 
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
+
+    uint64 internal constant FAR_FUTURE_EPOCH = type(uint64).max;
 
     /// @notice This struct contains the root and proof for verifying the state root against the oracle block root
     struct StateRootProof {
@@ -143,7 +148,7 @@ library BeaconChainProofs {
     function verifyValidatorBalance(
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
-        BalanceProof memory proof
+        BalanceProof calldata proof
     ) internal view returns (uint64 validatorBalanceGwei) {
         require(
             proof.proof.length == 32 * ((BALANCE_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT),
@@ -212,6 +217,21 @@ library BeaconChainProofs {
     }
 
     /**
+     * @notice Parses a balanceRoot to get the uint64 balance of a validator.  
+     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single 
+     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to 
+     * extract from the balanceRoot.
+     * @param balanceRoot is the combination of 4 validator balances being proven for
+     * @param validatorIndex is the index of the validator being proven for
+     * @return The validator's balance, in Gwei
+     */
+    function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
+        uint256 bitShiftAmount = (validatorIndex % 4) * 64;
+        return 
+            Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
+    }
+
+    /**
      * Indices for validator fields (refer to consensus specs):
      * 0: pubkey
      * 1: withdrawal credentials
@@ -252,11 +272,11 @@ library BeaconChainProofs {
     }
 
     /**
-     * @dev Retrieves a validator's withdrawable epoch
+     * @dev Retrieves a validator's exit epoch
      */
-    function getWithdrawableEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
+    function getExitEpoch(bytes32[] memory validatorFields) internal pure returns (uint64) {
         return 
-            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_WITHDRAWABLE_EPOCH_INDEX]);
+            Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
 
     /**

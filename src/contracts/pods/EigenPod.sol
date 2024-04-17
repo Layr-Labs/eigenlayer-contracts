@@ -155,7 +155,8 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
      * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
      * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
      */
-    function startCheckpoint() 
+    function startCheckpoint()
+        external
         onlyEigenPodOwner() 
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
         afterRestaking(uint64(block.timestamp)) /// TODO - this is the wrong condition
@@ -176,7 +177,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
             beaconBlockRoot: eigenPodManager.getParentBlockRoot(uint64(block.timestamp)),
             beaconStateRoot: bytes32(0),
             podBalanceGwei: podBalanceWei / GWEI_TO_WEI,
-            balanceDeltas: 0,
+            balanceDeltasGwei: 0,
             proofsRemaining: activeValidatorCount
         });
 
@@ -235,14 +236,14 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            (int256 balanceDeltaWei, bool noLongerStale) = _verifyCheckpointProof({
+            (int256 balanceDeltaGwei, bool noLongerStale) = _verifyCheckpointProof({
                 beaconTimestamp: beaconTimestamp,
                 beaconStateRoot: checkpoint.beaconStateRoot,
                 proof: proofs[i]
             });
 
             checkpoint.proofsRemaining--;
-            checkpoint.balanceDeltas += balanceDeltaWei;
+            checkpoint.balanceDeltasGwei += balanceDeltaGwei;
 
             if (noLongerStale) {
                 totalStaleValidatorsProven++;
@@ -342,7 +343,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
     function verifyStaleBalances(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.ValidatorProof calldata proofs
+        BeaconChainProofs.ValidatorProof[] calldata proofs
     )
         external
         onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
@@ -354,10 +355,8 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
 
         // Process each staleness proof
         for (uint256 i = 0; i < proofs.length; i++) {
-            BeaconChainProofs.ValidatorProof memory proof = proofs[i];
-
-            bytes32 validatorPubkeyHash = proof.validatorFields.getPubkeyHash();
-            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkeyHash];
+            bytes32 validatorPubkey = proofs[i].validatorFields.getPubkeyHash();
+            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
 
             // Validator must be eligible for a staleness proof
             require(
@@ -373,13 +372,13 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
 
             // Validator should not already be stale
             require(
-                !isValidatorStale[validatorPubkeyHash],
+                !isValidatorStale[validatorPubkey],
                 "EigenPod.verifyStaleBalance: validator already marked stale"
             );
 
             // Validator must be slashed on the beacon chain
             require(
-                proof.validatorFields.getSlashStatus() == true,
+                proofs[i].validatorFields.getSlashStatus() == true,
                 "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
             );
 
@@ -393,9 +392,9 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
             // Verify Validator container proof against `beaconStateRoot`
             BeaconChainProofs.verifyValidatorFields({
                 beaconStateRoot: stateRootProof.beaconStateRoot,
-                validatorFields: proof.validatorFields,
-                validatorFieldsProof: proof.proof,
-                validatorIndex: validatorInfo.validatorIndex
+                validatorFields: proofs[i].validatorFields,
+                validatorFieldsProof: proofs[i].proof,
+                validatorIndex: uint40(validatorInfo.validatorIndex)
             });
 
             isValidatorStale[validatorPubkey] = true;
@@ -514,7 +513,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
 
         // Validator should not already be in the process of exiting
         require(
-            validatorFields.getExitEpoch() == FAR_FUTURE_EPOCH,
+            validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH,
             "EigenPod._verifyWithdrawalCredentials: validator must not be exiting"
         );
 
@@ -555,8 +554,8 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
     function _verifyCheckpointProof(
         uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
-        BeaconChainProofs.BalanceProof memory proof
-    ) internal returns (int256 balanceDeltaWei, bool noLongerStale) {
+        BeaconChainProofs.BalanceProof calldata proof
+    ) internal returns (int256 balanceDeltaGwei, bool noLongerStale) {
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
 
         require(
@@ -578,7 +577,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
             beaconStateRoot: beaconStateRoot,
-            validatorIndex: validatorInfo.validatorIndex,
+            validatorIndex: uint40(validatorInfo.validatorIndex),
             proof: proof
         });
         
@@ -594,9 +593,9 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
-            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(uint40(validatorInfo.validatorIndex), beaconTimestamp, newBalanceGwei);
 
-            balanceDeltaWei = _calcBalanceDeltaWei({
+            balanceDeltaGwei = _calcBalanceDelta({
                 newAmountGwei: newBalanceGwei,
                 previousAmountGwei: prevBalanceGwei
             });
@@ -612,7 +611,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
             noLongerStale = true;
         }
 
-        return (balanceDeltaWei, noLongerStale);
+        return (balanceDeltaGwei, noLongerStale);
     }
 
     /**
@@ -625,13 +624,12 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
      */
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         if (checkpoint.proofsRemaining == 0) {
-            int256 totalShareDelta =
-                int256(checkpoint.podBalance) + checkpoint.balanceDeltas;
+            int256 totalShareDeltaWei =
+                (int256(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei) * int256(GWEI_TO_WEI);
 
             // Add any native ETH in the pod to `withdrawableRestakedExecutionLayerGwei`
             // ... this amount can be withdrawn via the `DelegationManager` withdrawal queue
-            uint64 podBalanceGwei = checkpoint.podBalanceWei / GWEI_TO_WEI;
-            withdrawableRestakedExecutionLayerGwei += podBalanceGwei;
+            withdrawableRestakedExecutionLayerGwei += uint64(checkpoint.podBalanceGwei);
 
             // Finalize the checkpoint
             lastFinalizedCheckpoint = currentCheckpointTimestamp;
@@ -639,7 +637,7 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
             delete currentCheckpoint;
 
             // Update pod owner's shares
-            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDelta);
+            eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
         } else {
             currentCheckpoint = checkpoint;
         }
@@ -670,9 +668,9 @@ contract EigenPod is EigenPodStorage, Initializable, ReentrancyGuardUpgradeable,
     }
 
     /// @dev Calculates the delta between two Gwei amounts, converts to Wei, and returns as an int256
-    function _calcBalanceDeltaWei(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
+    function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
         return
-            (int256(uint256(newAmountGwei)) - int256(uint256(previousAmountGwei))) * int256(GWEI_TO_WEI);
+            int256(uint256(newAmountGwei)) - int256(uint256(previousAmountGwei));
     }
 
     /*******************************************************************************

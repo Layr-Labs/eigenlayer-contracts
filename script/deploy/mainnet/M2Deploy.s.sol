@@ -187,7 +187,6 @@ contract M2Deploy is Script, Test {
             _ethPOS: ethPOS,
             _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
-            _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: 32 gwei,
             _GENESIS_TIME: 1616508000
         });
 
@@ -304,10 +303,6 @@ contract M2Deploy is Script, Test {
         require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager.eigenPodBeacon incorrect");
         require(eigenPodManager.strategyManager() == strategyManager, "eigenPodManager.strategyManager incorrect");
         require(eigenPodManager.slasher() == slasher, "eigenPodManager.slasher incorrect");
-        require(
-            address(eigenPodManager.beaconChainOracle()) == beaconChainOracle,
-            "eigenPodManager.beaconChainOracle incorrect"
-        );
         require(eigenPodManager.numPods() == numPods, "eigenPodManager.numPods incorrect");
         require(EigenPodManagerStorage(address(eigenPodManager)).delegationManager() == delegation, "eigenPodManager.delegationManager incorrect");
     }
@@ -336,7 +331,6 @@ contract M2Deploy is Script, Test {
 
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         EigenPodManager(address(eigenPodManager)).initialize(
-            IBeaconChainOracle(address(this)),
             address(this),
             PauserRegistry(address(this)),
             0

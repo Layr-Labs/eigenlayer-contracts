@@ -67,13 +67,6 @@ interface IEigenPodManager is IPausable {
      */
     function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
 
-    /**
-     * @notice Updates the oracle contract that provides the beacon chain state root
-     * @param newBeaconChainOracle is the new oracle contract being pointed to
-     * @dev Callable only by the owner of this contract (i.e. governance)
-     */
-    function updateBeaconChainOracle(IBeaconChainOracle newBeaconChainOracle) external;
-
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(address podOwner) external view returns (IEigenPod);
 
@@ -85,13 +78,7 @@ interface IEigenPodManager is IPausable {
 
     /// @notice Beacon proxy to which the EigenPods point
     function eigenPodBeacon() external view returns (IBeacon);
-
-    /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns (IBeaconChainOracle);
-
-    /// @notice Returns the beacon block root at `timestamp`. Reverts if the Beacon block root at `timestamp` has not yet been finalized.
-    function getBlockRootAtTimestamp(uint64 timestamp) external view returns (bytes32);
-
+    
     /// @notice EigenLayer's StrategyManager contract
     function strategyManager() external view returns (IStrategyManager);
 
@@ -142,6 +129,24 @@ interface IEigenPodManager is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+
+    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
+    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
+    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
+    /// will revert.
+    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
+
+    /**
+     * @dev Changes the `podOwner's` stale validator count by `countDelta`. The stale validator
+     * count can be used as an additional weighting mechanism to determine a staker or operator's shares.
+     * @param podOwner the pod owner whose stale validator count is being updated
+     * @param countDelta the change in `podOwner's` stale validator count as a signed integer
+     * @dev Callable only by the `podOwner's` EigenPod contract
+     */
+    function updateStaleValidatorCount(
+        address podOwner,
+        int256 countDelta
+    ) external;
 
     /**
      * @notice the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
