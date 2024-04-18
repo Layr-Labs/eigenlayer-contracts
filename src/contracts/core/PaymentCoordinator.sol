@@ -246,49 +246,30 @@ contract PaymentCoordinator is
      * @dev only callable by claimerFor[claim.earner]
      */
     function _processClaim(PaymentMerkleClaim calldata claim) internal onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
-        require(_checkClaim(claim), "PaymentCoordinator._processClaim: claim does not pass the check");
+        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+        require(_checkClaim(claim, root), "PaymentCoordinator._processClaim: claim does not pass the check");
+
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earnerLeaf.earner];
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
         if (claimer == address(0)) {
-            claimer = claim.earnerLeaf.earner;
+            claimer = earner;
         }
         require(msg.sender == claimer, "PaymentCoordinator._checkClaim: caller is not valid claimer");
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            _processTokenClaim({
-                earnerLeaf: claim.earnerLeaf,
-                tokenLeaf: claim.tokenLeaves[i],
-                claimer: claimer,
-                root: distributionRoots[claim.rootIndex].root
-            });
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+
+            // Calculate amount to claim and update cumulativeClaimed
+            // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earner][tokenLeaf.token];
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(claimer, claimAmount);
+            emit PaymentClaimed(root.root, tokenLeaf);
         }
     }
 
-    /**
-     * @notice Transfer claimable amount to the claimer
-     * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
-     * @param tokenLeaf token leaf to be claimed
-     * @param claimer address of the entity that can claim payments on behalf of the earner,
-     * can be earner account itself or be set to a different address by the earner
-     * @param root distribution root that should be read from storage
-     * @dev This function assumes the claim has already been checked and verified
-     */
-    function _processTokenClaim(
-        EarnerTreeMerkleLeaf calldata earnerLeaf,
-        TokenTreeMerkleLeaf calldata tokenLeaf,
-        address claimer,
-        bytes32 root
-    ) internal {
-        // Calculate amount to claim and update cumulativeClaimed
-        // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
-        uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token];
-        cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-        tokenLeaf.token.safeTransfer(claimer, claimAmount);
-        emit PaymentClaimed(root, tokenLeaf);
-    }
-
-    function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {
-        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+    function _checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root) internal view returns (bool) {
         require(block.timestamp >= root.activatedAt, "PaymentCoordinator._checkClaim: root not activated yet");
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
@@ -461,7 +442,7 @@ contract PaymentCoordinator is
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
-        return _checkClaim(claim);
+        return _checkClaim(claim, distributionRoots[claim.rootIndex]);
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
