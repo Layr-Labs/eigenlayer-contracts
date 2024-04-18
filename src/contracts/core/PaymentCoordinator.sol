@@ -164,24 +164,25 @@ contract PaymentCoordinator is
      * claimerFor[claim.earner] can claim the payments.
      */
     function processClaim(PaymentMerkleClaim calldata claim) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) nonReentrant {
-        require(_checkClaim(claim), "PaymentCoordinator.processClaim: claim does not pass the check");
+        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+        require(_checkClaim(claim, root), "PaymentCoordinator.processClaim: claim does not pass the check");
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earnerLeaf.earner];
+        address earner = claim.earnerLeaf.earner;
+        address claimer = claimerFor[earner];
         if (claimer == address(0)) {
-            claimer = claim.earnerLeaf.earner;
+            claimer = earner;
         }
         require(msg.sender == claimer, "PaymentCoordinator.processClaim: caller is not valid claimer");
         for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
             TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
-            bytes32 root = distributionRoots[claim.rootIndex].root;
 
             // Calculate amount to claim and update cumulativeClaimed
             // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
-            uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[claim.earnerLeaf.earner][tokenLeaf.token];
-            cumulativeClaimed[claim.earnerLeaf.earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earner][tokenLeaf.token];
+            cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
             tokenLeaf.token.safeTransfer(claimer, claimAmount);
-            emit PaymentClaimed(root, tokenLeaf);
+            emit PaymentClaimed(root.root, tokenLeaf);
         }
     }
 
@@ -259,8 +260,7 @@ contract PaymentCoordinator is
         rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
     }
 
-    function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {
-        DistributionRoot memory root = distributionRoots[claim.rootIndex];
+    function _checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root) internal view returns (bool) {
         require(block.timestamp >= root.activatedAt, "PaymentCoordinator._checkClaim: root not activated yet");
         require(
             claim.tokenIndices.length == claim.tokenTreeProofs.length,
@@ -433,7 +433,7 @@ contract PaymentCoordinator is
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
-        return _checkClaim(claim);
+        return _checkClaim(claim, distributionRoots[claim.rootIndex]);
     }
 
     function getDistributionRootsLength() public view returns (uint256) {
