@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
@@ -113,7 +113,8 @@ contract PaymentCoordinator is
     ) external onlyWhenNotPaused(PAUSED_PAY_FOR_RANGE) nonReentrant {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
-            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
+            uint256 nonce = paymentNonce[msg.sender];
+            bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
             require(
                 !isRangePaymentHash[msg.sender][rangePaymentHash],
                 "PaymentCoordinator._payForRange: range payment hash already submitted"
@@ -121,8 +122,8 @@ contract PaymentCoordinator is
             isRangePaymentHash[msg.sender][rangePaymentHash] = true;
 
             _payForRange(rangePayment);
-            emit RangePaymentCreated(msg.sender, paymentNonce, rangePaymentHash, rangePayment);
-            paymentNonce++;
+            emit RangePaymentCreated(msg.sender, nonce, rangePaymentHash, rangePayment);
+            paymentNonce[msg.sender] = nonce + 1;
         }
     }
 
@@ -137,7 +138,8 @@ contract PaymentCoordinator is
     ) external onlyWhenNotPaused(PAUSED_PAY_ALL_FOR_RANGE) onlyPayAllForRangeSubmitter nonReentrant {
         for (uint256 i = 0; i < rangePayments.length; i++) {
             RangePayment calldata rangePayment = rangePayments[i];
-            bytes32 rangePaymentForAllHash = keccak256(abi.encode(msg.sender, paymentNonce, rangePayment));
+            uint256 nonce = paymentNonce[msg.sender];
+            bytes32 rangePaymentForAllHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
             require(
                 !isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash],
                 "PaymentCoordinator._payForRange: range payment hash already submitted"
@@ -145,8 +147,8 @@ contract PaymentCoordinator is
             isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash] = true;
 
             _payForRange(rangePayment);
-            emit RangePaymentForAllCreated(msg.sender, paymentNonce, rangePaymentForAllHash, rangePayment);
-            paymentNonce++;
+            emit RangePaymentForAllCreated(msg.sender, nonce, rangePaymentForAllHash, rangePayment);
+            paymentNonce[msg.sender] = nonce + 1;
         }
     }
 
@@ -161,8 +163,26 @@ contract PaymentCoordinator is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the payments.
      */
-    function processClaim(PaymentMerkleClaim calldata claim) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
-        _processClaim(claim);
+    function processClaim(PaymentMerkleClaim calldata claim) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) nonReentrant {
+        require(_checkClaim(claim), "PaymentCoordinator.processClaim: claim does not pass the check");
+        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
+        address claimer = claimerFor[claim.earnerLeaf.earner];
+        if (claimer == address(0)) {
+            claimer = claim.earnerLeaf.earner;
+        }
+        require(msg.sender == claimer, "PaymentCoordinator.processClaim: caller is not valid claimer");
+        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
+            TokenTreeMerkleLeaf calldata tokenLeaf = claim.tokenLeaves[i];
+            bytes32 root = distributionRoots[claim.rootIndex].root;
+
+            // Calculate amount to claim and update cumulativeClaimed
+            // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
+            uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[claim.earnerLeaf.earner][tokenLeaf.token];
+            cumulativeClaimed[claim.earnerLeaf.earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
+
+            tokenLeaf.token.safeTransfer(claimer, claimAmount);
+            emit PaymentClaimed(root, tokenLeaf);
+        }
     }
 
     /**
@@ -222,11 +242,11 @@ contract PaymentCoordinator is
 
         // Require rangePayment is for whitelisted strategy or beaconChainETHStrategy
         address currAddress = address(0);
-        for (uint256 j = 0; j < rangePayment.strategiesAndMultipliers.length; j++) {
-            IStrategy strategy = rangePayment.strategiesAndMultipliers[j].strategy;
+        for (uint256 i = 0; i < rangePayment.strategiesAndMultipliers.length; ++i) {
+            IStrategy strategy = rangePayment.strategiesAndMultipliers[i].strategy;
             require(
                 strategyManager.strategyIsWhitelistedForDeposit(strategy) ||
-                    strategy == delegationManager.beaconChainETHStrategy(),
+                    strategy == beaconChainETHStrategy,
                 "PaymentCoordinator._payForRange: invalid strategy considered"
             );
             require(
@@ -237,54 +257,6 @@ contract PaymentCoordinator is
         }
 
         rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
-    }
-
-    /**
-     * @notice Process a payment claim.
-     * @param claim PaymentMerkleClaim struct containing the claim details for proof verification
-     * and payment transfer.
-     * @dev only callable by claimerFor[claim.earner]
-     */
-    function _processClaim(PaymentMerkleClaim calldata claim) internal onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) {
-        require(_checkClaim(claim), "PaymentCoordinator._processClaim: claim does not pass the check");
-        // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
-        address claimer = claimerFor[claim.earnerLeaf.earner];
-        if (claimer == address(0)) {
-            claimer = claim.earnerLeaf.earner;
-        }
-        require(msg.sender == claimer, "PaymentCoordinator._checkClaim: caller is not valid claimer");
-        for (uint256 i = 0; i < claim.tokenIndices.length; i++) {
-            _processTokenClaim({
-                earnerLeaf: claim.earnerLeaf,
-                tokenLeaf: claim.tokenLeaves[i],
-                claimer: claimer,
-                root: distributionRoots[claim.rootIndex].root
-            });
-        }
-    }
-
-    /**
-     * @notice Transfer claimable amount to the claimer
-     * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
-     * @param tokenLeaf token leaf to be claimed
-     * @param claimer address of the entity that can claim payments on behalf of the earner,
-     * can be earner account itself or be set to a different address by the earner
-     * @param root distribution root that should be read from storage
-     * @dev This function assumes the claim has already been checked and verified
-     */
-    function _processTokenClaim(
-        EarnerTreeMerkleLeaf calldata earnerLeaf,
-        TokenTreeMerkleLeaf calldata tokenLeaf,
-        address claimer,
-        bytes32 root
-    ) internal {
-        // Calculate amount to claim and update cumulativeClaimed
-        // Will revert if new leaf cumulativeEarnings is less than cumulative claimed
-        uint256 claimAmount = tokenLeaf.cumulativeEarnings - cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token];
-        cumulativeClaimed[earnerLeaf.earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
-
-        tokenLeaf.token.safeTransfer(claimer, claimAmount);
-        emit PaymentClaimed(root, tokenLeaf);
     }
 
     function _checkClaim(PaymentMerkleClaim calldata claim) internal view returns (bool) {

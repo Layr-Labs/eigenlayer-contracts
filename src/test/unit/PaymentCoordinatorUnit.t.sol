@@ -741,7 +741,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         cheats.startPrank(avs);
         paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce();
+        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(avs);
         bytes32 rangePaymentHash = keccak256(abi.encode(avs, currPaymentNonce, rangePayments[0]));
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
@@ -750,7 +750,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         cheats.stopPrank();
 
         assertTrue(paymentCoordinator.isRangePaymentHash(avs, rangePaymentHash), "Range payment hash not submitted");
-        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(), "Payment nonce not incremented");
+        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(avs), "Payment nonce not incremented");
         assertEq(
             avsBalanceBefore - amount,
             paymentToken.balanceOf(avs),
@@ -780,7 +780,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce();
+        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(param.avs);
         _deployMockPaymentTokens(param.avs, numPayments);
 
         uint256[] memory avsBalancesBefore = _getBalanceForTokens(paymentTokens, param.avs);
@@ -829,7 +829,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         // 5. Check for paymentNonce() and rangePaymentHashes being set
         assertEq(
             startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(),
+            paymentCoordinator.paymentNonce(param.avs),
             "Payment nonce not incremented properly"
         );
 
@@ -946,7 +946,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
 
         cheats.startPrank(payAllSubmitter);
         paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce();
+        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(payAllSubmitter);
         bytes32 rangePaymentHash = keccak256(abi.encode(payAllSubmitter, currPaymentNonce, rangePayments[0]));
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
@@ -958,7 +958,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHash),
             "Range payment hash not submitted"
         );
-        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(), "Payment nonce not incremented");
+        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(payAllSubmitter), "Payment nonce not incremented");
         assertEq(
             submitterBalanceBefore - amount,
             paymentToken.balanceOf(payAllSubmitter),
@@ -984,7 +984,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
 
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
         bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce();
+        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(payAllSubmitter);
         _deployMockPaymentTokens(payAllSubmitter, numPayments);
 
         uint256[] memory submitterBalancesBefore = _getBalanceForTokens(paymentTokens, payAllSubmitter);
@@ -1038,7 +1038,7 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         // 5. Check for paymentNonce() and rangePaymentHashes being set
         assertEq(
             startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(),
+            paymentCoordinator.paymentNonce(payAllSubmitter),
             "Payment nonce not incremented properly"
         );
 
