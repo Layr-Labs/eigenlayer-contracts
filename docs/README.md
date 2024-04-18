@@ -2,8 +2,6 @@
 
 ## EigenLayer M2 Docs
 
-**EigenLayer M2** extends the functionality of EigenLayer M1 (which is live on mainnet). M2 is currently on the Goerli testnet, and will eventually be released on mainnet. 
-
 This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
 This document provides an overview of system components, contracts, and user roles. Further documentation on the major system contracts can be found in [/core](./core/).

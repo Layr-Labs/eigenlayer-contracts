@@ -32,3 +32,6 @@ quote_style = "double"
 tab_width = 4
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config
+
+[profile.forktest.fuzz]
+runs=20

@@ -82,6 +82,7 @@ interface IPaymentCoordinator {
      * @param earnerTokenRoot The merkle root of the earner's token subtree
      * Each leaf in the earner's token subtree is a TokenTreeMerkleLeaf
      */
+
     struct EarnerTreeMerkleLeaf {
         address earner;
         bytes32 earnerTokenRoot;

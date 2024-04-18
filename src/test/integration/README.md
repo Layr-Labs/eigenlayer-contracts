@@ -6,6 +6,13 @@ Good question.
 
 This folder contains the integration framework and tests for Eigenlayer core, which orchestrates the deployment of all EigenLayer core contracts to fuzz high-level user flows across multiple user and asset types, and supports time-travelling state lookups to quickly compare past and present states (please try to avoid preventing your own birth).
 
+**If you want to know how to run the tests**:
+
+* Local: `forge t --mc Integration`
+* Mainnet fork tests: `env FOUNDRY_PROFILE=forktest forge t --mc Integration`
+
+Note that for mainnet fork tests, you'll need to set the `RPC_MAINNET` environment variable to your RPC provider of choice!
+
 **If you want to know where the tests are**, take a look at `/tests`. We're doing one test contract per top-level flow, and defining multiple test functions for variants on that flow. 
 
 e.g. if you're testing the flow "deposit into strategies -> delegate to operator -> queue withdrawal -> complete withdrawal", that's it's own test contract. For variants where withdrawals are completed "as tokens" vs "as shares," those are their own functions inside that contract.
@@ -94,3 +101,15 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {
 
 * Suggest or PR cleanup if you have ideas. Currently, the `IntegrationDeployer` contract is pretty messy.
 * Coordinate in Slack to pick out some user flows to write tests for!
+
+#### Reduce RPC spam for fork tests
+
+Currently our mainnet fork tests spam whatever RPC we use. We can improve this in the future - apparently the meta is:
+
+> Use an anvil node to fork the network, you can write a script to make some changes to the forked network for setup etc, then fork your local node in your test.
+> Effectively you just setup an anvil node with the command
+`anvil -f RPC_URL `
+You can use `anvil -h` for more info on what it can do.
+
+> Then in your test you use the vm.createSelectFork command in your setup with the argument to point to your local anvil node which is basically a copy of the rpc you set it up as. 
+>  If you want to do some setup before running your tests you can write a script file and broadcast the setup transactions to your local anvil node (make sure to use one of the private keys anvil gives you)

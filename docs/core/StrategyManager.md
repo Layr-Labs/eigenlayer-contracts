@@ -7,7 +7,7 @@
 
 The primary function of the `StrategyManager` is to handle accounting for individual Stakers as they deposit and withdraw LSTs from their corresponding strategies. It is responsible for (i) allowing Stakers to deposit LSTs into the corresponding strategy, (ii) allowing the `DelegationManager` to remove shares when a Staker queues a withdrawal, and (iii) allowing the `DelegationManager` to complete a withdrawal by either adding shares back to the Staker or withdrawing the shares as tokens via the corresponding strategy.
 
-As of M2, three LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`: cbETH, rETH, and stETH. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see below).
+As of M2, several LSTs are supported and each has its own instance of `StrategyBaseTVLLimits`. Each `StrategyBaseTVLLimits` has two main functions (`deposit` and `withdraw`), both of which can only be called by the `StrategyManager`. These `StrategyBaseTVLLimits` contracts are fairly simple deposit/withdraw contracts that hold tokens deposited by Stakers. Because these strategies are essentially extensions of the `StrategyManager`, their functions are documented in this file (see below).
 
 #### High-level Concepts
 
@@ -59,7 +59,7 @@ function depositIntoStrategy(
     returns (uint256 shares)
 ```
 
-Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the three whitelisted `StrategyBaseTVLLimits` instances, and the `token` being deposited must correspond to that `strategy's` underlying token (cbETH, rETH, or stETH).
+Allows a Staker to deposit some `amount` of `token` into the specified `strategy` in exchange for shares of that strategy. The underlying `strategy` must be one of the whitelisted `StrategyBaseTVLLimits` instances, and the `token` being deposited must correspond to that `strategy's` underlying token (cbETH, rETH, or stETH).
 
 The number of shares received is calculated by the `strategy` using an internal exchange rate that depends on the previous number of tokens deposited.
 
