@@ -99,8 +99,14 @@ contract PaymentCoordinator is
 
     /**
      * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
-     * set of stakers delegated to operators who are registered to the AVS.
+     * set of stakers delegated to operators who are registered to the `avs`
      * @param rangePayments The range payments being created
+     * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the payment is being made
+     * @dev The duration of the `rangePayment` cannot exceed `MAX_PAYMENT_DURATION`
+     * @dev The tokens are sent to the `PaymentCoordinator` contract
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `rangePayment` is malformed,
+     * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
     function payForRange(
         RangePayment[] calldata rangePayments
@@ -122,7 +128,8 @@ contract PaymentCoordinator is
 
     /**
      * @notice similar to `payForRange` except the payment is split amongst *all* stakers
-     * rather than just those delegated to operators who are registered to a single avs
+     * rather than just those delegated to operators who are registered to a single avs and is
+     * a permissioned call based on isPayAllForRangeSubmitter mapping.
      * @param rangePayments The range payments being created
      */
     function payAllForRange(
@@ -144,7 +151,10 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex])
+     * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
+     * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
+     * they can simply claim against the latest root and the contract will calculate the difference between
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to claimerFor[claim.earner]
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
      * @dev only callable by the valid claimer, that is
@@ -156,7 +166,7 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Creates a new distribution root
+     * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
      * @dev Only callable by the paymentUpdater
@@ -449,6 +459,7 @@ contract PaymentCoordinator is
     }
 
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
+    /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
         return _checkClaim(claim);
     }

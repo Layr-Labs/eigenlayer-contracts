@@ -71,8 +71,6 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice Mapping: claimer => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
-    // /// @notice Timestamp for last submitted 
-    // uint32 public currPaymentCalculationEndTimestamp;
     /// @notice Used for unique rangePaymentHashes
     uint256 public paymentNonce;
     /// @notice Mapping: avs => rangePaymentHash => bool to check if range payment hash has been submitted
