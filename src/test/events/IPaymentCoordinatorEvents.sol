@@ -39,7 +39,13 @@ interface IPaymentCoordinatorEvents {
         uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
-    event PaymentClaimed(bytes32 indexed root, IPaymentCoordinator.TokenTreeMerkleLeaf leaf);
+    event PaymentClaimed(
+        bytes32 root,
+        address indexed earner,
+        address indexed claimer,
+        IERC20 indexed token,
+        uint256 claimedAmount
+    );
 
 
 

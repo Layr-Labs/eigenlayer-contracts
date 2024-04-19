@@ -182,7 +182,7 @@ contract PaymentCoordinator is
             cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
             tokenLeaf.token.safeTransfer(claimer, claimAmount);
-            emit PaymentClaimed(root.root, tokenLeaf);
+            emit PaymentClaimed(root.root, earner, claimer, claim.tokenLeaves[i].token, claimAmount);
         }
     }
 

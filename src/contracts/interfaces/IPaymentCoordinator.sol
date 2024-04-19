@@ -29,14 +29,14 @@ interface IPaymentCoordinator {
 
     /**
      * Sliding Window for valid RangePayment startTimestamp
-     * 
+     *
      * Scenario A: GENESIS_PAYMENT_TIMESTAMP IS WITHIN RANGE
      *         <-----MAX_RETROACTIVE_LENGTH-----> t (block.timestamp) <---MAX_FUTURE_LENGTH--->
      *             <--------------------valid range for startTimestamp------------------------>
      *             ^
      *         GENESIS_PAYMENT_TIMESTAMP
      *
-     * 
+     *
      * Scenario B: GENESIS_PAYMENT_TIMESTAMP IS OUT OF RANGE
      *         <-----MAX_RETROACTIVE_LENGTH-----> t (block.timestamp) <---MAX_FUTURE_LENGTH--->
      *         <------------------------valid range for startTimestamp------------------------>
@@ -114,7 +114,7 @@ interface IPaymentCoordinator {
      * @param tokenLeaves The token leaves to be claimed
      * @dev The merkle tree is structured with the merkle root at the top and EarnerTreeMerkleLeaf as internal leaves
      * in the tree. Each earner leaf has its own subtree with TokenTreeMerkleLeaf as leaves in the subtree.
-     * To prove a claim against a specified rootIndex(which specifies the distributionRoot being used), 
+     * To prove a claim against a specified rootIndex(which specifies the distributionRoot being used),
      * the claim will first verify inclusion of the earner leaf in the tree against distributionRoots[rootIndex].root.
      * Then for each token, it will verify inclusion of the token leaf in the earner's subtree against the earner's earnerTokenRoot.
      */
@@ -155,7 +155,7 @@ interface IPaymentCoordinator {
     event CalculationIntervalSecondsSet(uint32 oldCalculationIntervalSeconds, uint32 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
-    /// @notice rootIndex is the specific array index of the newly created root in the storage array 
+    /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
@@ -163,7 +163,13 @@ interface IPaymentCoordinator {
         uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
-    event PaymentClaimed(bytes32 indexed root, TokenTreeMerkleLeaf leaf);
+    event PaymentClaimed(
+        bytes32 root,
+        address indexed earner,
+        address indexed claimer,
+        IERC20 indexed token,
+        uint256 claimedAmount
+    );
 
     /// VIEW FUNCTIONS ///
 
@@ -251,10 +257,7 @@ interface IPaymentCoordinator {
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
      * @dev Only callable by the paymentUpdater
      */
-    function submitRoot(
-        bytes32 root,
-        uint32 paymentCalculationEndTimestamp
-    ) external;
+    function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) external;
 
     /**
      * @notice Sets the permissioned `paymentUpdater` address which can post new roots

@@ -198,9 +198,19 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     }
 
     function _assertPaymentClaimedEvents(bytes32 root, IPaymentCoordinator.PaymentMerkleClaim memory claim) internal {
+        address earner = claim.earnerLeaf.earner;
+        address claimer = paymentCoordinator.claimerFor(earner);
+        if (claimer == address(0)) {
+            claimer = earner;
+        }
+        IERC20 token;
+        uint256 claimedAmount;
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
+            token = claim.tokenLeaves[i].token;
+            claimedAmount = paymentCoordinator.cumulativeClaimed(earner, token);
+
             cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit PaymentClaimed(root, claim.tokenLeaves[i]);
+            emit PaymentClaimed(root, earner, claimer, token, claim.tokenLeaves[i].cumulativeEarnings - claimedAmount);
         }
     }
 
@@ -283,7 +293,10 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(address caller, uint32 intervalSeconds) public {
+    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(
+        address caller,
+        uint32 intervalSeconds
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -299,7 +312,10 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setActivationDelay_Revert_WhenNotOwner(address caller, uint32 activationDelay) public filterFuzzedAddressInputs(caller) {
+    function testFuzz_setActivationDelay_Revert_WhenNotOwner(
+        address caller,
+        uint32 activationDelay
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -958,7 +974,11 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHash),
             "Range payment hash not submitted"
         );
-        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(payAllSubmitter), "Payment nonce not incremented");
+        assertEq(
+            currPaymentNonce + 1,
+            paymentCoordinator.paymentNonce(payAllSubmitter),
+            "Payment nonce not incremented"
+        );
         assertEq(
             submitterBalanceBefore - amount,
             paymentToken.balanceOf(payAllSubmitter),
