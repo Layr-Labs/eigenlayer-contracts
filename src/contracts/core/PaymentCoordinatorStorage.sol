@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "src/contracts/interfaces/IAVSDirectory.sol";
-import "src/contracts/interfaces/IStrategyManager.sol";
-import "src/contracts/interfaces/IDelegationManager.sol";
-import "src/contracts/interfaces/IEigenPodManager.sol";
-import "src/contracts/interfaces/IPaymentCoordinator.sol";
+import "../interfaces/IAVSDirectory.sol";
+import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IPaymentCoordinator.sol";
 
 /**
  * @title Storage variables for the `PaymentCoordinator` contract.

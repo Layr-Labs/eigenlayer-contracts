@@ -5,10 +5,10 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "src/contracts/libraries/Merkle.sol";
-import "src/contracts/libraries/EIP1271SignatureUtils.sol";
-import "src/contracts/permissions/Pausable.sol";
-import "src/contracts/core/PaymentCoordinatorStorage.sol";
+import "../libraries/Merkle.sol";
+import "../libraries/EIP1271SignatureUtils.sol";
+import "../permissions/Pausable.sol";
+import "./PaymentCoordinatorStorage.sol";
 
 /**
  * @title PaymentCoordinator
