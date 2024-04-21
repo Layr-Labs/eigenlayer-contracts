@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 interface IEigenPod {
     enum VALIDATOR_STATUS {
-        INACTIVE, // doesnt exist
+        INACTIVE, // doesn't exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
     }
