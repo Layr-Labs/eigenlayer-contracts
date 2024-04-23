@@ -69,8 +69,11 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     /// @dev Index for flag that pauses payAllForRange payments
     uint8 internal constant PAUSED_PAY_ALL_FOR_RANGE = 1;
 
-    /// @dev Index for flag that pauses
+    /// @dev Index for flag that pauses claiming
     uint8 internal constant PAUSED_CLAIM_PAYMENTS = 2;
+
+    /// @dev Index for flag that pauses submitRoots
+    uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
 
     // PaymentCoordinator entities
     address paymentUpdater = address(1000);
@@ -1089,6 +1092,14 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.prank(invalidPaymentUpdater);
 
         cheats.expectRevert("PaymentCoordinator: caller is not the paymentUpdater");
+        paymentCoordinator.submitRoot(bytes32(0), 0);
+    }
+
+    function test_Revert_WhenSubmitRootPaused() public {
+        cheats.prank(pauser);
+        paymentCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
+
+        cheats.expectRevert("Pausable: index is paused");
         paymentCoordinator.submitRoot(bytes32(0), 0);
     }
 
