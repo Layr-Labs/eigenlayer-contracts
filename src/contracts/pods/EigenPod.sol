@@ -166,29 +166,7 @@ contract EigenPod is
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
         afterRestaking(uint64(block.timestamp)) /// TODO - this is the wrong condition
     {
-        require(
-            currentCheckpointTimestamp == 0, 
-            "EigenPod.startCheckpoint: must finish previous checkpoint before starting another"
-        );
-
-        // Snapshot pod balance at the start of the checkpoint. Once the checkpoint is finalized,
-        // this amount will be added to the total validator balance delta and credited as shares.
-        uint256 podBalanceWei = 
-            address(this).balance
-                - nonBeaconChainETHBalanceWei
-                - (withdrawableRestakedExecutionLayerGwei * GWEI_TO_WEI);
-
-        Checkpoint memory checkpoint = Checkpoint({
-            beaconBlockRoot: eigenPodManager.getParentBlockRoot(uint64(block.timestamp)),
-            beaconStateRoot: bytes32(0),
-            podBalanceGwei: podBalanceWei / GWEI_TO_WEI,
-            balanceDeltasGwei: 0,
-            proofsRemaining: activeValidatorCount
-        });
-
-        // Place checkpoint in storage
-        currentCheckpointTimestamp = uint64(block.timestamp);
-        _updateCheckpoint(checkpoint);
+        _startCheckpoint();
     }
 
     /**
@@ -231,7 +209,6 @@ contract EigenPod is
         }
 
         // Process each checkpoint proof submitted
-        int256 totalStaleValidatorsProven;
         for (uint256 i = 0; i < proofs.length; i++) {
 
             // Process a checkpoint proof for a validator. 
@@ -241,7 +218,7 @@ contract EigenPod is
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            (int256 balanceDeltaGwei, bool noLongerStale) = _verifyCheckpointProof({
+            int256 balanceDeltaGwei = _verifyCheckpointProof({
                 beaconTimestamp: beaconTimestamp,
                 beaconStateRoot: checkpoint.beaconStateRoot,
                 proof: proofs[i]
@@ -249,18 +226,10 @@ contract EigenPod is
 
             checkpoint.proofsRemaining--;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
-
-            if (noLongerStale) {
-                totalStaleValidatorsProven++;
-            }
         }
 
         // Update and/or finalize the checkpoint
         _updateCheckpoint(checkpoint);
-
-        if (totalStaleValidatorsProven != 0) {
-            eigenPodManager.updateStaleValidatorCount(podOwner, totalStaleValidatorsProven);
-        }
     }
 
     /**
@@ -294,11 +263,7 @@ contract EigenPod is
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
-
-        // TODO - is == valid?
-        // I think YES, because we enforce no exit epoch is set
-        // However, we could also do strictly greater than if we want to be safe.
-        // TODO pt 2 - what about sub 12 on checkpointTimestamp?
+        
         require(
             beaconTimestamp > lastFinalizedCheckpoint && beaconTimestamp > currentCheckpointTimestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
@@ -328,13 +293,13 @@ contract EigenPod is
 
     /**
      * @dev Prove that one or more validators were slashed on the beacon chain and have not had timely
-     * checkpoint proofs since being slashed. If successful, this increases the pod owner's `staleValidatorCount`
-     * in the `EigenPodManager`. Stale validators can be restored by proving their balance in a checkpoint via
-     * `startCheckpoint` and `verifyCheckpointProofs`.
+     * checkpoint proofs since being slashed. If successful, this allows the caller to start a checkpoint.
+     * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
+     * (See `_startCheckpoint` for details)
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param proofs the fields of the beacon chain "Validator" container, along with a merkle proof against
+     * @param proof the fields of the beacon chain "Validator" container, along with a merkle proof against
      * the beacon state root. See the consensus specs for more details:
      * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      *
@@ -342,71 +307,59 @@ contract EigenPod is
      * - `beaconTimestamp` MUST NOT fall within `STALENESS_GRACE_PERIOD` seconds of `block.timestamp`
      * - Validator's last balance update is older than `beaconTimestamp` by `TIME_TILL_STALE_BALANCE`
      * - Validator MUST be in `ACTIVE` status in the pod
-     * - Validator MUST NOT already be marked stale
      * - Validator MUST be slashed on the beacon chain
      */
-    function verifyStaleBalances(
+    function verifyStaleBalance(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
-        BeaconChainProofs.ValidatorProof[] calldata proofs
+        BeaconChainProofs.ValidatorProof calldata proof
     )
         external
         onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
-    {
+    {  
         require(
             beaconTimestamp + STALENESS_GRACE_PERIOD < block.timestamp,
             "EigenPod.verifyStaleBalance: staleness grace period not elapsed"
         );
 
-        // Process each staleness proof
-        for (uint256 i = 0; i < proofs.length; i++) {
-            bytes32 validatorPubkey = proofs[i].validatorFields.getPubkeyHash();
-            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
+        bytes32 validatorPubkey = proof.validatorFields.getPubkeyHash();
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
 
-            // Validator must be eligible for a staleness proof
-            require(
-                beaconTimestamp > validatorInfo.mostRecentBalanceUpdateTimestamp + TIME_TILL_STALE_BALANCE,
-                "EigenPod.verifyStaleBalance: validator balance is not stale yet"
-            );
+        // Validator must be eligible for a staleness proof
+        require(
+            beaconTimestamp > validatorInfo.mostRecentBalanceUpdateTimestamp + TIME_TILL_STALE_BALANCE,
+            "EigenPod.verifyStaleBalance: validator balance is not stale yet"
+        );
 
-            // Validator must be checkpoint-able
-            require(
-                validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
-                "EigenPod.verifyStaleBalance: validator is not active"
-            );
+        // Validator must be checkpoint-able
+        require(
+            validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
+            "EigenPod.verifyStaleBalance: validator is not active"
+        );
 
-            // Validator should not already be stale
-            require(
-                !isValidatorStale[validatorPubkey],
-                "EigenPod.verifyStaleBalance: validator already marked stale"
-            );
+        // Validator must be slashed on the beacon chain
+        require(
+            proof.validatorFields.isValidatorSlashed(),
+            "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
+        );
 
-            // Validator must be slashed on the beacon chain
-            require(
-                proofs[i].validatorFields.getSlashStatus() == true,
-                "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
-            );
+        // Verify `beaconStateRoot` against beacon block root
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
+            latestBlockRoot: eigenPodManager.getParentBlockRoot(beaconTimestamp),
+            beaconStateRoot: stateRootProof.beaconStateRoot,
+            stateRootProof: stateRootProof.proof
+        });
 
-            // Verify `beaconStateRoot` against beacon block root
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-                latestBlockRoot: eigenPodManager.getParentBlockRoot(beaconTimestamp),
-                beaconStateRoot: stateRootProof.beaconStateRoot,
-                stateRootProof: stateRootProof.proof
-            });
-
-            // Verify Validator container proof against `beaconStateRoot`
-            BeaconChainProofs.verifyValidatorFields({
-                beaconStateRoot: stateRootProof.beaconStateRoot,
-                validatorFields: proofs[i].validatorFields,
-                validatorFieldsProof: proofs[i].proof,
-                validatorIndex: uint40(validatorInfo.validatorIndex)
-            });
-
-            isValidatorStale[validatorPubkey] = true;
-        }
+        // Verify Validator container proof against `beaconStateRoot`
+        BeaconChainProofs.verifyValidatorFields({
+            beaconStateRoot: stateRootProof.beaconStateRoot,
+            validatorFields: proof.validatorFields,
+            validatorFieldsProof: proof.proof,
+            validatorIndex: uint40(validatorInfo.validatorIndex)
+        });
         
-        // Increment stale validator count by one for each successful proof
-        eigenPodManager.updateStaleValidatorCount(podOwner, int256(proofs.length));
+        // Validator verified to be stale - start a checkpoint
+        _startCheckpoint();
     }
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
@@ -560,7 +513,7 @@ contract EigenPod is
         uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (int256 balanceDeltaGwei, bool noLongerStale) {
+    ) internal returns (int256 balanceDeltaGwei) {
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
 
         require(
@@ -606,17 +559,33 @@ contract EigenPod is
             });
         }
 
-        // If the validator was marked stale and this proof is younger than
-        // `TIME_TILL_STALE_BALANCE`, the validator is no longer stale.
-        if (
-            beaconTimestamp + TIME_TILL_STALE_BALANCE >= block.timestamp && 
-            isValidatorStale[proof.pubkeyHash]
-        ) {
-            isValidatorStale[proof.pubkeyHash] = false;
-            noLongerStale = true;
-        }
+        return balanceDeltaGwei;
+    }
 
-        return (balanceDeltaGwei, noLongerStale);
+    function _startCheckpoint() internal {
+        require(
+            currentCheckpointTimestamp == 0, 
+            "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
+        );
+
+        // Snapshot pod balance at the start of the checkpoint. Once the checkpoint is finalized,
+        // this amount will be added to the total validator balance delta and credited as shares.
+        uint256 podBalanceWei = 
+            address(this).balance
+                - nonBeaconChainETHBalanceWei
+                - (withdrawableRestakedExecutionLayerGwei * GWEI_TO_WEI);
+
+        Checkpoint memory checkpoint = Checkpoint({
+            beaconBlockRoot: eigenPodManager.getParentBlockRoot(uint64(block.timestamp)),
+            beaconStateRoot: bytes32(0),
+            podBalanceGwei: podBalanceWei / GWEI_TO_WEI,
+            balanceDeltasGwei: 0,
+            proofsRemaining: activeValidatorCount
+        });
+
+        // Place checkpoint in storage
+        currentCheckpointTimestamp = uint64(block.timestamp);
+        _updateCheckpoint(checkpoint);
     }
 
     /**

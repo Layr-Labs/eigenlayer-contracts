@@ -267,7 +267,7 @@ library BeaconChainProofs {
     /**
      * @dev Returns true IFF the validator is marked slashed
      */
-    function getSlashStatus(bytes32[] memory validatorFields) internal pure returns (bool) {
+    function isValidatorSlashed(bytes32[] memory validatorFields) internal pure returns (bool) {
         return validatorFields[VALIDATOR_SLASHED_INDEX] != 0;
     }
 

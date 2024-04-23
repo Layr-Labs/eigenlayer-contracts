@@ -22,7 +22,7 @@ abstract contract EigenPodStorage is IEigenPod {
     bool public hasRestaked;
 
     /// @notice This is a mapping of validatorPubkeyHash to timestamp to whether or not they have proven a withdrawal for that timestamp
-    mapping(bytes32 => mapping(uint64 => bool)) public __deprecated_provenWithdrawal;
+    mapping(bytes32 => mapping(uint64 => bool)) internal __deprecated_provenWithdrawal;
 
     /// @notice This is a mapping that tracks a validator's information by their pubkey hash
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
@@ -45,13 +45,10 @@ abstract contract EigenPodStorage is IEigenPod {
     /// @notice The current checkpoint, if there is one active
     Checkpoint public currentCheckpoint;
 
-    /// @notice Maps pubkey hash -> whether a validator has been marked "stale"
-    mapping(bytes32 => bool) public isValidatorStale;
-
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[38] private __gap;
 }

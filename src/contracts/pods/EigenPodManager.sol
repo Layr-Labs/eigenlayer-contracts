@@ -140,34 +140,6 @@ contract EigenPodManager is
     }
 
     /**
-     * @dev Changes the `podOwner's` stale validator count by `countDelta`. The stale validator
-     * count can be used as an additional weighting mechanism to determine a staker or operator's shares.
-     * @param podOwner the pod owner whose stale validator count is being updated
-     * @param countDelta the change in `podOwner's` stale validator count as a signed integer
-     * @dev Callable only by the `podOwner's` EigenPod contract
-     */
-    function updateStaleValidatorCount(
-        address podOwner,
-        int256 countDelta
-    ) external onlyEigenPod(podOwner) {
-        require(podOwner != address(0), "EigenPodManager.updateStaleValidatorCount: podOwner cannot be zero address");
-        require(countDelta != 0, "EigenPodManager.updateStaleValidatorCount: invalid countDelta");
-
-        uint256 currentCount = staleValidatorCount[podOwner];
-        uint256 deltaAbs = uint256(countDelta);
-
-        if (countDelta < 0) {
-            require(deltaAbs <= currentCount, "EigenPodManager.updateStaleValidatorCount: applying countDelta would make count negative");
-
-            staleValidatorCount[podOwner] -= deltaAbs;
-        } else {
-            staleValidatorCount[podOwner] += deltaAbs;
-        }
-
-        // TODO emit event
-    }
-
-    /**
      * @notice Used by the DelegationManager to remove a pod owner's shares while they're in the withdrawal queue.
      * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
      * @dev This function reverts if it would result in `podOwnerShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
