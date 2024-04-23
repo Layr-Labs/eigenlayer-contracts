@@ -1096,7 +1096,8 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
     /// - checks activatedAt has added activationDelay
     function testFuzz_submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) public {
         // fuzz avoiding overflows and valid activatedAt values
-        cheats.assume(paymentCalculationEndTimestamp > paymentCoordinator.currPaymentCalculationEndTimestamp());
+        cheats.assume(paymentCoordinator.currPaymentCalculationEndTimestamp() < paymentCalculationEndTimestamp);
+        cheats.assume(paymentCalculationEndTimestamp < block.timestamp);
 
         uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
         uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
@@ -1142,7 +1143,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             roots[i] = keccak256(abi.encodePacked(root, i));
 
             uint32 activationDelay = uint32(block.timestamp) + paymentCoordinator.activationDelay();
-            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp));
+            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp - 1));
             cheats.warp(activationDelay);
         }
         cheats.stopPrank();
@@ -1153,6 +1154,8 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
 
 /// @notice Tests for sets of JSON data with different distribution roots
 contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests {
+    using stdStorage for StdStorage;
+
     /// @notice earner address used for proofs
     address earner = 0xF2288D736d27C1584Ebf7be5f52f9E4d47251AeE;
 
@@ -1549,6 +1552,127 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
         paymentCoordinator.processClaim(claim);
 
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3 but write to cumulativeClaimed storage.
+    /// Expects a revert when calling processClaim()
+    function testFuzz_processClaim_Revert_WhenCumulativeClaimedUnderflow(
+        bool setClaimerFor,
+        address claimerFor
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        // Set cumulativeClaimed to be max uint256, should revert when attempting to claim
+        stdstore
+            .target(address(paymentCoordinator))
+            .sig("cumulativeClaimed(address,address)")
+            .with_key(claim.earnerLeaf.earner)
+            .with_key(address(claim.tokenLeaves[0].token))
+            .checked_write(type(uint256).max);
+        cheats.startPrank(claimer);
+        cheats.expectRevert(
+            "PaymentCoordinator.processClaim: cumulativeEarnings must be gte than cumulativeClaimed"
+        );
+        paymentCoordinator.processClaim(claim);
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3 but with larger tokenIndex used that could pass the proofs.
+    /// Expects a revert as we check for this in processClaim()
+    function testFuzz_processClaim_Revert_WhenTokenIndexBitwiseAddedTo(
+        bool setClaimerFor,
+        address claimerFor,
+        uint8 numShift
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        cheats.assume(0 < numShift && numShift < 16);
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        // Take the tokenIndex and add a significant bit so that the actual index number is increased
+        // but still with the same least significant bits for valid proofs
+        uint8 proofLength = uint8(claim.tokenTreeProofs[0].length);
+        claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength/32));
+        cheats.startPrank(claimer);
+        cheats.expectRevert(
+            "PaymentCoordinator._verifyTokenClaim: invalid tokenLeafIndex"
+        );
+        paymentCoordinator.processClaim(claim);
+        cheats.stopPrank();
+    }
+
+    /// @notice Claim against latest submitted root, rootIndex 3 but with larger earnerIndex used that could pass the proofs.
+    /// Expects a revert as we check for this in processClaim()
+    function testFuzz_processClaim_Revert_WhenEarnerIndexBitwiseAddedTo(
+        bool setClaimerFor,
+        address claimerFor,
+        uint8 numShift
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        cheats.assume(0 < numShift && numShift < 16);
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+
+        uint32 rootIndex = claim.rootIndex;
+        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        cheats.warp(activatedAt);
+
+        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+        // Take the tokenIndex and add a significant bit so that the actual index number is increased
+        // but still with the same least significant bits for valid proofs
+        uint8 proofLength = uint8(claim.earnerTreeProof.length);
+        claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength/32));
+        cheats.startPrank(claimer);
+        cheats.expectRevert(
+            "PaymentCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex"
+        );
+        paymentCoordinator.processClaim(claim);
         cheats.stopPrank();
     }
 
