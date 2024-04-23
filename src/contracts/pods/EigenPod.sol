@@ -263,11 +263,7 @@ contract EigenPod is
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
         );
-
-        // TODO - is == valid?
-        // I think YES, because we enforce no exit epoch is set
-        // However, we could also do strictly greater than if we want to be safe.
-        // TODO pt 2 - what about sub 12 on checkpointTimestamp?
+        
         require(
             beaconTimestamp > lastFinalizedCheckpoint && beaconTimestamp > currentCheckpointTimestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
