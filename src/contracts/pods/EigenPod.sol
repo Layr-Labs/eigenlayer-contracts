@@ -166,11 +166,6 @@ contract EigenPod is
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
         afterRestaking(uint64(block.timestamp)) /// TODO - this is the wrong condition
     {
-        require(
-            currentCheckpointTimestamp == 0, 
-            "EigenPod.startCheckpoint: must finish previous checkpoint before starting another"
-        );
-
         _startCheckpoint();
     }
 
@@ -303,6 +298,8 @@ contract EigenPod is
     /**
      * @dev Prove that one or more validators were slashed on the beacon chain and have not had timely
      * checkpoint proofs since being slashed. If successful, this allows the caller to start a checkpoint.
+     * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
+     * (See `_startCheckpoint` for details)
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
      * @param stateRootProof proves a beacon state root against a beacon block root
@@ -324,12 +321,7 @@ contract EigenPod is
     )
         external
         onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
-    {
-        require(
-            currentCheckpointTimestamp == 0, 
-            "EigenPod.verifyStaleBalance: must complete existing checkpoint before starting another"
-        );
-        
+    {  
         require(
             beaconTimestamp + STALENESS_GRACE_PERIOD < block.timestamp,
             "EigenPod.verifyStaleBalance: staleness grace period not elapsed"
@@ -576,6 +568,11 @@ contract EigenPod is
     }
 
     function _startCheckpoint() internal {
+        require(
+            currentCheckpointTimestamp == 0, 
+            "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
+        );
+
         // Snapshot pod balance at the start of the checkpoint. Once the checkpoint is finalized,
         // this amount will be added to the total validator balance delta and credited as shares.
         uint256 podBalanceWei = 
