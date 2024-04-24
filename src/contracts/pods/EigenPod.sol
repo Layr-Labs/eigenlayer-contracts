@@ -548,6 +548,7 @@ contract EigenPod is
         }
 
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
+        emit ValidatorCheckpointed(beaconTimestamp, uint40(validatorInfo.validatorIndex));
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
@@ -586,6 +587,8 @@ contract EigenPod is
         // Place checkpoint in storage
         currentCheckpointTimestamp = uint64(block.timestamp);
         _updateCheckpoint(checkpoint);
+
+        emit CheckpointCreated(uint64(block.timestamp), checkpoint.beaconBlockRoot);
     }
 
     /**
