@@ -45,13 +45,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
-    /// @notice The address of the EIP-4788 beacon block root oracle
-    /// (See https://eips.ethereum.org/EIPS/eip-4788)
-    address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
-
-    /// @notice The length of the EIP-4799 beacon block root ring buffer
-    uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
-
     /*******************************************************************************
                                    STATE VARIABLES
     *******************************************************************************/

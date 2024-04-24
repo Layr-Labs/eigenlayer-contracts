@@ -42,10 +42,8 @@ interface IEigenPod {
     struct Checkpoint {
         bytes32 beaconBlockRoot;
         bytes32 beaconStateRoot;
-
         uint256 podBalanceGwei;
         int256 balanceDeltasGwei;
-
         uint256 proofsRemaining;
     }
 
