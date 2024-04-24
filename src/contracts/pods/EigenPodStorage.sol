@@ -37,7 +37,7 @@ abstract contract EigenPodStorage is IEigenPod {
     uint256 public activeValidatorCount;
 
     /// @notice The timestamp of the last checkpoint finalized
-    uint64 public lastFinalizedCheckpoint;
+    uint64 public lastCheckpointTimestamp;
 
     /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
     uint64 public currentCheckpointTimestamp;
