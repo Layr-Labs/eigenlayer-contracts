@@ -297,26 +297,6 @@ contract EigenPodManager is
         return address(ownerToPod[podOwner]) != address(0);
     }
 
-    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
-    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
-    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
-    /// will revert.
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {
-        require(
-            block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
-            "EigenPodManager.getParentBlockRoot: timestamp out of range"
-        );
-
-        (bool success, bytes memory result) =
-            BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
-
-        if (success && result.length > 0) {
-            return abi.decode(result, (bytes32));
-        } else {
-            revert("EigenPodManager.getParentBlockRoot: invalid block root returned");
-        }
-    }
-
     /**
      * @notice Wrapper around the `_denebForkTimestamp` storage variable that returns type(uint64).max if the storage variable is unset.
      * @dev This allows restricting the storage variable to be set once and only once.

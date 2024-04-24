@@ -130,12 +130,6 @@ interface IEigenPodManager is IPausable {
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
 
-    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
-    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
-    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
-    /// will revert.
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
-
     /**
      * @notice the deneb hard fork timestamp used to determine which proof path to use for proving a withdrawal
      */

@@ -74,10 +74,6 @@ contract EigenPodManagerMock is IEigenPodManager, Test {
 
     function numPods() external view returns (uint256) {}
 
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {
-        return bytes32(0);
-    }
-
     function updateStaleValidatorCount(address, int256) external {}
 
     function denebForkTimestamp() external pure returns (uint64) {
