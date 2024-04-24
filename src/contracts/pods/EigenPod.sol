@@ -236,7 +236,7 @@ contract EigenPod is
      * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
      * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
      * future checkpoint proofs will need to include them.
-     * @dev Withdrawal credential proofs MUST NOT be older than the `lastFinalizedCheckpoint` OR `currentCheckpointTimestamp`.
+     * @dev Withdrawal credential proofs MUST NOT be older than the `lastCheckpointTimestamp` OR `currentCheckpointTimestamp`.
      * @dev Validators proven via this method MUST NOT have an exit epoch set already.
      * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
      * to the parent beacon block root against which the proof is verified.
@@ -265,7 +265,7 @@ contract EigenPod is
         );
         
         require(
-            beaconTimestamp > lastFinalizedCheckpoint && beaconTimestamp > currentCheckpointTimestamp,
+            beaconTimestamp > lastCheckpointTimestamp && beaconTimestamp > currentCheckpointTimestamp,
             "EigenPod.verifyWithdrawalCredentials: specified timestamp is too far in past"
         );
 
@@ -593,7 +593,7 @@ contract EigenPod is
      * @dev If the checkpoint has no proofs remaining, it is finalized:
      * - a share delta is calculated and sent to the `EigenPodManager`
      * - the checkpointed `podBalance` is added to `withdrawableRestakedExecutionLayerGwei`
-     * - `lastFinalizedCheckpoint` is updated
+     * - `lastCheckpointTimestamp` is updated
      * - `currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
@@ -606,7 +606,7 @@ contract EigenPod is
             withdrawableRestakedExecutionLayerGwei += uint64(checkpoint.podBalanceGwei);
 
             // Finalize the checkpoint
-            lastFinalizedCheckpoint = currentCheckpointTimestamp;
+            lastCheckpointTimestamp = currentCheckpointTimestamp;
             delete currentCheckpointTimestamp;
             delete currentCheckpoint;
 
