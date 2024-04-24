@@ -42,10 +42,8 @@ interface IEigenPod {
     struct Checkpoint {
         bytes32 beaconBlockRoot;
         bytes32 beaconStateRoot;
-
         uint256 podBalanceGwei;
         int256 balanceDeltasGwei;
-
         uint256 proofsRemaining;
     }
 
@@ -70,6 +68,12 @@ interface IEigenPod {
 
     /// @notice Emitted when ETH that was previously received via the `receive` fallback is withdrawn
     event NonBeaconChainETHWithdrawn(address indexed recipient, uint256 amountWithdrawn);
+
+    /// @notice Emitted when a checkpoint is created
+    event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot);
+
+    /// @notice Emitted when a validator is proven for a given checkpoint
+    event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
