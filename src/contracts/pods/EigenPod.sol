@@ -307,7 +307,6 @@ contract EigenPod is
      * - `beaconTimestamp` MUST NOT fall within `STALENESS_GRACE_PERIOD` seconds of `block.timestamp`
      * - Validator's last balance update is older than `beaconTimestamp` by `TIME_TILL_STALE_BALANCE`
      * - Validator MUST be in `ACTIVE` status in the pod
-     * - Validator MUST NOT already be marked stale
      * - Validator MUST be slashed on the beacon chain
      */
     function verifyStaleBalance(
@@ -340,7 +339,7 @@ contract EigenPod is
 
         // Validator must be slashed on the beacon chain
         require(
-            proof.validatorFields.getSlashStatus() == true,
+            proof.validatorFields.isValidatorSlashed(),
             "EigenPod.verifyStaleBalance: validator must be slashed to be marked stale"
         );
 
