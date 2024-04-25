@@ -273,39 +273,39 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testWithdrawBeforeRestaking() public {
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
+    // function testWithdrawBeforeRestaking() public {
+    //     testStaking();
+    //     IEigenPod pod = eigenPodManager.getPod(podOwner);
 
-        //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
-        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
-        require(pod.hasRestaked() == false, "Pod should not be restaked");
+    //     //simulate that hasRestaked is set to false, so that we can test withdrawBeforeRestaking for pods deployed before M2 activation
+    //     cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
+    //     require(pod.hasRestaked() == false, "Pod should not be restaked");
 
-        // simulate a withdrawal
-        cheats.deal(address(pod), stakeAmount);
-        cheats.startPrank(podOwner);
-        cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        emit DelayedWithdrawalCreated(
-            podOwner,
-            podOwner,
-            stakeAmount,
-            delayedWithdrawalRouter.userWithdrawalsLength(podOwner)
-        );
+    //     // simulate a withdrawal
+    //     cheats.deal(address(pod), stakeAmount);
+    //     cheats.startPrank(podOwner);
+    //     cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+    //     emit DelayedWithdrawalCreated(
+    //         podOwner,
+    //         podOwner,
+    //         stakeAmount,
+    //         delayedWithdrawalRouter.userWithdrawalsLength(podOwner)
+    //     );
 
-        uint timestampBeforeTx = pod.mostRecentWithdrawalTimestamp();
+    //     uint timestampBeforeTx = pod.mostRecentWithdrawalTimestamp();
 
-        pod.withdrawBeforeRestaking();
+    //     pod.withdrawBeforeRestaking();
 
-        require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
-        require(
-            pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp),
-            "Most recent withdrawal block number not updated"
-        );
-        require(
-            pod.mostRecentWithdrawalTimestamp() > timestampBeforeTx,
-            "Most recent withdrawal block number not updated"
-        );
-    }
+    //     require(_getLatestDelayedWithdrawalAmount(podOwner) == stakeAmount, "Payment amount should be stake amount");
+    //     require(
+    //         pod.mostRecentWithdrawalTimestamp() == uint64(block.timestamp),
+    //         "Most recent withdrawal block number not updated"
+    //     );
+    //     require(
+    //         pod.mostRecentWithdrawalTimestamp() > timestampBeforeTx,
+    //         "Most recent withdrawal block number not updated"
+    //     );
+    // }
 
     function testDeployEigenPodWithoutActivateRestaking() public {
         // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
@@ -344,69 +344,69 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testWithdrawNonBeaconChainETHBalanceWei() public {
-        IEigenPod pod = testDeployAndVerifyNewEigenPod();
+    // function testWithdrawNonBeaconChainETHBalanceWei() public {
+    //     IEigenPod pod = testDeployAndVerifyNewEigenPod();
 
-        cheats.deal(address(podOwner), 10 ether);
-        emit log_named_address("Pod:", address(pod));
+    //     cheats.deal(address(podOwner), 10 ether);
+    //     emit log_named_address("Pod:", address(pod));
 
-        uint256 balanceBeforeDeposit = pod.nonBeaconChainETHBalanceWei();
+    //     uint256 balanceBeforeDeposit = pod.nonBeaconChainETHBalanceWei();
 
-        (bool sent, ) = payable(address(pod)).call{value: 1 ether}("");
+    //     (bool sent, ) = payable(address(pod)).call{value: 1 ether}("");
 
-        require(sent == true, "not sent");
+    //     require(sent == true, "not sent");
 
-        uint256 balanceAfterDeposit = pod.nonBeaconChainETHBalanceWei();
+    //     uint256 balanceAfterDeposit = pod.nonBeaconChainETHBalanceWei();
 
-        require(
-            balanceBeforeDeposit < balanceAfterDeposit 
-            && (balanceAfterDeposit - balanceBeforeDeposit) == 1 ether, 
-            "increment checks"
-        );
+    //     require(
+    //         balanceBeforeDeposit < balanceAfterDeposit 
+    //         && (balanceAfterDeposit - balanceBeforeDeposit) == 1 ether, 
+    //         "increment checks"
+    //     );
 
-        cheats.startPrank(podOwner, podOwner);
-        cheats.expectEmit(true, true, true, true, address(pod));
-        emit NonBeaconChainETHWithdrawn(podOwner, 1 ether);
-        pod.withdrawNonBeaconChainETHBalanceWei(
-            podOwner,
-            1 ether
-        );
+    //     cheats.startPrank(podOwner, podOwner);
+    //     cheats.expectEmit(true, true, true, true, address(pod));
+    //     emit NonBeaconChainETHWithdrawn(podOwner, 1 ether);
+    //     pod.withdrawNonBeaconChainETHBalanceWei(
+    //         podOwner,
+    //         1 ether
+    //     );
 
-        uint256 balanceAfterWithdrawal = pod.nonBeaconChainETHBalanceWei();
+    //     uint256 balanceAfterWithdrawal = pod.nonBeaconChainETHBalanceWei();
 
-        require(
-            balanceAfterWithdrawal < balanceAfterDeposit 
-            && balanceAfterWithdrawal == balanceBeforeDeposit, 
-            "decrement checks"
-        );
+    //     require(
+    //         balanceAfterWithdrawal < balanceAfterDeposit 
+    //         && balanceAfterWithdrawal == balanceBeforeDeposit, 
+    //         "decrement checks"
+    //     );
 
-        cheats.stopPrank();
-    }
+    //     cheats.stopPrank();
+    // }
 
-    function testWithdrawFromPod() public {
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
-        cheats.startPrank(podOwner);
+    // function testWithdrawFromPod() public {
+    //     IEigenPod pod = eigenPodManager.getPod(podOwner);
+    //     cheats.startPrank(podOwner);
 
-        cheats.expectEmit(true, true, true, true, address(pod));
-        emit EigenPodStaked(pubkey);
+    //     cheats.expectEmit(true, true, true, true, address(pod));
+    //     emit EigenPodStaked(pubkey);
 
-        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
-        cheats.stopPrank();
+    //     eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+    //     cheats.stopPrank();
 
-        cheats.deal(address(pod), stakeAmount);
+    //     cheats.deal(address(pod), stakeAmount);
 
-        // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
-        cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
+    //     // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
+    //     cheats.store(address(pod), bytes32(uint256(52)), bytes32(uint256(1)));
 
-        cheats.startPrank(podOwner);
-        uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
-        // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
-        //cheats.expectEmit(true, true, true, true);
-        emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
-        pod.withdrawBeforeRestaking();
-        cheats.stopPrank();
-        require(address(pod).balance == 0, "Pod balance should be 0");
-    }
+    //     cheats.startPrank(podOwner);
+    //     uint256 userWithdrawalsLength = delayedWithdrawalRouter.userWithdrawalsLength(podOwner);
+    //     // cheats.expectEmit(true, true, true, true, address(delayedWithdrawalRouter));
+    //     //cheats.expectEmit(true, true, true, true);
+    //     emit DelayedWithdrawalCreated(podOwner, podOwner, stakeAmount, userWithdrawalsLength);
+    //     pod.withdrawBeforeRestaking();
+    //     cheats.stopPrank();
+    //     require(address(pod).balance == 0, "Pod balance should be 0");
+    // }
 
     // function testFullWithdrawalProof() public {
     //     setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
@@ -1059,20 +1059,20 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         cheats.stopPrank();
     }
 
-    function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner) {
-        cheats.assume(nonPodOwner != podOwner);
-        testStaking();
-        IEigenPod pod = eigenPodManager.getPod(podOwner);
+    // function testCallWithdrawBeforeRestakingFromNonOwner(address nonPodOwner) external fuzzedAddress(nonPodOwner) {
+    //     cheats.assume(nonPodOwner != podOwner);
+    //     testStaking();
+    //     IEigenPod pod = eigenPodManager.getPod(podOwner);
 
-        // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
-        cheats.store(address(pod), bytes32(uint256(52)), bytes32(0));
-        require(pod.hasRestaked() == false, "Pod should not be restaked");
+    //     // this is testing if pods deployed before M2 that do not have hasRestaked initialized to true, will revert
+    //     cheats.store(address(pod), bytes32(uint256(52)), bytes32(0));
+    //     require(pod.hasRestaked() == false, "Pod should not be restaked");
 
-        //simulate a withdrawal
-        cheats.startPrank(nonPodOwner);
-        cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
-        pod.withdrawBeforeRestaking();
-    }
+    //     //simulate a withdrawal
+    //     cheats.startPrank(nonPodOwner);
+    //     cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
+    //     pod.withdrawBeforeRestaking();
+    // }
 
     /* test deprecated since this is checked on the EigenPodManager level, rather than the EigenPod level
     TODO: @Sidu28 - check whether we have adequate coverage of the correct function

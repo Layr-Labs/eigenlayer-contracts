@@ -79,9 +79,6 @@ interface IEigenPod {
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
 
-    /// @notice any ETH deposited into the EigenPod contract via the `receive` fallback function
-    function nonBeaconChainETHBalanceWei() external view returns (uint256);
-
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external;
 
@@ -151,12 +148,6 @@ interface IEigenPod {
      * "withdrawBeforeRestaking()"
      */
     function activateRestaking() external;
-
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external;
-
-    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
