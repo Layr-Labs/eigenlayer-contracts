@@ -281,6 +281,12 @@ contract PaymentCoordinator is
         _setPaymentUpdater(_paymentUpdater);
     }
 
+    /**
+     * @notice Sets the permissioned `payAllForRangeSubmitter` address which can submit payAllForRange
+     * @dev Only callable by the contract owner
+     * @param _submitter The address of the payAllForRangeSubmitter
+     * @param _newValue The new value for isPayAllForRangeSubmitter
+     */
     function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external onlyOwner {
         bool prevValue = isPayAllForRangeSubmitter[_submitter];
         emit PayAllForRangeSubmitterSet(_submitter, prevValue, _newValue);

@@ -171,7 +171,9 @@ interface IPaymentCoordinator {
         uint256 claimedAmount
     );
 
-    /// VIEW FUNCTIONS ///
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
 
     /// @notice The address of the entity that can update the contract with new merkle roots
     function paymentUpdater() external view returns (address);
@@ -220,7 +222,9 @@ interface IPaymentCoordinator {
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
 
-    /// EXTERNAL FUNCTIONS ///
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
 
     /**
      * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
@@ -264,10 +268,18 @@ interface IPaymentCoordinator {
     function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) external;
 
     /**
-     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
-     * @dev Only callable by the contract owner
+     * @notice Sets the address of the entity that can claim payments on behalf of the earner (msg.sender)
+     * @param claimer The address of the entity that can claim payments on behalf of the earner
+     * @dev Only callable by the `earner`
      */
-    function setPaymentUpdater(address _paymentUpdater) external;
+    function setClaimerFor(address claimer) external;
+
+    /**
+     * @notice Set a new value for calculationIntervalSeconds. Only callable by owner
+     * Payment durations must be multiples of this interval
+     * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
+     */
+    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
@@ -284,9 +296,16 @@ interface IPaymentCoordinator {
     function setGlobalOperatorCommission(uint16 _globalCommissionBips) external;
 
     /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the earner (msg.sender)
-     * @param claimer The address of the entity that can claim payments on behalf of the earner
-     * @dev Only callable by the `earner`
+     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
+     * @dev Only callable by the contract owner
      */
-    function setClaimerFor(address claimer) external;
+    function setPaymentUpdater(address _paymentUpdater) external;
+
+    /**
+     * @notice Sets the permissioned `payAllForRangeSubmitter` address which can submit payAllForRange
+     * @dev Only callable by the contract owner
+     * @param _submitter The address of the payAllForRangeSubmitter
+     * @param _newValue The new value for isPayAllForRangeSubmitter
+     */
+    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external;
 }
