@@ -184,9 +184,7 @@ contract EigenPod is
      * (see `_updateCheckpoint` for more details)
      * @dev This method can only be called when there is a currently-active checkpoint.
      * @param stateRootProof proves a beacon state root against the checkpoint's `beaconBlockRoot`
-     * @dev Note that if the `beaconStateRoot` has already been verified for this checkpoint, it does
-     * not need to be verfied again.
-     * @param proofs Proofs for one or more validator current balances against the checkpoint's `beaconStateRoot`
+     * @param proofs Proofs for one or more validator current balances against the `beaconStateRoot`
      */
     function verifyCheckpointProofs(
         BeaconChainProofs.StateRootProof calldata stateRootProof,
@@ -203,17 +201,12 @@ contract EigenPod is
 
         Checkpoint memory checkpoint = currentCheckpoint;
 
-        // If we haven't already proven a state root for this checkpoint, verify
-        // `stateRootProof` against the block root and cache the result
-        if (checkpoint.beaconStateRoot == bytes32(0)) {
-            BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
-                latestBlockRoot: checkpoint.beaconBlockRoot,
-                beaconStateRoot: stateRootProof.beaconStateRoot,
-                stateRootProof: stateRootProof.proof
-            });
-
-            checkpoint.beaconStateRoot = stateRootProof.beaconStateRoot;
-        }
+        // Verify `stateRootProof` against `beaconBlockRoot`
+        BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
+            latestBlockRoot: checkpoint.beaconBlockRoot,
+            beaconStateRoot: stateRootProof.beaconStateRoot,
+            stateRootProof: stateRootProof.proof
+        });
 
         // Process each checkpoint proof submitted
         for (uint256 i = 0; i < proofs.length; i++) {
@@ -227,7 +220,7 @@ contract EigenPod is
             // the pod when `startCheckpoint` was originally called.
             int256 balanceDeltaGwei = _verifyCheckpointProof({
                 beaconTimestamp: beaconTimestamp,
-                beaconStateRoot: checkpoint.beaconStateRoot,
+                beaconStateRoot: stateRootProof.beaconStateRoot,
                 proof: proofs[i]
             });
 
@@ -552,6 +545,8 @@ contract EigenPod is
         if (newBalanceGwei == 0) {
             activeValidatorCount--;
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
+
+            emit ValidatorWithdrawn(beaconTimestamp, uint40(validatorInfo.validatorIndex));
         }
 
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
@@ -585,7 +580,6 @@ contract EigenPod is
 
         Checkpoint memory checkpoint = Checkpoint({
             beaconBlockRoot: _getParentBlockRoot(uint64(block.timestamp)),
-            beaconStateRoot: bytes32(0),
             podBalanceGwei: podBalanceWei / GWEI_TO_WEI,
             balanceDeltasGwei: 0,
             proofsRemaining: activeValidatorCount
