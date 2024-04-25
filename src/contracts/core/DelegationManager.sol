@@ -73,7 +73,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function shareScalingFactorSearch(address operator, IStrategy strategy, int256 epoch) public view returns (uint256) {
         uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
         if (slashedEpochHistoryLength == 0 || epoch < 0) {
-            return 0;
+            return SHARE_CONVERSION_SCALE;
         } else {
             for (uint256 i = slashedEpochHistoryLength - 1; i > 0; --i) {
                 if (slashedEpochHistory[operator][strategy][i] <= epoch) {
@@ -679,32 +679,37 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256 /*middlewareTimesIndex*/,
         bool receiveAsTokens
     ) internal {
-        bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
+        {
+            bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
-        require(
-            pendingWithdrawals[withdrawalRoot], 
-            "DelegationManager._completeQueuedWithdrawal: action is not in queue"
-        );
-
-        require(
-            withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number, 
-            "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
-        );
-
-        require(
-            msg.sender == withdrawal.withdrawer, 
-            "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
-        );
-
-        if (receiveAsTokens) {
             require(
-                tokens.length == withdrawal.strategies.length, 
-                "DelegationManager._completeQueuedWithdrawal: input length mismatch"
+                pendingWithdrawals[withdrawalRoot], 
+                "DelegationManager._completeQueuedWithdrawal: action is not in queue"
             );
-        }
 
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
+            require(
+                withdrawal.startBlock + minWithdrawalDelayBlocks <= block.number, 
+                "DelegationManager._completeQueuedWithdrawal: minWithdrawalDelayBlocks period has not yet passed"
+            );
+
+            require(
+                msg.sender == withdrawal.withdrawer, 
+                "DelegationManager._completeQueuedWithdrawal: only withdrawer can complete action"
+            );
+
+            if (receiveAsTokens) {
+                require(
+                    tokens.length == withdrawal.strategies.length, 
+                    "DelegationManager._completeQueuedWithdrawal: input length mismatch"
+                );
+            }
+
+            // Remove `withdrawalRoot` from pending roots
+            delete pendingWithdrawals[withdrawalRoot];
+
+            // TODO: moved up to fix stack too deep errors
+            emit WithdrawalCompleted(withdrawalRoot);
+        }
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
@@ -715,11 +720,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
+                uint256 convertedShareAmount = convertSharesOnWithdrawalCompletion({
+                    operator: withdrawal.delegatedTo,
+                    strategy: withdrawal.strategies[i],
+                    shares: withdrawal.shares[i],
+                    // TODO: this doesn't work right now, because the present storage is block number-based
+                    queuedEpoch: getEpochFromTimestamp(withdrawal.startBlock),
+                    completableEpoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
+                });
+
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
                     withdrawer: msg.sender,
                     strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
+                    shares: convertedShareAmount,
                     token: tokens[i]
                 });
                 unchecked { ++i; }
@@ -733,6 +747,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
+                uint256 convertedShareAmount = convertSharesOnWithdrawalCompletion({
+                    operator: withdrawal.delegatedTo,
+                    strategy: withdrawal.strategies[i],
+                    shares: withdrawal.shares[i],
+                    // TODO: this doesn't work right now, because the present storage is block number-based
+                    queuedEpoch: getEpochFromTimestamp(withdrawal.startBlock),
+                    completableEpoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
+                });
+
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy shares can + will be awarded to the withdrawer.
                  */
@@ -744,7 +767,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     */
                     uint256 increaseInDelegateableShares = eigenPodManager.addShares({
                         podOwner: staker,
-                        shares: withdrawal.shares[i]
+                        shares: convertedShareAmount
                     });
                     address podOwnerOperator = delegatedTo[staker];
                     // Similar to `isDelegated` logic
@@ -766,15 +789,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             // the 'staker' here is the address receiving new shares
                             staker: msg.sender,
                             strategy: withdrawal.strategies[i],
-                            shares: withdrawal.shares[i]
+                            shares: convertedShareAmount
                         });
                     }
                 }
                 unchecked { ++i; }
             }
         }
-
-        emit WithdrawalCompleted(withdrawalRoot);
     }
 
     // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
