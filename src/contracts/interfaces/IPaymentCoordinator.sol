@@ -49,7 +49,7 @@ interface IPaymentCoordinator {
      * cannot have duplicate strategies and need to be sorted in ascending address order
      * @param token The payment token to be distributed
      * @param amount The total amount of tokens to be distributed
-     * @param startTimestamp The timestamp at which the payment range is considered for distribution
+     * @param startTimestamp The timestamp (seconds) at which the payment range is considered for distribution
      * could start in the past or in the future but within a valid range. See the diagram above.
      * @param duration The duration of the payment range in seconds. Must be <= MAX_PAYMENT_DURATION
      */
@@ -67,8 +67,8 @@ interface IPaymentCoordinator {
      * if they wish but the merkle tree contains the cumulative earnings of all earners and tokens for a given period so earners (or their claimers if set)
      * only need to claim against the latest root to claim all available earnings.
      * @param root The merkle root of the distribution
-     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param activatedAt The timestamp at which the root can be claimed against
+     * @param paymentCalculationEndTimestamp The timestamp (seconds) until which payments have been calculated
+     * @param activatedAt The timestamp (seconds) at which the root can be claimed against
      */
     struct DistributionRoot {
         bytes32 root;
@@ -182,19 +182,19 @@ interface IPaymentCoordinator {
      */
     function calculationIntervalSeconds() external view returns (uint32);
 
-    /// @notice The maximum amount of time that a range payment can end in the future
+    /// @notice The maximum amount of time (seconds) that a range payment can span over
     function MAX_PAYMENT_DURATION() external view returns (uint32);
 
-    /// @notice max amount of time that a payment can start in the past
+    /// @notice max amount of time (seconds) that a payment can start in the past
     function MAX_RETROACTIVE_LENGTH() external view returns (uint32);
 
-    /// @notice max amount of time that a payment can start in the future
+    /// @notice max amount of time (seconds) that a payment can start in the future
     function MAX_FUTURE_LENGTH() external view returns (uint32);
 
-    /// @notice absolute min timestamp that a payment can start at
+    /// @notice absolute min timestamp (seconds) that a payment can start at
     function GENESIS_PAYMENT_TIMESTAMP() external view returns (uint32);
 
-    /// @notice Delay in timestamp before a posted root can be claimed against
+    /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     function activationDelay() external view returns (uint32);
 
     /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
@@ -205,6 +205,10 @@ interface IPaymentCoordinator {
 
     /// @notice the commission for all operators across all avss
     function globalOperatorCommissionBips() external view returns (uint16);
+
+    /// @notice the commission for a specific operator for a specific avs
+    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
+    function operatorCommissionBips(address operator, address avs) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
@@ -254,7 +258,7 @@ interface IPaymentCoordinator {
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
-     * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
+     * @param paymentCalculationEndTimestamp The timestamp (seconds) until which payments have been calculated
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) external;
@@ -267,7 +271,7 @@ interface IPaymentCoordinator {
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
-     * @param _activationDelay Delay in timestamp before a posted root can be claimed against
+     * @param _activationDelay Delay in timestamp (seconds) before a posted root can be claimed against
      * @dev Only callable by the contract owner
      */
     function setActivationDelay(uint32 _activationDelay) external;

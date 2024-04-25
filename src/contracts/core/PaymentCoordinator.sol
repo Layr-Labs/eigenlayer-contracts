@@ -102,6 +102,10 @@ contract PaymentCoordinator is
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
+    /*******************************************************************************
+                            EXTERNAL FUNCTIONS 
+    *******************************************************************************/
+
     /**
      * @notice Creates a new range payment on behalf of an AVS, to be split amongst the
      * set of stakers delegated to operators who are registered to the `avs`
@@ -228,6 +232,64 @@ contract PaymentCoordinator is
         currPaymentCalculationEndTimestamp = paymentCalculationEndTimestamp;
         emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt);
     }
+
+    /**
+     * @notice Sets the address of the entity that can claim payments on behalf of the earner
+     * @param claimer The address of the entity that can claim payments on behalf of the earner
+     * @dev Only callable by the `earner`
+     */
+    function setClaimerFor(address claimer) external {
+        address earner = msg.sender;
+        address prevClaimer = claimerFor[earner];
+        claimerFor[earner] = claimer;
+        emit ClaimerForSet(earner, prevClaimer, claimer);
+    }
+
+    /**
+     * @notice Set a new value for calculationIntervalSeconds. Only callable by owner
+     * Payment durations must be multiples of this interval
+     * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
+     */
+    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external onlyOwner {
+        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
+    }
+
+    /**
+     * @notice Sets the delay in timestamp before a posted root can be claimed against
+     * @dev Only callable by the contract owner
+     * @param _activationDelay The new value for activationDelay
+     */
+    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
+        _setActivationDelay(_activationDelay);
+    }
+
+    /**
+     * @notice Sets the global commission for all operators across all avss
+     * @dev Only callable by the contract owner
+     * @param _globalCommissionBips The commission for all operators across all avss
+     */
+    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
+        _setGlobalOperatorCommission(_globalCommissionBips);
+    }
+
+    /**
+     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
+     * @dev Only callable by the contract owner
+     * @param _paymentUpdater The address of the new paymentUpdater
+     */
+    function setPaymentUpdater(address _paymentUpdater) external onlyOwner {
+        _setPaymentUpdater(_paymentUpdater);
+    }
+
+    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external onlyOwner {
+        bool prevValue = isPayAllForRangeSubmitter[_submitter];
+        emit PayAllForRangeSubmitterSet(_submitter, prevValue, _newValue);
+        isPayAllForRangeSubmitter[_submitter] = _newValue;
+    }
+
+    /*******************************************************************************
+                            INTERNAL FUNCTIONS
+    *******************************************************************************/
 
     /**
      * @notice Create a RangePayment. Called from both `payForRange` and `payAllForRange`
@@ -372,70 +434,6 @@ contract PaymentCoordinator is
         );
     }
 
-    /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the earner
-     * @param claimer The address of the entity that can claim payments on behalf of the earner
-     * @dev Only callable by the `earner`
-     */
-    function setClaimerFor(address claimer) external {
-        address earner = msg.sender;
-        address prevClaimer = claimerFor[earner];
-        claimerFor[earner] = claimer;
-        emit ClaimerForSet(earner, prevClaimer, claimer);
-    }
-
-    /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
-    }
-
-    /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
-    }
-
-    /**
-     * @notice Set a new value for calculationIntervalSeconds. Only callable by owner
-     * Payment durations must be multiples of this interval
-     * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
-     */
-    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external onlyOwner {
-        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
-    }
-
-    /**
-     * @notice Sets the delay in timestamp before a posted root can be claimed against
-     * @dev Only callable by the contract owner
-     * @param _activationDelay The new value for activationDelay
-     */
-    function setActivationDelay(uint32 _activationDelay) external onlyOwner {
-        _setActivationDelay(_activationDelay);
-    }
-
-    /**
-     * @notice Sets the global commission for all operators across all avss
-     * @dev Only callable by the contract owner
-     * @param _globalCommissionBips The commission for all operators across all avss
-     */
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external onlyOwner {
-        _setGlobalOperatorCommission(_globalCommissionBips);
-    }
-
-    /**
-     * @notice Sets the permissioned `paymentUpdater` address which can post new roots
-     * @dev Only callable by the contract owner
-     * @param _paymentUpdater The address of the new paymentUpdater
-     */
-    function setPaymentUpdater(address _paymentUpdater) external onlyOwner {
-        _setPaymentUpdater(_paymentUpdater);
-    }
-
-    function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external onlyOwner {
-        bool prevValue = isPayAllForRangeSubmitter[_submitter];
-        emit PayAllForRangeSubmitterSet(_submitter, prevValue, _newValue);
-        isPayAllForRangeSubmitter[_submitter] = _newValue;
-    }
-
     function _setActivationDelay(uint32 _activationDelay) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
@@ -456,11 +454,31 @@ contract PaymentCoordinator is
         paymentUpdater = _paymentUpdater;
     }
 
+    /*******************************************************************************
+                            VIEW FUNCTIONS
+    *******************************************************************************/
+
+    /// @notice return the hash of the earner's leaf
+    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(EARNER_LEAF_SALT, leaf.earner, leaf.earnerTokenRoot));
+    }
+
+    /// @notice returns the hash of the earner's token leaf
+    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(TOKEN_LEAF_SALT, leaf.token, leaf.cumulativeEarnings));
+    }
+
     /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) public view returns (bool) {
         _checkClaim(claim, distributionRoots[claim.rootIndex]);
         return true;
+    }
+
+    /// @notice the commission for a specific operator for a specific avs
+    /// NOTE: Currently unused and simply returns the globalOperatorCommissionBips value but will be used in future release
+    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {
+        return globalOperatorCommissionBips;
     }
 
     function getDistributionRootsLength() public view returns (uint256) {

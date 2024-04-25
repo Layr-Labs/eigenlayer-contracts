@@ -23,12 +23,13 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
+    /// @notice The maximum amount of time (seconds) that a range payment can span over
     uint32 public immutable MAX_PAYMENT_DURATION;
-    /// @notice max amount of time that a payment can start in the past
+    /// @notice max amount of time (seconds) that a payment can start in the past
     uint32 public immutable MAX_RETROACTIVE_LENGTH;
-    /// @notice max amount of time that a payment can start in the future
+    /// @notice max amount of time (seconds) that a payment can start in the future
     uint32 public immutable MAX_FUTURE_LENGTH;
-    /// @notice absolute min timestamp that a payment can start at
+    /// @notice absolute min timestamp (seconds) that a payment can start at
     uint32 public immutable GENESIS_PAYMENT_TIMESTAMP;
 
     /// @notice The DelegationManager contract for EigenLayer
@@ -60,7 +61,7 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice The interval in seconds at which the calculation for range payment distribution is done.
     /// @dev Payment durations must be multiples of this interval.
     uint32 public calculationIntervalSeconds;
-    /// @notice Delay in timestamp before a posted root can be claimed against
+    /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     uint32 public activationDelay;
     /// @notice Timestamp for last submitted 
     uint32 public currPaymentCalculationEndTimestamp;
