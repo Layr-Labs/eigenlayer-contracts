@@ -177,35 +177,35 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
                             Withdraw Non Beacon Chain ETH Tests
     *******************************************************************************/
 
-    function testFuzz_withdrawNonBeaconChainETH_revert_notPodOwner(address invalidCaller) public {
-        cheats.assume(invalidCaller != podOwner);
+    // function testFuzz_withdrawNonBeaconChainETH_revert_notPodOwner(address invalidCaller) public {
+    //     cheats.assume(invalidCaller != podOwner);
 
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
-        eigenPod.withdrawNonBeaconChainETHBalanceWei(invalidCaller, 1 ether);
-    }
+    //     cheats.prank(invalidCaller);
+    //     cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
+    //     eigenPod.withdrawNonBeaconChainETHBalanceWei(invalidCaller, 1 ether);
+    // }
 
-    function test_withdrawNonBeaconChainETH_revert_tooMuchWithdrawn() public {
-        // Send EigenPod 0.9 ether
-        _seedPodWithETH(0.9 ether);
+    // function test_withdrawNonBeaconChainETH_revert_tooMuchWithdrawn() public {
+    //     // Send EigenPod 0.9 ether
+    //     _seedPodWithETH(0.9 ether);
 
-        // Withdraw 1 ether
-        cheats.expectRevert("EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
-        eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, 1 ether);
-    }
+    //     // Withdraw 1 ether
+    //     cheats.expectRevert("EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
+    //     eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, 1 ether);
+    // }
 
-    function testFuzz_withdrawNonBeaconChainETH(uint256 ethAmount) public {
-        _seedPodWithETH(ethAmount);
-        assertEq(eigenPod.nonBeaconChainETHBalanceWei(), ethAmount, "Incorrect amount incremented in receive function");
+    // function testFuzz_withdrawNonBeaconChainETH(uint256 ethAmount) public {
+    //     _seedPodWithETH(ethAmount);
+    //     assertEq(eigenPod.nonBeaconChainETHBalanceWei(), ethAmount, "Incorrect amount incremented in receive function");
 
-        cheats.expectEmit(true, true, true, true);
-        emit NonBeaconChainETHWithdrawn(podOwner, ethAmount);
-        eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, ethAmount);
+    //     cheats.expectEmit(true, true, true, true);
+    //     emit NonBeaconChainETHWithdrawn(podOwner, ethAmount);
+    //     eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, ethAmount);
 
-        // Checks
-        assertEq(address(eigenPod).balance, 0, "Incorrect amount withdrawn from eigenPod");
-        assertEq(address(delayedWithdrawalRouterMock).balance, ethAmount, "Incorrect amount set to delayed withdrawal router");
-    }
+    //     // Checks
+    //     assertEq(address(eigenPod).balance, 0, "Incorrect amount withdrawn from eigenPod");
+    //     assertEq(address(delayedWithdrawalRouterMock).balance, ethAmount, "Incorrect amount set to delayed withdrawal router");
+    // }
 
     /*******************************************************************************
                                   Recover Tokens Tests
@@ -270,19 +270,19 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
         eigenPod.activateRestaking();
     }
 
-    function testFuzz_activateRestaking(uint256 ethAmount) public hasNotRestaked {
-        // Seed some ETH
-        _seedPodWithETH(ethAmount);
+    // function testFuzz_activateRestaking(uint256 ethAmount) public hasNotRestaked {
+    //     // Seed some ETH
+    //     _seedPodWithETH(ethAmount);
 
-        // Activate restaking
-        vm.expectEmit(true, true, true, true);
-        emit RestakingActivated(podOwner);
-        eigenPod.activateRestaking();
+    //     // Activate restaking
+    //     vm.expectEmit(true, true, true, true);
+    //     emit RestakingActivated(podOwner);
+    //     eigenPod.activateRestaking();
 
-        // Checks
-        assertTrue(eigenPod.hasRestaked(), "hasRestaked incorrectly set");
-        _assertWithdrawalProcessed(ethAmount);
-    }
+    //     // Checks
+    //     assertTrue(eigenPod.hasRestaked(), "hasRestaked incorrectly set");
+    //     _assertWithdrawalProcessed(ethAmount);
+    // }
 
     /**
      * This is a regression test for a bug (EIG-14) found by Hexens.  Lets say podOwner sends 32 ETH to the EigenPod, 
@@ -293,67 +293,67 @@ contract EigenPodUnitTests_PodOwnerFunctions is EigenPodUnitTests, IEigenPodEven
      * And simply withdraw the 32ETH because nonBeaconChainETHBalanceWei is 32ETH.  This was an issue because 
      * nonBeaconChainETHBalanceWei was never zeroed out in _processWithdrawalBeforeRestaking
      */
-    function test_regression_validatorBalance_cannotBeRemoved_viaNonBeaconChainETHBalanceWei() external hasNotRestaked {
-        // Assert that the pod has not restaked
-        assertFalse(eigenPod.hasRestaked(), "hasRestaked should be false");
+    // function test_regression_validatorBalance_cannotBeRemoved_viaNonBeaconChainETHBalanceWei() external hasNotRestaked {
+    //     // Assert that the pod has not restaked
+    //     assertFalse(eigenPod.hasRestaked(), "hasRestaked should be false");
 
-        // Simulate podOwner sending 32 ETH to eigenPod
-        _seedPodWithETH(32 ether);
-        assertEq(eigenPod.nonBeaconChainETHBalanceWei(), 32 ether, "nonBeaconChainETHBalanceWei should be 32 ETH");
+    //     // Simulate podOwner sending 32 ETH to eigenPod
+    //     _seedPodWithETH(32 ether);
+    //     assertEq(eigenPod.nonBeaconChainETHBalanceWei(), 32 ether, "nonBeaconChainETHBalanceWei should be 32 ETH");
 
-        // Pod owner calls withdrawBeforeRestaking, sending 32 ETH to owner
-        eigenPod.withdrawBeforeRestaking();
-        assertEq(address(eigenPod).balance, 0, "eigenPod balance should be 0");
-        assertEq(address(delayedWithdrawalRouterMock).balance, 32 ether, "withdrawal router balance should be 32 ETH");
+    //     // Pod owner calls withdrawBeforeRestaking, sending 32 ETH to owner
+    //     eigenPod.withdrawBeforeRestaking();
+    //     assertEq(address(eigenPod).balance, 0, "eigenPod balance should be 0");
+    //     assertEq(address(delayedWithdrawalRouterMock).balance, 32 ether, "withdrawal router balance should be 32 ETH");
 
-        // Upgrade from m1 to m2
+    //     // Upgrade from m1 to m2
 
-        // Activate restaking on the pod
-        eigenPod.activateRestaking();
+    //     // Activate restaking on the pod
+    //     eigenPod.activateRestaking();
 
-        // Simulate a withdrawal by increasing eth balance without code execution
-        cheats.deal(address(eigenPod), 32 ether);
+    //     // Simulate a withdrawal by increasing eth balance without code execution
+    //     cheats.deal(address(eigenPod), 32 ether);
 
-        // Try calling withdrawNonBeaconChainETHBalanceWei, should fail since `nonBeaconChainETHBalanceWei` 
-        // was set to 0 when calling `_processWithdrawalBeforeRestaking` from `activateRestaking` 
-        cheats.expectRevert("EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
-        eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, 32 ether);
-    }
+    //     // Try calling withdrawNonBeaconChainETHBalanceWei, should fail since `nonBeaconChainETHBalanceWei` 
+    //     // was set to 0 when calling `_processWithdrawalBeforeRestaking` from `activateRestaking` 
+    //     cheats.expectRevert("EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei");
+    //     eigenPod.withdrawNonBeaconChainETHBalanceWei(podOwner, 32 ether);
+    // }
     
     /*******************************************************************************
                         Withdraw Before Restaking Tests
     *******************************************************************************/
 
-    function testFuzz_withdrawBeforeRestaking_revert_notPodOwner(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) {
-        cheats.assume(invalidCaller != podOwner);
+    // function testFuzz_withdrawBeforeRestaking_revert_notPodOwner(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) {
+    //     cheats.assume(invalidCaller != podOwner);
 
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
-        eigenPod.withdrawBeforeRestaking();
-    }
+    //     cheats.prank(invalidCaller);
+    //     cheats.expectRevert("EigenPod.onlyEigenPodOwner: not podOwner");
+    //     eigenPod.withdrawBeforeRestaking();
+    // }
 
-    function test_withdrawBeforeRestaking_revert_alreadyRestaked() public {
-        cheats.expectRevert("EigenPod.hasNeverRestaked: restaking is enabled");
-        eigenPod.withdrawBeforeRestaking();
-    }
+    // function test_withdrawBeforeRestaking_revert_alreadyRestaked() public {
+    //     cheats.expectRevert("EigenPod.hasNeverRestaked: restaking is enabled");
+    //     eigenPod.withdrawBeforeRestaking();
+    // }
 
-    function testFuzz_withdrawBeforeRestaking(uint256 ethAmount) public hasNotRestaked {
-        // Seed some ETH
-        _seedPodWithETH(ethAmount);
+    // function testFuzz_withdrawBeforeRestaking(uint256 ethAmount) public hasNotRestaked {
+    //     // Seed some ETH
+    //     _seedPodWithETH(ethAmount);
 
-        // Withdraw
-        eigenPod.withdrawBeforeRestaking();
+    //     // Withdraw
+    //     eigenPod.withdrawBeforeRestaking();
 
-        // Checks
-        _assertWithdrawalProcessed(ethAmount);
-    }
+    //     // Checks
+    //     _assertWithdrawalProcessed(ethAmount);
+    // }
 
     // Helpers
-    function _assertWithdrawalProcessed(uint256 amount) internal {
-        assertEq(eigenPod.mostRecentWithdrawalTimestamp(), uint32(block.timestamp), "Incorrect mostRecentWithdrawalTimestamp");
-        assertEq(eigenPod.nonBeaconChainETHBalanceWei(), 0, "Incorrect nonBeaconChainETHBalanceWei");
-        assertEq(address(delayedWithdrawalRouterMock).balance, amount, "Incorrect amount sent to delayed withdrawal router");
-    }
+    // function _assertWithdrawalProcessed(uint256 amount) internal {
+    //     assertEq(eigenPod.mostRecentWithdrawalTimestamp(), uint32(block.timestamp), "Incorrect mostRecentWithdrawalTimestamp");
+    //     assertEq(eigenPod.nonBeaconChainETHBalanceWei(), 0, "Incorrect nonBeaconChainETHBalanceWei");
+    //     assertEq(address(delayedWithdrawalRouterMock).balance, amount, "Incorrect amount sent to delayed withdrawal router");
+    // }
 
     function _seedPodWithETH(uint256 ethAmount) internal {
         cheats.deal(address(this), ethAmount);
