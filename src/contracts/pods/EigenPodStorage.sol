@@ -28,7 +28,7 @@ abstract contract EigenPodStorage is IEigenPod {
     mapping(bytes32 => ValidatorInfo) internal _validatorPubkeyHashToInfo;
 
     /// @notice This variable tracks any ETH deposited into this contract via the `receive` fallback function
-    uint256 public nonBeaconChainETHBalanceWei;
+    uint256 internal __deprecated_nonBeaconChainETHBalanceWei;
 
     /// @notice This variable tracks the total amount of partial withdrawals claimed via merkle proofs prior to a switch to ZK proofs for claiming partial withdrawals
     uint64 __deprecated_sumOfPartialWithdrawalsClaimedGwei;
