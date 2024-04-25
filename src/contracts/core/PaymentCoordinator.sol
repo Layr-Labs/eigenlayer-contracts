@@ -218,7 +218,7 @@ contract PaymentCoordinator is
         );
         require(
             paymentCalculationEndTimestamp < block.timestamp,
-            "PaymentCoordinator.submitRoot: paymentCalculationEndTimestamp can't be in the future"
+            "PaymentCoordinator.submitRoot: paymentCalculationEndTimestamp cannot be in the future"
         );
         uint32 rootIndex = uint32(distributionRoots.length);
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
