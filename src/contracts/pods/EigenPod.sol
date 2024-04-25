@@ -153,7 +153,6 @@ contract EigenPod is
 
     /// @notice payable fallback function that receives ether deposited to the eigenpods contract
     receive() external payable {
-        nonBeaconChainETHBalanceWei += msg.value;
         emit NonBeaconChainETHReceived(msg.value);
     }
 
@@ -163,7 +162,7 @@ contract EigenPod is
      * change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
      * @dev Once finalized, the pod owner is awarded shares corresponding to:
      * - the total change in their ACTIVE validator balances
-     * - any ETH in the pod not already awarded shares.
+     * - any ETH in the pod not already awarded shares
      * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
      * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
      */
@@ -362,20 +361,6 @@ contract EigenPod is
         _startCheckpoint();
     }
 
-    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(
-        address recipient,
-        uint256 amountToWithdraw
-    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
-        require(
-            amountToWithdraw <= nonBeaconChainETHBalanceWei,
-            "EigenPod.withdrawnonBeaconChainETHBalanceWei: amountToWithdraw is greater than nonBeaconChainETHBalanceWei"
-        );
-        nonBeaconChainETHBalanceWei -= amountToWithdraw;
-        emit NonBeaconChainETHWithdrawn(recipient, amountToWithdraw);
-        _sendETH_AsDelayedWithdrawal(recipient, amountToWithdraw);
-    }
-
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(
         IERC20[] memory tokenList,
@@ -403,14 +388,9 @@ contract EigenPod is
         hasNeverRestaked
     {
         hasRestaked = true;
-        _processWithdrawalBeforeRestaking(podOwner);
 
         emit RestakingActivated(podOwner);
-    }
-
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external onlyEigenPodOwner hasNeverRestaked {
-        _processWithdrawalBeforeRestaking(podOwner);
+        _startCheckpoint();
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
@@ -565,27 +545,47 @@ contract EigenPod is
         return balanceDeltaGwei;
     }
 
+    /**
+     * @dev Initiate a checkpoint proof by snapshotting both the pod's ETH balance and the
+     * current block's parent block root. After providing a checkpoint proof for each of the
+     * pod's ACTIVE validators, the pod's ETH balance is awarded shares and can be withdrawn.
+     * @dev ACTIVE validators are validators with verified withdrawal credentials (See
+     * `verifyWithdrawalCredentials` for details)
+     * @dev If the pod does not have any ACTIVE validators, the checkpoint is automatically
+     * finalized.
+     * @dev Once started, a checkpoint MUST be completed! It is not possible to start a
+     * checkpoint if the existing one is incomplete.
+     */
     function _startCheckpoint() internal {
         require(
             currentCheckpointTimestamp == 0, 
             "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
         );
 
-        // Snapshot pod balance at the start of the checkpoint. Once the checkpoint is finalized,
-        // this amount will be added to the total validator balance delta and credited as shares.
-        uint256 podBalanceWei = 
-            address(this).balance
-                - nonBeaconChainETHBalanceWei
-                - (withdrawableRestakedExecutionLayerGwei * GWEI_TO_WEI);
+        // Snapshot pod balance at the start of the checkpoint, subtracting pod balance that has
+        // previously been credited with shares. Once the checkpoint is finalized, `podBalanceGwei` 
+        // will be added to the total validator balance delta and credited as shares.
+        // 
+        // Note: On finalization, `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
+        // to denote that it has been credited with shares. Because this value is denominated in gwei, 
+        // `podBalanceGwei` is also converted to a gwei amount here. This means that any sub-gwei amounts 
+        // sent to the pod are not credited with shares and are therefore not withdrawable. 
+        // This can be addressed by topping up a pod's balance to a value divisible by 1 gwei.
+        uint256 podBalanceGwei = 
+            (address(this).balance / GWEI_TO_WEI) - withdrawableRestakedExecutionLayerGwei;
 
+        // Create checkpoint using the previous block's root for proofs, and the current
+        // `activeValidatorCount` as the number of checkpoint proofs needed to finalize
+        // the checkpoint.
         Checkpoint memory checkpoint = Checkpoint({
             beaconBlockRoot: _getParentBlockRoot(uint64(block.timestamp)),
-            podBalanceGwei: podBalanceWei / GWEI_TO_WEI,
+            podBalanceGwei: podBalanceGwei,
             balanceDeltasGwei: 0,
             proofsRemaining: activeValidatorCount
         });
 
-        // Place checkpoint in storage
+        // Place checkpoint in storage. If `proofsRemaining` is 0, the checkpoint
+        // is automatically finalized.
         currentCheckpointTimestamp = uint64(block.timestamp);
         _updateCheckpoint(checkpoint);
 
@@ -596,7 +596,7 @@ contract EigenPod is
      * @dev Finish progress on a checkpoint and store it in state.
      * @dev If the checkpoint has no proofs remaining, it is finalized:
      * - a share delta is calculated and sent to the `EigenPodManager`
-     * - the checkpointed `podBalance` is added to `withdrawableRestakedExecutionLayerGwei`
+     * - the checkpointed `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
      * - `currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
@@ -621,18 +621,8 @@ contract EigenPod is
         }
     }
 
-    function _processWithdrawalBeforeRestaking(address _podOwner) internal {
-        mostRecentWithdrawalTimestamp = uint32(block.timestamp);
-        nonBeaconChainETHBalanceWei = 0;
-        _sendETH_AsDelayedWithdrawal(_podOwner, address(this).balance);
-    }
-
     function _sendETH(address recipient, uint256 amountWei) internal {
         Address.sendValue(payable(recipient), amountWei);
-    }
-
-    function _sendETH_AsDelayedWithdrawal(address recipient, uint256 amountWei) internal {
-        delayedWithdrawalRouter.createDelayedWithdrawal{value: amountWei}(podOwner, recipient);
     }
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`

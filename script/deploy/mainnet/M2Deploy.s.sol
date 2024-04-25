@@ -451,7 +451,6 @@ contract M2Deploy is Script, Test {
         // Check updated storage values
         require(eigenPod.hasRestaked(), "eigenPod.hasRestaked not set to true");
         require(address(eigenPod).balance == 0, "eigenPod balance not 0 after activating restaking");
-        require(eigenPod.nonBeaconChainETHBalanceWei() == 0, "non beacon chain eth balance not 0");
         require(
             eigenPod.mostRecentWithdrawalTimestamp() == block.timestamp,
             "eigenPod.mostRecentWithdrawalTimestamp not updated"
