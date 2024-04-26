@@ -202,7 +202,7 @@ interface IPaymentCoordinator {
     /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     function activationDelay() external view returns (uint32);
 
-    /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
+    /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
     function claimerFor(address earner) external view returns (address);
 
     /// @notice Mapping: claimer => token => total amount claimed
@@ -253,7 +253,7 @@ interface IPaymentCoordinator {
      * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to claimerFor[claim.earner]
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to corresponding address in claim.tokenReceivers
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
      * @dev only callable by the valid claimer, that is
@@ -271,7 +271,7 @@ interface IPaymentCoordinator {
     function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) external;
 
     /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the earner (msg.sender)
+     * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
      * @param claimer The address of the entity that can claim payments on behalf of the earner
      * @dev Only callable by the `earner`
      */

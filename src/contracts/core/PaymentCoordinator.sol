@@ -165,7 +165,7 @@ contract PaymentCoordinator is
      * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to claimerFor[claim.earner]
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to corresponding address in claim.tokenReceivers
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
      * @dev only callable by the valid claimer, that is

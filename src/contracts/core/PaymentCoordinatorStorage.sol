@@ -70,7 +70,7 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice the commission for all operators across all avss
     uint16 public globalOperatorCommissionBips;
 
-    /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
+    /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
     mapping(address => address) public claimerFor;
 
     /// @notice Mapping: earner => token => total amount claimed
