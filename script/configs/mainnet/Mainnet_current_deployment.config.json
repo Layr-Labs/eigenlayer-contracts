@@ -21,6 +21,7 @@
     "slasherImplementation": "0xef31c292801f24f16479DD83197F1E6AeBb8d6d8",
     "strategyManager": "0x858646372CC42E1A627fcE94aa7A7033e7CF075A",
     "strategyManagerImplementation": "0x5d25EEf8CfEdaA47d31fE2346726dE1c21e342Fb",
+    "numStrategiesDeployed": 12,
     "strategies": {
       "stETH": "0x93c4b944D05dfe6df7645A86cd2206016c51564D",
       "rETH": "0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2",

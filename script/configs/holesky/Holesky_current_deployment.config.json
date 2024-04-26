@@ -19,6 +19,7 @@
     "paymentCoordinatorImplementation": "0x0000000000000000000000000000000000000000",
     "slasher": "0xcAe751b75833ef09627549868A04E32679386e7C",
     "slasherImplementation": "0x99715D255E34a39bE9943b82F281CA734bcF345A",
+    "numStrategiesDeployed": 8,
     "strategies": {
       "WETH": "0x80528D6e9A2BAbFc766965E0E26d5aB08D9CFaF9",
       "rETH": "0x3A8fBdf9e77DFc25d09741f51d3E181b25d0c4E0",
