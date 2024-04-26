@@ -197,8 +197,8 @@ contract PaymentCoordinator is
             uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
             cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
-            tokenLeaf.token.safeTransfer(claimer, claimAmount);
-            emit PaymentClaimed(root.root, earner, claimer, claim.tokenLeaves[i].token, claimAmount);
+            tokenLeaf.token.safeTransfer(claim.tokenReceivers[i], claimAmount);
+            emit PaymentClaimed(root.root, earner, claimer, claim.tokenReceivers[i], tokenLeaf.token, claimAmount);
         }
     }
 
@@ -352,6 +352,10 @@ contract PaymentCoordinator is
         require(
             claim.tokenTreeProofs.length == claim.tokenLeaves.length,
             "PaymentCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
+        );
+        require(
+            claim.tokenLeaves.length == claim.tokenReceivers.length,
+            "PaymentCoordinator._checkClaim: tokenLeaves and receivers length mismatch"
         );
 
         // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root

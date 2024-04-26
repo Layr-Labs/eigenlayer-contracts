@@ -112,6 +112,7 @@ interface IPaymentCoordinator {
      * @param tokenIndices The indices of the token leaves in the earner's subtree
      * @param tokenTreeProofs The proofs of the token leaves against the earner's earnerTokenRoot
      * @param tokenLeaves The token leaves to be claimed
+     * @param tokenReceivers The addresses to which the tokens will be sent to w.r.t the tokenLeaves input param
      * @dev The merkle tree is structured with the merkle root at the top and EarnerTreeMerkleLeaf as internal leaves
      * in the tree. Each earner leaf has its own subtree with TokenTreeMerkleLeaf as leaves in the subtree.
      * To prove a claim against a specified rootIndex(which specifies the distributionRoot being used),
@@ -126,6 +127,7 @@ interface IPaymentCoordinator {
         uint32[] tokenIndices;
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
+        address[] tokenReceivers;
     }
 
     /// EVENTS ///
@@ -159,7 +161,7 @@ interface IPaymentCoordinator {
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
         bytes32 indexed root,
-        uint32 paymentCalculationEndTimestamp,
+        uint32 indexed paymentCalculationEndTimestamp,
         uint32 activatedAt
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
@@ -167,7 +169,8 @@ interface IPaymentCoordinator {
         bytes32 root,
         address indexed earner,
         address indexed claimer,
-        IERC20 indexed token,
+        address indexed tokenReceiver,
+        IERC20 token,
         uint256 claimedAmount
     );
 

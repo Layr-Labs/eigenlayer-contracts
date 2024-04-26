@@ -200,6 +200,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
+    /// @notice for the tokenReceivers array we are simply setting it to the claimer for each token
     function _assertPaymentClaimedEvents(bytes32 root, IPaymentCoordinator.PaymentMerkleClaim memory claim) internal {
         address earner = claim.earnerLeaf.earner;
         address claimer = paymentCoordinator.claimerFor(earner);
@@ -213,7 +214,14 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
             claimedAmount = paymentCoordinator.cumulativeClaimed(earner, token);
 
             cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit PaymentClaimed(root, earner, claimer, token, claim.tokenLeaves[i].cumulativeEarnings - claimedAmount);
+            emit PaymentClaimed(
+                root,
+                earner,
+                claimer,
+                claimer,
+                token,
+                claim.tokenLeaves[i].cumulativeEarnings - claimedAmount
+            );
         }
     }
 
@@ -357,7 +365,10 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setPaymentUpdater_Revert_WhenNotOwner(address caller, address newPaymentUpdater) public {
+    function testFuzz_setPaymentUpdater_Revert_WhenNotOwner(
+        address caller,
+        address newPaymentUpdater
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -1145,8 +1156,8 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
 
     /// @notice Submits multiple roots and checks root index from hash is correct
     function testFuzz_getRootIndexFromHash(bytes32 root, uint16 numRoots, uint256 index) public {
-        cheats.assume(numRoots > 0 && numRoots < 100);
-        cheats.assume(index < numRoots);
+        numRoots = uint16(bound(numRoots, 1, 100));
+        index = bound(index, 0, uint256(numRoots - 1));
 
         bytes32[] memory roots = new bytes32[](numRoots);
         cheats.startPrank(paymentUpdater);
@@ -1208,7 +1219,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1257,7 +1268,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1306,7 +1317,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
@@ -1422,7 +1433,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
@@ -1503,7 +1514,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1544,7 +1555,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1583,7 +1594,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1600,9 +1611,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             .with_key(address(claim.tokenLeaves[0].token))
             .checked_write(type(uint256).max);
         cheats.startPrank(claimer);
-        cheats.expectRevert(
-            "PaymentCoordinator.processClaim: cumulativeEarnings must be gte than cumulativeClaimed"
-        );
+        cheats.expectRevert("PaymentCoordinator.processClaim: cumulativeEarnings must be gte than cumulativeClaimed");
         paymentCoordinator.processClaim(claim);
         cheats.stopPrank();
     }
@@ -1626,7 +1635,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1638,11 +1647,9 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // Take the tokenIndex and add a significant bit so that the actual index number is increased
         // but still with the same least significant bits for valid proofs
         uint8 proofLength = uint8(claim.tokenTreeProofs[0].length);
-        claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength/32));
+        claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert(
-            "PaymentCoordinator._verifyTokenClaim: invalid tokenLeafIndex"
-        );
+        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
         paymentCoordinator.processClaim(claim);
         cheats.stopPrank();
     }
@@ -1666,7 +1673,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs({tokenReceiver: claimer});
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
@@ -1678,11 +1685,9 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // Take the tokenIndex and add a significant bit so that the actual index number is increased
         // but still with the same least significant bits for valid proofs
         uint8 proofLength = uint8(claim.earnerTreeProof.length);
-        claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength/32));
+        claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert(
-            "PaymentCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex"
-        );
+        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
         paymentCoordinator.processClaim(claim);
         cheats.stopPrank();
     }
@@ -1695,7 +1700,10 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
     }
 
     /// @notice parse proofs from json file and submitRoot()
-    function _parseProofData(string memory filePath) internal returns (IPaymentCoordinator.PaymentMerkleClaim memory) {
+    function _parseProofData(
+        string memory filePath,
+        address tokenReceiver
+    ) internal returns (IPaymentCoordinator.PaymentMerkleClaim memory) {
         cheats.readFile(filePath);
 
         string memory claimProofData = cheats.readFile(filePath);
@@ -1714,6 +1722,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             numTokenLeaves
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
+        address[] memory tokenReceivers = new address[](numTokenLeaves);
         for (uint256 i = 0; i < numTokenLeaves; ++i) {
             string memory tokenKey = string.concat(".TokenLeaves[", cheats.toString(i), "].Token");
             string memory amountKey = string.concat(".TokenLeaves[", cheats.toString(i), "].CumulativeEarnings");
@@ -1726,6 +1735,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
                 cumulativeEarnings: cumulativeEarnings
             });
             tokenIndices[i] = uint32(stdJson.readUint(claimProofData, leafIndicesKey));
+            tokenReceivers[i] = tokenReceiver;
 
             /// DeployCode ERC20 to Token Address
             // deployCodeTo("ERC20PresetFixedSupply.sol", address(tokenLeaves[i].token));
@@ -1754,18 +1764,28 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
             tokenIndices: tokenIndices,
             tokenTreeProofs: tokenTreeProofs,
-            tokenLeaves: tokenLeaves
+            tokenLeaves: tokenLeaves,
+            tokenReceivers: tokenReceivers
         });
 
         return newClaim;
     }
 
-    function _parseAllProofs() internal returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+    function _parseAllProofs(address tokenReceiver) internal returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
         IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](3);
 
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root1.json");
-        claims[1] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root2.json");
-        claims[2] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root3.json");
+        claims[0] = _parseProofData(
+            "src/test/test-data/paymentCoordinator/processClaimProofs_Root1.json",
+            tokenReceiver
+        );
+        claims[1] = _parseProofData(
+            "src/test/test-data/paymentCoordinator/processClaimProofs_Root2.json",
+            tokenReceiver
+        );
+        claims[2] = _parseProofData(
+            "src/test/test-data/paymentCoordinator/processClaimProofs_Root3.json",
+            tokenReceiver
+        );
 
         return claims;
     }

@@ -73,7 +73,7 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// @notice Mapping: earner => the address of the entity to which new payments are directed on behalf of the earner
     mapping(address => address) public claimerFor;
 
-    /// @notice Mapping: claimer => token => total amount claimed
+    /// @notice Mapping: earner => token => total amount claimed
     mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed;
 
     /// @notice Used for unique rangePaymentHashes per AVS and for PayAllForRangeSubmitters
