@@ -34,7 +34,14 @@ To get an idea of how users interact with these contracts, check out our integra
 
 ## Building and Running Tests
 
-This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
+This repository uses Foundry. You can install foundry with these commands. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. 
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+source ~/.bashrc
+```
+
+If you already have foundry, you can build this project and run tests with these commands:
 
 ```
 foundryup
