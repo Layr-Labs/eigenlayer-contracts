@@ -28,6 +28,12 @@ contract PaymentCoordinator is
 {
     using SafeERC20 for IERC20;
 
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 internal constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    /// @dev Chain ID at the time of contract deployment
+    uint256 internal immutable ORIGINAL_CHAIN_ID;
+
     /// @dev Index for flag that pauses payForRange payments
     uint8 internal constant PAUSED_PAY_FOR_RANGE = 0;
     /// @dev Index for flag that pauses payAllForRange payments
@@ -42,8 +48,8 @@ contract PaymentCoordinator is
     /// @dev Salt for the token leaf, meant to distinguish from earnerLeaf since they have the same sized data
     uint8 internal constant TOKEN_LEAF_SALT = 1;
 
-    /// @dev Chain ID at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
+    /// @notice Canonical, virtual beacon chain ETH strategy
+    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     modifier onlyPaymentUpdater() {
         require(msg.sender == paymentUpdater, "PaymentCoordinator: caller is not the paymentUpdater");
@@ -234,8 +240,8 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Sets the address of the entity that can claim payments on behalf of the earner
-     * @param claimer The address of the entity that can claim payments on behalf of the earner
+     * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
+     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
      * @dev Only callable by the `earner`
      */
     function setClaimerFor(address claimer) external {

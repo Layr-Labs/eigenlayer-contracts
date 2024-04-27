@@ -19,10 +19,6 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
                                CONSTANTS AND IMMUTABLES 
     *******************************************************************************/
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
     /// @notice The maximum amount of time (seconds) that a range payment can span over
     uint32 public immutable MAX_PAYMENT_DURATION;
     /// @notice max amount of time (seconds) that a payment can start in the past
@@ -37,9 +33,6 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
 
     /// @notice The StrategyManager contract for EigenLayer
     IStrategyManager public immutable strategyManager;
-
-    /// @notice Canonical, virtual beacon chain ETH strategy
-    IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     /*******************************************************************************
                                        STORAGE 
