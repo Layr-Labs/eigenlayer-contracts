@@ -349,7 +349,7 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
     function testFuzz_setGlobalOperatorCommission_Revert_WhenNotOwner(
         address caller,
         uint16 globalCommissionBips
-    ) public {
+    ) public filterFuzzedAddressInputs(caller) {
         cheats.assume(caller != paymentCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -1692,6 +1692,75 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         cheats.stopPrank();
     }
 
+    /// @notice tests with earnerIndex and tokenIndex set to max value and using alternate claim proofs
+    function testFuzz_processClaim_WhenMaxEarnerIndexAndTokenIndex(
+        bool setClaimerFor,
+        address claimerFor,
+        uint8 numShift
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // Hardcode earner address to earner in alternate claim proofs
+        earner = 0x25A1B7322f9796B26a4Bec125913b34C292B28D6;
+
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAlternateClaimProofs({tokenReceiver: claimer});
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            // +1 since earnerIndex is 0-indexed
+            // Here the earnerIndex is 7 in a full binary tree and the number of bytes32 hash proofs is 3
+            assertEq(
+                claim.earnerIndex + 1,
+                (1 << ((claim.earnerTreeProof.length / 32))),
+                "EarnerIndex not set to max value"
+            );
+            // +1 since tokenIndex is 0-indexed
+            // Here the tokenIndex is also 7 in a full binary tree and the number of bytes32 hash proofs is 3
+            assertEq(
+                claim.tokenIndices[0] + 1,
+                (1 << ((claim.tokenTreeProofs[0].length / 32))),
+                "TokenIndex not set to max value"
+            );
+            _assertPaymentClaimedEvents(root, claim);
+            paymentCoordinator.processClaim(claim);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+    }
+
     /// @notice Set address with ERC20Mock bytecode and mint amount to paymentCoordinator for
     /// balance for testing processClaim()
     function _setAddressAsERC20(address randAddress, uint256 mintAmount) internal {
@@ -1771,7 +1840,9 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         return newClaim;
     }
 
-    function _parseAllProofs(address tokenReceiver) internal returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+    function _parseAllProofs(
+        address tokenReceiver
+    ) internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
         IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](3);
 
         claims[0] = _parseProofData(
@@ -1784,6 +1855,19 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         );
         claims[2] = _parseProofData(
             "src/test/test-data/paymentCoordinator/processClaimProofs_Root3.json",
+            tokenReceiver
+        );
+
+        return claims;
+    }
+
+    function _parseAlternateClaimProofs(
+        address tokenReceiver
+    ) internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](3);
+
+        claims[0] = _parseProofData(
+            "src/test/test-data/paymentCoordinator/processClaimProofsAlternateExample.json",
             tokenReceiver
         );
 
