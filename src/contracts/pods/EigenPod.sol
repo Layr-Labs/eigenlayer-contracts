@@ -370,8 +370,11 @@ contract EigenPod is
 
     /**
      * @notice Called by the pod owner to activate restaking by withdrawing
-     * all existing ETH from the pod and preventing further withdrawals via
-     * "withdrawBeforeRestaking()"
+     * all existing ETH from the pod by starting a checkpoint. Once this is called,
+     * the pod owner can begin proving validator withdrawal credentials and checkpoints
+     * to receive shares for beacon chain ETH.
+     * Note: This method is only callable on pods that were deployed *before* the M2
+     * upgrade. After the M2 upgrade, restaking is enabled by default.
      */
     function activateRestaking()
         external
