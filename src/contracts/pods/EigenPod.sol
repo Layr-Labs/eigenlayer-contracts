@@ -616,6 +616,7 @@ contract EigenPod is
 
             // Update pod owner's shares
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
+            emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
         } else {
             _currentCheckpoint = checkpoint;
         }
@@ -655,7 +656,7 @@ contract EigenPod is
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
-    /// @dev Calculates the delta between two Gwei amounts, converts to Wei, and returns as an int256
+    /// @dev Calculates the delta between two Gwei amounts and returns as an int256
     function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
         return
             int256(uint256(newAmountGwei)) - int256(uint256(previousAmountGwei));

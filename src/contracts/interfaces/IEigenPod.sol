@@ -68,9 +68,13 @@ interface IEigenPod {
     /// @notice Emitted when a checkpoint is created
     event CheckpointCreated(uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot);
 
+    /// @notice Emitted when a checkpoint is finalized
+    event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
+
     /// @notice Emitted when a validator is proven for a given checkpoint
     event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
+    /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
@@ -118,6 +122,15 @@ interface IEigenPod {
 
     /// @notice This returns the status of a given validator pubkey
     function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
+
+    /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
+    function activeValidatorCount() external view returns (uint256);
+
+    /// @notice The timestamp of the last checkpoint finalized
+    function lastCheckpointTimestamp() external view returns (uint64);
+
+    /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
+    function currentCheckpointTimestamp() external view returns (uint64);
 
     /// @notice Returns the currently-active checkpoint
     function currentCheckpoint() external view returns (Checkpoint memory);
