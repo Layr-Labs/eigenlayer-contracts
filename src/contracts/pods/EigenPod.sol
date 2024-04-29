@@ -63,10 +63,6 @@ contract EigenPod is
     /// via `verifyStaleBalance`.
     uint256 internal constant TIME_TILL_STALE_BALANCE = 2 weeks;
 
-    /// @notice A `verifyStaleBalance` proof MUST be older than `STALENESS_GRACE_PERIOD`, to give time
-    /// to a pod owner to prove the slashed validator's balance
-    uint256 internal constant STALENESS_GRACE_PERIOD = 6 hours;
-
     /// @notice The address of the EIP-4788 beacon block root oracle
     /// (See https://eips.ethereum.org/EIPS/eip-4788)
     address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
@@ -303,7 +299,6 @@ contract EigenPod is
      * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      *
      * @dev Staleness conditions:
-     * - `beaconTimestamp` MUST NOT fall within `STALENESS_GRACE_PERIOD` seconds of `block.timestamp`
      * - Validator's last balance update is older than `beaconTimestamp` by `TIME_TILL_STALE_BALANCE`
      * - Validator MUST be in `ACTIVE` status in the pod
      * - Validator MUST be slashed on the beacon chain
@@ -316,11 +311,6 @@ contract EigenPod is
         external
         onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
     {  
-        require(
-            beaconTimestamp + STALENESS_GRACE_PERIOD < block.timestamp,
-            "EigenPod.verifyStaleBalance: staleness grace period not elapsed"
-        );
-
         bytes32 validatorPubkey = proof.validatorFields.getPubkeyHash();
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
 
