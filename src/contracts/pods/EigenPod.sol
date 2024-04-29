@@ -161,14 +161,16 @@ contract EigenPod is
      * - any ETH in the pod not already awarded shares
      * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
      * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
+     * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
+     * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint()
+    function startCheckpoint(bool revertIfNoBalance)
         external
         onlyEigenPodOwner() 
         onlyWhenNotPaused(PAUSED_START_CHECKPOINT) 
         afterRestaking(uint64(block.timestamp)) /// TODO - this is the wrong condition
     {
-        _startCheckpoint();
+        _startCheckpoint(revertIfNoBalance);
     }
 
     /**
@@ -348,7 +350,7 @@ contract EigenPod is
         });
         
         // Validator verified to be stale - start a checkpoint
-        _startCheckpoint();
+        _startCheckpoint(false);
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
@@ -380,7 +382,7 @@ contract EigenPod is
         hasRestaked = true;
 
         emit RestakingActivated(podOwner);
-        _startCheckpoint();
+        _startCheckpoint(false);
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
@@ -545,8 +547,10 @@ contract EigenPod is
      * finalized.
      * @dev Once started, a checkpoint MUST be completed! It is not possible to start a
      * checkpoint if the existing one is incomplete.
+     * @param revertIfNoBalance If the available ETH balance for checkpointing is 0 and this is
+     * true, this method will revert
      */
-    function _startCheckpoint() internal {
+    function _startCheckpoint(bool revertIfNoBalance) internal {
         require(
             currentCheckpointTimestamp == 0, 
             "EigenPod._startCheckpoint: must finish previous checkpoint before starting another"
@@ -563,6 +567,11 @@ contract EigenPod is
         // This can be addressed by topping up a pod's balance to a value divisible by 1 gwei.
         uint256 podBalanceGwei = 
             (address(this).balance / GWEI_TO_WEI) - withdrawableRestakedExecutionLayerGwei;
+
+        // If the caller doesn't want a "0 balance" checkpoint, revert
+        if (revertIfNoBalance && podBalanceGwei == 0) {
+            revert("EigenPod._startCheckpoint: no balance available to checkpoint");
+        }
 
         // Create checkpoint using the previous block's root for proofs, and the current
         // `activeValidatorCount` as the number of checkpoint proofs needed to finalize
