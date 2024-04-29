@@ -43,6 +43,30 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS) {}
 
+    /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
+    function activeValidatorCount() external view returns (uint256) {}
+
+    /// @notice The timestamp of the last checkpoint finalized
+    function lastCheckpointTimestamp() external view returns (uint64) {}
+
+    /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
+    function currentCheckpointTimestamp() external view returns (uint64) {}
+
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() external view returns (Checkpoint memory) {}
+
+    function startCheckpoint(bool revertIfNoBalance) external {}
+
+    function verifyCheckpointProofs(
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceProof[] calldata proofs
+    ) external {}
+
+    function verifyStaleBalance(
+        uint64 beaconTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.ValidatorProof calldata proof
+    ) external {}
 
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,

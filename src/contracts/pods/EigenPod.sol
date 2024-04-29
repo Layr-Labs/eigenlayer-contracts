@@ -196,7 +196,7 @@ contract EigenPod is
             "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
         );
 
-        Checkpoint memory checkpoint = currentCheckpoint;
+        Checkpoint memory checkpoint = _currentCheckpoint;
 
         // Verify `stateRootProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
@@ -370,8 +370,11 @@ contract EigenPod is
 
     /**
      * @notice Called by the pod owner to activate restaking by withdrawing
-     * all existing ETH from the pod and preventing further withdrawals via
-     * "withdrawBeforeRestaking()"
+     * all existing ETH from the pod by starting a checkpoint. Once this is called,
+     * the pod owner can begin proving validator withdrawal credentials and checkpoints
+     * to receive shares for beacon chain ETH.
+     * Note: This method is only callable on pods that were deployed *before* the M2
+     * upgrade. After the M2 upgrade, restaking is enabled by default.
      */
     function activateRestaking()
         external
@@ -487,6 +490,7 @@ contract EigenPod is
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int256 balanceDeltaGwei) {
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
+        uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
 
         require(
             validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
@@ -507,7 +511,7 @@ contract EigenPod is
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
             beaconStateRoot: beaconStateRoot,
-            validatorIndex: uint40(validatorInfo.validatorIndex),
+            validatorIndex: validatorIndex,
             proof: proof
         });
         
@@ -518,15 +522,15 @@ contract EigenPod is
             activeValidatorCount--;
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
 
-            emit ValidatorWithdrawn(beaconTimestamp, uint40(validatorInfo.validatorIndex));
+            emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
         }
 
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-        emit ValidatorCheckpointed(beaconTimestamp, uint40(validatorInfo.validatorIndex));
+        emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
-            emit ValidatorBalanceUpdated(uint40(validatorInfo.validatorIndex), beaconTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
 
             balanceDeltaGwei = _calcBalanceDelta({
                 newAmountGwei: newBalanceGwei,
@@ -597,7 +601,7 @@ contract EigenPod is
      * - a share delta is calculated and sent to the `EigenPodManager`
      * - the checkpointed `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
-     * - `currentCheckpoint` and `currentCheckpointTimestamp` are deleted
+     * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         if (checkpoint.proofsRemaining == 0) {
@@ -611,12 +615,13 @@ contract EigenPod is
             // Finalize the checkpoint
             lastCheckpointTimestamp = currentCheckpointTimestamp;
             delete currentCheckpointTimestamp;
-            delete currentCheckpoint;
+            delete _currentCheckpoint;
 
             // Update pod owner's shares
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
+            emit CheckpointFinalized(lastCheckpointTimestamp, totalShareDeltaWei);
         } else {
-            currentCheckpoint = checkpoint;
+            _currentCheckpoint = checkpoint;
         }
     }
 
@@ -654,7 +659,7 @@ contract EigenPod is
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
     }
 
-    /// @dev Calculates the delta between two Gwei amounts, converts to Wei, and returns as an int256
+    /// @dev Calculates the delta between two Gwei amounts and returns as an int256
     function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int256) {
         return
             int256(uint256(newAmountGwei)) - int256(uint256(previousAmountGwei));
@@ -677,9 +682,14 @@ contract EigenPod is
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
-        /// @notice Returns the validator status for a given validatorPubkey
+    /// @notice Returns the validator status for a given validatorPubkey
     function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS) {
         bytes32 validatorPubkeyHash = _calculateValidatorPubkeyHash(validatorPubkey);
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
+    }
+
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() public view returns (Checkpoint memory) {
+        return _currentCheckpoint;
     }
 }
