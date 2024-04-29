@@ -196,7 +196,7 @@ contract EigenPod is
             "EigenPod.verifyCheckpointProofs: must have active checkpoint to perform checkpoint proof"
         );
 
-        Checkpoint memory checkpoint = currentCheckpoint;
+        Checkpoint memory checkpoint = _currentCheckpoint;
 
         // Verify `stateRootProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot({
@@ -487,6 +487,7 @@ contract EigenPod is
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int256 balanceDeltaGwei) {
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
+        uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
 
         require(
             validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
@@ -507,7 +508,7 @@ contract EigenPod is
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
             beaconStateRoot: beaconStateRoot,
-            validatorIndex: uint40(validatorInfo.validatorIndex),
+            validatorIndex: validatorIndex,
             proof: proof
         });
         
@@ -518,15 +519,15 @@ contract EigenPod is
             activeValidatorCount--;
             validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
 
-            emit ValidatorWithdrawn(beaconTimestamp, uint40(validatorInfo.validatorIndex));
+            emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
         }
 
         _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-        emit ValidatorCheckpointed(beaconTimestamp, uint40(validatorInfo.validatorIndex));
+        emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
-            emit ValidatorBalanceUpdated(uint40(validatorInfo.validatorIndex), beaconTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(validatorIndex, beaconTimestamp, newBalanceGwei);
 
             balanceDeltaGwei = _calcBalanceDelta({
                 newAmountGwei: newBalanceGwei,
@@ -597,7 +598,7 @@ contract EigenPod is
      * - a share delta is calculated and sent to the `EigenPodManager`
      * - the checkpointed `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
-     * - `currentCheckpoint` and `currentCheckpointTimestamp` are deleted
+     * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
      */
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         if (checkpoint.proofsRemaining == 0) {
@@ -611,12 +612,12 @@ contract EigenPod is
             // Finalize the checkpoint
             lastCheckpointTimestamp = currentCheckpointTimestamp;
             delete currentCheckpointTimestamp;
-            delete currentCheckpoint;
+            delete _currentCheckpoint;
 
             // Update pod owner's shares
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
         } else {
-            currentCheckpoint = checkpoint;
+            _currentCheckpoint = checkpoint;
         }
     }
 
@@ -677,9 +678,14 @@ contract EigenPod is
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
-        /// @notice Returns the validator status for a given validatorPubkey
+    /// @notice Returns the validator status for a given validatorPubkey
     function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS) {
         bytes32 validatorPubkeyHash = _calculateValidatorPubkeyHash(validatorPubkey);
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
+    }
+
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() public view returns (Checkpoint memory) {
+        return _currentCheckpoint;
     }
 }

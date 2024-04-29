@@ -43,6 +43,21 @@ contract EigenPodMock is IEigenPod, Test {
     /// @notice This returns the status of a given validator
     function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS) {}
 
+    /// @notice Returns the currently-active checkpoint
+    function currentCheckpoint() external view returns (Checkpoint memory) {}
+
+    function startCheckpoint(bool revertIfNoBalance) external {}
+
+    function verifyCheckpointProofs(
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.BalanceProof[] calldata proofs
+    ) external {}
+
+    function verifyStaleBalance(
+        uint64 beaconTimestamp,
+        BeaconChainProofs.StateRootProof calldata stateRootProof,
+        BeaconChainProofs.ValidatorProof calldata proof
+    ) external {}
 
     function verifyWithdrawalCredentials(
         uint64 oracleTimestamp,
