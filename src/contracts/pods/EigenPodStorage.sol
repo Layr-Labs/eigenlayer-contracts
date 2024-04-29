@@ -43,7 +43,7 @@ abstract contract EigenPodStorage is IEigenPod {
     uint64 public currentCheckpointTimestamp;
 
     /// @notice The current checkpoint, if there is one active
-    Checkpoint public currentCheckpoint;
+    Checkpoint internal _currentCheckpoint;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
