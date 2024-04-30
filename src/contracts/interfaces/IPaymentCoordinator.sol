@@ -112,7 +112,6 @@ interface IPaymentCoordinator {
      * @param tokenIndices The indices of the token leaves in the earner's subtree
      * @param tokenTreeProofs The proofs of the token leaves against the earner's earnerTokenRoot
      * @param tokenLeaves The token leaves to be claimed
-     * @param tokenReceivers The addresses to which the tokens will be sent to w.r.t the tokenLeaves input param
      * @dev The merkle tree is structured with the merkle root at the top and EarnerTreeMerkleLeaf as internal leaves
      * in the tree. Each earner leaf has its own subtree with TokenTreeMerkleLeaf as leaves in the subtree.
      * To prove a claim against a specified rootIndex(which specifies the distributionRoot being used),
@@ -127,7 +126,6 @@ interface IPaymentCoordinator {
         uint32[] tokenIndices;
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
-        address[] tokenReceivers;
     }
 
     /// EVENTS ///
@@ -169,7 +167,7 @@ interface IPaymentCoordinator {
         bytes32 root,
         address indexed earner,
         address indexed claimer,
-        address indexed tokenReceiver,
+        address indexed recipient,
         IERC20 token,
         uint256 claimedAmount
     );
@@ -253,14 +251,14 @@ interface IPaymentCoordinator {
      * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to corresponding address in claim.tokenReceivers
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the payments.
      */
-    function processClaim(PaymentMerkleClaim calldata claim) external;
+    function processClaim(PaymentMerkleClaim calldata claim, address recipient) external;
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay

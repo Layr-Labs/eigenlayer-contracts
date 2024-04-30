@@ -43,7 +43,7 @@ interface IPaymentCoordinatorEvents {
         bytes32 root,
         address indexed earner,
         address indexed claimer,
-        address indexed tokenReceiver,
+        address indexed recipient,
         IERC20 token,
         uint256 claimedAmount
     );

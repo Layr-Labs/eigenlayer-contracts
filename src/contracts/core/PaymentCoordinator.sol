@@ -171,15 +171,17 @@ contract PaymentCoordinator is
      * @notice Claim payments against a given root (read from distributionRoots[claim.rootIndex]).
      * Earnings are cumulative so earners don't have to claim against all distribution roots they have earnings for,
      * they can simply claim against the latest root and the contract will calculate the difference between
-     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to corresponding address in claim.tokenReceivers
+     * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 payments
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the payments.
      */
     function processClaim(
-        PaymentMerkleClaim calldata claim
+        PaymentMerkleClaim calldata claim,
+        address recipient
     ) external onlyWhenNotPaused(PAUSED_CLAIM_PAYMENTS) nonReentrant {
         DistributionRoot memory root = distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
@@ -203,8 +205,8 @@ contract PaymentCoordinator is
             uint256 claimAmount = tokenLeaf.cumulativeEarnings - currCumulativeClaimed;
             cumulativeClaimed[earner][tokenLeaf.token] = tokenLeaf.cumulativeEarnings;
 
-            tokenLeaf.token.safeTransfer(claim.tokenReceivers[i], claimAmount);
-            emit PaymentClaimed(root.root, earner, claimer, claim.tokenReceivers[i], tokenLeaf.token, claimAmount);
+            tokenLeaf.token.safeTransfer(recipient, claimAmount);
+            emit PaymentClaimed(root.root, earner, claimer, recipient, tokenLeaf.token, claimAmount);
         }
     }
 
@@ -358,10 +360,6 @@ contract PaymentCoordinator is
         require(
             claim.tokenTreeProofs.length == claim.tokenLeaves.length,
             "PaymentCoordinator._checkClaim: tokenTreeProofs and leaves length mismatch"
-        );
-        require(
-            claim.tokenLeaves.length == claim.tokenReceivers.length,
-            "PaymentCoordinator._checkClaim: tokenLeaves and receivers length mismatch"
         );
 
         // Verify inclusion of earners leaf (earner, earnerTokenRoot) in the distribution root
