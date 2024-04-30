@@ -214,11 +214,13 @@ contract PaymentCoordinator is
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
+     * @param ipfsHash The IPFS hash of the merkle tree data for the distribution root
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
-        uint32 paymentCalculationEndTimestamp
+        uint32 paymentCalculationEndTimestamp,
+        bytes32 ipfsHash
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) onlyPaymentUpdater {
         require(
             paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
@@ -234,11 +236,12 @@ contract PaymentCoordinator is
             DistributionRoot({
                 root: root,
                 activatedAt: activatedAt,
-                paymentCalculationEndTimestamp: paymentCalculationEndTimestamp
+                paymentCalculationEndTimestamp: paymentCalculationEndTimestamp,
+                ipfsHash: ipfsHash
             })
         );
         currPaymentCalculationEndTimestamp = paymentCalculationEndTimestamp;
-        emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt);
+        emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt, ipfsHash);
     }
 
     /**
@@ -507,6 +510,14 @@ contract PaymentCoordinator is
             }
         }
         revert("PaymentCoordinator.getRootIndexFromHash: root not found");
+    }
+
+    /**
+     * @notice returns the IPFS hash for the given rootIndexex
+     * @param rootIndex The array index of the root in the list of DistributionRoots
+     */
+    function getIpfsHash(uint32 rootIndex) public view returns (bytes32) {
+        return distributionRoots[rootIndex].ipfsHash;
     }
 
     /**

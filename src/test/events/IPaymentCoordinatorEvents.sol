@@ -36,7 +36,8 @@ interface IPaymentCoordinatorEvents {
         uint32 indexed rootIndex,
         bytes32 indexed root,
         uint32 indexed paymentCalculationEndTimestamp,
-        uint32 activatedAt
+        uint32 activatedAt,
+        bytes32 ipfsHash
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
     event PaymentClaimed(
