@@ -71,4 +71,24 @@ contract Deploy_Test_PaymentCoordinator is ExistingDeploymentParser {
 
 
     }
+
+        /**
+     * @notice Deploy PaymentCoordinator Implementation for Holesky and upgrade the proxy
+     */
+    function _upgradePaymentCoordinator() internal {
+        // Deploy PaymentCoordinator proxy and implementation
+        paymentCoordinatorImplementation = new PaymentCoordinator(
+            delegationManager,
+            strategyManager,
+            PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION,
+            PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH,
+            PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP
+        );
+
+        eigenLayerProxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(paymentCoordinator))),
+            address(paymentCoordinatorImplementation)
+        );
+    }
 }

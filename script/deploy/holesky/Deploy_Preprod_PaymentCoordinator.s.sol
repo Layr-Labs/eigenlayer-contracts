@@ -28,7 +28,8 @@ contract Deploy_Preprod_PaymentCoordinator is Deploy_Test_PaymentCoordinator {
 
         emit log_named_address("Deployer Address", msg.sender);
 
-        _deployPaymentCoordinator();
+        // _deployPaymentCoordinator();
+        _upgradePaymentCoordinator();
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
