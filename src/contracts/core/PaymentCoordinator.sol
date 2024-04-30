@@ -214,13 +214,13 @@ contract PaymentCoordinator is
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp until which payments have been calculated
-     * @param ipfsHash The IPFS hash of the merkle tree data for the distribution root
+     * @param rootCID The IPFS content identifier for the merkle tree data for the given root
      * @dev Only callable by the paymentUpdater
      */
     function submitRoot(
         bytes32 root,
         uint32 paymentCalculationEndTimestamp,
-        bytes32 ipfsHash
+        string memory rootCID
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_ROOTS) onlyPaymentUpdater {
         require(
             paymentCalculationEndTimestamp > currPaymentCalculationEndTimestamp,
@@ -237,11 +237,11 @@ contract PaymentCoordinator is
                 root: root,
                 activatedAt: activatedAt,
                 paymentCalculationEndTimestamp: paymentCalculationEndTimestamp,
-                ipfsHash: ipfsHash
+                rootCID: rootCID
             })
         );
         currPaymentCalculationEndTimestamp = paymentCalculationEndTimestamp;
-        emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt, ipfsHash);
+        emit DistributionRootSubmitted(rootIndex, root, paymentCalculationEndTimestamp, activatedAt, rootCID);
     }
 
     /**
@@ -512,12 +512,12 @@ contract PaymentCoordinator is
         revert("PaymentCoordinator.getRootIndexFromHash: root not found");
     }
 
-    /**
-     * @notice returns the IPFS hash for the given rootIndexex
+    /** 
+     * @notice returns the IPFS content identifier for the merkle tree data for the given root index
      * @param rootIndex The array index of the root in the list of DistributionRoots
      */
-    function getIpfsHash(uint32 rootIndex) public view returns (bytes32) {
-        return distributionRoots[rootIndex].ipfsHash;
+    function getRootCID(uint32 rootIndex) public view returns (string memory) {
+        return distributionRoots[rootIndex].rootCID;
     }
 
     /**

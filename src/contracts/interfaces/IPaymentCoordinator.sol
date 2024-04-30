@@ -74,7 +74,7 @@ interface IPaymentCoordinator {
         bytes32 root;
         uint32 paymentCalculationEndTimestamp;
         uint32 activatedAt;
-        bytes32 ipfsHash;
+        string rootCID;
     }
 
     /**
@@ -162,7 +162,7 @@ interface IPaymentCoordinator {
         bytes32 indexed root,
         uint32 indexed paymentCalculationEndTimestamp,
         uint32 activatedAt,
-        bytes32 ipfsHash
+        string rootCID
     );
     /// @notice root is one of the submitted distribution roots that was claimed against
     event PaymentClaimed(
@@ -226,10 +226,10 @@ interface IPaymentCoordinator {
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
 
     /** 
-     * @notice returns the IPFS hash for the given rootIndexex
+     * @notice returns the IPFS content identifier for the merkle tree data for the given root index
      * @param rootIndex The array index of the root in the list of DistributionRoots
      */
-    function getIpfsHash(uint32 rootIndex) external view returns (bytes32);
+    function getRootCID(uint32 rootIndex) external view returns (string memory);
 
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
@@ -272,10 +272,10 @@ interface IPaymentCoordinator {
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
      * @param root The merkle root of the distribution
      * @param paymentCalculationEndTimestamp The timestamp (seconds) until which payments have been calculated
-     * @param ipfsHash The IPFS hash of the merkle tree data for the distribution root
+     * @param rootCID The IPFS content identifier for the merkle tree data for the given root
      * @dev Only callable by the paymentUpdater
      */
-    function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp, bytes32 ipfsHash) external;
+    function submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp, string memory rootCID) external;
 
     /**
      * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)

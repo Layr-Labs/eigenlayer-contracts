@@ -40,7 +40,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     StrategyBase strategyImplementation;
     uint256 mockTokenInitialSupply = 10e50;
     IPaymentCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
-    bytes32 defaultIpfsHash = bytes32(0);
+    string defaultRootCID = "defaultRootCID";
 
     // Config Variables
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
@@ -1103,7 +1103,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         cheats.prank(invalidPaymentUpdater);
 
         cheats.expectRevert("PaymentCoordinator: caller is not the paymentUpdater");
-        paymentCoordinator.submitRoot(bytes32(0), 0, defaultIpfsHash);
+        paymentCoordinator.submitRoot(bytes32(0), 0, defaultRootCID);
     }
 
     function test_Revert_WhenSubmitRootPaused() public {
@@ -1111,12 +1111,12 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         paymentCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
 
         cheats.expectRevert("Pausable: index is paused");
-        paymentCoordinator.submitRoot(bytes32(0), 0, defaultIpfsHash);
+        paymentCoordinator.submitRoot(bytes32(0), 0, defaultRootCID);
     }
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp, bytes32 ipfsHash) public {
+    function testFuzz_submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp, string memory rootCID) public {
         // fuzz avoiding overflows and valid activatedAt values
         cheats.assume(paymentCoordinator.currPaymentCalculationEndTimestamp() < paymentCalculationEndTimestamp);
         cheats.assume(paymentCalculationEndTimestamp < block.timestamp);
@@ -1125,15 +1125,15 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
 
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit DistributionRootSubmitted(expectedRootIndex, root, paymentCalculationEndTimestamp, activatedAt, ipfsHash);
+        emit DistributionRootSubmitted(expectedRootIndex, root, paymentCalculationEndTimestamp, activatedAt, rootCID);
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, ipfsHash);
+        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp, rootCID);
 
         (
             bytes32 submittedRoot,
             uint32 submittedPaymentCalculationEndTimestamp,
             uint32 submittedActivatedAt,
-            bytes32 submittedIpfsHash
+            string memory submittedRootCID
         ) = paymentCoordinator.distributionRoots(expectedRootIndex);
 
         assertEq(
@@ -1154,14 +1154,14 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             "currPaymentCalculationEndTimestamp not set"
         );
         assertEq(
-            ipfsHash,
-            submittedIpfsHash,
-            "ipfsHash not set correctly"
+            rootCID,
+            submittedRootCID,
+            "rootCID not set correctly"
         );
         assertEq(
-            paymentCoordinator.getIpfsHash(expectedRootIndex),
-            ipfsHash,
-            "ipfsHash not set correctly from getIpfsHash view"
+            paymentCoordinator.getRootCID(expectedRootIndex),
+            rootCID,
+            "rootCID not set correctly from getRootCID view"
         );
     }
 
@@ -1176,7 +1176,7 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
             roots[i] = keccak256(abi.encodePacked(root, i));
 
             uint32 activationDelay = uint32(block.timestamp) + paymentCoordinator.activationDelay();
-            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp - 1), defaultIpfsHash);
+            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp - 1), defaultRootCID);
             cheats.warp(activationDelay);
         }
         cheats.stopPrank();
@@ -1830,7 +1830,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
 
         cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp, defaultIpfsHash);
+        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp, defaultRootCID);
 
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
             rootIndex: rootIndex,
