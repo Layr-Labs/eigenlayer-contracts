@@ -33,7 +33,7 @@ This document organizes methods according to the following themes (click each to
     * related functions: `payAllForRange`, `setPayAllForRangeSubmitter`
 * `mapping(address => address) public claimerFor`: earner => claimer
     * Mapping for earners(stakers/operators) to track their claimer address. The claimer is the address that can call `processClaim` on behalf of the earner. If the claimer is not set i.e `claimerFor[earner] == address(0)` , the earner themselves can call `processClaim` directly.
-    * Note that the claimerFor isn't necessarily the address that the payment tokens are transferred to but rather have the authority to process the claims and direct the tokens to their receiving addresses. See `struct PaymentMerkleClaim` and the `address[] tokenReceivers` field.
+    * Note that the claimerFor isn't necessarily the address that the payment tokens are transferred to but rather have the authority to process the claims and direct the tokens to their recipient address. See the interface for `processClaim`.
     * related functions: `processClaim`, `setClaimerFor`
 * `mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed`: earner => token => total amount claimed
     * Mapping for earners(stakers/operators) to track their total claimed earnings per ERC20 token. This mapping is used to calculate the difference between the cumulativeEarnings in the merkle tree and the previous total claimed amount. This difference is then transfered to the specified destination address.
@@ -44,7 +44,7 @@ This document organizes methods according to the following themes (click each to
 * `_checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root)`
     * Checks the merkle inclusion of a claim against a `DistributionRoot`
     * Reverts if any of the following are true:
-        * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves, tokenReceivers
+        * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves
         * earner proof reverting from calling `_verifyEarnerClaimProof`
         * any of the token proofs reverting from calling `_verifyTokenClaimProof`
 * Wherever AVS (Actively Validated Service) is mentioned, it refers to the contract entity that is submitting payments to the PaymentCoordinator. This is assumed to be a customized ServiceManager contract of some kind that is interfacing with the EigenLayer protocol. See base contract here [ServiceManager.sol](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/src/ServiceManagerBase.sol)
@@ -215,7 +215,7 @@ Called by an earner to set a claimer address that can call `processClaim` on the
 #### `processClaim`
 
 ```solidity
-function processClaim(PaymentMerkleClaim calldata claim) external
+function processClaim(PaymentMerkleClaim calldata claim, address recipient) external
 ```
 
 Called by earners (stakers/operators) or their set claimers to claim their accumulated earnings. The `PaymentMerkleClaim` struct contains the following fields:
@@ -230,13 +230,11 @@ Called by earners (stakers/operators) or their set claimers to claim their accum
 * `TokenTreeMerkleLeaf[] tokenLeaves`: the token leaves to be claimed, each `TokenTreeMerkleLeaf` defined by the following fields
     * `IERC20 token`: the ERC20 token to be claimed
     * `uint256 amount`: the amount of the ERC20 token to be claimed
-* `address[] tokenReceivers`: the addresses to which the tokens will be sent to w.r.t the tokenLeaves input param
 
 `processClaim` will first call `_checkClaim` to verify the merkle proofs against the `DistributionRoot` at the specified `rootIndex`. This is done by first performing a merkle proof verification of the earner's `EarnerTreeMerkleLeaf` against the `DistributionRoot` and then for each tokenIndex, verifying each token leaf against the earner's `earnerTokenRoot`. 
 
-The caller must be the set claimer address in the `claimerFor` mapping or the earner themselves if the claimer is not set. The claimer has the right to process the claim and direct the tokens to the receiving addresses specified in the `tokenReceivers` field.
-
-After the claim is verified, for each token leaf, the difference between the cumulative earnings in the merkle tree and the previous total claimed amount last stored in the contract is calculated and transferred to the specified destination address. The `PaymentMerkleClaim` contains a `tokenReceivers` field to allow for the transfer of tokens to multiple receiver/destination addresses. If for example the claimer wishes to send to themselves then they would have to have their address in the `tokenReceivers` array for all the token leaves.
+The caller must be the set claimer address in the `claimerFor` mapping or the earner themselves if the claimer is not set. The claimer has the right to process the claim for a given earner.
+After the claim is verified, for each token leaf, the difference between the cumulative earnings in the merkle tree and the previous total claimed amount last stored in the contract is calculated and transferred from the `PaymentCoordinator` contract to the address `recipient`.
 
 *Effects*:
 * For each `TokenTreeMerkleLeaf`, 
@@ -248,7 +246,7 @@ After the claim is verified, for each token leaf, the difference between the cum
 * `_checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root)` does not revert:
     * Checks the merkle inclusion of a claim against a `DistributionRoot`
     * Reverts if any of the following are true:
-        * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves, tokenReceivers
+        * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves
         * earner proof reverting from calling `_verifyEarnerClaimProof`
         * any of the token proofs reverting from calling `_verifyTokenClaimProof`
 * msg.sender is NOT the `claimerFor[earner]` and msg.sender is NOT the earner themself
@@ -343,7 +341,7 @@ The `DistributionRoot` consolidates all `RangePayment`s submitted by AVSs since 
 
 When an earner or their designated claimer calls `processClaim`, they must provide a `PaymentMerkleClaim` struct that contains the necessary information to verify their claim against the latest `DistributionRoot`. The merkle proof verification is done in the internal `_checkClaim` helper function. This function verifies the merkle proof of the earner's `EarnerTreeMerkleLeaf` against the `DistributionRoot` and then for each tokenIndex, verifies each token leaf against the earner's `earnerTokenRoot`.
 
-Claimers can selectively choose which token leaves to prove against and claim accumulated earnings. Each token payment can be claimed to a different token receiver address. 
+Claimers can selectively choose which token leaves to prove against and claim accumulated earnings. Each token payment claimed in a `processClaim` call will send tokens to the `recipient` address specified in the call. 
 
 The payment merkle tree is structured in the diagram below:
 
