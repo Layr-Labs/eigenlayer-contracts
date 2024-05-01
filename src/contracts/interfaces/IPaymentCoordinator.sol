@@ -222,6 +222,12 @@ interface IPaymentCoordinator {
     /// but will revert if not valid
     function checkClaim(PaymentMerkleClaim calldata claim) external view returns (bool);
 
+    /// @notice The timestamp until which payments have been calculated
+    function currPaymentCalculationEndTimestamp() external view returns (uint32);
+
+    /// @notice loop through distribution roots from reverse and return hash
+    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
+
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
