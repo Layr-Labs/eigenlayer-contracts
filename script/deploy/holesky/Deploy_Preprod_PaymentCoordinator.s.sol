@@ -6,12 +6,17 @@ import "./Deploy_Test_PaymentCoordinator.s.sol";
 /**
  * @notice Script used for the first deployment of EigenLayer core contracts to Holesky
  * anvil --fork-url $RPC_HOLESKY
- * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv
- * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv
+ * Local Fork: Deploy/Upgrade PaymentCoordinator
+ * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" deploy
+ * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
+ *
+ * Holesky testnet: Deploy/Upgrade PaymentCoordinator
+ * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" deploy
+ * forge script script/deploy/holesky/Deploy_Preprod_PaymentCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
  *
  */
 contract Deploy_Preprod_PaymentCoordinator is Deploy_Test_PaymentCoordinator {
-    function run() external virtual override {
+    function run(string memory deployArg) external virtual {
         _parseInitialDeploymentParams("script/configs/holesky/Deploy_PaymentCoordinator.holesky.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
 
@@ -28,8 +33,11 @@ contract Deploy_Preprod_PaymentCoordinator is Deploy_Test_PaymentCoordinator {
 
         emit log_named_address("Deployer Address", msg.sender);
 
-        // _deployPaymentCoordinator();
-        _upgradePaymentCoordinator();
+        if (keccak256(abi.encode(deployArg)) == keccak256(abi.encode("upgrade"))) {
+            _upgradePaymentCoordinator();
+        } else if (keccak256(abi.encode(deployArg)) == keccak256(abi.encode("deploy"))) {
+            _deployPaymentCoordinator();
+        }
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
