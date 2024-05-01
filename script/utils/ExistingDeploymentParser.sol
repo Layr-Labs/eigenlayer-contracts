@@ -290,6 +290,9 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".paymentCoordinator.init_paused_status"
         );
+        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.CALCULATION_INTERVAL_SECONDS")
+        );
         PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_PAYMENT_DURATION"));
         PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_RETROACTIVE_LENGTH"));
         PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_FUTURE_LENGTH"));
@@ -469,7 +472,6 @@ contract ExistingDeploymentParser is Script, Test {
             0, // initialPausedStatus
             address(0), // paymentUpdater
             0, // activationDelay
-            0, // calculationIntervalSeconds
             0 // globalCommissionBips
         );
         // DelegationManager
@@ -560,8 +562,8 @@ contract ExistingDeploymentParser is Script, Test {
             "paymentCoordinator: activationDelay not set correctly"
         );
         require(
-            paymentCoordinator.calculationIntervalSeconds() == PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            "paymentCoordinator: calculationIntervalSeconds not set correctly"
+            paymentCoordinator.CALCULATION_INTERVAL_SECONDS() == PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            "paymentCoordinator: CALCULATION_INTERVAL_SECONDS not set correctly"
         );
         require(
             paymentCoordinator.globalOperatorCommissionBips() == PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,

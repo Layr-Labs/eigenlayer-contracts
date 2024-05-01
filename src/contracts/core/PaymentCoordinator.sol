@@ -68,7 +68,8 @@ contract PaymentCoordinator is
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
-        uint32 _maxPaymentDuration,
+        uint32 _CALCULATION_INTERVAL_SECONDS,
+        uint32 _MAX_PAYMENT_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_PAYMENT_TIMESTAMP
@@ -76,7 +77,8 @@ contract PaymentCoordinator is
         PaymentCoordinatorStorage(
             _delegationManager,
             _strategyManager,
-            _maxPaymentDuration,
+            _CALCULATION_INTERVAL_SECONDS,
+            _MAX_PAYMENT_DURATION,
             _MAX_RETROACTIVE_LENGTH,
             _MAX_FUTURE_LENGTH,
             _GENESIS_PAYMENT_TIMESTAMP
@@ -96,7 +98,6 @@ contract PaymentCoordinator is
         uint256 initialPausedStatus,
         address _paymentUpdater,
         uint32 _activationDelay,
-        uint32 _calculationIntervalSeconds,
         uint16 _globalCommissionBips
     ) external initializer {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator();
@@ -104,7 +105,6 @@ contract PaymentCoordinator is
         _transferOwnership(initialOwner);
         _setPaymentUpdater(_paymentUpdater);
         _setActivationDelay(_activationDelay);
-        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
         _setGlobalOperatorCommission(_globalCommissionBips);
     }
 
@@ -254,15 +254,6 @@ contract PaymentCoordinator is
     }
 
     /**
-     * @notice Set a new value for calculationIntervalSeconds. Only callable by owner
-     * Payment durations must be multiples of this interval
-     * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
-     */
-    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external onlyOwner {
-        _setCalculationIntervalSeconds(_calculationIntervalSeconds);
-    }
-
-    /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
@@ -316,12 +307,12 @@ contract PaymentCoordinator is
             "PaymentCoordinator._payForRange: duration exceeds MAX_PAYMENT_DURATION"
         );
         require(
-            rangePayment.duration % calculationIntervalSeconds == 0,
-            "PaymentCoordinator._payForRange: duration must be a multiple of calculationIntervalSeconds"
+            rangePayment.duration % CALCULATION_INTERVAL_SECONDS == 0,
+            "PaymentCoordinator._payForRange: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
-            rangePayment.startTimestamp % calculationIntervalSeconds == 0,
-            "PaymentCoordinator._payForRange: startTimestamp must be a multiple of calculationIntervalSeconds"
+            rangePayment.startTimestamp % CALCULATION_INTERVAL_SECONDS == 0,
+            "PaymentCoordinator._payForRange: startTimestamp must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         require(
             block.timestamp - MAX_RETROACTIVE_LENGTH <= rangePayment.startTimestamp &&
@@ -451,11 +442,6 @@ contract PaymentCoordinator is
     function _setActivationDelay(uint32 _activationDelay) internal {
         emit ActivationDelaySet(activationDelay, _activationDelay);
         activationDelay = _activationDelay;
-    }
-
-    function _setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) internal {
-        emit CalculationIntervalSecondsSet(calculationIntervalSeconds, _calculationIntervalSeconds);
-        calculationIntervalSeconds = _calculationIntervalSeconds;
     }
 
     function _setGlobalOperatorCommission(uint16 _globalCommissionBips) internal {

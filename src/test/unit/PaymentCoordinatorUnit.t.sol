@@ -42,20 +42,21 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     IPaymentCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // Config Variables
+    /// @notice intervals(epochs) are 1 weeks
+    uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
+
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
     uint32 MAX_PAYMENT_DURATION = 70 days;
 
-    /// @notice Lower bound start range is ~3 months into the past, multiple of calculationIntervalSeconds
+    /// @notice Lower bound start range is ~3 months into the past, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
-    /// @notice Upper bound start range is ~1 month into the future, multiple of calculationIntervalSeconds
+    /// @notice Upper bound start range is ~1 month into the future, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_FUTURE_LENGTH = 28 days;
     /// @notice absolute min timestamp that a payment can start at
-    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712092632;
+    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712188800;
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
-    /// @notice intervals(epochs) are 2 weeks
-    uint32 calculationIntervalSeconds = 14 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
@@ -89,6 +90,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         paymentCoordinatorImplementation = new PaymentCoordinator(
             delegationManagerMock,
             strategyManagerMock,
+            CALCULATION_INTERVAL_SECONDS,
             MAX_PAYMENT_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
@@ -106,7 +108,6 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
                         0, // 0 is initialPausedStatus
                         paymentUpdater,
                         activationDelay,
-                        calculationIntervalSeconds,
                         globalCommissionBips
                     )
                 )
@@ -290,29 +291,6 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         cheats.stopPrank();
     }
 
-    function testFuzz_setCalculationIntervalSeconds(uint32 intervalSeconds) public {
-        cheats.startPrank(paymentCoordinator.owner());
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit CalculationIntervalSecondsSet(paymentCoordinator.calculationIntervalSeconds(), intervalSeconds);
-        paymentCoordinator.setCalculationIntervalSeconds(intervalSeconds);
-        assertEq(
-            intervalSeconds,
-            paymentCoordinator.calculationIntervalSeconds(),
-            "calculationIntervalSeconds not set"
-        );
-        cheats.stopPrank();
-    }
-
-    function testFuzz_setCalculationIntervalSeconds_Revert_WhenNotOwner(
-        address caller,
-        uint32 intervalSeconds
-    ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != paymentCoordinator.owner());
-        cheats.prank(caller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        paymentCoordinator.setCalculationIntervalSeconds(intervalSeconds);
-    }
-
     function testFuzz_setActivationDelay(uint32 activationDelay) public {
         cheats.startPrank(paymentCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
@@ -451,15 +429,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -488,15 +466,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -537,11 +515,11 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -573,15 +551,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        cheats.assume(duration % calculationIntervalSeconds != 0);
+        cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -596,7 +574,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         // 3. call payForRange() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "PaymentCoordinator._payForRange: duration must be a multiple of calculationIntervalSeconds"
+            "PaymentCoordinator._payForRange: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
         paymentCoordinator.payForRange(rangePayments);
     }
@@ -621,13 +599,13 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             0,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -659,13 +637,13 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            block.timestamp + uint256(MAX_FUTURE_LENGTH) + 1 + calculationIntervalSeconds,
+            block.timestamp + uint256(MAX_FUTURE_LENGTH) + 1 + CALCULATION_INTERVAL_SECONDS,
             type(uint32).max
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -697,15 +675,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -744,15 +722,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -825,15 +803,15 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
             param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
-            param.duration = param.duration - (param.duration % calculationIntervalSeconds);
+            param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
                 uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                    calculationIntervalSeconds -
+                    CALCULATION_INTERVAL_SECONDS -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
-            param.startTimestamp = param.startTimestamp - (param.startTimestamp % calculationIntervalSeconds);
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
@@ -949,15 +927,15 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
         );
         amount = bound(amount, 1, mockTokenInitialSupply);
         duration = bound(duration, 0, MAX_PAYMENT_DURATION);
-        duration = duration - (duration % calculationIntervalSeconds);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                calculationIntervalSeconds -
+                CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
-        startTimestamp = startTimestamp - (startTimestamp % calculationIntervalSeconds);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create range payment input param
         IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
@@ -1033,15 +1011,15 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
             param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
-            param.duration = param.duration - (param.duration % calculationIntervalSeconds);
+            param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
                 uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-                    calculationIntervalSeconds -
+                    CALCULATION_INTERVAL_SECONDS -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
-            param.startTimestamp = param.startTimestamp - (param.startTimestamp % calculationIntervalSeconds);
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
             // 2. Create range payment input param
             IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({

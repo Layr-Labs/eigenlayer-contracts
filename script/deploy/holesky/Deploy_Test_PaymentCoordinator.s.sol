@@ -45,6 +45,7 @@ contract Deploy_Test_PaymentCoordinator is ExistingDeploymentParser {
         paymentCoordinatorImplementation = new PaymentCoordinator(
             delegationManager,
             strategyManager,
+            PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION,
             PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH,
@@ -80,6 +81,7 @@ contract Deploy_Test_PaymentCoordinator is ExistingDeploymentParser {
         paymentCoordinatorImplementation = new PaymentCoordinator(
             delegationManager,
             strategyManager,
+            PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
             PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION,
             PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH,
             PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH,

@@ -152,7 +152,6 @@ interface IPaymentCoordinator {
         bool indexed newValue
     );
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
-    event CalculationIntervalSecondsSet(uint32 oldCalculationIntervalSeconds, uint32 newCalculationIntervalSeconds);
     event GlobalCommissionBipsSet(uint16 oldGlobalCommissionBips, uint16 newGlobalCommissionBips);
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
@@ -178,12 +177,12 @@ interface IPaymentCoordinator {
 
     /// @notice The address of the entity that can update the contract with new merkle roots
     function paymentUpdater() external view returns (address);
-
+    
     /**
      * @notice The interval in seconds at which the calculation for range payment distribution is done.
      * @dev Payment durations must be multiples of this interval.
      */
-    function calculationIntervalSeconds() external view returns (uint32);
+    function CALCULATION_INTERVAL_SECONDS() external view returns (uint32);
 
     /// @notice The maximum amount of time (seconds) that a range payment can span over
     function MAX_PAYMENT_DURATION() external view returns (uint32);
@@ -275,13 +274,6 @@ interface IPaymentCoordinator {
      * @dev Only callable by the `earner`
      */
     function setClaimerFor(address claimer) external;
-
-    /**
-     * @notice Set a new value for calculationIntervalSeconds. Only callable by owner
-     * Payment durations must be multiples of this interval
-     * @param _calculationIntervalSeconds The new value for calculationIntervalSeconds
-     */
-    function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against

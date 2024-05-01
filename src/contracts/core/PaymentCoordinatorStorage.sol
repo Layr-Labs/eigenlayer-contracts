@@ -19,6 +19,9 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
                                CONSTANTS AND IMMUTABLES 
     *******************************************************************************/
 
+    /// @notice The interval in seconds at which the calculation for range payment distribution is done.
+    /// @dev Payment durations must be multiples of this interval. This is going to be configured to 1 week
+    uint32 public immutable CALCULATION_INTERVAL_SECONDS;
     /// @notice The maximum amount of time (seconds) that a range payment can span over
     uint32 public immutable MAX_PAYMENT_DURATION;
     /// @notice max amount of time (seconds) that a payment can start in the past
@@ -51,12 +54,9 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     /// Slot 3
     /// @notice The address of the entity that can update the contract with new merkle roots
     address public paymentUpdater;
-    /// @notice The interval in seconds at which the calculation for range payment distribution is done.
-    /// @dev Payment durations must be multiples of this interval.
-    uint32 public calculationIntervalSeconds;
     /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     uint32 public activationDelay;
-    /// @notice Timestamp for last submitted 
+    /// @notice Timestamp for last submitted
     uint32 public currPaymentCalculationEndTimestamp;
 
     /// Slot 4
@@ -80,14 +80,20 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
 
     constructor(
         IDelegationManager _delegationManager,
-        IStrategyManager _strategyManager,  
+        IStrategyManager _strategyManager,
+        uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_PAYMENT_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
         uint32 _MAX_FUTURE_LENGTH,
         uint32 _GENESIS_PAYMENT_TIMESTAMP
     ) {
+        require(
+            _GENESIS_PAYMENT_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
+            "PaymentCoordinator: GENESIS_PAYMENT_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
+        CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_PAYMENT_DURATION = _MAX_PAYMENT_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
         MAX_FUTURE_LENGTH = _MAX_FUTURE_LENGTH;
