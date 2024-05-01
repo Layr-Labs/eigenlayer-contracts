@@ -254,6 +254,7 @@ interface IPaymentCoordinator {
      * their cumulativeEarnings and cumulativeClaimed. This difference is then transferred to recipient address.
      * @param claim The PaymentMerkleClaim to be processed.
      * Contains the root index, earner, payment leaves, and required proofs
+     * @param recipient The address recipient that receives the ERC20 payments
      * @dev only callable by the valid claimer, that is
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the payments.
