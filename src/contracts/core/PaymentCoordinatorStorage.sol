@@ -56,7 +56,7 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     address public paymentUpdater;
     /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
     uint32 public activationDelay;
-    /// @notice Timestamp for last submitted
+    /// @notice Timestamp for last submitted DistributionRoot
     uint32 public currPaymentCalculationEndTimestamp;
 
     /// Slot 4

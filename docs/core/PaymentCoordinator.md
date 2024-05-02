@@ -5,7 +5,7 @@
 | [`PaymentCoordinator.sol`](../../src/contracts/core/PaymentCoordinator.sol) | Singleton | Transparent proxy |
 
 
-The primary functions of the `PaymentCoordinator` contract are for (i) handling ERC20 payments from AVSs (Actively Validated Services) to their operators and delegated stakers for a given time range, (ii) enable the protocol to provide ERC20 tokens to all stakers over a specified time range, (iii) allows stakers and operators to claim their accumulated earnings.
+The primary functions of the `PaymentCoordinator` contract are for (i) handling ERC20 payments from AVSs (Actively Validated Services) to their operators and delegated stakers for a given time range; (ii) enable the protocol to provide ERC20 tokens to all stakers over a specified time range; and (iii) allows stakers and operators to claim their accumulated earnings.
 
 AVSs can submit payments to the `PaymentCoordinator` contract for a given time range with a specified ERC20 token and amount; this struct in particular is called a `RangePayment`. All AVS `RangePayments` are consolidated into a merkle tree and later distributed via posting of the merkle root by a permissioned entity of the protocol. These merkle trees are periodically calculated in our backend processing and all historical roots are stored in the contract. After a `DistributionRoot` is submitted and the activation delay has passed, stakers/operators(or their personally set claimers) can claim all their accumulated earnings by providing a merkle proof that gets verified against the latest `DistributionRoot`. This entire flow will repeat periodically as AVSs submit `RangePayment`s, `DistributionRoot`s are submitted, and stakers/operators claim their accumulated earnings. 
 
@@ -338,6 +338,13 @@ Allows the owner to set the `isPayAllForRangeSubmitter` mapping. This mapping is
 
 ### Payments Merkle Tree Structure
 
-The PaymentCoordinator contract stores for each earner, subtree composed of their cumulative earnings per ERC20 payment token. This merkle tree is used to verify the claims made by earners' claimers against the latest `DistributionRoot`. The merkle tree is structured as follows:
+This merkle tree is used to verify the claims made by earners' claimers against a `DistributionRoot`.
+The `DistributionRoot` consolidates all `RangePayment`s submitted by AVSs since the previously submitted `DistributionRoot` into a merkle tree comprised of earners and their cumulative earnings for their respective payment tokens distributed.
 
-TODO
+When an earner or their designated claimer calls `processClaim`, they must provide a `PaymentMerkleClaim` struct that contains the necessary information to verify their claim against the latest `DistributionRoot`. The merkle proof verification is done in the internal `_checkClaim` helper function. This function verifies the merkle proof of the earner's `EarnerTreeMerkleLeaf` against the `DistributionRoot` and then for each tokenIndex, verifies each token leaf against the earner's `earnerTokenRoot`.
+
+Claimers can selectively choose which token leaves to prove against and claim accumulated earnings. Each token payment can be claimed to a different token receiver address. 
+
+The payment merkle tree is structured in the diagram below:
+
+![.](../images/PaymentCoordinator_Merkle_Tree.png)
