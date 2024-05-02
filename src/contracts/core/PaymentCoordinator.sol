@@ -134,11 +134,14 @@ contract PaymentCoordinator is
                 !isRangePaymentHash[msg.sender][rangePaymentHash],
                 "PaymentCoordinator._payForRange: range payment hash already submitted"
             );
+            
+            _validateRangePayment(rangePayment);
+            
             isRangePaymentHash[msg.sender][rangePaymentHash] = true;
-
-            _payForRange(rangePayment);
-            emit RangePaymentCreated(msg.sender, nonce, rangePaymentHash, rangePayment);
             paymentNonce[msg.sender] = nonce + 1;
+
+            emit RangePaymentCreated(msg.sender, nonce, rangePaymentHash, rangePayment);
+            rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
         }
     }
 
@@ -159,11 +162,14 @@ contract PaymentCoordinator is
                 !isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash],
                 "PaymentCoordinator._payForRange: range payment hash already submitted"
             );
-            isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash] = true;
+            
+            _validateRangePayment(rangePayment);
 
-            _payForRange(rangePayment);
-            emit RangePaymentForAllCreated(msg.sender, nonce, rangePaymentForAllHash, rangePayment);
+            isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash] = true;
             paymentNonce[msg.sender] = nonce + 1;
+
+            emit RangePaymentForAllCreated(msg.sender, nonce, rangePaymentForAllHash, rangePayment);
+            rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
         }
     }
 
@@ -297,9 +303,9 @@ contract PaymentCoordinator is
     *******************************************************************************/
 
     /**
-     * @notice Create a RangePayment. Called from both `payForRange` and `payAllForRange`
+     * @notice Validate a RangePayment. Called from both `payForRange` and `payAllForRange`
      */
-    function _payForRange(RangePayment calldata rangePayment) internal {
+    function _validateRangePayment(RangePayment calldata rangePayment) internal view {
         require(rangePayment.strategiesAndMultipliers.length > 0, "PaymentCoordinator._payForRange: no strategies set");
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
         require(
@@ -338,8 +344,6 @@ contract PaymentCoordinator is
             );
             currAddress = address(strategy);
         }
-
-        rangePayment.token.safeTransferFrom(msg.sender, address(this), rangePayment.amount);
     }
 
     function _checkClaim(PaymentMerkleClaim calldata claim, DistributionRoot memory root) internal view {
