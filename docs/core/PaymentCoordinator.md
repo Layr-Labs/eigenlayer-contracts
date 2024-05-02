@@ -259,7 +259,80 @@ After the claim is verified, for each token leaf, the difference between the cum
 
 ### System Configuration
 
-TODO
+#### `setCalculationIntervalSeconds`
+
+```solidity
+function setCalculationIntervalSeconds(uint32 _calculationIntervalSeconds) external
+```
+
+Allows the Owner to set the calculation interval seconds. `RangePayment.duration` and `RangePayment.startTimestamp` must be in multiples of this interval. This requirement reduces offchain payment calculations and will be useful in the future with slashing.
+
+*Effects*:
+* Sets the global `calculationIntervalSeconds`
+* Emits a `CalculationIntervalSecondsSet` event
+
+*Requirements*:
+* Caller MUST be the Owner
+
+#### `setActivationDelay`
+
+```solidity
+function setActivationDelay(uint32 _activationDelay) external
+```
+
+Allows the owner to set the activation delay (seconds). The activation delay is the time in seconds after a `DistributionRoot` is submitted before it can be claimed against. This delay is to allow for the verification of the root submitted.
+
+*Effects*:
+* Sets the global `activationDelay`
+* Emits a `ActivationDelaySet` event
+
+*Requirements*:
+* Caller MUST be the Owner
+
+#### `setGlobalOperatorCommission`
+
+```solidity
+function setGlobalOperatorCommission(uint16 _globalCommissionBips) external
+```
+
+Allows the owner to set the global operator commission in basis points. This commission is applied to all operator earnings across all AVSs. The commission is calculated as a percentage of the operator earnings and is deducted from the operator's earnings before distribution to its delegated stakers. This is expected to be a flat 10% rate for the initial payments release.
+
+*Effects*:
+* Sets the global `globalOperatorCommissionBips`
+* Emits a `GlobalCommissionBipsSet` event
+
+*Requirements*:
+* Caller MUST be the Owner
+
+#### `setPaymentUpdater`
+
+```solidity
+function setPaymentUpdater(address _paymentUpdater) external
+```
+
+Allows the owner to set the `paymentUpdater` address. The `paymentUpdater` is the singleton address that can submit new `DistributionRoot`s to the PaymentCoordinator contract. This address is expected to be a separate entity that will periodically submit payment merkle roots to the contract.
+
+*Effects*:
+* Sets the global `paymentUpdater` address
+* Emits a `PaymentUpdaterSet` event
+
+*Requirements*:
+* Caller MUST be the Owner
+
+#### `setPayAllForRangeSubmitter`
+
+```solidity
+function setPayAllForRangeSubmitter(address _submitter, bool _newValue) external
+```
+
+Allows the owner to set the `isPayAllForRangeSubmitter` mapping. This mapping is used to determine if a given address is a valid submitter for `payAllForRange`. Only a valid submitter can call `payAllForRange` which submits a `RangePayment` that will be distributed across all EigenLayer stakers.
+
+*Effects*:
+* Sets the `isPayAllForRangeSubmitter` mapping for the address `_submitter` to the bool `_newValue`
+* Emits a `PayAllForRangeSubmitterSet` event
+
+*Requirements*:
+* Caller MUST be the Owner
 
 ---
 
