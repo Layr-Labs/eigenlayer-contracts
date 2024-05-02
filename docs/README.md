@@ -73,7 +73,10 @@ See full documentation in [`/core/DelegationManager.md`](./core/DelegationManage
 | -------- | -------- | -------- |
 | [`PaymentCoordinator.sol`](../src/contracts/core/PaymentCoordinator.sol) | Singleton | Transparent proxy |
 
-The `PaymentCoordinator` is the main entry point of submission and claiming of ERC20 payments in EigenLayer. It is interacted by AVSs (via the AVS's contracts) to submit payments to their registered Operators and their delegated Stakers. The payment updater will periodically consolidate all recent payments and distribute them to the Operators and Stakers by submitting a merkle root to the `PaymentCoordinator` contract. Total accumulated rewards can then be claimed by Operators/Stakers.
+The `PaymentCoordinator` is the main entry point of submission and claiming of ERC20 payments in EigenLayer. It carries out three basic functions:
+* AVSs (via the AVS's contracts) submit "range payments" to their registered Operators and Stakers over a specific time period 
+* *Off-chain*, the payment updater will use each range payment's time period to apply payment amounts to historical Staker/Operator stake weights. This is consolidated into a merkle root that is posted *on-chain* to the `PaymentCoordinator`, allowing Stakers/Operators to claim their allocated payments.
+* Stakers/Operators can claim payments posted by the payment updater.
 
 See full documentation in [`/core/PaymentCoordinator.md`](./core/PaymentCoordinator.md).
 
