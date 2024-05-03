@@ -63,7 +63,6 @@ contract Deploy_Test_PaymentCoordinator is ExistingDeploymentParser {
                         PAYMENT_COORDINATOR_INIT_PAUSED_STATUS,
                         PAYMENT_COORDINATOR_UPDATER,
                         PAYMENT_COORDINATOR_ACTIVATION_DELAY,
-                        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
                         PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
                     )
                 )
