@@ -1,0 +1,30 @@
+name: CI
+
+on: [push]
+
+jobs:
+  check-compilation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Build and validate
+        if: github.event_name == 'push'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make curl git software-properties-common jq
+          sudo add-apt-repository -y ppa:longsleep/golang-backports
+          sudo apt-get update
+          sudo apt-get install -y golang-1.22
+          sudo update-alternatives --install /usr/local/bin/go go /usr/lib/go-1.22/bin/go 1
+          mkdir ~/.go
+          export GOPATH=~/.go
+          export PATH=$PATH:~/.go/bin
+          go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.0
+          curl -L https://foundry.paradigm.xyz | bash
+          export PATH=$PATH:/home/runner/.config/.foundry/bin
+          source ~/.bashrc
+          foundryup
+          make bindings
+          if [ ! -z "$(git status --porcelain)" ]; then git diff; git status; exit 1; fi

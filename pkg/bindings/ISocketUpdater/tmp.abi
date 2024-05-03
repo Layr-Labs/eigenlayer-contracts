@@ -1,0 +1,34 @@
+[
+  {
+    "type": "function",
+    "name": "updateSocket",
+    "inputs": [
+      {
+        "name": "socket",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "OperatorSocketUpdate",
+    "inputs": [
+      {
+        "name": "operatorId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "socket",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  }
+]

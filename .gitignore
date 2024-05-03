@@ -43,3 +43,5 @@ test.sh
 # Surya outputs
 InheritanceGraph.png
 surya_report.md
+
+.idea
