@@ -63,7 +63,8 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    mapping(address => int256) public podOwnerShares;
+    // TODO: note this has been renamed (with leading underscore) + made internal
+    mapping(address => int256) public rebasedPodOwnerShares;
 
     uint64 internal _denebForkTimestamp;
 

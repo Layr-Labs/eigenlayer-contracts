@@ -9,6 +9,8 @@ import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
+// TODO: edit interface to include new functions and remove this import
+import "./DelegationManager.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -27,6 +29,13 @@ contract StrategyManager is
     StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
+
+    function stakerStrategyShares(address staker, IStrategy strategy) external view returns (uint256) {
+        uint256 rebasedShares = rebasedStakerStrategyShares[staker][strategy];
+        address delegatedAddress = delegation.delegatedTo(staker);
+        uint256 shares = DelegationManager(address(delegation)).convertRebasedSharesToStrategyShares(delegatedAddress, strategy, rebasedShares);
+        return shares;
+    }
 
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
@@ -288,7 +297,7 @@ contract StrategyManager is
      * @param strategy The Strategy in which the `staker` is receiving shares
      * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * delegated shares are tracked, increases the stored share amount in `rebasedStakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
     function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
@@ -297,7 +306,7 @@ contract StrategyManager is
         require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
 
         // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[staker][strategy] == 0) {
+        if (rebasedStakerStrategyShares[staker][strategy] == 0) {
             require(
                 stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
                 "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
@@ -305,8 +314,11 @@ contract StrategyManager is
             stakerStrategyList[staker].push(strategy);
         }
 
+        address delegatedAddress = delegation.delegatedTo(staker);
+        uint256 rebasedShares = DelegationManager(address(delegation)).convertStrategySharesToRebasedShares(delegatedAddress, strategy, shares);
+
         // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] += shares;
+        rebasedStakerStrategyShares[staker][strategy] += rebasedShares;
 
         emit Deposit(staker, token, strategy, shares);
     }
@@ -358,7 +370,7 @@ contract StrategyManager is
         require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[staker][strategy];
+        uint256 userShares = rebasedStakerStrategyShares[staker][strategy];
 
         require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
         //unchecked arithmetic since we just checked this above
@@ -367,7 +379,7 @@ contract StrategyManager is
         }
 
         // subtract the shares from the staker's existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = userShares;
+        rebasedStakerStrategyShares[staker][strategy] = userShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userShares == 0) {
@@ -439,7 +451,7 @@ contract StrategyManager is
         uint256[] memory shares = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ) {
-            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
+            shares[i] = rebasedStakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;
             }

@@ -95,7 +95,7 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     uint64 public sumOfPartialWithdrawalsClaimedGwei;
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
-    uint256 activeValidatorCount;
+    uint256 internal activeValidatorCount;
 
     modifier onlyEigenPodManager() {
         require(msg.sender == address(eigenPodManager), "EigenPod.onlyEigenPodManager: not eigenPodManager");

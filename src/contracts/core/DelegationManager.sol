@@ -86,14 +86,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint256 scalingFactor = currentShareScalingFactor(operator, strategy);
-        return (_operatorShares[operator][strategy] * SHARE_CONVERSION_SCALE) / scalingFactor;
+        return (rebasedOperatorShares[operator][strategy] * SHARE_CONVERSION_SCALE) / scalingFactor;
     }
 
-    function convertStrategySharesToInternalOperatorShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
+    function convertStrategySharesToRebasedShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
         return (currentShareScalingFactor(operator, strategy) * shares) / SHARE_CONVERSION_SCALE;
     }
 
-    function convertInternalOperatorSharesToStrategyShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
+    function convertRebasedSharesToStrategyShares(address operator, IStrategy strategy, uint256 shares) public view returns (uint256) {
         return (shares * SHARE_CONVERSION_SCALE) / currentShareScalingFactor(operator, strategy);
     }
 
@@ -110,12 +110,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         } else {
             scalingFactorAfter = scalingFactorBefore * BIPS_FACTOR / (BIPS_FACTOR - bipsToSlash);
         }
-        uint256 _operatorSharesBefore = _operatorShares[operator][strategy];
+        uint256 rebasedOperatorSharesBefore = rebasedOperatorShares[operator][strategy];
         // note that division must be done before multiplication here, to avoid risk of overflow
-        uint256 _operatorSharesAfter = (_operatorSharesBefore / scalingFactorAfter) * scalingFactorBefore;
+        uint256 rebasedOperatorSharesAfter = (rebasedOperatorSharesBefore / scalingFactorAfter) * scalingFactorBefore;
         // update storage to reflect the slashing
         slashedEpochHistory[operator][strategy].push(epoch);
-        _operatorShares[operator][strategy] = _operatorSharesAfter;
+        rebasedOperatorShares[operator][strategy] = rebasedOperatorSharesAfter;
         shareScalingFactor[operator][strategy][epoch] = scalingFactorAfter;
         // TODO: events!
     }
@@ -720,14 +720,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
-                uint256 convertedShareAmount = convertSharesOnWithdrawalCompletion({
+                uint256 scalingFactorWhenCompleteable = shareScalingFactorSearch({
                     operator: withdrawal.delegatedTo,
                     strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
-                    // TODO: this doesn't work right now, because the present storage is block number-based
-                    queuedEpoch: getEpochFromTimestamp(withdrawal.startBlock),
-                    completableEpoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
+                    // TODO: update this to instead be the end of the slashability period instead of the end of the withdrawal delay
+                    epoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
                 });
+
+                uint256 convertedShareAmount = (withdrawal.shares[i] * SHARE_CONVERSION_SCALE) / scalingFactorWhenCompleteable;
 
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
@@ -747,14 +747,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
-                uint256 convertedShareAmount = convertSharesOnWithdrawalCompletion({
+                uint256 scalingFactorWhenCompleteable = shareScalingFactorSearch({
                     operator: withdrawal.delegatedTo,
                     strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
-                    // TODO: this doesn't work right now, because the present storage is block number-based
-                    queuedEpoch: getEpochFromTimestamp(withdrawal.startBlock),
-                    completableEpoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
+                    // TODO: update this to instead be the end of the slashability period instead of the end of the withdrawal delay
+                    epoch: getEpochFromTimestamp(withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]])
                 });
+
+                uint256 convertedShareAmount = (withdrawal.shares[i] * SHARE_CONVERSION_SCALE) / scalingFactorWhenCompleteable;
 
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy shares can + will be awarded to the withdrawer.
@@ -802,7 +802,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         uint256 currentOperatorShares = operatorShares(operator, strategy);
         require(currentOperatorShares + shares <= MAX_VALID_SHARES, "cannot exceed max share amount");
-        _operatorShares[operator][strategy] += convertStrategySharesToInternalOperatorShares(operator, strategy, shares);
+        rebasedOperatorShares[operator][strategy] += convertStrategySharesToRebasedShares(operator, strategy, shares);
         // TODO: should this event change?
         emit OperatorSharesIncreased(operator, staker, strategy, shares);
     }
@@ -810,7 +810,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
     function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
         // This will revert on underflow, so no check needed
-        _operatorShares[operator][strategy] -= convertStrategySharesToInternalOperatorShares(operator, strategy, shares);
+        rebasedOperatorShares[operator][strategy] -= convertStrategySharesToRebasedShares(operator, strategy, shares);
         // TODO: should this event change?
         emit OperatorSharesDecreased(operator, staker, strategy, shares);
     }
@@ -1012,7 +1012,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) public view returns (uint256[] memory) {
         uint256[] memory shares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            shares[i] = _operatorShares[operator][strategies[i]];
+            shares[i] = rebasedOperatorShares[operator][strategies[i]];
         }
         return shares;
     }
