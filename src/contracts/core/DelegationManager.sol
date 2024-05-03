@@ -31,7 +31,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     // an amount of shares over this will cause overflow when multiplying by `SHARE_CONVERSION_SCALE`
     uint256 internal constant MAX_VALID_SHARES = type(uint96).max;
 
-    uint256 internal BIPS_FACTOR = 10000;
+    uint256 internal constant BIPS_FACTOR = 10000;
 
     // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
     uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / (MAX_VALID_SHARES * SHARE_CONVERSION_SCALE);
