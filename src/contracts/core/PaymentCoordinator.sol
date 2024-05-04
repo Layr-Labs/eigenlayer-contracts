@@ -203,8 +203,8 @@ contract PaymentCoordinator is
 
             uint256 currCumulativeClaimed = cumulativeClaimed[earner][tokenLeaf.token];
             require(
-                tokenLeaf.cumulativeEarnings >= currCumulativeClaimed,
-                "PaymentCoordinator.processClaim: cumulativeEarnings must be gte than cumulativeClaimed"
+                tokenLeaf.cumulativeEarnings > currCumulativeClaimed,
+                "PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
             );
 
             // Calculate amount to claim and update cumulativeClaimed

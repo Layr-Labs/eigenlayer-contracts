@@ -1395,7 +1395,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
 
     /// @notice Claim against rootIndex 0 and claim again. Balances should not increment.
     /// forge-config: default.fuzz.runs = 10
-    function testFuzz_processClaim_ReuseSameClaimAgain(
+    function testFuzz_processClaim_Revert_WhenReuseSameClaimAgain(
         bool setClaimerFor,
         address claimerFor
     ) public filterFuzzedAddressInputs(claimerFor) {
@@ -1444,7 +1444,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             cheats.stopPrank();
         }
 
-        // 2. Claim against first root again
+        // 2. Claim against first root again, expect a revert
         {
             uint32 rootIndex = claim.rootIndex;
             (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
@@ -1455,20 +1455,10 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             cheats.startPrank(claimer);
             assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
 
-            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
-            uint256[] memory earnings = _getCumulativeEarnings(claim);
-            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
-
-            _assertPaymentClaimedEvents(root, claim, claimer);
+            cheats.expectRevert(
+                "PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+            );
             paymentCoordinator.processClaim(claim, claimer);
-
-            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
-
-            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
-                assertEq(earnings[i], totalClaimedBefore[i], "totalClaimed should not be incremented");
-
-                assertEq(tokenBalancesBefore[i], tokenBalancesAfter[i], "token balance should not be incremented");
-            }
 
             cheats.stopPrank();
         }
@@ -1588,7 +1578,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
             .with_key(address(claim.tokenLeaves[0].token))
             .checked_write(type(uint256).max);
         cheats.startPrank(claimer);
-        cheats.expectRevert("PaymentCoordinator.processClaim: cumulativeEarnings must be gte than cumulativeClaimed");
+        cheats.expectRevert("PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
         paymentCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
