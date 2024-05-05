@@ -38,7 +38,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     IStrategy strategyMock2;
     IStrategy strategyMock3;
     StrategyBase strategyImplementation;
-    uint256 mockTokenInitialSupply = 10e50;
+    uint256 mockTokenInitialSupply = 1e38 - 1;
     IPaymentCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // Config Variables
@@ -390,6 +390,7 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
     // Revert from reentrancy
     function test_Revert_WhenReentrancy(uint256 amount) public {
+        amount = bound(amount, 1, 1e38-1);
         Reenterer reenterer = new Reenterer();
 
         reenterer.prepareReturnData(abi.encode(amount));
@@ -453,6 +454,43 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         // 3. call payForRange() with expected revert
         cheats.prank(avs);
         cheats.expectRevert("PaymentCoordinator._payForRange: no strategies set");
+        paymentCoordinator.payForRange(rangePayments);
+    }
+
+    // Revert when amount > 1e38-1
+    function testFuzz_Revert_AmountTooLarge(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public filterFuzzedAddressInputs(avs) {
+        // 1. Bound fuzz inputs
+        amount = bound(amount, 1e38, type(uint256).max);
+        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", amount, avs);
+        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp + uint256(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create range payment input param
+        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        rangePayments[0] = IPaymentCoordinator.RangePayment({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: paymentToken,
+            amount: amount,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration)
+        });
+
+        // 3. Call payForRange() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert("PaymentCoordinator._payForRange: amount too large");
         paymentCoordinator.payForRange(rangePayments);
     }
 

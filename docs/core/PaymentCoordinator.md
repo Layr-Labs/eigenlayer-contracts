@@ -28,6 +28,7 @@ This document is organized according to the following themes (click each to be t
 * [Distributing and Claiming Payments](#distributing-and-claiming-payments)
 * [System Configuration](#system-configuration)
 * [Payments Merkle Tree Structure](#payments-merkle-tree-structure)
+* [Off-Chain Calculation](#offchain-calculation)
 
 #### Important state variables
 
@@ -105,6 +106,7 @@ The payment distribution amongst the AVS's Operators and delegated Stakers is de
     * Requirements from calling internal function `_payForRange()`
         * `rangePayment.strategiesAndMultipliers.length > 0`
         * `rangePayment.amount > 0`
+        * `rangePayment.amount < MAX_PAYMENT_AMOUNT`
         * `rangePayment.duration <= MAX_PAYMENT_DURATION`
         * `rangePayment.duration % calculationIntervalSeconds == 0`
         * `rangePayment.startTimestamp % calculationIntervalSeconds == 0`
@@ -353,3 +355,9 @@ Claimers can selectively choose which token leaves to prove against and claim ac
 The payment merkle tree is structured in the diagram below:
 
 ![.](../images/PaymentCoordinator_Merkle_Tree.png)
+
+### Off-Chain Integrations
+
+Payments are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently said to once per day. It then combines these snapshots with any active payments to calculate what the single day payout of an earner is. Payouts are accumulated in the range of [`lastPaymentTimestamp`, `lastPaymentTimestamp + calculationIntervalSeconds`] and posted on-chain by the entity with the `paymentUpdater` role. 
+
+`MAX_PAYMENT_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. 

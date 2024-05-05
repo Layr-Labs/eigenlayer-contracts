@@ -30,6 +30,10 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
     uint32 public immutable MAX_FUTURE_LENGTH;
     /// @notice absolute min timestamp (seconds) that a payment can start at
     uint32 public immutable GENESIS_PAYMENT_TIMESTAMP;
+    /// @notice The cadence at which a snapshot is taken offchain for calculating payment distributions
+    uint32 public constant SNAPSHOT_CADENCE = 1 days;   
+    /// @notice The maximum payment token amount for a single range payment, constrained by off-chain calculation
+    uint256 public constant MAX_PAYMENT_AMOUNT = 1e38 - 1;
 
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegationManager;
@@ -90,6 +94,10 @@ abstract contract PaymentCoordinatorStorage is IPaymentCoordinator {
         require(
             _GENESIS_PAYMENT_TIMESTAMP % _CALCULATION_INTERVAL_SECONDS == 0,
             "PaymentCoordinator: GENESIS_PAYMENT_TIMESTAMP must be a multiple of CALCULATION_INTERVAL_SECONDS"
+        );
+        require(
+            _CALCULATION_INTERVAL_SECONDS % SNAPSHOT_CADENCE == 0,
+            "PaymentCoordinator: CALCULATION_INTERVAL_SECONDS must be a multiple of SNAPSHOT_CADENCE"
         );
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;

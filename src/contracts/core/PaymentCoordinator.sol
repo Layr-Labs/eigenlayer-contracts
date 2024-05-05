@@ -308,6 +308,7 @@ contract PaymentCoordinator is
     function _validateRangePayment(RangePayment calldata rangePayment) internal view {
         require(rangePayment.strategiesAndMultipliers.length > 0, "PaymentCoordinator._payForRange: no strategies set");
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
+        require(rangePayment.amount <= MAX_PAYMENT_AMOUNT, "PaymentCoordinator._payForRange: amount too large");
         require(
             rangePayment.duration <= MAX_PAYMENT_DURATION,
             "PaymentCoordinator._payForRange: duration exceeds MAX_PAYMENT_DURATION"
