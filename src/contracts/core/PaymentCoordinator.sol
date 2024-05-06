@@ -33,6 +33,8 @@ contract PaymentCoordinator is
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @dev Chain ID at the time of contract deployment
     uint256 internal immutable ORIGINAL_CHAIN_ID;
+    /// @notice The maximum payment token amount for a single range payment, constrained by off-chain calculation
+    uint256 internal constant MAX_PAYMENT_AMOUNT = 1e38 - 1;
 
     /// @dev Index for flag that pauses payForRange payments
     uint8 internal constant PAUSED_PAY_FOR_RANGE = 0;
@@ -308,6 +310,7 @@ contract PaymentCoordinator is
     function _validateRangePayment(RangePayment calldata rangePayment) internal view {
         require(rangePayment.strategiesAndMultipliers.length > 0, "PaymentCoordinator._payForRange: no strategies set");
         require(rangePayment.amount > 0, "PaymentCoordinator._payForRange: amount cannot be 0");
+        require(rangePayment.amount <= MAX_PAYMENT_AMOUNT, "PaymentCoordinator._payForRange: amount too large");
         require(
             rangePayment.duration <= MAX_PAYMENT_DURATION,
             "PaymentCoordinator._payForRange: duration exceeds MAX_PAYMENT_DURATION"
