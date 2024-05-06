@@ -358,6 +358,6 @@ The payment merkle tree is structured in the diagram below:
 
 ### Off-Chain Integrations
 
-Payments are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently said to once per day. It then combines these snapshots with any active payments to calculate what the single day payout of an earner is. Payouts are accumulated in the range of [`lastPaymentTimestamp`, `lastPaymentTimestamp + calculationIntervalSeconds`] and posted on-chain by the entity with the `paymentUpdater` role. 
+Payments are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently said to once per day. It then combines these snapshots with any active payments to calculate what the single day payout of an earner is. Every `CALCULATION_INTERVAL_SECONDS` payouts are accumulated up to `lastPaymentTimestamp + CALCULATION_INTERVAL_SECONDS` and posted on-chain by the entity with the `paymentUpdater` role. 
 
 `MAX_PAYMENT_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. 
