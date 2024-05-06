@@ -645,7 +645,7 @@ contract ExistingDeploymentParser is Script, Test {
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
             vm.serializeAddress(deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
-        string memory deployed_strategies_output = numStrategiesToDeploy == 0
+        string memory deployed_strategies_output = numStrategiesDeployed == 0
             ? ""
             : vm.serializeAddress(
                 deployed_strategies,
