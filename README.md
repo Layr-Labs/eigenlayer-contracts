@@ -20,19 +20,6 @@ The main branches we use are:
 
 ## Documentation
 
-### Setup
-
-To set up this repo for the first time, run:
-
-```bash
-make deps
-```
-
-This will:
-* Install the pre-commit hook
-* Install foundry and its tools
-* Install abigen
-
 ### Basics
 
 To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
@@ -54,9 +41,20 @@ foundryup
 
 forge build
 forge test
-
-make bindings
 ```
+
+### Contributor Setup
+
+To set up this repo for the first time, run:
+
+```bash
+make deps
+```
+
+This will:
+* Install the pre-commit hook
+* Install foundry and its tools
+* Install abigen
 
 ### Running Fork Tests
 

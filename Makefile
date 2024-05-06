@@ -1,14 +1,17 @@
 
+CONTAINER_NAME = eigenlayer-contracts
+
 .PHONY: install-hooks
 install-hooks:
-	cp scripts/pre-commit.sh .git/hooks/pre-commit
+	cp bin/pre-commit.sh .git/hooks/pre-commit
+
+.PHONY: install-deps
+install-deps:
+	./bin/install-deps.sh
+	foundryup
 
 .PHONY: deps
-deps: install-hooks
-	brew install libusb
-	go install github.com/ethereum/go-ethereum/cmd/abigen@latest
-	curl -L https://foundry.paradigm.xyz | bash
-	foundryup
+deps: install-hooks install-deps
 
 .PHONY: compile
 compile:
@@ -16,4 +19,28 @@ compile:
 
 .PHONY: bindings
 bindings: compile
-	./scripts/compile-bindings.sh
+	./bin/compile-bindings.sh
+
+.PHONY: all
+all: compile bindings
+
+gha:
+	git config --global --add safe.directory "*"
+	forge install
+	forge b
+	./bin/compile-bindings.sh
+
+docker:
+	docker build --progress=plain -t ${CONTAINER_NAME}:latest .
+
+compile-in-docker:
+	docker run -v $(PWD):/build -w /build --rm -it ${CONTAINER_NAME}:latest bash -c "make compile"
+
+bindings-in-docker:
+	docker run -v $(PWD):/build -w /build --rm -it ${CONTAINER_NAME}:latest bash -c "make bindings"
+
+all-in-docker:
+	docker run -v $(PWD):/build -w /build --rm -it ${CONTAINER_NAME}:latest bash -c "make all"
+
+gha-docker:
+	docker run -v $(PWD):/build -w /build --rm -i ${CONTAINER_NAME}:latest bash -c "make gha"
