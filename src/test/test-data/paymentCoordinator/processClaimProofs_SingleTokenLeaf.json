@@ -1,0 +1,24 @@
+{
+  "Root": "0x86867b737e68a56280554c0447ac6b43ba1cb68f4a46d1d9a0ecb919f912959b",
+  "RootIndex": 0,
+  "EarnerIndex": 3,
+  "EarnerTreeProof": "0x04da796e892869089dfdaae7269c8eb12548f6aa3774a747322b65c42d1ca0050d38d6d5e7e9e65ba24c275fcc0f0c377d8fb6ed089770d849c39a1829d1edf27e78a529aa8f867a3777f97541a23fb1844d6ae24c3b8ca1cc981510e5d08bda",
+  "EarnerLeaf": {
+    "Earner": "0xf2288d736d27c1584ebf7be5f52f9e4d47251aee",
+    "EarnerTokenRoot": "0x167f18d55815451f979244946b7eb2ce019c323a9e02fba1b2e05e19a27b91b5"
+  },
+  "LeafIndices": [
+    0
+  ],
+  "TokenTreeProofs": [
+    "0x"
+  ],
+  "TokenLeaves": [
+    {
+      "Token": "0x1006dd1b8c3d0ef53489bed27577c75299f71473",
+      "CumulativeEarnings": 1000000000000000000
+    }
+  ],
+  "TokenTreeProofsNum": 1,
+  "TokenLeavesNum": 1
+}
