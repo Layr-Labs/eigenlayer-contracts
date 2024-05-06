@@ -645,7 +645,7 @@ contract ExistingDeploymentParser is Script, Test {
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
             vm.serializeAddress(deployed_strategies, strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
-        string memory deployed_strategies_output = numStrategiesToDeploy == 0
+        string memory deployed_strategies_output = numStrategiesDeployed == 0
             ? ""
             : vm.serializeAddress(
                 deployed_strategies,
@@ -685,23 +685,11 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
-        vm.serializeString(
+        string memory deployed_addresses_output = vm.serializeString(
             deployed_addresses,
             "strategies",
             deployed_strategies_output
         );
-
-        // token
-        string memory token = "token";
-        vm.serializeAddress(token, "tokenProxyAdmin", address(tokenProxyAdmin));
-        vm.serializeAddress(token, "EIGEN", address(EIGEN));
-        vm.serializeAddress(token, "EIGENImpl", address(EIGENImpl));
-        vm.serializeAddress(token, "bEIGEN", address(bEIGEN));
-        vm.serializeAddress(token, "eigenStrategy", address(eigenStrategy));
-        vm.serializeAddress(token, "eigenStrategyImpl", address(eigenStrategyImpl));
-        string memory token_output = vm.serializeAddress(token, "bEIGENImpl", address(bEIGENImpl));
-
-        string memory deployed_addresses_output = vm.serializeString(deployed_addresses, "token", token_output);
 
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);

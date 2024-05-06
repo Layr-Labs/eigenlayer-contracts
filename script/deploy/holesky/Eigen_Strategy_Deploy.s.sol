@@ -22,6 +22,11 @@ contract Eigen_Strategy_Deploy is ExistingDeploymentParser {
         vm.stopBroadcast();
 
         _verifyDeployment();
+
+        emit log_string("====Deployed Contracts====");
+
+        emit log_named_address("EigenStrategy", address(eigenStrategy));
+        emit log_named_address("EigenStrategyImpl", address(eigenStrategyImpl));
     }
 
     function _deployStrategy() internal {
