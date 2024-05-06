@@ -28,7 +28,7 @@ This document is organized according to the following themes (click each to be t
 * [Distributing and Claiming Payments](#distributing-and-claiming-payments)
 * [System Configuration](#system-configuration)
 * [Payments Merkle Tree Structure](#payments-merkle-tree-structure)
-* [Off-Chain Calculation](#offchain-calculation)
+* [Off Chain Calculation](#off-chain-calculation)
 
 #### Important state variables
 
@@ -356,7 +356,7 @@ The payment merkle tree is structured in the diagram below:
 
 ![.](../images/PaymentCoordinator_Merkle_Tree.png)
 
-### Off-Chain Integrations
+### Off Chain Calcalculation
 
 Payments are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently said to once per day. It then combines these snapshots with any active payments to calculate what the single day payout of an earner is. Every `CALCULATION_INTERVAL_SECONDS` payouts are accumulated up to `lastPaymentTimestamp + CALCULATION_INTERVAL_SECONDS` and posted on-chain by the entity with the `paymentUpdater` role. 
 
