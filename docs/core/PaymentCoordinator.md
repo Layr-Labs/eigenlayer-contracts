@@ -264,7 +264,7 @@ After the claim is verified, for each token leaf, the difference between the cum
 * If the `earner` specified in `claim.earnerLeaf.earner` has a designated `claimer` in `claimerFor[earner]`, `msg.sender` MUST be the `claimer`
     * Otherwise, `msg.sender` MUST be the `earner`
 * For each `TokenTreeMerkleLeaf`, 
-    * `tokenLeaf.cumulativeEarnings >= cumulativeClaimed[earner][token]`: cumulativeEarnings must be gte than cumulativeClaimed
+    * `tokenLeaf.cumulativeEarnings > cumulativeClaimed[earner][token]`: cumulativeEarnings must be gt than cumulativeClaimed. Trying to reclaim with the same proofs will revert because the claimed and earnings values will equal, breaking this requirement.
     * `tokenLeaf.token.safeTransfer(recipient, claimAmount)` MUST succeed
 
 ---
