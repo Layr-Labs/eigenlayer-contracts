@@ -1679,7 +1679,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAlternateClaimProofs();
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsMaxEarnerAndLeafIndices();
         IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
@@ -1710,6 +1710,135 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
                 claim.tokenIndices[0] + 1,
                 (1 << ((claim.tokenTreeProofs[0].length / 32))),
                 "TokenIndex not set to max value"
+            );
+            _assertPaymentClaimedEvents(root, claim, claimer);
+            paymentCoordinator.processClaim(claim, claimer);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+    }
+
+    /// @notice tests with single token leaf for the earner's subtree. tokenTreeProof for the token in the claim should be empty
+    function testFuzz_processClaim_WhenSingleTokenLeaf(
+        bool setClaimerFor,
+        address claimerFor,
+        uint8 numShift
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsSingleTokenLeaf();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            // Single tokenLeaf in earner's subtree, should be 0 index
+            assertEq(
+                claim.tokenIndices[0],
+                0,
+                "TokenIndex should be 0"
+            );
+            assertEq(
+                claim.tokenTreeProofs[0].length,
+                0,
+                "TokenTreeProof should be empty"
+            );
+            _assertPaymentClaimedEvents(root, claim, claimer);
+            paymentCoordinator.processClaim(claim, claimer);
+
+            uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
+
+            for (uint256 i = 0; i < totalClaimedBefore.length; ++i) {
+                assertEq(
+                    earnings[i] - totalClaimedBefore[i],
+                    tokenBalancesAfter[i] - tokenBalancesBefore[i],
+                    "Token balance not incremented by earnings amount"
+                );
+            }
+
+            cheats.stopPrank();
+        }
+    }
+
+    /// @notice tests with single earner leaf in the merkle tree. earnerTreeProof in claim should be empty
+    function testFuzz_processClaim_WhenSingleEarnerLeaf(
+        bool setClaimerFor,
+        address claimerFor,
+        uint8 numShift
+    ) public filterFuzzedAddressInputs(claimerFor) {
+        // Hardcode earner address to earner in alternate claim proofs
+        earner = 0x0D6bA28b9919CfCDb6b233469Cc5Ce30b979e08E;
+
+        // if setClaimerFor is true, set the earners claimer to the fuzzed address
+        address claimer;
+        if (setClaimerFor) {
+            cheats.prank(earner);
+            paymentCoordinator.setClaimerFor(claimerFor);
+            claimer = claimerFor;
+        } else {
+            claimer = earner;
+        }
+
+        // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsSingleEarnerLeaf();
+        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+
+        // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
+        {
+            uint32 rootIndex = claim.rootIndex;
+            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            cheats.warp(activatedAt);
+
+            // Claim against root and check balances before/after, and check it matches the difference between
+            // cumulative claimed and earned.
+            cheats.startPrank(claimer);
+            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+
+            uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
+            uint256[] memory earnings = _getCumulativeEarnings(claim);
+            uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
+
+            // Earner Leaf in merkle tree, should be 0 index
+            assertEq(
+                claim.earnerIndex,
+                0,
+                "EarnerIndex should be 0"
+            );
+            assertEq(
+                claim.earnerTreeProof.length,
+                0,
+                "EarnerTreeProof should be empty"
             );
             _assertPaymentClaimedEvents(root, claim, claimer);
             paymentCoordinator.processClaim(claim, claimer);
@@ -1811,10 +1940,26 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         return claims;
     }
 
-    function _parseAlternateClaimProofs() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+    function _parseAllProofsMaxEarnerAndLeafIndices() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
         IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
 
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofsAlternateExample.json");
+        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json");
+
+        return claims;
+    }
+
+    function _parseAllProofsSingleTokenLeaf() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
+
+        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_SingleTokenLeaf.json");
+
+        return claims;
+    }
+
+    function _parseAllProofsSingleEarnerLeaf() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
+        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
+
+        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_SingleEarnerLeaf.json");
 
         return claims;
     }
