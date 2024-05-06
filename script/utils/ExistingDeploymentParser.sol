@@ -12,6 +12,7 @@ import "../../src/contracts/core/AVSDirectory.sol";
 
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "../../src/contracts/strategies/EigenStrategy.sol";
 
 import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
@@ -20,6 +21,9 @@ import "../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "../../src/contracts/permissions/PauserRegistry.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
+
+import "../../src/contracts/interfaces/IBackingEigen.sol";
+import "../../src/contracts/interfaces/IEigen.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -56,6 +60,15 @@ contract ExistingDeploymentParser is Script, Test {
     UpgradeableBeacon public eigenPodBeacon;
     EigenPod public eigenPodImplementation;
     StrategyBase public baseStrategyImplementation;
+
+    // Token
+    ProxyAdmin public tokenProxyAdmin;
+    IEigen public EIGEN;
+    IEigen public EIGENImpl;
+    IBackingEigen public bEIGEN;
+    IBackingEigen public bEIGENImpl;
+    EigenStrategy public eigenStrategy;
+    EigenStrategy public eigenStrategyImpl;
 
     // EigenPods deployed
     address[] public multiValidatorPods;
@@ -180,6 +193,15 @@ contract ExistingDeploymentParser is Script, Test {
             address strategyAddress = abi.decode(stdJson.parseRaw(existingDeploymentData, key), (address));
             deployedStrategyArray.push(StrategyBase(strategyAddress));
         }
+
+        // token
+        tokenProxyAdmin = ProxyAdmin(stdJson.readAddress(existingDeploymentData, ".addresses.token.tokenProxyAdmin"));
+        EIGEN = IEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.EIGEN"));
+        EIGENImpl = IEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.EIGENImpl"));
+        bEIGEN = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGEN"));
+        bEIGENImpl = IBackingEigen(stdJson.readAddress(existingDeploymentData, ".addresses.token.bEIGENImpl"));
+        eigenStrategy = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategy"));
+        eigenStrategyImpl = EigenStrategy(stdJson.readAddress(existingDeploymentData, ".addresses.token.eigenStrategyImpl"));
     }
 
     function _parseDeployedEigenPods(string memory existingDeploymentInfoPath) internal returns (DeployedEigenPods memory) {
@@ -663,11 +685,23 @@ contract ExistingDeploymentParser is Script, Test {
         vm.serializeAddress(deployed_addresses, "eigenPodImplementation", address(eigenPodImplementation));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
         vm.serializeAddress(deployed_addresses, "emptyContract", address(emptyContract));
-        string memory deployed_addresses_output = vm.serializeString(
+        vm.serializeString(
             deployed_addresses,
             "strategies",
             deployed_strategies_output
         );
+
+        // token
+        string memory token = "token";
+        vm.serializeAddress(token, "tokenProxyAdmin", address(tokenProxyAdmin));
+        vm.serializeAddress(token, "EIGEN", address(EIGEN));
+        vm.serializeAddress(token, "EIGENImpl", address(EIGENImpl));
+        vm.serializeAddress(token, "bEIGEN", address(bEIGEN));
+        vm.serializeAddress(token, "eigenStrategy", address(eigenStrategy));
+        vm.serializeAddress(token, "eigenStrategyImpl", address(eigenStrategyImpl));
+        string memory token_output = vm.serializeAddress(token, "bEIGENImpl", address(bEIGENImpl));
+
+        string memory deployed_addresses_output = vm.serializeString(deployed_addresses, "token", token_output);
 
         string memory parameters = "parameters";
         vm.serializeAddress(parameters, "executorMultisig", executorMultisig);
