@@ -1,0 +1,36 @@
+{
+  "Root": "0xd4aa4d1bdb95eb78f061238d587609407301a05bd952334ad6b5e8ca60bb347e",
+  "RootIndex": 0,
+  "EarnerIndex": 0,
+  "EarnerTreeProof": "0x",
+  "EarnerLeaf": {
+    "Earner": "0x0d6ba28b9919cfcdb6b233469cc5ce30b979e08e",
+    "EarnerTokenRoot": "0x12104ce9deb6e62ef479656476be1da6d71905234252cf9a5c9733e6cb115d77"
+  },
+  "LeafIndices": [
+    0,
+    2,
+    3
+  ],
+  "TokenTreeProofs": [
+    "0xf027f6a1f6522a5ede64f16448001378272bcc3b4d9b2660f241ea87d4cafc880d5fa8201813790dcfddb37966811813117ab78db2cce941c8b1d1f3888cccca6271c73f26f5e492cc990b25f85410beaf6f04958410162dc16eb5e3ce4791ce",
+    "0x9ae7a20b0f244cb25a1c18339432139587ecc0058130e9ebb10a98049981395d5bef23d3c6b22f7b1265e30a68e83b675394ea57b7fa150f5ecc07bae7e3b88d6271c73f26f5e492cc990b25f85410beaf6f04958410162dc16eb5e3ce4791ce",
+    "0x31335a07ff9047e08d712967b2ef1720f8682cb696d9df15902602b0c5eebdde5bef23d3c6b22f7b1265e30a68e83b675394ea57b7fa150f5ecc07bae7e3b88d6271c73f26f5e492cc990b25f85410beaf6f04958410162dc16eb5e3ce4791ce"
+  ],
+  "TokenLeaves": [
+    {
+      "Token": "0x1006dd1b8c3d0ef53489bed27577c75299f71473",
+      "CumulativeEarnings": 1000000000000000000
+    },
+    {
+      "Token": "0x43afffbe0afacdabe9ce7dbc4f07407a2b788a84",
+      "CumulativeEarnings": 3000000000000000000
+    },
+    {
+      "Token": "0x748a3ed7e6b04239150d7ebe12d7aef3e3994a23",
+      "CumulativeEarnings": 1000000000000000000
+    }
+  ],
+  "TokenTreeProofsNum": 3,
+  "TokenLeavesNum": 3
+}
