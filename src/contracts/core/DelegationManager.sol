@@ -8,6 +8,8 @@ import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "./DelegationManagerStorage.sol";
 
+import "../libraries/SlashingAccountingUtils.sol";
+
 /**
  * @title DelegationManager
  * @author Layr Labs, Inc.
@@ -19,6 +21,12 @@ import "./DelegationManagerStorage.sol";
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, DelegationManagerStorage, ReentrancyGuardUpgradeable {
+
+    function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
+        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.scaleDown(rebasedOperatorShares[operator][strategy], scalingFactor);
+    }
+
     // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -249,7 +257,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     operator: operator,
                     withdrawer: staker,
                     strategies: singleStrategy,
-                    shares: singleShare
+                    rebasedShares: singleShare
                 });
             }
         }
@@ -282,7 +290,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 operator: operator,
                 withdrawer: queuedWithdrawalParams[i].withdrawer,
                 strategies: queuedWithdrawalParams[i].strategies,
-                shares: queuedWithdrawalParams[i].shares
+                rebasedShares: queuedWithdrawalParams[i].shares
             });
         }
         return withdrawalRoots;
@@ -374,51 +382,51 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     /**
      * @notice Increases a staker's delegated share balance in a strategy.
-     * @param staker The address to increase the delegated shares for their operator.
-     * @param strategy The strategy in which to increase the delegated shares.
-     * @param shares The number of shares to increase.
+     * @param staker The address to increase the delegated rebasedShares for their operator.
+     * @param strategy The strategy in which to increase the delegated rebasedShares.
+     * @param rebasedShares The number of rebasedShares to increase.
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated rebasedShares in `strategy` by `rebasedShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 shares
+        uint256 rebasedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
-            // add strategy shares to delegate's shares
-            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, shares: shares});
+            // add strategy rebasedShares to delegate's rebasedShares
+            _increaseOperatorShares({operator: operator, staker: staker, strategy: strategy, rebasedShares: rebasedShares});
         }
     }
 
     /**
      * @notice Decreases a staker's delegated share balance in a strategy.
-     * @param staker The address to increase the delegated shares for their operator.
-     * @param strategy The strategy in which to decrease the delegated shares.
-     * @param shares The number of shares to decrease.
+     * @param staker The address to increase the delegated rebasedShares for their operator.
+     * @param strategy The strategy in which to decrease the delegated rebasedShares.
+     * @param rebasedShares The number of rebasedShares to decrease.
      *
-     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated shares in `strategy` by `shares`. Otherwise does nothing.
+     * @dev *If the staker is actively delegated*, then decreases the `staker`'s delegated rebasedShares in `strategy` by `rebasedShares`. Otherwise does nothing.
      * @dev Callable only by the StrategyManager or EigenPodManager.
      */
     function decreaseDelegatedShares(
         address staker,
         IStrategy strategy,
-        uint256 shares
+        uint256 rebasedShares
     ) external onlyStrategyManagerOrEigenPodManager {
         // if the staker is delegated to an operator
         if (isDelegated(staker)) {
             address operator = delegatedTo[staker];
 
-            // subtract strategy shares from delegate's shares
+            // subtract strategy rebasedShares from delegate's rebasedShares
             _decreaseOperatorShares({
                 operator: operator,
                 staker: staker,
                 strategy: strategy,
-                shares: shares
+                rebasedShares: rebasedShares
             });
         }
     }
@@ -542,7 +550,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 operator: operator,
                 staker: staker,
                 strategy: strategies[i],
-                shares: shares[i]
+                rebasedShares: shares[i]
             });
 
             unchecked { ++i; }
@@ -595,11 +603,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
+                // TODO: refactor so that rebasedShares is an input to `_withdrawSharesAsTokens`?
+                uint256 scalingFactor = slasher.shareScalingFactor(withdrawal.delegatedTo, withdrawal.strategies[i]);
+                uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactor);
+
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
                     withdrawer: msg.sender,
                     strategy: withdrawal.strategies[i],
-                    shares: withdrawal.shares[i],
+                    shares: shares,
                     token: tokens[i]
                 });
                 unchecked { ++i; }
@@ -634,7 +646,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             // the 'staker' here is the address receiving new shares
                             staker: staker,
                             strategy: withdrawal.strategies[i],
-                            shares: increaseInDelegateableShares
+                            rebasedShares: increaseInDelegateableShares
                         });
                     }
                 } else {
@@ -646,7 +658,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             // the 'staker' here is the address receiving new shares
                             staker: msg.sender,
                             strategy: withdrawal.strategies[i],
-                            shares: withdrawal.shares[i]
+                            rebasedShares: withdrawal.shares[i]
                         });
                     }
                 }
@@ -657,22 +669,22 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit WithdrawalCompleted(withdrawalRoot);
     }
 
-    // @notice Increases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesIncreased` event
-    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
-        operatorShares[operator][strategy] += shares;
-        emit OperatorSharesIncreased(operator, staker, strategy, shares);
+    // @notice Increases `operator`s delegated rebasedShares in `strategy` by `rebasedShares` and emits an `OperatorSharesIncreased` event
+    function _increaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 rebasedShares) internal {
+        rebasedOperatorShares[operator][strategy] += rebasedShares;
+        emit OperatorSharesIncreased(operator, staker, strategy, rebasedShares);
     }
 
-    // @notice Decreases `operator`s delegated shares in `strategy` by `shares` and emits an `OperatorSharesDecreased` event
-    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 shares) internal {
+    // @notice Decreases `operator`s delegated rebasedShares in `strategy` by `rebasedShares` and emits an `OperatorSharesDecreased` event
+    function _decreaseOperatorShares(address operator, address staker, IStrategy strategy, uint256 rebasedShares) internal {
         // This will revert on underflow, so no check needed
-        operatorShares[operator][strategy] -= shares;
-        emit OperatorSharesDecreased(operator, staker, strategy, shares);
+        rebasedOperatorShares[operator][strategy] -= rebasedShares;
+        emit OperatorSharesDecreased(operator, staker, strategy, rebasedShares);
     }
 
     /**
-     * @notice Removes `shares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
-     * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
+     * @notice Removes `rebasedShares` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+     * @dev If the `operator` is indeed an operator, then the operator's delegated rebasedShares in the `strategies` are also decreased appropriately.
      * @dev If `withdrawer` is not the same address as `staker`, then thirdPartyTransfersForbidden[strategy] must be set to false in the StrategyManager.
      */
     function _removeSharesAndQueueWithdrawal(
@@ -680,13 +692,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         address operator,
         address withdrawer,
         IStrategy[] memory strategies, 
-        uint256[] memory shares
+        uint256[] memory rebasedShares
     ) internal returns (bytes32) {
         require(staker != address(0), "DelegationManager._removeSharesAndQueueWithdrawal: staker cannot be zero address");
         require(strategies.length != 0, "DelegationManager._removeSharesAndQueueWithdrawal: strategies cannot be empty");
     
-        // Remove shares from staker and operator
-        // Each of these operations fail if we attempt to remove more shares than exist
+        // Remove rebasedShares from staker and operator
+        // Each of these operations fail if we attempt to remove more rebasedShares than exist
         for (uint256 i = 0; i < strategies.length;) {
             // Similar to `isDelegated` logic
             if (operator != address(0)) {
@@ -694,26 +706,26 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     operator: operator,
                     staker: staker,
                     strategy: strategies[i],
-                    shares: shares[i]
+                    rebasedShares: rebasedShares[i]
                 });
             }
 
             // Remove active shares from EigenPodManager/StrategyManager
             if (strategies[i] == beaconChainETHStrategy) {
                 /**
-                 * This call will revert if it would reduce the Staker's virtual beacon chain ETH shares below zero.
+                 * This call will revert if it would reduce the Staker's virtual beacon chain ETH rebasedShares below zero.
                  * This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-                 * shares from the operator to whom the staker is delegated.
+                 * rebasedShares from the operator to whom the staker is delegated.
                  * It will also revert if the share amount being withdrawn is not a whole Gwei amount.
                  */
-                eigenPodManager.removeShares(staker, shares[i]);
+                eigenPodManager.removeShares(staker, rebasedShares[i]);
             } else {
                 require(
                     staker == withdrawer || !strategyManager.thirdPartyTransfersForbidden(strategies[i]),
                     "DelegationManager._removeSharesAndQueueWithdrawal: withdrawer must be same address as staker if thirdPartyTransfersForbidden are set"
                 );
-                // this call will revert if `shares[i]` exceeds the Staker's current shares in `strategies[i]`
-                strategyManager.removeShares(staker, strategies[i], shares[i]);
+                // this call will revert if `rebasedShares[i]` exceeds the Staker's current rebasedShares in `strategies[i]`
+                strategyManager.removeShares(staker, strategies[i], rebasedShares[i]);
             }
 
             unchecked { ++i; }
@@ -730,7 +742,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            shares: shares
+            shares: rebasedShares
         });
 
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
@@ -751,6 +763,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             eigenPodManager.withdrawSharesAsTokens({
                 podOwner: staker,
                 destination: withdrawer,
+                // TODO: rename param in EigenPodManager and update here
                 shares: shares
             });
         } else {
@@ -867,7 +880,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     ) public view returns (uint256[] memory) {
         uint256[] memory shares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
-            shares[i] = operatorShares[operator][strategies[i]];
+            uint256 scalingFactor = slasher.shareScalingFactor(operator, strategies[i]);
+            shares[i] = SlashingAccountingUtils.scaleDown(rebasedOperatorShares[operator][strategies[i]], scalingFactor);
         }
         return shares;
     }

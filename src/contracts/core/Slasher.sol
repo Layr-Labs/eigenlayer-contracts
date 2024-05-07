@@ -9,6 +9,7 @@ import "../permissions/Pausable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
+import "../libraries/SlashingAccountingUtils.sol";
 
 /**
  * @notice This contract is not in use as of the Eigenlayer M2 release.
@@ -28,6 +29,55 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  */ 
 contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
      
+    /**
+     * @notice Mapping: operator => strategy => share scalingFactor,
+     * stored in the "SHARE_CONVERSION_SCALE", i.e. scalingFactor = 2 * SHARE_CONVERSION_SCALE indicates a scalingFactor of "2".
+     * Note that a value of zero is treated as one, since this means that the operator has never been slashed
+     */
+    mapping(address => mapping(IStrategy => uint256)) internal _shareScalingFactor;
+
+    function shareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
+        uint256 scalingFactor = _shareScalingFactor[operator][strategy];
+        if (scalingFactor == 0) {
+            return SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
+        } else {
+            return scalingFactor;
+        }
+    }
+
+    // @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
+    // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
+    mapping(address => mapping(IStrategy => int256[])) public slashedEpochHistory;
+    function lastSlashed(address operator, IStrategy strategy) public view returns (int256) {
+        uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
+        if (slashedEpochHistoryLength == 0) {
+            return 0;
+        } else {
+            return slashedEpochHistory[operator][strategy][slashedEpochHistoryLength - 1];
+        }
+    }
+
+    function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
+        require(bipsToSlash != 0, "cannot slash 0%");
+        require(bipsToSlash < SlashingAccountingUtils.BIPS_FACTOR, "cannot slash more than 99.99% in a single epoch");
+        int256 lastSlashedEpoch = lastSlashed(operator, strategy);
+        // TODO: again note that we need something like the first epoch being epoch 1 here
+        require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
+        uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
+        uint256 scalingFactorAfter;
+        // deal with edge case of operator being slashed repeatedly, inflating scalingFactor to max uint size
+        // TODO: figure out more nuanced / appropriate way to handle this 'edge case', e.g. deciding if deposits should be blocked when close to limit
+        if (SlashingAccountingUtils.MAX_SCALING_FACTOR / scalingFactorBefore >= bipsToSlash) {
+            scalingFactorAfter = type(uint256).max;
+        } else {
+            scalingFactorAfter = scalingFactorBefore * SlashingAccountingUtils.BIPS_FACTOR / (SlashingAccountingUtils.BIPS_FACTOR - bipsToSlash);
+        }
+        // update storage to reflect the slashing
+        slashedEpochHistory[operator][strategy].push(epoch);
+        _shareScalingFactor[operator][strategy] = scalingFactorAfter;
+        // TODO: events!
+    }
+
     constructor(IStrategyManager, IDelegationManager) {}
 
     function initialize(
