@@ -1,0 +1,54 @@
+{
+  "Root": "0x53d76498642862250c1caa8b14df55642d977200467a3dfce62e6da30b4820c6",
+  "RootIndex": 0,
+  "EarnerIndex": 3,
+  "EarnerTreeProof": "0xecd8c0e6d2d221742f8025acd6f1f0a5ff8482fe8f1cb135439e346df6fd56acce4f8a04a8bcb37dcbc11cb6984ba73cfa4da51dd037f7be27c257cf0605673b38d2f9a729da60cd7c3c2b7ff53bebfdef61de0871518eb36654368ac584b6b8",
+  "EarnerLeaf": {
+    "Earner": "0xf2288d736d27c1584ebf7be5f52f9e4d47251aee",
+    "EarnerTokenRoot": "0x36c11c299ad4a8b95a795d6afc1f5f958b9d1a1ea5cc13ea2fc59b6ccd4b6ee4"
+  },
+  "LeafIndices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "TokenTreeProofs": [
+    "0xfcf8546a323ba4d4bcfbdb5930b3bede1e93ec4bdd8d1372ed84db3126df143fb306484eeaece55c5cd8db0ce3f3a77f4aa6fa5150b95db06b9c1cec4825aae157a8dfba810f55acf97f229426649e26f6fe58886e1edcb404535334da43d92d",
+    "0xde4e83fd8b6b5e44f72fd511cd1a9ce6704f16378e5ca20c15f4d52efe27aa57b306484eeaece55c5cd8db0ce3f3a77f4aa6fa5150b95db06b9c1cec4825aae157a8dfba810f55acf97f229426649e26f6fe58886e1edcb404535334da43d92d",
+    "0x67f846894f21973d7db36e6b363141b291b2f0f57bfc4b9a74b4f5335c0d068a17aac423247fab5821f643830b49570dfdecd0f30a9ae24ff5fd59bd4e9e8a4e57a8dfba810f55acf97f229426649e26f6fe58886e1edcb404535334da43d92d",
+    "0xc27217da67ce7b0418f5c8bef4ceeefe04c5561ddd73ab9750798d8f981d981d17aac423247fab5821f643830b49570dfdecd0f30a9ae24ff5fd59bd4e9e8a4e57a8dfba810f55acf97f229426649e26f6fe58886e1edcb404535334da43d92d",
+    "0xd084816ad70c189dbfa8be4e6b1f912edb6fe3b39ba1c19c4ed16d91b84f903dad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb550d72c280c9bd978b5ef45c3647daa2ab564342c473cb977f35b053706ed19d1",
+    "0x2bec75e7737677b586943a2292393137cad6617ac248d249d220afb3bf31f4dcad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb550d72c280c9bd978b5ef45c3647daa2ab564342c473cb977f35b053706ed19d1"
+  ],
+  "TokenLeaves": [
+    {
+      "Token": "0x1006dd1b8c3d0ef53489bed27577c75299f71473",
+      "CumulativeEarnings": 3500000000000000000
+    },
+    {
+      "Token": "0x11a4b85eab283c98d27c8ae64469224d55ed1894",
+      "CumulativeEarnings": 1240000000000000000
+    },
+    {
+      "Token": "0x43afffbe0afacdabe9ce7dbc4f07407a2b788a84",
+      "CumulativeEarnings": 56800000000000000000
+    },
+    {
+      "Token": "0x748a3ed7e6b04239150d7ebe12d7aef3e3994a23",
+      "CumulativeEarnings": 8900000000000
+    },
+    {
+      "Token": "0xd275b23e0a5b68ae251b0dc4c81104cba36e7cd6",
+      "CumulativeEarnings": 4343000000000000000
+    },
+    {
+      "Token": "0xec562acb9e470de27dca2495950660fa9fbd85f8",
+      "CumulativeEarnings": 1064000000000000
+    }
+  ],
+  "TokenTreeProofsNum": 6,
+  "TokenLeavesNum": 6
+}

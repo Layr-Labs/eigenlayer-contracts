@@ -12,6 +12,7 @@ This document provides an overview of system components, contracts, and user rol
     * [`EigenPodManager`](#eigenpodmanager)
     * [`StrategyManager`](#strategymanager)
     * [`DelegationManager`](#delegationmanager)
+    * [`PaymentCoordinator`](#paymentcoordinator)
     * [`AVSDirectory`](#avsdirectory)
     * [`Slasher`](#slasher)
 * [Roles and Actors](#roles-and-actors)
@@ -65,6 +66,19 @@ See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md
 The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
+
+#### PaymentCoordinator
+
+| File | Type | Proxy |
+| -------- | -------- | -------- |
+| [`PaymentCoordinator.sol`](../src/contracts/core/PaymentCoordinator.sol) | Singleton | Transparent proxy |
+
+The `PaymentCoordinator` is the main entry point of submission and claiming of ERC20 payments in EigenLayer. It carries out three basic functions:
+* AVSs (via the AVS's contracts) submit "range payments" to their registered Operators and Stakers over a specific time period 
+* *Off-chain*, the payment updater will use each range payment's time period to apply payment amounts to historical Staker/Operator stake weights. This is consolidated into a merkle root that is posted *on-chain* to the `PaymentCoordinator`, allowing Stakers/Operators to claim their allocated payments.
+* Stakers/Operators can claim payments posted by the payment updater.
+
+See full documentation in [`/core/PaymentCoordinator.md`](./core/PaymentCoordinator.md).
 
 #### AVSDirectory
 

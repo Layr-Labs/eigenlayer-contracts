@@ -30,6 +30,8 @@ contract StrategyManagerMock is
     mapping(address => IStrategy[]) public strategiesToReturn;
     mapping(address => uint256[]) public sharesToReturn;
 
+    mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit;
+
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint256) public cumulativeWithdrawalsQueued;
     
@@ -104,6 +106,11 @@ contract StrategyManagerMock is
     function setStakerStrategyListLengthReturnValue(uint256 valueToSet) public {
         stakerStrategyListLengthReturnValue = valueToSet;
     }
+
+    function setStrategyWhitelist(IStrategy strategy, bool value) external {
+        strategyIsWhitelistedForDeposit[strategy] = value;
+    }
+
 
     function removeShares(address staker, IStrategy strategy, uint256 shares) external {}
 

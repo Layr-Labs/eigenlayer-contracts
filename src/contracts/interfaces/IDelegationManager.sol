@@ -395,6 +395,9 @@ interface IDelegationManager is ISignatureUtils {
      */
     function strategyWithdrawalDelayBlocks(IStrategy strategy) external view returns (uint256);
 
+    /// @notice return address of the beaconChainETHStrategy
+    function beaconChainETHStrategy() external view returns (IStrategy);
+
     /**
      * @notice Calculates the digestHash for a `staker` to sign to delegate to an `operator`
      * @param staker The signing staker
