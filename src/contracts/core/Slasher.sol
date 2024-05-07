@@ -28,7 +28,6 @@ import "../libraries/SlashingAccountingUtils.sol";
  * and deploy scripts. Otherwise, it does nothing.
  */ 
 contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
-     
     /**
      * @notice Mapping: operator => strategy => share scalingFactor,
      * stored in the "SHARE_CONVERSION_SCALE", i.e. scalingFactor = 2 * SHARE_CONVERSION_SCALE indicates a scalingFactor of "2".
@@ -48,6 +47,30 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     // @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
     mapping(address => mapping(IStrategy => int256[])) public slashedEpochHistory;
+
+    /**
+     * @notice Mapping: operator => strategy => epoch => scaling factor as a result of slashing *in that epoch*
+     * @dev Note that this will be zero in the event of no slashing for the (operator, strategy) tuple in the given epoch.
+     * You should use `shareScalingFactorAtEpoch` if you want the actual historical value of the share scaling factor in a given epoch.
+     */
+    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public shareScalingFactorHistory;
+
+    // TODO: this is a "naive" search since it brute-force backwards searches; we might technically want a binary search for completeness
+    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, int256 epoch) public view returns (uint256) {
+        uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
+        // TODO: note the edge case of 0th epoch; need to make sure it's clear how it should be handled
+        if (slashedEpochHistoryLength == 0 || epoch < 0) {
+            return SlashingAccountingUtils.SHARE_CONVERSION_SCALE;
+        } else {
+            for (uint256 i = slashedEpochHistoryLength - 1; i > 0; --i) {
+                if (slashedEpochHistory[operator][strategy][i] <= epoch) {
+                    int256 correctEpochForLookup = slashedEpochHistory[operator][strategy][i];
+                    return shareScalingFactorHistory[operator][strategy][correctEpochForLookup];
+                }
+            }
+        }
+    }
+
     function lastSlashed(address operator, IStrategy strategy) public view returns (int256) {
         uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
         if (slashedEpochHistoryLength == 0) {
@@ -69,6 +92,8 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         // update storage to reflect the slashing
         slashedEpochHistory[operator][strategy].push(epoch);
         _shareScalingFactor[operator][strategy] = scalingFactorAfter;
+        // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
+        shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
         // TODO: events!
     }
 
