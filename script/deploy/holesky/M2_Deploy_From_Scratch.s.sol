@@ -128,8 +128,8 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
-                executorMultisig, //initialOwner
-                STRATEGY_MANAGER_WHITELISTER, //initial whitelister
+                msg.sender, //initialOwner, set to executorMultisig later after whitelisting strategies
+                msg.sender, //initial whitelister, set to STRATEGY_MANAGER_WHITELISTER later
                 eigenLayerPauserReg,
                 STRATEGY_MANAGER_INIT_PAUSED_STATUS
             )
@@ -173,6 +173,10 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
         // Deploy Strategies
         baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager);
         uint256 numStrategiesToDeploy = strategiesToDeploy.length;
+        // whitelist params
+        IStrategy[] memory strategiesToWhitelist = new IStrategy[](numStrategiesToDeploy);
+        bool[] memory thirdPartyTransfersForbiddenValues = new bool[](numStrategiesToDeploy);
+
         for (uint256 i = 0; i < numStrategiesToDeploy; i++) {
             StrategyUnderlyingTokenConfig memory strategyConfig = strategiesToDeploy[i];
 
@@ -192,13 +196,21 @@ contract M2_Deploy_Holesky_From_Scratch is ExistingDeploymentParser {
                 )
             );
 
+            strategiesToWhitelist[i] = strategy;
+            thirdPartyTransfersForbiddenValues[i] = false;
+
             deployedStrategyArray.push(strategy);
         }
+
+        // Add strategies to whitelist and set whitelister to STRATEGY_MANAGER_WHITELISTER
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist, thirdPartyTransfersForbiddenValues);
+        strategyManager.setStrategyWhitelister(STRATEGY_MANAGER_WHITELISTER);
 
         // Fork timestamp config
         eigenPodManager.setDenebForkTimestamp(EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
 
         // Transfer ownership
+        strategyManager.transferOwnership(executorMultisig);
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodManager.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);

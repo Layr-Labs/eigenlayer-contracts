@@ -579,6 +579,10 @@ contract ExistingDeploymentParser is Script, Test {
                 deployedStrategyArray[i].paused() == 0,
                 "StrategyBaseTVLLimits: init paused status set incorrectly"
             );
+            require(
+                strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]),
+                "StrategyBaseTVLLimits: strategy should be whitelisted"
+            );
         }
 
         // Pausing Permissions
