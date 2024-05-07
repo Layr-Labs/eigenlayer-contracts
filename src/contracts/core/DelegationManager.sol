@@ -595,8 +595,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         delete pendingWithdrawals[withdrawalRoot];
 
         // TODO: clearly define how this is supposed to work! current withdrawal storage is block-based, which is problematic for epochs!
-        int256 queuedEpoch;
-        int256 epochForEndOfSlashingEligibility = queuedEpoch + 1;
+        // int256 queuedEpoch;
+        // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
+        // int256 epochForEndOfSlashability = queuedEpoch + 1;
+        int256 epochForEndOfSlashability = 1;
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
@@ -608,12 +610,20 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 );
 
                 // TODO: refactor so that rebasedShares is an input to `_withdrawSharesAsTokens`?
-                uint256 scalingFactor = slasher.shareScalingFactorAtEpoch(
-                    withdrawal.delegatedTo,
-                    withdrawal.strategies[i],
-                    epochForEndOfSlashingEligibility
+                // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
+                //     withdrawal.delegatedTo,
+                //     withdrawal.strategies[i],
+                //     epochForEndOfSlashability
+                // );
+                // uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
+                uint256 shares = SlashingAccountingUtils.scaleDown(
+                    withdrawal.shares[i], 
+                    slasher.shareScalingFactorAtEpoch(
+                        withdrawal.delegatedTo,
+                        withdrawal.strategies[i],
+                        epochForEndOfSlashability
+                    )
                 );
-                uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactor);
 
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
@@ -634,32 +644,57 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
+                // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
+                //     withdrawal.delegatedTo,
+                //     withdrawal.strategies[i],
+                //     epochForEndOfSlashability
+                // );
+                // uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
+                uint256 shares = SlashingAccountingUtils.scaleDown(
+                    withdrawal.shares[i], 
+                    slasher.shareScalingFactorAtEpoch(
+                        withdrawal.delegatedTo,
+                        withdrawal.strategies[i],
+                        epochForEndOfSlashability
+                    )
+                );
+
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy shares can + will be awarded to the withdrawer.
                  */
                 if (withdrawal.strategies[i] == beaconChainETHStrategy) {
-                    address staker = withdrawal.staker;
+                    // address staker = withdrawal.staker;
+                    address podOwnerOperator = delegatedTo[withdrawal.staker];
+                    // uint256 scalingFactor = slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy);
+                    // uint256 rebasedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+                    // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
+                    uint256 rebasedShares = SlashingAccountingUtils.scaleUp(
+                        shares,
+                        slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy)
+                    );
                     /**
                     * Update shares amount depending upon the returned value.
                     * The return value will be lower than the input value in the case where the staker has an existing share deficit
                     */
                     uint256 increaseInDelegateableShares = eigenPodManager.addShares({
-                        podOwner: staker,
-                        shares: withdrawal.shares[i]
+                        podOwner: withdrawal.staker,
+                        shares: rebasedShares
                     });
-                    address podOwnerOperator = delegatedTo[staker];
                     // Similar to `isDelegated` logic
                     if (podOwnerOperator != address(0)) {
                         _increaseOperatorShares({
                             operator: podOwnerOperator,
                             // the 'staker' here is the address receiving new shares
-                            staker: staker,
+                            staker: withdrawal.staker,
                             strategy: withdrawal.strategies[i],
                             rebasedShares: increaseInDelegateableShares
                         });
                     }
                 } else {
-                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], withdrawal.shares[i]);
+                    uint256 scalingFactor = slasher.shareScalingFactor(currentOperator, beaconChainETHStrategy);
+                    // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
+                    uint256 rebasedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+                    strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], rebasedShares);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
                         _increaseOperatorShares({
@@ -667,7 +702,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                             // the 'staker' here is the address receiving new shares
                             staker: msg.sender,
                             strategy: withdrawal.strategies[i],
-                            rebasedShares: withdrawal.shares[i]
+                            rebasedShares: rebasedShares
                         });
                     }
                 }
