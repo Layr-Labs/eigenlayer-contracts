@@ -11,7 +11,11 @@ import "./IDelegationManager.sol";
  * @notice See the `Slasher` contract itself for implementation details.
  */
 interface ISlasher {
+    // TODO: documentation
     function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256);
+
+    // TODO: documentation
+    function shareScalingFactorAtEpoch(address operator, IStrategy strategy, int256 epoch) external view returns (uint256);
 
     // struct used to store information about the current state of an operator's obligations to middlewares they are serving
     struct MiddlewareTimes {

@@ -594,6 +594,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
+        // TODO: clearly define how this is supposed to work! current withdrawal storage is block-based, which is problematic for epochs!
+        int256 queuedEpoch;
+        int256 epochForEndOfSlashingEligibility = queuedEpoch + 1;
+
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
         if (receiveAsTokens) {
@@ -604,7 +608,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 );
 
                 // TODO: refactor so that rebasedShares is an input to `_withdrawSharesAsTokens`?
-                uint256 scalingFactor = slasher.shareScalingFactor(withdrawal.delegatedTo, withdrawal.strategies[i]);
+                uint256 scalingFactor = slasher.shareScalingFactorAtEpoch(
+                    withdrawal.delegatedTo,
+                    withdrawal.strategies[i],
+                    epochForEndOfSlashingEligibility
+                );
                 uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactor);
 
                 _withdrawSharesAsTokens({
@@ -616,6 +624,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 });
                 unchecked { ++i; }
             }
+        // TODO: figure out how to award correct number of shares back when a stale withdrawal is completed
         // Award shares back in StrategyManager/EigenPodManager. If withdrawer is delegated, increase the shares delegated to the operator
         } else {
             address currentOperator = delegatedTo[msg.sender];
