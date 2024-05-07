@@ -58,20 +58,14 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
-        require(bipsToSlash != 0, "cannot slash 0%");
-        require(bipsToSlash < SlashingAccountingUtils.BIPS_FACTOR, "cannot slash more than 99.99% in a single epoch");
         int256 lastSlashedEpoch = lastSlashed(operator, strategy);
-        // TODO: again note that we need something like the first epoch being epoch 1 here
+        // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
         require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
         uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
-        uint256 scalingFactorAfter;
-        // deal with edge case of operator being slashed repeatedly, inflating scalingFactor to max uint size
-        // TODO: figure out more nuanced / appropriate way to handle this 'edge case', e.g. deciding if deposits should be blocked when close to limit
-        if (SlashingAccountingUtils.MAX_SCALING_FACTOR / scalingFactorBefore >= bipsToSlash) {
-            scalingFactorAfter = type(uint256).max;
-        } else {
-            scalingFactorAfter = scalingFactorBefore * SlashingAccountingUtils.BIPS_FACTOR / (SlashingAccountingUtils.BIPS_FACTOR - bipsToSlash);
-        }
+        uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
+            scalingFactorBefore: scalingFactorBefore,
+            bipsToSlash: bipsToSlash
+        });
         // update storage to reflect the slashing
         slashedEpochHistory[operator][strategy].push(epoch);
         _shareScalingFactor[operator][strategy] = scalingFactorAfter;

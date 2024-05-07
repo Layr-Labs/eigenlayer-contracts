@@ -52,9 +52,10 @@ library SlashingAccountingUtils {
 
     function findNewScalingFactor(uint256 scalingFactorBefore, uint256 bipsToSlash) internal pure returns (uint256) {
         require(bipsToSlash != 0, "cannot slash for 0%");
-        require(bipsToSlash < BIPS_FACTOR, "cannot slash more than 99.99%");
+        require(bipsToSlash < BIPS_FACTOR, "cannot slash more than 99.99% at once");
         uint256 scalingFactorAfter;
         // deal with edge case of operator being slashed repeatedly, inflating scalingFactor to max uint size
+        // TODO: figure out more nuanced / appropriate way to handle this 'edge case', e.g. deciding if deposits should be blocked when close to limit
         if (MAX_SCALING_FACTOR / scalingFactorBefore >= bipsToSlash) {
             scalingFactorAfter = type(uint256).max;
         } else {
