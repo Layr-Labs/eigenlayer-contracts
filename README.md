@@ -20,6 +20,19 @@ The main branches we use are:
 
 ## Documentation
 
+### Setup
+
+To set up this repo for the first time, run:
+
+```bash
+make deps
+```
+
+This will:
+* Install the pre-commit hook
+* Install foundry and its tools
+* Install abigen
+
 ### Basics
 
 To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
@@ -41,6 +54,8 @@ foundryup
 
 forge build
 forge test
+
+make bindings
 ```
 
 ### Running Fork Tests
@@ -83,6 +98,12 @@ surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
 surya mdreport surya_report.md ./src/contracts/**/*.sol
 ```
 
+### Generate Go bindings
+
+```bash
+make bindings
+```
+
 ## Deployments
 
 ### Current Mainnet Deployment
@@ -99,7 +120,7 @@ The current mainnet deployment is our M2 release. You can view the deployed cont
 | [`AVSDirectory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/4b15d68b7e16b5965bad398496bfce57f5a47e1b/src/contracts/core/AVSDirectory.sol) | [`0x135dda560e946695d6f155dacafc6f1f25c1f5af`](https://etherscan.io/address/0x135dda560e946695d6f155dacafc6f1f25c1f5af) | [`0xdabd...a5b7`](https://etherscan.io/address/0xdabdb3cd346b7d5f5779b0b614ede1cc9dcba5b7) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Slasher`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/4b15d68b7e16b5965bad398496bfce57f5a47e1b/src/contracts/core/Slasher.sol) | [`0xD92145c07f8Ed1D392c1B88017934E301CC1c3Cd`](https://etherscan.io/address/0xD92145c07f8Ed1D392c1B88017934E301CC1c3Cd) | [`0xf323...6614`](https://etherscan.io/address/0xf3234220163a757edf1e11a8a085638d9b236614) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-###### Strategies
+###### Strategies - ETH
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
@@ -117,6 +138,12 @@ The current mainnet deployment is our M2 release. You can view the deployed cont
 | [`StrategyBase (mETH)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/mainnet/src/contracts/strategies/StrategyBaseTVLLimits.sol) | [`0x298aFB19A105D59E74658C4C334Ff360BadE6dd2`](https://etherscan.io/address/0x298aFB19A105D59E74658C4C334Ff360BadE6dd2) | [`0xdfdA...46d3`](https://etherscan.io/address/0xdfdA04f980bE6A64E3607c95Ca26012Ab9aA46d3) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | `Beacon Chain ETH` | `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0` | - | - Used for Beacon Chain ETH shares <br />- Not a real contract! |
 
+###### Strategies - EIGEN
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`EigenStrategy (EIGEN)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/mainnet/src/contracts/strategies/EigenStrategy.sol) | [`0xaCB55C530Acdb2849e6d4f36992Cd8c9D50ED8F7`](https://etherscan.io/address/0xaCB55C530Acdb2849e6d4f36992Cd8c9D50ED8F7) | [`0x27e7...0428`](https://etherscan.io/address/0x27e7a3a81741b9fcc5ad7edcbf9f8a72a5c00428) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
 ###### EigenPods
 
 | Name | Proxy | Implementation | Notes |
@@ -124,6 +151,13 @@ The current mainnet deployment is our M2 release. You can view the deployed cont
 | [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/4b15d68b7e16b5965bad398496bfce57f5a47e1b/src/contracts/pods/EigenPod.sol) | [`0x5a2a4F2F3C18f09179B6703e63D9eDD165909073`](https://etherscan.io/address/0x5a2a4F2F3C18f09179B6703e63D9eDD165909073) | [`0x8ba4...a255`](https://etherscan.io/address/0x8ba40da60f0827d027f029acee62609f0527a255) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
 | [`DelayedWithdrawalRouter`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/4b15d68b7e16b5965bad398496bfce57f5a47e1b/src/contracts/pods/DelayedWithdrawalRouter.sol) | [`0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8`](https://etherscan.io/address/0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8) | [`0x4bb6...4226`](https://etherscan.io/address/0x4bb6731b02314d40abbffbc4540f508874014226) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`EigenLayerBeaconOracle`](https://github.com/succinctlabs/eigenlayer-beacon-oracle/blob/main/contracts/src/EigenLayerBeaconOracle.sol) | - | [`0x3439...5442`](https://etherscan.io/address/0x343907185b71adf0eba9567538314396aa985442) | Provided by [Succinct](https://succinct.xyz/) |
+
+###### EIGEN/bEIGEN
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- | 
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/mainnet/src/contracts/token/Eigen.sol) | [`0xec53bf9167f50cdeb3ae105f56099aaab9061f83`](https://etherscan.io/address/0xec53bf9167f50cdeb3ae105f56099aaab9061f83) | [`0x7ec3...700b`](https://etherscan.io/address/0x7ec354c84680112d3cff1544ec1eb19ca583700b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/mainnet/src/contracts/token/BackingEigen.sol) | [`0x83E9115d334D248Ce39a6f36144aEaB5b3456e75`](https://etherscan.io/address/0x83E9115d334D248Ce39a6f36144aEaB5b3456e75) | [`0xB91c...FFE3`](https://etherscan.io/address/0xB91c69Af3eE022bd0a59Da082945914BFDcEFFE3) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 
@@ -153,7 +187,7 @@ The current testnet deployment is on holesky, and is from our M2 beta release. Y
 | [`AVSDirectory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/core/AVSDirectory.sol) | [`0x055733000064333CaDDbC92763c58BF0192fFeBf`](https://holesky.etherscan.io/address/0x055733000064333CaDDbC92763c58BF0192fFeBf) | [`0xEF5B...3e3a`](https://holesky.etherscan.io/address/0xEF5BA995Bc7722fd1e163edF8Dc09375de3d3e3a) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Slasher`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/core/Slasher.sol) | [`0xcAe751b75833ef09627549868A04E32679386e7C`](https://holesky.etherscan.io/address/0xcAe751b75833ef09627549868A04E32679386e7C) | [`0x9971...345A`](https://holesky.etherscan.io/address/0x99715D255E34a39bE9943b82F281CA734bcF345A) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-###### Strategies
+###### Strategies - ETH
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
@@ -169,6 +203,12 @@ The current testnet deployment is on holesky, and is from our M2 beta release. Y
 | [`StrategyBase (ankrETH)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/strategies/StrategyBaseTVLLimits.sol) | [`0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac`](https://holesky.etherscan.io/address/0x7673a47463F80c6a3553Db9E54c8cDcd5313d0ac) | [`0xFb83...3305`](https://holesky.etherscan.io/address/0xFb83e1D133D0157775eC4F19Ff81478Df1103305) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | `Beacon Chain ETH` | `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0` | - | - Used for Beacon Chain ETH shares <br />- Not a real contract! |
 
+###### Strategies - EIGEN
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- | 
+| [`EigenStrategy (EIGEN)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/strategies/EigenStrategy.sol) | [`0x43252609bff8a13dFe5e057097f2f45A24387a84`](https://holesky.etherscan.io/address/0x43252609bff8a13dFe5e057097f2f45A24387a84) | [`0x9465...2697`](https://holesky.etherscan.io/address/0x94650e09a471CEF96e7966cabf26718FBf352697) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
 ###### EigenPods
 
 | Name | Proxy | Implementation | Notes |
@@ -176,6 +216,13 @@ The current testnet deployment is on holesky, and is from our M2 beta release. Y
 | [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/pods/EigenPod.sol) | [`0x7261C2bd75a7ACE1762f6d7FAe8F63215581832D`](https://holesky.etherscan.io/address/0x7261C2bd75a7ACE1762f6d7FAe8F63215581832D) | [`0xe98f...641c`](https://holesky.etherscan.io/address/0xe98f9298344527608A1BCC23907B8145F9Cb641c) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
 | [`DelayedWithdrawalRouter`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/pods/DelayedWithdrawalRouter.sol) | [`0x642c646053eaf2254f088e9019ACD73d9AE0FA32`](https://holesky.etherscan.io/address/0x642c646053eaf2254f088e9019ACD73d9AE0FA32) | [`0xcE8b...3407`](https://holesky.etherscan.io/address/0xcE8b8D99773a718423F8040a6e52c06a4ce63407) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`EigenLayerBeaconOracle`](https://github.com/succinctlabs/eigenlayer-beacon-oracle/blob/main/contracts/src/EigenLayerBeaconOracle.sol) | - | [`0x4C11...8f25`](https://holesky.etherscan.io/address/0x4C116BB629bff7A8373c2378bBd919f8349B8f25) | Provided by [Succinct](https://succinct.xyz/) |
+
+###### EIGEN/bEIGEN
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- | 
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/token/Eigen.sol) | [`0x3B78576F7D6837500bA3De27A60c7f594934027E`](https://holesky.etherscan.io/address/0x3B78576F7D6837500bA3De27A60c7f594934027E) | [`0x083b...8c5a`](https://holesky.etherscan.io/address/0x083bC9e0DCF2C3e13E24686e5202232995578c5a) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/testnet-holesky/src/contracts/token/BackingEigen.sol) | [`0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27`](https://holesky.etherscan.io/address/0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27) | [`0x4500...bce8`](https://holesky.etherscan.io/address/0x4500927874Ad41538c1bEF2F5278E7a86DF6bce8) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 

@@ -38,7 +38,16 @@
       "0x70EB4D3c164a6B4A5f908D4FBb5a9cAfFb66bAB6"
     ],
     "strategyManager": "0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6",
-    "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18"
+    "strategyManagerImplementation": "0x59f766A603C53f3AC8Be43bBe158c1519b193a18",
+    "token": {
+      "tokenProxyAdmin": "0x67482666771e82C9a73BB9e9A22B2B597f448BBf",
+      "EIGEN": "0x3B78576F7D6837500bA3De27A60c7f594934027E",
+      "bEIGEN": "0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27",
+      "EIGENImpl": "0x083bC9e0DCF2C3e13E24686e5202232995578c5a",
+      "bEIGENImpl": "0x4500927874Ad41538c1bEF2F5278E7a86DF6bce8",
+      "eigenStrategy": "0x43252609bff8a13dFe5e057097f2f45A24387a84",
+      "eigenStrategyImpl": "0x94650e09a471CEF96e7966cabf26718FBf352697"
+    }
   },
   "numStrategies": 8,
   "chainInfo": {
@@ -52,4 +61,5 @@
     "pauserMultisig": "0x53410249ec7d3a3F9F1ba3912D50D6A3Df6d10A7",
     "timelock": "0xcF19CE0561052a7A7Ff21156730285997B350A7D"
   }
+
 }
