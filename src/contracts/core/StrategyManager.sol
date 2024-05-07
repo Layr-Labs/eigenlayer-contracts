@@ -10,6 +10,8 @@ import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 
+import "../libraries/SlashingAccountingUtils.sol";
+
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
  * @author Layr Labs, Inc.
@@ -27,6 +29,12 @@ contract StrategyManager is
     StrategyManagerStorage
 {
     using SafeERC20 for IERC20;
+
+    function stakerStrategyShares(address staker, IStrategy strategy) external view returns (uint256) {
+        address operator = delegation.delegatedTo(staker);
+        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.scaleDown(rebasedStakerStrategyShares[staker][strategy], scalingFactor);
+    }
 
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
@@ -282,22 +290,22 @@ contract StrategyManager is
     // INTERNAL FUNCTIONS
 
     /**
-     * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
-     * @param staker The address to add shares to
+     * @notice This function adds `rebasedShares` for a given `strategy` to the `staker` and runs through the necessary update logic.
+     * @param staker The address to add rebasedShares to
      * @param token The token that is being deposited (used for indexing)
-     * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param shares The amount of shares to grant to the `staker`
-     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * @param strategy The Strategy in which the `staker` is receiving rebasedShares
+     * @param rebasedShares The amount of rebasedShares to grant to the `staker`
+     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, rebasedShares)` to ensure that all
+     * delegated rebasedShares are tracked, increases the stored share amount in `rebasedStakerStrategyShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
+    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 rebasedShares) internal {
         // sanity checks on inputs
         require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
-        require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
+        require(rebasedShares != 0, "StrategyManager._addShares: rebasedShares should not be zero!");
 
-        // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[staker][strategy] == 0) {
+        // if they dont have existing rebasedShares of this strategy, add it to their strats
+        if (rebasedStakerStrategyShares[staker][strategy] == 0) {
             require(
                 stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
                 "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
@@ -305,10 +313,10 @@ contract StrategyManager is
             stakerStrategyList[staker].push(strategy);
         }
 
-        // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] += shares;
+        // add the returned rebasedShares to their existing rebasedShares for this strategy
+        rebasedStakerStrategyShares[staker][strategy] += rebasedShares;
 
-        emit Deposit(staker, token, strategy, shares);
+        emit Deposit(staker, token, strategy, rebasedShares);
     }
 
     /**
@@ -332,42 +340,49 @@ contract StrategyManager is
         // deposit the assets into the specified strategy and get the equivalent amount of shares in that strategy
         shares = strategy.deposit(token, amount);
 
-        // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, shares);
+        // TODO: possibly optimize or clarify the below operations by reorganizing them
+        // find the rebasedShares amount
+        address operator = delegation.delegatedTo(staker);
+        uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
+        uint256 rebasedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
 
-        // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(staker, strategy, shares);
+        // add the returned rebasedShares to the staker's existing rebasedShares for this strategy
+        _addShares(staker, token, strategy, rebasedShares);
 
+        // Increase rebasedShares delegated to operator, if needed
+        delegation.increaseDelegatedShares(staker, strategy, rebasedShares);
+
+        // TODO: decide if this return value still makes sense
         return shares;
     }
 
     /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @notice Decreases the rebasedShares that `staker` holds in `strategy` by `rebasedShares`.
      * @param staker The address to decrement shares from
      * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param shareAmount The amount of shares to decrement
+     * @param rebasedShares The amount of shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
     function _removeShares(
         address staker,
         IStrategy strategy,
-        uint256 shareAmount
+        uint256 rebasedShares
     ) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
+        require(rebasedShares != 0, "StrategyManager._removeShares: rebasedShares should not be zero!");
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[staker][strategy];
+        uint256 userShares = rebasedStakerStrategyShares[staker][strategy];
 
-        require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
+        require(rebasedShares <= userShares, "StrategyManager._removeShares: rebasedShares too high");
         //unchecked arithmetic since we just checked this above
         unchecked {
-            userShares = userShares - shareAmount;
+            userShares = userShares - rebasedShares;
         }
 
         // subtract the shares from the staker's existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = userShares;
+        rebasedStakerStrategyShares[staker][strategy] = userShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userShares == 0) {
@@ -439,7 +454,7 @@ contract StrategyManager is
         uint256[] memory shares = new uint256[](strategiesLength);
 
         for (uint256 i = 0; i < strategiesLength; ) {
-            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
+            shares[i] = rebasedStakerStrategyShares[staker][stakerStrategyList[staker][i]];
             unchecked {
                 ++i;
             }
