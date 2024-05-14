@@ -58,19 +58,35 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         pauserMultisig = testAddress;
         communityMultisig = testAddress;
         STRATEGY_MANAGER_WHITELISTER = testAddress;
+    }
 
-
+    /// @notice helper to get operator Signature
+    function _getOperatorSignature(
+        uint256 _operatorPrivateKey,
+        address operator,
+        address avs,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) {
+        operatorSignature.expiry = expiry;
+        operatorSignature.salt = salt;
+        {
+            bytes32 digestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, avs, salt, expiry);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(_operatorPrivateKey, digestHash);
+            operatorSignature.signature = abi.encodePacked(r, s, v);
+        }
+        return operatorSignature;
     }
 
     /**
         Deploys a new AVS ServiceManager
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvvv \
             --sig "deployNewAVS()"
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --verify \
             --sig "deployNewAVS()"
      */
@@ -114,13 +130,13 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Submit a RangePayment to the PaymentCoordinator
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "payForRange(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x5d78d44aE92bF5C588930B4948D8DbCb93344830 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "payForRange(string memory startTimestampType, address avsServiceManager, address paymentTokenAddress, uint256 amount)" \
             "genesis" 0x5384B6701DbBAAa0a78A4F20cc48f150f7b1526D 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
@@ -192,11 +208,10 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
             "script/utils/paymentCoordinator/claimProofs/claimProof.json" 20
-
      */
     function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
         string memory claimProofData = vm.readFile(processClaimsPath);
@@ -254,23 +269,23 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         ========ANVIL========
         Deposit WETH strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xD523267698C81a372191136e477fdebFa33D9FB4
 
         Deposit EIGEN strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xdcCF401fD121d8C542E96BC1d0078884422aFAD2
 
         ========HOLESKY========
         Deposit WETH strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xD523267698C81a372191136e477fdebFa33D9FB4
 
         Deposit EIGEN strategy:
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositIntoStrategy(uint8 numStakers, address strategy)" 20 0xdcCF401fD121d8C542E96BC1d0078884422aFAD2
      */
@@ -310,14 +325,14 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Deposit into WETH and EIGEN strategies
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "depositWETHAndEIGEN(uint8 numStakers)" 80
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "depositWETHAndEIGEN(uint8 numStakers)" 80
+            --sig "depositWETHAndEIGEN(uint8 numStakers)" 10
      */
     function depositWETHAndEIGEN(uint8 numStakers) external virtual {
         _setupScript();
@@ -350,29 +365,38 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Register Operators in the DM
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "registerOperators(uint8 numOperators)" 20
+            --sig "registerOperators(uint8 numOperators, address serviceManagerAddress)" 5 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "registerOperators(uint8 numOperators)" 20
+            --sig "registerOperators(uint8 numOperators)" 20 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
      */
-    function registerOperators(uint8 numOperators) external virtual {
+    function registerOperators(uint8 numOperators, address serviceManagerAddress) external virtual {
         _setupScript();
+        ServiceManagerMock serviceManager = ServiceManagerMock(serviceManagerAddress);
         require(
             numOperators <= 20,
             "numStakers should not be larger than 80, indexes 20-100"
         );
 
         for (uint256 i = 0; i < numOperators; ++i) {
-            (address staker, /* privateKey */) = deriveRememberKey(TEST_MNEMONIC, uint32(i));
+            (address operator, uint256 privateKey) = deriveRememberKey(TEST_MNEMONIC, uint32(i));
+            // get signature
+            ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+                privateKey,
+                operator,
+                address(serviceManagerAddress),
+                bytes32(0), // salt
+                type(uint256).max //expiry
+            );
 
             // Transfer strategy token to staker
-            vm.startBroadcast(staker);
+            vm.startBroadcast(operator);
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: address(staker),
+                earningsReceiver: address(operator),
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
@@ -380,6 +404,8 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
                 operatorDetails,
                 ""
             );
+
+            serviceManager.registerOperatorToAVS(operator, operatorSignature);
             vm.stopBroadcast();
         }
     }
@@ -387,12 +413,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Delegate Stakers to Operators
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "delegateTo(uint8 stakerId, uint8 operatorId)" 40 10
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "delegateTo(uint8 stakerId, uint8 operatorId)" 40 10
      */
@@ -414,17 +440,19 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
         Transfer ETH to the test addresses so they can submit txs
         ========ANVIL========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "transferETH()"
 
         ========HOLESKY========
-        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "transferETH()"
+
+        currently transferred 0-16
     */
     function transferETH() external virtual {
-        for (uint256 i = 0; i < 100; ++i) {
+        for (uint256 i = 20; i < 40; ++i) {
 
             vm.startBroadcast();
             (address user, /*privateKey*/) = deriveRememberKey(TEST_MNEMONIC, uint32(i));
@@ -432,5 +460,26 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
             vm.stopBroadcast();
             require(user.balance > 0, "Should be nonzero balance of eth");
         }
+    }
+
+    /**
+        ========HOLESKY========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "deployStablecoin()"
+     */
+    function deployStablecoin() external virtual {
+        vm.startBroadcast();
+        TestStablecoin stablecoin = new TestStablecoin();
+        vm.stopBroadcast();
+    }
+}
+
+
+contract TestStablecoin is ERC20PresetFixedSupply {
+    constructor() ERC20PresetFixedSupply("My Stablecoin", "TSC", 10000000000 * 10**6, msg.sender) {}
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
     }
 }
