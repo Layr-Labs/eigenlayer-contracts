@@ -41,6 +41,13 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     IERC20 eigen = IERC20(0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926);
     IERC20 weth = IERC20(0x94373a4919B3240D86eA41593D5eBa789FEF3848);
 
+    // Temp storage for managing stack in processClaim
+    bytes32 merkleRoot;
+    uint32 earnerIndex;
+    bytes earnerTreeProof;
+    address proofEarner;
+    bytes32 earnerTokenRoot;
+
     function _setupScript() internal virtual {
         _parseInitialDeploymentParams("script/configs/holesky/Deploy_PaymentCoordinator.holesky.config.json");
         _parseDeployedContracts("script/output/holesky/M2_deploy_preprod.output.json");
@@ -198,15 +205,17 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
      */
-    function processClaim(string memory processClaimsPath, uint8 earnerIndex) external virtual {
-        string memory claimProofData = cheats.readFile(processClaimsPath);
+    function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
+        string memory claimProofData = vm.readFile(processClaimsPath);
+
+        (address earner, /* privateKey */) = deriveRememberKey(TEST_MNEMONIC, uint32(earnerIndexMnemonic));
 
         // Parse PaymentMerkleClaim
         merkleRoot = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
         earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerIndex"), (uint32));
         earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerTreeProof"), (bytes));
         proofEarner = stdJson.readAddress(claimProofData, ".EarnerLeaf.Earner");
-        require(earner == proofEarner, "earner in test and json file do not match");
+        require(earner == proofEarner, "earner index and in json file do not match");
         earnerTokenRoot = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerLeaf.EarnerTokenRoot"), (bytes32));
         uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".TokenLeavesNum");
         uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".TokenTreeProofsNum");
@@ -216,9 +225,9 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
         for (uint256 i = 0; i < numTokenLeaves; ++i) {
-            string memory tokenKey = string.concat(".TokenLeaves[", cheats.toString(i), "].Token");
-            string memory amountKey = string.concat(".TokenLeaves[", cheats.toString(i), "].CumulativeEarnings");
-            string memory leafIndicesKey = string.concat(".LeafIndices[", cheats.toString(i), "]");
+            string memory tokenKey = string.concat(".TokenLeaves[", vm.toString(i), "].Token");
+            string memory amountKey = string.concat(".TokenLeaves[", vm.toString(i), "].CumulativeEarnings");
+            string memory leafIndicesKey = string.concat(".LeafIndices[", vm.toString(i), "]");
 
             IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
             uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
@@ -230,14 +239,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         }
         bytes[] memory tokenTreeProofs = new bytes[](numTokenTreeProofs);
         for (uint256 i = 0; i < numTokenTreeProofs; ++i) {
-            string memory tokenTreeProofKey = string.concat(".TokenTreeProofs[", cheats.toString(i), "]");
+            string memory tokenTreeProofKey = string.concat(".TokenTreeProofs[", vm.toString(i), "]");
             tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
         }
 
-        uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
-
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
-            rootIndex: rootIndex,
+            rootIndex: uint32(paymentCoordinator.getDistributionRootsLength()),
             earnerIndex: earnerIndex,
             earnerTreeProof: earnerTreeProof,
             earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
@@ -246,8 +253,9 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
             tokenLeaves: tokenLeaves
         });
 
-        return newClaim;
-
+        vm.startBroadcast(earner);
+        paymentCoordinator.processClaim(newClaim, earner);
+        vm.stopBroadcast();
     }
 
     /**
