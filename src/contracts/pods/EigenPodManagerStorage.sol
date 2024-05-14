@@ -64,7 +64,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * as the withdrawal "paying off the deficit".
      */
     // TODO: note the renaming
-    mapping(address => int256) public rebasedPodOwnerShares;
+    mapping(address => int256) public nonNormalizedPodOwnerShares;
 
     uint64 internal _denebForkTimestamp;
 

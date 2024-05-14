@@ -45,7 +45,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     uint256 internal withdrawalDelayBlocks;
     /// @notice Mapping: staker => Strategy => number of shares which they currently hold
     // TODO: note the renaming
-    mapping(address => mapping(IStrategy => uint256)) public rebasedStakerStrategyShares;
+    mapping(address => mapping(IStrategy => uint256)) public nonNormalizedStakerStrategyShares;
     /// @notice Mapping: staker => array of strategies in which they have nonzero shares
     mapping(address => IStrategy[]) public stakerStrategyList;
     /// @notice *Deprecated* mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
