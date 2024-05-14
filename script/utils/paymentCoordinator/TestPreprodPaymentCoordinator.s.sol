@@ -372,7 +372,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         ========HOLESKY========
         forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
-            --sig "registerOperators(uint8 numOperators)" 20 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
+            --sig "registerOperators(uint8 numOperators, address serviceManagerAddress)" 1 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
      */
     function registerOperators(uint8 numOperators, address serviceManagerAddress) external virtual {
         _setupScript();
