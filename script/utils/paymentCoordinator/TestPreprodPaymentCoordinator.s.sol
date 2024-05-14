@@ -12,19 +12,6 @@ import "./ServiceManagerMock.sol";
  * registering as operators and to AVSs
  * depositing into strategies
  * delegating to operators
- * 
- * Local Fork: Deploy/Upgrade PaymentCoordinator
- * anvil --fork-url $RPC_HOLESKY
- * forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" deploy
- * forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
-
- forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "deployNewAVS()"
-
- forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv --sig "transferETH()"
- *
- * Holesky testnet: Deploy/Upgrade PaymentCoordinator
- * forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" deploy
- * forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv --sig "run(string memory deployArg)" upgrade
  *
  */
 contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
@@ -204,6 +191,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
     /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
+        ========HOLESKY========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol \
+            --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
+            "script/utils/paymentCoordinator/claimProofs/claimProof.json" 20
+
      */
     function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
         string memory claimProofData = vm.readFile(processClaimsPath);
