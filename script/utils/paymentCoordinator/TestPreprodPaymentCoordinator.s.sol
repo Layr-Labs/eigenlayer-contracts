@@ -277,7 +277,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         _setupScript();
         require(
             numStakers <= 80,
-            "numStakers shouldn't be larger than 80, indexes 20-100"
+            "numStakers should not be larger than 80, indexes 20-100"
         );
         require(
             strategyManager.strategyIsWhitelistedForDeposit(IStrategy(strategy)),
@@ -322,7 +322,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         _setupScript();
         require(
             numStakers <= 80,
-            "numStakers shouldn't be larger than 80, indexes 20-100"
+            "numStakers should not be larger than 80, indexes 20-100"
         );
 
         for (uint256 i = 20; i < 20 + numStakers; ++i) {
@@ -362,7 +362,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         _setupScript();
         require(
             numOperators <= 20,
-            "numStakers shouldn't be larger than 80, indexes 20-100"
+            "numStakers should not be larger than 80, indexes 20-100"
         );
 
         for (uint256 i = 0; i < numOperators; ++i) {
