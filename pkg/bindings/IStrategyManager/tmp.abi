@@ -393,25 +393,6 @@
   },
   {
     "type": "function",
-    "name": "strategyIsWhitelistedForDeposit",
-    "inputs": [
-      {
-        "name": "strategy",
-        "type": "address",
-        "internalType": "contract IStrategy"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "strategyWhitelister",
     "inputs": [],
     "outputs": [

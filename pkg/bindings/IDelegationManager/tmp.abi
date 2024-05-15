@@ -40,19 +40,6 @@
   },
   {
     "type": "function",
-    "name": "beaconChainETHStrategy",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IStrategy"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "calculateCurrentStakerDelegationDigestHash",
     "inputs": [
       {
