@@ -1,4 +1,5 @@
 
+using ERC20 as token;
 
 methods {
 
@@ -16,10 +17,10 @@ methods {
     function _.submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) external => DISPATCHER(true);
     function _.processClaim(IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) external => DISPATCHER(true);
 
-    function PaymentCoordinator._checkClaim(
-        IPaymentCoordinator.PaymentMerkleClaim calldata claim,
-        IPaymentCoordinator.DistributionRoot memory root
-    ) internal => NONDET;
+    // function PaymentCoordinator._checkClaim(
+    //     IPaymentCoordinator.PaymentMerkleC   laim calldata claim,
+    //     IPaymentCoordinator.DistributionRoot memory root
+    // ) internal => NONDET;
 }
 
 // Don't need
@@ -52,34 +53,6 @@ methods {
 //     assert claimable > claimed;
 // }
 
-// 1. For any claim that checkClaim(claim) == true && contains duplicate tokenLeafs, processClaim() will revert
-// rule claimWithduplicateTokenLeafs(address account, address reward, uint256 claimable, bytes32[] proof) {
-
-//     IPaymentCoordinator.PaymentMerkleClaim claim;
-//     env e;
-
-//     // require checkClaim(IPaymentCoordinator.PaymentMerkleClaim(account, reward, claimable, proof));
-//     checkClaim(claim);
-//     require !lastReverted;
-
-//     // calldataarg arg;
-//     // env e;
-//     // method f;
-//     // IPaymentCoordinator.PaymentMerkleClaim claim;
-//     address recipient;
-//     processClaim(e, claim, recipient);
-
-//     bool firstCallReverted = lastReverted;
-    
-//     processClaim(e, claim, recipient);
-
-//     bool secondCallReverted = lastReverted;
-//     // bool callReverted = lastReverted;
-// 	assert (
-//         !firstCallReverted => secondCallReverted,
-//         "First claim passing means second claim should revert"
-//     );
-// }
 
 // 2. Given a processClaim passes, second processClaim reverts
 // Rule status: FAILS
@@ -87,80 +60,62 @@ methods {
 // - checkClaim(claim) == true and doesn't revert
 // - claim has non-empty tokenLeaves
 rule claimWithduplicateTokenLeafs(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
-    require checkClaim(e, claim);
-    if (claimerFor(e, claim.earnerLeaf.earner)) != address(0) {
-        require e.msg.sender == claimerFor(e, claim.earnerLeaf.earner)
+    require claim.tokenLeaves.length >= 1;
+    
+    checkClaim(e, claim);
+    // bool canWork = claimerFor(e, claim.earnerLeaf.earner) != 0 ? 
+    //     e.msg.sender == claimerFor(e, claim.earnerLeaf.earner) :
+    //     e.msg.sender == claim.earnerLeaf.earner;
+
+    if ((claimerFor(e, claim.earnerLeaf.earner)) != 0) {
+        require e.msg.sender == claimerFor(e, claim.earnerLeaf.earner);
     } else {
         require e.msg.sender == claim.earnerLeaf.earner;
     }
 
     processClaim(e, claim, recipient);
-    bool firstCallReverted = lastReverted;
-    processClaim(e, claim, recipient);
-    bool secondCallReverted = lastReverted;
+    processClaim@withrevert(e, claim, recipient);
 
 	assert (
-        claim.tokenLeaves.length > 0 && !firstCallReverted => secondCallReverted,
+        lastReverted,
         "First claim passing with token claims means second claim should revert"
     );
 }
 
 
-// 3. Keep rule
 // Check that transfer amount in paymentCoordinator.prcocessClaim() is equal to leaf.cumulativeEarnings - cumulativeClaimed
+/// cumulativeEarnings - cumulativeClaimed == balanceAfter - balanceBefore
+/// status: Fail, havoc from token safeTransfer in the calldata
+rule transferredTokensFromClaim(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
+    require claim.tokenLeaves.length >= 1;
+    require token == claim.tokenLeaves[0].token;
 
-// create invariant with hooks keeping a sum of earner claims everytime processClaim() is called, this should also equal cumulativeClaimed storage mapping
-// sum of earner claims = sum of earner
-// Check that the transferred amount is equal to the claimed amount minus the previous claimed amount.
-// rule transferredTokens(address account, address reward, uint256 claimable, bytes32[] proof) {
-//     // Assume that the rewards distributor itself is not receiving the tokens, to simplify this rule.
-//     require account != currentContract;
+    address earner = claim.earnerLeaf.earner;
+    uint256 balanceBefore = token.balanceOf(e, recipient);
+    uint256 cumulativeClaimed = cumulativeClaimed(e, earner, claim.tokenLeaves[0].token);
 
-//     uint256 balanceBefore = Util.balanceOf(reward, account);
-//     uint256 claimedBefore = claimed(account, reward);
+    processClaim(e, claim, recipient);
 
-//     // Safe require because the sum is capped by the total supply.
-//     require balanceBefore + Util.balanceOf(reward, currentContract) < 2^256;
+    uint256 balanceAfter = token.balanceOf(e, recipient);
 
-//     claim(account, reward, claimable, proof);
+    assert claim.tokenLeaves[0].cumulativeEarnings - cumulativeClaimed == balanceAfter - balanceBefore;
+}
 
-//     uint256 balanceAfter = Util.balanceOf(reward, account);
+/// paymentCoordinator.checkClaim == True => processClaim success 
+/// status: pass
+rule claimCorrectness(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
+    // Call checkClaim to ensure it doesn't revert in rule since it never returns false
+    checkClaim(e, claim);
 
-//     assert balanceAfter - balanceBefore == claimable - claimedBefore;
-// }
+    bool canWork = claimerFor(e, claim.earnerLeaf.earner) != 0 ? 
+        e.msg.sender == claimerFor(e, claim.earnerLeaf.earner) :
+        e.msg.sender == claim.earnerLeaf.earner;
 
-// rule transferredTokensFromClaim(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
-//     require claim.tokenLeaves.length == 1 && checkClaim(e, claim);
+    processClaim@withrevert(e, claim, recipient);
 
+    assert !lastReverted => canWork;
+}
 
-//     uint256 balanceBefore = _.balanceOf(claim.reward);
-//     uint256 claimedBefore = claimed(claim.account, claim.reward);
-
-//     processClaim(e, claim, recipient);
-
-//     uint256 balanceAfter = _.balanceOf(claim.reward);
-
-//     assert balanceAfter - balanceBefore == claim.claimable - claimedBefore;
-// }
-
-
-// 4. Keep rule
-// paymentCoordinator.checkClaim == True => processClaim success 
-
-// The main correctness result of the verification.
-// It ensures that if the root is setup according to a well-formed Merkle tree, then claiming will result in receiving the rewards stored in the tree for that particular pair of account and reward.
-// rule claimCorrectness(address account, address reward, uint256 claimable, bytes32[] proof) {
-//     bytes32 node;
-
-//     // Assume that root is the hash of node in the tree.
-//     require MerkleTree.getHash(node) == root();
-
-//     // No need to make sure that node is equal to currRoot: one can pass an internal node instead.
-
-//     // Assume that the tree is well-formed.
-//     MerkleTree.wellFormedPath(node, proof);
-
-//     claim(account, reward, claimable, proof);
-
-//     assert claimable == MerkleTree.getValue(account, reward);
-// }
+/// checkClaim either returns True or reverts otherwise
+invariant checkClaimNeverFalse(env e, IPaymentCoordinator.PaymentMerkleClaim claim)
+    !checkClaim(e, claim);
