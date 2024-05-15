@@ -207,6 +207,22 @@ contract EigenPod is
 
         // Process each checkpoint proof submitted
         for (uint256 i = 0; i < proofs.length; i++) {
+            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proofs[i].pubkeyHash];
+
+            // Validator must be in the ACTIVE state to be provable during a checkpoint.
+            // Validators become ACTIVE when initially proven via verifyWithdrawalCredentials
+            // Validators become WITHDRAWN when a checkpoint proof shows they have 0 balance
+            if (validatorInfo.status != VALIDATOR_STATUS.ACTIVE) {
+                continue;
+            }
+            
+            // Ensure we aren't proving a validator twice for the same checkpoint. This will fail if:
+            // - validator submitted twice during this checkpoint
+            // - validator withdrawal credentials verified after checkpoint starts, then submitted
+            //   as a checkpoint proof
+            if (validatorInfo.mostRecentBalanceUpdateTimestamp < beaconTimestamp) {
+                continue;
+            }
 
             // Process a checkpoint proof for a validator. 
             // - the validator MUST be in the ACTIVE state
@@ -216,6 +232,7 @@ contract EigenPod is
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
             int256 balanceDeltaGwei = _verifyCheckpointProof({
+                validatorInfo: validatorInfo,
                 beaconTimestamp: beaconTimestamp,
                 beaconStateRoot: stateRootProof.beaconStateRoot,
                 proof: proofs[i]
@@ -485,27 +502,12 @@ contract EigenPod is
     }
 
     function _verifyCheckpointProof(
+        ValidatorInfo memory validatorInfo,
         uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (int256 balanceDeltaGwei) {
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
-
-        require(
-            validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
-            "EigenPod._verifyCheckpointProof: validator must be ACTIVE"
-        );
-
-        // Ensure we aren't proving a validator twice for the same checkpoint. This will fail if:
-        // - validator submitted twice during this checkpoint
-        // - validator withdrawal credentials verified after checkpoint starts, then submitted
-        //   as a checkpoint proof
-        // TODO - we might want to "skip" and emit an event, rather than revert?
-        require(
-            validatorInfo.mostRecentBalanceUpdateTimestamp < beaconTimestamp,
-            "EigenPod._verifyCheckpointProof: validator already proven for this checkpoint"
-        );
         
         // Verify validator balance against beaconStateRoot
         uint64 prevBalanceGwei = validatorInfo.restakedBalanceGwei;
