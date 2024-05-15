@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -23,7 +22,6 @@ import "../../../src/contracts/pods/DelayedWithdrawalRouter.sol";
 import "../../../src/contracts/permissions/PauserRegistry.sol";
 
 import "../../../src/test/mocks/EmptyContract.sol";
-import "../../../src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
@@ -219,7 +217,6 @@ contract Deployer_M2 is Script, Test {
                     executorMultisig,
                     eigenLayerPauserReg,
                     DELEGATION_INIT_PAUSED_STATUS,
-                    DELEGATION_WITHDRAWAL_DELAY_BLOCKS,
                     _strategies,
                     _withdrawalDelayBlocks
                 )

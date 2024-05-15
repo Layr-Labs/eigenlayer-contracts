@@ -41,8 +41,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @notice The EigenPodManager contract for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    // the number of 12-second blocks in 30 days (60 * 60 * 24 * 30 / 12 = 216,000)
-    uint256 public constant MAX_WITHDRAWAL_DELAY_BLOCKS = 216000;
+    uint256 public constant MIN_WITHDRAWAL_DELAY_EPOCHS = 1;
 
     /**
      * @notice returns the total number of shares in `strategy` that are delegated to `operator`.
@@ -80,10 +79,10 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * @notice Global minimum withdrawal delay for all strategy withdrawals.
      * In a prior Goerli release, we only had a global min withdrawal delay across all strategies.
      * In addition, we now also configure withdrawal delays on a per-strategy basis.
-     * To withdraw from a strategy, max(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed. 
+     * To withdraw from a strategy, max(MIN_WITHDRAWAL_DELAY_EPOCHS, strategyWithdrawalDelayBlocks[strategy]) number of blocks must have passed. 
      * See mapping strategyWithdrawalDelayBlocks below for per-strategy withdrawal delays.
      */
-    uint256 public minWithdrawalDelayBlocks;
+    uint256 private __deprecated_minWithdrawalDelayBlocks;
 
     /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
     mapping(bytes32 => bool) public pendingWithdrawals;

@@ -75,7 +75,7 @@ contract DelegationManagerMock is IDelegationManager, Test {
         return 0;
     }
 
-    function minWithdrawalDelayBlocks() external pure returns (uint256) {
+    function MIN_WITHDRAWAL_DELAY_EPOCHS() external pure returns (uint256) {
         return 0;
     }
 

@@ -344,7 +344,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 staker: stakerContract,
                 withdrawer: stakerContract,
                 nonce: (nonce - 1),
-                startBlock: uint32(block.number),
+                startEpoch: uint32(block.number),
                 delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
@@ -405,7 +405,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
                 staker: stakerContract,
                 withdrawer: stakerContract,
                 nonce: (nonce - 1),
-                startBlock: uint32(block.number),
+                startEpoch: uint32(block.number),
                 delegatedTo: strategyManager.delegation().delegatedTo(stakerContract)
             });
         }
@@ -502,7 +502,7 @@ contract DelegationFaucetTests is EigenLayerTestHelper {
             staker: staker,
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
-            startBlock: uint32(block.number),
+            startEpoch: uint32(block.number),
             delegatedTo: strategyManager.delegation().delegatedTo(staker)
         });
         // calculate the withdrawal root

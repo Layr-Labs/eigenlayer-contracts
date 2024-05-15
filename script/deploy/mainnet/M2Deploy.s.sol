@@ -329,7 +329,6 @@ contract M2Deploy is Script, Test {
             address(this),
             PauserRegistry(address(this)),
             0, // initialPausedStatus
-            0, // minWithdrawalDelayBLocks
             strategyArray,
             withdrawalDelayBlocksArray
         );
@@ -402,7 +401,7 @@ contract M2Deploy is Script, Test {
             delegatedTo: queuedWithdrawalLst.delegatedAddress,
             withdrawer: queuedWithdrawalLst.withdrawerAndNonce.withdrawer,
             nonce: 0, // first withdrawal, so 0 nonce
-            startBlock: queuedWithdrawalLst.withdrawalStartBlock,
+            startEpoch: queuedWithdrawalLst.withdrawalStartBlock,
             strategies: queuedWithdrawalLst.strategies,
             shares: queuedWithdrawalLst.shares
         });

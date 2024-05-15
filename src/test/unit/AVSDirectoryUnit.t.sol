@@ -34,7 +34,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
     // reused in various tests. in storage to help handle stack-too-deep errors
     address defaultAVS = address(this);
 
-    uint256 minWithdrawalDelayBlocks = 216_000;
     IStrategy[] public initializeStrategiesToSetDelayBlocks;
     uint256[] public initializeWithdrawalDelayBlocks;
 
@@ -59,7 +58,6 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents {
                         address(this),
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        minWithdrawalDelayBlocks,
                         initializeStrategiesToSetDelayBlocks,
                         initializeWithdrawalDelayBlocks
                     )

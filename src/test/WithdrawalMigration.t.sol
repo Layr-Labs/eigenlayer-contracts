@@ -92,7 +92,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             delegatedTo: queuedWithdrawal.delegatedAddress,
             withdrawer: queuedWithdrawal.withdrawerAndNonce.withdrawer,
             nonce: queuedWithdrawal.withdrawerAndNonce.nonce,
-            startBlock: queuedWithdrawal.withdrawalStartBlock,
+            startEpoch: queuedWithdrawal.withdrawalStartBlock,
             strategies: queuedWithdrawal.strategies,
             shares: queuedWithdrawal.shares
         });
@@ -144,7 +144,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             delegatedTo: queuedWithdrawal1.delegatedAddress,
             withdrawer: queuedWithdrawal1.withdrawerAndNonce.withdrawer,
             nonce: queuedWithdrawal1.withdrawerAndNonce.nonce,
-            startBlock: queuedWithdrawal1.withdrawalStartBlock,
+            startEpoch: queuedWithdrawal1.withdrawalStartBlock,
             strategies: queuedWithdrawal1.strategies,
             shares: queuedWithdrawal1.shares
         });
@@ -154,7 +154,7 @@ contract WithdrawalMigrationTests is EigenLayerTestHelper, Utils {
             delegatedTo: queuedWithdrawal2.delegatedAddress,
             withdrawer: queuedWithdrawal2.withdrawerAndNonce.withdrawer,
             nonce: queuedWithdrawal2.withdrawerAndNonce.nonce,
-            startBlock: queuedWithdrawal2.withdrawalStartBlock,
+            startEpoch: queuedWithdrawal2.withdrawalStartBlock,
             strategies: queuedWithdrawal2.strategies,
             shares: queuedWithdrawal2.shares
         });

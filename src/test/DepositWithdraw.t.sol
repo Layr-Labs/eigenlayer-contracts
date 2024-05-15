@@ -142,7 +142,7 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
             withdrawer: withdrawer,
             nonce: delegation.cumulativeWithdrawalsQueued(staker),
             delegatedTo: delegation.delegatedTo(staker),
-            startBlock: uint32(block.number)
+            startEpoch: uint32(block.number)
         });
 
 
@@ -385,7 +385,6 @@ contract DepositWithdrawTests is EigenLayerTestHelper {
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
-                minWithdrawalDelayBlocks,
                 initializeStrategiesToSetDelayBlocks,
                 initializeWithdrawalDelayBlocks
             )

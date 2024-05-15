@@ -224,7 +224,7 @@ contract User is Test {
             delegatedTo: operator,
             withdrawer: withdrawer,
             nonce: nonce,
-            startBlock: uint32(block.number),
+            startEpoch: uint32(block.number),
             strategies: strategies,
             shares: shares
         });
@@ -364,7 +364,7 @@ contract User is Test {
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
-                startBlock: uint32(block.number),
+                startEpoch: uint32(block.number),
                 strategies: singleStrategy,
                 shares: singleShares
             });

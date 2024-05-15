@@ -1774,7 +1774,7 @@ contract Relayer is Test {
     //         shares: amountWei,
     //         podOwner: staker,
     //         nonce: eigenPodManager.cumulativeWithdrawalsQueued(staker),
-    //         startBlock: uint32(block.number),
+    //         startEpoch: uint32(block.number),
     //         delegatedTo: delegationManagerMock.delegatedTo(staker),
     //         withdrawer: withdrawer
     //     });

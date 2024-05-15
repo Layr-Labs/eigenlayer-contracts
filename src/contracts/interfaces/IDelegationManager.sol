@@ -83,8 +83,9 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
         // Nonce used to guarantee that otherwise identical withdrawals have unique hashes
         uint256 nonce;
-        // Block number when the Withdrawal was created
-        uint32 startBlock;
+        // epoch when the Withdrawal was created
+        // @dev note that this used to be the *block* when the withdrawal was created. use the `startEpochOfWithdrawal` function to disambiguate.
+        uint32 startEpoch;
         // Array of strategies that the Withdrawal contains
         IStrategy[] strategies;
         // Array containing the amount of shares in each Strategy in the `strategies` array
@@ -140,9 +141,6 @@ interface IDelegationManager is ISignatureUtils {
     /// @notice Emitted when a queued withdrawal is *migrated* from the StrategyManager to the DelegationManager
     event WithdrawalMigrated(bytes32 oldWithdrawalRoot, bytes32 newWithdrawalRoot);
     
-    /// @notice Emitted when the `minWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
-    event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue);
-
     /// @notice Emitted when the `strategyWithdrawalDelayBlocks` variable is modified from `previousValue` to `newValue`.
     event StrategyWithdrawalDelayBlocksSet(IStrategy strategy, uint256 previousValue, uint256 newValue);
 
@@ -347,7 +345,7 @@ interface IDelegationManager is ISignatureUtils {
 
     /**
      * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
-     * from all the inputted strategies. Return value is >= minWithdrawalDelayBlocks as this is the global min withdrawal delay.
+     * from all the inputted strategies. Return value is >= MIN_WITHDRAWAL_DELAY_EPOCHS as this is the global min withdrawal delay.
      * @param strategies The strategies to check withdrawal delays for
      */
     function getWithdrawalDelay(IStrategy[] calldata strategies) external view returns (uint256);
@@ -384,10 +382,10 @@ interface IDelegationManager is ISignatureUtils {
     /**
      * @notice Minimum delay enforced by this contract for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of blocks that must pass
-     * to withdraw a strategy is MAX(minWithdrawalDelayBlocks, strategyWithdrawalDelayBlocks[strategy])
+     * Note that strategies each have a separate withdrawal delay, which can be greater than this value. So the minimum number of epochs that must pass
+     * to withdraw a strategy is MAX(MIN_WITHDRAWAL_DELAY_EPOCHS, strategyWithdrawalDelayBlocks[strategy])
      */
-    function minWithdrawalDelayBlocks() external view returns (uint256);
+    function MIN_WITHDRAWAL_DELAY_EPOCHS() external view returns (uint256);
 
     /**
      * @notice Minimum delay enforced by this contract per Strategy for completing queued withdrawals. Measured in blocks, and adjustable by this contract's owner,

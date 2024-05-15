@@ -298,11 +298,6 @@ contract ExistingDeploymentParser is Script, Test {
         );
         // Slasher
         SLASHER_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".slasher.init_paused_status");
-        // DelegationManager
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = stdJson.readUint(
-            initialDeploymentData,
-            ".delegationManager.init_minWithdrawalDelayBlocks"
-        );
         DELEGATION_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(
             initialDeploymentData,
             ".delegationManager.init_paused_status"
@@ -504,7 +499,6 @@ contract ExistingDeploymentParser is Script, Test {
             address(0),
             eigenLayerPauserReg,
             0,
-            0, // minWithdrawalDelayBLocks
             initializeStrategiesToSetDelayBlocks,
             initializeWithdrawalDelayBlocks
         );
@@ -600,10 +594,6 @@ contract ExistingDeploymentParser is Script, Test {
         require(
             delegationManager.paused() == DELEGATION_MANAGER_INIT_PAUSED_STATUS,
             "delegationManager: init paused status set incorrectly"
-        );
-        require(
-            delegationManager.minWithdrawalDelayBlocks() == DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            "delegationManager: minWithdrawalDelayBlocks not set correctly"
         );
         // StrategyManager
         require(
