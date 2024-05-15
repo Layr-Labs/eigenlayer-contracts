@@ -594,11 +594,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Remove `withdrawalRoot` from pending roots
         delete pendingWithdrawals[withdrawalRoot];
 
-        // TODO: clearly define how this is supposed to work! current withdrawal storage is block-based, which is problematic for epochs!
-        // int256 queuedEpoch;
         // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
-        // int256 epochForEndOfSlashability = queuedEpoch + 1;
-        int256 epochForEndOfSlashability = 1;
+        // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
+        int256 epochForEndOfSlashability = withdrawalCreationEpoch[withdrawalRoot] + 1;
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
@@ -793,6 +791,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
+        withdrawalCreationEpoch[withdrawalRoot] = SlashingAccountingUtils.currentEpoch();
 
         emit WithdrawalQueued(withdrawalRoot, withdrawal);
         return withdrawalRoot;
