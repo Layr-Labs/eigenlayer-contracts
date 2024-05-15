@@ -84,7 +84,7 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         eigenLayerProxyAdmin = ProxyAdmin(stdJson.readAddress(deployment_data, ".addresses.eigenLayerProxyAdmin"));
 
         genesisTimeBefore = EigenPod(payable(eigenPodBeacon.implementation())).GENESIS_TIME();
-        maxRestakedBalanceBefore = EigenPod(payable(eigenPodBeacon.implementation())).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR();
+        // maxRestakedBalanceBefore = EigenPod(payable(eigenPodBeacon.implementation())).MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR();
         delayedWithdrawalRouter = EigenPod(payable(eigenPodBeacon.implementation())).delayedWithdrawalRouter();
 
         // Begin deployment
@@ -95,7 +95,7 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
             _ethPOS: ethPOS,
             _delayedWithdrawalRouter: delayedWithdrawalRouter,
             _eigenPodManager: eigenPodManager,
-            _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: maxRestakedBalanceBefore,
+            // _MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR: maxRestakedBalanceBefore,
             _GENESIS_TIME: genesisTimeBefore
         });
 
@@ -150,13 +150,13 @@ contract EigenPod_Minor_Upgrade_Deploy is Script, Test {
         require(eigenPodImplementation.eigenPodManager() == eigenPodManager,
             "eigenPodManager set incorrectly");
         // check that values are unchanged
-        require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == maxRestakedBalanceBefore,
-            "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
+        // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == maxRestakedBalanceBefore,
+        //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
         require(eigenPodImplementation.GENESIS_TIME() == genesisTimeBefore,
             "GENESIS_TIME set incorrectly");
         // redundant checks on correct values
-        require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
-            "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
+        // require(eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() == 32 gwei,
+        //     "MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR set incorrectly");
         require(eigenPodImplementation.GENESIS_TIME() == 1606824023,
             "GENESIS_TIME set incorrectly");
 
