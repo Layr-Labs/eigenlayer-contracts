@@ -32,6 +32,11 @@ library SlashingAccountingUtils {
         return getEpochFromTimestamp(block.timestamp);
     }
 
+    // @notice returns the UTC timestamp at which the epoch starts
+    function startOfEpoch(int256 epoch) internal pure returns (uint256) {
+        return uint256(int256(EPOCH_GENESIS_TIMESTAMP) + (epoch * int256(EPOCH_LENGTH_SECONDS)));
+    }
+
     function scaleUp(uint256 shares, uint256 scalingFactor) internal pure returns (uint256) {
         return (shares * scalingFactor) / SHARE_CONVERSION_SCALE;
     }

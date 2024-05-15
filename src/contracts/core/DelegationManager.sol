@@ -638,7 +638,9 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             address currentOperator = delegatedTo[msg.sender];
             for (uint256 i = 0; i < withdrawal.strategies.length; ) {
                 require(
-                    withdrawal.startEpoch + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number, 
+                    SlashingAccountingUtils.startOfEpoch(int256(uint256(withdrawal.startEpoch)) + 1) +
+                    (strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] * 12)
+                    <= block.timestamp, 
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
 
@@ -964,14 +966,14 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
     }
 
     /**
-     * @notice Given a list of strategies, return the minimum number of blocks that must pass to withdraw
+     * @notice Given a list of strategies, return the minimum number of seconds that must pass to withdraw
      * from all the inputted strategies. Return value is >= MIN_WITHDRAWAL_DELAY_EPOCHS as this is the global min withdrawal delay.
      * @param strategies The strategies to check withdrawal delays for
      */
     function getWithdrawalDelay(IStrategy[] calldata strategies) public view returns (uint256) {
-        uint256 withdrawalDelay = MIN_WITHDRAWAL_DELAY_EPOCHS;
+        uint256 withdrawalDelay = MIN_WITHDRAWAL_DELAY_EPOCHS * SlashingAccountingUtils.EPOCH_LENGTH_SECONDS;
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 currWithdrawalDelay = strategyWithdrawalDelayBlocks[strategies[i]];
+            uint256 currWithdrawalDelay = strategyWithdrawalDelayBlocks[strategies[i]] * 12;
             if (currWithdrawalDelay > withdrawalDelay) {
                 withdrawalDelay = currWithdrawalDelay;
             }
