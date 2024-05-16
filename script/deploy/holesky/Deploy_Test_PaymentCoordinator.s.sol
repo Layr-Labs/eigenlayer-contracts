@@ -58,7 +58,7 @@ contract Deploy_Test_PaymentCoordinator is ExistingDeploymentParser {
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         PaymentCoordinator.initialize.selector,
-                        testAddress, // initOwner
+                        executorMultisig, // initOwner
                         eigenLayerPauserReg,
                         PAYMENT_COORDINATOR_INIT_PAUSED_STATUS,
                         PAYMENT_COORDINATOR_UPDATER,

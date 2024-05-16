@@ -551,10 +551,10 @@ contract ExistingDeploymentParser is Script, Test {
             paymentCoordinator.pauserRegistry() == eigenLayerPauserReg,
             "paymentCoordinator: pauser registry not set correctly"
         );
-        // require(
-        //     paymentCoordinator.owner() == executorMultisig,
-        //     "paymentCoordinator: owner not set correctly"
-        // );
+        require(
+            paymentCoordinator.owner() == executorMultisig,
+            "paymentCoordinator: owner not set correctly"
+        );
         require(
             paymentCoordinator.paused() == PAYMENT_COORDINATOR_INIT_PAUSED_STATUS,
             "paymentCoordinator: init paused status set incorrectly"
