@@ -27,14 +27,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
     }
 
+    // TODO: decide if this function needs to go in the interface at all
     function pendingWithdrawalData(bytes32 withdrawalRoot) public view returns (PendingWithdrawalData memory) {
         return _pendingWithdrawalData[withdrawalRoot];        
     }
 
+    // @notice Returns 'true' if the `withdrawalRoot` corresponds to a queued-but-not-completed withdrawal, and 'false' otherwise
     function pendingWithdrawals(bytes32 withdrawalRoot) public view returns (bool) {
         return _pendingWithdrawalData[withdrawalRoot].isPending;        
     }
 
+    // TODO: decide if the return type should be int256 instead of int64
+    // @notice Returns the epoch in which the withdrawal corresponding to `withdrawalRoot` was queued
+    // @dev Will return zero for a non-existent (i.e never queued or already completed) withdrawal
     function withdrawalCreationEpoch(bytes32 withdrawalRoot) public view returns (int64) {
         return _pendingWithdrawalData[withdrawalRoot].creationEpoch;        
     }
