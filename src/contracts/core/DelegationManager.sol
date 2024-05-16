@@ -27,6 +27,18 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
     }
 
+    function pendingWithdrawalData(bytes32 withdrawalRoot) public view returns (PendingWithdrawalData memory) {
+        return _pendingWithdrawalData[withdrawalRoot];        
+    }
+
+    function pendingWithdrawals(bytes32 withdrawalRoot) public view returns (bool) {
+        return _pendingWithdrawalData[withdrawalRoot].isPending;        
+    }
+
+    function withdrawalCreationEpoch(bytes32 withdrawalRoot) public view returns (int64) {
+        return _pendingWithdrawalData[withdrawalRoot].creationEpoch;        
+    }
+
     // @dev Index for flag that pauses new delegations when set
     uint8 internal constant PAUSED_NEW_DELEGATION = 0;
 
@@ -366,8 +378,11 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 // create the new storage
                 bytes32 newRoot = calculateWithdrawalRoot(migratedWithdrawal);
                 // safety check to ensure that root doesn't exist already -- this should *never* be hit
-                require(!pendingWithdrawals[newRoot], "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
-                pendingWithdrawals[newRoot] = true;
+                require(!pendingWithdrawals(newRoot), "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
+                _pendingWithdrawalData[newRoot] = PendingWithdrawalData({
+                    isPending: true,
+                    creationEpoch: int64(SlashingAccountingUtils.currentEpoch())
+                });
 
                 emit WithdrawalQueued(newRoot, migratedWithdrawal);
 
@@ -570,7 +585,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         require(
-            pendingWithdrawals[withdrawalRoot], 
+            pendingWithdrawals(withdrawalRoot), 
             "DelegationManager._completeQueuedWithdrawal: action is not in queue"
         );
 
@@ -591,12 +606,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
             );
         }
 
-        // Remove `withdrawalRoot` from pending roots
-        delete pendingWithdrawals[withdrawalRoot];
-
         // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
         // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
-        int256 epochForEndOfSlashability = withdrawalCreationEpoch[withdrawalRoot] + 1;
+        int256 epochForEndOfSlashability = withdrawalCreationEpoch(withdrawalRoot) + 1;
+
+        // Remove `withdrawalRoot` from pending roots
+        delete _pendingWithdrawalData[withdrawalRoot];
 
         // Finalize action by converting shares to tokens for each strategy, or
         // by re-awarding shares in each strategy.
@@ -790,8 +805,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         // Place withdrawal in queue
-        pendingWithdrawals[withdrawalRoot] = true;
-        withdrawalCreationEpoch[withdrawalRoot] = SlashingAccountingUtils.currentEpoch();
+        _pendingWithdrawalData[withdrawalRoot] = PendingWithdrawalData({
+            isPending: true,
+            creationEpoch: int64(SlashingAccountingUtils.currentEpoch())
+        });
 
         emit WithdrawalQueued(withdrawalRoot, withdrawal);
         return withdrawalRoot;

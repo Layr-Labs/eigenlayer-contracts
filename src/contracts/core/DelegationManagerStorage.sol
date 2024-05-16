@@ -85,8 +85,9 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      */
     uint256 public minWithdrawalDelayBlocks;
 
-    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending
-    mapping(bytes32 => bool) public pendingWithdrawals;
+    // TODO: verify that changing the value of this mapping from a bool to a struct does not interfere with the existing boolean storage
+    /// @notice Mapping: hash of withdrawal inputs, aka 'withdrawalRoot' => whether the withdrawal is pending, and the epoch in which the withdrawal was queued
+    mapping(bytes32 => PendingWithdrawalData) internal _pendingWithdrawalData;
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
@@ -101,9 +102,6 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
     mapping(IStrategy => uint256) public strategyWithdrawalDelayBlocks;
-
-    // @notice Mapping: withdrawal root => epoch in which the withdrawal was queued
-    mapping(bytes32 => int256) public withdrawalCreationEpoch;
 
     constructor(IStrategyManager _strategyManager, ISlasher _slasher, IEigenPodManager _eigenPodManager) {
         strategyManager = _strategyManager;
