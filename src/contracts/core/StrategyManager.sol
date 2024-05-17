@@ -36,6 +36,13 @@ contract StrategyManager is
         return SlashingAccountingUtils.scaleDown(nonNormalizedStakerStrategyShares[staker][strategy], scalingFactor);
     }
 
+    // includes the effect of all unexecuted but pending slashings
+    function stakerStrategySharesIncludingPendingSlashings(address staker, IStrategy strategy) external view returns (uint256) {
+        address operator = delegation.delegatedTo(staker);
+        uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.scaleDown(nonNormalizedStakerStrategyShares[staker][strategy], scalingFactor);
+    }
+
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
 

@@ -7,6 +7,7 @@ import "../../contracts/interfaces/ISlasher.sol";
 
 contract SlasherMock is ISlasher, Test {
     function shareScalingFactor(address operator, IStrategy strategy) external view returns (uint256) {}
+    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {}
     function shareScalingFactorAtEpoch(address operator, IStrategy strategy, int256 epoch) public view returns (uint256) {}
 
     mapping(address => bool) public isFrozen;

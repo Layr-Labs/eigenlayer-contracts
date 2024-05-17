@@ -27,6 +27,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
     }
 
+    // includes the effect of all unexecuted but pending slashings
+    function operatorSharesIncludingPendingSlashings(address operator, IStrategy strategy) external view returns (uint256) {
+        uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
+        return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
+    }
+
     // TODO: decide if this function needs to go in the interface at all
     function pendingWithdrawalData(bytes32 withdrawalRoot) public view returns (PendingWithdrawalData memory) {
         return _pendingWithdrawalData[withdrawalRoot];        
