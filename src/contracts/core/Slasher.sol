@@ -44,6 +44,16 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         }
     }
 
+    // includes pending but unexecuted slashings
+    function pendingShareScalingFactor(address operator, IStrategy strategy) public view returns (uint256) {
+        uint256 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
+            scalingFactorBefore: _shareScalingFactor[operator][strategy],
+            // TODO: this particular lookup could potentially get more complex? e.g. also including the trailing epoch's pending amounts
+            bipsToSlash: pendingSlashedBips[operator][strategy][SlashingAccountingUtils.currentEpoch()]
+        });
+        return pendingScalingFactor;
+    }
+
     // @notice Mapping: operator => strategy => epochs in which the strategy was slashed for the operator
     // TODO: note that since default will be 0, we should probably make the "first epoch" actually be epoch 1 or something
     mapping(address => mapping(IStrategy => int256[])) public slashedEpochHistory;
