@@ -71,12 +71,27 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         }
     }
 
+    // @notice Returns the epoch in which the operator was last slashed
     function lastSlashed(address operator, IStrategy strategy) public view returns (int256) {
         uint256 slashedEpochHistoryLength = slashedEpochHistory[operator][strategy].length;
         if (slashedEpochHistoryLength == 0) {
+            // TODO: consider if a different return value is more appropriate for this special case
             return 0;
         } else {
             return slashedEpochHistory[operator][strategy][slashedEpochHistoryLength - 1];
+        }
+    }
+
+    // @notice Permissionlessly called to execute slashing of strategies for a given operator, for an epoch
+    function executeSlashing(address operator, IStrategy[] memory strategies, int256 epoch) external {
+        // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
+        require(epoch < SlashingAccountingUtils.currentEpoch(),
+            "must slash for a previous epoch");
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy strategy = strategies[i];
+            uint256 bipsToSlash = pendingSlashedBips[operator][strategy][epoch];
+            pendingSlashedBips[operator][strategy][epoch] = 0;
+            _slashShares(operator, strategy, epoch, bipsToSlash);
         }
     }
 
@@ -95,6 +110,124 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         // TODO: note that this behavior risks off-by-one errors. it needs to be clearly defined precisely how the historical storage is supposed to work
         shareScalingFactorHistory[operator][strategy][epoch] = scalingFactorAfter;
         // TODO: events!
+    }
+
+    // Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
+    mapping(address => mapping(IStrategy => mapping(int256 => mapping(address => uint256)))) public requestedSlashedBips;
+
+    // Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
+    // amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
+    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public pendingSlashedBips;
+
+    // @notice fetches the bips slashable by an AVS for the shares of a certain strategy delegated to a certain operator for a certain epoch
+    function getSlashableBips(
+        address operator, 
+        address avs, 
+        IStrategy strategy, 
+        int256 epoch
+    ) public pure returns (uint256) {
+        // TODO: this is a stub. it needs implementation
+        return 10;
+    }
+
+    // @notice fetches the maximum slashing rate -- expressed in bips -- by an AVS for the shares of a certain strategy for a certain epoch
+    function getMaxSlashingRate(
+        address avs,
+        IStrategy strategy, 
+        int256 epoch
+    ) public pure returns (uint256) {
+        // TODO: this is a stub. it needs implementation
+        return 10000;
+    }
+
+    function createSlashingRequest(
+        address operator,
+        IStrategy[] memory strategies,
+        uint256 bipsToSlash
+    ) external {
+        require(bipsToSlash <= SlashingAccountingUtils.BIPS_FACTOR, "invalid slashing amount");
+        require(bipsToSlash != 0, "cannot slash 0");
+        address avs = msg.sender;
+        int256 epoch = SlashingAccountingUtils.currentEpoch();
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy strategy = strategies[i];
+            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
+            uint256 requestedSlashedBipsAfter = requestedSlashedBipsBefore + bipsToSlash;
+            // TODO: consider loss of precision here. this is undesirable; we should fix it
+            uint256 bipsAllowedToSlash =
+                getSlashableBips(operator, avs, strategy, epoch) * getMaxSlashingRate(avs, strategy, epoch) / SlashingAccountingUtils.BIPS_FACTOR;
+            int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
+                bipsAllowedToSlash: bipsAllowedToSlash,
+                requestedSlashedBipsBefore: requestedSlashedBipsBefore,
+                requestedSlashedBipsAfter: requestedSlashedBipsAfter
+            });
+
+            // TODO: events
+            requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
+            pendingSlashedBips[operator][strategy][epoch] = uint256(
+                int256(pendingSlashedBips[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
+            );
+        }
+    }
+
+    function reduceRequestedSlashedBips(
+        address operator,
+        IStrategy[] memory strategies,
+        // TODO: naming
+        uint256 bipsToReduce
+    ) external {
+        require(bipsToReduce != 0, "cannot reduce slashing by 0");
+        address avs = msg.sender;
+        int256 epoch = SlashingAccountingUtils.currentEpoch();
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IStrategy strategy = strategies[i];
+            uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
+            uint256 requestedSlashedBipsAfter;
+            // ignore underflow; max out at reducing to zero
+            if (bipsToReduce >= requestedSlashedBipsBefore) {
+                requestedSlashedBipsAfter = 0;
+            } else {
+                requestedSlashedBipsAfter = requestedSlashedBipsBefore - bipsToReduce;
+            }
+            // TODO: consider loss of precision here. this is undesirable; we should fix it
+            uint256 bipsAllowedToSlash =
+                getSlashableBips(operator, avs, strategy, epoch) * getMaxSlashingRate(avs, strategy, epoch) / SlashingAccountingUtils.BIPS_FACTOR;
+            int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
+                bipsAllowedToSlash: bipsAllowedToSlash,
+                requestedSlashedBipsBefore: requestedSlashedBipsBefore,
+                requestedSlashedBipsAfter: requestedSlashedBipsAfter
+            });
+
+            // TODO: events
+            requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
+            pendingSlashedBips[operator][strategy][epoch] = uint256(
+                int256(pendingSlashedBips[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
+            );
+        }
+    }
+
+    function _changeInPendingSlashedBips(
+        uint256 bipsAllowedToSlash,
+        uint256 requestedSlashedBipsBefore,
+        uint256 requestedSlashedBipsAfter
+    ) internal pure returns (int256) {
+        // if the amount started at or above the "ceiling"
+        if (requestedSlashedBipsBefore >= bipsAllowedToSlash) {
+            // no decrease below ceiling
+            if (requestedSlashedBipsAfter >= bipsAllowedToSlash) {
+                return int256(0);
+            // measure decrease below ceiling, report as negative number
+            } else {
+                return int256(requestedSlashedBipsAfter) - int256(bipsAllowedToSlash);
+            }
+        } else {
+            // new amount meets or exceeds ceiling, so increase is capped
+            if (requestedSlashedBipsAfter >= bipsAllowedToSlash) {
+                return int256(bipsAllowedToSlash - requestedSlashedBipsBefore);
+            } else {
+                return int256(requestedSlashedBipsAfter) - int256(requestedSlashedBipsBefore);
+            }
+        }
     }
 
     constructor(IStrategyManager, IDelegationManager) {}
