@@ -304,15 +304,22 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
         external
         onlyEigenPodOwner
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-        // check that the provided `oracleTimestamp` is after the `mostRecentWithdrawalTimestamp`
-        proofIsForValidTimestamp(oracleTimestamp)
         // ensure that caller has previously enabled restaking by calling `activateRestaking()`
         hasEnabledRestaking
-    {
+    {        
         require(
             (validatorIndices.length == validatorFieldsProofs.length) &&
                 (validatorFieldsProofs.length == validatorFields.length),
             "EigenPod.verifyWithdrawalCredentials: validatorIndices and proofs must be same length"
+        );
+
+        // `mostRecentWithdrawalTimestamp` will be 0 for any pods deployed after M2
+        // If this is non-zero, ensure `oracleTimestamp` is from the epoch AFTER `activateRestaking`
+        // was called.
+        require(
+            mostRecentWithdrawalTimestamp == 0 ||
+            oracleTimestamp >= _nextEpochStartTimestamp(_timestampToEpoch(mostRecentWithdrawalTimestamp)),
+            "EigenPod.verifyWithdrawalCredentials: proof must be in the epoch after activation"
         );
 
         /**
@@ -777,6 +784,14 @@ contract EigenPod is IEigenPod, Initializable, ReentrancyGuardUpgradeable, Eigen
     function _timestampToEpoch(uint64 timestamp) internal view returns (uint64) {
         require(timestamp >= GENESIS_TIME, "EigenPod._timestampToEpoch: timestamp is before genesis");
         return (timestamp - GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
+    }
+
+    /**
+     * @dev Given an epoch number, calculates the timestamp of the first slot in the following epoch
+     */
+    function _nextEpochStartTimestamp(uint64 epoch) internal view returns (uint64) {
+        return  
+            GENESIS_TIME + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
     }
 
     /*******************************************************************************
