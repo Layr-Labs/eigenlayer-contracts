@@ -39,7 +39,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
     IEigenPod public podImplementation;
     IDelayedWithdrawalRouter public delayedWithdrawalRouter;
     IETHPOSDeposit public ethPOSDeposit;
-    IBeacon public eigenPodBeacon;
+    UpgradeableBeacon public eigenPodBeacon;
     EPInternalFunctions public podInternalFunctionTester;
 
     BeaconChainOracleMock public beaconChainOracle;
@@ -156,6 +156,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
+        cheats.warp(GOERLI_GENESIS_TIME); // start at a sane timestamp
         ethPOSDeposit = new ETHPOSDepositMock();
         podImplementation = new EigenPod(
             ethPOSDeposit,
@@ -343,6 +344,153 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             validatorFieldsArray
         );
         cheats.stopPrank();
+    }
+
+    // regression test for bug when activateRestaking -> verifyWC occur in the same epoch, in that order
+    function testEigenPodWithdrawalCredentialTimingBug(uint16 epochNum) public {
+        // ./solidityProofGen  -newBalance=32000115173 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913.json");
+
+        IEigenPod newPod = eigenPodManager.getPod(podOwner);
+
+        cheats.startPrank(podOwner);
+        cheats.expectEmit(true, true, true, true, address(newPod));
+        emit EigenPodStaked(pubkey);
+        eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
+        cheats.stopPrank();
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+        BeaconChainOracleMock(address(beaconChainOracle)).setOracleBlockRootAtTimestamp(getLatestBlockRoot());
+
+        //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(0)));
+        assertTrue(newPod.hasRestaked() == false, "EigenPod should not be restaked");
+
+        uint64 startTime = GOERLI_GENESIS_TIME + (BeaconChainProofs.SECONDS_PER_EPOCH * epochNum);
+        uint64 startEpoch = _timestampToEpoch(startTime);
+        // move to start time - this is the first slot in the epoch, and is where we will call activateRestaking
+        cheats.warp(startTime);
+
+        // activate restaking
+        cheats.startPrank(podOwner);
+        newPod.activateRestaking();
+
+        // Ensure verifyWC fails for each slot remaining in the epoch
+        for (uint i = 0; i < 32; i++) {
+            // Move forward 0-31 slots
+            uint64 slotTimestamp = uint64(startTime + (BeaconChainProofs.SECONDS_PER_SLOT * i));
+            uint64 epoch = _timestampToEpoch(slotTimestamp);
+            assertTrue(epoch == startEpoch, "calculated epoch should not change");
+
+            cheats.warp(slotTimestamp);
+            cheats.expectRevert(bytes("EigenPod.verifyWithdrawalCredentials: proof must be in the epoch after activation"));
+            newPod.verifyWithdrawalCredentials(
+                slotTimestamp,
+                stateRootProofStruct,
+                validatorIndices,
+                proofsArray,
+                validatorFieldsArray
+            );
+        }
+
+        // finally, move to the next epoch
+        cheats.warp(block.timestamp + BeaconChainProofs.SECONDS_PER_SLOT);
+        uint64 endEpoch = _timestampToEpoch(uint64(block.timestamp));
+        assertEq(startEpoch + 1, endEpoch, "should have advanced one epoch");
+
+        // now verifyWC should succeed
+        newPod.verifyWithdrawalCredentials(
+            uint64(block.timestamp),
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
+        
+        cheats.stopPrank();
+    }
+
+    function _timestampToEpoch(uint64 timestamp) internal view returns (uint64) {
+        require(timestamp >= GOERLI_GENESIS_TIME, "Test._timestampToEpoch: timestamp is before genesis");
+        return (timestamp - GOERLI_GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
+    }
+
+    // verifies that it is possible to subsequently prove WCs and withdraw funds when activateRestaking -> validator exit occur in the same epoch, in that order
+    // this is similar to `testProveWithdrawalCredentialsAfterValidatorExit` but somewhat more specific / targeted
+    function testEigenPodWithdrawalCredentialTimingSuccess() public {
+        // upgrade EigenPods to an implementation that has the genesis time to **one slot earlier**
+        // we do this so the validator exit at `GOERLI_GENESIS_TIME` is explicitly after genesis time, where we will active restaking
+        uint64 modifiedGenesisTime = GOERLI_GENESIS_TIME - 12;
+        podImplementation = new EigenPod(
+            ethPOSDeposit,
+            delayedWithdrawalRouter,
+            IEigenPodManager(podManagerAddress),
+            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+            modifiedGenesisTime
+        );
+        eigenPodBeacon.upgradeTo(address(podImplementation));
+
+        cheats.startPrank(podOwner);
+        IEigenPod newPod = IEigenPod(eigenPodManager.createPod());
+        cheats.stopPrank();
+
+        //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
+        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(0)));
+        require(newPod.hasRestaked() == false, "Pod should not be restaked");
+
+        // move to slot at modifiedGenesisTime. this is within epoch 0, like the withdrawal
+        cheats.warp(modifiedGenesisTime);
+        cheats.prank(podOwner);
+        newPod.activateRestaking();
+
+        // warp forward to start of next epoch (epoch 1), so we can do WC proof with zero effective balance
+        cheats.warp(modifiedGenesisTime + BeaconChainProofs.SECONDS_PER_EPOCH);
+
+        // get proof of validator 302913 having WCs pointed with 0 balance
+        // ./solidityProofGen  -newBalance=0 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913_exited.json"
+        setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
+
+        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+        validatorFieldsArray[0] = getValidatorFields();
+
+        bytes[] memory proofsArray = new bytes[](1);
+        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+
+        uint40[] memory validatorIndices = new uint40[](1);
+        validatorIndices[0] = uint40(getValidatorIndex());
+
+        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+        //set the oracle block root
+        _setOracleBlockRoot();
+
+        int256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(podOwner);
+
+        cheats.prank(podOwner);
+        newPod.verifyWithdrawalCredentials(
+            uint64(block.timestamp),
+            stateRootProofStruct,
+            validatorIndices,
+            proofsArray,
+            validatorFieldsArray
+        );
+
+        int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(podOwner);
+        require(beaconChainETHSharesBefore == beaconChainETHSharesAfter,
+            "effectiveBalance should be zero, no shares should be credited");
+
+        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
+        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+
+        _proveWithdrawalForPod(newPod);
     }
 
     function testWithdrawNonBeaconChainETHBalanceWei() public {
@@ -756,7 +904,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         _testDeployAndVerifyNewEigenPod(podOwner, signature, depositDataRoot);
         IEigenPod newPod = eigenPodManager.getPod(podOwner);
 
-        cheats.warp(GOERLI_GENESIS_TIME);
+        cheats.warp(block.timestamp + 1);
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
         _proveOverCommittedStake(newPod);
@@ -789,7 +937,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         validatorFields = getValidatorFields();
         validatorFields[1] = abi.encodePacked(bytes1(uint8(1)), bytes11(0), wrongWithdrawalAddress).toBytes32(0);
-        uint64 timestamp = 0;
 
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = validatorFields;
@@ -799,7 +946,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorIndices[0] = uint40(validatorIndex0);
 
         cheats.startPrank(podOwner);
-        cheats.warp(timestamp);
         if (!newPod.hasRestaked()) {
             newPod.activateRestaking();
         }
@@ -808,7 +954,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-        cheats.warp(timestamp += 1);
+        uint64 timestamp = _verifyWCStartTimestamp(newPod);
+        cheats.warp(timestamp);
+
         cheats.expectRevert(bytes("EigenPod.verifyCorrectWithdrawalCredentials: Proof is not for this EigenPod"));
         newPod.verifyWithdrawalCredentials(
             timestamp,
@@ -848,9 +996,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
 
-
-        uint64 timestamp = 1;
-
         bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
         validatorFieldsArray[0] = getValidatorFields();
         bytes[] memory proofsArray = new bytes[](1);
@@ -859,6 +1004,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         validatorIndices[0] = uint40(validatorIndex0);
 
         BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+
+        uint64 timestamp = _verifyWCStartTimestamp(newPod);
+        cheats.warp(timestamp);
 
         cheats.startPrank(nonPodOwnerAddress);
         cheats.expectRevert(bytes("EigenPod.onlyEigenPodOwner: not podOwner"));
@@ -940,7 +1088,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
         // prove overcommitted balance
-        cheats.warp(GOERLI_GENESIS_TIME);
+        cheats.warp(block.timestamp + 1);
         _proveOverCommittedStake(newPod);
 
         uint256 validatorRestakedBalanceAfter = newPod
@@ -980,7 +1128,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         // ./solidityProofGen "BalanceUpdateProof" 302913 true 0 "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "balanceUpdateProof_overCommitted_302913.json"
         setJSON("./src/test/test-data/balanceUpdateProof_updated_to_0ETH_302913.json");
         // prove overcommitted balance
-        cheats.warp(GOERLI_GENESIS_TIME);
+        cheats.warp(block.timestamp + 1);
         _proveOverCommittedStake(newPod);
 
         cheats.warp(block.timestamp + 1);
@@ -1106,7 +1254,6 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         emit EigenPodStaked(pubkey);
         eigenPodManager.stake{value: stakeAmount}(pubkey, signature, depositDataRoot);
         cheats.stopPrank();
-        uint64 timestamp = 1;
 
         // pause the contract
         cheats.startPrank(pauser);
@@ -1123,6 +1270,9 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         uint40[] memory validatorIndices = new uint40[](1);
         validatorIndices[0] = uint40(getValidatorIndex());
+
+        uint64 timestamp = _verifyWCStartTimestamp(newPod);
+        cheats.warp(timestamp);
 
         cheats.startPrank(podOwner);
         cheats.expectRevert(bytes("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager"));
@@ -1535,7 +1685,7 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
     function _verifyWithdrawalCredentials(IEigenPod newPod, address _podOwner) internal returns (IEigenPod) {
         _deployInternalFunctionTester();
-        uint64 timestamp = 0;
+        uint64 timestamp = EigenPod(payable(address(newPod))).GENESIS_TIME();
         // cheats.expectEmit(true, true, true, true, address(newPod));
         // emit ValidatorRestaked(validatorIndex);
 
@@ -1565,7 +1715,8 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
             BeaconChainOracleMock(address(beaconChainOracle)).mockBeaconChainStateRoot()
         );
 
-        cheats.warp(timestamp += 1);
+        timestamp = _verifyWCStartTimestamp(newPod);
+        cheats.warp(timestamp);
         newPod.verifyWithdrawalCredentials(
             timestamp,
             stateRootProofStruct,
@@ -1598,6 +1749,32 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
 
         }
         return newPod;
+    }
+
+    function _verifyWCStartTimestamp(IEigenPod pod) internal  returns (uint64) {
+        uint64 genesis = EigenPod(payable(address(pod))).GENESIS_TIME();
+        uint64 activateRestakingTimestamp = pod.mostRecentWithdrawalTimestamp();
+
+        // For pods deployed after M2, `mostRecentWithdrawalTimestamp` will always be 0
+        // In order to give our `_nextEpochStartTimestamp` a sane calculation, we set it
+        // to the genesis time
+        if (activateRestakingTimestamp == 0) {
+            activateRestakingTimestamp = uint64(block.timestamp);
+        }
+
+        emit log_named_uint("genesis", genesis);
+        emit log_named_uint("activation", activateRestakingTimestamp);
+
+        return _nextEpochStartTimestamp(genesis, activateRestakingTimestamp);
+    }
+
+    /// @dev Given a genesis time and a timestamp, converts the timestamp to an epoch
+    /// then calculates the next epoch's start timestamp. Used for the verifyWC proof window.
+    function _nextEpochStartTimestamp(uint64 genesisTime, uint64 timestamp) internal pure returns (uint64) {
+        require(timestamp >= genesisTime, "_verifyWCStartTimestamp: timestamp is before genesis");
+        uint64 epoch = (timestamp - genesisTime) / BeaconChainProofs.SECONDS_PER_EPOCH;
+
+        return genesisTime + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
     }
 
     /* TODO: reimplement similar tests

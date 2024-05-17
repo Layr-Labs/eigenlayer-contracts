@@ -159,7 +159,6 @@ function verifyWithdrawalCredentials(
     external
     onlyEigenPodOwner
     onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
-    proofIsForValidTimestamp(oracleTimestamp)
     hasEnabledRestaking
 ```
 
@@ -194,7 +193,7 @@ For each validator the Pod Owner wants to verify, the Pod Owner must supply:
 * Pod MUST have enabled restaking
 * All input array lengths MUST be equal
 * `oracleTimestamp`:
-    * MUST be greater than the `mostRecentWithdrawalTimestamp`
+    * MUST be greater than or equal to the timestamp of the first slot in the epoch following `mostRecentWithdrawalTimestamp`
     * MUST be no more than `VERIFY_BALANCE_UPDATE_WINDOW_SECONDS` (~4.5 hrs) old
     * MUST be queryable via `EigenPodManager.getBlockRootAtTimestamp` (fails if `stateRoot == 0`)
 * `BeaconChainProofs.verifyStateRootAgainstLatestBlockRoot` MUST verify the provided `beaconStateRoot` against the oracle-provided `latestBlockRoot`

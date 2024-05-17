@@ -6,6 +6,8 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
+import "src/contracts/libraries/BeaconChainProofs.sol";
+
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -124,6 +126,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             emit log("======");
 
+            // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
+            emit log("advancing block time to start of next epoch:");
+
+            uint64 curEpoch = _timeStampToEpoch(uint64(block.timestamp));
+            uint64 nextEpochStartTime = _nextEpochStartTimestamp(curEpoch);
+
+            emit log_named_uint("- current time", block.timestamp);
+            emit log_named_uint("- current epoch", curEpoch);
+            emit log_named_uint("- next epoch starts at", nextEpochStartTime);
+
+            cheats.warp(nextEpochStartTime);
+            beaconChain.setNextTimestamp(nextEpochStartTime);
+
+            emit log("======");
+
             isUpgraded = true;
             emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
         } else if (forkType == HOLESKY) {
@@ -135,6 +152,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
             isUpgraded = true;
             emit log("_upgradeEigenLayerContracts: m2 upgrade complete");
         }
+    }
+
+    /// From EigenPod.sol, using genesis time configured in ExistingDeploymentParser
+    function _timeStampToEpoch(uint64 timestamp) internal view returns (uint64) {
+        require(timestamp >= EIGENPOD_GENESIS_TIME, "EigenPod._timestampToEpoch: timestamp is before genesis");
+        return (timestamp - EIGENPOD_GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
+    }
+
+    /// From EigenPod.sol, using genesis time configured in ExistingDeploymentParser
+    function _nextEpochStartTimestamp(uint64 epoch) internal view returns (uint64) {
+        return  
+            EIGENPOD_GENESIS_TIME + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
     }
 
     /** 

@@ -1,0 +1,9 @@
+{
+  "addresses": {
+    "eigenPodImplementation": "0x28144C53bA98B4e909Df5bC7cA33eAf0404cFfcc"
+  },
+  "chainInfo": {
+    "chainId": 1,
+    "deploymentBlock": 19878127
+  }
+}
