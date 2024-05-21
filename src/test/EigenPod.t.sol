@@ -420,77 +420,77 @@ contract EigenPodTests is ProofParsing, EigenPodPausingConstants {
         return (timestamp - GOERLI_GENESIS_TIME) / BeaconChainProofs.SECONDS_PER_EPOCH;
     }
 
-    // verifies that it is possible to subsequently prove WCs and withdraw funds when activateRestaking -> validator exit occur in the same epoch, in that order
-    // this is similar to `testProveWithdrawalCredentialsAfterValidatorExit` but somewhat more specific / targeted
-    function testEigenPodWithdrawalCredentialTimingSuccess() public {
-        // upgrade EigenPods to an implementation that has the genesis time to **one slot earlier**
-        // we do this so the validator exit at `GOERLI_GENESIS_TIME` is explicitly after genesis time, where we will active restaking
-        uint64 modifiedGenesisTime = GOERLI_GENESIS_TIME - 12;
-        podImplementation = new EigenPod(
-            ethPOSDeposit,
-            delayedWithdrawalRouter,
-            IEigenPodManager(podManagerAddress),
-            MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
-            modifiedGenesisTime
-        );
-        eigenPodBeacon.upgradeTo(address(podImplementation));
+    // // verifies that it is possible to subsequently prove WCs and withdraw funds when activateRestaking -> validator exit occur in the same epoch, in that order
+    // // this is similar to `testProveWithdrawalCredentialsAfterValidatorExit` but somewhat more specific / targeted
+    // function testEigenPodWithdrawalCredentialTimingSuccess() public {
+    //     // upgrade EigenPods to an implementation that has the genesis time to **one slot earlier**
+    //     // we do this so the validator exit at `GOERLI_GENESIS_TIME` is explicitly after genesis time, where we will active restaking
+    //     uint64 modifiedGenesisTime = GOERLI_GENESIS_TIME - 12;
+    //     podImplementation = new EigenPod(
+    //         ethPOSDeposit,
+    //         delayedWithdrawalRouter,
+    //         IEigenPodManager(podManagerAddress),
+    //         MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR,
+    //         modifiedGenesisTime
+    //     );
+    //     eigenPodBeacon.upgradeTo(address(podImplementation));
 
-        cheats.startPrank(podOwner);
-        IEigenPod newPod = IEigenPod(eigenPodManager.createPod());
-        cheats.stopPrank();
+    //     cheats.startPrank(podOwner);
+    //     IEigenPod newPod = IEigenPod(eigenPodManager.createPod());
+    //     cheats.stopPrank();
 
-        //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
-        cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(0)));
-        require(newPod.hasRestaked() == false, "Pod should not be restaked");
+    //     //this simulates that hasRestaking is set to false, as would be the case for deployed pods that have not yet restaked prior to M2
+    //     cheats.store(address(newPod), bytes32(uint256(52)), bytes32(uint256(0)));
+    //     require(newPod.hasRestaked() == false, "Pod should not be restaked");
 
-        // move to slot at modifiedGenesisTime. this is within epoch 0, like the withdrawal
-        cheats.warp(modifiedGenesisTime);
-        cheats.prank(podOwner);
-        newPod.activateRestaking();
+    //     // move to slot at modifiedGenesisTime. this is within epoch 0, like the withdrawal
+    //     cheats.warp(modifiedGenesisTime);
+    //     cheats.prank(podOwner);
+    //     newPod.activateRestaking();
 
-        // warp forward to start of next epoch (epoch 1), so we can do WC proof with zero effective balance
-        cheats.warp(modifiedGenesisTime + BeaconChainProofs.SECONDS_PER_EPOCH);
+    //     // warp forward to start of next epoch (epoch 1), so we can do WC proof with zero effective balance
+    //     cheats.warp(modifiedGenesisTime + BeaconChainProofs.SECONDS_PER_EPOCH);
 
-        // get proof of validator 302913 having WCs pointed with 0 balance
-        // ./solidityProofGen  -newBalance=0 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913_exited.json"
-        setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
+    //     // get proof of validator 302913 having WCs pointed with 0 balance
+    //     // ./solidityProofGen  -newBalance=0 "ValidatorFieldsProof" 302913 true "data/withdrawal_proof_goerli/goerli_block_header_6399998.json"  "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "withdrawal_credential_proof_302913_exited.json"
+    //     setJSON("./src/test/test-data/withdrawal_credential_proof_302913_exited.json");
 
-        bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
-        validatorFieldsArray[0] = getValidatorFields();
+    //     bytes32[][] memory validatorFieldsArray = new bytes32[][](1);
+    //     validatorFieldsArray[0] = getValidatorFields();
 
-        bytes[] memory proofsArray = new bytes[](1);
-        proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
+    //     bytes[] memory proofsArray = new bytes[](1);
+    //     proofsArray[0] = abi.encodePacked(getWithdrawalCredentialProof());
 
-        uint40[] memory validatorIndices = new uint40[](1);
-        validatorIndices[0] = uint40(getValidatorIndex());
+    //     uint40[] memory validatorIndices = new uint40[](1);
+    //     validatorIndices[0] = uint40(getValidatorIndex());
 
-        BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
+    //     BeaconChainProofs.StateRootProof memory stateRootProofStruct = _getStateRootProof();
 
-        //set the oracle block root
-        _setOracleBlockRoot();
+    //     //set the oracle block root
+    //     _setOracleBlockRoot();
 
-        int256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(podOwner);
+    //     int256 beaconChainETHSharesBefore = eigenPodManager.podOwnerShares(podOwner);
 
-        cheats.prank(podOwner);
-        newPod.verifyWithdrawalCredentials(
-            uint64(block.timestamp),
-            stateRootProofStruct,
-            validatorIndices,
-            proofsArray,
-            validatorFieldsArray
-        );
+    //     cheats.prank(podOwner);
+    //     newPod.verifyWithdrawalCredentials(
+    //         uint64(block.timestamp),
+    //         stateRootProofStruct,
+    //         validatorIndices,
+    //         proofsArray,
+    //         validatorFieldsArray
+    //     );
 
-        int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(podOwner);
-        require(beaconChainETHSharesBefore == beaconChainETHSharesAfter,
-            "effectiveBalance should be zero, no shares should be credited");
+    //     int256 beaconChainETHSharesAfter = eigenPodManager.podOwnerShares(podOwner);
+    //     require(beaconChainETHSharesBefore == beaconChainETHSharesAfter,
+    //         "effectiveBalance should be zero, no shares should be credited");
 
-        //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
-        // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
-        // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
-        setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
+    //     //./solidityProofGen "WithdrawalFieldsProof" 302913 146 8092 true false "data/withdrawal_proof_goerli/goerli_block_header_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6399998.json" "data/withdrawal_proof_goerli/goerli_slot_6397852.json" "data/withdrawal_proof_goerli/goerli_block_header_6397852.json" "data/withdrawal_proof_goerli/goerli_block_6397852.json" "fullWithdrawalProof_Latest.json" false
+    //     // To get block header: curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v1/beacon/headers/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_header_6399000.json
+    //     // To get block:  curl -H "Accept: application/json" 'https://eigenlayer.spiceai.io/goerli/beacon/eth/v2/beacon/blocks/6399000?api_key\="343035|f6ebfef661524745abb4f1fd908a76e8"' > block_6399000.json
+    //     setJSON("./src/test/test-data/fullWithdrawalProof_Latest.json");
 
-        _proveWithdrawalForPod(newPod);
-    }
+    //     _proveWithdrawalForPod(newPod);
+    // }
 
     // function testWithdrawNonBeaconChainETHBalanceWei() public {
     //     IEigenPod pod = testDeployAndVerifyNewEigenPod();

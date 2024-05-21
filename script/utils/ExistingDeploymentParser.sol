@@ -513,15 +513,11 @@ contract ExistingDeploymentParser is Script, Test {
         strategyManager.initialize(address(0), address(0), eigenLayerPauserReg, STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         // EigenPodManager
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-<<<<<<< HEAD
-        eigenPodManager.initialize(beaconOracle, address(0), eigenLayerPauserReg, EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
-=======
         eigenPodManager.initialize(
             address(0),
             eigenLayerPauserReg,
             EIGENPOD_MANAGER_INIT_PAUSED_STATUS
         );
->>>>>>> a524406e (feat: poc for partial withdrawal batching)
         // DelayedWithdrawalRouter
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         delayedWithdrawalRouter.initialize(
@@ -661,15 +657,6 @@ contract ExistingDeploymentParser is Script, Test {
             "eigenPodImplementation: GENESIS TIME not set correctly"
         );
         require(
-<<<<<<< HEAD
-            eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR() ==
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR &&
-                EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR % 1 gwei == 0,
-            "eigenPodImplementation: MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR not set correctly"
-        );
-        require(
-=======
->>>>>>> a524406e (feat: poc for partial withdrawal batching)
             eigenPodImplementation.ethPOS() == IETHPOSDeposit(ETHPOSDepositAddress),
             "eigenPodImplementation: ethPOS not set correctly"
         );
