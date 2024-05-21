@@ -220,7 +220,7 @@ contract EigenPod is
             // - validator submitted twice during this checkpoint
             // - validator withdrawal credentials verified after checkpoint starts, then submitted
             //   as a checkpoint proof
-            if (validatorInfo.mostRecentBalanceUpdateTimestamp < beaconTimestamp) {
+            if (validatorInfo.mostRecentBalanceUpdateTimestamp >= beaconTimestamp) {
                 continue;
             }
 
