@@ -175,7 +175,7 @@ contract EigenPod is
 
     /**
      * @dev Progress the current checkpoint towards completion by submitting one or more validator
-     * checkpoint proofs. Anyone can call this method to submit proofs towards the current checkpoint.
+     * checkpoint proofs. Only the pod owner can call this method to submit proofs towards the current checkpoint.
      * For each validator proven, the current checkpoint's `proofsRemaining` decreases.
      * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
      * (see `_updateCheckpoint` for more details)
@@ -188,6 +188,7 @@ contract EigenPod is
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) 
         external 
+        onlyEigenPodOwner() 
         onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS) 
     {
         uint64 beaconTimestamp = currentCheckpointTimestamp;
