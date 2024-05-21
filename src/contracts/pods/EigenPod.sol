@@ -215,7 +215,7 @@ contract EigenPod is
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            int256 balanceDeltaGwei = _verifyCheckpointProof({
+            (int256 balanceDeltaGwei, int256 exitBalanceDeltaGwei) = _verifyCheckpointProof({
                 beaconTimestamp: beaconTimestamp,
                 beaconStateRoot: stateRootProof.beaconStateRoot,
                 proof: proofs[i]
@@ -223,6 +223,7 @@ contract EigenPod is
 
             checkpoint.proofsRemaining--;
             checkpoint.balanceDeltasGwei += balanceDeltaGwei;
+            checkpoint.exitBalanceDeltasGwei += exitBalanceDeltaGwei;
         }
 
         // Update and/or finalize the checkpoint
@@ -488,7 +489,7 @@ contract EigenPod is
         uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (int256 balanceDeltaGwei) {
+    ) internal returns (int256 balanceDeltaGwei, int256 exitBalanceDeltaGwei) {
         ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
         uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
 
@@ -514,19 +515,6 @@ contract EigenPod is
             validatorIndex: validatorIndex,
             proof: proof
         });
-        
-        // Update validator state. If their new balance is 0, they are marked `WITHDRAWN`
-        validatorInfo.restakedBalanceGwei = newBalanceGwei;
-        validatorInfo.mostRecentBalanceUpdateTimestamp = beaconTimestamp;
-        if (newBalanceGwei == 0) {
-            activeValidatorCount--;
-            validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
-
-            emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
-        }
-
-        _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-        emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
@@ -537,8 +525,22 @@ contract EigenPod is
                 previousAmountGwei: prevBalanceGwei
             });
         }
+        
+        // Update validator state. If their new balance is 0, they are marked `WITHDRAWN`
+        validatorInfo.restakedBalanceGwei = newBalanceGwei;
+        validatorInfo.mostRecentBalanceUpdateTimestamp = beaconTimestamp;
+        if (newBalanceGwei == 0) {
+            activeValidatorCount--;
+            validatorInfo.status = VALIDATOR_STATUS.WITHDRAWN;
+            exitBalanceDeltaGwei += balanceDeltaGwei;
 
-        return balanceDeltaGwei;
+            emit ValidatorWithdrawn(beaconTimestamp, validatorIndex);
+        }
+
+        _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
+        emit ValidatorCheckpointed(beaconTimestamp, validatorIndex);
+
+        return (balanceDeltaGwei, exitBalanceDeltaGwei);
     }
 
     /**
@@ -584,6 +586,7 @@ contract EigenPod is
             beaconBlockRoot: _getParentBlockRoot(uint64(block.timestamp)),
             podBalanceGwei: podBalanceGwei,
             balanceDeltasGwei: 0,
+            exitBalanceDeltasGwei: 0,
             proofsRemaining: activeValidatorCount
         });
 
@@ -601,7 +604,7 @@ contract EigenPod is
      * - a share delta is calculated and sent to the `EigenPodManager`
      * - the checkpointed `podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
-     * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
+     * - `currentCheckpointTimestamp` is deleted
      */
     function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         if (checkpoint.proofsRemaining == 0) {
@@ -615,7 +618,6 @@ contract EigenPod is
             // Finalize the checkpoint
             lastCheckpointTimestamp = currentCheckpointTimestamp;
             delete currentCheckpointTimestamp;
-            delete _currentCheckpoint;
 
             // Update pod owner's shares
             eigenPodManager.recordBeaconChainETHBalanceUpdate(podOwner, totalShareDeltaWei);
