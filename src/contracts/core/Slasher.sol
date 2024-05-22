@@ -122,11 +122,18 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         // TODO: events!
     }
 
-    // Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
+    /**
+     * @notice Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
+     * @dev Note that this is *independent* of the slashable bips that the operator has determined!
+     *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashedBips`) is linearly proportional
+     *      to *both* this number (capped by the `maxSlashingRate`) *and* linearly proportional to the slashable bips.
+     */
     mapping(address => mapping(IStrategy => mapping(int256 => mapping(address => uint256)))) public requestedSlashedBips;
 
-    // Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
-    // amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
+    /**
+     * @notice Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
+     * amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
+     */
     mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public pendingSlashedBips;
 
     // @notice fetches the bips slashable by an AVS for the shares of a certain strategy delegated to a certain operator for a certain epoch
@@ -163,11 +170,9 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
             IStrategy strategy = strategies[i];
             uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
             uint256 requestedSlashedBipsAfter = requestedSlashedBipsBefore + bipsToSlash;
-            // TODO: consider loss of precision here. this is undesirable; we should fix it
-            uint256 bipsAllowedToSlash =
-                getSlashableBips(operator, avs, strategy, epoch) * getMaxSlashingRate(avs, strategy, epoch) / SlashingAccountingUtils.BIPS_FACTOR;
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                bipsAllowedToSlash: bipsAllowedToSlash,
+                slashableBips: getSlashableBips(operator, avs, strategy, epoch),
+                maxSlashingRate: getMaxSlashingRate(avs, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
@@ -199,11 +204,9 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
             } else {
                 requestedSlashedBipsAfter = requestedSlashedBipsBefore - bipsToReduce;
             }
-            // TODO: consider loss of precision here. this is undesirable; we should fix it
-            uint256 bipsAllowedToSlash =
-                getSlashableBips(operator, avs, strategy, epoch) * getMaxSlashingRate(avs, strategy, epoch) / SlashingAccountingUtils.BIPS_FACTOR;
             int256 changeInPendingSlashedBips = _changeInPendingSlashedBips({
-                bipsAllowedToSlash: bipsAllowedToSlash,
+                slashableBips: getSlashableBips(operator, avs, strategy, epoch),
+                maxSlashingRate: getMaxSlashingRate(avs, strategy, epoch),
                 requestedSlashedBipsBefore: requestedSlashedBipsBefore,
                 requestedSlashedBipsAfter: requestedSlashedBipsAfter
             });
@@ -217,26 +220,27 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     }
 
     function _changeInPendingSlashedBips(
-        uint256 bipsAllowedToSlash,
+        uint256 slashableBips,
+        uint256 maxSlashingRate,
         uint256 requestedSlashedBipsBefore,
         uint256 requestedSlashedBipsAfter
     ) internal pure returns (int256) {
-        // if the amount started at or above the "ceiling"
-        if (requestedSlashedBipsBefore >= bipsAllowedToSlash) {
-            // no decrease below ceiling
-            if (requestedSlashedBipsAfter >= bipsAllowedToSlash) {
-                return int256(0);
-            // measure decrease below ceiling, report as negative number
-            } else {
-                return int256(requestedSlashedBipsAfter) - int256(bipsAllowedToSlash);
-            }
+        uint256 realSlashingRateBefore = _getSlashingRate(slashableBips, maxSlashingRate, requestedSlashedBipsBefore);
+        uint256 realSlashingRateAfter = _getSlashingRate(slashableBips, maxSlashingRate, requestedSlashedBipsAfter);
+        return int256(realSlashingRateAfter) - int256(realSlashingRateBefore);
+    }
+    
+    // TODO: consider loss of precision in this function, and find a way to fix it! e.g. 70 slashableBips and 100 requested slashed bips will yield ZERO slashed bips right now.
+    // @notice returns the amount of total delegated shares that will get slashed, based on the input params
+    function _getSlashingRate(
+        uint256 slashableBips,
+        uint256 maxSlashingRate,
+        uint256 requestedSlashedBips
+    ) internal pure returns (uint256) {
+        if (requestedSlashedBips >= maxSlashingRate) {
+            return (maxSlashingRate * slashableBips) / SlashingAccountingUtils.BIPS_FACTOR;
         } else {
-            // new amount meets or exceeds ceiling, so increase is capped
-            if (requestedSlashedBipsAfter >= bipsAllowedToSlash) {
-                return int256(bipsAllowedToSlash - requestedSlashedBipsBefore);
-            } else {
-                return int256(requestedSlashedBipsAfter) - int256(requestedSlashedBipsBefore);
-            }
+            return (requestedSlashedBips * slashableBips) / SlashingAccountingUtils.BIPS_FACTOR;
         }
     }
 
