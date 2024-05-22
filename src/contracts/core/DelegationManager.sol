@@ -24,13 +24,19 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
     function operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedOperatorShares[operator][strategy],
+            scalingFactor: scalingFactor
+        });
     }
 
     // includes the effect of all unexecuted but pending slashings
     function operatorSharesIncludingPendingSlashings(address operator, IStrategy strategy) external view returns (uint256) {
         uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategy], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedOperatorShares[operator][strategy],
+            scalingFactor: scalingFactor
+        });
     }
 
     // TODO: decide if this function needs to go in the interface at all
@@ -639,15 +645,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 //     withdrawal.strategies[i],
                 //     epochForEndOfSlashability
                 // );
-                // uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
-                uint256 shares = SlashingAccountingUtils.scaleDown(
-                    withdrawal.shares[i], 
-                    slasher.shareScalingFactorAtEpoch(
+                // uint256 shares = SlashingAccountingUtils.normalize(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
+                uint256 shares = SlashingAccountingUtils.normalize({
+                    nonNormalizedShares: withdrawal.shares[i], 
+                    scalingFactor: slasher.shareScalingFactorAtEpoch(
                         withdrawal.delegatedTo,
                         withdrawal.strategies[i],
                         epochForEndOfSlashability
                     )
-                );
+                });
 
                 _withdrawSharesAsTokens({
                     staker: withdrawal.staker,
@@ -673,15 +679,15 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 //     withdrawal.strategies[i],
                 //     epochForEndOfSlashability
                 // );
-                // uint256 shares = SlashingAccountingUtils.scaleDown(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
-                uint256 shares = SlashingAccountingUtils.scaleDown(
-                    withdrawal.shares[i], 
-                    slasher.shareScalingFactorAtEpoch(
+                // uint256 shares = SlashingAccountingUtils.normalize(withdrawal.shares[i], scalingFactorAtEndOfSlashability);
+                uint256 shares = SlashingAccountingUtils.normalize({
+                    nonNormalizedShares: withdrawal.shares[i], 
+                    scalingFactor: slasher.shareScalingFactorAtEpoch(
                         withdrawal.delegatedTo,
                         withdrawal.strategies[i],
                         epochForEndOfSlashability
                     )
-                );
+                });
 
                 /** When awarding podOwnerShares in EigenPodManager, we need to be sure to only give them back to the original podOwner.
                  * Other strategy shares can + will be awarded to the withdrawer.
@@ -690,12 +696,12 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     // address staker = withdrawal.staker;
                     address podOwnerOperator = delegatedTo[withdrawal.staker];
                     // uint256 scalingFactor = slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy);
-                    // uint256 nonNormalizedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+                    // uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize(shares, scalingFactor);
                     // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
-                    uint256 nonNormalizedShares = SlashingAccountingUtils.scaleUp(
-                        shares,
-                        slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy)
-                    );
+                    uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+                        shares: shares,
+                        scalingFactor: slasher.shareScalingFactor(podOwnerOperator, beaconChainETHStrategy)
+                    });
                     /**
                     * Update shares amount depending upon the returned value.
                     * The return value will be lower than the input value in the case where the staker has an existing share deficit
@@ -717,7 +723,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 } else {
                     uint256 scalingFactor = slasher.shareScalingFactor(currentOperator, beaconChainETHStrategy);
                     // TODO: unfortunately there doesn't seem to be a good way to avoid scaling down then up
-                    uint256 nonNormalizedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+                    uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+                        shares: shares,
+                        scalingFactor: scalingFactor
+                    });
                     strategyManager.addShares(msg.sender, tokens[i], withdrawal.strategies[i], nonNormalizedShares);
                     // Similar to `isDelegated` logic
                     if (currentOperator != address(0)) {
@@ -952,7 +961,10 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         uint256[] memory shares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             uint256 scalingFactor = slasher.shareScalingFactor(operator, strategies[i]);
-            shares[i] = SlashingAccountingUtils.scaleDown(nonNormalizedOperatorShares[operator][strategies[i]], scalingFactor);
+            shares[i] = SlashingAccountingUtils.normalize({
+                nonNormalizedShares: nonNormalizedOperatorShares[operator][strategies[i]],
+                scalingFactor: scalingFactor
+            });
         }
         return shares;
     }

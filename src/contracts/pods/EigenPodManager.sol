@@ -35,14 +35,20 @@ contract EigenPodManager is
     function podOwnerShares(address podOwner) external view returns (int256) {
         address operator = delegationManager.delegatedTo(podOwner);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedPodOwnerShares[podOwner], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
+            scalingFactor: scalingFactor
+        });
     }
 
     // includes the effect of all unexecuted but pending slashings
     function podOwnerSharesIncludingPendingSlashings(address podOwner) external view returns (int256) {
         address operator = delegationManager.delegatedTo(podOwner);
         uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, beaconChainETHStrategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedPodOwnerShares[podOwner], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedPodOwnerShares[podOwner],
+            scalingFactor: scalingFactor
+        });
     }
     
     modifier onlyEigenPod(address podOwner) {
@@ -130,7 +136,10 @@ contract EigenPodManager is
         // find the nonNormalizedShares amount
         address operator = delegationManager.delegatedTo(podOwner);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
-        int256 nonNormalizedSharesDelta = SlashingAccountingUtils.scaleUp(sharesDelta, scalingFactor);
+        int256 nonNormalizedSharesDelta = SlashingAccountingUtils.denormalize({
+            shares: sharesDelta,
+            scalingFactor: scalingFactor
+        });
 
         int256 updatedPodOwnerShares = currentPodOwnerShares + nonNormalizedSharesDelta;
         nonNormalizedPodOwnerShares[podOwner] = updatedPodOwnerShares;
@@ -222,7 +231,10 @@ contract EigenPodManager is
         // find the nonNormalizedShares amount
         address operator = delegationManager.delegatedTo(podOwner);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, beaconChainETHStrategy);
-        uint256 nonNormalizedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+        uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+            shares: shares,
+            scalingFactor: scalingFactor
+        });
 
         // if there is an existing shares deficit, prioritize decreasing the deficit first
         if (currentPodOwnerShares < 0) {
@@ -241,7 +253,10 @@ contract EigenPodManager is
         }
 
         // find the remaining share amount
-        shares = SlashingAccountingUtils.scaleDown(nonNormalizedShares, scalingFactor);
+        shares = SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedShares,
+            scalingFactor: scalingFactor
+        });
 
         // Actually withdraw to the destination
         ownerToPod[podOwner].withdrawRestakedBeaconChainETH(destination, shares);

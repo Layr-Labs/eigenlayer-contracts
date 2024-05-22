@@ -32,22 +32,22 @@ library SlashingAccountingUtils {
         return getEpochFromTimestamp(block.timestamp);
     }
 
-    function scaleUp(uint256 shares, uint256 scalingFactor) internal pure returns (uint256) {
+    function denormalize(uint256 shares, uint256 scalingFactor) internal pure returns (uint256) {
         return (shares * scalingFactor) / SHARE_CONVERSION_SCALE;
     }
 
-    function scaleDown(uint256 shares, uint256 scalingFactor) internal pure returns (uint256) {
-        return (shares * SHARE_CONVERSION_SCALE) / scalingFactor;
+    function normalize(uint256 nonNormalizedShares, uint256 scalingFactor) internal pure returns (uint256) {
+        return (nonNormalizedShares * SHARE_CONVERSION_SCALE) / scalingFactor;
     }
 
     // @notice Overloaded version of `scaleUp` that accepts a signed integer shares amount
-    function scaleUp(int256 shares, uint256 scalingFactor) internal pure returns (int256) {
+    function denormalize(int256 shares, uint256 scalingFactor) internal pure returns (int256) {
         return (shares * int256(scalingFactor)) / int256(SHARE_CONVERSION_SCALE);
     }
 
     // @notice Overloaded version of `scaleDown` that accepts a signed integer shares amount
-    function scaleDown(int256 shares, uint256 scalingFactor) internal pure returns (int256) {
-        return (shares * int256(SHARE_CONVERSION_SCALE)) / int256(scalingFactor);
+    function normalize(int256 nonNormalizedShares, uint256 scalingFactor) internal pure returns (int256) {
+        return (nonNormalizedShares * int256(SHARE_CONVERSION_SCALE)) / int256(scalingFactor);
     }
 
     function findNewScalingFactor(uint256 scalingFactorBefore, uint256 bipsToSlash) internal pure returns (uint256) {

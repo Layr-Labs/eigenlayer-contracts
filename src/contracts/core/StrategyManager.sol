@@ -33,14 +33,20 @@ contract StrategyManager is
     function stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
         address operator = delegation.delegatedTo(staker);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedStakerStrategyShares[staker][strategy], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
+            scalingFactor: scalingFactor
+        });
     }
 
     // includes the effect of all unexecuted but pending slashings
     function stakerStrategySharesIncludingPendingSlashings(address staker, IStrategy strategy) external view returns (uint256) {
         address operator = delegation.delegatedTo(staker);
         uint256 scalingFactor = slasher.pendingShareScalingFactor(operator, strategy);
-        return SlashingAccountingUtils.scaleDown(nonNormalizedStakerStrategyShares[staker][strategy], scalingFactor);
+        return SlashingAccountingUtils.normalize({
+            nonNormalizedShares: nonNormalizedStakerStrategyShares[staker][strategy],
+            scalingFactor: scalingFactor
+        });
     }
 
     // index for flag that pauses deposits when set
@@ -351,7 +357,10 @@ contract StrategyManager is
         // find the nonNormalizedShares amount
         address operator = delegation.delegatedTo(staker);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
-        uint256 nonNormalizedShares = SlashingAccountingUtils.scaleUp(shares, scalingFactor);
+        uint256 nonNormalizedShares = SlashingAccountingUtils.denormalize({
+            shares: shares,
+            scalingFactor: scalingFactor
+        });
 
         // add the returned nonNormalizedShares to the staker's existing nonNormalizedShares for this strategy
         _addShares(staker, token, strategy, nonNormalizedShares);
