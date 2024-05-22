@@ -18,6 +18,12 @@ struct CredentialsProofs {
     bytes32[][] validatorFields;
 }
 
+struct ValidatorFieldsProof {
+    uint40 validatorIndex;
+    bytes32[] validatorFields;
+    bytes validatorFieldsProof;
+}
+
 // struct BeaconWithdrawal {
 //     uint64 oracleTimestamp;
 //     BeaconChainProofs.StateRootProof stateRootProof;
@@ -40,32 +46,67 @@ contract BeaconChainMock is Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     struct Validator {
-        bytes32 pubkeyHash;
         uint40 validatorIndex;
+        bytes32 pubkeyHash;
         bytes withdrawalCreds;
         uint64 effectiveBalanceGwei;
+        uint64 exitEpoch;
     }
-    
-    uint40 nextValidatorIndex = 0;
-    uint64 public nextTimestamp;
-    
-    // Sequential list of created Validators
-    // Validator[] validators;
-    // mapping(uint40 => Validator) validators;
-
-    mapping(uint40 => Validator) validators;
-
-    BeaconChainOracleMock oracle;
-    EigenPodManager eigenPodManager;
 
     /// @dev All withdrawals are processed with index == 0
     uint64 constant WITHDRAWAL_INDEX = 0;
     uint constant GWEI_TO_WEI = 1e9;
+    uint constant ZERO_NODES_LENGTH = 50;
+    
+    uint64 public nextTimestamp;
+
+    BeaconChainOracleMock oracle;
+    EigenPodManager eigenPodManager;
+    
+    /**
+     * BeaconState containers, used for proofgen:
+     * https://eth2book.info/capella/part3/containers/state/#beaconstate 
+     */
+
+    // Validator container, references every validator created so far
+    Validator[] validators;
+
+    // Current balance container, keeps a balance for every validator
+    //
+    // Since balances are stored in groups of 4, it's easier to make
+    // this a mapping rather than an array. If it were an array, its
+    // length would be validators.length / 4;
+    mapping(uint40 => bytes32) balances;
+
+    /**
+     * Generated proofs for each block timestamp:
+     */
+
+    // Maps block.timestamp -> calculated beacon block roots
+    mapping(uint64 => bytes32) beaconBlockRoots;
+
+    // Maps block.timestamp -> beacon state root and proof
+    mapping(uint64 => BeaconChainProofs.StateRootProof) public stateRootProofs;
+
+    // Maps block.timestamp -> validator field proofs for that timestamp
+    mapping(uint64 => mapping(uint40 => ValidatorFieldsProof)) public validatorFieldsProofs;
+    
+    bytes32[] zeroNodes;
     
     constructor(TimeMachine timeMachine, BeaconChainOracleMock beaconChainOracle, EigenPodManager _eigenPodManager) {
         nextTimestamp = timeMachine.proofGenStartTime();
         oracle = beaconChainOracle;
         eigenPodManager = _eigenPodManager;
+
+        // Calculate nodes of empty merkle tree
+        bytes32 curNode = Merkle.merkleizeSha256(new bytes32[](8));
+        zeroNodes = new bytes32[](ZERO_NODES_LENGTH);
+        zeroNodes[0] = curNode;
+
+        for (uint i = 1; i < zeroNodes.length; i++) {
+            zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
+            curNode = zeroNodes[i];
+        }
     }
     
     /**
@@ -75,11 +116,11 @@ contract BeaconChainMock is Test {
      * For now, this returns empty proofs that will pass in the oracle,
      * but in the future this should use FFI to return a valid proof.
      */
-    function newValidator( 
-        uint balanceWei, 
+    function newValidator(
+        uint balanceWei,
         bytes memory withdrawalCreds
-    ) public returns (uint40, CredentialsProofs memory) {
-        emit log_named_uint("- BeaconChain.newValidator with balance: ", balanceWei);
+    ) public returns (uint40) {
+        _log("newValidator");
 
         // These checks mimic the checks made in the beacon chain deposit contract
         //
@@ -91,20 +132,177 @@ contract BeaconChainMock is Test {
         uint depositAmount = balanceWei / GWEI_TO_WEI;
         require(depositAmount <= type(uint64).max, "BeaconChainMock.newValidator: deposit value too high");
 
-        // Create unique index for new validator
-        uint40 validatorIndex = nextValidatorIndex;
-        nextValidatorIndex++;
-
-        // Create new validator and record in state
-        Validator memory validator = Validator({
-            pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
+        // Create new validator with unique index
+        uint40 validatorIndex = uint40(validators.length);
+        Validator memory v = Validator({
             validatorIndex: validatorIndex,
+            pubkeyHash: keccak256(abi.encodePacked(validatorIndex)),
             withdrawalCreds: withdrawalCreds,
-            effectiveBalanceGwei: uint64(depositAmount)
+            effectiveBalanceGwei: uint64(depositAmount),
+            exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH
         });
-        validators[validatorIndex] = validator;
 
-        return (validator.validatorIndex, _genCredentialsProof(validator));
+        // Encode current balance and update balance root
+        uint40 balanceRootIndex = validatorIndex / 4;
+        bytes32 balanceRoot = balances[balanceRootIndex];
+        balanceRoot = _setBalanceAtIndex(balanceRoot, validatorIndex, v.effectiveBalanceGwei);
+
+        // Record in state
+        validators.push(v);
+        balances[balanceRootIndex] = balanceRoot;
+
+        return validatorIndex;
+    }
+
+    function updateValidator(uint40 validatorIndex, uint addBalanceWei) public {
+        uint amount = addBalanceWei / GWEI_TO_WEI;
+        validators[validatorIndex].effectiveBalanceGwei += uint64(amount);
+    }
+
+    struct MerkleTree {
+        uint numPopulated;
+        bytes32[] leaves;
+    }
+
+    mapping(uint64 => mapping(bytes32 => bytes32)) siblings;
+    mapping(uint64 => mapping(bytes32 => bytes32)) parents;
+
+    // NOTE: currently only does validator container; ignores balances
+    function processEpoch() public returns (ValidatorFieldsProof[] memory) {
+        _log("processEpoch");
+
+        uint64 timestamp = uint64(block.timestamp);
+        cheats.warp(block.timestamp + 12);
+        uint numValidators = validators.length;
+        
+        ValidatorFieldsProof[] memory vfProofs = new ValidatorFieldsProof[](numValidators);
+        MerkleTree memory tree = MerkleTree({
+            numPopulated: numValidators,
+            leaves: new bytes32[](numValidators)
+        });
+
+        emit log_named_uint("populated leaves", tree.leaves.length);
+
+        // Calculate validator fields and roots for each validator
+        for (uint i = 0; i < numValidators; i++) {
+            bytes32[] memory vFields = _getValidatorFields(uint40(i));
+            vfProofs[i].validatorIndex = uint40(i);
+            vfProofs[i].validatorFields = vFields;
+            tree.leaves[i] = Merkle.merkleizeSha256(vFields);
+        }
+
+        // Calculate validators tree
+        uint depth = 0;
+        for (; depth < BeaconChainProofs.VALIDATOR_TREE_HEIGHT; depth++) {
+            uint newLength = (tree.leaves.length + 1) / 2;
+            bytes32[] memory newLeaves = new bytes32[](newLength);
+
+            // Hash each pair of nodes in this level of the tree
+            for (uint i = 0; i < newLength; i++) {
+                uint leftIdx = 2 * i;
+                uint rightIdx = leftIdx + 1;
+
+                // Get left leaf
+                bytes32 leftLeaf = tree.leaves[leftIdx];
+
+                // Calculate right leaf
+                bytes32 rightLeaf;
+                if (rightIdx < tree.leaves.length) {
+                    rightLeaf = tree.leaves[rightIdx];
+                } else {
+                    rightLeaf = _getZeroNode(depth);
+                }
+
+                // Hash left and right
+                bytes32 result = sha256(abi.encodePacked(leftLeaf, rightLeaf));
+                newLeaves[i] = result;
+
+                // emit log_named_uint("depth", depth);
+                // emit log_named_bytes32("left", leftLeaf);
+                // emit log_named_bytes32("right", rightLeaf);
+
+                // Record results, used to generate individual proofs later:
+                // Record left and right as siblings
+                siblings[timestamp][leftLeaf] = rightLeaf;
+                siblings[timestamp][rightLeaf] = leftLeaf;
+                // Record the result as the parent of left and right
+                parents[timestamp][leftLeaf] = result;
+                parents[timestamp][rightLeaf] = result;
+            }
+
+            // Move up one level
+            tree.leaves = newLeaves;
+        }
+
+        emit log_named_uint("validator count", numValidators);
+        emit log_named_uint("tree depth", depth);
+        emit log_named_bytes32("validator container root", tree.leaves[0]);
+
+        // Generate a proof for each validator
+        for (uint i = 0; i < numValidators; i++) {
+
+            bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
+            bytes32 curNode = Merkle.merkleizeSha256(vfProofs[i].validatorFields);
+
+            for (uint j = 0; j < depth; j++) {
+                bytes32 sibling = siblings[timestamp][curNode];
+
+                // proof[j] = sibling;
+                assembly {
+                    mstore(
+                        add(proof, add(32, mul(32, j))),
+                        sibling
+                    )
+                }
+
+                if (sibling == 0) {
+                    emit log_named_uint("err generating proof for validator", i);
+                    emit log_named_bytes32("found null sibling for leaf", curNode);
+                    emit log_named_uint("at depth", j);
+                }
+
+                curNode = parents[timestamp][curNode];
+            }
+
+            vfProofs[i].validatorFieldsProof = proof;
+
+            emit log("===");
+            emit log_named_uint("proof for validator", i);
+            for (uint j = 32; j < proof.length; j+=32) {
+                bytes32 element;
+                assembly { element := mload(add(j, proof)) }
+                emit log_bytes32(element);
+            }
+        }
+
+        return vfProofs;
+    }
+
+    function _getValidatorFields(uint40 validatorIndex) internal view returns (bytes32[] memory) {
+        bytes32[] memory vFields = new bytes32[](8);
+        Validator memory v = validators[validatorIndex];
+
+        vFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = v.pubkeyHash;
+        vFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = bytes32(v.withdrawalCreds);
+        vFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = _toLittleEndianUint64(v.effectiveBalanceGwei);
+        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = bytes32(uint(BeaconChainProofs.FAR_FUTURE_EPOCH));
+
+        return vFields;
+    }
+
+    function getBalanceRoot(uint40 validatorIndex) public view returns (bytes32) {
+        return balances[validatorIndex / 4];
+    }
+
+    function getBalance(uint40 validatorIndex) public view returns (uint64) {
+        return BeaconChainProofs.getBalanceAtIndex(
+            getBalanceRoot(validatorIndex),
+            validatorIndex
+        );
+    }
+
+    function _log(string memory s) internal {
+        emit log_named_string("- beaconChain", s);
     }
 
     /**
@@ -789,6 +987,12 @@ contract BeaconChainMock is Test {
             (a % 2 == 0 && b == a + 1) || (b % 2 == 0 && a == b + 1);
     }
 
+    function _getZeroNode(uint depth) internal view returns (bytes32) {
+        require(depth < ZERO_NODES_LENGTH, "_getZeroNode: invalid depth");
+
+        return zeroNodes[depth];
+    }
+
     /// @dev Opposite of Endian.fromLittleEndianUint64
     function _toLittleEndianUint64(uint64 num) internal pure returns (bytes32) {
         uint256 lenum;
@@ -805,6 +1009,21 @@ contract BeaconChainMock is Test {
 
         // Shift the little-endian bytes to the end of the bytes32 value
         return bytes32(lenum << 192);
+    }
+
+    /// @dev Opposite of BeaconChainProofs.getBalanceAtIndex
+    /// @return The new, updated balance root
+    function _setBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex, uint64 newBalanceGwei) internal returns (bytes32) {
+        // Clear out old balance
+        uint bitShiftAmount = 256 - (64 * ((validatorIndex % 4) + 1));
+        uint mask = ~(uint(0xFFFFFFFFFFFFFFFF) << bitShiftAmount);
+        uint clearedRoot = uint(balanceRoot) & mask;
+
+        // Convert validator balance to little endian and shift to correct position
+        uint leBalance = uint(_toLittleEndianUint64(newBalanceGwei));
+        uint shiftedBalance = leBalance >> (192 - bitShiftAmount);
+
+        return bytes32(clearedRoot | shiftedBalance);
     }
 
     /// @dev Helper to convert 32-byte withdrawal credentials to an address

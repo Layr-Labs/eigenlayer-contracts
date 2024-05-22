@@ -15,6 +15,9 @@ import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 
+struct Validator {
+    uint40 index;
+}
 
 interface IUserDeployer {
     function delegationManager() external view returns (DelegationManager);
@@ -87,46 +90,95 @@ contract User is Test {
         delegationManager.registerAsOperator(details, "metadata");
     }
 
+    /**
+     * Beacon chain methods
+     */
+
+    function startValidators(uint _numValidators) public createSnapshot virtual returns (uint40[] memory) {
+        _log("startValidators");
+
+        uint40[] memory newValidators = new uint40[](_numValidators);
+
+        for (uint i = 0; i < _numValidators; i++) {
+            uint40 validatorIndex = beaconChain.newValidator({
+                balanceWei: 32 ether,
+                withdrawalCreds: _podWithdrawalCredentials()
+            });
+
+            newValidators[i] = validatorIndex;
+            validators.push(validatorIndex);
+        }
+
+        return newValidators;
+    }
+
+    function rewardValidators(Validator[] memory _validators) public createSnapshot virtual {
+        // generate consensus rewards for validators and send to pod
+    }
+
+    function stopValidators(Validator[] memory _validators) public createSnapshot virtual {
+        // stop validators and send ETH to pod
+    }
+
+    function _log(string memory s) internal {
+        emit log_named_string(NAME, s);
+    }
+
+    /**
+     * EigenPod methods:
+     */
+
+    function verifyWithdrawalCredentials(uint40[] memory _validators) public createSnapshot virtual {
+        // _log("verifyWithdrawalCredentials");
+
+        // CredentialsProofs memory proofs = beaconChain.genCredentialProofs(_validators);
+
+        // pod.verifyWithdrawalCredentials({
+        //     beaconTimestamp: proofs.beaconTimestamp,
+        //     stateRootProof: proofs.stateRootProof,
+        //     validatorIndices: proofs.validatorIndices,
+        //     validatorFieldsProofs: proofs.validatorFieldsProofs,
+        //     validatorFields: proofs.validatorFields
+        // });
+    }
+
+    function startCheckpoint() public createSnapshot virtual {
+        // _log("startCheckpoint");
+
+        // beaconChain.generateStateRoot();
+
+        // pod.startCheckpoint(false);
+    }
+
+    function completeCheckpoint() public createSnapshot virtual {
+        // _log("completeCheckpoint");
+
+        // CheckpointProofs memory proofs = beaconChain.genCheckpointProofs(validators);
+
+        // pod.verifyCheckpointProofs({
+        //     stateRootProof: proofs.stateRootProof,
+        //     proofs: proofs.balanceProofs
+        // });
+    }
+
+    function depositLSTs(IStrategy[] memory strategies) public createSnapshot virtual {
+        // _log("depositIntoStrategies");
+
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     IStrategy strat = strategies[i];
+        //     uint tokenBalance = tokenBalances[i];
+
+        //     IERC20 underlyingToken = strat.underlyingToken();
+        //     underlyingToken.approve(address(strategyManager), tokenBalance);
+        //     strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+        // }
+    }
+
     /// @dev For each strategy/token balance, call the relevant deposit method
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
         emit log(_name(".depositIntoEigenlayer"));
 
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-            uint tokenBalance = tokenBalances[i];
-
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                // We're depositing via `eigenPodManager.stake`, which only accepts
-                // deposits of exactly 32 ether.
-                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
-                
-                // For each multiple of 32 ether, deploy a new validator to the same pod
-                uint numValidators = tokenBalance / 32 ether;
-                for (uint j = 0; j < numValidators; j++) {
-                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
-
-                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
-                        beaconChain.newValidator({
-                            balanceWei: 32 ether,
-                            withdrawalCreds: _podWithdrawalCredentials()
-                        });
-
-                    validators.push(newValidatorIndex);
-                    emit log_named_uint("oracle timestamp", proofs.oracleTimestamp);
-                    pod.verifyWithdrawalCredentials({
-                        beaconTimestamp: proofs.oracleTimestamp,
-                        stateRootProof: proofs.stateRootProof,
-                        validatorIndices: proofs.validatorIndices,
-                        validatorFieldsProofs: proofs.validatorFieldsProofs,
-                        validatorFields: proofs.validatorFields
-                    });
-                }
-            } else {
-                IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
-                strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
-            }
-        }
+        revert("unimplemented");
     }
 
     function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
@@ -414,69 +466,69 @@ contract User_AltMethods is User {
     }
 
     function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
-        emit log(_name(".depositIntoEigenlayer"));
+        // emit log(_name(".depositIntoEigenlayer"));
         
-        uint256 expiry = type(uint256).max;
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-            uint tokenBalance = tokenBalances[i];
+        // uint256 expiry = type(uint256).max;
+        // for (uint i = 0; i < strategies.length; i++) {
+        //     IStrategy strat = strategies[i];
+        //     uint tokenBalance = tokenBalances[i];
 
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                // We're depositing via `eigenPodManager.stake`, which only accepts
-                // deposits of exactly 32 ether.
-                require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
+        //     if (strat == BEACONCHAIN_ETH_STRAT) {
+        //         // We're depositing via `eigenPodManager.stake`, which only accepts
+        //         // deposits of exactly 32 ether.
+        //         require(tokenBalance % 32 ether == 0, "User.depositIntoEigenlayer: balance must be multiple of 32 eth");
                 
-                // For each multiple of 32 ether, deploy a new validator to the same pod
-                uint numValidators = tokenBalance / 32 ether;
-                for (uint j = 0; j < numValidators; j++) {
-                    eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
+        //         // For each multiple of 32 ether, deploy a new validator to the same pod
+        //         uint numValidators = tokenBalance / 32 ether;
+        //         for (uint j = 0; j < numValidators; j++) {
+        //             eigenPodManager.stake{ value: 32 ether }("", "", bytes32(0));
 
-                    (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
-                        beaconChain.newValidator({
-                            balanceWei: 32 ether,
-                            withdrawalCreds: _podWithdrawalCredentials()
-                        });
+        //             (uint40 newValidatorIndex, CredentialsProofs memory proofs) = 
+        //                 beaconChain.newValidator({
+        //                     balanceWei: 32 ether,
+        //                     withdrawalCreds: _podWithdrawalCredentials()
+        //                 });
                     
-                    validators.push(newValidatorIndex);
+        //             validators.push(newValidatorIndex);
 
-                    pod.verifyWithdrawalCredentials({
-                        beaconTimestamp: proofs.oracleTimestamp,
-                        stateRootProof: proofs.stateRootProof,
-                        validatorIndices: proofs.validatorIndices,
-                        validatorFieldsProofs: proofs.validatorFieldsProofs,
-                        validatorFields: proofs.validatorFields
-                    });
-                }
-            } else {
-                // Approve token
-                IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
+        //             pod.verifyWithdrawalCredentials({
+        //                 beaconTimestamp: proofs.oracleTimestamp,
+        //                 stateRootProof: proofs.stateRootProof,
+        //                 validatorIndices: proofs.validatorIndices,
+        //                 validatorFieldsProofs: proofs.validatorFieldsProofs,
+        //                 validatorFields: proofs.validatorFields
+        //             });
+        //         }
+        //     } else {
+        //         // Approve token
+        //         IERC20 underlyingToken = strat.underlyingToken();
+        //         underlyingToken.approve(address(strategyManager), tokenBalance);
 
-                // Get signature
-                uint256 nonceBefore = strategyManager.nonces(address(this));
-                bytes32 structHash = keccak256(
-                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
-                );
-                bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
-                bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
+        //         // Get signature
+        //         uint256 nonceBefore = strategyManager.nonces(address(this));
+        //         bytes32 structHash = keccak256(
+        //             abi.encode(strategyManager.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
+        //         );
+        //         bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
+        //         bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
-                // Mark hash as signed
-                signedHashes[digestHash] = true;
+        //         // Mark hash as signed
+        //         signedHashes[digestHash] = true;
 
-                // Deposit
-                strategyManager.depositIntoStrategyWithSignature(
-                    strat,
-                    underlyingToken,
-                    tokenBalance,
-                    address(this),
-                    expiry,
-                    signature
-                );
+        //         // Deposit
+        //         strategyManager.depositIntoStrategyWithSignature(
+        //             strat,
+        //             underlyingToken,
+        //             tokenBalance,
+        //             address(this),
+        //             expiry,
+        //             signature
+        //         );
 
-                // Mark hash as used
-                signedHashes[digestHash] = false;
-            }
-        }
+        //         // Mark hash as used
+        //         signedHashes[digestHash] = false;
+        //     }
+        // }
     }
  
     bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
