@@ -737,6 +737,13 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Place withdrawal in queue
         pendingWithdrawals[withdrawalRoot] = true;
+        
+        // if the staker has no more shares, undelegate them from the operator
+        if (strategyManager.stakerStrategyListLength(staker) == 0) {
+            // undelegate the staker
+            emit StakerUndelegated(staker, operator);
+            delegatedTo[staker] = address(0);
+        }
 
         emit WithdrawalQueued(withdrawalRoot, withdrawal);
         return withdrawalRoot;
