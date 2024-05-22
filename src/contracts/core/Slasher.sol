@@ -243,12 +243,12 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     function _getSlashingRate(
         uint256 slashableBips,
         uint256 maxSlashingRate,
-        uint256 requestedSlashedBips
+        uint256 _requestedSlashedBips
     ) internal pure returns (uint256) {
-        if (requestedSlashedBips >= maxSlashingRate) {
+        if (_requestedSlashedBips >= maxSlashingRate) {
             return (maxSlashingRate * slashableBips);
         } else {
-            return (requestedSlashedBips * slashableBips);
+            return (_requestedSlashedBips * slashableBips);
         }
     }
 
