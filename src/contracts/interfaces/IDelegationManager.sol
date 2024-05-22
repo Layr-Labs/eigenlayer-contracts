@@ -100,10 +100,6 @@ interface IDelegationManager is ISignatureUtils {
         address withdrawer;
     }
 
-    struct PendingWithdrawalData {
-        bool isPending;
-        int64 creationEpoch;
-    }
 
     // @notice Emitted when a new operator registers in EigenLayer and provides their OperatorDetails.
     event OperatorRegistered(address indexed operator, OperatorDetails operatorDetails);
