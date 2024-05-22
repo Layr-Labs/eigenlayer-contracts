@@ -627,6 +627,8 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // TODO: currently, this _inclusive_, meaning the completed withdrawal will include slashing effects that were enacted in the `epochForEndOfSlashability`
         // TODO: note that we again probably want the first real epoch to be epoch 1, so that existing queued withdrawals are safe from slashing
         int256 epochForEndOfSlashability = withdrawalCreationEpoch(withdrawalRoot) + 1;
+        require(EpochUtils.currentEpoch() > epochForEndOfSlashability,
+            "DelegationManager._completeQueuedWithdrawal: withdrawal is still slashable");
 
         // Remove `withdrawalRoot` from pending roots
         delete _pendingWithdrawalData[withdrawalRoot];
@@ -639,6 +641,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number,
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
+                // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
 
                 // TODO: refactor so that nonNormalizedShares is an input to `_withdrawSharesAsTokens`?
                 // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
@@ -674,6 +677,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                     withdrawal.startBlock + strategyWithdrawalDelayBlocks[withdrawal.strategies[i]] <= block.number, 
                     "DelegationManager._completeQueuedWithdrawal: withdrawalDelayBlocks period has not yet passed for this strategy"
                 );
+                // TODO: require no pending slashing in epochForEndOfSlashability for each strategy
 
                 // uint256 scalingFactorAtEndOfSlashability = slasher.shareScalingFactorAtEpoch(
                 //     withdrawal.delegatedTo,
