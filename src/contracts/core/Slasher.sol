@@ -49,7 +49,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         uint256 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
             scalingFactorBefore: _shareScalingFactor[operator][strategy],
             // TODO: this particular lookup could potentially get more complex? e.g. also including the trailing epoch's pending amounts
-            bipsToSlash: pendingSlashedBips[operator][strategy][EpochUtils.currentEpoch()]
+            rateToSlash: pendingSlashingRate[operator][strategy][EpochUtils.currentEpoch()]
         });
         return pendingScalingFactor;
     }
@@ -99,20 +99,25 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
             "must slash for a previous epoch");
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
-            uint256 bipsToSlash = pendingSlashedBips[operator][strategy][epoch];
-            pendingSlashedBips[operator][strategy][epoch] = 0;
-            _slashShares(operator, strategy, epoch, bipsToSlash);
+            uint256 rateToSlash = pendingSlashingRate[operator][strategy][epoch];
+            pendingSlashingRate[operator][strategy][epoch] = 0;
+            _slashShares({
+                operator: operator,
+                strategy: strategy,
+                epoch: epoch,
+                rateToSlash: rateToSlash
+            });
         }
     }
 
-    function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 bipsToSlash) internal {
+    function _slashShares(address operator, IStrategy strategy, int256 epoch, uint256 rateToSlash) internal {
         int256 lastSlashedEpoch = lastSlashed(operator, strategy);
         // TODO: again note that we need something like the first epoch being epoch 1 here, to allow actually slashing in the first epoch
         require(epoch > lastSlashedEpoch, "slashing must occur in strictly ascending epoch order");
         uint256 scalingFactorBefore = shareScalingFactor(operator, strategy);
         uint256 scalingFactorAfter = SlashingAccountingUtils.findNewScalingFactor({
             scalingFactorBefore: scalingFactorBefore,
-            bipsToSlash: bipsToSlash
+            rateToSlash: rateToSlash
         });
         // update storage to reflect the slashing
         slashedEpochHistory[operator][strategy].push(epoch);
@@ -125,7 +130,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     /**
      * @notice Mapping: Operator => Strategy => epoch => AVS => requested slashed bips
      * @dev Note that this is *independent* of the slashable bips that the operator has determined!
-     *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashedBips`) is linearly proportional
+     *      The amount that the operator's delegated shares will actually get slashed (which goes into `pendingSlashingRate`) is linearly proportional
      *      to *both* this number (capped by the `maxSlashingRate`) *and* linearly proportional to the slashable bips.
      */
     mapping(address => mapping(IStrategy => mapping(int256 => mapping(address => uint256)))) public requestedSlashedBips;
@@ -133,8 +138,9 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     /**
      * @notice Mapping: Operator => Strategy => epoch => pending slashed amount, where pending slashed amount is the
      * amount that will be slashed when slashing is executed for the current epoch, assuming no existing requests are cancelled or nullified. summed over all AVSs
+     * @dev Note that this is parts per (BIPS_FACTOR**2), i.e. parts per 1e8
      */
-    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public pendingSlashedBips;
+    mapping(address => mapping(IStrategy => mapping(int256 => uint256))) public pendingSlashingRate;
 
     // @notice fetches the bips slashable by an AVS for the shares of a certain strategy delegated to a certain operator for a certain epoch
     function getSlashableBips(
@@ -179,8 +185,8 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
             // TODO: events
             requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
-            pendingSlashedBips[operator][strategy][epoch] = uint256(
-                int256(pendingSlashedBips[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
+            pendingSlashingRate[operator][strategy][epoch] = uint256(
+                int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
             );
         }
     }
@@ -213,8 +219,8 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
 
             // TODO: events
             requestedSlashedBips[operator][strategy][epoch][avs] = requestedSlashedBipsAfter;
-            pendingSlashedBips[operator][strategy][epoch] = uint256(
-                int256(pendingSlashedBips[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
+            pendingSlashingRate[operator][strategy][epoch] = uint256(
+                int256(pendingSlashingRate[operator][strategy][epoch]) + int256(changeInPendingSlashedBips)
             );
         }
     }
@@ -230,17 +236,19 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         return int256(realSlashingRateAfter) - int256(realSlashingRateBefore);
     }
     
-    // TODO: consider loss of precision in this function, and find a way to fix it! e.g. 70 slashableBips and 100 requested slashed bips will yield ZERO slashed bips right now.
-    // @notice returns the amount of total delegated shares that will get slashed, based on the input params
+    /**
+     * @notice returns the amount of total delegated shares that will get slashed, based on the input params
+     * @dev note that the return value is a rate as parts per (BIPS_FACTOR**2), i.e. parts per 1e8
+     */
     function _getSlashingRate(
         uint256 slashableBips,
         uint256 maxSlashingRate,
         uint256 requestedSlashedBips
     ) internal pure returns (uint256) {
         if (requestedSlashedBips >= maxSlashingRate) {
-            return (maxSlashingRate * slashableBips) / SlashingAccountingUtils.BIPS_FACTOR;
+            return (maxSlashingRate * slashableBips);
         } else {
-            return (requestedSlashedBips * slashableBips) / SlashingAccountingUtils.BIPS_FACTOR;
+            return (requestedSlashedBips * slashableBips);
         }
     }
 
