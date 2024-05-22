@@ -30,7 +30,7 @@ contract StrategyManager is
 {
     using SafeERC20 for IERC20;
 
-    function stakerStrategyShares(address staker, IStrategy strategy) external view returns (uint256) {
+    function stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
         address operator = delegation.delegatedTo(staker);
         uint256 scalingFactor = slasher.shareScalingFactor(operator, strategy);
         return SlashingAccountingUtils.scaleDown(nonNormalizedStakerStrategyShares[staker][strategy], scalingFactor);
@@ -457,6 +457,25 @@ contract StrategyManager is
      * @return (staker's strategies, shares in these strategies)
      */
     function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+        uint256 strategiesLength = stakerStrategyList[staker].length;
+        uint256[] memory shares = new uint256[](strategiesLength);
+
+        for (uint256 i = 0; i < strategiesLength; ) {
+            // TODO: consider optimizing the lookups here
+            shares[i] = stakerStrategyShares(staker, stakerStrategyList[staker][i]);
+            unchecked {
+                ++i;
+            }
+        }
+        return (stakerStrategyList[staker], shares);
+    }
+
+    /**
+     * @notice Get all details on the staker's deposits and corresponding shares
+     * @param staker The staker of interest, whose deposits this function will fetch
+     * @return (staker's strategies, shares in these strategies)
+     */
+    function getNonNormalizedDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
         uint256 strategiesLength = stakerStrategyList[staker].length;
         uint256[] memory shares = new uint256[](strategiesLength);
 

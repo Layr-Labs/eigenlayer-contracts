@@ -253,7 +253,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
 
         // Gather strategies and shares to remove from staker/operator during undelegation
         // Undelegation removes ALL currently-active strategies and shares
-        (IStrategy[] memory strategies, uint256[] memory shares) = getDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint256[] memory shares) = getNonNormalizedDelegatableShares(staker);
 
         // emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
@@ -569,7 +569,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         emit StakerDelegated(staker, operator);
 
         (IStrategy[] memory strategies, uint256[] memory shares)
-            = getDelegatableShares(staker);
+            = getNonNormalizedDelegatableShares(staker);
 
         for (uint256 i = 0; i < strategies.length;) {
             _increaseOperatorShares({
@@ -957,6 +957,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         return shares;
     }
 
+// TODO: consider deleting function. currently used in tests; may be used in some integrations.
     /**
      * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
      * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
@@ -966,6 +967,56 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         int256 podShares = eigenPodManager.podOwnerShares(staker);
         (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
             = strategyManager.getDeposits(staker);
+
+        // Has no shares in EigenPodManager, but potentially some in StrategyManager
+        if (podShares <= 0) {
+            return (strategyManagerStrats, strategyManagerShares);
+        }
+
+        IStrategy[] memory strategies;
+        uint256[] memory shares;
+
+        if (strategyManagerStrats.length == 0) {
+            // Has shares in EigenPodManager, but not in StrategyManager
+            strategies = new IStrategy[](1);
+            shares = new uint256[](1);
+            strategies[0] = beaconChainETHStrategy;
+            shares[0] = uint256(podShares);
+        } else {
+            // Has shares in both
+            
+            // 1. Allocate return arrays
+            strategies = new IStrategy[](strategyManagerStrats.length + 1);
+            shares = new uint256[](strategies.length);
+            
+            // 2. Place StrategyManager strats/shares in return arrays
+            for (uint256 i = 0; i < strategyManagerStrats.length; ) {
+                strategies[i] = strategyManagerStrats[i];
+                shares[i] = strategyManagerShares[i];
+
+                unchecked { ++i; }
+            }
+
+            // 3. Place EigenPodManager strat/shares in return arrays
+            strategies[strategies.length - 1] = beaconChainETHStrategy;
+            shares[strategies.length - 1] = uint256(podShares);
+        }
+
+        return (strategies, shares);
+    }
+
+
+
+// TODO: update documentation
+    /**
+     * @notice Returns the number of actively-delegatable shares a staker has across all strategies.
+     * @dev Returns two empty arrays in the case that the Staker has no actively-delegateable shares.
+     */
+    function getNonNormalizedDelegatableShares(address staker) public view returns (IStrategy[] memory, uint256[] memory) {
+        // Get currently active shares and strategies for `staker`
+        int256 podShares = eigenPodManager.nonNormalizedPodOwnerShares(staker);
+        (IStrategy[] memory strategyManagerStrats, uint256[] memory strategyManagerShares) 
+            = strategyManager.getNonNormalizedDeposits(staker);
 
         // Has no shares in EigenPodManager, but potentially some in StrategyManager
         if (podShares <= 0) {

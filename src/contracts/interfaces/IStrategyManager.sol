@@ -90,11 +90,17 @@ interface IStrategyManager {
     /// @notice Returns the current shares of `user` in `strategy`
     function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
+    // TODO: documentation
+    function nonNormalizedStakerStrategyShares(address user, IStrategy strategy) external view returns (uint256);
+
     /**
      * @notice Get all details on the staker's deposits and corresponding shares
      * @return (staker's strategies, shares in these strategies)
      */
     function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
+
+    // TODO: documentation
+    function getNonNormalizedDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
     function stakerStrategyListLength(address staker) external view returns (uint256);
