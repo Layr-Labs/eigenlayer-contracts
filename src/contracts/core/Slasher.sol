@@ -4,11 +4,11 @@ pragma solidity ^0.8.12;
 import "../interfaces/ISlasher.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IStrategyManager.sol";
-import "../libraries/StructuredLinkedList.sol";
 import "../permissions/Pausable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
+import "../libraries/EpochUtils.sol";
 import "../libraries/SlashingAccountingUtils.sol";
 
 /**
@@ -49,7 +49,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         uint256 pendingScalingFactor = SlashingAccountingUtils.findNewScalingFactor({
             scalingFactorBefore: _shareScalingFactor[operator][strategy],
             // TODO: this particular lookup could potentially get more complex? e.g. also including the trailing epoch's pending amounts
-            bipsToSlash: pendingSlashedBips[operator][strategy][SlashingAccountingUtils.currentEpoch()]
+            bipsToSlash: pendingSlashedBips[operator][strategy][EpochUtils.currentEpoch()]
         });
         return pendingScalingFactor;
     }
@@ -95,7 +95,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     // @notice Permissionlessly called to execute slashing of strategies for a given operator, for an epoch
     function executeSlashing(address operator, IStrategy[] memory strategies, int256 epoch) external {
         // TODO: decide if this needs a stonger condition. e.g. the epoch must be further in the past
-        require(epoch < SlashingAccountingUtils.currentEpoch(),
+        require(epoch < EpochUtils.currentEpoch(),
             "must slash for a previous epoch");
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
@@ -158,7 +158,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
         require(bipsToSlash <= SlashingAccountingUtils.BIPS_FACTOR, "invalid slashing amount");
         require(bipsToSlash != 0, "cannot slash 0");
         address avs = msg.sender;
-        int256 epoch = SlashingAccountingUtils.currentEpoch();
+        int256 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];
@@ -188,7 +188,7 @@ contract Slasher is Initializable, OwnableUpgradeable, ISlasher, Pausable {
     ) external {
         require(bipsToReduce != 0, "cannot reduce slashing by 0");
         address avs = msg.sender;
-        int256 epoch = SlashingAccountingUtils.currentEpoch();
+        int256 epoch = EpochUtils.currentEpoch();
         for (uint256 i = 0; i < strategies.length; ++i) {
             IStrategy strategy = strategies[i];
             uint256 requestedSlashedBipsBefore = requestedSlashedBips[operator][strategy][epoch][avs];

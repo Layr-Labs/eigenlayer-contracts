@@ -8,6 +8,7 @@ import "../permissions/Pausable.sol";
 import "../libraries/EIP1271SignatureUtils.sol";
 import "./DelegationManagerStorage.sol";
 
+import "../libraries/EpochUtils.sol";
 import "../libraries/SlashingAccountingUtils.sol";
 
 /**
@@ -398,7 +399,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
                 require(!pendingWithdrawals(newRoot), "DelegationManager.migrateQueuedWithdrawals: withdrawal already exists");
                 _pendingWithdrawalData[newRoot] = PendingWithdrawalData({
                     isPending: true,
-                    creationEpoch: int64(SlashingAccountingUtils.currentEpoch())
+                    creationEpoch: int64(EpochUtils.currentEpoch())
                 });
 
                 emit WithdrawalQueued(newRoot, migratedWithdrawal);
@@ -827,7 +828,7 @@ contract DelegationManager is Initializable, OwnableUpgradeable, Pausable, Deleg
         // Place withdrawal in queue
         _pendingWithdrawalData[withdrawalRoot] = PendingWithdrawalData({
             isPending: true,
-            creationEpoch: int64(SlashingAccountingUtils.currentEpoch())
+            creationEpoch: int64(EpochUtils.currentEpoch())
         });
 
         emit WithdrawalQueued(withdrawalRoot, withdrawal);

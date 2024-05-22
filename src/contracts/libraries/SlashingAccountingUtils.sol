@@ -8,12 +8,6 @@ pragma solidity ^0.8.12;
  */
 library SlashingAccountingUtils {
 
-    // TODO: set this based on payments epochs
-    uint256 internal constant EPOCH_GENESIS_TIMESTAMP = 1606824000;
-
-    // TODO: define appropriately
-    uint256 internal constant EPOCH_LENGTH_SECONDS = 2 weeks;
-
     uint256 internal constant SHARE_CONVERSION_SCALE = 1e18;
 
     // an amount of shares over this will cause overflow when multiplying by `SHARE_CONVERSION_SCALE`
@@ -23,14 +17,6 @@ library SlashingAccountingUtils {
 
     // TODO: explain this better. basically seems like we may need to set some max factor beyond which shares are just zeroed out
     uint256 internal constant MAX_SCALING_FACTOR = type(uint256).max / (MAX_VALID_SHARES * SHARE_CONVERSION_SCALE);
-
-    function getEpochFromTimestamp(uint256 timestamp) internal pure returns (int256) {
-        return (int256(timestamp) - int256(EPOCH_GENESIS_TIMESTAMP)) / int256(EPOCH_LENGTH_SECONDS);
-    }
-
-    function currentEpoch() internal view returns (int256) {
-        return getEpochFromTimestamp(block.timestamp);
-    }
 
     function denormalize(uint256 shares, uint256 scalingFactor) internal pure returns (uint256) {
         return (shares * scalingFactor) / SHARE_CONVERSION_SCALE;
