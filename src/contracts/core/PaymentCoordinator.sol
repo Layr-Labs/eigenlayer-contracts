@@ -132,10 +132,6 @@ contract PaymentCoordinator is
             RangePayment calldata rangePayment = rangePayments[i];
             uint256 nonce = paymentNonce[msg.sender];
             bytes32 rangePaymentHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
-            require(
-                !isRangePaymentHash[msg.sender][rangePaymentHash],
-                "PaymentCoordinator._payForRange: range payment hash already submitted"
-            );
             
             _validateRangePayment(rangePayment);
             
@@ -160,10 +156,6 @@ contract PaymentCoordinator is
             RangePayment calldata rangePayment = rangePayments[i];
             uint256 nonce = paymentNonce[msg.sender];
             bytes32 rangePaymentForAllHash = keccak256(abi.encode(msg.sender, nonce, rangePayment));
-            require(
-                !isRangePaymentForAllHash[msg.sender][rangePaymentForAllHash],
-                "PaymentCoordinator._payForRange: range payment hash already submitted"
-            );
             
             _validateRangePayment(rangePayment);
 
