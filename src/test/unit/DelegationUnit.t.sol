@@ -3039,11 +3039,8 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         // Randomly set strategy true for thirdPartyTransfersForbidden
         uint256 randStrategyIndex = randSalt % strategies.length;
         strategyManagerMock.setThirdPartyTransfersForbidden(strategies[randStrategyIndex], true);
-        console.log(1);
         _registerOperatorWithBaseDetails(defaultOperator);
-        console.log(2);
         _delegateToOperatorWhoAcceptsAllStakers(staker, defaultOperator);
-        console.log(3);
         (IDelegationManager.QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawals({
             staker: staker,
             withdrawer: withdrawer,
