@@ -13,7 +13,6 @@ import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/mocks/BeaconChainOracleMock.t.sol";
 
 struct Validator {
     uint40 index;
@@ -25,7 +24,6 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
-    function beaconChainOracle() external view returns (address);
 }
 
 contract User is Test {
@@ -41,7 +39,6 @@ contract User is Test {
     /// @dev Native restaker state vars
 
     BeaconChainMock beaconChain;
-    BeaconChainOracleMock beaconChainOracle;
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
     uint40[] validators;
@@ -61,7 +58,6 @@ contract User is Test {
         timeMachine = deployer.timeMachine();
                 
         beaconChain = deployer.beaconChain();
-        beaconChainOracle = BeaconChainOracleMock(deployer.beaconChainOracle());
         _createPod();
 
         NAME = name;
@@ -128,18 +124,20 @@ contract User is Test {
      * EigenPod methods:
      */
 
-    function verifyWithdrawalCredentials(uint40[] memory _validators) public createSnapshot virtual {
-        // _log("verifyWithdrawalCredentials");
+    function verifyWithdrawalCredentials(
+        uint40[] memory _validators
+    ) public createSnapshot virtual {
+        _log("verifyWithdrawalCredentials");
 
-        // CredentialsProofs memory proofs = beaconChain.genCredentialProofs(_validators);
+        CredentialProofs memory proofs = beaconChain.genCredentialProofs(_validators);
 
-        // pod.verifyWithdrawalCredentials({
-        //     beaconTimestamp: proofs.beaconTimestamp,
-        //     stateRootProof: proofs.stateRootProof,
-        //     validatorIndices: proofs.validatorIndices,
-        //     validatorFieldsProofs: proofs.validatorFieldsProofs,
-        //     validatorFields: proofs.validatorFields
-        // });
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: _validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
     }
 
     function startCheckpoint() public createSnapshot virtual {

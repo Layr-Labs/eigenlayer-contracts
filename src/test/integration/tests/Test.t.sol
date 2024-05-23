@@ -63,43 +63,88 @@ contract Integration_Tester is IntegrationCheckUtils {
 
     // }
 
-    function test_Thing() public {
-        beaconChain.newValidator(1 ether, "");
-        beaconChain.newValidator(2 ether, "");
+    function test_Thing2() public {
+        _configRand({
+            _randomSeed: 0,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
 
-        ValidatorFieldsProof[] memory proofs = beaconChain.processEpoch();
+        emit log("1");
 
-        for (uint i = 0; i < proofs.length; i++) {
-            ValidatorFieldsProof memory proof = proofs[i];
+        (User staker, ,) = _newRandomStaker();
 
-            bytes32 stateRoot = Merkle.processInclusionProofSha256({
-                proof: proof.validatorFieldsProof,
-                leaf: Merkle.merkleizeSha256(proof.validatorFields),
-                index: uint(proof.validatorIndex)
-            });
+        uint40[] memory validators = staker.startValidators(4);
 
-            emit log_named_uint("validator", proof.validatorIndex);
-            emit log_named_bytes32("state root", stateRoot);
-            emit log("===");
+        for (uint i = 0; i < validators.length; i++) {
+            _logValidator(validators[i]);
         }
 
-        beaconChain.updateValidator(0, 1 ether);
+        staker.verifyWithdrawalCredentials(validators);
+    }
 
-        proofs = beaconChain.processEpoch();
+    // function test_Thing() public {
+    //     beaconChain.newValidator(1 ether, "");
+    //     beaconChain.newValidator(2 ether, "");
 
-        for (uint i = 0; i < proofs.length; i++) {
-            ValidatorFieldsProof memory proof = proofs[i];
+    //     ValidatorFieldsProof[] memory proofs = beaconChain.processEpoch();
 
-            bytes32 stateRoot = Merkle.processInclusionProofSha256({
-                proof: proof.validatorFieldsProof,
-                leaf: Merkle.merkleizeSha256(proof.validatorFields),
-                index: uint(proof.validatorIndex)
-            });
+    //     for (uint i = 0; i < proofs.length; i++) {
+    //         ValidatorFieldsProof memory proof = proofs[i];
 
-            emit log_named_uint("validator", proof.validatorIndex);
-            emit log_named_bytes32("state root", stateRoot);
-            emit log("===");
-        }
+    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
+    //             proof: proof.validatorFieldsProof,
+    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
+    //             index: uint(proof.validatorIndex)
+    //         });
+
+    //         emit log_named_bytes32("state root", stateRoot);
+    //         _logValidator(proof.validatorIndex);
+    //     }
+
+    //     beaconChain.updateValidator(0, 1 ether);
+
+    //     proofs = beaconChain.processEpoch();
+
+    //     for (uint i = 0; i < proofs.length; i++) {
+    //         ValidatorFieldsProof memory proof = proofs[i];
+
+    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
+    //             proof: proof.validatorFieldsProof,
+    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
+    //             index: uint(proof.validatorIndex)
+    //         });
+
+    //         emit log_named_bytes32("state root", stateRoot);
+    //         _logValidator(proof.validatorIndex);
+    //     }
+
+    //     uint balanceExitedGwei = beaconChain.exitValidator(0) / GWEI_TO_WEI;
+    //     emit log_named_uint("exited gwei", balanceExitedGwei);
+
+    //     proofs = beaconChain.processEpoch();
+
+    //     for (uint i = 0; i < proofs.length; i++) {
+    //         ValidatorFieldsProof memory proof = proofs[i];
+
+    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
+    //             proof: proof.validatorFieldsProof,
+    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
+    //             index: uint(proof.validatorIndex)
+    //         });
+
+    //         emit log_named_bytes32("state root", stateRoot);
+    //         _logValidator(proof.validatorIndex);
+    //     }
+    // }
+
+    function _logValidator(uint40 validatorIndex) internal {
+        emit log_named_uint("validator", validatorIndex);
+        emit log_named_uint("current balance", beaconChain.currentBalance(validatorIndex));
+        emit log_named_uint("effective balance", beaconChain.effectiveBalance(validatorIndex));
+        emit log_named_uint("exit epoch", beaconChain.exitEpoch(validatorIndex));
+
+        emit log("===");
     }
 
     // function test_Thing() public {
