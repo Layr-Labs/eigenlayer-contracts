@@ -228,6 +228,9 @@ interface IPaymentCoordinator {
     /// @notice loop through distribution roots from reverse and return hash
     function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
 
+    /// @notice returns the number of distribution roots posted
+    function getDistributionRootsLength() external view returns (uint256);
+
     /*******************************************************************************
                             EXTERNAL FUNCTIONS 
     *******************************************************************************/
