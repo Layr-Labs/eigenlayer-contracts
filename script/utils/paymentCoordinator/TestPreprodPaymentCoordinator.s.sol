@@ -207,35 +207,42 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
 
     /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
+        ========ANVIL========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
+            "script/utils/paymentCoordinator/claimProofs/processClaim_1.json" 20
+
         ========HOLESKY========
         forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
             --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
             --sig "processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic)" \
-            "script/utils/paymentCoordinator/claimProofs/claimProof.json" 20
+            "script/utils/paymentCoordinator/claimProofs/processClaim_proof1.json" 20
      */
     function processClaim(string memory processClaimsPath, uint8 earnerIndexMnemonic) external virtual {
+        _setupScript();
         string memory claimProofData = vm.readFile(processClaimsPath);
 
         (address earner, /* privateKey */) = deriveRememberKey(TEST_MNEMONIC, uint32(earnerIndexMnemonic));
 
         // Parse PaymentMerkleClaim
-        merkleRoot = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
-        earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerIndex"), (uint32));
-        earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerTreeProof"), (bytes));
-        proofEarner = stdJson.readAddress(claimProofData, ".EarnerLeaf.Earner");
+        merkleRoot = abi.decode(stdJson.parseRaw(claimProofData, ".proof.root"), (bytes32));
+        earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".proof.earnerIndex"), (uint32));
+        earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".proof.earnerTreeProof"), (bytes));
+        proofEarner = stdJson.readAddress(claimProofData, ".proof.earnerLeaf.earner");
         require(earner == proofEarner, "earner index and in json file do not match");
-        earnerTokenRoot = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerLeaf.EarnerTokenRoot"), (bytes32));
-        uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".TokenLeavesNum");
-        uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".TokenTreeProofsNum");
+        earnerTokenRoot = abi.decode(stdJson.parseRaw(claimProofData, ".proof.earnerLeaf.earnerTokenRoot"), (bytes32));
+        uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".proof.tokenLeavesNum");
+        uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".proof.tokenTreeProofsNum");
 
         IPaymentCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IPaymentCoordinator.TokenTreeMerkleLeaf[](
             numTokenLeaves
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
         for (uint256 i = 0; i < numTokenLeaves; ++i) {
-            string memory tokenKey = string.concat(".TokenLeaves[", vm.toString(i), "].Token");
-            string memory amountKey = string.concat(".TokenLeaves[", vm.toString(i), "].CumulativeEarnings");
-            string memory leafIndicesKey = string.concat(".LeafIndices[", vm.toString(i), "]");
+            string memory tokenKey = string.concat(".proof.tokenLeaves[", vm.toString(i), "].token");
+            string memory amountKey = string.concat(".proof.tokenLeaves[", vm.toString(i), "].cumulativeEarnings");
+            string memory leafIndicesKey = string.concat(".proof.leafIndices[", vm.toString(i), "]");
 
             IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
             uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
@@ -247,12 +254,12 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         }
         bytes[] memory tokenTreeProofs = new bytes[](numTokenTreeProofs);
         for (uint256 i = 0; i < numTokenTreeProofs; ++i) {
-            string memory tokenTreeProofKey = string.concat(".TokenTreeProofs[", vm.toString(i), "]");
+            string memory tokenTreeProofKey = string.concat(".proof.tokenTreeProofs[", vm.toString(i), "]");
             tokenTreeProofs[i] = abi.decode(stdJson.parseRaw(claimProofData, tokenTreeProofKey), (bytes));
         }
 
         IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
-            rootIndex: uint32(paymentCoordinator.getDistributionRootsLength()),
+            rootIndex: uint32(paymentCoordinator.getDistributionRootsLength() - 1),
             earnerIndex: earnerIndex,
             earnerTreeProof: earnerTreeProof,
             earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
