@@ -31,7 +31,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
 
         //setting up operator's delegation terms
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
+            __deprecated_earningsReceiver: operator,
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
@@ -273,7 +273,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
         if (registerAsOperator) {
             assertTrue(!delegation.isDelegated(staker), "_createQueuedWithdrawal: staker is already delegated");
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: staker,
+                __deprecated_earningsReceiver: staker,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });
@@ -340,7 +340,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     ) internal {
         if (!delegation.isOperator(operator)) {
             IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-                earningsReceiver: operator,
+                __deprecated_earningsReceiver: operator,
                 delegationApprover: address(0),
                 stakerOptOutWindowBlocks: 0
             });

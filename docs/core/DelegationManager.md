@@ -44,7 +44,7 @@ This document organizes methods according to the following themes (click each to
 * `isDelegated(address staker) -> (bool)`
     * True if `delegatedTo[staker] != address(0)`
 * `isOperator(address operator) -> (bool)` 
-    * True if `_operatorDetails[operator].earningsReceiver != address(0)`
+    * True if `delegatedTo[operator] == operator`
 
 ---
 
@@ -63,7 +63,7 @@ function registerAsOperator(OperatorDetails calldata registeringOperatorDetails,
 ```
 
 Registers the caller as an Operator in EigenLayer. The new Operator provides the `OperatorDetails`, a struct containing:
-* `address earningsReceiver`: the address that will receive earnings as the Operator provides services to AVSs *(currently unused)*
+* `address __deprecated_earningsReceiver`: Currently deprecated address slot that may be reused in the future for a different purpose. *(currently unused)*
 * `address delegationApprover`: if set, this address must sign and approve new delegation from Stakers to this Operator *(optional)*
 * `uint32 stakerOptOutWindowBlocks`: the minimum delay (in blocks) between beginning and completing registration for an AVS. *(currently unused)*
 
@@ -78,7 +78,6 @@ Registers the caller as an Operator in EigenLayer. The new Operator provides the
 *Requirements*:
 * Caller MUST NOT already be an Operator
 * Caller MUST NOT already be delegated to an Operator
-* `earningsReceiver != address(0)`
 * `stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`: (~180 days)
 * Pause status MUST NOT be set: `PAUSED_NEW_DELEGATION`
 
@@ -92,7 +91,6 @@ Allows an Operator to update their stored `OperatorDetails`.
 
 *Requirements*:
 * Caller MUST already be an Operator
-* `new earningsReceiver != address(0)`
 * `new stakerOptOutWindowBlocks >= old stakerOptOutWindowBlocks`
 * `new stakerOptOutWindowBlocks <= MAX_STAKER_OPT_OUT_WINDOW_BLOCKS`
 
