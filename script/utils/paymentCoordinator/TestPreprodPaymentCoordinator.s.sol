@@ -206,6 +206,84 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
     }
 
     /**
+        Submit a PayForAll to the PaymentCoordinator
+        Address associated with `PRIVATE_KEY` must be a payForAllSubmitter
+        ========ANVIL========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "payForAll(string memory startTimestampType, address paymentTokenAddress, uint256 amount)" \
+            "genesis" 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
+
+        ========HOLESKY========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig " "payForAll(string memory startTimestampType, address paymentTokenAddress, uint256 amount)" \
+            "genesis" 0x0000000000000000000000000000000000000000 1000000000000000000000000000000
+     */
+    function payForAll(
+        string memory startTimestampType,
+        address paymentTokenAddress,
+        uint256 amount
+    ) external {
+        _setupScript();
+
+        uint256 mockTokenInitialSupply = 1e32;
+        uint32 startTimestamp;
+        uint32 duration;
+
+        IERC20 paymentToken = IERC20(paymentTokenAddress);
+        // if paymentToken is address(0) deploy a new mocktoken
+        if (paymentTokenAddress == address(0)) {
+            vm.startBroadcast();
+            paymentToken = new ERC20PresetFixedSupply(
+                "mockpayment token",
+                "MOCK1",
+                mockTokenInitialSupply,
+                msg.sender
+            );
+            vm.stopBroadcast();
+        }
+
+        if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("genesis"))) {
+            /// 1710979200 unix timestamp, genesis at March 21st
+            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
+            duration = 10 weeks;
+        } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("current"))) {
+            /// 1715212800 unix timestamp, May 9th
+            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 9 weeks;
+            duration = 3 weeks;
+        } else if (keccak256(abi.encode(startTimestampType)) == keccak256(abi.encode("future"))) {
+            /// 1715817600 unix timestamp, May 16th
+            startTimestamp = PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP + 8 weeks;
+            duration = 2 weeks;
+        }
+
+        IPaymentCoordinator.StrategyAndMultiplier[] memory strategiesAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
+        strategiesAndMultipliers[0] = IPaymentCoordinator.StrategyAndMultiplier({
+            strategy: wethStrategy,
+            multiplier: 1e18
+        });
+        strategiesAndMultipliers[1] = IPaymentCoordinator.StrategyAndMultiplier({
+            strategy: eigenStrategy,
+            multiplier: 2e18
+        });
+
+        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        rangePayments[0] = IPaymentCoordinator.RangePayment({
+            strategiesAndMultipliers: strategiesAndMultipliers,
+            token: paymentToken,
+            amount: amount,
+            startTimestamp: startTimestamp,
+            duration: duration
+        });
+
+        vm.startBroadcast();
+        paymentToken.approve(address(paymentCoordinator), amount);
+        paymentCoordinator.payAllForRange(rangePayments);
+        vm.stopBroadcast();
+    }
+
+    /**
      * @notice Takes the latest distributionRoot and uses the claim against it. Broadcasts with earnerIndex and the test mnemonic
         ========ANVIL========
         forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
@@ -234,7 +312,7 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
         earnerTokenRoot = abi.decode(stdJson.parseRaw(claimProofData, ".proof.earnerLeaf.earnerTokenRoot"), (bytes32));
         uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".proof.tokenLeavesNum");
         uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".proof.tokenTreeProofsNum");
-
+ 
         IPaymentCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IPaymentCoordinator.TokenTreeMerkleLeaf[](
             numTokenLeaves
         );
@@ -415,6 +493,49 @@ contract TestPreprodPaymentCoordinator is ExistingDeploymentParser {
             serviceManager.registerOperatorToAVS(operator, operatorSignature);
             vm.stopBroadcast();
         }
+    }
+
+    /**
+        Register Operators in the DM
+        ========ANVIL========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "registerOperatorByIndex(uint8 operatorIndex, address serviceManagerAddress)" 5 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
+
+        ========HOLESKY========
+        forge script script/utils/paymentCoordinator/TestPreprodPaymentCoordinator.s.sol:TestPreprodPaymentCoordinator \
+            --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast -vvvv \
+            --sig "registerOperatorByIndex(uint8 operatorIndex, address serviceManagerAddress)" 1 0xa5d5E9bcdDC1dACe96E5d8f7536A97900550BbB2
+     */
+    function registerOperatorByIndex(uint8 operatorIndex, address serviceManagerAddress) external virtual {
+        _setupScript();
+        ServiceManagerMock serviceManager = ServiceManagerMock(serviceManagerAddress);
+
+        (address operator, uint256 privateKey) = deriveRememberKey(TEST_MNEMONIC, uint32(operatorIndex));
+        // get signature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = _getOperatorSignature(
+            privateKey,
+            operator,
+            address(serviceManagerAddress),
+            bytes32(0), // salt
+            type(uint256).max //expiry
+        );
+
+        // Transfer strategy token to staker
+        vm.startBroadcast(operator);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            earningsReceiver: address(operator),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        delegationManager.registerAsOperator(
+            operatorDetails,
+            ""
+        );
+
+        serviceManager.registerOperatorToAVS(operator, operatorSignature);
+        vm.stopBroadcast();
+
     }
 
     /**
