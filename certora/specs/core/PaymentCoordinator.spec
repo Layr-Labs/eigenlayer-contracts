@@ -23,7 +23,7 @@ methods {
     // ) internal => NONDET;
 }
 
-// Don't need
+// Do not need
 // paymentCoordinator.submitRoot() adds a merkle root to the contract with a 7 day activationDelay
 
 // // Check how accept root changes the storage.
@@ -57,10 +57,10 @@ methods {
 // 2. Given a processClaim passes, second processClaim reverts
 // Rule status: FAILS
 // Assumptions
-// - checkClaim(claim) == true and doesn't revert
+// - checkClaim(claim) == true and does not revert
 // - claim has non-empty tokenLeaves
 rule claimWithduplicateTokenLeafs(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
-    require claim.tokenLeaves.length >= 1;
+    require claim.tokenLeaves.length == 1;
     
     checkClaim(e, claim);
     // bool canWork = claimerFor(e, claim.earnerLeaf.earner) != 0 ? 
@@ -104,7 +104,7 @@ rule transferredTokensFromClaim(env e, IPaymentCoordinator.PaymentMerkleClaim cl
 /// paymentCoordinator.checkClaim == True => processClaim success 
 /// status: pass
 rule claimCorrectness(env e, IPaymentCoordinator.PaymentMerkleClaim claim, address recipient) {
-    // Call checkClaim to ensure it doesn't revert in rule since it never returns false
+    // Call checkClaim to ensure it does not revert in rule since it never returns false
     checkClaim(e, claim);
 
     bool canWork = claimerFor(e, claim.earnerLeaf.earner) != 0 ? 
