@@ -131,6 +131,8 @@ contract User is Test {
 
         CredentialProofs memory proofs = beaconChain.genCredentialProofs(_validators);
 
+        uint gasBefore = gasleft();
+
         pod.verifyWithdrawalCredentials({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,
@@ -138,6 +140,12 @@ contract User is Test {
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
         });
+
+        uint gasAfter = gasleft();
+        uint gasConsumed = gasBefore - gasAfter;
+
+        emit log_named_uint("credential proofs for num validators", _validators.length);
+        emit log_named_uint("consumed gas", gasConsumed);
     }
 
     function startCheckpoint() public createSnapshot virtual {
@@ -149,12 +157,36 @@ contract User is Test {
     function completeCheckpoint() public createSnapshot virtual {
         _log("completeCheckpoint");
 
-        // CheckpointProofs memory proofs = beaconChain.genCheckpointProofs(validators);
+        CheckpointProofs memory proofs = beaconChain.genCheckpointProofs(validators);
 
-        // pod.verifyCheckpointProofs({
-        //     stateRootProof: proofs.stateRootProof,
-        //     proofs: proofs.balanceProofs
-        // });
+        // for (uint i = 0; i < validators.length; i++) {
+        //     emit log_named_uint("submitting proof for validator", validators[i]);
+
+        //     BeaconChainProofs.BalanceProof[] memory proof = new BeaconChainProofs.BalanceProof[](1);
+        //     proof[0] = proofs.balanceProofs[i];
+
+        //     emit log_named_bytes32("- pubkeyHash", proof[0].pubkeyHash);
+        //     emit log_named_bytes32("- balanceRoot", proof[0].balanceRoot);
+        //     emit log_named_bytes("- proof", proof[0].proof);
+
+        //     pod.verifyCheckpointProofs({
+        //         stateRootProof: proofs.stateRootProof,
+        //         proofs: proof
+        //     });
+        // }
+
+        uint gasBefore = gasleft();
+
+        pod.verifyCheckpointProofs({
+            stateRootProof: proofs.stateRootProof,
+            proofs: proofs.balanceProofs
+        });
+
+        uint gasAfter = gasleft();
+        uint gasConsumed = gasBefore - gasAfter;
+
+        emit log_named_uint("checkpoint proofs for num validators", validators.length);
+        emit log_named_uint("consumed gas", gasConsumed);
     }
 
     function depositLSTs(IStrategy[] memory strategies) public createSnapshot virtual {

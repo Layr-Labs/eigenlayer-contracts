@@ -78,7 +78,7 @@ contract Integration_Tester is IntegrationCheckUtils {
 
         (User staker, ,) = _newRandomStaker();
 
-        uint numValidators = 12;
+        uint numValidators = 10;
         uint40[] memory validators = staker.startValidators(numValidators);
         _logPod(staker);
 
@@ -99,7 +99,81 @@ contract Integration_Tester is IntegrationCheckUtils {
         _logPod(staker);
         // check_StartCheckpoint_State(staker, validators, 1 gwei);
 
+        staker.completeCheckpoint();
+        _logPod(staker);
+    }
+
+    function test_Thing2() public {
+        _configRand({
+            _randomSeed: 0,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        (User staker, ,) = _newRandomStaker();
+        cheats.pauseGasMetering();
+
+        uint numValidators = 5;
+        uint40[] memory validators = staker.startValidators(numValidators);
+        _logPod(staker);
+
+        IStrategy[] memory strats = new IStrategy[](1);
+        uint[] memory shares = new uint[](1);
+        strats[0] = BEACONCHAIN_ETH_STRAT;
+        shares[0] = 32 ether * numValidators;
+
+        CredentialProofs memory proofs = beaconChain.genCredentialProofs(validators);
+
+        cheats.startPrank(address(staker));
+        EigenPod pod = staker.pod();
+
+        cheats.resumeGasMetering();
+        uint gasBefore = gasleft();
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
+        uint gasAfter = gasleft();
+        uint gasConsumed = gasBefore - gasAfter;
+        cheats.pauseGasMetering();
+
+        emit log_named_uint("credential proofs for num validators", validators.length);
+        emit log_named_uint("consumed gas", gasConsumed);
+
+        pod.startCheckpoint(false);
+
+        CheckpointProofs memory proofs2 = beaconChain.genCheckpointProofs(validators);
+
+        cheats.resumeGasMetering();
+        gasBefore = gasleft();
+        pod.verifyCheckpointProofs({
+            stateRootProof: proofs2.stateRootProof,
+            proofs: proofs2.balanceProofs
+        });
+        gasAfter = gasleft();
+        gasConsumed = gasBefore - gasAfter;
+        cheats.pauseGasMetering();
+
+        emit log_named_uint("checkpoint proofs for num validators", validators.length);
+        emit log_named_uint("consumed gas", gasConsumed);
+
+        // staker.verifyWithdrawalCredentials(validators);
+        // assert_Snap_Added_StakerShares(staker, strats, shares, "should have added shares");
+        // _logPod(staker);
+
+        // // Move forward one epoch and distribute consensus rewards to all validators
+        // // These rewards are not withdrawn to the execution layer!
+        // // beaconChain.advanceEpochWithRewards({ withdraw: false });
+
+        // staker.startCheckpoint();
+        // _logPod(staker);
+        // // check_StartCheckpoint_State(staker, validators, 1 gwei);
+
         // staker.completeCheckpoint();
+        // _logPod(staker);
     }
 
     function _logValidator(uint40 validatorIndex) internal {
