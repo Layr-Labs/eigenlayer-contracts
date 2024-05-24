@@ -3,12 +3,6 @@ using ERC20 as token1;
 using ERC20PresetFixedSupply as token2;
 
 methods {
-
-
-    // function MerkleTree.getValue(address, address) external returns(uint256) envfree;
-    // function MerkleTree.getHash(bytes32) external returns(bytes32) envfree;
-    // function MerkleTree.wellFormedPath(bytes32, bytes32[]) external envfree;
-
     function _.balanceOf(address) external => DISPATCHER(true);
     function _.transfer(address, uint256) external => DISPATCHER(true);
     function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
@@ -40,9 +34,6 @@ rule claimWithduplicateTokenLeafs(env e, IPaymentCoordinator.PaymentMerkleClaim 
     require claim.tokenLeaves.length == 1;
     
     checkClaim(e, claim);
-    // bool canWork = claimerFor(e, claim.earnerLeaf.earner) != 0 ? 
-    //     e.msg.sender == claimerFor(e, claim.earnerLeaf.earner) :
-    //     e.msg.sender == claim.earnerLeaf.earner;
 
     if ((claimerFor(e, claim.earnerLeaf.earner)) != 0) {
         require e.msg.sender == claimerFor(e, claim.earnerLeaf.earner);
@@ -59,7 +50,7 @@ rule claimWithduplicateTokenLeafs(env e, IPaymentCoordinator.PaymentMerkleClaim 
     );
 }
 
-/// status: pending
+/// status: pass
 rule cumulativeClaimedStrictlyIncreasing(env e, address claimToken, address earner) {
     uint256 cumulativeClaimedBefore = cumulativeClaimed(earner, claimToken);
     calldataarg args;
