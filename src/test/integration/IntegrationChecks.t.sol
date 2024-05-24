@@ -7,7 +7,7 @@ import "src/test/integration/users/User_M1.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    
+
     function check_Deposit_State(
         User staker, 
         IStrategy[] memory strategies, 

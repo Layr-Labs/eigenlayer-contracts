@@ -62,10 +62,13 @@ contract BeaconChainMock is Test {
     /// @dev All withdrawals are processed with index == 0
     uint64 constant WITHDRAWAL_INDEX = 0;
     uint constant GWEI_TO_WEI = 1e9;
-    uint constant ZERO_NODES_LENGTH = 50;
+    uint constant ZERO_NODES_LENGTH = 100;
+
+    // Rewards given to each validator
+    uint constant PER_EPOCH_REWARDS = 1 gwei;
 
     // see https://eth2book.info/capella/part3/containers/state/#beaconstate
-    uint constant BEACON_STATE_FIELDS = 28;
+    uint constant BEACON_STATE_FIELDS = 32;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
     
@@ -203,6 +206,10 @@ contract BeaconChainMock is Test {
         return currentBalanceWei;
     }
 
+    // function advanceEpochWithRewards(bool withdraw) public {
+
+    // }
+
     /// @dev Moves forward one epoch, calculating a beacon state root
     /// NOTE: currently only does validator container; ignores balances
     function processEpoch() public {
@@ -231,7 +238,8 @@ contract BeaconChainMock is Test {
         // Build merkle tree for validators
         bytes32 validatorsRoot = _buildMerkleTree({
             leaves: _getValidatorLeaves(),
-            treeHeight: BeaconChainProofs.VALIDATOR_TREE_HEIGHT
+            treeHeight: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1,
+            tree: trees[curTimestamp].validatorTree
         });
         emit log_named_bytes32("- validator container root", validatorsRoot);
         
@@ -242,14 +250,16 @@ contract BeaconChainMock is Test {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balancesRoot),
-            treeHeight: BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT
+            treeHeight: BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT,
+            tree: trees[curTimestamp].stateTree
         });
         emit log_named_bytes32("- beacon state root", beaconStateRoot);
 
         // Build merkle tree for BeaconBlock
         bytes32 beaconBlockRoot = _buildMerkleTree({
             leaves: _getBeaconBlockLeaves(beaconStateRoot),
-            treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT
+            treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT,
+            tree: trees[curTimestamp].blockTree
         });
         emit log_named_bytes32("- beacon block root", beaconBlockRoot);
 
@@ -269,7 +279,7 @@ contract BeaconChainMock is Test {
         bytes32 curNode = beaconStateRoot;
 
         for (uint i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT; i++) {
-            bytes32 sibling = siblings[curTimestamp][curNode];
+            bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
 
             // proof[j] = sibling;
             assembly {
@@ -279,14 +289,7 @@ contract BeaconChainMock is Test {
                 )
             }
 
-            // if (sibling == 0) {
-            //     emit log_named_uint("err generating proof for validator", i);
-            //     emit log_named_bytes32("found null sibling for leaf", curNode);
-            //     emit log_named_uint("at depth", i);
-            //     revert("BeaconChainMock.processEpoch: null sibling");
-            // }
-
-            curNode = parents[curTimestamp][curNode];
+            curNode = trees[curTimestamp].blockTree.parents[curNode];
         }
 
         stateRootProofs[curTimestamp] = BeaconChainProofs.StateRootProof({
@@ -307,8 +310,10 @@ contract BeaconChainMock is Test {
             bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
 
-            for (uint j = 0; j < BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
-                bytes32 sibling = siblings[curTimestamp][curNode];
+            // Validator fields leaf -> validator container root
+            uint depth = 0;
+            for (uint j = 0; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
+                bytes32 sibling = trees[curTimestamp].validatorTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
@@ -318,23 +323,41 @@ contract BeaconChainMock is Test {
                     )
                 }
 
-                if (sibling == 0) {
-                    emit log_named_uint("err generating proof for validator", i);
-                    emit log_named_bytes32("found null sibling for leaf", curNode);
-                    emit log_named_uint("at depth", j);
-                    revert("BeaconChainMock.processEpoch: null sibling");
-                }
-
-                curNode = parents[curTimestamp][curNode];
+                curNode = trees[curTimestamp].validatorTree.parents[curNode];
+                depth++;
             }
 
-            // emit log("===");
-            // emit log_named_uint("proof for validator", i);
-            // for (uint j = 32; j < proof.length; j+=32) {
-            //     bytes32 element;
-            //     assembly { element := mload(add(j, proof)) }
-            //     emit log_bytes32(element);
-            // }
+            // emit log_named_bytes32("- calc val root", curNode);
+
+            // Validator container root -> beacon state root
+            for (
+                uint j = depth; 
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_FIELD_TREE_HEIGHT; 
+                j++
+            ) {
+                bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
+
+                // proof[j] = sibling;
+                assembly {
+                    mstore(
+                        add(proof, add(32, mul(32, j))),
+                        sibling
+                    )
+                }
+
+                curNode = trees[curTimestamp].stateTree.parents[curNode];
+            }
+
+            emit log("===");
+
+            bytes32 beaconStateRoot = Merkle.processInclusionProofSha256({
+                proof: proof,
+                leaf: Merkle.merkleizeSha256(validatorFields),
+                index: _calcValProofIndex(uint40(i))
+            });
+
+            emit log_named_uint("proof for validator", i);
+            emit log_named_bytes32("calculated beacon state root", beaconStateRoot);
 
             vfProofs[uint40(i)].validatorFields = validatorFields;
             vfProofs[uint40(i)].validatorFieldsProof = proof;
@@ -374,15 +397,32 @@ contract BeaconChainMock is Test {
         return proofs;
     }
 
-    mapping(uint64 => mapping(bytes32 => bytes32)) siblings;
-    mapping(uint64 => mapping(bytes32 => bytes32)) parents;
+    struct Tree {
+        mapping(bytes32 => bytes32) siblings;
+        mapping(bytes32 => bytes32) parents;
+    }
+
+    struct MerkleTrees {
+        Tree validatorTree;
+        Tree balancesTree;
+        Tree stateTree;
+        Tree blockTree;
+    }
+
+    /// Timestamp -> merkle trees constructed at that timestamp
+    /// Used to generate proofs
+    mapping(uint64 => MerkleTrees) trees;
 
     /// @dev Builds a merkle tree using the given leaves and height
     /// -- if the leaves given are not complete (i.e. the depth should have more leaves),
     ///    a pre-calculated zero-node is used to complete the tree.
     /// -- each pair of nodes is stored in `siblings`, and their parent in `parents`.
     ///    These mappings are used to build proofs for any individual leaf
-    function _buildMerkleTree(bytes32[] memory leaves, uint treeHeight) internal returns (bytes32) {
+    function _buildMerkleTree(
+        bytes32[] memory leaves, 
+        uint treeHeight, 
+        Tree storage tree
+    ) internal returns (bytes32) {
         for (uint depth = 0; depth < treeHeight; depth++) {
             uint newLength = (leaves.length + 1) / 2;
             bytes32[] memory newLeaves = new bytes32[](newLength);
@@ -407,17 +447,29 @@ contract BeaconChainMock is Test {
                 bytes32 result = sha256(abi.encodePacked(leftLeaf, rightLeaf));
                 newLeaves[i] = result;
 
-                // emit log_named_uint("depth", depth);
-                // emit log_named_bytes32("left", leftLeaf);
-                // emit log_named_bytes32("right", rightLeaf);
+                if (tree.siblings[leftLeaf] != bytes32(0) && tree.siblings[leftLeaf] != rightLeaf) {
+                    emit log("overwriting left sibling");
+                }
+
+                if (tree.siblings[rightLeaf] != bytes32(0) && tree.siblings[rightLeaf] != leftLeaf) {
+                    emit log("overwriting right sibling");
+                }
+
+                if (tree.siblings[leftLeaf] != bytes32(0) && tree.siblings[leftLeaf] != result) {
+                    emit log("overwriting left parent");
+                }
+
+                if (tree.siblings[rightLeaf] != bytes32(0) && tree.siblings[rightLeaf] != result) {
+                    emit log("overwriting right parent");
+                }
 
                 // Record results, used to generate individual proofs later:
                 // Record left and right as siblings
-                siblings[curTimestamp][leftLeaf] = rightLeaf;
-                siblings[curTimestamp][rightLeaf] = leftLeaf;
+                tree.siblings[leftLeaf] = rightLeaf;
+                tree.siblings[rightLeaf] = leftLeaf;
                 // Record the result as the parent of left and right
-                parents[curTimestamp][leftLeaf] = result;
-                parents[curTimestamp][rightLeaf] = result;
+                tree.parents[leftLeaf] = result;
+                tree.parents[rightLeaf] = result;
             }
 
             // Move up one level
@@ -428,18 +480,29 @@ contract BeaconChainMock is Test {
         return leaves[0];
     }
 
-    function _getValidatorLeaves() internal view returns (bytes32[] memory) {
+    function _getValidatorLeaves() internal  returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](validators.length);
         // Place each validator's validatorFields into tree
         for (uint i = 0; i < validators.length; i++) {
             bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
             leaves[i] = Merkle.merkleizeSha256(validatorFields);
+
+            emit log_named_bytes32("val leaf", leaves[i]);
         }
+
+        emit log("===");
+
         return leaves;
     }
 
     function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
+
+        // Pre-populate leaves with dummy values so sibling/parent tracking is correct
+        for (uint i = 0; i < leaves.length; i++) {
+            leaves[i] = bytes32(i + 1);
+        }
+
         // Place validatorsRoot and balancesRoot into tree
         leaves[BeaconChainProofs.VALIDATOR_TREE_ROOT_INDEX] = validatorsRoot;
         leaves[BeaconChainProofs.BALANCE_INDEX] = balancesRoot;
@@ -448,6 +511,12 @@ contract BeaconChainMock is Test {
 
     function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_BLOCK_FIELDS);
+
+        // Pre-populate leaves with dummy values so sibling/parent tracking is correct
+        for (uint i = 0; i < leaves.length; i++) {
+            leaves[i] = bytes32(i + 1);
+        }
+
         // Place beaconStateRoot into tree
         leaves[BeaconChainProofs.STATE_ROOT_INDEX] = beaconStateRoot;
         return leaves;

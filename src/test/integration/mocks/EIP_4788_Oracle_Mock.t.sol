@@ -14,7 +14,7 @@ contract EIP_4788_Oracle_Mock {
         require(timestamp != 0, "4788OracleMock.fallback: timestamp is 0");
 
         bytes32 blockRoot = blockRoots[timestamp];
-        require(blockRoot != 0, "4788OracleMock.fallback: no block root found");
+        require(blockRoot != 0, "4788OracleMock.fallback: no block root found. DID YOU USE CHEATS.WARP?");
 
         assembly {
             mstore(0, blockRoot)

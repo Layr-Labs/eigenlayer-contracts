@@ -141,15 +141,13 @@ contract User is Test {
     }
 
     function startCheckpoint() public createSnapshot virtual {
-        // _log("startCheckpoint");
+        _log("startCheckpoint");
 
-        // beaconChain.generateStateRoot();
-
-        // pod.startCheckpoint(false);
+        pod.startCheckpoint(false);
     }
 
     function completeCheckpoint() public createSnapshot virtual {
-        // _log("completeCheckpoint");
+        _log("completeCheckpoint");
 
         // CheckpointProofs memory proofs = beaconChain.genCheckpointProofs(validators);
 

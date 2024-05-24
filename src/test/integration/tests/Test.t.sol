@@ -19,6 +19,12 @@ enum Version {
 
 contract Integration_Tester is IntegrationCheckUtils {
 
+    using Strings for *;
+    using StdStyle for *;
+
+    string constant HEADER_DELIMITER = "========================================================================";
+    string constant SECTION_DELIMITER = "======";
+
     // function setUp() public override {
     //     _select({
     //         network: Network.LOCAL,
@@ -63,80 +69,38 @@ contract Integration_Tester is IntegrationCheckUtils {
 
     // }
 
-    function test_Thing2() public {
+    function test_Thing() public {
         _configRand({
             _randomSeed: 0,
             _assetTypes: HOLDS_ETH,
             _userTypes: DEFAULT
         });
 
-        emit log("1");
-
         (User staker, ,) = _newRandomStaker();
 
-        uint40[] memory validators = staker.startValidators(4);
+        uint numValidators = 12;
+        uint40[] memory validators = staker.startValidators(numValidators);
+        _logPod(staker);
 
-        for (uint i = 0; i < validators.length; i++) {
-            _logValidator(validators[i]);
-        }
+        IStrategy[] memory strats = new IStrategy[](1);
+        uint[] memory shares = new uint[](1);
+        strats[0] = BEACONCHAIN_ETH_STRAT;
+        shares[0] = 32 ether * numValidators;
 
         staker.verifyWithdrawalCredentials(validators);
+        assert_Snap_Added_StakerShares(staker, strats, shares, "should have added shares");
+        _logPod(staker);
+
+        // Move forward one epoch and distribute consensus rewards to all validators
+        // These rewards are not withdrawn to the execution layer!
+        // beaconChain.advanceEpochWithRewards({ withdraw: false });
+
+        staker.startCheckpoint();
+        _logPod(staker);
+        // check_StartCheckpoint_State(staker, validators, 1 gwei);
+
+        // staker.completeCheckpoint();
     }
-
-    // function test_Thing() public {
-    //     beaconChain.newValidator(1 ether, "");
-    //     beaconChain.newValidator(2 ether, "");
-
-    //     ValidatorFieldsProof[] memory proofs = beaconChain.processEpoch();
-
-    //     for (uint i = 0; i < proofs.length; i++) {
-    //         ValidatorFieldsProof memory proof = proofs[i];
-
-    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
-    //             proof: proof.validatorFieldsProof,
-    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
-    //             index: uint(proof.validatorIndex)
-    //         });
-
-    //         emit log_named_bytes32("state root", stateRoot);
-    //         _logValidator(proof.validatorIndex);
-    //     }
-
-    //     beaconChain.updateValidator(0, 1 ether);
-
-    //     proofs = beaconChain.processEpoch();
-
-    //     for (uint i = 0; i < proofs.length; i++) {
-    //         ValidatorFieldsProof memory proof = proofs[i];
-
-    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
-    //             proof: proof.validatorFieldsProof,
-    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
-    //             index: uint(proof.validatorIndex)
-    //         });
-
-    //         emit log_named_bytes32("state root", stateRoot);
-    //         _logValidator(proof.validatorIndex);
-    //     }
-
-    //     uint balanceExitedGwei = beaconChain.exitValidator(0) / GWEI_TO_WEI;
-    //     emit log_named_uint("exited gwei", balanceExitedGwei);
-
-    //     proofs = beaconChain.processEpoch();
-
-    //     for (uint i = 0; i < proofs.length; i++) {
-    //         ValidatorFieldsProof memory proof = proofs[i];
-
-    //         bytes32 stateRoot = Merkle.processInclusionProofSha256({
-    //             proof: proof.validatorFieldsProof,
-    //             leaf: Merkle.merkleizeSha256(proof.validatorFields),
-    //             index: uint(proof.validatorIndex)
-    //         });
-
-    //         emit log_named_bytes32("state root", stateRoot);
-    //         _logValidator(proof.validatorIndex);
-    //     }
-    // }
 
     function _logValidator(uint40 validatorIndex) internal {
         emit log_named_uint("validator", validatorIndex);
@@ -145,6 +109,57 @@ contract Integration_Tester is IntegrationCheckUtils {
         emit log_named_uint("exit epoch", beaconChain.exitEpoch(validatorIndex));
 
         emit log("===");
+    }
+
+    function _logPod(User staker) internal {
+        EigenPod pod = staker.pod();
+
+        _logSection(string.concat(staker.NAME().cyan(), ": Pod Details"));
+
+        _log("- hasRestaked", pod.hasRestaked());
+        _log("- podOwnerShares", eigenPodManager.podOwnerShares(address(staker)));
+        _log("- activeValidatorCount", pod.activeValidatorCount());
+        _logU64("- withdrawableRestakedELGwei", pod.withdrawableRestakedExecutionLayerGwei());
+
+        bool hasCheckpoint = pod.currentCheckpointTimestamp() != 0;
+        _log("- has checkpoint", hasCheckpoint);
+        if (hasCheckpoint) {
+            IEigenPod.Checkpoint memory checkpoint = pod.currentCheckpoint();
+            _log("-- beaconBlockRoot", checkpoint.beaconBlockRoot);
+            _log("-- podBalanceGwei", checkpoint.podBalanceGwei);
+            _log("-- balanceDeltasGwei", checkpoint.balanceDeltasGwei);
+            _log("-- proofsRemaining", checkpoint.proofsRemaining);
+        }
+
+        _logSection("");
+    }
+
+    function _logSection(string memory name) internal {
+        emit log(string.concat(
+            SECTION_DELIMITER,
+            name,
+            SECTION_DELIMITER
+        ));
+    }
+
+    function _log(string memory name, bool value) internal {
+        emit log_named_string(name, value ? "true".green() : "false".magenta());
+    }
+
+    function _log(string memory name, bytes32 value) internal {
+        emit log_named_string(name, value.dimBytes32());
+    }
+
+    function _log(string memory name, uint value) internal {
+        emit log_named_uint(name, value);
+    }
+
+    function _logU64(string memory name, uint64 value) internal {
+        emit log_named_uint(name, value);
+    }
+
+    function _log(string memory name, int value) internal {
+        emit log_named_int(name, value);
     }
 
     // function test_Thing() public {
