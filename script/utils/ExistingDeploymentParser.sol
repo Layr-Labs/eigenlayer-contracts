@@ -9,7 +9,7 @@ import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/Slasher.sol";
 import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
-import "../../src/contracts/core/PaymentCoordinator.sol";
+import "../../src/contracts/core/RewardsCoordinator.sol";
 
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
@@ -53,8 +53,8 @@ contract ExistingDeploymentParser is Script, Test {
     DelegationManager public delegationManagerImplementation;
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
-    PaymentCoordinator public paymentCoordinator;
-    PaymentCoordinator public paymentCoordinatorImplementation;
+    RewardsCoordinator public rewardsCoordinator;
+    RewardsCoordinator public rewardsCoordinatorImplementation;
     EigenPodManager public eigenPodManager;
     EigenPodManager public eigenPodManagerImplementation;
     DelayedWithdrawalRouter public delayedWithdrawalRouter;
@@ -106,16 +106,16 @@ contract ExistingDeploymentParser is Script, Test {
     uint256 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
     // AVSDirectory
     uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
-    // PaymentCoordinator
-    uint256 PAYMENT_COORDINATOR_INIT_PAUSED_STATUS;
-    uint32 PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION;
-    uint32 PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH;
-    uint32 PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH;
-    uint32 PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP;
-    address PAYMENT_COORDINATOR_UPDATER;
-    uint32 PAYMENT_COORDINATOR_ACTIVATION_DELAY;
-    uint32 PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
-    uint32 PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    // RewardsCoordinator
+    uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
+    uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
+    uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
+    uint32 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH;
+    uint32 REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
+    address REWARDS_COORDINATOR_UPDATER;
+    uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
+    uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+    uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
     // EigenPodManager
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint64 EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP;
@@ -172,11 +172,11 @@ contract ExistingDeploymentParser is Script, Test {
         avsDirectoryImplementation = AVSDirectory(
             stdJson.readAddress(existingDeploymentData, ".addresses.avsDirectoryImplementation")
         );
-        paymentCoordinator = PaymentCoordinator(
-            stdJson.readAddress(existingDeploymentData, ".addresses.paymentCoordinator")
+        rewardsCoordinator = RewardsCoordinator(
+            stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinator")
         );
-        paymentCoordinatorImplementation = PaymentCoordinator(
-            stdJson.readAddress(existingDeploymentData, ".addresses.paymentCoordinatorImplementation")
+        rewardsCoordinatorImplementation = RewardsCoordinator(
+            stdJson.readAddress(existingDeploymentData, ".addresses.rewardsCoordinatorImplementation")
         );
         strategyManager = StrategyManager(stdJson.readAddress(existingDeploymentData, ".addresses.strategyManager"));
         strategyManagerImplementation = StrategyManager(
@@ -307,25 +307,25 @@ contract ExistingDeploymentParser is Script, Test {
             initialDeploymentData,
             ".delegationManager.init_paused_status"
         );
-        // PaymentCoordinator
-        PAYMENT_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(
+        // RewardsCoordinator
+        REWARDS_COORDINATOR_INIT_PAUSED_STATUS = stdJson.readUint(
             initialDeploymentData,
-            ".paymentCoordinator.init_paused_status"
+            ".rewardsCoordinator.init_paused_status"
         );
-        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.CALCULATION_INTERVAL_SECONDS")
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS")
         );
-        PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_PAYMENT_DURATION"));
-        PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_RETROACTIVE_LENGTH"));
-        PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.MAX_FUTURE_LENGTH"));
-        PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP"));
-        PAYMENT_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".paymentCoordinator.payment_updater_address");
-        PAYMENT_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".paymentCoordinator.activation_delay"));
-        PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
-            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.calculation_interval_seconds")
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_REWARDS_DURATION"));
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.MAX_FUTURE_LENGTH"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
+        REWARDS_COORDINATOR_UPDATER = stdJson.readAddress(initialDeploymentData, ".rewardsCoordinator.rewards_updater_address");
+        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.activation_delay"));
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.calculation_interval_seconds")
         );
-        PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
-            stdJson.readUint(initialDeploymentData, ".paymentCoordinator.global_operator_commission_bips")
+        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
+            stdJson.readUint(initialDeploymentData, ".rewardsCoordinator.global_operator_commission_bips")
         );
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = stdJson.readUint(initialDeploymentData, ".avsDirectory.init_paused_status");
@@ -365,14 +365,14 @@ contract ExistingDeploymentParser is Script, Test {
             avsDirectory.delegation() == delegationManager,
             "avsDirectory: delegationManager address not set correctly"
         );
-        // PaymentCoordinator
+        // RewardsCoordinator
         require(
-            paymentCoordinator.delegationManager() == delegationManager,
-            "paymentCoordinator: delegationManager address not set correctly"
+            rewardsCoordinator.delegationManager() == delegationManager,
+            "rewardsCoordinator: delegationManager address not set correctly"
         );
         require(
-            paymentCoordinator.strategyManager() == strategyManager,
-            "paymentCoordinator: strategyManager address not set correctly"
+            rewardsCoordinator.strategyManager() == strategyManager,
+            "rewardsCoordinator: strategyManager address not set correctly"
         );
         // DelegationManager
         require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");
@@ -428,9 +428,9 @@ contract ExistingDeploymentParser is Script, Test {
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(paymentCoordinator)))
-            ) == address(paymentCoordinatorImplementation),
-            "paymentCoordinator: implementation set incorrectly"
+                TransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+            ) == address(rewardsCoordinatorImplementation),
+            "rewardsCoordinator: implementation set incorrectly"
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
@@ -486,13 +486,13 @@ contract ExistingDeploymentParser is Script, Test {
         // AVSDirectory
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
         avsDirectory.initialize(address(0), eigenLayerPauserReg, AVS_DIRECTORY_INIT_PAUSED_STATUS);
-        // PaymentCoordinator
+        // RewardsCoordinator
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        paymentCoordinator.initialize(
+        rewardsCoordinator.initialize(
             address(0),
             eigenLayerPauserReg,
             0, // initialPausedStatus
-            address(0), // paymentUpdater
+            address(0), // rewardsUpdater
             0, // activationDelay
             0 // globalCommissionBips
         );
@@ -546,50 +546,50 @@ contract ExistingDeploymentParser is Script, Test {
             avsDirectory.paused() == AVS_DIRECTORY_INIT_PAUSED_STATUS,
             "avsdirectory: init paused status set incorrectly"
         );
-        // PaymentCoordinator
+        // RewardsCoordinator
         require(
-            paymentCoordinator.pauserRegistry() == eigenLayerPauserReg,
-            "paymentCoordinator: pauser registry not set correctly"
+            rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
+            "rewardsCoordinator: pauser registry not set correctly"
         );
         // require(
-        //     paymentCoordinator.owner() == executorMultisig,
-        //     "paymentCoordinator: owner not set correctly"
+        //     rewardsCoordinator.owner() == executorMultisig,
+        //     "rewardsCoordinator: owner not set correctly"
         // );
         require(
-            paymentCoordinator.paused() == PAYMENT_COORDINATOR_INIT_PAUSED_STATUS,
-            "paymentCoordinator: init paused status set incorrectly"
+            rewardsCoordinator.paused() == REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
+            "rewardsCoordinator: init paused status set incorrectly"
         );
         require(
-            paymentCoordinator.MAX_PAYMENT_DURATION() == PAYMENT_COORDINATOR_MAX_PAYMENT_DURATION,
-            "paymentCoordinator: maxPaymentDuration not set correctly"
+            rewardsCoordinator.MAX_REWARDS_DURATION() == REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+            "rewardsCoordinator: maxRewardsDuration not set correctly"
         );
         require(
-            paymentCoordinator.MAX_RETROACTIVE_LENGTH() == PAYMENT_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            "paymentCoordinator: maxRetroactiveLength not set correctly"
+            rewardsCoordinator.MAX_RETROACTIVE_LENGTH() == REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            "rewardsCoordinator: maxRetroactiveLength not set correctly"
         );
         require(
-            paymentCoordinator.MAX_FUTURE_LENGTH() == PAYMENT_COORDINATOR_MAX_FUTURE_LENGTH,
-            "paymentCoordinator: maxFutureLength not set correctly"
+            rewardsCoordinator.MAX_FUTURE_LENGTH() == REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            "rewardsCoordinator: maxFutureLength not set correctly"
         );
         require(
-            paymentCoordinator.GENESIS_PAYMENT_TIMESTAMP() == PAYMENT_COORDINATOR_GENESIS_PAYMENT_TIMESTAMP,
-            "paymentCoordinator: genesisPaymentTimestamp not set correctly"
+            rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+            "rewardsCoordinator: genesisRewardsTimestamp not set correctly"
         );
         require(
-            paymentCoordinator.paymentUpdater() == PAYMENT_COORDINATOR_UPDATER,
-            "paymentCoordinator: paymentUpdater not set correctly"
+            rewardsCoordinator.rewardsUpdater() == REWARDS_COORDINATOR_UPDATER,
+            "rewardsCoordinator: rewardsUpdater not set correctly"
         );
         require(
-            paymentCoordinator.activationDelay() == PAYMENT_COORDINATOR_ACTIVATION_DELAY,
-            "paymentCoordinator: activationDelay not set correctly"
+            rewardsCoordinator.activationDelay() == REWARDS_COORDINATOR_ACTIVATION_DELAY,
+            "rewardsCoordinator: activationDelay not set correctly"
         );
         require(
-            paymentCoordinator.CALCULATION_INTERVAL_SECONDS() == PAYMENT_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            "paymentCoordinator: CALCULATION_INTERVAL_SECONDS not set correctly"
+            rewardsCoordinator.CALCULATION_INTERVAL_SECONDS() == REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            "rewardsCoordinator: CALCULATION_INTERVAL_SECONDS not set correctly"
         );
         require(
-            paymentCoordinator.globalOperatorCommissionBips() == PAYMENT_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,
-            "paymentCoordinator: globalCommissionBips not set correctly"
+            rewardsCoordinator.globalOperatorCommissionBips() == REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,
+            "rewardsCoordinator: globalCommissionBips not set correctly"
         );
         // DelegationManager
         require(
@@ -723,8 +723,8 @@ contract ExistingDeploymentParser is Script, Test {
         );
         emit log_named_uint("DELEGATION_MANAGER_INIT_PAUSED_STATUS", DELEGATION_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("AVS_DIRECTORY_INIT_PAUSED_STATUS", AVS_DIRECTORY_INIT_PAUSED_STATUS);
-        emit log_named_uint("PAYMENT_COORDINATOR_INIT_PAUSED_STATUS", PAYMENT_COORDINATOR_INIT_PAUSED_STATUS);
-        // todo log all payment coordinator params
+        emit log_named_uint("REWARDS_COORDINATOR_INIT_PAUSED_STATUS", REWARDS_COORDINATOR_INIT_PAUSED_STATUS);
+        // todo log all rewards coordinator params
         emit log_named_uint("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         emit log_named_uint("EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP", EIGENPOD_MANAGER_DENEB_FORK_TIMESTAMP);
         emit log_named_uint("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
@@ -796,11 +796,11 @@ contract ExistingDeploymentParser is Script, Test {
             "strategyManagerImplementation",
             address(strategyManagerImplementation)
         );
-        vm.serializeAddress(deployed_addresses, "paymentCoordinator", address(paymentCoordinator));
+        vm.serializeAddress(deployed_addresses, "rewardsCoordinator", address(rewardsCoordinator));
         vm.serializeAddress(
             deployed_addresses,
-            "paymentCoordinatorImplementation",
-            address(paymentCoordinatorImplementation)
+            "rewardsCoordinatorImplementation",
+            address(rewardsCoordinatorImplementation)
         );
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
         vm.serializeAddress(

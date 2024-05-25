@@ -14,7 +14,7 @@ Currently, the only interactions between AVSs and the core contracts is to track
 * [`AVSDirectory.registerOperatorToAVS`](#registeroperatortoavs)
 * [`AVSDirectory.deregisterOperatorFromAVS`](#deregisteroperatorfromavs)
 
-In a future release, this contract will implement additional interactions that relate to (i) paying Operators for the services they provide and (ii) slashing Operators that misbehave. Currently, these features are not implemented.
+In a future release, this contract will implement additional interactions that relate to (i) rewarding Operators for the services they provide and (ii) slashing Operators that misbehave. Currently, these features are not implemented.
 
 ---
 
@@ -41,7 +41,7 @@ Allows the caller (an AVS) to register an `operator` with itself, given the prov
 * `operatorSignature` must be a valid, unused, unexpired signature from the `operator`. The signature is an ECDSA signature by the operator over the [`OPERATOR_AVS_REGISTRATION_TYPEHASH`](../../src/contracts/core/DelegationManagerStorage.sol). Expiry is a utc timestamp in seconds. Salt is used only once per signature to prevent replay attacks.
 
 *As of M2*:
-* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into rewards for services and slashing for misbehavior.
 
 #### `deregisterOperatorFromAVS`
 
@@ -63,7 +63,7 @@ Allows the caller (an AVS) to deregister an `operator` with itself
 * `operator` MUST already be registered with the AVS
 
 *As of M2*:
-* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into payments for services and slashing for misbehavior.
+* Operator registration/deregistration does not have any sort of consequences for the Operator or its shares. Eventually, this will tie into rewards for services and slashing for misbehavior.
 
 #### `cancelSalt`
 

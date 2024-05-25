@@ -4,22 +4,22 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
-import "src/contracts/core/PaymentCoordinator.sol";
+import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
-import "src/test/events/IPaymentCoordinatorEvents.sol";
+import "src/test/events/IRewardsCoordinatorEvents.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/Reenterer.sol";
 import "src/test/mocks/ERC20Mock.sol";
 
 /**
- * @notice Unit testing of the PaymentCoordinator contract
- * Contracts tested: PaymentCoordinator
+ * @notice Unit testing of the RewardsCoordinator contract
+ * Contracts tested: RewardsCoordinator
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
-contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordinatorEvents {
+contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordinatorEvents {
     // used for stack too deep
-    struct FuzzPayForRange {
+    struct FuzzAVSRewardsSubmission {
         address avs;
         uint256 startTimestamp;
         uint256 duration;
@@ -27,8 +27,8 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     }
 
     // Contract under test
-    PaymentCoordinator public paymentCoordinator;
-    PaymentCoordinator public paymentCoordinatorImplementation;
+    RewardsCoordinator public rewardsCoordinator;
+    RewardsCoordinator public rewardsCoordinatorImplementation;
 
     // Mocks
     IERC20 token1;
@@ -39,74 +39,74 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     IStrategy strategyMock3;
     StrategyBase strategyImplementation;
     uint256 mockTokenInitialSupply = 1e38 - 1;
-    IPaymentCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
+    IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // Config Variables
     /// @notice intervals(epochs) are 1 weeks
     uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
 
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
-    uint32 MAX_PAYMENT_DURATION = 70 days;
+    uint32 MAX_REWARDS_DURATION = 70 days;
 
     /// @notice Lower bound start range is ~3 months into the past, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_RETROACTIVE_LENGTH = 84 days;
     /// @notice Upper bound start range is ~1 month into the future, multiple of CALCULATION_INTERVAL_SECONDS
     uint32 MAX_FUTURE_LENGTH = 28 days;
-    /// @notice absolute min timestamp that a payment can start at
-    uint32 GENESIS_PAYMENT_TIMESTAMP = 1712188800;
+    /// @notice absolute min timestamp that a rewards can start at
+    uint32 GENESIS_REWARDS_TIMESTAMP = 1712188800;
 
     /// @notice Delay in timestamp before a posted root can be claimed against
     uint32 activationDelay = 7 days;
     /// @notice the commission for all operators across all avss
     uint16 globalCommissionBips = 1000;
 
-    IERC20[] paymentTokens;
+    IERC20[] rewardTokens;
 
-    // PaymentCoordinator Constants
+    // RewardsCoordinator Constants
 
-    /// @dev Index for flag that pauses payForRange payments
-    uint8 internal constant PAUSED_PAY_FOR_RANGE = 0;
+    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
+    uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
 
-    /// @dev Index for flag that pauses payAllForRange payments
-    uint8 internal constant PAUSED_PAY_ALL_FOR_RANGE = 1;
+    /// @dev Index for flag that pauses calling createRewardsForAllSubmission
+    uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
 
     /// @dev Index for flag that pauses claiming
-    uint8 internal constant PAUSED_CLAIM_PAYMENTS = 2;
+    uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
 
     /// @dev Index for flag that pauses submitRoots
     uint8 internal constant PAUSED_SUBMIT_ROOTS = 3;
 
-    // PaymentCoordinator entities
-    address paymentUpdater = address(1000);
+    // RewardsCoordinator entities
+    address rewardsUpdater = address(1000);
     address defaultAVS = address(1001);
     address defaultClaimer = address(1002);
-    address payAllSubmitter = address(1003);
+    address rewardsForAllSubmitter = address(1003);
 
     function setUp() public virtual override {
         // Setup
         EigenLayerUnitTestSetup.setUp();
 
-        // Deploy PaymentCoordinator proxy and implementation
-        paymentCoordinatorImplementation = new PaymentCoordinator(
+        // Deploy RewardsCoordinator proxy and implementation
+        rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManagerMock,
             strategyManagerMock,
             CALCULATION_INTERVAL_SECONDS,
-            MAX_PAYMENT_DURATION,
+            MAX_REWARDS_DURATION,
             MAX_RETROACTIVE_LENGTH,
             MAX_FUTURE_LENGTH,
-            GENESIS_PAYMENT_TIMESTAMP
+            GENESIS_REWARDS_TIMESTAMP
         );
-        paymentCoordinator = PaymentCoordinator(
+        rewardsCoordinator = RewardsCoordinator(
             address(
                 new TransparentUpgradeableProxy(
-                    address(paymentCoordinatorImplementation),
+                    address(rewardsCoordinatorImplementation),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
-                        PaymentCoordinator.initialize.selector,
+                        RewardsCoordinator.initialize.selector,
                         address(this), // initOwner
                         pauserRegistry,
                         0, // 0 is initialPausedStatus
-                        paymentUpdater,
+                        rewardsUpdater,
                         activationDelay,
                         globalCommissionBips
                     )
@@ -158,33 +158,33 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         strategyManagerMock.setStrategyWhitelist(strategies[2], true);
 
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[0])), 1e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[1])), 2e18)
         );
         defaultStrategyAndMultipliers.push(
-            IPaymentCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
+            IRewardsCoordinator.StrategyAndMultiplier(IStrategy(address(strategies[2])), 3e18)
         );
 
-        paymentCoordinator.setPayAllForRangeSubmitter(payAllSubmitter, true);
-        paymentCoordinator.setPaymentUpdater(paymentUpdater);
+        rewardsCoordinator.setRewardsForAllSubmitter(rewardsForAllSubmitter, true);
+        rewardsCoordinator.setRewardsUpdater(rewardsUpdater);
 
         // Exclude from fuzzed tests
-        addressIsExcludedFromFuzzedInputs[address(paymentCoordinator)] = true;
-        addressIsExcludedFromFuzzedInputs[address(paymentUpdater)] = true;
+        addressIsExcludedFromFuzzedInputs[address(rewardsCoordinator)] = true;
+        addressIsExcludedFromFuzzedInputs[address(rewardsUpdater)] = true;
 
-        // Set the timestamp to some time after the genesis payment timestamp
-        cheats.warp(GENESIS_PAYMENT_TIMESTAMP + 5 days);
+        // Set the timestamp to some time after the genesis rewards timestamp
+        cheats.warp(GENESIS_REWARDS_TIMESTAMP + 5 days);
     }
 
-    /// @notice deploy token to owner and approve paymentCoordinator. Used for deploying payment tokens
-    function _deployMockPaymentTokens(address owner, uint256 numTokens) internal virtual {
+    /// @notice deploy token to owner and approve rewardsCoordinator. Used for deploying reward tokens
+    function _deployMockRewardTokens(address owner, uint256 numTokens) internal virtual {
         cheats.startPrank(owner);
         for (uint256 i = 0; i < numTokens; ++i) {
             IERC20 token = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, owner);
-            paymentTokens.push(token);
-            token.approve(address(paymentCoordinator), mockTokenInitialSupply);
+            rewardTokens.push(token);
+            token.approve(address(rewardsCoordinator), mockTokenInitialSupply);
         }
         cheats.stopPrank();
     }
@@ -201,9 +201,9 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         return timestamp1 > timestamp2 ? timestamp1 : timestamp2;
     }
 
-    function _assertPaymentClaimedEvents(bytes32 root, IPaymentCoordinator.PaymentMerkleClaim memory claim, address recipient) internal {
+    function _assertRewardsClaimedEvents(bytes32 root, IRewardsCoordinator.RewardsMerkleClaim memory claim, address recipient) internal {
         address earner = claim.earnerLeaf.earner;
-        address claimer = paymentCoordinator.claimerFor(earner);
+        address claimer = rewardsCoordinator.claimerFor(earner);
         if (claimer == address(0)) {
             claimer = earner;
         }
@@ -211,10 +211,10 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         uint256 claimedAmount;
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
             token = claim.tokenLeaves[i].token;
-            claimedAmount = paymentCoordinator.cumulativeClaimed(earner, token);
+            claimedAmount = rewardsCoordinator.cumulativeClaimed(earner, token);
 
-            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit PaymentClaimed(
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit RewardsClaimed(
                 root,
                 earner,
                 claimer,
@@ -225,15 +225,15 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
         }
     }
 
-    /// @notice given address and array of payment tokens, return array of cumulativeClaimed amonts
+    /// @notice given address and array of reward tokens, return array of cumulativeClaimed amonts
     function _getCumulativeClaimed(
         address earner,
-        IPaymentCoordinator.PaymentMerkleClaim memory claim
+        IRewardsCoordinator.RewardsMerkleClaim memory claim
     ) internal view returns (uint256[] memory) {
         uint256[] memory totalClaimed = new uint256[](claim.tokenLeaves.length);
 
         for (uint256 i = 0; i < claim.tokenLeaves.length; ++i) {
-            totalClaimed[i] = paymentCoordinator.cumulativeClaimed(earner, claim.tokenLeaves[i].token);
+            totalClaimed[i] = rewardsCoordinator.cumulativeClaimed(earner, claim.tokenLeaves[i].token);
         }
 
         return totalClaimed;
@@ -241,7 +241,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
     /// @notice given a claim, return the new cumulativeEarnings for each token
     function _getCumulativeEarnings(
-        IPaymentCoordinator.PaymentMerkleClaim memory claim
+        IRewardsCoordinator.RewardsMerkleClaim memory claim
     ) internal pure returns (uint256[] memory) {
         uint256[] memory earnings = new uint256[](claim.tokenLeaves.length);
 
@@ -254,7 +254,7 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
 
     function _getClaimTokenBalances(
         address earner,
-        IPaymentCoordinator.PaymentMerkleClaim memory claim
+        IRewardsCoordinator.RewardsMerkleClaim memory claim
     ) internal view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](claim.tokenLeaves.length);
 
@@ -281,22 +281,22 @@ contract PaymentCoordinatorUnitTests is EigenLayerUnitTestSetup, IPaymentCoordin
     }
 }
 
-contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorUnitTests {
+contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorUnitTests {
     function testFuzz_setClaimerFor(address earner, address claimer) public filterFuzzedAddressInputs(earner) {
         cheats.startPrank(earner);
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit ClaimerForSet(earner, paymentCoordinator.claimerFor(earner), claimer);
-        paymentCoordinator.setClaimerFor(claimer);
-        assertEq(claimer, paymentCoordinator.claimerFor(earner), "claimerFor not set");
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ClaimerForSet(earner, rewardsCoordinator.claimerFor(earner), claimer);
+        rewardsCoordinator.setClaimerFor(claimer);
+        assertEq(claimer, rewardsCoordinator.claimerFor(earner), "claimerFor not set");
         cheats.stopPrank();
     }
 
     function testFuzz_setActivationDelay(uint32 activationDelay) public {
-        cheats.startPrank(paymentCoordinator.owner());
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit ActivationDelaySet(paymentCoordinator.activationDelay(), activationDelay);
-        paymentCoordinator.setActivationDelay(activationDelay);
-        assertEq(activationDelay, paymentCoordinator.activationDelay(), "activationDelay not set");
+        cheats.startPrank(rewardsCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit ActivationDelaySet(rewardsCoordinator.activationDelay(), activationDelay);
+        rewardsCoordinator.setActivationDelay(activationDelay);
+        assertEq(activationDelay, rewardsCoordinator.activationDelay(), "activationDelay not set");
         cheats.stopPrank();
     }
 
@@ -304,20 +304,20 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         address caller,
         uint32 activationDelay
     ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.assume(caller != rewardsCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        paymentCoordinator.setActivationDelay(activationDelay);
+        rewardsCoordinator.setActivationDelay(activationDelay);
     }
 
     function testFuzz_setGlobalOperatorCommission(uint16 globalCommissionBips) public {
-        cheats.startPrank(paymentCoordinator.owner());
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit GlobalCommissionBipsSet(paymentCoordinator.globalOperatorCommissionBips(), globalCommissionBips);
-        paymentCoordinator.setGlobalOperatorCommission(globalCommissionBips);
+        cheats.startPrank(rewardsCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit GlobalCommissionBipsSet(rewardsCoordinator.globalOperatorCommissionBips(), globalCommissionBips);
+        rewardsCoordinator.setGlobalOperatorCommission(globalCommissionBips);
         assertEq(
             globalCommissionBips,
-            paymentCoordinator.globalOperatorCommissionBips(),
+            rewardsCoordinator.globalOperatorCommissionBips(),
             "globalOperatorCommissionBips not set"
         );
         cheats.stopPrank();
@@ -327,65 +327,65 @@ contract PaymentCoordinatorUnitTests_initializeAndSetters is PaymentCoordinatorU
         address caller,
         uint16 globalCommissionBips
     ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.assume(caller != rewardsCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        paymentCoordinator.setGlobalOperatorCommission(globalCommissionBips);
+        rewardsCoordinator.setGlobalOperatorCommission(globalCommissionBips);
     }
 
-    function testFuzz_setPaymentUpdater(address newPaymentUpdater) public {
-        cheats.startPrank(paymentCoordinator.owner());
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit PaymentUpdaterSet(paymentCoordinator.paymentUpdater(), newPaymentUpdater);
-        paymentCoordinator.setPaymentUpdater(newPaymentUpdater);
-        assertEq(newPaymentUpdater, paymentCoordinator.paymentUpdater(), "paymentUpdater not set");
+    function testFuzz_setRewardsUpdater(address newRewardsUpdater) public {
+        cheats.startPrank(rewardsCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit RewardsUpdaterSet(rewardsCoordinator.rewardsUpdater(), newRewardsUpdater);
+        rewardsCoordinator.setRewardsUpdater(newRewardsUpdater);
+        assertEq(newRewardsUpdater, rewardsCoordinator.rewardsUpdater(), "rewardsUpdater not set");
         cheats.stopPrank();
     }
 
-    function testFuzz_setPaymentUpdater_Revert_WhenNotOwner(
+    function testFuzz_setRewardsUpdater_Revert_WhenNotOwner(
         address caller,
-        address newPaymentUpdater
+        address newRewardsUpdater
     ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.assume(caller != rewardsCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        paymentCoordinator.setPaymentUpdater(newPaymentUpdater);
+        rewardsCoordinator.setRewardsUpdater(newRewardsUpdater);
     }
 
-    function testFuzz_setPayAllForRangeSubmitter(address submitter, bool newValue) public {
-        cheats.startPrank(paymentCoordinator.owner());
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit PayAllForRangeSubmitterSet(submitter, paymentCoordinator.isPayAllForRangeSubmitter(submitter), newValue);
-        paymentCoordinator.setPayAllForRangeSubmitter(submitter, newValue);
+    function testFuzz_setRewardsForAllSubmitter(address submitter, bool newValue) public {
+        cheats.startPrank(rewardsCoordinator.owner());
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit RewardsForAllSubmitterSet(submitter, rewardsCoordinator.isRewardsForAllSubmitter(submitter), newValue);
+        rewardsCoordinator.setRewardsForAllSubmitter(submitter, newValue);
         assertEq(
             newValue,
-            paymentCoordinator.isPayAllForRangeSubmitter(submitter),
-            "isPayAllForRangeSubmitter not set"
+            rewardsCoordinator.isRewardsForAllSubmitter(submitter),
+            "isRewardsForAllSubmitter not set"
         );
         cheats.stopPrank();
     }
 
-    function testFuzz_setPayAllForRangeSubmitter_Revert_WhenNotOwner(
+    function testFuzz_setRewardsForAllSubmitter_Revert_WhenNotOwner(
         address caller,
         address submitter,
         bool newValue
     ) public filterFuzzedAddressInputs(caller) {
-        cheats.assume(caller != paymentCoordinator.owner());
+        cheats.assume(caller != rewardsCoordinator.owner());
         cheats.prank(caller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        paymentCoordinator.setPayAllForRangeSubmitter(submitter, newValue);
+        rewardsCoordinator.setRewardsForAllSubmitter(submitter, newValue);
     }
 }
 
-contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests {
+contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordinatorUnitTests {
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        paymentCoordinator.pause(2 ** PAUSED_PAY_FOR_RANGE);
+        rewardsCoordinator.pause(2 ** PAUSED_AVS_REWARDS_SUBMISSION);
 
         cheats.expectRevert("Pausable: index is paused");
-        IPaymentCoordinator.RangePayment[] memory rangePayments;
-        paymentCoordinator.payForRange(rangePayments);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert from reentrancy
@@ -395,13 +395,13 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
 
         reenterer.prepareReturnData(abi.encode(amount));
 
-        address targetToUse = address(paymentCoordinator);
+        address targetToUse = address(rewardsCoordinator);
         uint256 msgValueToUse = 0;
 
-        _deployMockPaymentTokens(address(this), 1);
+        _deployMockRewardTokens(address(this), 1);
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
@@ -409,11 +409,11 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
             duration: 0
         });
 
-        bytes memory calldataToUse = abi.encodeWithSelector(PaymentCoordinator.payForRange.selector, rangePayments);
+        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
         cheats.expectRevert();
-        paymentCoordinator.payForRange(rangePayments);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert with 0 length strats and multipliers
@@ -424,37 +424,37 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        IPaymentCoordinator.StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: emptyStratsAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: no strategies set");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: no strategies set");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert when amount > 1e38-1
@@ -466,32 +466,32 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
     ) public filterFuzzedAddressInputs(avs) {
         // 1. Bound fuzz inputs
         amount = bound(amount, 1e38, type(uint256).max);
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", amount, avs);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", amount, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. Call payForRange() with expected revert
+        // 3. Call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: amount too large");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: amount too large");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     function testFuzz_Revert_WhenDuplicateStrategies(
@@ -501,39 +501,39 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        IPaymentCoordinator.StrategyAndMultiplier[]
-            memory dupStratsAndMultipliers = new IPaymentCoordinator.StrategyAndMultiplier[](2);
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory dupStratsAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
         dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: dupStratsAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "PaymentCoordinator._payForRange: strategies must be in ascending order to handle duplicates"
+            "RewardsCoordinator._validateRewardsSubmission: strategies must be in ascending order to handle duplicates"
         );
-        paymentCoordinator.payForRange(rangePayments);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert with exceeding max duration
@@ -544,35 +544,35 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, MAX_PAYMENT_DURATION + 1, type(uint32).max);
+        duration = bound(duration, MAX_REWARDS_DURATION + 1, type(uint32).max);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: duration exceeds MAX_PAYMENT_DURATION");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: duration exceeds MAX_REWARDS_DURATION");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert with invalid interval seconds
@@ -583,44 +583,44 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(
-            "PaymentCoordinator._payForRange: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
+            "RewardsCoordinator._validateRewardsSubmission: duration must be a multiple of CALCULATION_INTERVAL_SECONDS"
         );
-        paymentCoordinator.payForRange(rangePayments);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    // Revert with retroactive payments enabled and set too far in past
-    // - either before genesis payment timestamp
+    // Revert with retroactive rewards enabled and set too far in past
+    // - either before genesis rewards timestamp
     // - before max retroactive length
-    function testFuzz_Revert_WhenPaymentTooStale(
+    function testFuzz_Revert_WhenRewardsSubmissionTooStale(
         uint256 fuzzBlockTimestamp,
         address avs,
         uint256 startTimestamp,
@@ -628,53 +628,53 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         fuzzBlockTimestamp = bound(fuzzBlockTimestamp, uint256(MAX_RETROACTIVE_LENGTH), block.timestamp);
         cheats.warp(fuzzBlockTimestamp);
 
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
             0,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: startTimestamp too far in the past");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the past");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert with start timestamp past max future length
-    function testFuzz_Revert_WhenPaymentTooFarInFuture(
+    function testFuzz_Revert_WhenRewardsSubmissionTooFarInFuture(
         address avs,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -683,20 +683,20 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected revert
+        // 3. call createAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: startTimestamp too far in the future");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: startTimestamp too far in the future");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     // Revert with non whitelisted strategy
@@ -707,205 +707,205 @@ contract PaymentCoordinatorUnitTests_payForRange is PaymentCoordinatorUnitTests 
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
         defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected event emitted
+        // 3. call createAVSRewardsSubmission() with expected event emitted
         cheats.prank(avs);
-        cheats.expectRevert("PaymentCoordinator._payForRange: invalid strategy considered");
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator._validateRewardsSubmission: invalid strategy considered");
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**
-     * @notice test a single range payment asserting for the following
+     * @notice test a single rewards submission asserting for the following
      * - correct event emitted
-     * - payment nonce incrementation by 1, and range payment hash being set in storage.
-     * - range payment hash being set in storage
-     * - token balance before and after of avs and paymentCoordinator
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of avs and rewardsCoordinator
      */
-    function testFuzz_payForRange_SinglePayment(
+    function testFuzz_createAVSRewardsSubmission_SingleSubmission(
         address avs,
         uint256 startTimestamp,
         uint256 duration,
         uint256 amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected event emitted
-        uint256 avsBalanceBefore = paymentToken.balanceOf(avs);
-        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(address(paymentCoordinator));
+        // 3. call createAVSRewardsSubmission() with expected event emitted
+        uint256 avsBalanceBefore = rewardToken.balanceOf(avs);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
 
         cheats.startPrank(avs);
-        paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(avs);
-        bytes32 rangePaymentHash = keccak256(abi.encode(avs, currPaymentNonce, rangePayments[0]));
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
+        bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, currSubmissionNonce, rewardsSubmissions[0]));
 
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit RangePaymentCreated(avs, currPaymentNonce, rangePaymentHash, rangePayments[0]);
-        paymentCoordinator.payForRange(rangePayments);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit AVSRewardsSubmissionCreated(avs, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
-        assertTrue(paymentCoordinator.isRangePaymentHash(avs, rangePaymentHash), "Range payment hash not submitted");
-        assertEq(currPaymentNonce + 1, paymentCoordinator.paymentNonce(avs), "Payment nonce not incremented");
+        assertTrue(rewardsCoordinator.isAVSRewardsSubmissionHash(avs, rewardsSubmissionHash), "rewards submission hash not submitted");
+        assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
         assertEq(
             avsBalanceBefore - amount,
-            paymentToken.balanceOf(avs),
-            "AVS balance not decremented by amount of range payment"
+            rewardToken.balanceOf(avs),
+            "AVS balance not decremented by amount of rewards submission"
         );
         assertEq(
-            paymentCoordinatorBalanceBefore + amount,
-            paymentToken.balanceOf(address(paymentCoordinator)),
-            "PaymentCoordinator balance not incremented by amount of range payment"
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
         );
     }
 
     /**
-     * @notice test multiple range payments asserting for the following
+     * @notice test multiple rewards submissions asserting for the following
      * - correct event emitted
-     * - payment nonce incrementation by numPayments, and range payment hashes being set in storage.
-     * - range payment hash being set in storage
-     * - token balances before and after of avs and paymentCoordinator
+     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balances before and after of avs and rewardsCoordinator
      */
-    function testFuzz_payForRange_MultiplePayments(
-        FuzzPayForRange memory param,
-        uint256 numPayments
+    function testFuzz_createAVSRewardsSubmission_MultipleSubmissions(
+        FuzzAVSRewardsSubmission memory param,
+        uint256 numSubmissions
     ) public filterFuzzedAddressInputs(param.avs) {
-        cheats.assume(2 <= numPayments && numPayments <= 10);
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
         cheats.assume(param.avs != address(0));
-        cheats.prank(paymentCoordinator.owner());
+        cheats.prank(rewardsCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
-        bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(param.avs);
-        _deployMockPaymentTokens(param.avs, numPayments);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(param.avs);
+        _deployMockRewardTokens(param.avs, numSubmissions);
 
-        uint256[] memory avsBalancesBefore = _getBalanceForTokens(paymentTokens, param.avs);
-        uint256[] memory paymentCoordinatorBalancesBefore = _getBalanceForTokens(
-            paymentTokens,
-            address(paymentCoordinator)
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, param.avs);
+        uint256[] memory rewardsCoordinatorBalancesBefore = _getBalanceForTokens(
+            rewardTokens,
+            address(rewardsCoordinator)
         );
-        uint256[] memory amounts = new uint256[](numPayments);
+        uint256[] memory amounts = new uint256[](numSubmissions);
 
-        // Create multiple range payments and their expected event
-        for (uint256 i = 0; i < numPayments; ++i) {
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
-            param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
+            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                     CALCULATION_INTERVAL_SECONDS -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+            // 2. Create rewards submission input param
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: paymentTokens[i],
+                token: rewardTokens[i],
                 amount: amounts[i],
                 startTimestamp: uint32(param.startTimestamp),
                 duration: uint32(param.duration)
             });
-            rangePayments[i] = rangePayment;
+            rewardsSubmissions[i] = rewardsSubmission;
 
-            // 3. expected event emitted for this rangePayment
-            rangePaymentHashes[i] = keccak256(abi.encode(param.avs, startPaymentNonce + i, rangePayments[i]));
-            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit RangePaymentCreated(param.avs, startPaymentNonce + i, rangePaymentHashes[i], rangePayments[i]);
+            // 3. expected event emitted for this rewardsSubmission
+            rewardsSubmissionHashes[i] = keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit AVSRewardsSubmissionCreated(param.avs, startSubmissionNonce + i, rewardsSubmissionHashes[i], rewardsSubmissions[i]);
         }
 
-        // 4. call payForRange()
+        // 4. call createAVSRewardsSubmission()
         cheats.prank(param.avs);
-        paymentCoordinator.payForRange(rangePayments);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
 
-        // 5. Check for paymentNonce() and rangePaymentHashes being set
+        // 5. Check for submissionNonce() and rewardsSubmissionHashes being set
         assertEq(
-            startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(param.avs),
-            "Payment nonce not incremented properly"
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(param.avs),
+            "submission nonce not incremented properly"
         );
 
-        for (uint256 i = 0; i < numPayments; ++i) {
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentHash(param.avs, rangePaymentHashes[i]),
-                "Range payment hash not submitted"
+                rewardsCoordinator.isAVSRewardsSubmissionHash(param.avs, rewardsSubmissionHashes[i]),
+                "rewards submission hash not submitted"
             );
             assertEq(
                 avsBalancesBefore[i] - amounts[i],
-                paymentTokens[i].balanceOf(param.avs),
-                "AVS balance not decremented by amount of range payment"
+                rewardTokens[i].balanceOf(param.avs),
+                "AVS balance not decremented by amount of rewards submission"
             );
             assertEq(
-                paymentCoordinatorBalancesBefore[i] + amounts[i],
-                paymentTokens[i].balanceOf(address(paymentCoordinator)),
-                "PaymentCoordinator balance not incremented by amount of range payment"
+                rewardsCoordinatorBalancesBefore[i] + amounts[i],
+                rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+                "RewardsCoordinator balance not incremented by amount of rewards submission"
             );
         }
     }
 }
 
-contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTests {
+contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoordinatorUnitTests {
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        paymentCoordinator.pause(2 ** PAUSED_PAY_ALL_FOR_RANGE);
+        rewardsCoordinator.pause(2 ** PAUSED_REWARDS_FOR_ALL_SUBMISSION);
 
         cheats.expectRevert("Pausable: index is paused");
-        IPaymentCoordinator.RangePayment[] memory rangePayments;
-        paymentCoordinator.payAllForRange(rangePayments);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
     // Revert from reentrancy
@@ -914,13 +914,13 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
 
         reenterer.prepareReturnData(abi.encode(amount));
 
-        address targetToUse = address(paymentCoordinator);
+        address targetToUse = address(rewardsCoordinator);
         uint256 msgValueToUse = 0;
 
-        _deployMockPaymentTokens(address(this), 1);
+        _deployMockRewardTokens(address(this), 1);
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: IERC20(address(reenterer)),
             amount: amount,
@@ -928,244 +928,244 @@ contract PaymentCoordinatorUnitTests_payAllForRange is PaymentCoordinatorUnitTes
             duration: 0
         });
 
-        bytes memory calldataToUse = abi.encodeWithSelector(PaymentCoordinator.payForRange.selector, rangePayments);
+        bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
         reenterer.prepare(targetToUse, msgValueToUse, calldataToUse, bytes("ReentrancyGuard: reentrant call"));
 
-        cheats.prank(payAllSubmitter);
+        cheats.prank(rewardsForAllSubmitter);
         cheats.expectRevert();
-        paymentCoordinator.payAllForRange(rangePayments);
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
-    function testFuzz_Revert_WhenNotPayAllForRangeSubmitter(
+    function testFuzz_Revert_WhenNotRewardsForAllSubmitter(
         address invalidSubmitter
     ) public filterFuzzedAddressInputs(invalidSubmitter) {
-        cheats.assume(invalidSubmitter != payAllSubmitter);
+        cheats.assume(invalidSubmitter != rewardsForAllSubmitter);
 
-        cheats.expectRevert("PaymentCoordinator: caller is not a valid payAllForRange submitter");
-        IPaymentCoordinator.RangePayment[] memory rangePayments;
-        paymentCoordinator.payAllForRange(rangePayments);
+        cheats.expectRevert("RewardsCoordinator: caller is not a valid createRewardsForAllSubmission submitter");
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
     /**
-     * @notice test a single range payment asserting for the following
+     * @notice test a single rewards submission asserting for the following
      * - correct event emitted
-     * - payment nonce incrementation by 1, and range payment hash being set in storage.
-     * - range payment hash being set in storage
-     * - token balance before and after of payAllForRangeSubmitter and paymentCoordinator
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
      */
-    function testFuzz_payAllForRange_SinglePayment(uint256 startTimestamp, uint256 duration, uint256 amount) public {
-        cheats.prank(paymentCoordinator.owner());
+    function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint256 startTimestamp, uint256 duration, uint256 amount) public {
+        cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        IERC20 paymentToken = new ERC20PresetFixedSupply(
+        IERC20 rewardToken = new ERC20PresetFixedSupply(
             "dog wif hat",
             "MOCK1",
             mockTokenInitialSupply,
-            payAllSubmitter
+            rewardsForAllSubmitter
         );
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_PAYMENT_DURATION);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
-            uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                 CALCULATION_INTERVAL_SECONDS -
                 1,
             block.timestamp + uint256(MAX_FUTURE_LENGTH)
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create range payment input param
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](1);
-        rangePayments[0] = IPaymentCoordinator.RangePayment({
+        // 2. Create rewards submission input param
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: paymentToken,
+            token: rewardToken,
             amount: amount,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration)
         });
 
-        // 3. call payForRange() with expected event emitted
-        uint256 submitterBalanceBefore = paymentToken.balanceOf(payAllSubmitter);
-        uint256 paymentCoordinatorBalanceBefore = paymentToken.balanceOf(address(paymentCoordinator));
+        // 3. call createAVSRewardsSubmission() with expected event emitted
+        uint256 submitterBalanceBefore = rewardToken.balanceOf(rewardsForAllSubmitter);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
 
-        cheats.startPrank(payAllSubmitter);
-        paymentToken.approve(address(paymentCoordinator), amount);
-        uint256 currPaymentNonce = paymentCoordinator.paymentNonce(payAllSubmitter);
-        bytes32 rangePaymentHash = keccak256(abi.encode(payAllSubmitter, currPaymentNonce, rangePayments[0]));
+        cheats.startPrank(rewardsForAllSubmitter);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
+        bytes32 rewardsSubmissionHash = keccak256(abi.encode(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissions[0]));
 
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit RangePaymentForAllCreated(payAllSubmitter, currPaymentNonce, rangePaymentHash, rangePayments[0]);
-        paymentCoordinator.payAllForRange(rangePayments);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit RewardsSubmissionForAllCreated(rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]);
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
-            paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHash),
-            "Range payment hash not submitted"
+            rewardsCoordinator.isRewardsSubmissionForAllHash(rewardsForAllSubmitter, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
         );
         assertEq(
-            currPaymentNonce + 1,
-            paymentCoordinator.paymentNonce(payAllSubmitter),
-            "Payment nonce not incremented"
+            currSubmissionNonce + 1,
+            rewardsCoordinator.submissionNonce(rewardsForAllSubmitter),
+            "submission nonce not incremented"
         );
         assertEq(
             submitterBalanceBefore - amount,
-            paymentToken.balanceOf(payAllSubmitter),
-            "PayAllForRange Submitter balance not decremented by amount of range payment"
+            rewardToken.balanceOf(rewardsForAllSubmitter),
+            "createRewardsForAllSubmission Submitter balance not decremented by amount of rewards submission"
         );
         assertEq(
-            paymentCoordinatorBalanceBefore + amount,
-            paymentToken.balanceOf(address(paymentCoordinator)),
-            "PaymentCoordinator balance not incremented by amount of range payment"
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
         );
     }
 
     /**
-     * @notice test multiple range payments asserting for the following
+     * @notice test multiple rewards submissions asserting for the following
      * - correct event emitted
-     * - payment nonce incrementation by numPayments, and range payment hashes being set in storage.
-     * - range payment hash being set in storage
-     * - token balances before and after of payAllForRange submitter and paymentCoordinator
+     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
      */
-    function testFuzz_payAllForRange_MultiplePayments(FuzzPayForRange memory param, uint256 numPayments) public {
-        cheats.assume(2 <= numPayments && numPayments <= 10);
-        cheats.prank(paymentCoordinator.owner());
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint256 numSubmissions) public {
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        cheats.prank(rewardsCoordinator.owner());
 
-        IPaymentCoordinator.RangePayment[] memory rangePayments = new IPaymentCoordinator.RangePayment[](numPayments);
-        bytes32[] memory rangePaymentHashes = new bytes32[](numPayments);
-        uint256 startPaymentNonce = paymentCoordinator.paymentNonce(payAllSubmitter);
-        _deployMockPaymentTokens(payAllSubmitter, numPayments);
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](numSubmissions);
+        bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(rewardsForAllSubmitter);
+        _deployMockRewardTokens(rewardsForAllSubmitter, numSubmissions);
 
-        uint256[] memory submitterBalancesBefore = _getBalanceForTokens(paymentTokens, payAllSubmitter);
-        uint256[] memory paymentCoordinatorBalancesBefore = _getBalanceForTokens(
-            paymentTokens,
-            address(paymentCoordinator)
+        uint256[] memory submitterBalancesBefore = _getBalanceForTokens(rewardTokens, rewardsForAllSubmitter);
+        uint256[] memory rewardsCoordinatorBalancesBefore = _getBalanceForTokens(
+            rewardTokens,
+            address(rewardsCoordinator)
         );
-        uint256[] memory amounts = new uint256[](numPayments);
+        uint256[] memory amounts = new uint256[](numSubmissions);
 
-        // Create multiple range payments and their expected event
-        for (uint256 i = 0; i < numPayments; ++i) {
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
-            param.duration = bound(param.duration + i, 0, MAX_PAYMENT_DURATION);
+            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
-                uint256(_maxTimestamp(GENESIS_PAYMENT_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
                     CALCULATION_INTERVAL_SECONDS -
                     1,
                 block.timestamp + uint256(MAX_FUTURE_LENGTH)
             );
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            // 2. Create range payment input param
-            IPaymentCoordinator.RangePayment memory rangePayment = IPaymentCoordinator.RangePayment({
+            // 2. Create rewards submission input param
+            IRewardsCoordinator.RewardsSubmission memory rewardsSubmission = IRewardsCoordinator.RewardsSubmission({
                 strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: paymentTokens[i],
+                token: rewardTokens[i],
                 amount: amounts[i],
                 startTimestamp: uint32(param.startTimestamp),
                 duration: uint32(param.duration)
             });
-            rangePayments[i] = rangePayment;
+            rewardsSubmissions[i] = rewardsSubmission;
 
-            // 3. expected event emitted for this rangePayment
-            rangePaymentHashes[i] = keccak256(abi.encode(payAllSubmitter, startPaymentNonce + i, rangePayments[i]));
-            cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-            emit RangePaymentForAllCreated(
-                payAllSubmitter,
-                startPaymentNonce + i,
-                rangePaymentHashes[i],
-                rangePayments[i]
+            // 3. expected event emitted for this rewardsSubmission
+            rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit RewardsSubmissionForAllCreated(
+                rewardsForAllSubmitter,
+                startSubmissionNonce + i,
+                rewardsSubmissionHashes[i],
+                rewardsSubmissions[i]
             );
         }
 
-        // 4. call payForRange()
-        cheats.prank(payAllSubmitter);
-        paymentCoordinator.payAllForRange(rangePayments);
+        // 4. call createAVSRewardsSubmission()
+        cheats.prank(rewardsForAllSubmitter);
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
 
-        // 5. Check for paymentNonce() and rangePaymentHashes being set
+        // 5. Check for submissionNonce() and rewardsSubmissionHashes being set
         assertEq(
-            startPaymentNonce + numPayments,
-            paymentCoordinator.paymentNonce(payAllSubmitter),
-            "Payment nonce not incremented properly"
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(rewardsForAllSubmitter),
+            "submission nonce not incremented properly"
         );
 
-        for (uint256 i = 0; i < numPayments; ++i) {
+        for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                paymentCoordinator.isRangePaymentForAllHash(payAllSubmitter, rangePaymentHashes[i]),
-                "Range payment hash not submitted"
+                rewardsCoordinator.isRewardsSubmissionForAllHash(rewardsForAllSubmitter, rewardsSubmissionHashes[i]),
+                "rewards submission hash not submitted"
             );
             assertEq(
                 submitterBalancesBefore[i] - amounts[i],
-                paymentTokens[i].balanceOf(payAllSubmitter),
-                "PayAllForRange Submitter balance not decremented by amount of range payment"
+                rewardTokens[i].balanceOf(rewardsForAllSubmitter),
+                "RewardsForAllSubmitter Submitter balance not decremented by amount of rewards submission"
             );
             assertEq(
-                paymentCoordinatorBalancesBefore[i] + amounts[i],
-                paymentTokens[i].balanceOf(address(paymentCoordinator)),
-                "PaymentCoordinator balance not incremented by amount of range payment"
+                rewardsCoordinatorBalancesBefore[i] + amounts[i],
+                rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+                "RewardsCoordinator balance not incremented by amount of rewards submission"
             );
         }
     }
 }
 
-contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
-    // only callable by paymentUpdater
-    function testFuzz_Revert_WhenNotPaymentUpdater(
-        address invalidPaymentUpdater
-    ) public filterFuzzedAddressInputs(invalidPaymentUpdater) {
-        cheats.prank(invalidPaymentUpdater);
+contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
+    // only callable by rewardsUpdater
+    function testFuzz_Revert_WhenNotRewardsUpdater(
+        address invalidRewardsUpdater
+    ) public filterFuzzedAddressInputs(invalidRewardsUpdater) {
+        cheats.prank(invalidRewardsUpdater);
 
-        cheats.expectRevert("PaymentCoordinator: caller is not the paymentUpdater");
-        paymentCoordinator.submitRoot(bytes32(0), 0);
+        cheats.expectRevert("RewardsCoordinator: caller is not the rewardsUpdater");
+        rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
     function test_Revert_WhenSubmitRootPaused() public {
         cheats.prank(pauser);
-        paymentCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
+        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
 
         cheats.expectRevert("Pausable: index is paused");
-        paymentCoordinator.submitRoot(bytes32(0), 0);
+        rewardsCoordinator.submitRoot(bytes32(0), 0);
     }
 
     /// @notice submits root with correct values and adds to root storage array
     /// - checks activatedAt has added activationDelay
-    function testFuzz_submitRoot(bytes32 root, uint32 paymentCalculationEndTimestamp) public {
+    function testFuzz_submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) public {
         // fuzz avoiding overflows and valid activatedAt values
-        cheats.assume(paymentCoordinator.currPaymentCalculationEndTimestamp() < paymentCalculationEndTimestamp);
-        cheats.assume(paymentCalculationEndTimestamp < block.timestamp);
+        cheats.assume(rewardsCoordinator.currRewardsCalculationEndTimestamp() < rewardsCalculationEndTimestamp);
+        cheats.assume(rewardsCalculationEndTimestamp < block.timestamp);
 
-        uint32 expectedRootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
-        uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
+        uint32 expectedRootIndex = uint32(rewardsCoordinator.getDistributionRootsLength());
+        uint32 activatedAt = uint32(block.timestamp) + rewardsCoordinator.activationDelay();
 
-        cheats.expectEmit(true, true, true, true, address(paymentCoordinator));
-        emit DistributionRootSubmitted(expectedRootIndex, root, paymentCalculationEndTimestamp, activatedAt);
-        cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(root, paymentCalculationEndTimestamp);
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit DistributionRootSubmitted(expectedRootIndex, root, rewardsCalculationEndTimestamp, activatedAt);
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.submitRoot(root, rewardsCalculationEndTimestamp);
 
         (
             bytes32 submittedRoot,
-            uint32 submittedPaymentCalculationEndTimestamp,
+            uint32 submittedRewardsCalculationEndTimestamp,
             uint32 submittedActivatedAt
-        ) = paymentCoordinator.distributionRoots(expectedRootIndex);
+        ) = rewardsCoordinator.distributionRoots(expectedRootIndex);
 
         assertEq(
             expectedRootIndex,
-            paymentCoordinator.getDistributionRootsLength() - 1,
+            rewardsCoordinator.getDistributionRootsLength() - 1,
             "root not added to roots array"
         );
         assertEq(activatedAt, submittedActivatedAt, "activatedAt not correct");
         assertEq(root, submittedRoot, "root not set");
         assertEq(
-            paymentCalculationEndTimestamp,
-            submittedPaymentCalculationEndTimestamp,
-            "paymentCalculationEndTimestamp not set"
+            rewardsCalculationEndTimestamp,
+            submittedRewardsCalculationEndTimestamp,
+            "rewardsCalculationEndTimestamp not set"
         );
         assertEq(
-            paymentCoordinator.currPaymentCalculationEndTimestamp(),
-            paymentCalculationEndTimestamp,
-            "currPaymentCalculationEndTimestamp not set"
+            rewardsCoordinator.currRewardsCalculationEndTimestamp(),
+            rewardsCalculationEndTimestamp,
+            "currRewardsCalculationEndTimestamp not set"
         );
     }
 
@@ -1175,22 +1175,22 @@ contract PaymentCoordinatorUnitTests_submitRoot is PaymentCoordinatorUnitTests {
         index = bound(index, 0, uint256(numRoots - 1));
 
         bytes32[] memory roots = new bytes32[](numRoots);
-        cheats.startPrank(paymentUpdater);
+        cheats.startPrank(rewardsUpdater);
         for (uint16 i = 0; i < numRoots; ++i) {
             roots[i] = keccak256(abi.encodePacked(root, i));
 
-            uint32 activationDelay = uint32(block.timestamp) + paymentCoordinator.activationDelay();
-            paymentCoordinator.submitRoot(roots[i], uint32(block.timestamp - 1));
+            uint32 activationDelay = uint32(block.timestamp) + rewardsCoordinator.activationDelay();
+            rewardsCoordinator.submitRoot(roots[i], uint32(block.timestamp - 1));
             cheats.warp(activationDelay);
         }
         cheats.stopPrank();
 
-        assertEq(index, paymentCoordinator.getRootIndexFromHash(roots[index]), "root index not found");
+        assertEq(index, rewardsCoordinator.getRootIndexFromHash(roots[index]), "root index not found");
     }
 }
 
 /// @notice Tests for sets of JSON data with different distribution roots
-contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests {
+contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests {
     using stdStorage for StdStorage;
 
     /// @notice earner address used for proofs
@@ -1209,7 +1209,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
     bytes32 earnerTokenRoot;
 
     function setUp() public virtual override {
-        PaymentCoordinatorUnitTests.setUp();
+        RewardsCoordinatorUnitTests.setUp();
 
         // Create mock token to use bytecode later to etch
         IERC20 mockToken = new ERC20Mock();
@@ -1227,31 +1227,31 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
         // cumulative claimed and earned.
         cheats.startPrank(claimer);
-        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
         uint256[] memory earnings = _getCumulativeEarnings(claim);
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-        _assertPaymentClaimedEvents(root, claim, claimer);
-        paymentCoordinator.processClaim(claim, claimer);
+        _assertRewardsClaimedEvents(root, claim, claimer);
+        rewardsCoordinator.processClaim(claim, claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1276,31 +1276,31 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Claim against root and check balances before/after, and check it matches the difference between
         // cumulative claimed and earned.
         cheats.startPrank(claimer);
-        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
         uint256[] memory earnings = _getCumulativeEarnings(claim);
         uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-        _assertPaymentClaimedEvents(root, claim, claimer);
-        paymentCoordinator.processClaim(claim, claimer);
+        _assertRewardsClaimedEvents(root, claim, claimer);
+        rewardsCoordinator.processClaim(claim, claimer);
 
         uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1325,33 +1325,33 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1370,20 +1370,20 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[1];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1402,20 +1402,20 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         claim = claims[2];
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1441,33 +1441,33 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
             uint256[] memory tokenBalancesBefore = _getClaimTokenBalances(claimer, claim);
 
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1485,18 +1485,18 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // 2. Claim against first root again, expect a revert
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             cheats.expectRevert(
-                "PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
+                "RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed"
             );
-            paymentCoordinator.processClaim(claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             cheats.stopPrank();
         }
@@ -1512,18 +1512,18 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earnings
@@ -1533,11 +1533,11 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid token claim proof");
-        assertFalse(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid token claim proof");
-        paymentCoordinator.processClaim(claim, claimer);
+        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid token claim proof");
+        rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
     }
@@ -1553,18 +1553,18 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
         // Modify Earner
@@ -1573,11 +1573,11 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         // Check claim is not valid from both checkClaim() and processClaim() throwing a revert
         cheats.startPrank(claimer);
 
-        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
-        assertFalse(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        assertFalse(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
-        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
-        paymentCoordinator.processClaim(claim, claimer);
+        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earner claim proof");
+        rewardsCoordinator.processClaim(claim, claimer);
 
         cheats.stopPrank();
     }
@@ -1592,32 +1592,32 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
-        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         // Set cumulativeClaimed to be max uint256, should revert when attempting to claim
         stdstore
-            .target(address(paymentCoordinator))
+            .target(address(rewardsCoordinator))
             .sig("cumulativeClaimed(address,address)")
             .with_key(claim.earnerLeaf.earner)
             .with_key(address(claim.tokenLeaves[0].token))
             .checked_write(type(uint256).max);
         cheats.startPrank(claimer);
-        cheats.expectRevert("PaymentCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
-        paymentCoordinator.processClaim(claim, claimer);
+        cheats.expectRevert("RewardsCoordinator.processClaim: cumulativeEarnings must be gt than cumulativeClaimed");
+        rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
 
@@ -1633,29 +1633,29 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
-        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         // Take the tokenIndex and add a significant bit so that the actual index number is increased
         // but still with the same least significant bits for valid proofs
         uint8 proofLength = uint8(claim.tokenTreeProofs[0].length);
         claim.tokenIndices[0] = claim.tokenIndices[0] | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("PaymentCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
-        paymentCoordinator.processClaim(claim, claimer);
+        cheats.expectRevert("RewardsCoordinator._verifyTokenClaim: invalid tokenLeafIndex");
+        rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
 
@@ -1671,29 +1671,29 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofs();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[2];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofs();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[2];
 
         uint32 rootIndex = claim.rootIndex;
-        (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+        (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
         cheats.warp(activatedAt);
 
-        assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+        assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         // Take the tokenIndex and add a significant bit so that the actual index number is increased
         // but still with the same least significant bits for valid proofs
         uint8 proofLength = uint8(claim.earnerTreeProof.length);
         claim.earnerIndex = claim.earnerIndex | uint32(1 << (numShift + proofLength / 32));
         cheats.startPrank(claimer);
-        cheats.expectRevert("PaymentCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
-        paymentCoordinator.processClaim(claim, claimer);
+        cheats.expectRevert("RewardsCoordinator._verifyEarnerClaimProof: invalid earnerLeafIndex");
+        rewardsCoordinator.processClaim(claim, claimer);
         cheats.stopPrank();
     }
 
@@ -1710,26 +1710,26 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsMaxEarnerAndLeafIndices();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsMaxEarnerAndLeafIndices();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
@@ -1749,8 +1749,8 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
                 (1 << ((claim.tokenTreeProofs[0].length / 32))),
                 "TokenIndex not set to max value"
             );
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1776,26 +1776,26 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsSingleTokenLeaf();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsSingleTokenLeaf();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
@@ -1812,8 +1812,8 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
                 0,
                 "TokenTreeProof should be empty"
             );
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1842,26 +1842,26 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         address claimer;
         if (setClaimerFor) {
             cheats.prank(earner);
-            paymentCoordinator.setClaimerFor(claimerFor);
+            rewardsCoordinator.setClaimerFor(claimerFor);
             claimer = claimerFor;
         } else {
             claimer = earner;
         }
 
         // Parse all 3 claim proofs for distributionRoots 0,1,2 respectively
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = _parseAllProofsSingleEarnerLeaf();
-        IPaymentCoordinator.PaymentMerkleClaim memory claim = claims[0];
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = _parseAllProofsSingleEarnerLeaf();
+        IRewardsCoordinator.RewardsMerkleClaim memory claim = claims[0];
 
         // 1. Claim against first root where earner tree is full tree and earner and token index is last index of that tree height
         {
             uint32 rootIndex = claim.rootIndex;
-            (bytes32 root, , uint32 activatedAt) = paymentCoordinator.distributionRoots(rootIndex);
+            (bytes32 root, , uint32 activatedAt) = rewardsCoordinator.distributionRoots(rootIndex);
             cheats.warp(activatedAt);
 
             // Claim against root and check balances before/after, and check it matches the difference between
             // cumulative claimed and earned.
             cheats.startPrank(claimer);
-            assertTrue(paymentCoordinator.checkClaim(claim), "PaymentCoordinator.checkClaim: claim not valid");
+            assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
             uint256[] memory totalClaimedBefore = _getCumulativeClaimed(earner, claim);
             uint256[] memory earnings = _getCumulativeEarnings(claim);
@@ -1878,8 +1878,8 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
                 0,
                 "EarnerTreeProof should be empty"
             );
-            _assertPaymentClaimedEvents(root, claim, claimer);
-            paymentCoordinator.processClaim(claim, claimer);
+            _assertRewardsClaimedEvents(root, claim, claimer);
+            rewardsCoordinator.processClaim(claim, claimer);
 
             uint256[] memory tokenBalancesAfter = _getClaimTokenBalances(claimer, claim);
 
@@ -1895,20 +1895,20 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
     }
 
-    /// @notice Set address with ERC20Mock bytecode and mint amount to paymentCoordinator for
+    /// @notice Set address with ERC20Mock bytecode and mint amount to rewardsCoordinator for
     /// balance for testing processClaim()
     function _setAddressAsERC20(address randAddress, uint256 mintAmount) internal {
         cheats.etch(randAddress, mockTokenBytecode);
-        ERC20Mock(randAddress).mint(address(paymentCoordinator), mintAmount);
+        ERC20Mock(randAddress).mint(address(rewardsCoordinator), mintAmount);
     }
 
     /// @notice parse proofs from json file and submitRoot()
-    function _parseProofData(string memory filePath) internal returns (IPaymentCoordinator.PaymentMerkleClaim memory) {
+    function _parseProofData(string memory filePath) internal returns (IRewardsCoordinator.RewardsMerkleClaim memory) {
         cheats.readFile(filePath);
 
         string memory claimProofData = cheats.readFile(filePath);
 
-        // Parse PaymentMerkleClaim
+        // Parse RewardsMerkleClaim
         merkleRoot = abi.decode(stdJson.parseRaw(claimProofData, ".Root"), (bytes32));
         earnerIndex = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerIndex"), (uint32));
         earnerTreeProof = abi.decode(stdJson.parseRaw(claimProofData, ".EarnerTreeProof"), (bytes));
@@ -1918,7 +1918,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         uint256 numTokenLeaves = stdJson.readUint(claimProofData, ".TokenLeavesNum");
         uint256 numTokenTreeProofs = stdJson.readUint(claimProofData, ".TokenTreeProofsNum");
 
-        IPaymentCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IPaymentCoordinator.TokenTreeMerkleLeaf[](
+        IRewardsCoordinator.TokenTreeMerkleLeaf[] memory tokenLeaves = new IRewardsCoordinator.TokenTreeMerkleLeaf[](
             numTokenLeaves
         );
         uint32[] memory tokenIndices = new uint32[](numTokenLeaves);
@@ -1929,7 +1929,7 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
 
             IERC20 token = IERC20(stdJson.readAddress(claimProofData, tokenKey));
             uint256 cumulativeEarnings = stdJson.readUint(claimProofData, amountKey);
-            tokenLeaves[i] = IPaymentCoordinator.TokenTreeMerkleLeaf({
+            tokenLeaves[i] = IRewardsCoordinator.TokenTreeMerkleLeaf({
                 token: token,
                 cumulativeEarnings: cumulativeEarnings
             });
@@ -1946,20 +1946,20 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         }
 
         uint32 rootCalculationEndTimestamp = uint32(block.timestamp);
-        uint32 activatedAt = uint32(block.timestamp) + paymentCoordinator.activationDelay();
+        uint32 activatedAt = uint32(block.timestamp) + rewardsCoordinator.activationDelay();
         prevRootCalculationEndTimestamp = rootCalculationEndTimestamp;
         cheats.warp(activatedAt);
 
-        uint32 rootIndex = uint32(paymentCoordinator.getDistributionRootsLength());
+        uint32 rootIndex = uint32(rewardsCoordinator.getDistributionRootsLength());
 
-        cheats.prank(paymentUpdater);
-        paymentCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp);
+        cheats.prank(rewardsUpdater);
+        rewardsCoordinator.submitRoot(merkleRoot, prevRootCalculationEndTimestamp);
 
-        IPaymentCoordinator.PaymentMerkleClaim memory newClaim = IPaymentCoordinator.PaymentMerkleClaim({
+        IRewardsCoordinator.RewardsMerkleClaim memory newClaim = IRewardsCoordinator.RewardsMerkleClaim({
             rootIndex: rootIndex,
             earnerIndex: earnerIndex,
             earnerTreeProof: earnerTreeProof,
-            earnerLeaf: IPaymentCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
+            earnerLeaf: IRewardsCoordinator.EarnerTreeMerkleLeaf({earner: earner, earnerTokenRoot: earnerTokenRoot}),
             tokenIndices: tokenIndices,
             tokenTreeProofs: tokenTreeProofs,
             tokenLeaves: tokenLeaves
@@ -1968,36 +1968,36 @@ contract PaymentCoordinatorUnitTests_processClaim is PaymentCoordinatorUnitTests
         return newClaim;
     }
 
-    function _parseAllProofs() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](3);
+    function _parseAllProofs() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](3);
 
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root1.json");
-        claims[1] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root2.json");
-        claims[2] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_Root3.json");
-
-        return claims;
-    }
-
-    function _parseAllProofsMaxEarnerAndLeafIndices() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
-
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json");
+        claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_Root1.json");
+        claims[1] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_Root2.json");
+        claims[2] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_Root3.json");
 
         return claims;
     }
 
-    function _parseAllProofsSingleTokenLeaf() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
+    function _parseAllProofsMaxEarnerAndLeafIndices() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
 
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_SingleTokenLeaf.json");
+        claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_MaxEarnerAndLeafIndices.json");
 
         return claims;
     }
 
-    function _parseAllProofsSingleEarnerLeaf() internal virtual returns (IPaymentCoordinator.PaymentMerkleClaim[] memory) {
-        IPaymentCoordinator.PaymentMerkleClaim[] memory claims = new IPaymentCoordinator.PaymentMerkleClaim[](1);
+    function _parseAllProofsSingleTokenLeaf() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
 
-        claims[0] = _parseProofData("src/test/test-data/paymentCoordinator/processClaimProofs_SingleEarnerLeaf.json");
+        claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleTokenLeaf.json");
+
+        return claims;
+    }
+
+    function _parseAllProofsSingleEarnerLeaf() internal virtual returns (IRewardsCoordinator.RewardsMerkleClaim[] memory) {
+        IRewardsCoordinator.RewardsMerkleClaim[] memory claims = new IRewardsCoordinator.RewardsMerkleClaim[](1);
+
+        claims[0] = _parseProofData("src/test/test-data/rewardsCoordinator/processClaimProofs_SingleEarnerLeaf.json");
 
         return claims;
     }
