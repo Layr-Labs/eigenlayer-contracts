@@ -13,7 +13,7 @@ abstract contract OperatorSetManager is IOperatorSetManager {
 
     struct MagnitudeUpdate {
         uint32 epoch;
-        uint32 magnitude;
+        uint192 magnitude;
     }
 
     mapping(address => mapping(IStrategy => BipUpdate[])) private _slashingCapBipsUpdates;
@@ -52,14 +52,14 @@ abstract contract OperatorSetManager is IOperatorSetManager {
         for (uint256 i = 0; i < strategies.length; i++) {
             require(slashingCapBips[i] <= SlashingAccountingUtils.BIPS_FACTOR, "OperatorSetManager.updateSlashingCapBips: bips is invalid");
 
-            BipUpdate[] storage updates = _slashingCapBipsUpdates[operator][strategies[i]];
-            uint256 updatesLength = updates.length;
+            BipUpdate[] storage slashingCapBipsUpdates = _slashingCapBipsUpdates[operator][strategies[i]];
+            uint256 slashingCapBipsUpdatesLength = slashingCapBipsUpdates.length;
 
             // Overwrite the last update if it's in the same effect epoch
-            if (updatesLength > 0 && updates[updatesLength - 1].epoch == effectEpoch) {
-                updates[updatesLength - 1].bips = slashingCapBips[i];
+            if (slashingCapBipsUpdatesLength > 0 && slashingCapBipsUpdates[slashingCapBipsUpdatesLength - 1].epoch == effectEpoch) {
+                slashingCapBipsUpdates[slashingCapBipsUpdatesLength - 1].bips = slashingCapBips[i];
             } else {
-                updates.push(BipUpdate({epoch: effectEpoch, bips: slashingCapBips[i]}));
+                slashingCapBipsUpdates.push(BipUpdate({epoch: effectEpoch, bips: slashingCapBips[i]}));
             }
         }
 
@@ -109,7 +109,7 @@ abstract contract OperatorSetManager is IOperatorSetManager {
                 }
 
                 // check whether we can just decrease the operator set magnitude
-                uint32 newOperatorSetMagnitude = slashableBips[i][j] * totalMagnitudeUpdate.magnitude / uint32(SlashingAccountingUtils.BIPS_FACTOR);
+                uint192 newOperatorSetMagnitude = totalMagnitudeUpdate.magnitude * slashableBips[i][j] / uint32(SlashingAccountingUtils.BIPS_FACTOR);
                 if (newOperatorSetMagnitude > operatorSetMagnitudeUpdate.magnitude) {
                     // if the new operator set magnitude is greater than the current one,
                     // we need to update the total magnitude
@@ -127,7 +127,7 @@ abstract contract OperatorSetManager is IOperatorSetManager {
                     // this is why sb cannot be BIPS_FACTOR, lest we divide by zero
                     newOperatorSetMagnitude = (totalMagnitudeUpdate.magnitude - operatorSetMagnitudeUpdate.magnitude) * slashableBips[i][j] / (uint32(SlashingAccountingUtils.BIPS_FACTOR) - slashableBips[i][j]);
                     
-                    uint32 newTotalMagnitude = totalMagnitudeUpdate.magnitude - operatorSetMagnitudeUpdate.magnitude + newOperatorSetMagnitude;
+                    uint192 newTotalMagnitude = totalMagnitudeUpdate.magnitude - operatorSetMagnitudeUpdate.magnitude + newOperatorSetMagnitude;
                     // update storage in place if last update is for effectEpoch
                     if (totalMagnitudeUpdate.epoch == effectEpoch) {
                         _totalMagnitudeUpdates[operator][strategies[i][j]][totalMagnitudeUpdatesLength - 1].magnitude = newTotalMagnitude;
@@ -165,13 +165,13 @@ abstract contract OperatorSetManager is IOperatorSetManager {
     function getSlashingCapBips(address operator, IStrategy strategy, uint32 epoch) external view returns (uint16) {
         require(epoch <= EpochUtils.currentEpochUint32() + 2, "Epoch is more than 2 epochs in the future");
 
-        BipUpdate[] storage updates = _slashingCapBipsUpdates[operator][strategy];
+        BipUpdate[] storage slashingCapBipsUpdates = _slashingCapBipsUpdates[operator][strategy];
         uint16 latestBips = 0;
 
         // iterate from the latest update to the oldest
-        for (uint256 i = updates.length; i > 0; i--) {
-            if (updates[i - 1].epoch <= epoch) {
-                latestBips = updates[i - 1].bips;
+        for (uint256 i = slashingCapBipsUpdates.length; i > 0; i--) {
+            if (slashingCapBipsUpdates[i - 1].epoch <= epoch) {
+                latestBips = slashingCapBipsUpdates[i - 1].bips;
                 break;
             }
         }
@@ -198,17 +198,17 @@ abstract contract OperatorSetManager is IOperatorSetManager {
 
         bytes32 operatorSetHash = _hashOperatorSet(operatorSet);
         MagnitudeUpdate[] storage operatorSetMagnitudeUpdates = _operatorSetMagnitudeUpdates[operator][strategy][operatorSetHash];
-        uint32 operatorSetMagnitude = 0;
+        uint192 operatorSetMagnitude = 0;
 
         // iterate from the latest operator set magnitude update to the oldest
         for (uint256 i = operatorSetMagnitudeUpdates.length; i > 0; i--) {
             if (operatorSetMagnitudeUpdates[i - 1].epoch <= epoch) {
-                operatorSetMagnitude = uint16(operatorSetMagnitudeUpdates[i - 1].magnitude);
+                operatorSetMagnitude = operatorSetMagnitudeUpdates[i - 1].magnitude;
                 break;
             }
         }
 
-        uint32 totalMagnitude = 0;
+        uint192 totalMagnitude = 0;
         // iterate through total magnitude updates to get the total magnitude
         for (uint256 i = _totalMagnitudeUpdates[operator][strategy].length; i > 0; i--) {
             if (_totalMagnitudeUpdates[operator][strategy][i - 1].epoch <= epoch) {
