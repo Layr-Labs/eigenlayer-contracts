@@ -5,151 +5,101 @@ import "../interfaces/IOperatorSetManager.sol";
 import "../libraries/EpochUtils.sol";
 import "../libraries/SlashingAccountingUtils.sol";
 
-abstract contract OperatorSetManager is IOperatorSetManager {
+contract OperatorSetManager is IOperatorSetManager {
     struct BipUpdate {
         uint32 epoch;
         uint16 bips;
     }
 
+    struct TotalMagnitudeUpdate {
+        uint32 epoch;
+        uint64 totalMagnitude;
+        uint64 totalAllocatedMagnitude;
+    }
+
     struct MagnitudeUpdate {
         uint32 epoch;
-        uint192 magnitude;
+        uint64 magnitude;
     }
 
     mapping(address => mapping(IStrategy => BipUpdate[])) private _slashingCapBipsUpdates;
     mapping(address => mapping(IStrategy => mapping(bytes32 => MagnitudeUpdate[]))) private _operatorSetMagnitudeUpdates;
-    mapping(address => mapping(IStrategy => MagnitudeUpdate[])) private _totalMagnitudeUpdates;
-
+    mapping(address => mapping(IStrategy => TotalMagnitudeUpdate[])) private _totalMagnitudeUpdates;
 
     /**
-	 * @notice Updates the slashingCapBips for a given operator and the provided strategies
-	 *
-	 * @param operator the operator to change slashingCapBips for
-	 * @param strategies the strategies to set slashingCapBips for
-	 * @param slashingCapBips the new slashingCapBips to set for each of the strategies
-	 * @param allocatorSignature if non-empty is the signature of the allocator on 
-	 * the modification. if empty, the msg.sender is must be the operator's allocator
+	 * @notice Updates slashableBips of the provided strategies
+	 * for an operator set for a given operator
 	 * 
-	 * @return effectEpoch the epoch in which the change will take effect
+	 * @param operator the operator to change slashing parameters for
+	 * @param slashingMagnitudeParameters the new slashing magnitude parameters
+	 * @param allocatorSignature if non-empty is the signature of the allocator on 
+	 * the modification. if empty, the msg.sender must be the allocator for the 
+	 * operator
+	 * 
+	 * @return effectEpoch the epoch in which the change to parameters will 
+	 * take effect 
 	 */
-    function updateSlashingCapBips(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint16[] calldata slashingCapBips,
-        SignatureWithExpiry calldata allocatorSignature // TODO: Verify sig!
-    ) public override returns (uint32 effectEpoch) {
-        require(
-            _isAllocatorFor(msg.sender, operator),
-            "OperatorSetManager.updateSlashingCapBips: Caller is not the allocator for the operator"
-        );
-        require(
-            strategies.length == slashingCapBips.length,
-            "OperatorSetManager.updateSlashingCapBips: Strategies and slashingCapBips length mismatch"
-        );
-
-        effectEpoch = EpochUtils.currentEpochUint32() + 2; // Change take effect in 2 epochs
-
-        for (uint256 i = 0; i < strategies.length; i++) {
-            require(slashingCapBips[i] <= SlashingAccountingUtils.BIPS_FACTOR, "OperatorSetManager.updateSlashingCapBips: bips is invalid");
-
-            BipUpdate[] storage slashingCapBipsUpdates = _slashingCapBipsUpdates[operator][strategies[i]];
-            uint256 slashingCapBipsUpdatesLength = slashingCapBipsUpdates.length;
-
-            // Overwrite the last update if it's in the same effect epoch
-            if (slashingCapBipsUpdatesLength > 0 && slashingCapBipsUpdates[slashingCapBipsUpdatesLength - 1].epoch == effectEpoch) {
-                slashingCapBipsUpdates[slashingCapBipsUpdatesLength - 1].bips = slashingCapBips[i];
-            } else {
-                slashingCapBipsUpdates.push(BipUpdate({epoch: effectEpoch, bips: slashingCapBips[i]}));
-            }
-        }
-
-        emit OperatorSlashingCapBipsUpdated(operator, strategies, slashingCapBips);
-    }
-
-    function updateOperatorSetSlashingParameters(
-        address operator,
-        OperatorSet[] calldata operatorSets,
-        IStrategy[][] calldata strategies,
-        uint16[][] calldata slashableBips,
-        SignatureWithExpiry calldata allocatorSignature // TODO: Verify sig!
-    ) external override returns (uint32 effectEpoch) {
+	function updateSlashingParameters(
+		address operator,
+		SlashingMagnitudeParameters[] calldata slashingMagnitudeParameters,
+		SignatureWithExpiry calldata allocatorSignature
+	) external returns(uint32 effectEpoch) {
         require(_isAllocatorFor(msg.sender, operator), "OperatorSetManager.updateOperatorSetSlashingParameters: Caller is not the allocator for the operator");
-        require(operatorSets.length == strategies.length, "OperatorSetManager.updateOperatorSetSlashingParameters: OperatorSets and strategies length mismatch");
-        require(operatorSets.length == slashableBips.length, "OperatorSetManager.updateOperatorSetSlashingParameters: OperatorSets and slashableBips length mismatch");
+        // Change takes effect in 2 epochs
+        effectEpoch = EpochUtils.currentEpochUint32() + 2; 
 
-        effectEpoch = EpochUtils.currentEpochUint32() + 2; // Change takes effect in 2 epochs
+        for (uint256 i = 0; i < slashingMagnitudeParameters.length; i++) {
+            require(slashingMagnitudeParameters[i].operatorSets.length == slashingMagnitudeParameters[i].slashableMagnitudes.length, "OperatorSetManager.updateOperatorSetSlashingParameters: operatorSets and slashableMagnitudes length mismatch");
 
-        for (uint256 i = 0; i < operatorSets.length; i++) {
-            bytes32 operatorSetHash = _hashOperatorSet(operatorSets[i]);
-            require(strategies[i].length == slashableBips[i].length, "OperatorSetManager.updateOperatorSetSlashingParameters: Strategies and slashableBips length mismatch");
+            TotalMagnitudeUpdate memory totalMagnitudeUpdate;
+            uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy].length;
+            if (totalMagnitudeUpdatesLength != 0) {
+                totalMagnitudeUpdate = _totalMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][totalMagnitudeUpdatesLength - 1];
+            }
 
-            for (uint256 j = 0; j < strategies[i].length; j++) {
-                require(j == 0 || uint160(address(strategies[i][j])) > uint160(address(strategies[i][j - 1])), "OperatorSetManager.updateOperatorSetSlashingParameters: not ascending order of strategies");
-                // TODO: can only allocate 9999 bips to the operator set
-                require(slashableBips[i][j] <= SlashingAccountingUtils.BIPS_FACTOR - 1, "OperatorSetManager.updateOperatorSetSlashingParameters: bips is invalid");
-
-                MagnitudeUpdate memory totalMagnitudeUpdate;
-                uint256 totalMagnitudeUpdatesLength = _totalMagnitudeUpdates[operator][strategies[i][j]].length;
-                if (totalMagnitudeUpdatesLength == 0) {
-                    // if this is the first magnitude update,
-                    // set the total magnitude to 10000 
-                    _totalMagnitudeUpdates[operator][strategies[i][j]].push(MagnitudeUpdate({epoch: effectEpoch, magnitude: 10000}));
-                    // and the operator set magnitude to the slashable bips
-                    _operatorSetMagnitudeUpdates[operator][strategies[i][j]][operatorSetHash].push(MagnitudeUpdate({epoch: effectEpoch, magnitude: slashableBips[i][j]}));
-                    // continue to the next strategy
-                    continue;
-                } else {
-                    totalMagnitudeUpdate = _totalMagnitudeUpdates[operator][strategies[i][j]][totalMagnitudeUpdatesLength - 1];
-                }
+            for (uint256 j = 0; j < slashingMagnitudeParameters[i].operatorSets.length; j++) {
+                bytes32 operatorSetHash = _hashOperatorSet(slashingMagnitudeParameters[i].operatorSets[j]);
                 
+                // set the magnitude to the slashable magnitude
                 MagnitudeUpdate memory operatorSetMagnitudeUpdate;
-                uint256 operatorSetMagnitudeUpdatesLength = _operatorSetMagnitudeUpdates[operator][strategies[i][j]][operatorSetHash].length;
-                if (operatorSetMagnitudeUpdatesLength > 0) {
-                    operatorSetMagnitudeUpdate = _operatorSetMagnitudeUpdates[operator][strategies[i][j]][operatorSetHash][operatorSetMagnitudeUpdatesLength - 1];
+                uint256 operatorSetMagnitudeUpdatesLength = _operatorSetMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][operatorSetHash].length;
+                if (operatorSetMagnitudeUpdatesLength != 0) {
+                    operatorSetMagnitudeUpdate = _operatorSetMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][operatorSetHash][operatorSetMagnitudeUpdatesLength - 1];
                 }
 
-                // check whether we can just decrease the operator set magnitude
-                uint192 newOperatorSetMagnitude = totalMagnitudeUpdate.magnitude * slashableBips[i][j] / uint32(SlashingAccountingUtils.BIPS_FACTOR);
-                if (newOperatorSetMagnitude > operatorSetMagnitudeUpdate.magnitude) {
-                    // if the new operator set magnitude is greater than the current one,
-                    // we need to update the total magnitude
-
-                    // nosm = newOperatorSetMagnitude
-                    // tm = totalMagnitudeUpdate.magnitude
-                    // osm = operatorSetMagnitudeUpdate.magnitude
-                    // sb = slashableBips[i][j]
-                    // we are trying to solve:
-                    // nosm / (tm - osm + nosm) = sb / BIPS_FACTOR
-                    // nosm = (tm - osm + nosm) * sb / BIPS_FACTOR
-                    // BIPS_FACTOR * nosm = (tm - osm + nosm) * sb
-                    // (BIPS_FACTOR - sb) * nosm = (tm - osm) * sb
-                    // nosm = (tm - osm) * sb / (BIPS_FACTOR - sb)
-                    // this is why sb cannot be BIPS_FACTOR, lest we divide by zero
-                    newOperatorSetMagnitude = (totalMagnitudeUpdate.magnitude - operatorSetMagnitudeUpdate.magnitude) * slashableBips[i][j] / (uint32(SlashingAccountingUtils.BIPS_FACTOR) - slashableBips[i][j]);
-                    
-                    uint192 newTotalMagnitude = totalMagnitudeUpdate.magnitude - operatorSetMagnitudeUpdate.magnitude + newOperatorSetMagnitude;
-                    // update storage in place if last update is for effectEpoch
-                    if (totalMagnitudeUpdate.epoch == effectEpoch) {
-                        _totalMagnitudeUpdates[operator][strategies[i][j]][totalMagnitudeUpdatesLength - 1].magnitude = newTotalMagnitude;
-                    } else {
-                        // otherwise, add a new update
-                        totalMagnitudeUpdate = MagnitudeUpdate({epoch: effectEpoch, magnitude: newTotalMagnitude});
-                        _totalMagnitudeUpdates[operator][strategies[i][j]].push(totalMagnitudeUpdate);
-                    }
-                }
+                // keep track of the lower bound on total magnitude
+                totalMagnitudeUpdate.totalAllocatedMagnitude -= operatorSetMagnitudeUpdate.magnitude;
+                totalMagnitudeUpdate.totalAllocatedMagnitude += slashingMagnitudeParameters[i].slashableMagnitudes[j];
 
                 // update storage in place if last update is for effectEpoch
                 if (operatorSetMagnitudeUpdate.epoch == effectEpoch) {
-                    _operatorSetMagnitudeUpdates[operator][strategies[i][j]][operatorSetHash][operatorSetMagnitudeUpdatesLength - 1].magnitude = newOperatorSetMagnitude;
+                    _operatorSetMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][operatorSetHash][operatorSetMagnitudeUpdatesLength - 1].magnitude = slashingMagnitudeParameters[i].slashableMagnitudes[j];
                 } else {
                     // otherwise, add a new update
-                    operatorSetMagnitudeUpdate = MagnitudeUpdate({epoch: effectEpoch, magnitude: newOperatorSetMagnitude});
-                    _operatorSetMagnitudeUpdates[operator][strategies[i][j]][operatorSetHash].push(operatorSetMagnitudeUpdate);
+                    operatorSetMagnitudeUpdate = MagnitudeUpdate({epoch: effectEpoch, magnitude: slashingMagnitudeParameters[i].slashableMagnitudes[j]});
+                    _operatorSetMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][operatorSetHash].push(operatorSetMagnitudeUpdate);
                 }
+
+                emit SlashableMagnitudeUpdated(operator, slashingMagnitudeParameters[i].strategy, slashingMagnitudeParameters[i].operatorSets[j], slashingMagnitudeParameters[i].slashableMagnitudes[j], effectEpoch);
             }
 
-            emit OperatorSetSlashingParametersUpdated(operator, operatorSets[i], strategies[i], slashableBips[i], effectEpoch);
-        }
+            require(totalMagnitudeUpdate.totalAllocatedMagnitude <= slashingMagnitudeParameters[i].totalMagnitude, "OperatorSetManager.updateOperatorSetSlashingParameters: totalAllocatedMagnitude exceeds totalMagnitude");
+            totalMagnitudeUpdate.totalMagnitude = slashingMagnitudeParameters[i].totalMagnitude;
+            totalMagnitudeUpdate.totalAllocatedMagnitude = totalMagnitudeUpdate.totalAllocatedMagnitude;
+
+            // update storage in place if last update is for effectEpoch
+            if (totalMagnitudeUpdate.epoch == effectEpoch) {
+                _totalMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy][totalMagnitudeUpdatesLength - 1] = totalMagnitudeUpdate;
+            } else {
+                // otherwise, add a new update
+                totalMagnitudeUpdate.epoch = effectEpoch;
+                _totalMagnitudeUpdates[operator][slashingMagnitudeParameters[i].strategy].push(totalMagnitudeUpdate);
+            }
+
+            emit TotalMagnitudeUpdated(operator, slashingMagnitudeParameters[i].strategy, slashingMagnitudeParameters[i].totalMagnitude, effectEpoch);
+        } 
+
+        return effectEpoch;
     }
 
     /// VIEW
@@ -212,7 +162,7 @@ abstract contract OperatorSetManager is IOperatorSetManager {
         // iterate through total magnitude updates to get the total magnitude
         for (uint256 i = _totalMagnitudeUpdates[operator][strategy].length; i > 0; i--) {
             if (_totalMagnitudeUpdates[operator][strategy][i - 1].epoch <= epoch) {
-                totalMagnitude = _totalMagnitudeUpdates[operator][strategy][i - 1].magnitude;
+                totalMagnitude = _totalMagnitudeUpdates[operator][strategy][i - 1].totalMagnitude;
                 break;
             }
         }
